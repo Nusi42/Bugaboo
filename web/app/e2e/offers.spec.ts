@@ -6,7 +6,7 @@ import { ada, bob, cleo } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn, signOut } from "./support/flows.ts";
-import { tickIssues } from "./support/many-changes-pages.ts";
+import { previewMoveToLab } from "./support/offers-look.ts";
 import { offerSwitch, prepareOffers, switchOff, typesOffered } from "./support/offers.ts";
 
 // Issue types and groups of labels per project, and Check access per issue type (ISS-02, TAG-02,
@@ -87,17 +87,9 @@ test("iss_02 moving an issue to a project that does not offer its type names the
   page,
 }) => {
   await signIn(page, ada);
-  await tickIssues(page, ["WEB-1"]);
-  await page.getByRole("button", { name: t("many-changes.action-move"), exact: true }).click();
-  const dialog = page.getByRole("alertdialog");
-  await dialog.getByLabel(t("many-changes.project-search"), { exact: true }).fill("Lab");
-  await dialog.getByRole("radio", { name: /Lab/u }).click();
-  await dialog.getByRole("button", { name: t("many-changes.show-changes"), exact: true }).click();
   // The issue is not skipped: it keeps its type, and the preview says that Lab does not use it.
+  const dialog = await previewMoveToLab(page);
   await expect(dialog.getByText(t("preview.summary", { changed: 1, skipped: 0 }))).toBeVisible();
-  await expect(
-    dialog.getByText(t("many-changes.note-type-not-used", { type: "Bug", project: "Lab" })),
-  ).toBeVisible();
   await expectGoodInEveryLook(page);
 });
 

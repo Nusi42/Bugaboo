@@ -62,8 +62,8 @@ mod tests {
 
     use super::super::Database;
     use crate::db::StoredId as _;
-    use crate::schema::{IssueTypeRow, LabelGroupRow, OfferRow};
-    use crate::test_support::at;
+    use crate::schema::{LabelGroupRow, OfferRow};
+    use crate::test_support::{at, insert_old_issue_type};
 
     // The rows of the "M4 database before this package" are written by hand, up to migration 17: a
     // type and a group, the way the program wrote them (no project; the columns did not exist).
@@ -74,24 +74,7 @@ mod tests {
             database.migrate_until(17, at(0)).await?;
             let issue_type = IssueTypeId::from_parts(Timestamp::UNIX_EPOCH, [2; 10])?;
             let group = LabelGroupId::from_parts(Timestamp::UNIX_EPOCH, [3; 10])?;
-            let mut insert = Query::insert();
-            insert
-                .into_table(IssueTypeRow::Table)
-                .columns([
-                    IssueTypeRow::Id,
-                    IssueTypeRow::Name,
-                    IssueTypeRow::Icon,
-                    IssueTypeRow::Position,
-                    IssueTypeRow::Version,
-                ])
-                .values([
-                    Expr::val(issue_type.stored()),
-                    Expr::val("Task"),
-                    Expr::val("square-check"),
-                    Expr::val(0_i64),
-                    Expr::val(1_i64),
-                ])?;
-            database.execute(&insert).await?;
+            insert_old_issue_type(&database, issue_type, "Task").await?;
             let mut insert = Query::insert();
             insert
                 .into_table(LabelGroupRow::Table)

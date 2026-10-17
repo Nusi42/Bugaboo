@@ -423,13 +423,23 @@ fn sec_04_the_derive_lists_the_fields_a_view_holds_and_nothing_else() {
     assert_eq!(shown.hidden_properties(), ["cost_center", "assigned_to"]);
 }
 
-#[test]
-fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
+/// The world of the tests of levels per issue type: a role that changes a field for every type,
+/// except that it sees nothing of it for bugs, and sees it only in ACME for tasks.
+struct TypedWorld {
+    world: World,
+    severity: FieldKey,
+    bug: bb_core::id::IssueTypeId,
+    task: bb_core::id::IssueTypeId,
+    feature: bb_core::id::IssueTypeId,
+}
+
+fn typed_world() -> TypedWorld {
     use bb_core::id::{FieldId, IssueTypeId, SequentialIds};
     use bb_policy::{FieldRule, TypedFieldRule};
 
     let mut ids = SequentialIds::default();
-    let (bug, task) = (
+    let (bug, task, feature) = (
+        IssueTypeId::generate(&mut ids).unwrap(),
         IssueTypeId::generate(&mut ids).unwrap(),
         IssueTypeId::generate(&mut ids).unwrap(),
     );
@@ -460,6 +470,24 @@ fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
         subject: severity,
         level: FieldLevel::CanSee,
     });
+    TypedWorld {
+        world,
+        severity,
+        bug,
+        task,
+        feature,
+    }
+}
+
+#[test]
+fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
+    let TypedWorld {
+        world,
+        severity,
+        bug,
+        task,
+        ..
+    } = typed_world();
     let at_web = world.at(world.web);
     assert_eq!(
         at_web.field_level_for(Some(bug), severity),
@@ -485,41 +513,15 @@ fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
 
 #[test]
 fn sec_03_check_access_explains_a_field_level_for_one_issue_type() {
-    use bb_core::id::{FieldId, IssueTypeId, SequentialIds};
-    use bb_policy::{FieldRule, LevelSource, TypedFieldRule};
+    use bb_policy::LevelSource;
 
-    let mut ids = SequentialIds::default();
-    let (bug, task, feature) = (
-        IssueTypeId::generate(&mut ids).unwrap(),
-        IssueTypeId::generate(&mut ids).unwrap(),
-        IssueTypeId::generate(&mut ids).unwrap(),
-    );
-    let field = FieldId::generate(&mut ids).unwrap();
-    let severity = FieldKey::Own(field);
-    let mut world = World::new();
-    world.rules.own_fields.push(field);
-    let member = world.role("Team member", &[Permission::SeeProjects]);
-    world.give_everywhere(member);
-    world.rules.add(FieldRule {
-        project: None,
-        role: member,
-        subject: severity,
-        level: FieldLevel::CanChange,
-    });
-    world.rules.typed.push(TypedFieldRule {
-        project: None,
-        role: member,
-        issue_type: bug,
-        subject: severity,
-        level: FieldLevel::Hidden,
-    });
-    world.rules.typed.push(TypedFieldRule {
-        project: Some(world.acme),
-        role: member,
-        issue_type: task,
-        subject: severity,
-        level: FieldLevel::CanSee,
-    });
+    let TypedWorld {
+        world,
+        severity,
+        bug,
+        task,
+        feature,
+    } = typed_world();
     let at_web = world.at(world.web);
     let for_bug = at_web.explain_level_for(severity, Some(bug));
     assert_eq!(for_bug.level, FieldLevel::Hidden);

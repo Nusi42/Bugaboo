@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { addressInProject, paths, projectIssuesAddress } from "../../src/shared/paths.ts";
 import { check } from "./access.ts";
@@ -52,8 +52,8 @@ export async function takeNewIssue(page: Page, theme: Theme, project: string): P
   await take(page, theme, "new-issue-types", project);
 }
 
-export async function takeMove(page: Page, theme: Theme, project: string): Promise<void> {
-  await signIn(page, ada);
+/** Previews moving the bug WEB-1 to Lab, and gives the dialog back with the note on its type. */
+export async function previewMoveToLab(page: Page): Promise<Locator> {
   await tickIssues(page, ["WEB-1"]);
   await page.getByRole("button", { name: t("many-changes.action-move"), exact: true }).click();
   const dialog = page.getByRole("alertdialog");
@@ -63,6 +63,12 @@ export async function takeMove(page: Page, theme: Theme, project: string): Promi
   await expect(
     dialog.getByText(t("many-changes.note-type-not-used", { type: "Bug", project: "Lab" })),
   ).toBeVisible();
+  return dialog;
+}
+
+export async function takeMove(page: Page, theme: Theme, project: string): Promise<void> {
+  await signIn(page, ada);
+  await previewMoveToLab(page);
   await take(page, theme, "move-note", project);
 }
 
