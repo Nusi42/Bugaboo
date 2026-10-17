@@ -69,6 +69,21 @@ Since M3, Bugaboo stores who follows an issue, who is mentioned, and the notes o
 - **Sending from the use case that made the change:** the change would wait for the mail server, and a failed mail could undo nothing. Rejected; ADR-0007 already gives the outbox.
 - **Filtering only when the row is built:** a person who loses access an hour later would still read yesterday's notifications. Rejected; checking again costs one permission lookup per row shown.
 
+## Amendment (M4 WP-06)
+
+The reader and the e-mail are built. What the build decided where this record left room:
+
+- **The reader.** `notifications` is read by `run_due_jobs` before the jobs are taken, in batches of 200 events. A row is unique by the recipient and what it is about (`once`: the event, or the mention), so a restart that repeats a batch makes no second row. The rows, the jobs they queue and the new place of the reader are stored in one step.
+- **Who follows from when.** A follower hears only of events from the time they began to follow.
+- **Shaped when shown.** A row keeps the changes and the person who made them. Every time it is listed or put in an e-mail it is shaped again for the recipient: the fields they may see, the people as *Who sees people* says, the issue only if they still see it. The number of unread notifications is a route of its own, capped at 100, and counts only rows that still show.
+- **E-mail.** Plain text only: nothing is rendered or loaded, so escaping is not needed; the subject is one line. One `mail.send` job for each person and issue is queued for 5 minutes after the first change; it takes every waiting row of that pair, so a second job for the same pair finds nothing. A failed job is tried again with the pause of the job runner and the rows stay waiting; when it gives up, the rows are marked as never sent.
+- **The mail password** has its own routes (`PUT /api/v1/mail/password`, *Send me a test e-mail*). The test e-mail is sent at once, not as a job, so the person sees the answer. A refusal of the mail server is `mail.rejected`, a server that cannot be reached `mail.unavailable`, a server that is not entered `mail.off`.
+- **Handles.** The handle is the key of a table of its own; a handle a person had before stays with them (`current` says which is the one in use), so a mention in an old text still finds them. It is made in the same change as the account.
+- **Confirming an address.** `sign_up` answers `202` with `confirmation_needed` while mail is on. The link (`/confirm-address`, with the secret in the fragment) is sent as a `mail.send` job, is valid for 24 hours, and signing in is refused with `auth.address_not_confirmed` until it is followed. The job `sessions.purge` removes accounts whose link ran out, and signing up with that address again replaces them.
+- **Keeping.** Five more kinds of job: `notifications.purge` (rows after 90 days, and the payload of dead jobs after 30), `security-log.prune` (the setting *Keep the security log for* days, 365 at the start), `sessions.purge`, `server-log.rotate` (the size and the number of files are settings) and `mail.send`. Each can run twice with the same result.
+- **Tags.** Renaming or combining tags counts each touched issue's version in the same change that rewrites its tags (M3-F126); a rename of a very large tag is therefore one long change, which a step job could split later.
+- **Delivery in the matrix.** The record of SEC-MATRIX has a `delivery` line for each entry point (`notifications`, `e-mail`) and each starting role as the recipient; the check compares it with the tables of the starting roles.
+
 ## Enforced by
 
 SEC-MATRIX (the e-mail and notifications column), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (`lettre`), the permission tests of M4 WP-06, and review (no other path sends mail).

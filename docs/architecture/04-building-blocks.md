@@ -17,7 +17,7 @@ bugaboo/
 │   ├── bb-auth/            passwords, passkeys, two-step codes, sessions, access keys, OIDC, OAuth 2.1
 │   ├── bb-ai/              AI provider adapters, context builder, tool registry
 │   ├── bb-mcp/             MCP server (uses the tool registry)
-│   ├── bb-notify/          in-app, e-mail and webhook delivery
+│   ├── bb-notify/          delivery adapters: e-mail over SMTP (lettre) today, webhooks later
 │   ├── bb-jobs/            the loop that runs the due background jobs (the work of each kind is in bb-app)
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
@@ -126,7 +126,7 @@ Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows no
 
 ### bb-app — use cases by feature
 
-Built so far (M0 to M3): `auth` (signing in), `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*, the starting roles), `projects`, `settings`, `issues` (issues, types, IDs, the trash), `fields` (own fields and their choices), `relations` (relations, sub-issues, kinds of relation), `tags` (tags, labels, groups of labels), `comments` (comments, mentions), `follow`, `history` (the history read from the events), `editing` (edit locks, drafts, the check of versions, the structured conflict), `layouts` (the issue page and the new-issue form), `many_changes` (changing many issues, with the run that goes on in the background), `jobs` (the queue as the use cases see it, and what each kind of job does), `first_start` (what a new server makes before anyone signs in), `preview`, `status`. Planned: `workflows`, `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `attachments`, `notifications`, `assistant`, `privacy`, `themes`, `admin`.
+Built so far (M0 to M4 WP-06): `auth` (signing in), `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*, the starting roles), `projects`, `settings`, `issues` (issues, types, IDs, the trash), `fields` (own fields and their choices), `relations` (relations, sub-issues, kinds of relation), `tags` (tags, labels, groups of labels), `comments` (comments, mentions), `follow`, `history` (the history read from the events), `editing` (edit locks, drafts, the check of versions, the structured conflict), `layouts` (the issue page and the new-issue form), `many_changes` (changing many issues, with the run that goes on in the background), `notifications` (the reader of the outbox that tells people, their e-mail, handles and the confirming of an address; M4), `jobs` (the queue as the use cases see it, and what each kind of job does), `first_start` (what a new server makes before anyone signs in), `preview`, `status`. Planned: `workflows`, `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `attachments`, `assistant`, `privacy`, `themes`, `admin`.
 
 Every use case has the same shape:
 
