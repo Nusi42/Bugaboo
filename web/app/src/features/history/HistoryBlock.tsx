@@ -27,7 +27,12 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
   const list = useHistory(issue, tab);
   const groups = groupByEvent(itemsOf(list.data?.pages));
   // *Open* of a notification: the entry it names is marked, and earlier pages are read until it is found.
-  const found = useOpenedEntry(groups, list);
+  const found = useOpenedEntry(groups, tab, {
+    pagesRead: list.data?.pages.length ?? 0,
+    hasNextPage: list.hasNextPage,
+    isFetchingNextPage: list.isFetchingNextPage,
+    fetchNextPage: list.fetchNextPage,
+  });
   return (
     <div {...partOf(part.stack)}>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}

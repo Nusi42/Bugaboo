@@ -60,13 +60,53 @@ export function isTarget(entry: readonly HistoryEntry[], target?: IssueTarget): 
 }
 
 /**
+ * How many pages *Open* of a notification reads at most while it looks for its entry. An entry
+ * further back than this is not brought to the screen: the person finds it with *Show earlier*.
+ */
+export const openedPagesMax = 10;
+
+/** Whether the tab can hold the entry: a comment is in *Everything* and *Comments*, a change in *Everything* and *Changes*. */
+function tabCanHold(tab: HistoryTabName, target: IssueTarget): boolean {
+  return tab === "everything" || tab === (target.kind === "comment" ? "comments" : "changes");
+}
+
+/** What decides whether *Open* of a notification reads one more page. */
+export interface OpenedSearch {
+  readonly target?: IssueTarget | undefined;
+  readonly tab: HistoryTabName;
+  readonly found: boolean;
+  readonly pagesRead: number;
+  readonly hasNextPage: boolean;
+  readonly isFetchingNextPage: boolean;
+}
+
+/**
+ * Whether the next page is read for *Open* of a notification: only in a tab that can hold the
+ * entry, only for a target that can be told from others (a moment that does not parse matches
+ * nothing), only while it is not found and there are earlier pages, and not past
+ * {@link openedPagesMax} pages.
+ */
+export function readsEarlierForTarget(search: OpenedSearch): boolean {
+  const { target } = search;
+  if (target === undefined || search.found || !search.hasNextPage || search.isFetchingNextPage) {
+    return false;
+  }
+  if (target.kind === "change" && Number.isNaN(Date.parse(target.at))) {
+    return false;
+  }
+  return tabCanHold(search.tab, target) && search.pagesRead < openedPagesMax;
+}
+
+/**
  * The index of the entry *Open* of a notification came to, among the entries of the tab, or -1.
- * While it is not among them and there are earlier pages, the next page is read: the entry may be
- * further back than the first page goes.
+ * While it is not among them and there are earlier pages (up to {@link openedPagesMax}), the next
+ * page is read: the entry may be further back than the first page goes.
  */
 export function useOpenedEntry(
   groups: readonly (readonly HistoryEntry[])[],
+  tab: HistoryTabName,
   list: Readonly<{
+    pagesRead: number;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
     fetchNextPage: () => Promise<unknown>;
@@ -74,12 +114,20 @@ export function useOpenedEntry(
 ): number {
   const target = useIssueTarget();
   const found = groups.findIndex((group) => isTarget(group, target));
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = list;
+  const { pagesRead, hasNextPage, isFetchingNextPage, fetchNextPage } = list;
+  const more = readsEarlierForTarget({
+    target,
+    tab,
+    found: found >= 0,
+    pagesRead,
+    hasNextPage,
+    isFetchingNextPage,
+  });
   useEffect(() => {
-    if (target !== undefined && found < 0 && hasNextPage && !isFetchingNextPage) {
+    if (more) {
       void fetchNextPage();
     }
-  }, [target, found, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [more, fetchNextPage]);
   return found;
 }
 

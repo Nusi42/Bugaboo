@@ -5,6 +5,8 @@ import {
   changeSentence,
   groupByEvent,
   isTarget,
+  openedPagesMax,
+  readsEarlierForTarget,
   relationSentence,
   type HistoryEntry,
 } from "./history.ts";
@@ -192,5 +194,45 @@ describe("ntf_01 Open of a notification finds the comment or the change in the h
 
   it("finds nothing when there is no target", () => {
     expect(isTarget([comment])).toBe(false);
+  });
+});
+
+describe("ntf_05 Open of a notification reads earlier pages only as far as it must", () => {
+  const search = {
+    target: { kind: "comment", comment: "c1" },
+    tab: "comments",
+    found: false,
+    pagesRead: 1,
+    hasNextPage: true,
+    isFetchingNextPage: false,
+  } as const;
+
+  it("reads the next page while the entry is not found and there are earlier pages", () => {
+    expect(readsEarlierForTarget(search)).toBe(true);
+  });
+
+  it("stops when the entry is found, a page is on its way, or there is no earlier page", () => {
+    expect(readsEarlierForTarget({ ...search, found: true })).toBe(false);
+    expect(readsEarlierForTarget({ ...search, isFetchingNextPage: true })).toBe(false);
+    expect(readsEarlierForTarget({ ...search, hasNextPage: false })).toBe(false);
+    expect(readsEarlierForTarget({ ...search, target: undefined })).toBe(false);
+  });
+
+  it("stops after the most pages", () => {
+    expect(readsEarlierForTarget({ ...search, pagesRead: openedPagesMax - 1 })).toBe(true);
+    expect(readsEarlierForTarget({ ...search, pagesRead: openedPagesMax })).toBe(false);
+  });
+
+  it("looks only in a tab that can hold the entry", () => {
+    expect(readsEarlierForTarget({ ...search, tab: "changes" })).toBe(false);
+    expect(readsEarlierForTarget({ ...search, tab: "everything" })).toBe(true);
+    const moved = { kind: "change", at: "2027-01-15T08:00:00Z" } as const;
+    expect(readsEarlierForTarget({ ...search, target: moved, tab: "comments" })).toBe(false);
+    expect(readsEarlierForTarget({ ...search, target: moved, tab: "changes" })).toBe(true);
+  });
+
+  it("does not look for a moment that does not parse", () => {
+    const broken = { kind: "change", at: "yesterday-ish" } as const;
+    expect(readsEarlierForTarget({ ...search, target: broken, tab: "changes" })).toBe(false);
   });
 });
