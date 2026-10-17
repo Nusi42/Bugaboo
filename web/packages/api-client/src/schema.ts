@@ -6239,7 +6239,11 @@ export interface components {
      * @enum {string}
      */
     ProjectShown: "visible" | "hidden";
-    /** @description The statuses the issues of a project can have: one list for all issue types, each key once. */
+    /**
+     * @description The statuses the issues of a project can have: one list for all issue types. A status with the
+     *     same key, name and group in several workflows is listed once; one with the same key and another
+     *     name or group is listed for each.
+     */
     ProjectStatusesBody: {
       /** @description The statuses, in the order the workflows list them. */
       statuses: components["schemas"]["StatusRef"][];

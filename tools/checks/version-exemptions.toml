@@ -157,7 +157,7 @@ reason = "Makes the workflow of a place as a copy of the one in force (a new rec
 
 [[exempt]]
 routes = ["PUT /api/v1/workflows/uses"]
-reason = "Says which workflow a place uses: one row for the place, replaced as a whole, with no state of its own to overwrite unseen. The workflows themselves are changed only by Publish, which takes the version."
+reason = "The last choice wins: the use of a place is one row replaced as a whole, with no content of its own to overwrite unseen. The workflows themselves are changed only by Publish, which takes the version."
 
 [[exempt]]
 routes = ["DELETE /api/v1/workflows/{workflow}"]

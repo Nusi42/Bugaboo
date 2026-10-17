@@ -27931,7 +27931,7 @@
       },
       "ProjectStatusesBody": {
         "type": "object",
-        "description": "The statuses the issues of a project can have: one list for all issue types, each key once.",
+        "description": "The statuses the issues of a project can have: one list for all issue types. A status with the\nsame key, name and group in several workflows is listed once; one with the same key and another\nname or group is listed for each.",
         "required": ["statuses"],
         "properties": {
           "statuses": {

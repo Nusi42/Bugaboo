@@ -134,11 +134,8 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
             {
                 let unknown_tag =
                     example.has(Quirk::NamesATagOfTheTarget) && !reads_issues_of_the_target(actor);
-                let unseen_field = example.has(Quirk::NamesAField)
-                    && matches!(actor, Actor::Exactly(_) | Actor::ExactlyBoth(..));
                 if (at == Where::Target && example.has(Quirk::NeedsToSeeTheProject) && !held.sees())
                     || unknown_tag
-                    || unseen_field
                 {
                     // A tag that exists only on an issue of the target project is not known to
                     // whoever does not read the issues there (SEC-06, WP-12).
@@ -348,8 +345,17 @@ async fn hold(
                 )
                 .await?;
             org.give_everywhere(member, only.id).await?;
-            if SETS_ISSUE_FIELDS.contains(&permission) {
-                // A new role sees no field: the route could not be let in for the permission alone.
+            // A new role sees no field: a route could not be let in for the permission alone. The
+            // routes that set fields need *Can change*, and the question of which roles may
+            // change a field (M3-F53) needs the field to be seen.
+            let level = if SETS_ISSUE_FIELDS.contains(&permission) {
+                Some(FieldLevel::CanChange)
+            } else if permission == Permission::SeeIssues {
+                Some(FieldLevel::CanSee)
+            } else {
+                None
+            };
+            if let Some(level) = level {
                 for field in Field::ALL {
                     rig.api()
                         .set_field_level(
@@ -360,7 +366,7 @@ async fn hold(
                                 project: None,
                                 issue_type: None,
                                 field: (*field).into(),
-                                level: Some(FieldLevel::CanChange),
+                                level: Some(level),
                             },
                         )
                         .await
