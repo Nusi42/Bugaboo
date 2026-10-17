@@ -193,6 +193,39 @@ async fn ntf_01_the_store_lists_newest_first_by_filter_and_marks_as_read() -> Te
 }
 
 #[tokio::test]
+async fn adr_0007_the_rows_the_jobs_and_the_place_of_the_reader_are_one_step() -> TestResult {
+    each_database("adr_0007_one_step", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = fixture.storage.clone();
+        let mut source = ids();
+        let ana = stored_person(&storage, &mut source, "ana@example.test").await?;
+        let job = QueuedJob {
+            id: JobId::generate(&mut source)?,
+            kind: TechnicalName::new("mail.send")?,
+            payload: json!({"what": "changes"}),
+            run_at: at(301),
+        };
+        let first = row(&mut source, ana, None, 1)?;
+        storage
+            .store_notifications(&[first], std::slice::from_ref(&job), 5, at(4))
+            .await?;
+        assert_eq!(storage.database().outbox_position(&consumer()?).await?, 5);
+        // A step that fails half way (the job is in the queue already) leaves nothing of it: no
+        // row, and the reader has not moved, so it reads the same events again.
+        let second = row(&mut source, ana, None, 2)?;
+        let failed = storage
+            .store_notifications(&[second.clone()], std::slice::from_ref(&job), 9, at(6))
+            .await;
+        assert!(failed.is_err(), "the job is there twice");
+        assert_eq!(storage.database().outbox_position(&consumer()?).await?, 5);
+        let found = storage.notifications_by_ids(ana, &[second.id]).await?;
+        assert!(found.is_empty());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ntf_02_the_e_mail_that_waits_is_found_by_person_issue_and_time_and_can_be_given_up()
 -> TestResult {
     each_database("ntf_02_waiting", async |db| {

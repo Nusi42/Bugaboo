@@ -300,35 +300,8 @@ impl Database {
         position: i64,
         now: Timestamp,
     ) -> Result<(), StoreError> {
-        if consumer.as_str() == OUTBOX_HEAD {
-            return Err(StoreError::ReservedName);
-        }
         let mut transaction = self.begin().await?;
-        let mut update = Query::update();
-        update
-            .table(OutboxPosition::Table)
-            .value(OutboxPosition::Position, position)
-            .value(OutboxPosition::UpdatedAt, to_micros(now))
-            .and_where(Expr::col(OutboxPosition::Consumer).eq(consumer.as_str()))
-            .and_where(Expr::col(OutboxPosition::Position).lt(position));
-        let changed = transaction.execute(&update).await?;
-        if changed == 0 && transaction_has_no_row(&mut transaction, consumer).await? {
-            let mut insert = Query::insert();
-            insert
-                .into_table(OutboxPosition::Table)
-                .columns([
-                    OutboxPosition::Consumer,
-                    OutboxPosition::Position,
-                    OutboxPosition::UpdatedAt,
-                ])
-                .values([
-                    Expr::val(consumer.as_str()),
-                    Expr::val(position),
-                    Expr::val(to_micros(now)),
-                ])
-                .map_err(|_| StoreError::Corrupt("an outbox position"))?;
-            transaction.execute(&insert).await?;
-        }
+        outbox_move(&mut transaction, consumer, position, now).await?;
         transaction.commit().await
     }
 }
@@ -375,6 +348,50 @@ async fn transaction_has_no_row(
         .from(OutboxPosition::Table)
         .and_where(Expr::col(OutboxPosition::Consumer).eq(consumer.as_str()));
     Ok(transaction.fetch_optional(&select).await?.is_none())
+}
+
+/// Records, inside the transaction of the reader that gives its place, that `consumer` has
+/// finished everything up to and including `position`: the place moves in the same transaction as
+/// what the reader made, so a reader that stops reads again and never twice (ADR-0007).
+///
+/// # Errors
+/// Fails with [`StoreError::ReservedName`] for the name of the outbox's own counter, and when the
+/// database fails.
+pub(crate) async fn outbox_move(
+    transaction: &mut Transaction,
+    consumer: &TechnicalName,
+    position: i64,
+    now: Timestamp,
+) -> Result<(), StoreError> {
+    if consumer.as_str() == OUTBOX_HEAD {
+        return Err(StoreError::ReservedName);
+    }
+    let mut update = Query::update();
+    update
+        .table(OutboxPosition::Table)
+        .value(OutboxPosition::Position, position)
+        .value(OutboxPosition::UpdatedAt, to_micros(now))
+        .and_where(Expr::col(OutboxPosition::Consumer).eq(consumer.as_str()))
+        .and_where(Expr::col(OutboxPosition::Position).lt(position));
+    let changed = transaction.execute(&update).await?;
+    if changed == 0 && transaction_has_no_row(transaction, consumer).await? {
+        let mut insert = Query::insert();
+        insert
+            .into_table(OutboxPosition::Table)
+            .columns([
+                OutboxPosition::Consumer,
+                OutboxPosition::Position,
+                OutboxPosition::UpdatedAt,
+            ])
+            .values([
+                Expr::val(consumer.as_str()),
+                Expr::val(position),
+                Expr::val(to_micros(now)),
+            ])
+            .map_err(|_| StoreError::Corrupt("an outbox position"))?;
+        transaction.execute(&insert).await?;
+    }
+    Ok(())
 }
 
 /// Appends the events and their outbox entries, in the order given, inside the transaction of the

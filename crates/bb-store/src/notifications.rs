@@ -23,6 +23,7 @@ use zeroize::Zeroizing;
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
+use crate::events::outbox_move;
 use crate::jobs::{NewJob, enqueue};
 use crate::schema::NotificationRow;
 
@@ -135,24 +136,23 @@ impl NotificationStore for AuthStorage {
         position: i64,
         now: Timestamp,
     ) -> Result<(), StoreError> {
-        let database = self.database();
-        if !rows.is_empty() || !jobs.is_empty() {
-            let mut transaction = database.begin().await?;
-            for row in rows {
-                insert(&mut transaction, row).await?;
-            }
-            for queued in jobs {
-                let job = NewJob {
-                    kind: queued.kind.clone(),
-                    payload: queued.payload.clone(),
-                    run_at: queued.run_at,
-                    max_attempts: JOB_ATTEMPTS_MAX,
-                };
-                enqueue(&mut transaction, queued.id, &job, now).await?;
-            }
-            transaction.commit().await?;
+        // The rows, the jobs and the place of the reader are one step: a reader that stops reads
+        // the same events again, and the rows it made once are not made twice.
+        let mut transaction = self.database().begin().await?;
+        for row in rows {
+            insert(&mut transaction, row).await?;
         }
-        database.outbox_done(&consumer()?, position, now).await
+        for queued in jobs {
+            let job = NewJob {
+                kind: queued.kind.clone(),
+                payload: queued.payload.clone(),
+                run_at: queued.run_at,
+                max_attempts: JOB_ATTEMPTS_MAX,
+            };
+            enqueue(&mut transaction, queued.id, &job, now).await?;
+        }
+        outbox_move(&mut transaction, &consumer()?, position, now).await?;
+        transaction.commit().await
     }
 
     async fn notifications_of(
