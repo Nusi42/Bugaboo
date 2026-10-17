@@ -10,7 +10,7 @@ use serde_json::Value;
 use crate::sample::{IssuePlan, ProjectIssues, TypeShare};
 
 /// `count` of the full sample scaled to a sample of `asked` issues out of `full`, rounded.
-fn scaled(count: u32, full: u32, asked: u32) -> u64 {
+pub(crate) fn scaled(count: u32, full: u32, asked: u32) -> u64 {
     if full == 0 {
         return 0;
     }
@@ -18,15 +18,23 @@ fn scaled(count: u32, full: u32, asked: u32) -> u64 {
 }
 
 /// What is wrong, collected in plain words.
-struct Judge<'a> {
+pub(crate) struct Judge<'a> {
     label: &'a str,
     percent: u32,
     problems: Vec<String>,
 }
 
 impl Judge<'_> {
+    /// Something that is wrong in a way of its own.
+    pub(crate) fn problem(&mut self, what: &str) {
+        self.problems.push(format!(
+            "{}: {what}. The sample has the work of architecture §11.",
+            self.label
+        ));
+    }
+
     /// A made count has to be near the planned one: `percent` of it apart at most, and one.
-    fn near(&mut self, what: &str, found: u64, planned: u64) {
+    pub(crate) fn near(&mut self, what: &str, found: u64, planned: u64) {
         let allowed = (planned * u64::from(self.percent)).div_ceil(100).max(1);
         if found.abs_diff(planned) > allowed {
             self.problems.push(format!(
@@ -37,7 +45,7 @@ impl Judge<'_> {
     }
 
     /// Something the plan has must be there at all.
-    fn present(&mut self, what: &str, found: u64) {
+    pub(crate) fn present(&mut self, what: &str, found: u64) {
         if found == 0 {
             self.problems.push(format!(
                 "{}: the sample has no {what}. The plan of architecture §11 has them.",
@@ -47,7 +55,7 @@ impl Judge<'_> {
     }
 
     /// Something the plan has exactly so many of.
-    fn exactly(&mut self, what: &str, found: u64, planned: u64) {
+    pub(crate) fn exactly(&mut self, what: &str, found: u64, planned: u64) {
         if found != planned {
             self.problems.push(format!(
                 "{}: the sample has {found} {what}, the plan has {planned}.",
@@ -120,6 +128,7 @@ impl IssuePlan {
         judge.present("edited comments", number(&issues["edited_comments"]));
         judge.exactly("edit locks held", number(&issues["edit_locks"]), 1);
         judge.exactly("drafts waiting", number(&issues["drafts"]), 1);
+        self.work.judge(&mut judge, &issues["work"], asked, full);
         judge.problems
     }
 
@@ -174,14 +183,14 @@ impl IssuePlan {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use serde_json::json;
 
     use super::*;
     use crate::sample::Layout;
 
     /// A dump that has exactly what the plan says for `asked` issues.
-    fn made(plan: &IssuePlan, asked: u32) -> Value {
+    pub(crate) fn made(plan: &IssuePlan, asked: u32) -> Value {
         let full: u32 = plan.projects.iter().map(|project| project.issues).sum();
         let mut projects = Vec::new();
         let mut by_type = serde_json::Map::new();
@@ -220,7 +229,46 @@ mod tests {
             "edited_comments": 5,
             "edit_locks": 1,
             "drafts": 1,
+            "work": made_work(plan, asked, full),
         }})
+    }
+
+    /// The part `work` of a dump that has what the plan says.
+    fn made_work(plan: &IssuePlan, asked: u32, full: u32) -> Value {
+        let work = &plan.work;
+        let counts = work.counts(asked, full);
+        let pictures = counts.files * u64::from(work.files.pictures_percent) / 100;
+        json!({
+            "workflows": [
+                { "name": "Simple", "statuses": 3, "changes": 6, "asks": 0 },
+                { "name": "Bug", "statuses": 5, "changes": 10, "asks": 0 },
+                { "name": "Development", "statuses": 6, "changes": 12, "asks": 0 },
+                { "name": work.own_workflow.name, "statuses": 3, "changes": 6, "asks": 1 },
+            ],
+            "own_workflow_projects": [work.own_workflow.project],
+            "files": {
+                "total": counts.files,
+                "pictures": pictures,
+                "pdfs": counts.files - pictures,
+                "on_comments": counts.files / 5,
+                "previews_ready": counts.files,
+                "without_preview": 0,
+            },
+            "notifications": {
+                "total": 100,
+                "read": 40,
+                "by_kind": { "assigned": 30, "followed_activity": 50 },
+                "to": { "viewer": 30, "team_member": 70, "guest": 5 },
+                "to_guests_about_others": 0,
+            },
+            "reports": {
+                "contributor": counts.contributor_reports,
+                "guest": counts.guest_reports,
+            },
+            "status_changes": { "team_member": counts.team_status_changes },
+            "own_changes": { "contributor": counts.contributor_changes },
+            "follows": { "viewer": counts.viewer_follows },
+        })
     }
 
     #[test]

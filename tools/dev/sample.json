@@ -150,6 +150,16 @@
     ],
     "relations": 3000,
     "comments": 30000,
-    "editedCommentsPercent": 5
+    "editedCommentsPercent": 5,
+    "work": {
+      "$comment": "How the people work together (architecture §11, 'Working together'): the project that has a workflow of its own, the files on issues and comments, and what Contributors, Guests and Viewers do. Counts are those of the full sample and are scaled to the issues asked for like the others.",
+      "ownWorkflow": { "project": "OPS", "name": "Operations" },
+      "files": { "total": 500, "picturesPercent": 70, "onCommentsPercent": 20 },
+      "reports": { "contributors": 240, "guests": 60 },
+      "teamStatusChanges": 1200,
+      "contributorChanges": 120,
+      "viewerFollows": 400,
+      "readPercent": 40
+    }
   }
 }

@@ -13,3 +13,6 @@ pub mod accounts;
 pub mod database;
 pub mod sample;
 mod sample_issues;
+mod sample_work;
+
+pub use sample_work::WorkCounts;
