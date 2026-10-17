@@ -28,6 +28,7 @@ use crate::access::PolicyStore;
 use crate::comments::CommentStore;
 use crate::editing::EditStore;
 use crate::fields::FieldStore;
+use crate::files::AttachmentStore;
 use crate::follow::FollowStore;
 use crate::history::HistoryStore;
 use crate::issues::IssueStore;
@@ -327,6 +328,7 @@ pub trait AuthStore:
     + TagStore
     + ManyChangeStore
     + CommentStore
+    + AttachmentStore
     + FollowStore
     + HistoryStore
     + NotificationStore

@@ -823,6 +823,21 @@ pub const ERROR_FIELD_UNKNOWN_REFERENCE: MessageKey =
 /// The message `error.field.wrong-value`.
 pub const ERROR_FIELD_WRONG_VALUE: MessageKey = MessageKey::new("error.field.wrong-value");
 
+/// The message `error.file.incomplete`.
+pub const ERROR_FILE_INCOMPLETE: MessageKey = MessageKey::new("error.file.incomplete");
+
+/// The message `error.file.no-room`.
+pub const ERROR_FILE_NO_ROOM: MessageKey = MessageKey::new("error.file.no-room");
+
+/// The message `error.file.too-big`.
+pub const ERROR_FILE_TOO_BIG: MessageKey = MessageKey::new("error.file.too-big");
+
+/// The message `error.file.type-blocked`.
+pub const ERROR_FILE_TYPE_BLOCKED: MessageKey = MessageKey::new("error.file.type-blocked");
+
+/// The message `error.file.wrong-part`.
+pub const ERROR_FILE_WRONG_PART: MessageKey = MessageKey::new("error.file.wrong-part");
+
 /// The message `error.handle.changed-lately`.
 pub const ERROR_HANDLE_CHANGED_LATELY: MessageKey = MessageKey::new("error.handle.changed-lately");
 
@@ -1370,6 +1385,42 @@ pub const FIELDS_USED_LIST: MessageKey = MessageKey::new("fields.used-list");
 
 /// The message `fields.yes`.
 pub const FIELDS_YES: MessageKey = MessageKey::new("fields.yes");
+
+/// The message `files.add-to-comment`.
+pub const FILES_ADD_TO_COMMENT: MessageKey = MessageKey::new("files.add-to-comment");
+
+/// The message `files.delete`.
+pub const FILES_DELETE: MessageKey = MessageKey::new("files.delete");
+
+/// The message `files.download`.
+pub const FILES_DOWNLOAD: MessageKey = MessageKey::new("files.download");
+
+/// The message `files.drop`.
+pub const FILES_DROP: MessageKey = MessageKey::new("files.drop");
+
+/// The message `files.drop-place`.
+pub const FILES_DROP_PLACE: MessageKey = MessageKey::new("files.drop-place");
+
+/// The message `files.for-comment`.
+pub const FILES_FOR_COMMENT: MessageKey = MessageKey::new("files.for-comment");
+
+/// The message `files.none`.
+pub const FILES_NONE: MessageKey = MessageKey::new("files.none");
+
+/// The message `files.of-comment`.
+pub const FILES_OF_COMMENT: MessageKey = MessageKey::new("files.of-comment");
+
+/// The message `files.of-issue`.
+pub const FILES_OF_ISSUE: MessageKey = MessageKey::new("files.of-issue");
+
+/// The message `files.take-out-short`.
+pub const FILES_TAKE_OUT_SHORT: MessageKey = MessageKey::new("files.take-out-short");
+
+/// The message `files.title`.
+pub const FILES_TITLE: MessageKey = MessageKey::new("files.title");
+
+/// The message `files.upload`.
+pub const FILES_UPLOAD: MessageKey = MessageKey::new("files.upload");
 
 /// The message `first-run.account.intro`.
 pub const FIRST_RUN_ACCOUNT_INTRO: MessageKey = MessageKey::new("first-run.account.intro");
@@ -3708,6 +3759,22 @@ pub const SETTING_CONTENT_IMAGE_HOSTS_HELP: MessageKey =
 pub const SETTING_CONTENT_IMAGE_HOSTS_NAME: MessageKey =
     MessageKey::new("setting.content.image-hosts.name");
 
+/// The message `setting.files.blocked-types.help`.
+pub const SETTING_FILES_BLOCKED_TYPES_HELP: MessageKey =
+    MessageKey::new("setting.files.blocked-types.help");
+
+/// The message `setting.files.blocked-types.name`.
+pub const SETTING_FILES_BLOCKED_TYPES_NAME: MessageKey =
+    MessageKey::new("setting.files.blocked-types.name");
+
+/// The message `setting.files.max-megabytes.help`.
+pub const SETTING_FILES_MAX_MEGABYTES_HELP: MessageKey =
+    MessageKey::new("setting.files.max-megabytes.help");
+
+/// The message `setting.files.max-megabytes.name`.
+pub const SETTING_FILES_MAX_MEGABYTES_NAME: MessageKey =
+    MessageKey::new("setting.files.max-megabytes.name");
+
 /// The message `setting.issues.id-length.help`.
 pub const SETTING_ISSUES_ID_LENGTH_HELP: MessageKey =
     MessageKey::new("setting.issues.id-length.help");
@@ -5665,6 +5732,146 @@ pub fn fields_used_types(names: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.used-types"),
         vec![("names", Value::Text(names.to_string()))],
+    )
+}
+
+/// The message `files.added`.
+#[must_use]
+pub fn files_added(
+    size: impl std::fmt::Display,
+    when: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.added"),
+        vec![
+            ("size", Value::Text(size.to_string())),
+            ("when", Value::Text(when.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `files.delete-named`.
+#[must_use]
+pub fn files_delete_named(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.delete-named"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.deleted`.
+#[must_use]
+pub fn files_deleted(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.deleted"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.download-named`.
+#[must_use]
+pub fn files_download_named(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.download-named"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.empty`.
+#[must_use]
+pub fn files_empty(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.empty"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.lost`.
+#[must_use]
+pub fn files_lost(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.lost"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.not-added`.
+#[must_use]
+pub fn files_not_added(name: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.not-added"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `files.preview-of`.
+#[must_use]
+pub fn files_preview_of(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.preview-of"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.sending`.
+#[must_use]
+pub fn files_sending(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.sending"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.sent-of`.
+#[must_use]
+pub fn files_sent_of(sent: impl std::fmt::Display, size: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.sent-of"),
+        vec![
+            ("sent", Value::Text(sent.to_string())),
+            ("size", Value::Text(size.to_string())),
+        ],
+    )
+}
+
+/// The message `files.show-larger`.
+#[must_use]
+pub fn files_show_larger(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.show-larger"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.take-out`.
+#[must_use]
+pub fn files_take_out(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.take-out"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.too-big`.
+#[must_use]
+pub fn files_too_big(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.too-big"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `files.waiting`.
+#[must_use]
+pub fn files_waiting(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.waiting"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -9359,6 +9566,26 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That is not a value this field can hold.",
     ),
     (
+        "error.file.incomplete",
+        "The file did not arrive completely. Try adding it again.",
+    ),
+    (
+        "error.file.no-room",
+        "The server has no room for this file right now. Try again later, or tell your administrator.",
+    ),
+    (
+        "error.file.too-big",
+        "That file is bigger than this project allows.",
+    ),
+    (
+        "error.file.type-blocked",
+        "Your organization does not accept this type of file.",
+    ),
+    (
+        "error.file.wrong-part",
+        "A part of the file arrived out of order. The upload goes on from where it stopped.",
+    ),
+    (
         "error.handle.changed-lately",
         "You changed your handle only a short time ago. You can change it again later.",
     ),
@@ -9756,6 +9983,38 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.used-types", "Issue types: {names}"),
     ("fields.yes", "Yes"),
+    ("files.add-to-comment", "Add files"),
+    ("files.added", "{size} · Added by {who}, {when}"),
+    ("files.delete", "Delete"),
+    ("files.delete-named", "Delete {name}"),
+    ("files.deleted", "{name} is deleted."),
+    ("files.download", "Download"),
+    ("files.download-named", "Download {name}"),
+    (
+        "files.drop",
+        "Drop files here, paste a screenshot, or use Upload.",
+    ),
+    ("files.drop-place", "Place to drop files for this issue"),
+    ("files.empty", "{name} is empty, so it was not added."),
+    ("files.for-comment", "Files that go with the comment"),
+    (
+        "files.lost",
+        "The connection was lost, and {name} was not sent.",
+    ),
+    ("files.none", "No files yet."),
+    ("files.not-added", "{name} was not added. {reason}"),
+    ("files.of-comment", "Files of this comment"),
+    ("files.of-issue", "Files of this issue"),
+    ("files.preview-of", "Preview of {name}"),
+    ("files.sending", "Sending {name}"),
+    ("files.sent-of", "{sent} of {size}"),
+    ("files.show-larger", "Show {name} larger"),
+    ("files.take-out", "Take {name} out"),
+    ("files.take-out-short", "Take out"),
+    ("files.title", "Files"),
+    ("files.too-big", "Too big: at most {limit} per file."),
+    ("files.upload", "Upload"),
+    ("files.waiting", "{name} is waiting for its turn."),
     (
         "first-run.account.intro",
         "An administrator can invite people and look after the server. This account is the first one.",
@@ -11714,6 +11973,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.content.image-hosts.name",
         "Hosts that images may come from",
     ),
+    (
+        "setting.files.blocked-types.help",
+        "File types the organization never accepts, as a list separated by commas, like exe, bat. A file is refused when its content or its name has one of these types.",
+    ),
+    (
+        "setting.files.blocked-types.name",
+        "Types of file that are never accepted",
+    ),
+    (
+        "setting.files.max-megabytes.help",
+        "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
+    ),
+    ("setting.files.max-megabytes.name", "Biggest file"),
     (
         "setting.issues.id-length.help",
         "How many letters and digits a random issue ID has after the dash. Between 4 and 8. It grows by itself when the short ones run out.",

@@ -153,6 +153,22 @@ routes = ["DELETE /api/v1/layouts/{layout}"]
 reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a layout that changed since is refused with edit.version_changed."
 
 [[exempt]]
+routes = [
+  "POST /api/v1/issues/{issue}/uploads",
+  "PUT /api/v1/uploads/{upload}",
+  "DELETE /api/v1/uploads/{upload}",
+  "POST /api/v1/uploads/{upload}/finish",
+]
+reason = "An upload is a new record that only its own person writes: starting one has nothing earlier to be stale, a part names the offset it starts at and is refused as file.wrong_part when the server's copy ends elsewhere (that offset is its version, ADR-0032), and finishing or discarding it is the same however often it is asked. (M4 WP-05)"
+
+[[exempt]]
+routes = [
+  "DELETE /api/v1/attachments/{attachment}",
+  "POST /api/v1/attachments/{attachment}/restore",
+]
+reason = "A file goes to the trash and comes back whole, like a comment: the trash and its undo hold no text to overwrite, and a second deletion answers resource.not_found. (M4 WP-05)"
+
+[[exempt]]
 routes = ["POST /api/v1/workflows"]
 reason = "Makes the workflow of a place as a copy of the one in force (a new record); two people who make it at the same moment get one (the second is told version_changed)."
 

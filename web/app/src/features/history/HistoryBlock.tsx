@@ -26,7 +26,7 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
       {groups.length === 0 && list.isSuccess && !list.hasNextPage ? <NothingYet /> : null}
       {groups.map((group) =>
         group[0]?.kind === "comment" ? (
-          <CommentEntry key={group[0].event} entry={group[0]} />
+          <CommentEntry key={group[0].event} issue={issue} entry={group[0]} />
         ) : (
           <ChangeEntry key={group[0]?.event} items={group} />
         ),

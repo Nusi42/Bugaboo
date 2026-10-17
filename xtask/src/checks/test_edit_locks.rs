@@ -83,7 +83,7 @@ fn suite_text(repo: &crate::repo::Repo) -> Option<(String, Vec<Finding>)> {
 }
 
 /// The modules a file declares with `mod name;` and no `cfg` in their attributes.
-fn declared_modules(code: &str) -> Vec<String> {
+pub(super) fn declared_modules(code: &str) -> Vec<String> {
     let mut modules = Vec::new();
     for (at, _) in code.match_indices("mod ") {
         let rest = &code[at + 4..];
@@ -101,11 +101,17 @@ fn declared_modules(code: &str) -> Vec<String> {
     modules
 }
 
+/// Whether attributes can switch an item off: a `cfg(…)` among them. `#[cfg(test)]` alone does not,
+/// because a test only runs under it (a module of tests that clippy lets unwrap is written so).
+fn has_cfg(attributes: &str) -> bool {
+    attributes.replace("#[cfg(test)]", "").contains("cfg(")
+}
+
 /// The attributes of the item that starts right after `before`: everything since the end of the
 /// item before it. `cfg(` in them (`#[cfg(any())]`, `#[cfg(not(test))]`) can switch the item off.
 fn switched_off_by_cfg(before: &str) -> bool {
     let start = before.rfind(['}', ';', '{']).map_or(0, |end| end + 1);
-    before[start..].contains("cfg(")
+    has_cfg(&before[start..])
 }
 
 /// Whether a block that encloses the position `at` has `cfg(` in its attributes (a `mod` that is
@@ -116,7 +122,7 @@ fn inside_switched_off_block(code: &str, at: usize) -> bool {
     for (index, character) in code[..at].char_indices() {
         match character {
             '{' => {
-                open.push(code[header_start..index].contains("cfg("));
+                open.push(has_cfg(&code[header_start..index]));
                 header_start = index + 1;
             }
             '}' => {
@@ -137,14 +143,20 @@ fn inside_switched_off_block(code: &str, at: usize) -> bool {
 /// anywhere in them (`#[ignore]`, `#[ignore = "…"]`, `#[cfg_attr(…, ignore)]`) counts as off, and
 /// so does `cfg(` in them or in the attributes of a block around the function.
 fn is_a_test(code: &str, name: &str) -> bool {
-    let needle = format!("async fn {name}(");
+    is_a_test_as(code, name, "async fn", "#[tokio::test]")
+}
+
+/// The same for a test that starts with this `signature` (`async fn`, `fn`) and carries this
+/// `attribute` (`#[tokio::test]`, `#[test]`).
+pub(super) fn is_a_test_as(code: &str, name: &str, signature: &str, attribute: &str) -> bool {
+    let needle = format!("{signature} {name}(");
     code.match_indices(&needle).any(|(at, _)| {
         let before = &code[..at];
         let start = before.rfind(['}', ';', '{']).map_or(0, |end| end + 1);
         let attributes = &before[start..];
-        attributes.contains("#[tokio::test]")
+        attributes.contains(attribute)
             && !attributes.contains("ignore")
-            && !attributes.contains("cfg(")
+            && !has_cfg(attributes)
             && !inside_switched_off_block(code, at)
     })
 }
@@ -312,6 +324,37 @@ async fn {name}() {{}}
             let _ = writeln!(suite, "{text}");
             assert_eq!(evaluate(Some(&suite)).len(), 1, "{text}");
         }
+    }
+
+    #[test]
+    fn good_example_a_module_of_tests_behind_cfg_test_only() {
+        let name = REQUIRED[0];
+        let mut suite = suite_with(&REQUIRED[1..]);
+        let _ = writeln!(
+            suite,
+            "#[cfg(test)]
+mod tests {{
+#[tokio::test]
+async fn {name}() {{}}
+}}"
+        );
+        assert!(evaluate(Some(&suite)).is_empty());
+        assert_eq!(
+            declared_modules(
+                "#[cfg(test)]
+mod tests;
+"
+            ),
+            ["tests"]
+        );
+        assert!(
+            declared_modules(
+                "#[cfg(not(test))]
+mod tests;
+"
+            )
+            .is_empty()
+        );
     }
 
     #[test]

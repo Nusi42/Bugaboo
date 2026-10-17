@@ -143,6 +143,20 @@ error_codes! {
     FieldUnknownReference => ("field.unknown_reference", 400),
     /// An own field is not used for this project or this issue type (CF-03).
     FieldNotHere => ("field.not_here", 400),
+    /// A file is bigger than the limit of the project (ATT-03). The page says the limit in words
+    /// from the number it read (`getIssueFiles`); the message itself names no number.
+    FileTooBig => ("file.too_big", 413),
+    /// The organization does not accept this type of file (ATT-03).
+    FileTypeBlocked => ("file.type_blocked", 415),
+    /// A part of an upload does not start where the file stands now; the upload goes on from there
+    /// (ATT-01).
+    FileWrongPart => ("file.wrong_part", 409),
+    /// An upload was finished before all its bytes were there (ATT-01).
+    FileIncomplete => ("file.incomplete", 409),
+    /// The disk of the server has no room for a part of an upload: less than
+    /// [`DISK_KEPT_FREE_BYTES`](crate::files::DISK_KEPT_FREE_BYTES) would be left. Trying later can
+    /// work; the administrator frees room (ATT-01).
+    FileNoRoom => ("file.no_room", 507),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409),
     /// There is no such thing, or the person may not know about it.

@@ -54,6 +54,7 @@ mod comments;
 mod editing;
 mod field_permissions;
 mod fields;
+mod files;
 mod follow;
 mod groups;
 mod handles;
@@ -167,6 +168,7 @@ where
         .merge(tags::routes())
         .merge(many_changes::routes())
         .merge(comments::routes())
+        .merge(files::routes())
         .merge(history::routes())
         .merge(follow::routes())
         .merge(notifications::routes())

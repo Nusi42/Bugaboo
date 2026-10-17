@@ -9,6 +9,7 @@ use bb_core::id::UserId;
 use jiff::Timestamp;
 
 use super::fake::FakeStore;
+use super::fake_files::FakeFiles;
 use crate::access::{CreateStartingRoles, create_starting_roles};
 use crate::auth::{
     AcceptInvitation, AppError, AuthServices, CompleteSetup, CreateInvitation, Ctx, IssueSetupCode,
@@ -47,6 +48,8 @@ pub(crate) struct World {
     pub(crate) store: FakeStore,
     pub(crate) services: AuthServices<FakeStore>,
     pub(crate) clock: Arc<TestClock>,
+    /// The bytes of files.
+    pub(crate) files: FakeFiles,
     /// What the server would have sent by e-mail.
     pub(crate) mailer: FakeMailer,
     pub(crate) admin: Started,
@@ -65,6 +68,7 @@ impl World {
         let store = FakeStore::default();
         let clock = Arc::new(TestClock(AtomicI64::new(START)));
         let party = RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo").map_err(text)?;
+        let files = FakeFiles::default();
         let mailer = FakeMailer::default();
         let services = AuthServices::new(
             store.clone(),
@@ -75,12 +79,14 @@ impl World {
             Arc::new(NoFailureLimit),
             "Bugaboo".to_owned(),
         )
+        .with_files(Arc::new(files.clone()))
         .with_mailer(Arc::new(mailer.clone()))
         .with_public_url(PUBLIC_URL);
         Ok(Self {
             store,
             services,
             clock,
+            files,
             mailer,
             // Replaced by `new`; a bare world has nobody.
             admin: Started {

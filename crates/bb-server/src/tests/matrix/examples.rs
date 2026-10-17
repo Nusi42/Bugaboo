@@ -55,6 +55,12 @@ pub(super) enum Quirk {
     /// refusal that the matrix does not expect fails, so a permitted actor cannot be refused for
     /// another reason without anybody noticing.
     AlsoAnswers(&'static str),
+    /// The route names a record that belongs to the person who made it (an upload). The example
+    /// names the actor's own where the actor may start one, so the route runs on a real record; for
+    /// whoever may not, it names one that nobody made, and they are told `resource.not_found`, as
+    /// for a record that is not there, whether the permission is theirs or not, because the record
+    /// is looked up before the permission of the issue it belongs to (M4 WP-05).
+    TheirOwn,
     /// The route is about an issue in the target project that somebody else reported (M3 WP-03): a
     /// person who does not see the project, or lacks *See issues* there, is told
     /// `resource.not_found`, as for an issue that is not there; a person who sees the issue and
@@ -144,6 +150,13 @@ impl Example {
             .any(|quirk| matches!(quirk, Quirk::AlsoAnswers(known) if *known == code))
     }
 }
+
+/// What the routes of an upload have in common: the example names the actor's own upload, or one nobody started.
+const UPLOAD: [Quirk; 3] = [
+    Quirk::AtTheTargetProject,
+    Quirk::NamesAMissingThing,
+    Quirk::TheirOwn,
+];
 
 /// Every route of the API description, in the order of the description.
 pub(super) const EXAMPLES: &[Example] = &[
@@ -357,6 +370,19 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("listMentionChoices", &[Quirk::AnIssueOfTheTarget]),
     Example::route("listMentions"),
     Example::route("readMentions"),
+    Example::with("startUpload", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getUpload", &UPLOAD),
+    Example::with("sendUploadPart", &UPLOAD),
+    Example::with("cancelUpload", &UPLOAD),
+    Example::with("finishUpload", &UPLOAD),
+    Example::with("listIssueFiles", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getFileRules", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("deleteAttachment", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "restoreAttachment",
+        &[Quirk::AnIssueOfTheTarget, Quirk::InTheTrash],
+    ),
+    Example::with("downloadFile", &[Quirk::AnIssueOfTheTarget]),
     Example::route("getMyHandle"),
     Example::route("changeMyHandle"),
     Example::route("listNotifications"),
@@ -487,6 +513,9 @@ pub(super) async fn request(
     if let Some(found) =
         super::examples_relations::relation_request(fixture, operation, browser).await?
     {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_files::file_request(fixture, operation, browser).await? {
         return Ok(found);
     }
     if let Some(found) = super::examples_tags::tag_request(fixture, operation).await? {

@@ -14,11 +14,11 @@ help: the trait `NotPersonal` is not implemented for `Person`
              AccessKeyId
              AppliesTo
              AssignmentId
+             AttachmentId
              Basis
              Box<T>
              Category
              Channel
-             ChoiceColor
            and $N others
 note: required by a bound in `_::{closure#0}::not_personal`
   --> tests/ui/not_personal_person.rs:9:10
