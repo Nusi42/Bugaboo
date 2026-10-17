@@ -1826,9 +1826,16 @@
   "handle.rule-own": "Nobody else may have it, and it cannot be the handle of a group or a role.",
   "handle.rule-weekly": "You can change it once in {days, plural, one {# day} other {# days}}.",
   "handle.rule-kept": "A handle you give up stays reserved for you. Comments written before still name you, but a new comment that uses it names nobody.",
+  "sign-up.check-title": "Check your e-mail",
+  "sign-up.check-text": "If {email} can sign up here, we sent a link to it. Open the link to choose your name and your password. It works once, for {hours, plural, one {# hour} other {# hours}}.",
+  "sign-up.check-nothing": "Nothing there? Look in your spam folder and check the address. You can ask for a new link.",
+  "sign-up.resend": "Send a new link",
+  "sign-up.resend-in": "You can ask for a new link in {minutes, plural, one {# minute} other {# minutes}}.",
+  "sign-up.resent": "If {email} can sign up here, we sent a new link to it.",
+  "sign-up.other-address": "Use another address",
+  "invitation.ask-again": "Ask for a new link",
   "sign-up-policy.mail-off": "E-mail is off, so signing up without an invitation is closed. Set up e-mail first.",
   "sign-up-policy.mail-link": "Set up e-mail",
   "notifications.count-capped": "{max}+",
-  "notifications.locked-way": "{way}: {value} · Set by your organization",
-  "sign-up.sent": "We sent an e-mail to that address. Open the address in it to choose your name and your password. If nothing arrives, check the address, or ask an administrator to invite you."
+  "notifications.locked-way": "{way}: {value} · Set by your organization"
 }

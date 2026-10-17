@@ -1599,6 +1599,9 @@ pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
 /// The message `home.intro`.
 pub const HOME_INTRO: MessageKey = MessageKey::new("home.intro");
 
+/// The message `invitation.ask-again`.
+pub const INVITATION_ASK_AGAIN: MessageKey = MessageKey::new("invitation.ask-again");
+
 /// The message `invitation.incomplete`.
 pub const INVITATION_INCOMPLETE: MessageKey = MessageKey::new("invitation.incomplete");
 
@@ -4469,14 +4472,23 @@ pub const SIGN_UP_POLICY_TITLE: MessageKey = MessageKey::new("sign-up-policy.tit
 /// The message `sign-up-policy.warning`.
 pub const SIGN_UP_POLICY_WARNING: MessageKey = MessageKey::new("sign-up-policy.warning");
 
+/// The message `sign-up.check-nothing`.
+pub const SIGN_UP_CHECK_NOTHING: MessageKey = MessageKey::new("sign-up.check-nothing");
+
+/// The message `sign-up.check-title`.
+pub const SIGN_UP_CHECK_TITLE: MessageKey = MessageKey::new("sign-up.check-title");
+
 /// The message `sign-up.closed`.
 pub const SIGN_UP_CLOSED: MessageKey = MessageKey::new("sign-up.closed");
 
 /// The message `sign-up.have-account`.
 pub const SIGN_UP_HAVE_ACCOUNT: MessageKey = MessageKey::new("sign-up.have-account");
 
-/// The message `sign-up.sent`.
-pub const SIGN_UP_SENT: MessageKey = MessageKey::new("sign-up.sent");
+/// The message `sign-up.other-address`.
+pub const SIGN_UP_OTHER_ADDRESS: MessageKey = MessageKey::new("sign-up.other-address");
+
+/// The message `sign-up.resend`.
+pub const SIGN_UP_RESEND: MessageKey = MessageKey::new("sign-up.resend");
 
 /// The message `sign-up.submit`.
 pub const SIGN_UP_SUBMIT: MessageKey = MessageKey::new("sign-up.submit");
@@ -8277,6 +8289,36 @@ pub fn shortcuts_conflict(action: impl std::fmt::Display, keys: impl std::fmt::D
     )
 }
 
+/// The message `sign-up.check-text`.
+#[must_use]
+pub fn sign_up_check_text(email: impl std::fmt::Display, hours: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sign-up.check-text"),
+        vec![
+            ("email", Value::Text(email.to_string())),
+            ("hours", Value::Number(hours)),
+        ],
+    )
+}
+
+/// The message `sign-up.resend-in`.
+#[must_use]
+pub fn sign_up_resend_in(minutes: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sign-up.resend-in"),
+        vec![("minutes", Value::Number(minutes))],
+    )
+}
+
+/// The message `sign-up.resent`.
+#[must_use]
+pub fn sign_up_resent(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sign-up.resent"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
 /// The message `sub-issues.added`.
 #[must_use]
 pub fn sub_issues_added(key: impl std::fmt::Display) -> Message {
@@ -9770,6 +9812,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
     ),
     ("home.title", "Welcome, {name}"),
+    ("invitation.ask-again", "Ask for a new link"),
     (
         "invitation.incomplete",
         "This link is not complete. Open the whole link that you were sent.",
@@ -12157,13 +12200,28 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "No domain is listed, so everyone who can reach Bugaboo can ask for an account. The e-mail goes to the address they give, so only a person who can read that address can create one.",
     ),
     (
+        "sign-up.check-nothing",
+        "Nothing there? Look in your spam folder and check the address. You can ask for a new link.",
+    ),
+    (
+        "sign-up.check-text",
+        "If {email} can sign up here, we sent a link to it. Open the link to choose your name and your password. It works once, for {hours, plural, one {# hour} other {# hours}}.",
+    ),
+    ("sign-up.check-title", "Check your e-mail"),
+    (
         "sign-up.closed",
         "Creating your own account is switched off here. Ask an administrator to invite you.",
     ),
     ("sign-up.have-account", "I already have an account"),
+    ("sign-up.other-address", "Use another address"),
+    ("sign-up.resend", "Send a new link"),
     (
-        "sign-up.sent",
-        "We sent an e-mail to that address. Open the address in it to choose your name and your password. If nothing arrives, check the address, or ask an administrator to invite you.",
+        "sign-up.resend-in",
+        "You can ask for a new link in {minutes, plural, one {# minute} other {# minutes}}.",
+    ),
+    (
+        "sign-up.resent",
+        "If {email} can sign up here, we sent a new link to it.",
     ),
     ("sign-up.submit", "Send me an e-mail"),
     ("sign-up.title", "Create an account"),

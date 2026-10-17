@@ -11,6 +11,12 @@ term = "link"
 at = [
   "messages/en.json#invitation.incomplete",
   "messages/en.json#invitations.*",
+  "messages/en.json#invitation.ask-again",
+  "messages/en.json#sign-up.check-text",
+  "messages/en.json#sign-up.check-nothing",
+  "messages/en.json#sign-up.resend",
+  "messages/en.json#sign-up.resend-in",
+  "messages/en.json#sign-up.resent",
   "messages/en.json#service.settings-is-link",
   "messages/en.json#service.data-folder-real",
   "api:property CreatedInvitationBody.link_path",

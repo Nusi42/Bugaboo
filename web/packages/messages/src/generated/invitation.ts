@@ -9,6 +9,7 @@ export const messages = {
   "invitation.invalid-title": "This invitation does not work",
   "invitation.incomplete": "This link is not complete. Open the whole link that you were sent.",
   "invitation.sign-in": "Go to sign in",
+  "invitation.ask-again": "Ask for a new link",
 } as const;
 
 register(messages);

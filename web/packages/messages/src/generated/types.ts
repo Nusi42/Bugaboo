@@ -390,6 +390,9 @@ export interface MessageArguments {
   "setup.saved": { path: string | number };
   "shell.signed-in-as": { name: string | number };
   "shortcuts.conflict": { action: string | number; keys: string | number };
+  "sign-up.check-text": { email: string | number; hours: number };
+  "sign-up.resend-in": { minutes: number };
+  "sign-up.resent": { email: string | number };
   "sub-issues.added": { key: string | number };
   "sub-issues.not-part-of": { key: string | number };
   "sub-issues.progress": { done: string | number; total: string | number };
