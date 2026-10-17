@@ -18,7 +18,7 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 27] = [
+const VERSIONED: [&str; 29] = [
     "changeSignUpPolicy",
     "saveComment",
     "changeField",
@@ -28,12 +28,14 @@ const VERSIONED: [&str; 27] = [
     "combineChoices",
     "renameGroup",
     "changeIssueType",
+    "changeIssueTypeOffers",
     "changeIssue",
     "saveIssueDescription",
     "saveIssueFieldText",
     "moveIssue",
     "setIssueParent",
     "changeLabelGroup",
+    "changeLabelGroupOffers",
     "changeLabel",
     "combineLabels",
     "saveLayout",
@@ -110,9 +112,12 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         | "saveIssueFieldText"
         | "moveIssue"
         | "setIssueParent" => prepare_issues(id, site, ada).await,
-        "changeLabelGroup" | "changeLabel" | "combineLabels" | "changeTag" | "combineTags" => {
-            prepare_labels(id, site, ada).await
-        }
+        "changeLabelGroup"
+        | "changeLabelGroupOffers"
+        | "changeLabel"
+        | "combineLabels"
+        | "changeTag"
+        | "combineTags" => prepare_labels(id, site, ada).await,
         "saveLayout" | "deleteLayout" => prepare_layout(id, ada).await,
         "publishWorkflow" | "deleteWorkflow" => prepare_workflow(id, ada).await,
         "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
@@ -140,6 +145,16 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
                 format!("/api/v1/groups/{}", text_in(&group, "id")?),
                 json!({"name": "Frontend"}),
                 &group["version"],
+            )
+        }
+        "changeIssueTypeOffers" => {
+            let types = read(ada, "/api/v1/issue-types").await?;
+            let one = &types["items"][0];
+            Save::new(
+                "PUT",
+                format!("/api/v1/issue-types/{}/offers", text_in(one, "id")?),
+                json!({"changes": [{"offered": true}]}),
+                &one["version"],
             )
         }
         "changeIssueType" => {
@@ -352,6 +367,20 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
                 "PATCH",
                 format!("/api/v1/label-groups/{}", text_in(&group, "id")?),
                 json!({"name": "Part"}),
+                &group["version"],
+            )
+        }
+        "changeLabelGroupOffers" => {
+            let group = made(
+                ada,
+                "/api/v1/label-groups",
+                json!({"name": "Platform", "pick_one": false}),
+            )
+            .await?;
+            Save::new(
+                "PUT",
+                format!("/api/v1/label-groups/{}/offers", text_in(&group, "id")?),
+                json!({"changes": [{"offered": true}]}),
                 &group["version"],
             )
         }
