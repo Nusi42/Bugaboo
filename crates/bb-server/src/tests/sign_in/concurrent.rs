@@ -4,7 +4,9 @@
 //! Ten people, each with a browser of their own, change the same few issues together: short values,
 //! descriptions under their locks, comments and reads. Some editors vanish without letting go, and
 //! some type for longer than the lease lasts. The clock of the test runs on until the last person
-//! is done, so leases really run out. The people write a book of what they did; what must hold
+//! is done, so leases really run out. Two cases are played out first, alone and by construction
+//! (an editor who vanishes, one who is too slow), so that what the run is for never depends on how
+//! fast the computer is. The people write a book of what they did; what must hold
 //! afterwards is not defined here but in `bb-load-check`, which `cargo xtask load` calls with the
 //! book of its own run.
 
@@ -50,6 +52,18 @@ fn version_in(body: &Value) -> Result<i64, Failure> {
         .as_i64()
         .or_else(|| body["issue"]["version"].as_i64())
         .ok_or_else(|| format!("no version in {body}").into())
+}
+
+/// How an editor behaves under the lock: by who they are and the round (the crowd), or one of the two
+/// cases that are played out alone first.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Behaviour {
+    /// Fixed by the number of the person and the round.
+    ByRound,
+    /// Closes the laptop and never lets go.
+    Vanishes,
+    /// Types for longer than the lease lasts: nobody else moves the clock, so this one does.
+    TypesForLongAlone,
 }
 
 /// One person: what they do in each round is fixed by who they are, so a failure repeats.
@@ -168,6 +182,17 @@ impl Person {
     /// Edits the description under the lock. A person whose time ran out or who was taken over
     /// keeps their text as a draft: that is looked for at once.
     async fn describe(&mut self, work: &Work, round: usize) -> Result<(), Failure> {
+        self.describe_as(work, round, Behaviour::ByRound).await
+    }
+
+    /// [`Self::describe`] with the way the editor behaves.
+    async fn describe_as(
+        &mut self,
+        work: &Work,
+        round: usize,
+        behaviour: Behaviour,
+    ) -> Result<(), Failure> {
+        let by_round = behaviour == Behaviour::ByRound;
         let Some(token) = self.lock(work).await? else {
             return Ok(());
         };
@@ -182,13 +207,16 @@ impl Person {
             .await?;
         ok(&beat)?;
         // Every fifth editor closes the laptop and never lets go: the lease has to end it.
-        if (self.number + round).is_multiple_of(5) {
+        if behaviour == Behaviour::Vanishes || (by_round && (self.number + round).is_multiple_of(5))
+        {
             return self.drafted(work, &text, DraftEnd::Vanished, None);
         }
         // Every third one types for longer than the lease lasts, by the clock of the test. The
         // clock runs on as long as anybody works, so the wait ends, and the lease has run out by
         // then, however slow the computer is.
-        if (self.number + round).is_multiple_of(3) {
+        if behaviour == Behaviour::TypesForLongAlone {
+            self.clock.advance(LEASE_SECONDS + 1);
+        } else if by_round && (self.number + round).is_multiple_of(3) {
             while self.clock.now().as_second() <= started + LEASE_SECONDS {
                 tokio::time::sleep(TICK).await;
             }
@@ -283,6 +311,20 @@ async fn the_crowd(
     Ok(people)
 }
 
+/// The two cases the run is for, played out alone before the crowd starts: one editor types for
+/// longer than the lease lasts and is refused with the text kept as a draft, and one vanishes
+/// without letting go. They are in the book like everything the crowd does.
+async fn the_two_cases(people: &mut [Person]) -> Result<(), Failure> {
+    let [slow, vanishing, ..] = people else {
+        return Err("fewer than two people".into());
+    };
+    let work = slow.issue(0).clone();
+    slow.describe_as(&work, 0, Behaviour::TypesForLongAlone)
+        .await?;
+    let work = vanishing.issue(1).clone();
+    vanishing.describe_as(&work, 0, Behaviour::Vanishes).await
+}
+
 /// All the people work until each has done their rounds. The clock runs beside them for as long as
 /// any of them is at work, and no lock is allowed to be further away than its lease.
 async fn work_together(rig: &Rig, people: Vec<Person>, shared: &Shared) -> Result<(), Failure> {
@@ -312,10 +354,29 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut admin) = Site::start(&rig, &app).await?;
         let shared: Shared = Arc::default();
-        let people = the_crowd(&rig, &site, &mut admin, &shared).await?;
+        // The test is about edit locks, not about sessions: the clock of the test runs about 470
+        // times as fast as the real one, so on a slow computer a person could wait out the idle
+        // time of a session between two requests. The limits are the largest the settings allow,
+        // set the way a deployment sets them.
+        rig.set_organization_setting("security.session-idle-minutes", 1440)
+            .await?;
+        rig.set_organization_setting("security.session-absolute-hours", 720)
+            .await?;
+        let mut people = the_crowd(&rig, &site, &mut admin, &shared).await?;
+        the_two_cases(&mut people).await?;
+        {
+            let alone = book(&shared)?;
+            let ended = |ending| alone.drafted.iter().any(|each| each.ending == ending);
+            assert!(ended(DraftEnd::Refused), "the slow editor was not refused");
+            assert!(
+                ended(DraftEnd::Vanished),
+                "the vanishing editor did not vanish"
+            );
+        }
         work_together(&rig, people, &shared).await?;
         // The run did what it is for: texts were kept, some saves were refused because the clock
-        // went past their lease and the text was kept as a draft, some editors vanished.
+        // went past their lease and the text was kept as a draft, some editors vanished (the two
+        // cases played out first are there by construction, the crowd adds more).
         let book = std::mem::take(&mut *book(&shared)?);
         let ended = |ending| book.drafted.iter().any(|each| each.ending == ending);
         assert!(book.kept.iter().any(|each| each.text.is_some()));
