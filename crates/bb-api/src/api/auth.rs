@@ -89,6 +89,9 @@ impl From<AppError> for ApiError {
             }
             // Only a use case that is called without `AuthApi` can leave a stale version unnamed.
             AppError::Stale(_) => Self::new(ErrorCode::VersionChanged),
+            AppError::TakenOver { by } => {
+                Self::new(ErrorCode::EditTakenOver).with_taken_over_by(by)
+            }
             AppError::Limited { retry_after } => {
                 Self::new(ErrorCode::TooManyRequests).with_retry_after(retry_after)
             }

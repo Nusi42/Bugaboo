@@ -99,6 +99,47 @@ async fn iss_17_a_save_with_a_lost_lock_is_refused_and_the_text_kept() -> TestRe
 }
 
 #[tokio::test]
+async fn iss_17_a_refused_save_names_who_took_over() -> TestResult {
+    on_both_databases("iss_17_taken_over_names", async |stage| {
+        // Cleo sees names: the refusal itself says who took over, with no heartbeat in between.
+        let (token, _) = stage.lock(&stage.cleo).await?;
+        stage.edit_anyway(&stage.dan).await?;
+        let error = stage
+            .save(&stage.cleo, token, "Cleo's text", 1)
+            .await
+            .unwrap_err();
+        assert_eq!(
+            error,
+            AppError::TakenOver {
+                by: shown_as(&stage.dan, "Bob Builder")
+            }
+        );
+        // Dan's lock runs out, and Ben sees editors as Someone: the refusal tells no more than the heartbeat would.
+        stage.pass(LEASE_SECONDS);
+        let (token, _) = stage.lock(&stage.ben).await?;
+        stage.edit_anyway(&stage.dan).await?;
+        let error = stage
+            .save(&stage.ben, token, "Ben's text", 1)
+            .await
+            .unwrap_err();
+        assert_eq!(
+            error,
+            AppError::TakenOver {
+                by: PersonRef::Someone
+            }
+        );
+        // The text is kept as the draft, as for any refusal of this kind.
+        let kept = stage.draft(&stage.ben, &stage.describing()).await?;
+        assert_eq!(
+            kept.draft.map(|draft| draft.text).as_deref(),
+            Some("Ben's text")
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn iss_17_a_save_with_the_lock_and_the_version_goes_through_and_lets_go() -> TestResult {
     on_both_databases("iss_17_saved", async |stage| {
         let (token, _) = stage.lock(&stage.ben).await?;

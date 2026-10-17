@@ -1,4 +1,4 @@
-import { conflictOf } from "@bugaboo/api-client";
+import { conflictOf, takenOverByOf } from "@bugaboo/api-client";
 
 import { codeOf } from "../errors.ts";
 import { EditLockSession, type Answer } from "./edit-lock-session.ts";
@@ -165,7 +165,7 @@ export class LongTextEditor extends WatchingEditor {
       return;
     }
     void this.lock.refused(found.reason);
-    const by = found.by ?? conflictOf(error)?.changed_by;
+    const by = found.by ?? takenOverByOf(error) ?? conflictOf(error)?.changed_by;
     this.set({
       phase: {
         kind: "lost",

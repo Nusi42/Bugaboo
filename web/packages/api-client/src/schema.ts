@@ -3837,6 +3837,7 @@ export interface components {
      */
     ConflictProblem: components["schemas"]["Problem"] & {
       conflict?: components["schemas"]["ConflictBody"] | null;
+      taken_over_by?: components["schemas"]["PersonRef"] | null;
     };
     /** @description A role to make from a copy of another. */
     CopyRoleBody: {

@@ -52,10 +52,22 @@ pub(crate) struct ConflictProblem {
     /// What changed the record; only for `edit.version_changed`.
     #[serde(skip_serializing_if = "Option::is_none")]
     conflict: Option<ConflictBody>,
+    /// Who took the editing over, as the person who saved may see them; only for
+    /// `edit.taken_over`, so the browser needs no further request to name them (M3-F176).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    taken_over_by: Option<PersonRef>,
 }
 
 impl ConflictProblem {
-    pub(crate) const fn new(problem: Problem, conflict: Option<ConflictBody>) -> Self {
-        Self { problem, conflict }
+    pub(crate) const fn new(
+        problem: Problem,
+        conflict: Option<ConflictBody>,
+        taken_over_by: Option<PersonRef>,
+    ) -> Self {
+        Self {
+            problem,
+            conflict,
+            taken_over_by,
+        }
     }
 }

@@ -23986,6 +23986,17 @@
                     "type": "null"
                   }
                 ]
+              },
+              "taken_over_by": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PersonRef",
+                    "description": "Who took the editing over, as the person who saved may see them; only for\n`edit.taken_over`, so the browser needs no further request to name them (M3-F176)."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }

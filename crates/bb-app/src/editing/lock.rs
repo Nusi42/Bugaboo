@@ -19,7 +19,7 @@ use bb_core::event::FieldChange;
 use bb_core::id::{LockToken, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
-use bb_policy::{Authorized, Evaluation, PeopleContext, Permission};
+use bb_policy::{Authorized, Evaluation, PeopleContext, Permission, Place};
 use serde_json::json;
 
 use super::parts::Need;
@@ -96,6 +96,29 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .filter(|lock| !lock.has_expired(now)))
+    }
+
+    /// The refusal of a save that found the lock in other hands: `edit.taken_over` with who holds it
+    /// now, as `person` may see them, so the browser needs no heartbeat to learn it (M3-F176). When
+    /// the holder cannot be found (the lock ran out meanwhile) or shown, the plain refusal stands.
+    pub(super) async fn taken_over_by(
+        &self,
+        person: UserId,
+        place: Place,
+        what: &EditWhat,
+    ) -> AppError {
+        let found = async {
+            let Some(lock) = self.live_lock(what).await? else {
+                return Ok(None);
+            };
+            let viewer = self.evaluate(person, place).await?;
+            Ok::<_, AppError>(Some(self.editor_ref(&viewer, lock.holder).await?))
+        }
+        .await;
+        match found {
+            Ok(Some(by)) => AppError::TakenOver { by },
+            Ok(None) | Err(_) => AppError::Refused(ErrorCode::EditTakenOver),
+        }
     }
 
     /// The answer for an editor that has the lock.
