@@ -15,7 +15,7 @@ use bb_core::people_kinds::PeopleKind;
 
 use crate::catalogue::Permission;
 use crate::evaluate::{Evaluation, Place, Row, RowStatus, RowTrace, Who};
-use crate::levels::{LevelSource, LevelSubject, RoleLevel};
+use crate::levels::{LevelSubject, RoleLevel};
 
 /// One row of *Who has which role* that played a part, as data.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -227,41 +227,21 @@ impl Evaluation {
     /// reasons cannot disagree with [`Self::field_level_for`]. Without an issue type, or while no
     /// role set a level for one, it is [`Self::explain_level`].
     #[must_use]
-    pub fn explain_level_for<K: LevelSubject>(
+    pub fn explain_level_for(
         &self,
-        subject: K,
+        subject: FieldKey,
         issue_type: Option<IssueTypeId>,
-    ) -> LevelDecision<K> {
+    ) -> LevelDecision<FieldKey> {
         let Some(issue_type) = issue_type.filter(|_| self.has_levels_per_issue_type()) else {
             return self.explain_level(subject);
         };
-        let roles: Vec<RoleLevel<K::Level>> = self
-            .roles
-            .iter()
-            .map(|role| {
-                let (source, level) = K::level_for(
-                    &self.type_rules,
-                    &self.chain,
-                    role.id,
-                    subject,
-                    Some(issue_type),
-                )
-                .map_or((LevelSource::Unset, K::CLOSED), |(source, _, level)| {
-                    (source, level)
-                });
-                RoleLevel {
-                    role: role.id,
-                    level,
-                    source,
-                }
-            })
-            .collect();
+        let roles = self.role_levels_for(subject, issue_type);
         let from_roles = roles
             .iter()
             .map(|role| role.level)
             .max()
-            .unwrap_or(K::CLOSED);
-        let level = K::held_level(self, subject, Some(issue_type));
+            .unwrap_or(FieldKey::CLOSED);
+        let level = self.field_level_from(&roles);
         LevelDecision {
             subject,
             level,
