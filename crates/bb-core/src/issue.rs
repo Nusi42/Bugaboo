@@ -139,6 +139,10 @@ pub const STARTING_ISSUE_TYPES: [StartingIssueType; 4] = [
     },
 ];
 
+/// The most issue types one place has: the whole organization, and each project, counted on its
+/// own (the types created there).
+pub const ISSUE_TYPES_MAX: usize = 100;
+
 /// A kind of issue (ISS-02): *Bug*, *Task*, *Feature*, *Goal*, or one the organization or a project
 /// made. Where it is offered is data (`offer`).
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]

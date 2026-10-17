@@ -14,8 +14,8 @@ use bb_core::security_log::Digest;
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{
-    ColumnDef, DeleteStatement, Expr, IndexCreateStatement, InsertStatement, Order,
-    PostgresQueryBuilder, Query, SqliteQueryBuilder, Table, TableAlterStatement,
+    ColumnDef, DeleteStatement, Expr, IndexCreateStatement, IndexDropStatement, InsertStatement,
+    Order, PostgresQueryBuilder, Query, SqliteQueryBuilder, Table, TableAlterStatement,
     TableCreateStatement, TableRenameStatement, UpdateStatement,
 };
 use sha2::{Digest as _, Sha256};
@@ -66,6 +66,9 @@ pub(crate) enum Step {
     Update(UpdateStatement),
     /// Give a table the name the program calls it now.
     Rename(TableRenameStatement),
+    /// Take an index away that a later rule no longer wants (a unique key that became a rule of
+    /// the program).
+    DropIndex(IndexDropStatement),
 }
 
 /// One migration.
@@ -113,6 +116,10 @@ impl Definition {
                     statement.to_string(PostgresQueryBuilder),
                 ],
                 Step::Rename(statement) => [
+                    statement.build(SqliteQueryBuilder),
+                    statement.build(PostgresQueryBuilder),
+                ],
+                Step::DropIndex(statement) => [
                     statement.build(SqliteQueryBuilder),
                     statement.build(PostgresQueryBuilder),
                 ],
@@ -334,6 +341,7 @@ impl Database {
                         transaction.execute(&statement).await?;
                     }
                     Step::Rename(statement) => transaction.execute_schema(&statement).await?,
+                    Step::DropIndex(statement) => transaction.execute_schema(&statement).await?,
                 }
             }
             record(&mut transaction, next, now).await?;

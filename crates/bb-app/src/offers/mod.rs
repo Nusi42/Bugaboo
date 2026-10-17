@@ -5,20 +5,26 @@
 //! rows; the ones that write an issue or a label on an issue ask the same function, inside their
 //! own change, after the shared lock of the workflows (`place.rs`).
 //!
-//! Who may change what is judged at a place. A subject made for the whole organization is looked
-//! after by whoever holds the permission for the whole organization; one made in a project, by
+//! Who may change what is judged at a place. A subject created for the whole organization is looked
+//! after by whoever holds the permission for the whole organization; one created in a project, by
 //! whoever holds it in that project. A row is judged at the place it is for: the Project lead of a
 //! project can switch an organization's type off in their project and below, and nowhere else.
+//!
+//! Who may know a subject is one rule (`known.rs`), used by every list and every route that takes a
+//! subject by its ID.
 
 mod change;
 mod here;
+mod known;
 mod place;
 mod store;
+mod subject;
 mod types;
 
 pub use change::{change_offers, offers};
 pub use store::OfferStore;
 pub use types::*;
 
-pub(crate) use here::Here;
-pub(crate) use place::{GroupOffers, ensure_type_takes_issues_in, group_offers_in, place_of};
+pub(crate) use here::Standing;
+pub(crate) use place::{GroupOffers, ensure_type_takes_issues_in, group_offers_in, lock_chain_in};
+pub(crate) use subject::Subject;

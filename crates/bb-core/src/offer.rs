@@ -7,6 +7,7 @@
 //! subject made in a project is offered in that project and below.
 
 use crate::id::{IssueTypeId, LabelGroupId, ProjectId};
+use crate::issue::IssueType;
 use crate::lookup::{chain_depth, nearest_row};
 use crate::personal::Entity;
 
@@ -63,7 +64,9 @@ impl crate::personal::NotPersonal for OfferSubject {}
 /// Whether a subject is offered at a place: the row of one place.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Entity)]
 pub struct Offer {
-    /// The issue type or the group of labels.
+    /// The issue type or the group of labels, as its kind and its ID. No foreign key holds it (one
+    /// column cannot refer to two tables), and nothing deletes types or groups yet: they are
+    /// retired. Whoever adds deleting must delete their rows in the same change.
     #[not_personal]
     pub subject: OfferSubject,
     /// The project, with its sub-projects; none for the whole organization.
@@ -74,9 +77,18 @@ pub struct Offer {
     pub offered: bool,
 }
 
+/// Whether a subject created in `owner` (none: for the whole organization) reaches a place whose
+/// projects from the top down are `place_chain` (empty for the whole organization): one created in a
+/// project reaches that project and everything below it, and nothing else. The one definition of
+/// this rule: the offers, the rows a person may set and the screens of a project all ask it.
+#[must_use]
+pub fn reaches(owner: Option<ProjectId>, place_chain: &[ProjectId]) -> bool {
+    owner.is_none_or(|owner| place_chain.contains(&owner))
+}
+
 /// Whether `subject` is offered in a place whose projects from the top down are `chain`. `owner` is
-/// the project it was made in (none for the whole organization). A row below the owner may take it
-/// away again; a row above the owner, or for the whole organization, is no part of the answer.
+/// the project it was created in (none for the whole organization). A row below the owner may take
+/// it away again; a row above the owner, or for the whole organization, is no part of the answer.
 #[must_use]
 pub fn is_offered(
     subject: OfferSubject,
@@ -84,24 +96,84 @@ pub fn is_offered(
     offers: &[Offer],
     chain: &[ProjectId],
 ) -> bool {
-    // A subject made in a project reaches only that project and below.
-    let owner_depth = match owner {
-        None => 0,
-        Some(owner) => match chain_depth(chain, owner) {
-            Some(depth) => depth,
-            None => return false,
-        },
-    };
+    if !reaches(owner, chain) {
+        return false;
+    }
     let rows = offers
         .iter()
         .filter(|offer| offer.subject == subject)
-        .filter(|offer| {
-            offer.project.map_or(0, |project| {
-                chain_depth(chain, project).unwrap_or(usize::MAX)
-            }) >= owner_depth
-        })
-        .map(|offer| (offer.project, None, offer.offered));
+        .filter_map(|offer| {
+            // The projects from the top down to the place of the row; a row outside the chain is no
+            // part of the answer.
+            let row_chain = match offer.project {
+                None => &chain[..0],
+                Some(project) => &chain[..chain_depth(chain, project)?],
+            };
+            reaches(owner, row_chain).then_some((offer.project, None, offer.offered))
+        });
     nearest_row(chain, None, rows).is_none_or(|(_, _, offered)| offered)
+}
+
+/// Why an issue type takes no new issue in a project.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TypeRefusal {
+    /// The type is retired.
+    Retired,
+    /// The project does not offer the type.
+    NotOffered,
+}
+
+/// Whether an issue type takes a new issue (or an issue changed to it) in a project whose projects
+/// from the top down are `chain`: it is not retired, and the project offers it. The one definition,
+/// before a change and inside it. An issue keeps a type that fails this.
+///
+/// # Errors
+/// The reason the type takes no issue there.
+pub fn type_takes_issues(
+    issue_type: &IssueType,
+    offers: &[Offer],
+    chain: &[ProjectId],
+) -> Result<(), TypeRefusal> {
+    if issue_type.retired_at.is_some() {
+        return Err(TypeRefusal::Retired);
+    }
+    if is_offered(
+        OfferSubject::IssueType(issue_type.id),
+        issue_type.project,
+        offers,
+        chain,
+    ) {
+        Ok(())
+    } else {
+        Err(TypeRefusal::NotOffered)
+    }
+}
+
+/// Whether two subjects made in these places can meet in one project, so their names must differ
+/// (ISS-02, TAG-02): one made for the whole organization meets every other subject; two made in
+/// projects meet when they are the same project or one is inside the other. `is_within(project,
+/// outside)` says whether a project is inside another, at any depth.
+#[must_use]
+pub fn can_meet(
+    one: Option<ProjectId>,
+    other: Option<ProjectId>,
+    is_within: impl Fn(ProjectId, ProjectId) -> bool,
+) -> bool {
+    match (one, other) {
+        (Some(one), Some(other)) => one == other || is_within(one, other) || is_within(other, one),
+        _ => true,
+    }
+}
+
+/// Whether one more subject fits in `owner`: the subjects made there (none: for the whole
+/// organization) are counted on their own, so a project does not use up the room of another one.
+#[must_use]
+pub fn has_room(
+    made_in: impl IntoIterator<Item = Option<ProjectId>>,
+    owner: Option<ProjectId>,
+    most: usize,
+) -> bool {
+    made_in.into_iter().filter(|each| *each == owner).count() < most
 }
 
 #[cfg(test)]
@@ -222,5 +294,71 @@ mod tests {
         }];
         assert!(is_offered(w.bug, None, &rows, &[w.parent]));
         assert!(!is_offered(w.task, None, &rows, &[w.parent]));
+    }
+
+    #[test]
+    fn iss_02_subjects_meet_when_one_is_for_the_organization_or_in_the_same_chain() {
+        let w = world();
+        let within = |project, outside| project == w.child && outside == w.parent;
+        assert!(can_meet(None, Some(w.other), within));
+        assert!(can_meet(Some(w.other), None, within));
+        assert!(can_meet(Some(w.parent), Some(w.parent), within));
+        assert!(can_meet(Some(w.child), Some(w.parent), within));
+        assert!(can_meet(Some(w.parent), Some(w.child), within));
+        assert!(!can_meet(Some(w.parent), Some(w.other), within));
+        assert!(!can_meet(Some(w.child), Some(w.other), within));
+    }
+
+    #[test]
+    fn iss_02_the_room_is_counted_for_each_owner_on_its_own() {
+        let w = world();
+        let made = [None, Some(w.parent), Some(w.parent), Some(w.other)];
+        assert!(has_room(made, Some(w.parent), 3));
+        assert!(!has_room(made, Some(w.parent), 2));
+        assert!(has_room(made, Some(w.child), 1));
+        assert!(!has_room(made, None, 1));
+        assert!(has_room(made, None, 2));
+    }
+
+    #[test]
+    fn iss_02_a_type_takes_issues_when_it_is_not_retired_and_the_project_offers_it() {
+        let w = world();
+        let OfferSubject::IssueType(id) = w.bug else {
+            return;
+        };
+        let mut found = IssueType {
+            id,
+            name: "Bug".to_owned(),
+            icon: crate::issue::IssueIcon::CircleHelp,
+            project: None,
+            position: 0,
+            retired_at: None,
+            version: 1,
+        };
+        let off = [Offer {
+            subject: w.bug,
+            project: Some(w.parent),
+            offered: false,
+        }];
+        assert_eq!(type_takes_issues(&found, &off, &[w.other]), Ok(()));
+        assert_eq!(
+            type_takes_issues(&found, &off, &[w.parent, w.child]),
+            Err(TypeRefusal::NotOffered)
+        );
+        found.retired_at = Some(jiff::Timestamp::UNIX_EPOCH);
+        assert_eq!(
+            type_takes_issues(&found, &[], &[w.other]),
+            Err(TypeRefusal::Retired)
+        );
+    }
+
+    #[test]
+    fn iss_02_a_subject_reaches_its_project_and_below_only() {
+        let w = world();
+        assert!(reaches(None, &[]));
+        assert!(reaches(None, &[w.parent]));
+        assert!(reaches(Some(w.parent), &[w.parent, w.child]));
+        assert!(!reaches(Some(w.parent), &[]));
+        assert!(!reaches(Some(w.child), &[w.parent]));
     }
 }

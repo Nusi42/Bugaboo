@@ -44,7 +44,7 @@ const fn everywhere(offered: Option<bool>) -> OfferChange {
     }
 }
 
-async fn types(
+pub(super) async fn types(
     world: &World,
     who: &str,
     project: Option<&str>,
@@ -63,7 +63,7 @@ async fn types(
     .items)
 }
 
-async fn version_of(world: &World, issue_type: IssueTypeId) -> Result<i64, AppError> {
+pub(super) async fn version_of(world: &World, issue_type: IssueTypeId) -> Result<i64, AppError> {
     Ok(types(world, &token(world), None)
         .await?
         .iter()
@@ -72,7 +72,7 @@ async fn version_of(world: &World, issue_type: IssueTypeId) -> Result<i64, AppEr
         .unwrap_or_default())
 }
 
-async fn change(
+pub(super) async fn change(
     world: &World,
     who: &str,
     issue_type: IssueTypeId,
@@ -202,7 +202,11 @@ async fn iss_02_a_sub_project_follows_its_parent_until_it_has_its_own_row() -> O
 }
 
 /// A person who is Project lead of the project, with the session of their sign-in.
-async fn lead_of(world: &World, email: &str, project: ProjectId) -> Result<Started, AppError> {
+pub(super) async fn lead_of(
+    world: &World,
+    email: &str,
+    project: ProjectId,
+) -> Result<Started, AppError> {
     member(world, email, StartingRole::ProjectLead, project).await
 }
 
@@ -382,7 +386,7 @@ async fn iss_02_a_type_the_target_does_not_offer_is_named_and_kept_on_a_move() -
 
 // ---- Groups of labels ----
 
-async fn group_in(
+pub(super) async fn group_in(
     world: &World,
     who: &str,
     project: Option<&str>,
@@ -402,7 +406,11 @@ async fn group_in(
     .id)
 }
 
-async fn all_labels(world: &World, who: &str, project: Option<&str>) -> Result<Labels, AppError> {
+pub(super) async fn all_labels(
+    world: &World,
+    who: &str,
+    project: Option<&str>,
+) -> Result<Labels, AppError> {
     Ok(labels(
         &world.ctx(),
         LabelsQuery {
@@ -416,18 +424,18 @@ async fn all_labels(world: &World, who: &str, project: Option<&str>) -> Result<L
 
 /// ACME with a sub-project SUB, a project OTHER, and a lead of ACME; the lead made the group
 /// *Area* in ACME, with the label *login* in it.
-struct Groups {
-    world: World,
-    admin: String,
-    lead: String,
-    acme: ProjectId,
-    sub: ProjectId,
-    other: ProjectId,
-    area: LabelGroupId,
-    login: LabelId,
+pub(super) struct Groups {
+    pub(super) world: World,
+    pub(super) admin: String,
+    pub(super) lead: String,
+    pub(super) acme: ProjectId,
+    pub(super) sub: ProjectId,
+    pub(super) other: ProjectId,
+    pub(super) area: LabelGroupId,
+    pub(super) login: LabelId,
 }
 
-async fn groups() -> Result<Groups, Box<dyn std::error::Error + Send + Sync>> {
+pub(super) async fn groups() -> Result<Groups, Box<dyn std::error::Error + Send + Sync>> {
     let world = World::new().await?;
     let admin = token(&world);
     let acme = a_project(&world, "ACME").await?;
@@ -472,7 +480,7 @@ async fn groups() -> Result<Groups, Box<dyn std::error::Error + Send + Sync>> {
     })
 }
 
-async fn label_on(
+pub(super) async fn label_on(
     world: &World,
     who: &str,
     issue: IssueId,
@@ -519,7 +527,8 @@ async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below_in_memory(
     for (project, offered) in [
         ("ACME", Some(true)),
         ("SUB", Some(true)),
-        ("OTHER", Some(false)),
+        // A project the group cannot reach does not list it at all.
+        ("OTHER", None),
     ] {
         let listed = all_labels(&world, &admin, Some(project)).await?;
         assert_eq!(says(&listed), offered, "{project}");

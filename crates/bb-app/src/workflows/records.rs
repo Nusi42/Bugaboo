@@ -18,7 +18,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// the workflow is used.
     pub(crate) async fn place_of_workflow(&self, id: WorkflowId) -> Result<Place, AppError> {
         let failed = |error| internal::<S>(&error);
-        let tree = Tree::of(&self.store().project_tree().await.map_err(failed)?);
+        let tree = self.project_tree_now().await?;
         let uses = self.store().workflow_uses().await.map_err(failed)?;
         Ok(place_from_uses(&tree, &uses, id))
     }
@@ -33,7 +33,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         chain: &[ProjectId],
     ) -> Result<bool, AppError> {
         let failed = |error| internal::<S>(&error);
-        let tree = Tree::of(&self.store().project_tree().await.map_err(failed)?);
+        let tree = self.project_tree_now().await?;
         let uses = self.store().workflow_uses().await.map_err(failed)?;
         let unused = !uses.iter().any(|used| used.workflow == id);
         if unused

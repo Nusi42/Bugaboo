@@ -19,7 +19,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::fields::{Item, ItemValues, PlannedValues};
 use crate::follow::started_following;
-use crate::offers::ensure_type_takes_issues_in;
+use crate::offers::{ensure_type_takes_issues_in, lock_chain_in};
 use crate::projects::Why;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
 use std::sync::Arc;
@@ -315,8 +315,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        self.ensure_type_takes_issues(&found, current.project)
-            .await?;
+        let chain = self.chain_of(current.project).await?;
+        self.ensure_type_takes_issues(&found, &chain).await?;
         Ok(wanted)
     }
 }
@@ -408,18 +408,25 @@ pub async fn change_issue<S: AuthStore>(
                 if stored.version != version {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
+                let chain = lock_chain_in::<S>(transaction, written.project).await?;
                 if written.issue_type != stored.issue_type {
                     ensure_type_takes_issues_in::<S>(
                         transaction,
-                        written.project,
+                        &chain,
                         written.issue_type,
                         &stopped,
                     )
                     .await?;
                 }
                 // The workflow the status was judged on is still the one that counts.
-                ensure_written_status_in::<S>(transaction, &written, Some(&stored), &stopped)
-                    .await?;
+                ensure_written_status_in::<S>(
+                    transaction,
+                    &chain,
+                    &written,
+                    Some(&stored),
+                    &stopped,
+                )
+                .await?;
                 if !S::update_issue(transaction, &written, version).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }

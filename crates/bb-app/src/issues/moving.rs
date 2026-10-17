@@ -14,7 +14,6 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{IdSource, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, StatusGroup};
-use bb_core::offer::OfferSubject;
 use bb_core::project::{Project, ShortName};
 use bb_core::readable_id::{IssueCode, ReadableId};
 use bb_core::version::{counted_up, next as next_version};
@@ -30,6 +29,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::issues::member;
 use crate::many_changes::ManyChangeNote;
+use crate::offers::lock_chain_in;
 use crate::projects::Why;
 use crate::workflows::ensure_status_in_force_in;
 
@@ -78,26 +78,43 @@ impl MovePlan {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The name of the issue's type when the issue would keep a type that the project does not
-    /// use: the type is retired, or the project does not offer it. A retired type is not missing
-    /// (the issue keeps it, as every issue keeps a retired type).
+    /// use: the type is retired, or the project does not offer it (`type_takes_issues`). A retired
+    /// type is not missing (the issue keeps it, as every issue keeps a retired type). The answer is
+    /// read once for each type and project of a request, not for each issue.
     async fn type_not_used_in(
         &self,
         issue: &Issue,
         project: ProjectId,
     ) -> Result<Option<String>, AppError> {
-        let Some(found) = self
+        let key = (issue.issue_type, project);
+        if let Some(known) = self
+            .known
+            .types_not_used
+            .lock()
+            .ok()
+            .and_then(|each| each.get(&key).cloned())
+        {
+            return Ok(known);
+        }
+        let name = match self
             .store()
             .issue_type(issue.issue_type)
             .await
             .map_err(|error| internal::<S>(&error))?
-        else {
-            return Ok(None);
+        {
+            Some(found) => {
+                let chain = self.chain_of(project).await?;
+                self.ensure_type_takes_issues(&found, &chain)
+                    .await
+                    .err()
+                    .map(|_| found.name)
+            }
+            None => None,
         };
-        let used = found.retired_at.is_none()
-            && self
-                .offered_in(OfferSubject::IssueType(found.id), found.project, project)
-                .await?;
-        Ok((!used).then_some(found.name))
+        if let Ok(mut each) = self.known.types_not_used.lock() {
+            each.insert(key, name.clone());
+        }
+        Ok(name)
     }
 
     /// The project issues are moved into, as the person asks for it, and what they hold there: it
@@ -311,16 +328,12 @@ impl MoveWrite {
         now: Timestamp,
         stopped: &Why,
     ) -> Result<IssueCode, S::Error> {
+        // The locks are taken in their one order: the workflows, then the codes of the project.
+        let chain = lock_chain_in::<S>(transaction, self.to).await?;
         S::lock_issue_codes(transaction, self.to).await?;
         // The workflow of the project it goes to still has the status the issue gets there.
-        ensure_status_in_force_in::<S>(
-            transaction,
-            self.to,
-            self.issue_type,
-            &self.status,
-            stopped,
-        )
-        .await?;
+        ensure_status_in_force_in::<S>(transaction, &chain, self.issue_type, &self.status, stopped)
+            .await?;
         let plan = code_plan_in::<S>(transaction, self.to).await?;
         let code = new_code_in::<S>(transaction, self.to, plan, ids).await?;
         if !S::move_issue(

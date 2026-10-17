@@ -254,14 +254,8 @@ impl TagStore for FakeStore {
     }
 
     async fn insert_label_group(tx: &mut Tx, group: &LabelGroup) -> Result<(), FakeError> {
-        if tx
-            .state
-            .label_groups
-            .iter()
-            .any(|other| name_key(&other.name) == name_key(&group.name))
-        {
-            return Err(FakeError::Duplicate);
-        }
+        // The name is unique among the groups that can meet in one project, which the use case
+        // judges (the store has no unique key for it).
         tx.state.label_groups.push(group.clone());
         Ok(())
     }

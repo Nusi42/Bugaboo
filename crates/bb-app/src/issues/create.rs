@@ -24,7 +24,7 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
-use crate::offers::ensure_type_takes_issues_in;
+use crate::offers::{ensure_type_takes_issues_in, lock_chain_in};
 use crate::projects::Why;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
 
@@ -158,15 +158,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        self.ensure_type_takes_issues(&issue_type, project.id)
-            .await?;
+        let chain = self.chain_of(project.id).await?;
+        self.ensure_type_takes_issues(&issue_type, &chain).await?;
         let now = self.now();
         let id = IssueId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let item = Item {
             kind: RecordKind::Issue,
             id: Some(id.into()),
-            chain: self.chain_of(project.id).await?,
+            chain,
             issue_type: Some(issue_type.id),
             reported_by: Some(actor.person.id),
         };
@@ -267,15 +267,17 @@ pub async fn create_issue<S: AuthStore>(
                 Box::pin(async move {
                     // The type may have been retired, or the project may have stopped offering
                     // it, since the request began.
+                    let chain = lock_chain_in::<S>(transaction, issue.project).await?;
                     ensure_type_takes_issues_in::<S>(
                         transaction,
-                        issue.project,
+                        &chain,
                         issue.issue_type,
                         &stopped,
                     )
                     .await?;
                     // The workflow the status was judged on is still the one that counts.
-                    ensure_written_status_in::<S>(transaction, &issue, None, &stopped).await?;
+                    ensure_written_status_in::<S>(transaction, &chain, &issue, None, &stopped)
+                        .await?;
                     // The mode and the code are judged after the lock on the codes of the
                     // project, so a change of the mode meanwhile is seen whole or not at all.
                     S::lock_issue_codes(transaction, issue.project).await?;

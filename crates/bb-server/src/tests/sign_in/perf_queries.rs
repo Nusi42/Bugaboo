@@ -364,3 +364,73 @@ async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_run_the_same_stat
     })
     .await
 }
+
+#[tokio::test]
+async fn perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_forty_as_for_five()
+-> TestResult {
+    each_database("perf_05_types_and_groups", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        let create = async |ada: &mut Browser, range: std::ops::Range<u32>| -> TestResult {
+            for number in range {
+                ok(&ada
+                    .send(
+                        "POST",
+                        "/api/v1/issue-types",
+                        Some(json!({
+                            "name": format!("Type {number}"),
+                            "icon": "circle-help",
+                            "project": "ACME",
+                        })),
+                    )
+                    .await?)?;
+                ok(&ada
+                    .send(
+                        "POST",
+                        "/api/v1/label-groups",
+                        Some(json!({
+                            "name": format!("Group {number}"),
+                            "pick_one": false,
+                            "project": "ACME",
+                        })),
+                    )
+                    .await?)?;
+            }
+            Ok(())
+        };
+        let types = "/api/v1/issue-types?project=ACME&limit=200";
+        let labels = "/api/v1/labels?project=ACME";
+        let mut counter = Counter::on(&rig.database);
+        create(&mut ada, 0..5).await?;
+        // Warm, then count.
+        ok(&ada.send("GET", types, None).await?)?;
+        ok(&ada.send("GET", labels, None).await?)?;
+        counter.take();
+        ok(&ada.send("GET", types, None).await?)?;
+        let types_on_five = counter.take();
+        ok(&ada.send("GET", labels, None).await?)?;
+        let labels_on_five = counter.take();
+        create(&mut ada, 5..40).await?;
+        counter.take();
+        let listed = ada.send("GET", types, None).await?;
+        assert!(ok(&listed)?["items"].as_array().map_or(0, Vec::len) >= 40);
+        let types_on_forty = counter.take();
+        let listed = ada.send("GET", labels, None).await?;
+        assert!(ok(&listed)?["groups"].as_array().map_or(0, Vec::len) >= 40);
+        let labels_on_forty = counter.take();
+        assert!(
+            types_on_five > 0 && labels_on_five > 0,
+            "the counter sees nothing"
+        );
+        assert_eq!(
+            types_on_five, types_on_forty,
+            "more types must not run more statements"
+        );
+        assert_eq!(
+            labels_on_five, labels_on_forty,
+            "more groups must not run more statements"
+        );
+        Ok(())
+    })
+    .await
+}

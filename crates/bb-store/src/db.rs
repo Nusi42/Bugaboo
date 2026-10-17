@@ -399,6 +399,15 @@ enum TxInner {
 
 /// The kinds of advisory lock of the program, the one home of their numbers: PostgreSQL takes
 /// the two-key form `pg_advisory_xact_lock(class, key)`, so locks of different kinds never meet.
+///
+/// **The order.** A change that takes more than one lock takes them in this order, and no other:
+/// `Policy`, `TagsAndLabels`, `Workflows`, `IssueCodes`, then the others by their numbers. Two
+/// changes that take two of them in different orders can each hold one and wait for the other
+/// (more so behind an exclusive taker such as a change of the workflows or of the offers, which
+/// waits for every shared one and is waited for by every new one). Writing an issue takes the
+/// workflows (shared) before the codes of its project, and so does moving one; a change of an issue
+/// type that retires it takes the policy and then the workflows (exclusive), so an issue of the
+/// type is never created after the retire has looked.
 #[derive(Clone, Copy, Debug)]
 #[repr(i32)]
 pub(crate) enum LockClass {

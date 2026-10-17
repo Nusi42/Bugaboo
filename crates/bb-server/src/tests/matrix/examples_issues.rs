@@ -84,8 +84,9 @@ pub(super) async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
     Ok(made.key)
 }
 
-/// An issue type, made by the administrator of the matrix: its ID.
-async fn a_new_type(fixture: &Fixture<'_>) -> Result<String, Failure> {
+/// An issue type, created by the administrator of the matrix for the whole organization or in the
+/// project: its ID.
+async fn a_new_type(fixture: &Fixture<'_>, project: Option<String>) -> Result<String, Failure> {
     Ok(fixture
         .rig()
         .api()
@@ -93,7 +94,7 @@ async fn a_new_type(fixture: &Fixture<'_>) -> Result<String, Failure> {
             Rig::info(),
             CreateIssueType {
                 session_token: fixture.admin_session().to_owned(),
-                project: None,
+                project,
                 name: format!("Type {}", fixture.next_number()),
                 icon: IssueIcon::Bug,
             },
@@ -115,21 +116,34 @@ pub(super) async fn issue_request(
         "createIssueType" => (
             "POST",
             "/api/v1/issue-types".into(),
-            Some(json!({"name": format!("Type {}", fixture.next_number()), "icon": "bug"})),
+            Some(json!({
+                "name": format!("Type {}", fixture.next_number()),
+                "icon": "bug",
+                "project": target,
+            })),
         ),
         "changeIssueType" => (
             "PATCH",
-            format!("/api/v1/issue-types/{}", a_new_type(fixture).await?),
+            format!(
+                "/api/v1/issue-types/{}",
+                a_new_type(fixture, Some(target.clone())).await?
+            ),
             Some(json!({"version": 1, "icon": "star"})),
         ),
         "listIssueTypeOffers" => (
             "GET",
-            format!("/api/v1/issue-types/{}/offers", a_new_type(fixture).await?),
+            format!(
+                "/api/v1/issue-types/{}/offers",
+                a_new_type(fixture, None).await?
+            ),
             None,
         ),
         "changeIssueTypeOffers" => (
             "PUT",
-            format!("/api/v1/issue-types/{}/offers", a_new_type(fixture).await?),
+            format!(
+                "/api/v1/issue-types/{}/offers",
+                a_new_type(fixture, None).await?
+            ),
             Some(json!({"version": 1, "changes": [{"project": target, "offered": false}]})),
         ),
         "listIssues" => ("GET", format!("/api/v1/projects/{target}/issues"), None),

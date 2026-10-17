@@ -1,95 +1,87 @@
 //! Asking "is this offered here" in the places that need the answer: before a change (on what the
 //! request read) and again inside the change (on what is stored, after the shared lock of the
 //! workflows, so a change of the offers cannot happen between the look and the write).
+//!
+//! The rules are in `bb_core::offer` (`type_takes_issues`, `is_offered`); this file only reads what
+//! they are asked about.
 
 use bb_core::ErrorCode;
 use bb_core::id::{IssueTypeId, ProjectId};
 use bb_core::issue::IssueType;
-use bb_core::offer::{Offer, OfferSubject, is_offered};
+use bb_core::offer::{Offer, OfferSubject, TypeRefusal, is_offered, type_takes_issues};
 use bb_core::tags::LabelGroup;
-use bb_policy::{Place, Tree};
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::projects::Why;
 
+/// The error code for an issue type that takes no new issue.
+const fn refusal_code(refusal: TypeRefusal) -> ErrorCode {
+    match refusal {
+        TypeRefusal::Retired => ErrorCode::IssueTypeRetired,
+        TypeRefusal::NotOffered => ErrorCode::IssueTypeNotOffered,
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Refuses an issue type that takes no new issue in the project: it is retired
-    /// (`issue.type_retired`), or the project does not offer it (`issue.type_not_offered`). An issue
-    /// keeps a type that is retired or not offered; only a new issue and a change of type are judged.
+    /// Refuses an issue type that takes no new issue in the project whose chain from the top down
+    /// is given: it is retired (`issue.type_retired`), or the project does not offer it
+    /// (`issue.type_not_offered`). An issue keeps a type that is retired or not offered; only a new
+    /// issue and a change of type are judged.
     pub(crate) async fn ensure_type_takes_issues(
         &self,
         found: &IssueType,
-        project: ProjectId,
+        chain: &[ProjectId],
     ) -> Result<(), AppError> {
-        if found.retired_at.is_some() {
-            return Err(ErrorCode::IssueTypeRetired.into());
-        }
-        if !self
-            .offered_in(OfferSubject::IssueType(found.id), found.project, project)
-            .await?
-        {
-            return Err(ErrorCode::IssueTypeNotOffered.into());
-        }
-        Ok(())
-    }
-
-    /// Whether a project offers an issue type or a group of labels, on what is stored now.
-    pub(crate) async fn offered_in(
-        &self,
-        subject: OfferSubject,
-        owner: Option<ProjectId>,
-        project: ProjectId,
-    ) -> Result<bool, AppError> {
         let offers = self
             .store()
             .offers()
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let chain = self.chain_of(project).await?;
-        Ok(is_offered(subject, owner, &offers, &chain))
+        type_takes_issues(found, &offers, chain).map_err(|refusal| refusal_code(refusal).into())
     }
 }
 
-/// The place that a subject made in this project is looked after at.
-#[must_use]
-pub(crate) fn place_of(owner: Option<ProjectId>) -> Place {
-    owner.map_or(Place::Organization, Place::Project)
+/// Inside the transaction that writes an issue (or a label on one) in a project: takes the lock of
+/// the workflows shared, before any lock on the codes of a project (the one order of the locks,
+/// see `LockClass`), and reads the projects from the top down to the project, which the offers and
+/// the workflow are judged on.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn lock_chain_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    project: ProjectId,
+) -> Result<Vec<ProjectId>, S::Error> {
+    S::lock_workflows_shared(transaction).await?;
+    Ok(crate::projects::tree_in::<S>(transaction)
+        .await?
+        .chain(project)
+        .unwrap_or_default())
 }
 
-/// Inside the transaction that writes an issue of this type in this project: takes the lock of the
-/// workflows shared and checks that the type still takes new issues. If it was retired meanwhile,
-/// the write is stopped with `issue.type_retired`, and if a place was changed so that the project
-/// does not offer it any more, with `issue.type_not_offered`.
+/// Inside the transaction that writes an issue of this type in the project whose chain is given
+/// (after [`lock_chain_in`]): checks that the type still takes new issues. If it was retired
+/// meanwhile, the write is stopped with `issue.type_retired`, and if a place was changed so that
+/// the project does not offer it any more, with `issue.type_not_offered`.
 ///
 /// # Errors
 /// The error of the store, or the stop of the change.
 pub(crate) async fn ensure_type_takes_issues_in<S: AuthStore>(
     transaction: &mut S::Transaction,
-    project: ProjectId,
+    chain: &[ProjectId],
     issue_type: IssueTypeId,
     stopped: &Why,
 ) -> Result<(), S::Error> {
-    S::lock_workflows_shared(transaction).await?;
     let Some(found) = S::issue_types_in(transaction)
         .await?
         .into_iter()
-        .find(|each| each.id == issue_type && each.retired_at.is_none())
+        .find(|each| each.id == issue_type)
     else {
         return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
     };
-    let tree = Tree::of(&S::project_tree_in(transaction).await?);
-    let chain = tree.chain(project).unwrap_or_default();
     let offers = S::offers_in(transaction).await?;
-    if is_offered(
-        OfferSubject::IssueType(issue_type),
-        found.project,
-        &offers,
-        &chain,
-    ) {
-        Ok(())
-    } else {
-        Err(stopped.stop::<S>(ErrorCode::IssueTypeNotOffered))
-    }
+    type_takes_issues(&found, &offers, chain)
+        .map_err(|refusal| stopped.stop::<S>(refusal_code(refusal)))
 }
 
 /// What decides whether a project offers a group of labels, read once: the rows of the offers and
@@ -138,10 +130,6 @@ pub(crate) async fn group_offers_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     project: ProjectId,
 ) -> Result<GroupOffers, S::Error> {
-    S::lock_workflows_shared(transaction).await?;
-    let tree = Tree::of(&S::project_tree_in(transaction).await?);
-    Ok(GroupOffers::new(
-        S::offers_in(transaction).await?,
-        tree.chain(project).unwrap_or_default(),
-    ))
+    let chain = lock_chain_in::<S>(transaction, project).await?;
+    Ok(GroupOffers::new(S::offers_in(transaction).await?, chain))
 }

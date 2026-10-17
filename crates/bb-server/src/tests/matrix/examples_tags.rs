@@ -41,8 +41,9 @@ async fn a_tag(fixture: &Fixture<'_>) -> Result<String, Failure> {
         .ok_or_else(|| "the tag is not on the issue".into())
 }
 
-/// A group of labels made by the administrator: its ID.
-async fn a_group(fixture: &Fixture<'_>) -> Result<String, Failure> {
+/// A group of labels, created by the administrator for the whole organization or in the project:
+/// its ID.
+async fn a_group(fixture: &Fixture<'_>, project: Option<String>) -> Result<String, Failure> {
     Ok(fixture
         .rig()
         .api()
@@ -50,7 +51,7 @@ async fn a_group(fixture: &Fixture<'_>) -> Result<String, Failure> {
             Rig::info(),
             CreateLabelGroup {
                 session_token: fixture.admin_session().to_owned(),
-                project: None,
+                project,
                 name: format!("group {}", fixture.next_number()),
                 pick_one: false,
             },
@@ -62,8 +63,23 @@ async fn a_group(fixture: &Fixture<'_>) -> Result<String, Failure> {
         .to_string())
 }
 
-/// A label made by the administrator: its ID.
+/// A label made by the administrator, in no group: its ID.
 async fn a_label(fixture: &Fixture<'_>) -> Result<String, Failure> {
+    label_in(fixture, None).await
+}
+
+/// A label in a group created in the target project: its ID.
+async fn a_target_label(fixture: &Fixture<'_>) -> Result<String, Failure> {
+    let group = a_group(fixture, Some(target_of(fixture))).await?;
+    label_in(fixture, Some(group)).await
+}
+
+/// The target project, as the requests name it.
+fn target_of(fixture: &Fixture<'_>) -> String {
+    fixture.project(super::actors::Project::Target).to_string()
+}
+
+async fn label_in(fixture: &Fixture<'_>, group: Option<String>) -> Result<String, Failure> {
     Ok(fixture
         .rig()
         .api()
@@ -73,7 +89,9 @@ async fn a_label(fixture: &Fixture<'_>) -> Result<String, Failure> {
                 session_token: fixture.admin_session().to_owned(),
                 name: format!("label {}", fixture.next_number()),
                 color: None,
-                group: None,
+                group: group
+                    .map(|each| each.parse().map_err(|_| "no group ID"))
+                    .transpose()?,
             },
         )
         .await
@@ -174,21 +192,34 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
         "createLabelGroup" => (
             "POST",
             "/api/v1/label-groups".into(),
-            Some(json!({"name": format!("group {}", fixture.next_number()), "pick_one": true})),
+            Some(json!({
+                "name": format!("group {}", fixture.next_number()),
+                "pick_one": true,
+                "project": target_of(fixture),
+            })),
         ),
         "changeLabelGroup" => (
             "PATCH",
-            format!("/api/v1/label-groups/{}", a_group(fixture).await?),
+            format!(
+                "/api/v1/label-groups/{}",
+                a_group(fixture, Some(target_of(fixture))).await?
+            ),
             Some(json!({"version": 1, "name": format!("renamed {}", fixture.next_number())})),
         ),
         "listLabelGroupOffers" => (
             "GET",
-            format!("/api/v1/label-groups/{}/offers", a_group(fixture).await?),
+            format!(
+                "/api/v1/label-groups/{}/offers",
+                a_group(fixture, None).await?
+            ),
             None,
         ),
         "changeLabelGroupOffers" => (
             "PUT",
-            format!("/api/v1/label-groups/{}/offers", a_group(fixture).await?),
+            format!(
+                "/api/v1/label-groups/{}/offers",
+                a_group(fixture, None).await?
+            ),
             Some(json!({
                 "version": 1,
                 "changes": [{
@@ -200,22 +231,25 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
         "createLabel" => (
             "POST",
             "/api/v1/labels".into(),
-            Some(json!({"name": format!("label {}", fixture.next_number())})),
+            Some(json!({
+                "name": format!("label {}", fixture.next_number()),
+                "group": a_group(fixture, Some(target_of(fixture))).await?,
+            })),
         ),
         "previewLabelChange" => (
             "POST",
-            format!("/api/v1/labels/{}/preview", a_label(fixture).await?),
+            format!("/api/v1/labels/{}/preview", a_target_label(fixture).await?),
             Some(json!({"name": format!("renamed {}", fixture.next_number())})),
         ),
         "changeLabel" => (
             "PATCH",
-            format!("/api/v1/labels/{}", a_label(fixture).await?),
+            format!("/api/v1/labels/{}", a_target_label(fixture).await?),
             Some(json!({"version": 1, "color": "cat6"})),
         ),
         "combineLabels" => (
             "POST",
-            format!("/api/v1/labels/{}/combine", a_label(fixture).await?),
-            Some(json!({"into": a_label(fixture).await?, "version": 1, "into_version": 1})),
+            format!("/api/v1/labels/{}/combine", a_target_label(fixture).await?),
+            Some(json!({"into": a_target_label(fixture).await?, "version": 1, "into_version": 1})),
         ),
         _ => return many_changes_request(fixture, operation).await,
     }))

@@ -2422,6 +2422,10 @@ pub const MANY_CHANGES_SKIP_SAME_ISSUE: MessageKey =
 pub const MANY_CHANGES_SKIP_TAG_NOT_HERE: MessageKey =
     MessageKey::new("many-changes-skip.tag-not-here");
 
+/// The message `many-changes-skip.type-missing`.
+pub const MANY_CHANGES_SKIP_TYPE_MISSING: MessageKey =
+    MessageKey::new("many-changes-skip.type-missing");
+
 /// The message `many-changes-skip.workflow`.
 pub const MANY_CHANGES_SKIP_WORKFLOW: MessageKey = MessageKey::new("many-changes-skip.workflow");
 
@@ -10514,6 +10518,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "many-changes-skip.tag-not-here",
         "It has a tag that is not for the other project",
+    ),
+    (
+        "many-changes-skip.type-missing",
+        "The other project did not offer its issue type",
     ),
     (
         "many-changes-skip.workflow",

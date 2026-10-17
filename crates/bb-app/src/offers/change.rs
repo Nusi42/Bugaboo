@@ -9,177 +9,43 @@ use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{EntityId, ProjectId};
-use bb_core::offer::{Offer, OfferSubject};
+use bb_core::id::ProjectId;
+use bb_core::offer::{Offer, OfferSubject, reaches};
 use bb_core::paging::window;
 use bb_core::version::counted_up;
-use bb_policy::{Authorized, Permission, Place, Tree};
+use bb_policy::{Authorized, Place};
 use serde_json::{Value, json};
 
-use super::place::place_of;
+use super::subject::Subject;
 use super::types::{ChangeOffers, OfferChange, OfferRowPage, OfferRowView, Offers, OffersQuery};
-use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::projects::Why;
-
-/// What a subject is, as far as the offers are concerned.
-pub(crate) struct Subject {
-    pub(crate) id: OfferSubject,
-    /// The project it was made in; none for the whole organization.
-    pub(crate) owner: Option<ProjectId>,
-    /// The version it is at.
-    pub(crate) version: i64,
-    /// What a person needs to hold to look after it.
-    pub(crate) permission: Permission,
-    /// The kind of record its events are about.
-    pub(crate) record: RecordKind,
-}
-
-impl Subject {
-    /// The record of its events.
-    fn entity(&self) -> bb_core::event::EntityRef {
-        let id: EntityId = match self.id {
-            OfferSubject::IssueType(id) => id.into(),
-            OfferSubject::LabelGroup(id) => id.into(),
-        };
-        entity(self.record, id)
-    }
-
-    /// The place its owner is judged at.
-    pub(crate) fn place(&self) -> Place {
-        place_of(self.owner)
-    }
-}
+use crate::auth::{AppError, AuthStore, Ctx, by, internal};
+use crate::projects::{Shown, Why};
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The subject, or `resource.not_found`.
-    pub(crate) async fn offer_subject(&self, id: OfferSubject) -> Result<Subject, AppError> {
-        let missing = || AppError::Refused(ErrorCode::NotFound);
-        match id {
-            OfferSubject::IssueType(issue_type) => {
-                let found = self
-                    .store()
-                    .issue_type(issue_type)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?
-                    .ok_or_else(missing)?;
-                Ok(Subject {
-                    id,
-                    owner: found.project,
-                    version: found.version,
-                    permission: Permission::ManageIssueTypes,
-                    record: RecordKind::IssueType,
-                })
-            }
-            OfferSubject::LabelGroup(group) => {
-                let found = self
-                    .store()
-                    .label_groups()
-                    .await
-                    .map_err(|error| internal::<S>(&error))?
-                    .into_iter()
-                    .find(|each| each.id == group)
-                    .ok_or_else(missing)?;
-                Ok(Subject {
-                    id,
-                    owner: found.project,
-                    version: found.version,
-                    permission: Permission::ManageLabels,
-                    record: RecordKind::LabelGroup,
-                })
-            }
-        }
-    }
-
-    /// Whether the person holds `permission` at `place`; a place they may not know is as good as
-    /// one where they lack it.
-    pub(crate) async fn holds_at(
-        &self,
-        actor: &Actor,
-        permission: Permission,
-        place: Place,
-    ) -> Result<bool, AppError> {
-        match self.evaluation_of(actor, place).await {
-            Ok(held) => Ok(held.allows(permission)),
-            Err(AppError::Refused(ErrorCode::NotFound)) => Ok(false),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// The place a project address names: the project, or the whole organization for none.
-    pub(crate) async fn offer_place(&self, project: Option<&str>) -> Result<Place, AppError> {
-        match project {
-            None => Ok(Place::Organization),
-            Some(address) => Ok(Place::Project(
-                self.find_project(address)
-                    .await?
-                    .ok_or(AppError::Refused(ErrorCode::NotFound))?
-                    .project
-                    .id,
-            )),
-        }
-    }
-
-    /// The tree of the projects, read once for a request.
-    pub(crate) async fn project_tree_now(&self) -> Result<Tree, AppError> {
-        Ok(Tree::of(
-            &self
-                .store()
-                .project_tree()
-                .await
-                .map_err(|error| internal::<S>(&error))?,
-        ))
-    }
-
-    /// The rows of a subject as the person sees them.
+    /// The rows of a subject as the person sees them: a row at a place they may not know is left
+    /// out, so the answer never names or counts a hidden project.
     async fn offer_rows(
         &self,
-        actor: &Actor,
+        shown: &Shown,
         subject: &Subject,
     ) -> Result<Vec<OfferRowView>, AppError> {
         let rows = self
             .store()
-            .offers()
+            .subject_offers(subject.id)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let tree = self.project_tree_now().await?;
-        let mut views = Vec::new();
-        for row in rows.iter().filter(|row| row.subject == subject.id) {
-            views.push(OfferRowView {
-                place: self.place_label(actor, place_of(row.project)).await?,
-                offered: row.offered,
-                may_change: self
-                    .may_offer_at(actor, subject, row.project, &tree)
-                    .await?,
-            });
-        }
-        Ok(views)
-    }
-
-    /// Whether a row at this place may be set for the subject by the person: the subject reaches
-    /// the place, and the person looks after such subjects there.
-    pub(crate) async fn may_offer_at(
-        &self,
-        actor: &Actor,
-        subject: &Subject,
-        project: Option<ProjectId>,
-        tree: &Tree,
-    ) -> Result<bool, AppError> {
-        if !reaches(subject.owner, project, tree) {
-            return Ok(false);
-        }
-        self.holds_at(actor, subject.permission, place_of(project))
-            .await
-    }
-}
-
-/// Whether a subject made in `owner` takes a row at `project`: one made for the whole organization
-/// takes a row anywhere; one made in a project, only for that project and below.
-pub(crate) fn reaches(owner: Option<ProjectId>, project: Option<ProjectId>, tree: &Tree) -> bool {
-    match (owner, project) {
-        (None, _) => true,
-        (Some(_), None) => false,
-        (Some(owner), Some(project)) => tree.is_within(project, owner),
+        Ok(rows
+            .iter()
+            .filter(|row| row.project.is_none_or(|project| shown.sees(project)))
+            .map(|row| {
+                let place = Place::from(row.project);
+                OfferRowView {
+                    place: shown.label(place),
+                    offered: row.offered,
+                    may_change: subject.may_offer_at(shown, place),
+                }
+            })
+            .collect())
     }
 }
 
@@ -203,21 +69,22 @@ const fn member_of(record: RecordKind) -> &'static str {
     }
 }
 
-/// The rows that say where a subject is offered, a page at a time. Anybody who is signed in may
-/// read them: the names of the types and the groups are not hidden from anybody who works here, and
-/// a project the person may not see is not named.
+/// The rows that say where a subject is offered, a page at a time. Anybody who is signed in and may
+/// know the subject (`known.rs`) may read them; a row at a project the person may not see is left
+/// out.
 ///
 /// # Errors
-/// `resource.not_found` for a subject that is not there, `request.invalid` for a cursor that is not
-/// one.
+/// `resource.not_found` for a subject that is not there or that the person may not know,
+/// `request.invalid` for a cursor that is not one.
 pub async fn offers<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: OffersQuery,
 ) -> Result<Authorized<OfferRowPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    let subject = ctx.offer_subject(input.subject).await?;
-    let rows = ctx.offer_rows(&actor, &subject).await?;
+    let shown = ctx.shown_to(&actor).await?;
+    let subject = ctx.offer_subject(&shown, input.subject).await?;
+    let rows = ctx.offer_rows(&shown, &subject).await?;
     let page = window(rows.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     Ok(held.authorize(OfferRowPage {
@@ -241,28 +108,25 @@ pub async fn change_offers<S: AuthStore>(
     input: ChangeOffers,
 ) -> Result<Authorized<Offers>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let subject = ctx.offer_subject(input.subject).await?;
+    let shown = ctx.shown_to(&actor).await?;
+    let subject = ctx.offer_subject(&shown, input.subject).await?;
     if input.changes.is_empty() {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    let tree = ctx.project_tree_now().await?;
     // Every place is judged before anything is written; the first one the person may not change
     // answers for all.
     let mut places: Places = Vec::new();
     let mut seen = BTreeSet::new();
     for OfferChange { project, offered } in &input.changes {
         let place = ctx.offer_place(project.as_deref()).await?;
-        let project = match place {
-            Place::Organization => None,
-            Place::Project(project) => Some(project),
-        };
+        let project = place.project();
         if !seen.insert(project) {
             return Err(ErrorCode::InvalidRequest.into());
         }
         // A person who may not know the place is told it is not there; one who knows it and lacks
         // the permission is refused.
         ctx.require(&actor, subject.permission, place).await?;
-        if !reaches(subject.owner, project, &tree) {
+        if !reaches(subject.owner, &shown.chain(place)) {
             return Err(ErrorCode::InvalidRequest.into());
         }
         places.push((project, *offered));
@@ -271,19 +135,25 @@ pub async fn change_offers<S: AuthStore>(
     if subject.version != input.version {
         return Err(AppError::stale(record, subject.place(), actor.person.id));
     }
-    let before: Vec<Offer> = ctx
+    let before = ctx
         .store()
-        .offers()
+        .subject_offers(subject.id)
         .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .filter(|row| row.subject == subject.id)
-        .collect();
+        .map_err(|error| internal::<S>(&error))?;
     let after = after_rows(subject.id, &before, &places);
+    // The event names the places that were changed, which the person knows, and no other.
+    let touched = |rows: &[Offer]| {
+        let kept: Vec<Offer> = rows
+            .iter()
+            .filter(|row| places.iter().any(|(project, _)| *project == row.project))
+            .copied()
+            .collect();
+        rows_json(&kept)
+    };
     let change = FieldChange {
         field: member_of(subject.record).to_owned(),
-        before: Some(rows_json(&before)),
-        after: Some(rows_json(&after)),
+        before: Some(touched(&before)),
+        after: Some(touched(&after)),
     };
     let event = ctx.event(
         by(actor.person.id),
@@ -319,9 +189,9 @@ pub async fn change_offers<S: AuthStore>(
             )
         })?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    let now = ctx.offer_subject(input.subject).await?;
+    let now = ctx.offer_subject(&shown, input.subject).await?;
     Ok(held.authorize(Offers {
-        rows: ctx.offer_rows(&actor, &now).await?,
+        rows: ctx.offer_rows(&shown, &now).await?,
         version: now.version,
     }))
 }

@@ -10,6 +10,7 @@ use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::issue::IssueType;
+use bb_core::offer::type_takes_issues;
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
     AccessReport, Authorized, Evaluation, LevelDecision, LevelSource, LevelSubject, Masked,
@@ -321,16 +322,18 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Whether the person's field levels differ by issue type, among the fields the checker may
-    /// know: some type has another level for some field than the answer for all types gives.
+    /// know: some type has another level for some field than the answer for all types gives
+    /// (`all`). Only the types the place offers and that are not retired count: they are the ones
+    /// the screen can ask about.
     fn levels_differ_by_type(
         theirs: &Evaluation,
-        types: &[IssueType],
+        all: &AccessReport,
+        types: &[&IssueType],
         own_names: &std::collections::HashMap<FieldKey, String>,
     ) -> bool {
         if !theirs.has_levels_per_issue_type() {
             return false;
         }
-        let all = theirs.report();
         all.fields
             .iter()
             .filter(|decision| {
@@ -378,11 +381,14 @@ pub async fn check_access<S: AuthStore>(
         )
         .await?;
     let own_names = ctx.known_field_names(&actor, &checker, input.place).await?;
+    // The checker asks about the issue types they may know (`offers/known.rs`).
+    let shown = ctx.shown_to(&actor).await?;
     let types = ctx
         .store()
         .issue_types()
         .await
         .map_err(|error| internal::<S>(&error))?;
+    let types = ctx.known_types(&shown, types).await?;
     let asked = input
         .issue_type
         .map(|wanted| {
@@ -392,18 +398,28 @@ pub async fn check_access<S: AuthStore>(
                 .ok_or(AppError::Refused(ErrorCode::NotFound))
         })
         .transpose()?;
+    let offers = ctx
+        .store()
+        .offers()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let chain = shown.chain(place);
+    let choices: Vec<&IssueType> = types
+        .iter()
+        .filter(|found| type_takes_issues(found, &offers, &chain).is_ok())
+        .collect();
+    // One report for all types; the report for one type is built only when one is asked.
+    let all = theirs.report();
     let by_type = (
         asked.map(IssueTypeRef::from),
-        Ctx::<S>::levels_differ_by_type(&theirs, &types, &own_names),
+        Ctx::<S>::levels_differ_by_type(&theirs, &all, &choices, &own_names),
     );
+    let report = match asked {
+        Some(found) => theirs.report_for(Some(found.id)),
+        None => all,
+    };
     let answer = ctx
-        .access_answer(
-            &actor,
-            &theirs.report_for(asked.map(|found| found.id)),
-            person,
-            &own_names,
-            by_type,
-        )
+        .access_answer(&actor, &report, person, &own_names, by_type)
         .await?;
     Ok(checker.authorize(answer))
 }

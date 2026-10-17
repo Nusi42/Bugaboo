@@ -7627,6 +7627,7 @@ export interface components {
       | "not-allowed"
       | "nothing-to-change"
       | "changed-since"
+      | "type-missing"
       | "field-missing"
       | "tag-not-here"
       | "label-not-here"

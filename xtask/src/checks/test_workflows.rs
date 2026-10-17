@@ -14,7 +14,7 @@ use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
 
 /// The tests of the rules of a status change (docs/milestones/M4/WP-04-workflows-on-the-server.md).
-const REQUIRED: [Required; 23] = [
+const REQUIRED: [Required; 37] = [
     Required {
         name: "wf_01_an_m3_database_keeps_every_status_after_the_upgrade",
         both_databases: true,
@@ -108,6 +108,63 @@ const REQUIRED: [Required; 23] = [
     Required {
         name: "iss_02_a_sub_project_follows_its_parent_until_it_has_its_own_row",
         both_databases: false,
+    },
+    // Who may know a subject, the names, the limits and the upgrade (review of WP-11).
+    Required {
+        name: "sec_03_a_subject_created_in_a_project_is_unknown_outside_it",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_check_access_does_not_name_a_type_the_checker_may_not_know",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_subject_in_use_on_an_issue_the_reader_reads_is_known",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_name_is_unique_among_the_subjects_that_can_meet_in_a_project",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_the_rows_of_a_subject_leave_out_a_place_the_reader_may_not_know",
+        both_databases: false,
+    },
+    Required {
+        name: "iss_02_each_place_has_its_own_limit_of_issue_types",
+        both_databases: false,
+    },
+    Required {
+        name: "tag_02_each_place_has_its_own_limit_of_groups_and_of_labels",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_label_of_a_project_is_not_rewritten_in_projects_its_lead_does_not_manage",
+        both_databases: false,
+    },
+    Required {
+        name: "tag_02_a_list_about_a_project_holds_only_the_subjects_that_can_reach_it",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_subject_created_in_a_project_is_not_there_for_a_guest_a_sibling_lead_or_a_key",
+        both_databases: true,
+    },
+    Required {
+        name: "perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_forty_as_for_five",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_09_a_stored_run_that_skipped_for_a_missing_type_is_still_read",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_a_subject_refers_to_its_project_and_a_group_name_may_repeat",
+        both_databases: true,
+    },
+    Required {
+        name: "sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offers",
+        both_databases: true,
     },
 ];
 

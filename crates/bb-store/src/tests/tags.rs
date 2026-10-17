@@ -336,3 +336,135 @@ async fn adr_0017_more_issues_than_a_statement_can_bind_are_read_in_chunks() -> 
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offers() -> TestResult {
+    use bb_app::offers::OfferStore as _;
+    use bb_core::offer::{Offer, OfferSubject};
+
+    each_database("sec_06_used_subjects", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 2).await;
+        let (area, kind) = (group(&mut source, "Area"), group(&mut source, "Kind"));
+        let (login, ops) = (
+            label(&mut source, Some(area.id), "login"),
+            label(&mut source, Some(kind.id), "ops"),
+        );
+        let on = |at_issue: usize, label: LabelId| IssueLabel {
+            issue: world.issues[at_issue].id,
+            label,
+            added_by: world.person,
+            added_at: at(2),
+        };
+        let (groups, labels, links) = (
+            [area.clone(), kind.clone()],
+            [login.clone(), ops.clone()],
+            [on(0, login.id), on(1, ops.id)],
+        );
+        let trashed = world.issues[1].id;
+        let bug = OfferSubject::IssueType(world.issues[0].issue_type);
+        let rows = [
+            Offer {
+                subject: bug,
+                project: None,
+                offered: false,
+            },
+            Offer {
+                subject: bug,
+                project: Some(world.project),
+                offered: true,
+            },
+            Offer {
+                subject: OfferSubject::LabelGroup(area.id),
+                project: None,
+                offered: false,
+            },
+        ];
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move {
+                for row in &groups {
+                    AuthStorage::insert_label_group(tx, row).await?;
+                }
+                for row in &labels {
+                    AuthStorage::insert_label(tx, row).await?;
+                }
+                for link in &links {
+                    AuthStorage::insert_issue_label(tx, link).await?;
+                }
+                AuthStorage::set_issue_deleted(tx, trashed, Some(at(3)), at(3)).await?;
+                for row in &rows {
+                    AuthStorage::put_offer(tx, row).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
+        let sight = |with_trashed: bool, projects: Vec<ProjectId>| IssueSight {
+            all: projects,
+            own: Vec::new(),
+            person: world.person,
+            with_trashed,
+            hidden: Vec::new(),
+        };
+        // An issue in the trash is not read: its group is not found, until the trash is asked for.
+        let read = sight(false, vec![world.project]);
+        assert_eq!(storage.used_label_groups(&read).await?, vec![area.id]);
+        let mut both = storage
+            .used_label_groups(&sight(true, vec![world.project]))
+            .await?;
+        both.sort_by_key(|id| id.to_bytes());
+        let mut expected = vec![area.id, kind.id];
+        expected.sort_by_key(|id| id.to_bytes());
+        assert_eq!(both, expected);
+        assert_eq!(
+            storage.used_issue_types(&read).await?,
+            vec![world.issues[0].issue_type]
+        );
+        // A project the person does not read adds nothing.
+        let nowhere = ProjectId::generate(&mut source).unwrap();
+        let elsewhere = sight(false, vec![nowhere]);
+        assert!(storage.used_label_groups(&elsewhere).await?.is_empty());
+        assert!(storage.used_issue_types(&elsewhere).await?.is_empty());
+        assert!(
+            storage
+                .used_issue_types(&sight(false, Vec::new()))
+                .await?
+                .is_empty()
+        );
+        // The projects with a label count the trash as well.
+        assert_eq!(
+            storage.projects_with_label(ops.id).await?,
+            vec![world.project]
+        );
+        assert!(
+            storage
+                .projects_with_label(a_label_nobody_made(&mut source))
+                .await?
+                .is_empty()
+        );
+        // The rows are found by their subject.
+        assert_eq!(storage.subject_offers(bug).await?.len(), 2);
+        assert_eq!(
+            storage
+                .subject_offers(OfferSubject::LabelGroup(area.id))
+                .await?
+                .len(),
+            1
+        );
+        assert!(
+            storage
+                .subject_offers(OfferSubject::LabelGroup(kind.id))
+                .await?
+                .is_empty()
+        );
+        Ok(())
+    })
+    .await
+}
+
+/// The ID of a label nobody made.
+fn a_label_nobody_made(source: &mut impl IdSource) -> LabelId {
+    LabelId::generate(source).unwrap()
+}

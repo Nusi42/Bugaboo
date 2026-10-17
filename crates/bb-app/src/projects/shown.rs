@@ -17,7 +17,7 @@ use bb_core::tags::IssueSight;
 use bb_policy::{LevelRules, Narrowing, Permission, Place, Policy, Tree};
 
 use super::types::{ProjectItem, ProjectRef, TRAIL_MAX};
-use crate::access::Actor;
+use crate::access::{Actor, ProjectLabel};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// The projects, and which of them one person sees.
@@ -147,17 +147,44 @@ impl Shown {
     /// Whether the person holds the permission in the project, from the same rows and the same
     /// engine as every other decision.
     pub(crate) fn allows(&self, project: ProjectId, permission: Permission) -> bool {
-        self.held_in(project)
+        self.holds(Place::Project(project), permission)
+    }
+
+    /// Whether the person holds the permission at the place, the whole organization included.
+    pub(crate) fn holds(&self, place: Place, permission: Permission) -> bool {
+        self.held_at(place)
             .is_some_and(|held| held.allows(permission))
     }
 
     fn held_in(&self, project: ProjectId) -> Option<std::sync::Arc<bb_policy::Evaluation>> {
-        self.policy.evaluate_as(
-            self.person,
-            self.key.as_ref(),
-            &self.tree,
-            Place::Project(project),
-        )
+        self.held_at(Place::Project(project))
+    }
+
+    fn held_at(&self, place: Place) -> Option<std::sync::Arc<bb_policy::Evaluation>> {
+        self.policy
+            .evaluate_as(self.person, self.key.as_ref(), &self.tree, place)
+    }
+
+    /// The projects from the top down to the place, the stored ones (empty for the whole
+    /// organization): only for comparing places, never to be named.
+    pub(crate) fn chain(&self, place: Place) -> Vec<ProjectId> {
+        place
+            .project()
+            .and_then(|project| self.tree.chain(project))
+            .unwrap_or_default()
+    }
+
+    /// The place as a name the person may use: the project if they see it, else *a project you
+    /// can't see*; none for the whole organization.
+    pub(crate) fn label(&self, place: Place) -> Option<ProjectLabel> {
+        place.project().map(|project| {
+            self.get(project)
+                .map_or(ProjectLabel::Hidden, |found| ProjectLabel::Visible {
+                    id: found.id,
+                    short_name: found.short_name.to_string(),
+                    name: found.name.clone(),
+                })
+        })
     }
 
     /// The parent a stored project has, whether the person sees it or not: only for comparing

@@ -566,6 +566,7 @@ export const messages = {
   "many-changes-skip.not-allowed": "You may not change it this way",
   "many-changes-skip.nothing-to-change": "It is like that already",
   "many-changes-skip.changed-since": "It changed after the preview",
+  "many-changes-skip.type-missing": "The other project did not offer its issue type",
   "many-changes-skip.label-not-here":
     "The project of the issue does not use the group that label is in",
   "many-changes-skip.field-missing": "It has a value in a field the other project does not use",

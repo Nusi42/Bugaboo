@@ -619,11 +619,11 @@ Whether a subject is offered at a place: the row of one place.
 
 Defined in `crates/bb-core/src/offer.rs`.
 
-| Field     | Personal data | Category | Legal basis | What it holds                                                        |
-| --------- | ------------- | -------- | ----------- | -------------------------------------------------------------------- |
-| `subject` | No            | –        | –           | The issue type or the group of labels.                               |
-| `project` | No            | –        | –           | The project, with its sub-projects; none for the whole organization. |
-| `offered` | No            | –        | –           | Whether the subject is offered there.                                |
+| Field     | Personal data | Category | Legal basis | What it holds                                                                                                                                                                                                                                               |
+| --------- | ------------- | -------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `subject` | No            | –        | –           | The issue type or the group of labels, as its kind and its ID. No foreign key holds it (one column cannot refer to two tables), and nothing deletes types or groups yet: they are retired. Whoever adds deleting must delete their rows in the same change. |
+| `project` | No            | –        | –           | The project, with its sub-projects; none for the whole organization.                                                                                                                                                                                        |
+| `offered` | No            | –        | –           | Whether the subject is offered there.                                                                                                                                                                                                                       |
 
 ### OutboxEntry
 

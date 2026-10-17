@@ -105,6 +105,16 @@ impl<'a> Site<'a> {
         role: StartingRole,
         name: &str,
     ) -> Result<(Browser, UserId), Failure> {
+        self.person_in(role, name, &self.acme).await
+    }
+
+    /// A person with the starting role in one project (by its ID) only, signed in.
+    pub(super) async fn person_in(
+        &self,
+        role: StartingRole,
+        name: &str,
+        project: &str,
+    ) -> Result<(Browser, UserId), Failure> {
         let email = format!("{name}@example.test");
         let started = self
             .org
@@ -115,9 +125,9 @@ impl<'a> Site<'a> {
             id: started.person.id,
             session: started.session_token,
         };
-        let acme = self.acme.parse().map_err(|_| "no project ID")?;
+        let project = project.parse().map_err(|_| "no project ID")?;
         self.org
-            .give(&member, self.roles[role.code()], acme)
+            .give(&member, self.roles[role.code()], project)
             .await?;
         Ok((Browser::signed_in_as(self.app, &email).await?, member.id))
     }

@@ -291,7 +291,8 @@ async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below() -> TestR
         let in_acme = ada.send("GET", "/api/v1/labels?project=ACME", None).await?;
         assert_eq!(says(ok(&in_acme)?), true);
         let in_web = ada.send("GET", "/api/v1/labels?project=WEB", None).await?;
-        assert_eq!(says(ok(&in_web)?), false);
+        // A project the group cannot reach does not list it at all.
+        assert_eq!(says(ok(&in_web)?), Value::Null);
         let in_sub = ada.send("GET", "/api/v1/labels?project=SUB", None).await?;
         assert_eq!(says(ok(&in_sub)?), true, "and in the sub-projects of ACME");
         let without = ada.send("GET", "/api/v1/labels", None).await?;
@@ -324,6 +325,88 @@ async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below() -> TestR
             .send("POST", &put(web_issue), Some(json!({"label": label_id})))
             .await?;
         assert_eq!(code(&refused), (StatusCode::CONFLICT, "label.not_offered"));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_03_a_subject_created_in_a_project_is_not_there_for_a_guest_a_sibling_lead_or_a_key()
+-> TestResult {
+    each_database("sec_03_subject_of_a_project", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let web = ok(&ada
+            .send(
+                "POST",
+                PROJECTS,
+                Some(json!({"short_name": "WEB", "name": "Website"})),
+            )
+            .await?)?["id"]
+            .as_str()
+            .ok_or("no project ID")?
+            .to_owned();
+        let question = id_in(ok(&ada
+            .send(
+                "POST",
+                TYPES,
+                Some(json!({"name": "Question", "icon": "circle-help", "project": "ACME"})),
+            )
+            .await?)?)?;
+        let area = id_in(ok(&ada
+            .send(
+                "POST",
+                GROUPS,
+                Some(json!({"name": "Area", "pick_one": false, "project": "ACME"})),
+            )
+            .await?)?)?;
+        let (mut gus, _) = site.person_in(StartingRole::Guest, "gus", &web).await?;
+        let (mut sam, _) = site
+            .person_in(StartingRole::ProjectLead, "sam", &web)
+            .await?;
+        let web_id = web.parse().map_err(|_| "no project ID")?;
+        let key = super::access_keys::create(
+            &rig,
+            &site.org.admin,
+            bb_core::access_key::KeyChoice::Everything,
+            &[],
+            &[web_id],
+        )
+        .await?
+        .secret;
+        let mut keyed = Browser::signed_in_as(&app, super::http::ADA_EMAIL).await?;
+        let routes = [
+            ("GET", TYPES.to_owned(), None),
+            ("GET", "/api/v1/labels".to_owned(), None),
+            ("GET", format!("{TYPES}/{question}/offers"), None),
+            ("GET", format!("{GROUPS}/{area}/offers"), None),
+            (
+                "PUT",
+                format!("{TYPES}/{question}/offers"),
+                Some(json!({"version": 1, "changes": [{"project": "WEB", "offered": false}]})),
+            ),
+        ];
+        for (who, label) in [
+            (0, "a guest"),
+            (1, "a lead of a sibling project"),
+            (2, "a key"),
+        ] {
+            for (method, path, body) in &routes {
+                let reply = match who {
+                    0 => gus.send(method, path, body.clone()).await?,
+                    1 => sam.send(method, path, body.clone()).await?,
+                    _ => keyed.script(method, path, body.clone(), &key).await?,
+                };
+                let listed = reply.body.to_string();
+                assert!(
+                    !listed.contains("Question") && !listed.contains("Area"),
+                    "{label}: {method} {path}: {listed}"
+                );
+                if path.contains("/offers") {
+                    assert_eq!(code(&reply), (StatusCode::NOT_FOUND, "resource.not_found"));
+                }
+            }
+        }
         Ok(())
     })
     .await
