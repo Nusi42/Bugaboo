@@ -33,6 +33,7 @@
   --size-form: var(--size-dialog);
   --size-qr: 200px;
   --size-code: 220px;
+  --size-file-tile: 64px;
   --size-target-least: 24px;
   --size-control: 36px;
   --size-control-small: 28px;
@@ -580,6 +581,7 @@
 @media (width < 768px) {
   :root {
     --fs-ui: calc(16px * var(--text-scale));
+    --size-file-tile: 56px;
     --size-name: 120px;
   }
 }

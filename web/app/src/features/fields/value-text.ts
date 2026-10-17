@@ -91,3 +91,25 @@ export function textOf(field: OwnField, value: unknown): string {
   }
   return typeof value === "string" || typeof value === "number" ? String(value) : "";
 }
+
+/**
+ * What a box in a row of the Details last sent, and the value it was sent against. The value the
+ * page shows is read again after a save, and until that read comes back it is still the old one: a
+ * box that is left in between must not send what it has sent already.
+ */
+export interface Kept {
+  /** The value the page showed when the text was sent. */
+  readonly from: string;
+  /** The text that was sent. */
+  readonly text: string;
+}
+
+/** The text the box counts as saved: the last text sent while the value is still the one it was sent against. */
+export function savedText(shown: string, kept?: Kept): string {
+  return kept !== undefined && kept.from === shown ? kept.text : shown;
+}
+
+/** Whether leaving the box sends nothing: it has what is saved already. */
+export function isUnchanged(typed: string, shown: string, kept?: Kept): boolean {
+  return typed === savedText(shown, kept);
+}

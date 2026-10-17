@@ -69,3 +69,7 @@ reason = "The exact HTML the renderer must write for the corpus case of the same
 [[exempt]]
 path = "crates/bb-markdown/tests/corpus/*.hosts"
 reason = "The allowed image hosts of the corpus case of the same name, one per line; read by the corpus test."
+
+[[exempt]]
+path = "docs/third-party/notices/*.txt"
+reason = "The license texts that the licenses of third-party code ask to ship with the binary, copied word for word from the crate; no formatter may change a license text. The notices of a release include this folder (COMP-02)."

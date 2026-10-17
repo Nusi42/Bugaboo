@@ -3,7 +3,6 @@
 //! Line endings are judged as Git stores them (the index), so `.gitattributes` decides: a file
 //! that is stored with LF and checked out with CRLF (for example `*.ps1`) is fine.
 
-use globset::{Glob, GlobSet, GlobSetBuilder};
 use std::fs;
 
 use super::{Check, Context, Finding};
@@ -12,9 +11,18 @@ use crate::repo::Repo;
 /// The largest file that may be committed, in bytes.
 const MAX_BYTES: u64 = 1024 * 1024;
 
-/// Files that may be larger than [`MAX_BYTES`]. Add a glob with a reason in the comment, and
-/// only for files that cannot be generated or split.
-const LARGE_ALLOWED: &[&str] = &[];
+/// The ceiling of the description of the API, in bytes (2 MiB).
+const OPENAPI_MAX_BYTES: u64 = 2 * 1024 * 1024;
+
+/// Files that may be larger than [`MAX_BYTES`], each with a ceiling of its own, so that growth is
+/// still noticed. Add a file with a reason in the comment, and only for files that cannot be split.
+///
+/// - `web/packages/api-client/openapi.json`: the description of the API, written by `cargo xtask
+///   gen api`. It is read for its diffs and it is the base of the API freeze (ARCH-API-FREEZE), so
+///   it stays in Git, and with the routes of M4 it passed 1 MiB. The follow-up M4-F53 looks at why
+///   it is this large (repeated schemas, long texts).
+const LARGE_ALLOWED: &[(&str, u64)] =
+    &[("web/packages/api-client/openapi.json", OPENAPI_MAX_BYTES)];
 
 pub(crate) struct GitFiles;
 
@@ -30,7 +38,6 @@ impl Check for GitFiles {
 }
 
 fn check_root(repo: &Repo, only: Option<&[String]>) -> anyhow::Result<Vec<Finding>> {
-    let allowed = allow_list()?;
     let mut findings = Vec::new();
     let root = repo.real_root();
     for entry in index_entries(repo)? {
@@ -40,13 +47,17 @@ fn check_root(repo: &Repo, only: Option<&[String]>) -> anyhow::Result<Vec<Findin
         let Ok(metadata) = fs::metadata(root.join(&entry.path)) else {
             continue;
         };
-        if metadata.len() > MAX_BYTES && !allowed.is_match(&entry.path) {
+        let ceiling = LARGE_ALLOWED
+            .iter()
+            .find(|(path, _)| *path == entry.path)
+            .map_or(MAX_BYTES, |(_, ceiling)| *ceiling);
+        if metadata.len() > ceiling {
             findings.push(Finding::at(
                 &entry.path,
                 format!(
                     "is {} KB; files over {} KB are not allowed. Keep big files out of Git (generate or download them).",
                     metadata.len() / 1024,
-                    MAX_BYTES / 1024
+                    ceiling / 1024
                 ),
             ));
         }
@@ -59,14 +70,6 @@ fn check_root(repo: &Repo, only: Option<&[String]>) -> anyhow::Result<Vec<Findin
         }
     }
     Ok(findings)
-}
-
-fn allow_list() -> anyhow::Result<GlobSet> {
-    let mut builder = GlobSetBuilder::new();
-    for pattern in LARGE_ALLOWED {
-        builder.add(Glob::new(pattern)?);
-    }
-    Ok(builder.build()?)
 }
 
 struct IndexEntry {
@@ -118,6 +121,43 @@ mod tests {
         commit_all(&temp);
         let findings = check_root(&Repo::at(temp.path().to_path_buf()), None).unwrap();
         assert!(findings.iter().any(|f| f.message.contains("KB")));
+    }
+
+    #[test]
+    fn good_example_the_api_description_may_be_bigger_but_has_a_ceiling() {
+        let temp = TempDir::new("files-openapi");
+        temp.write(
+            "web/packages/api-client/openapi.json",
+            vec![b' '; 1_500_000],
+        );
+        commit_all(&temp);
+        assert!(
+            check_root(&Repo::at(temp.path().to_path_buf()), None)
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn bad_example_the_api_description_over_its_ceiling() {
+        let temp = TempDir::new("files-openapi-big");
+        temp.write(
+            "web/packages/api-client/openapi.json",
+            vec![b' '; 2_100_000],
+        );
+        // Another file of that size has no ceiling of its own.
+        temp.write("other.json", vec![b' '; 1_500_000]);
+        commit_all(&temp);
+        let findings = check_root(&Repo::at(temp.path().to_path_buf()), None).unwrap();
+        let named: Vec<_> = findings
+            .iter()
+            .filter_map(|finding| finding.location.as_deref())
+            .collect();
+        assert!(
+            named.contains(&"web/packages/api-client/openapi.json"),
+            "{named:?}"
+        );
+        assert!(named.contains(&"other.json"), "{named:?}");
     }
 
     #[test]

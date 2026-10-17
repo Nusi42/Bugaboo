@@ -10,11 +10,11 @@ error[E0277]: `String` may hold personal data, so a field of this type cannot be
             AccessKeyId
             AppliesTo
             AssignmentId
+            AttachmentId
             Basis
             Box<T>
             Category
             Channel
-            ChoiceColor
           and $N others
 note: required by a bound in `not_personal`
  --> tests/ui/not_personal_text.rs:3:10

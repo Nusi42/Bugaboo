@@ -45,7 +45,9 @@ Latest stable versions, checked against crates.io and npm on **2026-10-04**. Loc
 | Embedded web app | rust-embed | 8.12.0 | MIT |
 | File type detection | infer | 0.22.0 | MIT |
 | Image previews | image | 0.25.10 | MIT/Apache-2.0 |
-| PDF previews | hayro | 0.7.1 | to check in the register |
+| PDF previews | hayro | 0.8.0 | MIT/Apache-2.0 (the fonts it embeds: BSD-3-Clause, notice in the register) |
+| Free room on the disk | fs4 | 1.1.0 | MIT/Apache-2.0 |
+| Memory limit of the preview child | cap (every system), rlimit (Linux) | 0.1.2 / 0.11.0 | MIT/Apache-2.0 |
 | File storage (S3) | object_store | 0.14.2 | MIT/Apache-2.0 |
 | E-mail | lettre | 0.11.23 | MIT |
 | MCP | rmcp | 3.5.0 | MIT/Apache-2.0 |

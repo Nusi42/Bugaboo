@@ -56,9 +56,12 @@ function Lost({
 export function CommentBox({
   long,
   onClose,
+  onFiles,
 }: {
   readonly long: LongText;
   readonly onClose: () => void;
+  /** Gets the files pasted into the box. */
+  readonly onFiles: (files: readonly File[]) => void;
 }) {
   const { phase } = long;
   const saving = phase.kind === "saving";
@@ -70,6 +73,7 @@ export function CommentBox({
         value={long.text}
         onChange={long.type}
         imageHosts={noImageHosts}
+        onFiles={onFiles}
       />
       {long.problem === null || long.problem === undefined ? null : (
         <Alert tone={alertTone.danger}>{messageOf(long.problem)}</Alert>

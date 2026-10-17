@@ -14,9 +14,11 @@ mod wiring;
 
 use std::process::ExitCode;
 
-#[tokio::main]
-async fn main() -> ExitCode {
-    cli::run().await
+/// Not async: the child process of a preview runs with no runtime at all (its memory limit would
+/// count the stacks of every worker), so the command line is read first and the runtime is built
+/// only for the commands that need one.
+fn main() -> ExitCode {
+    cli::start()
 }
 
 #[cfg(test)]

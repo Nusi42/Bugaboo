@@ -49,9 +49,16 @@ pub mod kind {
     /// Starting a new file of the log of a server that has no console (M1-F61). It comes back
     /// every day.
     pub const ROTATE_SERVER_LOG: &str = "server-log.rotate";
+    /// The preview of an attachment, made in a process of its own (`files::jobs`, ADR-0032); the
+    /// payload names the attachment.
+    pub const PREVIEW_FILE: &str = "files.preview";
+    /// Clearing old uploads, attachments that stayed in the trash and files nothing points to
+    /// (`files::jobs`). It comes back every day.
+    pub const CLEAN_UP_FILES: &str = "files.clean-up";
     /// The kinds that come back every day, see [`super::DAILY`].
-    pub const DAILY_JOBS: [&str; 6] = [
+    pub const DAILY_JOBS: [&str; 7] = [
         CATCH_UP_HISTORY,
+        CLEAN_UP_FILES,
         PURGE_DRAFTS,
         PURGE_NOTIFICATIONS,
         PRUNE_SECURITY_LOG,
@@ -217,6 +224,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "the history could not catch up");
                 JobFailure::of(&error, FAILED, job)
             }),
+            kind::PREVIEW_FILE | kind::CLEAN_UP_FILES => self.do_files_job(job).await,
             kind::MAIL_SEND => Box::pin(self.run_mail_job(&job.payload))
                 .await
                 .map_err(|error| {
@@ -280,6 +288,35 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
+    /// The jobs of files (`files::jobs`, ADR-0032): the preview of an attachment, and the daily
+    /// clean-up of what nothing needs any more.
+    async fn do_files_job(&self, job: &Job) -> Result<(), JobFailure> {
+        match job.kind.as_str() {
+            kind::PREVIEW_FILE => Box::pin(self.run_preview_step(&job.payload)).await.map_err(
+                |error| {
+                    tracing::warn!(cause = %error, "the preview of a file could not be created");
+                    JobFailure::of(&error, FAILED, job)
+                },
+            ),
+            kind::CLEAN_UP_FILES => Box::pin(self.run_daily(kind::CLEAN_UP_FILES, async {
+                self.clean_up_files().await.map(|cleaned| {
+                    tracing::info!(
+                        uploads = cleaned.uploads,
+                        attachments = cleaned.attachments,
+                        files = cleaned.files,
+                        "old files were cleared"
+                    );
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "old files could not be cleared");
+                JobFailure::of(&error, FAILED, job)
+            }),
+            _ => Err(JobFailure::unknown_kind(job)),
+        }
+    }
+
     /// What happens when a job is on the dead-letter list: the work that people can see ends in
     /// a state they can see. A change to many issues ends as failed with what it did so far; the
     /// renewal of issue IDs has no record of its own, so its death is an event of the project that
@@ -292,6 +329,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 self.renewal_gave_up(&job.payload).await
             }
             kind::MAIL_SEND => self.mail_job_gave_up(&job.payload).await,
+            kind::PREVIEW_FILE => self.preview_gave_up(&job.payload).await,
             _ => Ok(()),
         };
         if let Err(error) = ended {

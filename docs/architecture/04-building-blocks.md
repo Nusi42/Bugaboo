@@ -82,6 +82,7 @@ flowchart TB
   ai -. implements ports .-> app
   notify -. implements ports .-> app
   store --> search & policy & core
+  files --> core
   notify --> core
   wasm --> search & md
   store -. tests only .-> testing

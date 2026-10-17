@@ -310,6 +310,16 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a file added to an issue or a comment (ATT-01).
+    AttachmentId
+}
+
+define_ordered_id! {
+    /// The ID of an upload, a file on its way (ATT-01).
+    UploadId
+}
+
+define_ordered_id! {
     /// The ID of a tag (TAG-01).
     TagId
 }
@@ -426,6 +436,8 @@ into_entity_id!(
     LayoutId,
     WorkflowId,
     CommentId,
+    AttachmentId,
+    UploadId,
     TagId,
     LabelId,
     LabelGroupId,

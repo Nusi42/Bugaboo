@@ -26,6 +26,8 @@ export const issueSlots = {
   subIssues: "sub-issues",
   /** The related issues, below the sub-issues (WP-07). */
   relatedIssues: "related-issues",
+  /** *Files*, below the related issues (M4 WP-05). */
+  files: "files",
   /** *History*: comments and changes, at the end of the main column (WP-07). */
   history: "history",
   /** Sections of own fields that the layout puts into the main column (WP-05). */

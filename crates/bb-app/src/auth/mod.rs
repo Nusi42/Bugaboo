@@ -48,6 +48,13 @@ use crate::fields::{
     SaveFieldText, add_choice, change_choice, change_field, combine_choices, create_field, field,
     field_types, field_usage, fields, reorder_choices, save_field_text,
 };
+use crate::files::{
+    AttachmentView, CancelUploadQuery, DeleteAttachment, DownloadQuery, FileDownload, FileRules,
+    FileRulesQuery, FinishUpload, IssueFiles, IssueFilesQuery, RestoreAttachment, SendPartQuery,
+    StartUploadQuery, UploadStateQuery, UploadView, cancel_upload, delete_attachment, download,
+    file_rules, finish_upload, issue_files, restore_attachment, send_part, start_upload,
+    upload_state,
+};
 use crate::follow::{
     FollowIssue, Followers, FollowersQuery, FollowingQuery, FollowingState, UnfollowIssue,
     follow_issue, followers, following, unfollow_issue,
@@ -480,6 +487,26 @@ use_cases! {
     read_notifications(ReadNotifications) -> Done;
     /// Marks the mentions of the person as read.
     read_mentions(ReadMentions) -> Done;
+    /// Starts an upload of a file to an issue or a comment.
+    start_upload(StartUploadQuery) -> Authorized<UploadView>;
+    /// Shows how far an upload is, so an interrupted one goes on.
+    upload_state(UploadStateQuery) -> Authorized<UploadView>;
+    /// Sends the next part of an upload.
+    send_part(SendPartQuery) -> Authorized<UploadView>;
+    /// Throws an unfinished upload away.
+    cancel_upload(CancelUploadQuery) -> Done;
+    /// Finishes an upload: the file becomes an attachment.
+    finish_upload(FinishUpload) -> Authorized<AttachmentView>;
+    /// Lists the files of an issue.
+    issue_files(IssueFilesQuery) -> Authorized<IssueFiles>;
+    /// Says what the person may add to an issue and the limits of its project.
+    file_rules(FileRulesQuery) -> Authorized<FileRules>;
+    /// Puts an attachment into the trash.
+    delete_attachment(DeleteAttachment) -> Done;
+    /// Takes an attachment out of the trash.
+    restore_attachment(RestoreAttachment) -> Authorized<AttachmentView>;
+    /// Opens a file or its preview through a signed link.
+    download(DownloadQuery) -> FileDownload;
     /// Shows the history of an issue.
     history(HistoryQuery) -> Authorized<HistoryPage>;
     /// Follows an issue.

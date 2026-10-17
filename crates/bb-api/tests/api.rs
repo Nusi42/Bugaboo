@@ -10,6 +10,7 @@ use bb_core as _;
 use bb_dev_words as _;
 use bb_policy as _;
 use brotli as _;
+use futures_util as _;
 use getrandom as _;
 use h2 as _;
 use hmac as _;
