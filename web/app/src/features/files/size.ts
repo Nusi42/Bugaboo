@@ -14,7 +14,8 @@ export function formatSize(bytes: number): string {
   return new Intl.NumberFormat(locale, {
     style: "unit",
     unit: units[power] ?? units[0],
-    unitDisplay: "short",
+    // *1 byte* and *34 bytes* in words, the other units short (*1.5 kB*).
+    unitDisplay: power === 0 ? "long" : "short",
     maximumFractionDigits: decimals,
   }).format(bytes / step ** power);
 }

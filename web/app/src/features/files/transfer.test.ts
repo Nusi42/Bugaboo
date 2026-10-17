@@ -1,135 +1,109 @@
-import { ApiError, type ErrorCode, type Problem } from "@bugaboo/api-client";
+import { ApiError } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import {
-  sendFile,
-  waitsBetweenTries,
-  type Attachment,
-  type Course,
-  type Delivery,
-  type Transport,
-  type UploadState,
-} from "./transfer.ts";
+import { course, delivery, done, fakeUploads, lostConnection, problem } from "./fake-uploads.ts";
 import { extensionOf, formatSize } from "./size.ts";
+import { sendFile, waitsBetweenTries } from "./transfer.ts";
 
-const delivery: Delivery = { issue: "WEB-1", comment: null, name: "a.txt", size: 10 };
-const done: Attachment = {
-  added_at: "2026-01-01T00:00:00Z",
-  added_by: { shown: "someone" },
-  download_url: "/files/x",
-  id: "att",
-  issue: "WEB-1",
-  may_delete: true,
-  media_type: "text/plain",
-  name: "a.txt",
-  size: 10,
-  version: 1,
-};
-function problem(code: ErrorCode, status: number): Problem {
-  return {
-    type: code,
-    title: "x",
-    status,
-    code,
-    message_key: "error.server.unavailable",
-    params: {},
-  };
-}
-const lost = new ApiError(0, undefined);
-
-function course(): Course & { readonly waited: number[]; readonly seen: number[] } {
-  const waited: number[] = [];
-  const seen: number[] = [];
-  return {
-    waited,
-    seen,
-    wait: (ms) => {
-      waited.push(ms);
-      return Promise.resolve();
-    },
-    progress: (sent) => {
-      seen.push(sent);
-    },
-  };
-}
-
-/** A server that keeps `have` bytes and takes parts of four bytes; `failures` break sends. */
-function server(failures: readonly Readonly<ApiError>[]) {
-  const state = { have: 0 };
-  const sent: number[] = [];
-  let tries = 0;
-  const upload = (): UploadState => ({ id: "u1", offset: state.have, part_bytes: 4, size: 10 });
-  const transport: Transport = {
-    start: () => Promise.resolve(upload()),
-    state: () => Promise.resolve(upload()),
-    send: (_id, offset, bytes) => {
-      const failure = failures[tries];
-      tries += 1;
-      if (failure !== undefined) {
-        return Promise.reject(failure);
-      }
-      sent.push(offset);
-      state.have = offset + bytes.size;
-      return Promise.resolve(upload());
-    },
-    finish: () => Promise.resolve(done),
-  };
-  return { transport, sent };
-}
+const content = (): Blob => new Blob(["0123456789"]);
 
 describe("att_01 an upload that resumes", () => {
   it("sends the file in parts that each say where they start", async () => {
-    const { transport, sent } = server([]);
+    const { transport, sent } = fakeUploads();
     const c = course();
-    await expect(sendFile(transport, delivery, new Blob(["0123456789"]), c)).resolves.toBe(done);
+    await expect(sendFile(transport, delivery, content(), c)).resolves.toBe(done);
     expect(sent).toEqual([0, 4, 8]);
     expect(c.seen).toEqual([0, 4, 8, 10]);
+    expect(c.opened).toEqual(["u1"]);
   });
 
   it("goes on from where the server stands after a lost connection", async () => {
-    const { transport, sent } = server([lost]);
+    const { transport, sent } = fakeUploads([undefined, lostConnection()]);
     const c = course();
-    await sendFile(transport, delivery, new Blob(["0123456789"]), c);
+    await sendFile(transport, delivery, content(), c);
     expect(sent).toEqual([0, 4, 8]);
     expect(c.waited).toEqual([waitsBetweenTries[0]]);
   });
 
   it("asks where the server stands after a part out of order, without waiting", async () => {
     const wrong = new ApiError(409, problem("file.wrong_part", 409));
-    const { transport, sent } = server([wrong]);
+    const { transport, sent } = fakeUploads([wrong]);
     const c = course();
-    await sendFile(transport, delivery, new Blob(["0123456789"]), c);
+    await sendFile(transport, delivery, content(), c);
     expect(sent).toEqual([0, 4, 8]);
     expect(c.waited).toEqual([]);
   });
+});
 
+describe("att_01 an upload that gives up", () => {
   it("gives up after the last wait", async () => {
-    const { transport } = server(waitsBetweenTries.map(() => lost).concat(lost));
-    await expect(sendFile(transport, delivery, new Blob(["0123456789"]), course())).rejects.toBe(
+    const lost = lostConnection();
+    const { transport } = fakeUploads(waitsBetweenTries.map(() => lost).concat(lost));
+    await expect(sendFile(transport, delivery, content(), course())).rejects.toBe(lost);
+  });
+
+  it("gives up after the last wait also when parts went through before", async () => {
+    const lost = lostConnection();
+    const { transport, sent } = fakeUploads([
+      undefined,
+      ...waitsBetweenTries.map(() => lost),
       lost,
-    );
+    ]);
+    const c = course();
+    await expect(sendFile(transport, delivery, content(), c)).rejects.toBe(lost);
+    // The waits are those of one run of failures, not of one run for every part before it.
+    expect(c.waited).toEqual(waitsBetweenTries);
+    expect(sent).toEqual([0]);
   });
 
   it("tells the person at once when the disk of the server is full", async () => {
     const full = new ApiError(507, problem("file.no_room", 507));
-    const { transport } = server([full]);
+    const { transport } = fakeUploads([full]);
     const c = course();
-    await expect(sendFile(transport, delivery, new Blob(["0123456789"]), c)).rejects.toBe(full);
+    await expect(sendFile(transport, delivery, content(), c)).rejects.toBe(full);
     expect(c.waited).toEqual([]);
   });
 
   it("does not ask again after a refusal", async () => {
     const refusal = new ApiError(413, problem("file.too_big", 413));
-    const { transport } = server([refusal]);
+    const { transport } = fakeUploads([refusal]);
     const c = course();
-    await expect(sendFile(transport, delivery, new Blob(["0123456789"]), c)).rejects.toBe(refusal);
+    await expect(sendFile(transport, delivery, content(), c)).rejects.toBe(refusal);
     expect(c.waited).toEqual([]);
+  });
+});
+
+describe("att_01 an upload that is taken up again", () => {
+  it("goes on with an upload that was started before, from where the server has it", async () => {
+    const { transport, sent, started, held } = fakeUploads();
+    // A first try reached the server with its first two parts and was lost after that.
+    const first = await transport.start(delivery);
+    await transport.send(first.id, 0, content().slice(0, 4));
+    await transport.send(first.id, 4, content().slice(4, 8));
+    sent.length = 0;
+    const c = course();
+    await expect(sendFile(transport, delivery, content(), c, first.id)).resolves.toBe(done);
+    // Only what the server did not have is sent, in the upload it has, and no new one is started.
+    expect(sent).toEqual([8]);
+    expect(started()).toBe(1);
+    expect(c.opened).toEqual([first.id]);
+    expect(held.get(first.id)).toBe(10);
+  });
+
+  it("starts a new upload when the one to go on with is gone", async () => {
+    const { transport, sent, started } = fakeUploads();
+    const c = course();
+    await expect(sendFile(transport, delivery, content(), c, "u-that-is-gone")).resolves.toBe(done);
+    expect(started()).toBe(1);
+    expect(sent).toEqual([0, 4, 8]);
+    expect(c.opened).toEqual(["u1"]);
   });
 });
 
 describe("att_01 sizes and types in words", () => {
   it("writes sizes with a unit", () => {
-    expect(formatSize(312)).toBe("312 byte");
+    expect(formatSize(1)).toBe("1 byte");
+    expect(formatSize(34)).toBe("34 bytes");
     expect(formatSize(1536)).toBe("1.5 kB");
     expect(formatSize(25 * 1024 * 1024)).toBe("25 MB");
   });

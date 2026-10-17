@@ -37,4 +37,9 @@ export const connection: Transport = {
         params: { path: { upload } },
       }),
     ),
+  cancel: async (upload) => {
+    await api.client.DELETE("/api/v1/uploads/{upload}", {
+      params: { path: { upload } },
+    });
+  },
 };

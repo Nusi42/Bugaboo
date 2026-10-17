@@ -27,9 +27,9 @@ export interface Dependencies {
 export interface Transfers {
   /** Takes files to send to a target, one after the other. `limit` is the limit of the project in bytes. */
   readonly add: (target: TransferTarget, files: readonly File[], limit: number) => void;
-  /** Forgets a transfer that was refused or lost. */
+  /** Forgets a transfer that was refused or lost, and throws its upload away. */
   readonly dismiss: (id: number) => void;
-  /** Sends a transfer that was lost again. */
+  /** Sends a transfer that was lost again, from where its upload stands. */
   readonly retry: (id: number) => void;
   readonly subscribe: TransferStore["subscribe"];
   readonly snapshot: TransferStore["snapshot"];
@@ -59,7 +59,42 @@ function transferOf(id: number, target: TransferTarget, file: File, limit: numbe
     message: empty ? t("files.empty", { name: file.name }) : null,
     canRetry: false,
     limit,
+    upload: null,
   };
+}
+
+/** What a call that does not matter to anybody does when it fails: nothing. */
+function ignored(): void {
+  // The server does not mind an upload that is gone, and neither does the person.
+}
+
+/** Throws an upload away, if there is one. */
+function throwAway(deps: Dependencies, upload: string | null): void {
+  if (upload !== null) {
+    deps.transport.cancel(upload).catch(ignored);
+  }
+}
+
+/** Says in the record of a transfer why it ended, and keeps or throws away what the server has. */
+function refuse(
+  deps: Dependencies,
+  store: TransferStore,
+  transfer: Transfer,
+  error: unknown,
+): void {
+  const again = isTemporary(error);
+  // Where trying again can help, the upload stays for it to go on with. Any other refusal ends
+  // it: what the server has of the file is of no use to anybody.
+  const open = store.snapshot().find((each) => each.id === transfer.id)?.upload ?? null;
+  if (!again) {
+    throwAway(deps, open);
+  }
+  store.replace(transfer.id, {
+    status: "refused",
+    message: messageFor(error, transfer),
+    canRetry: again,
+    upload: again ? open : null,
+  });
 }
 
 /** Sends one transfer, and says in its record how it went. */
@@ -90,16 +125,16 @@ async function sendOne(
         progress: (sent) => {
           store.replace(transfer.id, { sent });
         },
+        started: (upload) => {
+          store.replace(transfer.id, { upload });
+        },
       },
+      transfer.upload ?? undefined,
     );
     store.remove(transfer.id);
     await deps.refresh();
   } catch (error) {
-    store.replace(transfer.id, {
-      status: "refused",
-      message: messageFor(error, transfer),
-      canRetry: isTemporary(error),
-    });
+    refuse(deps, store, transfer, error);
   }
 }
 
@@ -136,7 +171,10 @@ export function createTransfers(deps: Dependencies): Transfers {
       store.append(added, sendable);
       start();
     },
-    dismiss: store.remove,
+    dismiss: (id) => {
+      throwAway(deps, store.snapshot().find((each) => each.id === id)?.upload ?? null);
+      store.remove(id);
+    },
     retry: (id) => {
       store.replace(id, { status: "waiting", message: null, canRetry: false });
       start();

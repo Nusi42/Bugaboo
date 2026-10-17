@@ -22,6 +22,8 @@ export interface Transfer {
   readonly canRetry: boolean;
   /** The limit of the project, in bytes, for the sentence that refuses a file that is too big. */
   readonly limit: number;
+  /** The upload the server has for it, while there is one: what *Try again* goes on with. */
+  readonly upload: string | null;
 }
 
 /** The list of transfers and the files behind them, with the screens that watch the list. */

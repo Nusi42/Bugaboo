@@ -16,7 +16,7 @@ export interface Delivery {
 }
 
 /**
- * What the transfer asks of the server (the four calls of an upload, ADR-0032 §2). The app's one
+ * What the transfer asks of the server (the calls of an upload, ADR-0032 §2). The app's one
  * connection implements it (`connection.ts`), and the tests of this file play the server.
  */
 export interface Transport {
@@ -24,6 +24,8 @@ export interface Transport {
   readonly state: (upload: string) => Promise<UploadState>;
   readonly send: (upload: string, offset: number, bytes: Blob) => Promise<UploadState>;
   readonly finish: (upload: string) => Promise<Attachment>;
+  /** Throws an unfinished upload away; the server does not mind one that is gone. */
+  readonly cancel: (upload: string) => Promise<void>;
 }
 
 /**
@@ -34,6 +36,8 @@ export const waitsBetweenTries: readonly number[] = [1_000, 2_000, 4_000, 8_000,
 
 /** The HTTP status of an answer from a server that was too slow. */
 const TIMED_OUT = 408;
+/** The HTTP status of an answer that says the server does not know the thing asked for. */
+const NOT_FOUND = 404;
 /** The first status of the answers that say the server failed. */
 const SERVER_FAILED = 500;
 /** The answer that says the disk of the server is full: the person is told, it is not retried. */
@@ -62,6 +66,11 @@ export interface Course {
   readonly wait: (milliseconds: number) => Promise<void>;
   /** Called with the number of bytes the server has, after each part. */
   readonly progress: (sent: number) => void;
+  /**
+   * Called with the ID of the upload as soon as it is there, so a transfer that is lost can go on
+   * with it later instead of starting over, and a refusal can throw it away.
+   */
+  readonly started: (upload: string) => void;
 }
 
 /**
@@ -113,10 +122,9 @@ async function sendParts(
   }
   const from = state.offset;
   const to = Math.min(delivery.size, from + state.part_bytes);
+  let next: UploadState;
   try {
-    const next = await transport.send(state.id, from, file.slice(from, to));
-    course.progress(next.offset);
-    return await sendParts(transport, delivery, file, course, next, 0);
+    next = await transport.send(state.id, from, file.slice(from, to));
   } catch (error) {
     const wait = waitsBetweenTries[failures];
     if (!(isTemporary(error) || isOutOfOrder(error)) || wait === undefined) {
@@ -129,21 +137,52 @@ async function sendParts(
     course.progress(stands.offset);
     return sendParts(transport, delivery, file, course, stands, failures + 1);
   }
+  // The next part is sent outside the `try` above: a part that fails for good down the line must
+  // not be caught here and tried again by every part before it.
+  course.progress(next.offset);
+  return sendParts(transport, delivery, file, course, next, 0);
+}
+
+/** Whether the server says it does not know the upload (it is gone, or never was). */
+function isGone(error: unknown): boolean {
+  return error instanceof ApiError && error.status === NOT_FOUND;
+}
+
+/** The upload to send: the one to go on with if the server still has it, else a new one. */
+async function beginOrResume(
+  transport: Transport,
+  delivery: Delivery,
+  course: Course,
+  resume: string | undefined,
+): Promise<UploadState> {
+  if (resume !== undefined) {
+    try {
+      return await whereItStands(transport, course, resume);
+    } catch (error) {
+      if (!isGone(error)) {
+        throw error;
+      }
+    }
+  }
+  return withTries(course, () => transport.start(delivery));
 }
 
 /**
  * Sends one file: starts the upload, sends it in parts that each say where they start, and
  * finishes it. After a lost connection the transfer asks the server where it stands and goes on from
- * there, so a file that was half sent is never sent from the beginning (ATT-01). A refusal of the
- * server (too big, a type that is not accepted, no right) rejects at once.
+ * there, so a file that was half sent is never sent from the beginning (ATT-01). With the ID of an
+ * upload of an earlier try (`resume`) it goes on with that one, from where the server has it. A
+ * refusal of the server (too big, a type that is not accepted, no right) rejects at once.
  */
 export async function sendFile(
   transport: Transport,
   delivery: Delivery,
   file: Blob,
   course: Course,
+  resume?: string,
 ): Promise<Attachment> {
-  const started = await withTries(course, () => transport.start(delivery));
+  const started = await beginOrResume(transport, delivery, course, resume);
+  course.started(started.id);
   course.progress(started.offset);
   const sent = await sendParts(transport, delivery, file, course, started, 0);
   return withTries(course, () => transport.finish(sent.id));
