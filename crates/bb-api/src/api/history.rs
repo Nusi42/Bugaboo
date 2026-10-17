@@ -354,10 +354,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bb_core::issue::{IssueIcon, Status, StatusGroup};
+    use bb_core::issue::IssueIcon;
 
     use super::*;
     use crate::api::issues::IssueTypeRef;
+    use crate::api::workflows::StatusBody;
 
     #[test]
     fn perf_02_the_field_table_names_exactly_the_fields_of_an_item() {
@@ -377,8 +378,7 @@ mod tests {
                 retired: false,
             },
             title: None,
-            status: Some(Status::Open),
-            status_group: Some(StatusGroup::NotStarted),
+            status: Some(StatusBody::blank()),
         };
         let item = HistoryEntryItem {
             event: String::new(),

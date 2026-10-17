@@ -4,12 +4,16 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
+use std::collections::BTreeSet;
+
 use bb_core::event::{EntityKind, RecordKind};
-use bb_core::id::{IssueId, UserId};
-use bb_core::issue::{AssignedPerson, Issue, Priority, Status};
+use bb_core::fields::FieldKey;
+use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::issue::{AssignedPerson, Issue, Priority, StatusGroup};
 use bb_core::project::Project;
 use bb_core::readable_id::IssueCode;
 use bb_core::version::FIRST_VERSION;
+use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
@@ -22,6 +26,7 @@ use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
 use crate::projects::Why;
+use crate::workflows::StatusCheck;
 
 /// How often a change is tried again when two writers drew the same random code at the same
 /// moment (the second one hits the unique key of the project's codes and draws another).
@@ -51,7 +56,67 @@ impl NewIssue {
     }
 }
 
+/// The facts of a new issue that the first status is judged on.
+struct NewIssueFacts<'a> {
+    input: &'a CreateIssue,
+    chain: &'a [ProjectId],
+    issue_type: IssueTypeId,
+    assigned: &'a [UserId],
+    description_filled: bool,
+    own: &'a PlannedValues,
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The status a new issue starts in, with the status group it enters. A new issue starts in the
+    /// first status of its workflow; another status is a status change from there, judged like any
+    /// other with the issue as it will be.
+    async fn starting_status(
+        &self,
+        actor: &Actor,
+        access: &Evaluation,
+        facts: &NewIssueFacts<'_>,
+    ) -> Result<(StatusKey, Option<StatusGroup>), AppError> {
+        let workflow = self
+            .workflow_in_force(facts.chain, Some(facts.issue_type))
+            .await?;
+        let first = workflow
+            .initial()
+            .ok_or_else(|| AppError::Internal("a workflow has no status".into()))?
+            .clone();
+        let status = facts.input.status.clone().unwrap_or_else(|| first.clone());
+        if status == first {
+            let group = workflow.status(&first).map(|each| each.group);
+            return Ok((status, group));
+        }
+        let own_filled = facts.own.filled_after(BTreeSet::new());
+        let given: BTreeSet<FieldKey> = Given::from(facts.input)
+            .fields()
+            .into_iter()
+            .map(FieldKey::from)
+            .chain(
+                facts
+                    .input
+                    .fields
+                    .keys()
+                    .filter_map(|key| FieldKey::from_code(key)),
+            )
+            .collect();
+        let check = StatusCheck {
+            held: access,
+            person: actor.person.id,
+            chain: facts.chain,
+            issue_type: facts.issue_type,
+            reported_by: actor.person.id,
+            may_change_status: true,
+            assigned: facts.assigned,
+            description_filled: facts.description_filled,
+            own_filled: &own_filled,
+            given: &given,
+        };
+        let checked = self.ensure_status_change(&check, &first, &status).await?;
+        Ok((status, Some(checked.group)))
+    }
+
     /// What the person asks for, when they may ask it: they may create issues in the project, the
     /// fields they set are ones they may change (the title always), and the type is one that
     /// takes new issues.
@@ -108,7 +173,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Err(ErrorCode::IssueTypeRetired.into());
         }
         let now = self.now();
-        let status = input.status.unwrap_or(Status::NEW);
         let id = IssueId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let item = Item {
@@ -121,6 +185,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         let nothing_yet = self.load_values(RecordKind::Issue, &[]).await?;
         let own = self
             .plan_values(actor, &access, &item, &input.fields, &nothing_yet, true)
+            .await?;
+        let (status, entered) = self
+            .starting_status(
+                actor,
+                &access,
+                &NewIssueFacts {
+                    input,
+                    chain: &item.chain,
+                    issue_type: issue_type.id,
+                    assigned: &assigned_people,
+                    description_filled: description.as_deref().is_some_and(|text| !text.is_empty()),
+                    own: &own,
+                },
+            )
             .await?;
         let issue = Issue {
             id,
@@ -135,7 +213,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             reported_by: actor.person.id,
             created_at: now,
             updated_at: now,
-            closed_at: Status::NEW.closed_after(status, None, now),
+            closed_at: entered.and_then(|group| group.closed_after(None, now)),
             deleted_at: None,
             version: FIRST_VERSION,
         };
@@ -173,7 +251,7 @@ pub async fn create_issue<S: AuthStore>(
         set_to(member::ISSUE_TYPE, json!(new.issue.issue_type.to_string())),
         set_to(member::TITLE, json!(new.issue.title)),
         set_to(member::DESCRIPTION, json!(new.issue.description)),
-        set_to(member::STATUS, json!(new.issue.status.code())),
+        set_to(member::STATUS, json!(new.issue.status.as_str())),
         set_to(member::PRIORITY, json!(new.issue.priority.code())),
         set_to(member::REPORTED_BY, json!(actor.person.id.to_string())),
         set_to(

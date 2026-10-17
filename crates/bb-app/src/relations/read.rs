@@ -64,7 +64,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let count = |lines: &[&IssueLine]| u32::try_from(lines.len()).unwrap_or(u32::MAX);
                 let done: Vec<&IssueLine> = sub_issues
                     .iter()
-                    .filter(|line| line.status_group == Some(StatusGroup::Done))
+                    .filter(|line| {
+                        line.status
+                            .as_ref()
+                            .is_some_and(|status| status.group == StatusGroup::Done)
+                    })
                     .collect();
                 Some(Progress {
                     done: count(&done),

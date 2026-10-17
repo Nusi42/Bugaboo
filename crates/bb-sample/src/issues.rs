@@ -35,7 +35,7 @@ use serde_json::{Value, json};
 use crate::error::{SampleError, Step};
 use crate::generate::{Later, LeftBehind, World};
 use crate::issues_hands::Hands;
-use crate::issues_plan::{Action, FieldPick, Plan};
+use crate::issues_plan::{Action, FieldPick, Plan, Reached};
 use crate::issues_setup::{Setup, id_in, json};
 use crate::issues_time::Calendar;
 use crate::issues_words::{IssueWords, MENTION};
@@ -235,7 +235,7 @@ impl Maker<'_, '_> {
                 Action::Parent(at) => self.parent(at, person).await?,
                 Action::Tag(at, tag) => self.tag(at, tag, person).await?,
                 Action::Label(at, label) => self.label(at, label, person).await?,
-                Action::Status(at, status) => self.status(at, status, person).await?,
+                Action::Status(at, reached) => self.status(at, reached, person).await?,
                 Action::Comment(at) => self.comment(at, person).await?,
                 Action::Edit(at) => self.edit(at).await?,
                 Action::Relate(at) => self.relate(at, person).await?,
@@ -355,7 +355,7 @@ impl Maker<'_, '_> {
     async fn status(
         &mut self,
         at: usize,
-        status: bb_core::issue::Status,
+        reached: Reached,
         person: usize,
     ) -> Result<(), SampleError> {
         let made = self.issue(at)?.clone();
@@ -369,7 +369,7 @@ impl Maker<'_, '_> {
                     version: made.version,
                     issue_type: None,
                     title: None,
-                    status: Some(status),
+                    status: Some(reached.status()),
                     priority: None,
                     assigned_to: None,
                     fields: BTreeMap::new(),

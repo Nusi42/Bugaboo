@@ -37,6 +37,7 @@ mod settings;
 mod tags;
 #[cfg(feature = "testing")]
 mod testing;
+mod workflows;
 
 pub use anchor::LogSeal;
 pub use auth::AuthStorage;
@@ -70,10 +71,11 @@ mod test_support {
     use bb_app::issues::IssueStore as _;
     use bb_app::ports::ChangeStore;
     use bb_core::id::{IssueId, IssueTypeId, ProjectId};
-    use bb_core::issue::{Issue, IssueIcon, IssueType, Priority, Status};
+    use bb_core::issue::{Issue, IssueIcon, IssueType, Priority};
     use bb_core::project::{Project, ShortName};
     use bb_core::readable_id::IssueCode;
     use bb_core::version::FIRST_VERSION;
+    use bb_core::workflow::starter;
 
     use crate::{AuthStorage, Database, LogSeal};
 
@@ -131,7 +133,7 @@ mod test_support {
             code: IssueCode::counting(number),
             title: format!("Issue {number}"),
             description: String::new(),
-            status: Status::Open,
+            status: starter::open(),
             priority: Priority::Normal,
             reported_by: UserId::generate(source),
             created_at: at(1),

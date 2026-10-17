@@ -9,9 +9,10 @@
 use std::collections::BTreeMap;
 
 use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
-use bb_core::issue::{Priority, Status};
+use bb_core::issue::Priority;
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::relation::Direction;
+use bb_core::workflow::StatusKey;
 use bb_policy::Masked;
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
@@ -26,7 +27,7 @@ use crate::relations::IssueLine;
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct ManyChange {
     /// A new status.
-    pub status: Option<Status>,
+    pub status: Option<StatusKey>,
     /// A new priority.
     pub priority: Option<Priority>,
     /// The people the issues are assigned to from now on (all of them, not the ones to add).
@@ -132,7 +133,7 @@ pub enum ManyChangeDetail {
         /// What the issue reads (*blocks*).
         name: String,
         /// The issue at the other end.
-        issue: IssueLine,
+        issue: Box<IssueLine>,
     },
 }
 

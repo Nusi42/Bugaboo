@@ -38,6 +38,7 @@ mod m0011_tags;
 mod m0012_layouts;
 mod m0013_job_kinds;
 mod m0014_names;
+mod m0015_workflows;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -193,6 +194,11 @@ const ALL: &[Definition] = &[
         version: 14,
         name: "names",
         steps: || Ok(m0014_names::steps()),
+    },
+    Definition {
+        version: 15,
+        name: "workflows",
+        steps: || Ok(m0015_workflows::steps()),
     },
 ];
 
@@ -404,7 +410,7 @@ mod tests {
     /// old one, and name the old tables and columns it uses in the migration itself.
     #[test]
     fn the_checksum_of_an_applied_migration_never_changes() {
-        const APPLIED: [&str; 14] = [
+        const APPLIED: [&str; 15] = [
             "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
             "2f79f1fcf6ccadf282c92d37e1803b440c1759d098887112f96b5cbc24d2f30e",
             "559268007329af29e9b173a8e836d1e5e5d924a70eb5a509147de6d2f1a54d2a",
@@ -419,6 +425,7 @@ mod tests {
             "fffa0b40e2a8b74a36236e5d54896ec8d4a5078c82dcde3215f9ff610a4b6d2e",
             "672ecd2ebb383bd7483263729b11f4f2f3e2695825b42b86bbaf22330b12a4bf",
             "045061588034b6040764c6ba14cfd34631f165361100372b98f44a2812c6b790",
+            "babd94895a1c2c32df5e5ea5f721567b18133cbc114aa26ce2a9ded9d6d25634",
         ];
         for (definition, wanted) in ALL.iter().zip(APPLIED) {
             let checksum = definition.checksum().unwrap();

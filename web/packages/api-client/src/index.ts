@@ -62,10 +62,8 @@ export {
   layoutKindWords,
   lookWords,
   newIssuePriority,
-  newIssueStatus,
   priorityWords,
   statusGroupWords,
-  statusWords,
 } from "./words.generated.ts";
 export {
   settingChoices,

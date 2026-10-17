@@ -110,6 +110,7 @@ use crate::tags::{
     issue_labels_and_tags, label_change_preview, labels, remove_label, remove_tag,
     tag_change_preview, tag_suggestions, tags,
 };
+use crate::workflows::{ProjectStatuses, ProjectStatusesQuery, project_statuses};
 
 #[cfg(test)]
 pub(crate) use access_keys::narrowing_of;
@@ -536,4 +537,6 @@ use_cases! {
     save_layout(SaveLayout) -> Authorized<LayoutEditor>;
     /// Takes the layout of a place away.
     delete_layout(DeleteLayout) -> Done;
+    /// Lists the statuses the issues of a project can have.
+    project_statuses(ProjectStatusesQuery) -> Authorized<ProjectStatuses>;
 }

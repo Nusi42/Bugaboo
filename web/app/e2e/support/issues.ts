@@ -223,7 +223,7 @@ export async function setStatusAndPriority(
   session: ApiSession,
   issue: MadeIssue,
   version: number,
-  change: { readonly status: Schema<"Status">; readonly priority: Schema<"Priority"> },
+  change: { readonly status: string; readonly priority: Schema<"Priority"> },
 ): Promise<void> {
   await session.client.PATCH("/api/v1/issues/{issue}", {
     params: { path: { issue: issue.key } },

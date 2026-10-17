@@ -154,16 +154,18 @@ pub async fn issues<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let page = Cut::of(found, limit);
     let next_cursor = page.next_cursor(write_cursor);
-    let assigned_people = if input.assigned_to {
-        let ids: Vec<IssueId> = page.items.iter().map(|issue| issue.id).collect();
-        ctx.store()
-            .assigned_people_of(&ids)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-    } else {
-        Vec::new()
-    };
+    // Always read: a status change may name the person assigned. The people are in the answer only
+    // when they were asked for.
+    let ids: Vec<IssueId> = page.items.iter().map(|issue| issue.id).collect();
+    let assigned_people = ctx
+        .store()
+        .assigned_people_of(&ids)
+        .await
+        .map_err(|error| internal::<S>(&error))?;
     let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
+    if !input.assigned_to {
+        views = views.without_people();
+    }
     let shown: Vec<IssueId> = page.items.iter().map(|issue| issue.id).collect();
     ctx.preload_values(&mut views, &shown).await?;
     let mut items = Vec::with_capacity(page.items.len());

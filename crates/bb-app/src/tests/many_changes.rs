@@ -7,8 +7,8 @@ use std::collections::BTreeMap;
 
 use bb_core::access::AppliesTo;
 use bb_core::id::IssueId;
-use bb_core::issue::Status;
 use bb_core::many_changes::{MANY_CHANGES_JOB_ABOVE, ManyChangeStatus, SkipReason};
+use bb_core::workflow::starter;
 use bb_policy::Permission;
 
 use super::scenarios::{a_project, token};
@@ -28,7 +28,7 @@ use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_r
 pub(super) fn done() -> ManyChangeAction {
     ManyChangeAction::Change {
         change: ManyChange {
-            status: Some(Status::Done),
+            status: Some(starter::done()),
             ..ManyChange::default()
         },
     }
@@ -184,10 +184,17 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
     assert_eq!(skipped, vec![Some(SkipReason::ChangedSince), None]);
     // The named issue is left as the other person made it.
     let left = result.outcomes[0].issue.as_ref().ok_or("no line")?;
-    assert_eq!(left.status, Some(Status::Open));
     assert_eq!(
-        result.outcomes[1].issue.as_ref().map(|line| line.status),
-        Some(Some(Status::Open))
+        left.status.as_ref().map(|status| status.key.clone()),
+        Some(starter::open())
+    );
+    assert_eq!(
+        result.outcomes[1]
+            .issue
+            .as_ref()
+            .and_then(|line| line.status.as_ref())
+            .map(|status| status.key.clone()),
+        Some(starter::open())
     );
     Ok(())
 }

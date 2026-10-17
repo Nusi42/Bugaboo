@@ -4,8 +4,9 @@
 use bb_core::edit::EditWhat;
 use bb_core::event::{EntityRef, RecordKind};
 use bb_core::id::{EditorId, EntityId, IssueId, IssueTypeId, ProjectId};
-use bb_core::issue::{IssueIcon, Status};
+use bb_core::issue::IssueIcon;
 use bb_core::technical::TechnicalName;
+use bb_core::workflow::starter;
 
 use super::fake::FakeStore;
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -74,7 +75,7 @@ pub(crate) async fn create_issue_scenario(world: &World) -> Added {
                 issue_type: a_type(world).await?,
                 title: "The login button does nothing".to_owned(),
                 description: Some("Press it and wait.".to_owned()),
-                status: Some(Status::InProgress),
+                status: Some(starter::in_progress()),
                 priority: None,
                 assigned_to: Some(vec![world.admin.person.id]),
                 fields: std::collections::BTreeMap::new(),
@@ -97,7 +98,7 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
                 version: 1,
                 issue_type: None,
                 title: Some("The login button does nothing at all".to_owned()),
-                status: Some(Status::Done),
+                status: Some(starter::done()),
                 priority: None,
                 assigned_to: None,
                 fields: std::collections::BTreeMap::new(),
@@ -268,7 +269,7 @@ pub(crate) async fn apply_many_changes_scenario(world: &World) -> Added {
                 }],
                 action: ManyChangeAction::Change {
                     change: ManyChange {
-                        status: Some(Status::Done),
+                        status: Some(starter::done()),
                         ..ManyChange::default()
                     },
                 },

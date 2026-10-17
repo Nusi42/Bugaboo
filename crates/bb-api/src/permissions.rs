@@ -492,6 +492,11 @@ pub const ROUTES: &[Route] = &[
     route("unfollowIssue", Declared::ByRecord, Answer::Ordinary),
     route("listIssueTypes", Declared::SignedIn, Answer::Ordinary),
     route(
+        "getProjectStatuses",
+        Declared::Permission(Permission::SeeProjects),
+        Answer::Ordinary,
+    ),
+    route(
         "getFormLayout",
         Declared::Permission(Permission::SeeProjects),
         Answer::NeverStored,

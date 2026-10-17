@@ -16794,6 +16794,114 @@
         "x-permission": "change-project-settings"
       }
     },
+    "/api/v1/projects/{project}/statuses": {
+      "get": {
+        "tags": ["workflows"],
+        "summary": "The statuses the issues of a project can have, for choosing one for many issues at once. Each\nissue is still judged by its own workflow. Needs the permission *See the project*.",
+        "operationId": "getProjectStatuses",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project, or its short name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The statuses.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStatusesBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "see-projects"
+      }
+    },
     "/api/v1/projects/{project}/sub-projects": {
       "post": {
         "tags": ["projects"],
@@ -20268,15 +20376,8 @@
             ]
           },
           "status": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Status",
-                "description": "A new status. Entering the group *Done* sets the closed date; leaving it clears it."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"],
+            "description": "The key of a new status: judged by the workflow of the issue. Entering the group *Done* sets\nthe closed date; leaving it clears it."
           },
           "title": {
             "type": ["string", "null"],
@@ -22473,24 +22574,20 @@
           "status": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/Status",
-                "description": "Where it stands in the workflow."
+                "$ref": "#/components/schemas/StatusBody",
+                "description": "Where it stands in its workflow: the key, the name and the status group."
               },
               {
                 "type": "null"
               }
             ]
           },
-          "status_group": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/StatusGroup",
-                "description": "The group of its status."
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "status_changes": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/StatusChangeBody"
+            },
+            "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
           },
           "title": {
             "type": ["string", "null"],
@@ -22573,19 +22670,8 @@
           "status": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/Status",
-                "description": "Where it stands in the workflow."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "status_group": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/StatusGroup",
-                "description": "The group of its status."
+                "$ref": "#/components/schemas/StatusBody",
+                "description": "Where it stands in its workflow: the key, the name and the status group."
               },
               {
                 "type": "null"
@@ -23594,15 +23680,8 @@
             ]
           },
           "status": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Status",
-                "description": "A new status."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"],
+            "description": "The key of a new status. Each issue is judged by its own workflow, and an issue whose\nworkflow does not allow the change is skipped."
           }
         }
       },
@@ -24278,15 +24357,8 @@
             ]
           },
           "status": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Status",
-                "description": "Where it starts. The first status of the starting workflow when left out."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"],
+            "description": "The key of the status it starts in. The first status of its workflow when left out; another\none is judged as a status change from the first."
           },
           "title": {
             "type": "string",
@@ -25305,24 +25377,20 @@
                 "status": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/Status",
-                      "description": "Where it stands in the workflow."
+                      "$ref": "#/components/schemas/StatusBody",
+                      "description": "Where it stands in its workflow: the key, the name and the status group."
                     },
                     {
                       "type": "null"
                     }
                   ]
                 },
-                "status_group": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/StatusGroup",
-                      "description": "The group of its status."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                "status_changes": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/StatusChangeBody"
+                  },
+                  "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
                 },
                 "title": {
                   "type": ["string", "null"],
@@ -25378,19 +25446,8 @@
                 "status": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/Status",
-                      "description": "Where it stands in the workflow."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "status_group": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/StatusGroup",
-                      "description": "The group of its status."
+                      "$ref": "#/components/schemas/StatusBody",
+                      "description": "Where it stands in its workflow: the key, the name and the status group."
                     },
                     {
                       "type": "null"
@@ -26778,6 +26835,20 @@
         "description": "Whether the owner may know the project.",
         "enum": ["visible", "hidden"]
       },
+      "ProjectStatusesBody": {
+        "type": "object",
+        "description": "The statuses the issues of a project can have: one list for all issue types, each key once.",
+        "required": ["statuses"],
+        "properties": {
+          "statuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusBody"
+            },
+            "description": "The statuses, in the order the workflows list them."
+          }
+        }
+      },
       "ReadMentionsBody": {
         "type": "object",
         "description": "The mentions to mark as read.",
@@ -28031,10 +28102,46 @@
           }
         }
       },
-      "Status": {
-        "type": "string",
-        "description": "A status of the starting workflow.",
-        "enum": ["open", "in-progress", "done"]
+      "StatusBody": {
+        "type": "object",
+        "description": "A status as it is shown: the browser keeps no list of statuses, it shows what the server sends.",
+        "required": ["key", "name", "group"],
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/StatusGroup",
+            "description": "The status group it belongs to."
+          },
+          "key": {
+            "type": "string",
+            "description": "The key, which never changes: it is what a request names a status by."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          }
+        }
+      },
+      "StatusChangeBody": {
+        "type": "object",
+        "description": "A status change the reader may make on an issue now.",
+        "required": ["to", "button", "needs"],
+        "properties": {
+          "button": {
+            "type": "string",
+            "description": "The text of the button."
+          },
+          "needs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldKey"
+            },
+            "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), by their keys. Empty when it needs none."
+          },
+          "to": {
+            "$ref": "#/components/schemas/StatusBody",
+            "description": "The status it ends in."
+          }
+        }
       },
       "StatusGroup": {
         "type": "string",

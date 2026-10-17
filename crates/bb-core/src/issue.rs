@@ -1,9 +1,8 @@
-//! Issues, issue types and statuses (ISS-01, ISS-02, ADR-0027 decision 5).
+//! Issues, issue types and status groups (ISS-01, ISS-02, ADR-0027 decision 5).
 //!
 //! An issue has an internal ID that never changes and a readable ID (`readable_id.rs`) that can.
-//! Until workflows come (M4) every issue type uses the **starting workflow**, defined here once:
-//! *Open*, *In progress* and *Done*, each in a status group, and every status can follow every
-//! other. Entering the group *Done* sets the closed date; leaving it clears it.
+//! Its status is the key of a status of its workflow (`workflow.rs`), and every status belongs to a
+//! status group. Entering the group *Done* sets the closed date; leaving it clears it.
 
 use jiff::Timestamp;
 
@@ -11,6 +10,7 @@ use crate::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use crate::message::{self, MessageKey};
 use crate::personal::Entity;
 use crate::readable_id::IssueCode;
+use crate::workflow::StatusKey;
 
 /// The most people an issue is assigned to.
 pub const ASSIGNED_PEOPLE_MAX: usize = 20;
@@ -31,56 +31,13 @@ words! {
 
 words_in_api!(StatusGroup, "The group of a status.");
 
-words! {
-    /// A status of the starting workflow (ADR-0027 decision 5). The word is the key that is
-    /// stored; M4's workflow editor keeps these keys when it makes the starting workflow the first
-    /// workflow of the organization.
-    pub enum Status {
-        /// Nobody started it.
-        Open => "open",
-        /// Somebody is working on it.
-        InProgress => "in-progress",
-        /// It is finished.
-        Done => "done",
-    }
-    messages name = "status."
-}
-
-words_in_api!(Status, "A status of the starting workflow.");
-
-impl Status {
-    /// The status of a new issue.
-    pub const NEW: Self = Self::Open;
-
-    /// The group the status belongs to.
+impl StatusGroup {
+    /// The closed date after an issue enters a status of this group, given the date it had: the
+    /// group *Done* sets it (an issue that is in the group already keeps the date it had), every
+    /// other group has none (ADR-0027 decision 5, ADR-0031 decision 5).
     #[must_use]
-    pub const fn group(self) -> StatusGroup {
-        match self {
-            Self::Open => StatusGroup::NotStarted,
-            Self::InProgress => StatusGroup::InProgress,
-            Self::Done => StatusGroup::Done,
-        }
-    }
-
-    /// The closed date after the status changes from `self` to `new` at `now`, given the date it
-    /// had: entering the group *Done* sets it, leaving the group clears it, staying in the group
-    /// keeps the date it had.
-    #[must_use]
-    pub fn closed_after(
-        self,
-        new: Self,
-        closed_at: Option<Timestamp>,
-        now: Timestamp,
-    ) -> Option<Timestamp> {
-        match (
-            self.group() == StatusGroup::Done,
-            new.group() == StatusGroup::Done,
-        ) {
-            (false, true) => Some(now),
-            (true, true) => closed_at.or(Some(now)),
-            // Not in the group after the change: there is no closed date.
-            (_, false) => None,
-        }
+    pub fn closed_after(self, closed_at: Option<Timestamp>, now: Timestamp) -> Option<Timestamp> {
+        (self == Self::Done).then(|| closed_at.unwrap_or(now))
     }
 }
 
@@ -227,9 +184,9 @@ pub struct Issue {
     /// The long text, in Markdown. Free text that could name a person.
     #[personal(category = "content", basis = "contract")]
     pub description: String,
-    /// Where it stands in the workflow.
+    /// The key of its status in the workflow that counts for it.
     #[not_personal]
-    pub status: Status,
+    pub status: StatusKey,
     /// How important it is.
     #[not_personal]
     pub priority: Priority,
@@ -309,36 +266,20 @@ mod tests {
     }
 
     #[test]
-    fn adr_0027_the_starting_workflow_has_three_statuses_in_three_groups() {
-        let groups: Vec<StatusGroup> = Status::ALL.iter().map(|status| status.group()).collect();
-        assert_eq!(groups, StatusGroup::ALL);
-        assert_eq!(Status::NEW.group(), StatusGroup::NotStarted);
-    }
-
-    #[test]
     fn adr_0027_the_closed_date_follows_the_done_group() {
         let (opened, closed) = (at(1), at(5));
-        // Entering Done sets it; leaving clears it; moving inside the group keeps the old date.
+        // Entering Done sets it; moving inside the group keeps the old date; every other group
+        // has none.
+        assert_eq!(StatusGroup::Done.closed_after(None, closed), Some(closed));
         assert_eq!(
-            Status::Open.closed_after(Status::Done, None, closed),
-            Some(closed)
-        );
-        assert_eq!(
-            Status::InProgress.closed_after(Status::Done, None, closed),
-            Some(closed)
-        );
-        assert_eq!(
-            Status::Done.closed_after(Status::Open, Some(opened), closed),
-            None
-        );
-        assert_eq!(
-            Status::Done.closed_after(Status::Done, Some(opened), closed),
+            StatusGroup::Done.closed_after(Some(opened), closed),
             Some(opened)
         );
         assert_eq!(
-            Status::Open.closed_after(Status::InProgress, None, closed),
+            StatusGroup::InProgress.closed_after(Some(opened), closed),
             None
         );
+        assert_eq!(StatusGroup::NotStarted.closed_after(None, closed), None);
     }
 
     #[test]

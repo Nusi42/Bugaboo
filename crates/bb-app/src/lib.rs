@@ -27,6 +27,7 @@ pub mod settings;
 pub mod status;
 mod store_macros;
 pub mod tags;
+pub mod workflows;
 
 #[cfg(test)]
 mod tests;

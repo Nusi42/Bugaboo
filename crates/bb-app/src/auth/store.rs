@@ -38,6 +38,7 @@ use crate::relations::RelationStore;
 use crate::settings::SettingsStore;
 use crate::store_macros::{reads, writes};
 use crate::tags::TagStore;
+use crate::workflows::WorkflowStore;
 
 /// A person with the password hash they sign in with.
 #[derive(Clone)]
@@ -328,6 +329,7 @@ pub trait AuthStore:
     + HistoryStore
     + FieldStore
     + LayoutStore
+    + WorkflowStore
     + SettingsStore
     + 'static
 {

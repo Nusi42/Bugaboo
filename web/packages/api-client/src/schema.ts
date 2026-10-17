@@ -2386,6 +2386,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/projects/{project}/statuses": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The statuses the issues of a project can have, for choosing one for many issues at once. Each
+     *     issue is still judged by its own workflow. Needs the permission *See the project*.
+     */
+    get: operations["getProjectStatuses"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/projects/{project}/sub-projects": {
     parameters: {
       query?: never;
@@ -3009,7 +3029,11 @@ export interface components {
       /** @description A new issue type; a retired type is refused. */
       issue_type?: string | null;
       priority?: components["schemas"]["Priority"] | null;
-      status?: components["schemas"]["Status"] | null;
+      /**
+       * @description The key of a new status: judged by the workflow of the issue. Entering the group *Done* sets
+       *     the closed date; leaving it clears it.
+       */
+      status?: string | null;
       /** @description A new title. */
       title?: string | null;
       /**
@@ -4073,8 +4097,12 @@ export interface components {
       priority?: components["schemas"]["Priority"] | null;
       project?: components["schemas"]["ProjectRef"] | null;
       reported_by?: components["schemas"]["PersonRef"] | null;
-      status?: components["schemas"]["Status"] | null;
-      status_group?: components["schemas"]["StatusGroup"] | null;
+      status?: components["schemas"]["StatusBody"] | null;
+      /**
+       * @description The status changes the person may make now, with the text of each button and the fields it
+       *     still needs. Empty when they may not change the issue. Hidden with the status.
+       */
+      status_changes?: components["schemas"]["StatusChangeBody"][] | null;
       /** @description What it is about. */
       title?: string | null;
       /** @description When it was last changed. */
@@ -4121,8 +4149,7 @@ export interface components {
       key: string;
       /** @description The project it is in. */
       project: components["schemas"]["ProjectRef"];
-      status?: components["schemas"]["Status"] | null;
-      status_group?: components["schemas"]["StatusGroup"] | null;
+      status?: components["schemas"]["StatusBody"] | null;
       /** @description What it is about. */
       title?: string | null;
     };
@@ -4585,7 +4612,11 @@ export interface components {
         [key: string]: unknown;
       };
       priority?: components["schemas"]["Priority"] | null;
-      status?: components["schemas"]["Status"] | null;
+      /**
+       * @description The key of a new status. Each issue is judged by its own workflow, and an issue whose
+       *     workflow does not allow the change is skipped.
+       */
+      status?: string | null;
     };
     /** @description What a row of the preview says will happen to the issue. */
     ManyChangeDetailBody:
@@ -4856,7 +4887,11 @@ export interface components {
       /** @description The ID of its issue type; a retired type takes no new issues. */
       issue_type: string;
       priority?: components["schemas"]["Priority"] | null;
-      status?: components["schemas"]["Status"] | null;
+      /**
+       * @description The key of the status it starts in. The first status of its workflow when left out; another
+       *     one is judged as a status change from the first.
+       */
+      status?: string | null;
       /** @description What it is about. */
       title: string;
     };
@@ -5279,8 +5314,12 @@ export interface components {
         priority?: components["schemas"]["Priority"] | null;
         project?: components["schemas"]["ProjectRef"] | null;
         reported_by?: components["schemas"]["PersonRef"] | null;
-        status?: components["schemas"]["Status"] | null;
-        status_group?: components["schemas"]["StatusGroup"] | null;
+        status?: components["schemas"]["StatusBody"] | null;
+        /**
+         * @description The status changes the person may make now, with the text of each button and the fields it
+         *     still needs. Empty when they may not change the issue. Hidden with the status.
+         */
+        status_changes?: components["schemas"]["StatusChangeBody"][] | null;
         /** @description What it is about. */
         title?: string | null;
         /** @description When it was last changed. */
@@ -5309,8 +5348,7 @@ export interface components {
         key: string;
         /** @description The project it is in. */
         project: components["schemas"]["ProjectRef"];
-        status?: components["schemas"]["Status"] | null;
-        status_group?: components["schemas"]["StatusGroup"] | null;
+        status?: components["schemas"]["StatusBody"] | null;
         /** @description What it is about. */
         title?: string | null;
       }[];
@@ -6015,6 +6053,11 @@ export interface components {
      * @enum {string}
      */
     ProjectShown: "visible" | "hidden";
+    /** @description The statuses the issues of a project can have: one list for all issue types, each key once. */
+    ProjectStatusesBody: {
+      /** @description The statuses, in the order the workflows list them. */
+      statuses: components["schemas"]["StatusBody"][];
+    };
     /** @description The mentions to mark as read. */
     ReadMentionsBody: {
       /** @description The IDs of the comments. */
@@ -6646,11 +6689,27 @@ export interface components {
       /** @description The person sees the project. */
       sees: boolean;
     };
-    /**
-     * @description A status of the starting workflow.
-     * @enum {string}
-     */
-    Status: "open" | "in-progress" | "done";
+    /** @description A status as it is shown: the browser keeps no list of statuses, it shows what the server sends. */
+    StatusBody: {
+      /** @description The status group it belongs to. */
+      group: components["schemas"]["StatusGroup"];
+      /** @description The key, which never changes: it is what a request names a status by. */
+      key: string;
+      /** @description What it is called. */
+      name: string;
+    };
+    /** @description A status change the reader may make on an issue now. */
+    StatusChangeBody: {
+      /** @description The text of the button. */
+      button: string;
+      /**
+       * @description The fields the change still needs before it can be made (*Must be filled in* fields that
+       *     are empty, and *Ask for* fields), by their keys. Empty when it needs none.
+       */
+      needs: components["schemas"]["FieldKey"][];
+      /** @description The status it ends in. */
+      to: components["schemas"]["StatusBody"];
+    };
     /**
      * @description The group of a status.
      * @enum {string}
@@ -19508,6 +19567,87 @@ export interface operations {
       };
       /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getProjectStatuses: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project, or its short name. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The statuses. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectStatusesBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
         headers: {
           [name: string]: unknown;
         };

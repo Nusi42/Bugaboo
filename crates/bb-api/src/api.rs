@@ -71,6 +71,7 @@ mod roles;
 mod second_step_gap;
 mod settings;
 mod tags;
+mod workflows;
 
 pub use admin::ProbeHandle;
 pub use auth::AuthHandle;
@@ -157,6 +158,7 @@ where
         .merge(fields::routes())
         .merge(issue_types::routes())
         .merge(layouts::routes())
+        .merge(workflows::routes())
         .merge(issues::routes())
         .merge(relations::routes())
         .merge(tags::routes())

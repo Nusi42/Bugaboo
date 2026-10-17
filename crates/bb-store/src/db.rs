@@ -17,7 +17,7 @@ use bb_core::id::{
     AccessKeyId, AssignmentId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GroupId,
     IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
     ManyChangeRunId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId, SessionId, TagId,
-    UserId,
+    UserId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -687,6 +687,7 @@ stored_ids!(
     RoleId => "a role ID",
     SessionId => "a session ID",
     UserId => "a person ID",
+    WorkflowId => "a workflow ID",
 );
 
 /// A moment as it is stored: microseconds since 1970 (UTC), the same whole number in both databases.

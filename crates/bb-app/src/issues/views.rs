@@ -1,15 +1,17 @@
 //! Issues as one viewer sees them: the project and the type by name, the people as *Who sees
 //! people* says, the readable ID as it is now.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
 use bb_core::event::RecordKind;
-use bb_core::id::{EntityId, IssueId, IssueTypeId, UserId};
+use bb_core::fields::Field;
+use bb_core::id::{EntityId, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::Project;
 use bb_core::readable_id::ReadableId;
+use bb_core::workflow::WorkflowContent;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 
 use super::types::{IssueTypeRef, IssueView};
@@ -17,6 +19,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::ItemValues;
 use crate::projects::ProjectRef;
+use crate::workflows::{StatusChangeView, StatusCheck, StatusView};
 
 /// What turns the issues of one project into views for one viewer. The people are resolved once
 /// each: a list shows the same few people over and over.
@@ -28,6 +31,21 @@ pub(crate) struct IssueViews {
     people: HashMap<(PeopleKind, UserId), PersonRef>,
     /// The values of own fields of the issues shown so far.
     values: ItemValues,
+    /// The projects from the top down to the project, read when the first issue needs them.
+    chain: Option<Vec<ProjectId>>,
+    /// The workflow that counts for each issue type of the project, found once.
+    workflows: HashMap<IssueTypeId, Arc<WorkflowContent>>,
+    /// Whether the people each issue is assigned to are shown. They are always read (a status
+    /// change may name *the person assigned*), and left out of the answer when nobody asked.
+    show_people: bool,
+}
+
+impl IssueViews {
+    /// Leaves the people an issue is assigned to out of the views.
+    pub(crate) const fn without_people(mut self) -> Self {
+        self.show_people = false;
+        self
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -54,7 +72,61 @@ impl<S: AuthStore> Ctx<'_, S> {
             types,
             people: HashMap::new(),
             values: ItemValues::default(),
+            chain: None,
+            workflows: HashMap::new(),
+            show_people: true,
         })
+    }
+
+    /// The workflow that counts for an issue type in the project of the views.
+    async fn view_workflow(
+        &self,
+        views: &mut IssueViews,
+        issue_type: IssueTypeId,
+    ) -> Result<Arc<WorkflowContent>, AppError> {
+        if let Some(found) = views.workflows.get(&issue_type) {
+            return Ok(Arc::clone(found));
+        }
+        if views.chain.is_none() {
+            views.chain = Some(self.chain_of(views.project.id).await?);
+        }
+        let chain = views.chain.as_deref().unwrap_or_default();
+        let found = self.workflow_in_force(chain, Some(issue_type)).await?;
+        views.workflows.insert(issue_type, Arc::clone(&found));
+        Ok(found)
+    }
+
+    /// The status changes the viewer may make on the issue now.
+    async fn view_status_changes(
+        &self,
+        views: &IssueViews,
+        workflow: &WorkflowContent,
+        issue: &Issue,
+        assigned_to: &[UserId],
+    ) -> Result<Vec<StatusChangeView>, AppError> {
+        let held = &views.viewer;
+        let mask = held.field_mask_for(Some(issue.issue_type));
+        if issue.deleted_at.is_some()
+            || !held.may_change_issue(issue.reported_by)
+            || !mask.can_change(Field::Status)
+        {
+            return Ok(Vec::new());
+        }
+        let own_filled = views.values.filled_fields(issue.id.into());
+        let check = StatusCheck {
+            held,
+            person: views.actor.person.id,
+            chain: views.chain.as_deref().unwrap_or_default(),
+            issue_type: issue.issue_type,
+            reported_by: issue.reported_by,
+            may_change_status: true,
+            assigned: assigned_to,
+            description_filled: !issue.description.is_empty(),
+            own_filled: &own_filled,
+            given: &BTreeSet::new(),
+        };
+        self.status_changes_of(&check, workflow, &issue.status)
+            .await
     }
 
     /// Reads the own-field values of these issues in one go, so a page of issues costs one read.
@@ -119,11 +191,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         // A value the viewer is not shown (an issue they do not see) is no value.
         own_fields.0.retain(|_, value| !value.is_null());
+        let workflow = self.view_workflow(views, issue.issue_type).await?;
+        let status = StatusView::of_issue(&workflow, issue);
+        let status_changes = self
+            .view_status_changes(views, &workflow, issue, assigned_to)
+            .await?;
         let reported_by = self
             .person_once(views, PeopleKind::ReportedBy, issue.reported_by)
             .await?;
-        let mut people = Vec::with_capacity(assigned_to.len());
-        for person in assigned_to {
+        let shown_people = if views.show_people { assigned_to } else { &[] };
+        let mut people = Vec::with_capacity(shown_people.len());
+        for person in shown_people {
             people.push(
                 self.person_once(views, PeopleKind::AssignedTo, *person)
                     .await?,
@@ -136,8 +214,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             issue_type,
             title: issue.title.clone(),
             description: issue.description.clone(),
-            status: issue.status,
-            status_group: issue.status.group(),
+            status,
+            status_changes,
             priority: issue.priority,
             reported_by,
             assigned_to: people,

@@ -197,7 +197,7 @@ impl IssueStore for FakeStore {
         found.issue_type = issue.issue_type;
         found.title.clone_from(&issue.title);
         found.description.clone_from(&issue.description);
-        found.status = issue.status;
+        found.status.clone_from(&issue.status);
         found.priority = issue.priority;
         found.updated_at = issue.updated_at;
         found.closed_at = issue.closed_at;

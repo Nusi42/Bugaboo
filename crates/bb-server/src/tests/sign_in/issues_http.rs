@@ -50,8 +50,10 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
         // A Contributor makes an issue and changes the fields she may change in her own.
         let made = site.create(&mut cora, "The login button does nothing").await?;
         let issue = ok(&made)?;
-        assert_eq!(issue["status"], "open");
-        assert_eq!(issue["status_group"], "not-started");
+        assert_eq!(
+            issue["status"],
+            json!({"key": "open", "name": "Open", "group": "not-started"})
+        );
         assert_eq!(issue["priority"], "normal");
         assert_eq!(issue["version"], 1);
         assert_eq!(issue["reported_by"]["id"], cora_id.to_string());
@@ -90,7 +92,7 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
         let done = ada
             .send("PATCH", &path, Some(json!({"version": 2, "status": "done"})))
             .await?;
-        assert_eq!(ok(&done)?["status_group"], "done");
+        assert_eq!(ok(&done)?["status"]["group"], "done");
         assert!(done.body["closed_at"].is_string());
         let reopened = ada
             .send(

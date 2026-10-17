@@ -89,7 +89,7 @@ async fn iss_09_the_preview_equals_what_happens() -> TestResult {
         assert_eq!(skips(&result, "outcomes"), skips(&preview, "rows"));
         for issue in &issues {
             let read = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
-            assert_eq!(ok(&read)?["issue"]["status"], "done", "{issue}");
+            assert_eq!(ok(&read)?["issue"]["status"]["key"], "done", "{issue}");
         }
         Ok(())
     })
@@ -181,7 +181,7 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
         // The skipped issue is named, and left as it is.
         assert_eq!(result["outcomes"][0]["issue"]["key"], first);
         let left = ada.send("GET", &format!("{ISSUES}/{first}"), None).await?;
-        assert_eq!(ok(&left)?["issue"]["status"], "open");
+        assert_eq!(ok(&left)?["issue"]["status"]["key"], "open");
         Ok(())
     })
     .await

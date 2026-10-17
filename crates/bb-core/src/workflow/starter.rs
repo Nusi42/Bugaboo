@@ -37,6 +37,24 @@ const _: () = {
     }
 };
 
+/// The status of *Simple* a new issue starts in.
+#[must_use]
+pub fn open() -> StatusKey {
+    StatusKey::written(OPEN)
+}
+
+/// The status of *Simple* that is work going on.
+#[must_use]
+pub fn in_progress() -> StatusKey {
+    StatusKey::written(IN_PROGRESS)
+}
+
+/// The status of *Simple* that is finished.
+#[must_use]
+pub fn done() -> StatusKey {
+    StatusKey::written(DONE)
+}
+
 /// A status of a starter workflow.
 #[derive(Clone, Copy, Debug)]
 pub struct StarterStatus {

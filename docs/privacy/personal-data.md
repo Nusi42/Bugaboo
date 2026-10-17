@@ -325,7 +325,7 @@ Defined in `crates/bb-core/src/issue.rs`.
 | `code`        | No            | –          | –           | The code of its readable ID now; the short name of its project comes before it.         |
 | `title`       | Yes           | `content`  | `contract`  | What it is about. Free text that could name a person.                                   |
 | `description` | Yes           | `content`  | `contract`  | The long text, in Markdown. Free text that could name a person.                         |
-| `status`      | No            | –          | –           | Where it stands in the workflow.                                                        |
+| `status`      | No            | –          | –           | The key of its status in the workflow that counts for it.                               |
 | `priority`    | No            | –          | –           | How important it is.                                                                    |
 | `reported_by` | Yes           | `activity` | `contract`  | Who made it.                                                                            |
 | `created_at`  | No            | –          | –           | When it was made.                                                                       |

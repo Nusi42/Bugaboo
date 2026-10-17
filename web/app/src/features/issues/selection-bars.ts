@@ -6,6 +6,8 @@ import type { IssueSelection } from "./use-selection.ts";
 export interface SelectionBarProps {
   /** The issues that are ticked, by their IDs. */
   readonly selection: IssueSelection;
+  /** The project whose issues are listed: its short name. */
+  readonly project: string;
 }
 
 /** A bar with the place among the others. */

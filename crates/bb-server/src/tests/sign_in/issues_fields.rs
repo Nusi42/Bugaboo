@@ -332,7 +332,7 @@ async fn priv_13_no_issue_answer_holds_a_count() -> TestResult {
             .as_str()
             .ok_or("no key")?
             .to_owned();
-        let all_fields = "id,key,project,issue_type,title,description,status,status_group,priority,reported_by,assigned_to,created_at,updated_at,closed_at,version";
+        let all_fields = "id,key,project,issue_type,title,description,status,priority,reported_by,assigned_to,created_at,updated_at,closed_at,version";
         let answers = [
             ada.send(
                 "GET",

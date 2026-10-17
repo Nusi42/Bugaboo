@@ -2,10 +2,12 @@
 //! The closed date follows the status group *Done* (ADR-0027, decision 5).
 
 use bb_core::ErrorCode;
+use std::collections::BTreeSet;
+
 use bb_core::event::{EntityKind, FieldChange, RecordKind};
-use bb_core::fields::Field;
-use bb_core::id::{IssueTypeId, UserId};
-use bb_core::issue::{AssignedPerson, Issue};
+use bb_core::fields::{Field, FieldKey};
+use bb_core::id::{IssueTypeId, ProjectId, UserId};
+use bb_core::issue::{AssignedPerson, Issue, StatusGroup};
 use bb_core::version::{counted_up, next as next_version};
 use bb_policy::{Authorized, Evaluation, Place};
 use serde_json::{Value, json};
@@ -14,9 +16,10 @@ use super::fields::{Given, clean_title, ensure_may_change, member};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::fields::{Item, PlannedValues};
+use crate::fields::{Item, ItemValues, PlannedValues};
 use crate::follow::started_following;
 use crate::projects::Why;
+use crate::workflows::StatusCheck;
 use std::sync::Arc;
 
 /// What a change of an issue asks for, checked against what the person may do and what is
@@ -32,6 +35,8 @@ pub(crate) struct Plan {
     assigned_next: Vec<UserId>,
     /// The values of own fields the request sets.
     own: PlannedValues,
+    /// The status group the issue enters, when its status changes: it decides the closed date.
+    entering: Option<StatusGroup>,
 }
 
 impl Plan {
@@ -56,8 +61,8 @@ impl Plan {
         add(member::TITLE, json!(before.title), json!(after.title));
         add(
             member::STATUS,
-            json!(before.status.code()),
-            json!(after.status.code()),
+            json!(before.status.as_str()),
+            json!(after.status.as_str()),
         );
         add(
             member::PRIORITY,
@@ -93,7 +98,66 @@ fn named(input: &ChangeIssue) -> Vec<Field> {
     Given::from(input).fields()
 }
 
+/// A change of the status of an issue, with the issue as it will be.
+struct StatusMove<'a> {
+    input: &'a ChangeIssue,
+    current: &'a Issue,
+    next: &'a Issue,
+    chain: &'a [ProjectId],
+    assigned: &'a [UserId],
+    own: &'a PlannedValues,
+    stored: &'a ItemValues,
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The status group the issue enters when its status changes, once the workflow allows the
+    /// change (the one judge, ADR-0031); none while the status stays.
+    async fn entering_group(
+        &self,
+        actor: &Actor,
+        held: &Evaluation,
+        change: &StatusMove<'_>,
+    ) -> Result<Option<StatusGroup>, AppError> {
+        let StatusMove {
+            input,
+            current,
+            next,
+            ..
+        } = change;
+        if next.status == current.status {
+            return Ok(None);
+        }
+        let own_filled = change
+            .own
+            .filled_after(change.stored.filled_fields(current.id.into()));
+        let given: BTreeSet<FieldKey> = named(input)
+            .into_iter()
+            .map(FieldKey::from)
+            .chain(
+                input
+                    .fields
+                    .keys()
+                    .filter_map(|key| FieldKey::from_code(key)),
+            )
+            .collect();
+        let check = StatusCheck {
+            held,
+            person: actor.person.id,
+            chain: change.chain,
+            issue_type: next.issue_type,
+            reported_by: current.reported_by,
+            may_change_status: true,
+            assigned: change.assigned,
+            description_filled: !current.description.is_empty(),
+            own_filled: &own_filled,
+            given: &given,
+        };
+        let checked = self
+            .ensure_status_change(&check, &current.status, &next.status)
+            .await?;
+        Ok(Some(checked.group))
+    }
+
     /// The issue a person asks to change, with what they hold there: they see it (or it answers
     /// like a missing one) and may change it.
     pub(crate) async fn issue_to_change(
@@ -160,7 +224,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(title) = &input.title {
             next.title = clean_title(title)?;
         }
-        next.status = input.status.unwrap_or(current.status);
+        next.status = input
+            .status
+            .clone()
+            .unwrap_or_else(|| current.status.clone());
         next.priority = input.priority.unwrap_or(current.priority);
         if let Some(issue_type) = input.issue_type {
             next.issue_type = self.writable_type(issue_type, &current).await?;
@@ -178,12 +245,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         let own = self
             .plan_values(actor, &held, &item, &input.fields, &stored, false)
             .await?;
+        let entering = self
+            .entering_group(
+                actor,
+                &held,
+                &StatusMove {
+                    input,
+                    current: &current,
+                    next: &next,
+                    chain: &item.chain,
+                    assigned: &assigned_next,
+                    own: &own,
+                    stored: &stored,
+                },
+            )
+            .await?;
         let plan = Plan {
             current,
             assigned_now,
             next,
             assigned_next,
             own,
+            entering,
         };
         if plan.current.version != input.version {
             return Err(AppError::stale(
@@ -254,13 +337,13 @@ pub async fn change_issue<S: AuthStore>(
         assigned_now,
         assigned_next,
         own,
-        ..
+        entering,
     } = plan;
     let own_writes = own.writes();
     next.updated_at = now;
-    next.closed_at = current
-        .status
-        .closed_after(next.status, current.closed_at, now);
+    next.closed_at = entering.map_or(current.closed_at, |group| {
+        group.closed_after(current.closed_at, now)
+    });
     let id = current.id;
     let mut field_changes = field_changes;
     field_changes.push(counted_up(current.version));

@@ -10,9 +10,10 @@ use std::collections::BTreeMap;
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
 use bb_core::id::{IssueId, LabelId, ProjectId, RelationKindId};
-use bb_core::issue::{Issue, Priority, Status};
+use bb_core::issue::{Issue, Priority};
 use bb_core::many_changes::SkipReason;
 use bb_core::relation::Direction;
+use bb_core::workflow::{StatusKey, starter};
 use bb_policy::Permission;
 use proptest::prelude::*;
 
@@ -43,6 +44,11 @@ struct Seed {
     in_trash: bool,
 }
 
+/// The status a seed stands for: *Open*, *In progress* or *Done*.
+fn status_of(index: usize) -> StatusKey {
+    [starter::open(), starter::in_progress(), starter::done()][index].clone()
+}
+
 fn seed() -> impl Strategy<Value = Seed> {
     (0_usize..3, any::<bool>(), any::<bool>(), any::<bool>()).prop_map(
         |(status, in_secret_project, has_label, in_trash)| Seed {
@@ -68,7 +74,7 @@ struct Setup {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Stands {
     version: i64,
-    status: Status,
+    status: StatusKey,
     priority: Priority,
     project: ProjectId,
     in_trash: bool,
@@ -133,7 +139,7 @@ async fn set_up(world: &World, seeds: &[Seed]) -> Result<Setup, TestCaseError> {
     for seed in seeds {
         let project = if seed.in_secret_project { secret } else { open };
         let issue = an_issue(world, project).await.map_err(broke)?;
-        if Status::ALL[seed.status] != Status::Open {
+        if seed.status != 0 {
             change_issue(
                 &world.ctx(),
                 ChangeIssue {
@@ -142,7 +148,7 @@ async fn set_up(world: &World, seeds: &[Seed]) -> Result<Setup, TestCaseError> {
                     version: 1,
                     issue_type: None,
                     title: None,
-                    status: Some(Status::ALL[seed.status]),
+                    status: Some(status_of(seed.status)),
                     priority: None,
                     assigned_to: None,
                     fields: BTreeMap::new(),
@@ -297,8 +303,8 @@ fn compare(
     match action {
         ManyChangeAction::Change { change } if change.status.is_some() => {
             let shown = changed_field(row, "status").ok_or_else(|| broke("no status in detail"))?;
-            prop_assert_eq!(text_of(shown.after.as_ref()), Some(after.status.code()));
-            prop_assert_eq!(Some(after.status), change.status);
+            prop_assert_eq!(text_of(shown.after.as_ref()), Some(after.status.as_str()));
+            prop_assert_eq!(Some(&after.status), change.status.as_ref());
         }
         ManyChangeAction::Change { change } => {
             let shown =
