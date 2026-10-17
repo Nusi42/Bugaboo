@@ -103,6 +103,7 @@ table! {
     "restore_issue" => si::restore_issue_scenario,
     "create_issue_type" => si::create_issue_type_scenario,
     "change_issue_type" => si::change_issue_type_scenario,
+    "change_offers" => si::change_offers_scenario,
     "create_starting_issue_types" => si::create_starting_issue_types_scenario,
     "create_relation_kind" => sr::create_relation_kind_scenario,
     "change_relation_kind" => sr::change_relation_kind_scenario,

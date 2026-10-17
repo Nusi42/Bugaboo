@@ -181,6 +181,10 @@ pub(crate) mod member {
         pub(crate) const NAME: &str = "name";
         pub(crate) const ICON: &str = "icon";
         pub(crate) const RETIRED: &str = "retired";
+        /// The project the type was made in, in the event of the type.
+        pub(crate) const PROJECT: &str = "project";
+        /// Where the type is offered, in the event of the type.
+        pub(crate) const OFFERED: &str = "offered";
         /// The list of the types the first start made.
         pub(crate) const STARTING: &str = "issue-types";
     }

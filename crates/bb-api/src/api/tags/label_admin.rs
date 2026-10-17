@@ -1,36 +1,46 @@
 //! Listing, creating, previewing, changing and combining labels and label groups (TAG-01).
 
 use super::{
-    ApiError, ApiJson, ApiPath, AuthHandle, ChangeLabel, ChangeLabelBody, ChangeLabelGroup,
-    ChangeLabelGroupBody, ChangePreviewBody, CombineBody, CombineLabels, ConflictAnswer,
-    CreateLabel, CreateLabelGroup, Edit, ForbiddenAnswer, Info, InvalidAnswer, LabelBody,
-    LabelChangePreviewQuery, LabelGroupBody, LabelGroupId, LabelId, LabelsBody, LabelsQuery,
-    NewLabelBody, NewLabelGroupBody, NotFoundAnswer, NotSignedInAnswer, PreviewChangeBody,
-    Response, Session, State, answer_authorized, body_id, path_id,
+    ApiError, ApiJson, ApiPath, ApiQuery, AuthHandle, ChangeLabel, ChangeLabelBody,
+    ChangeLabelGroup, ChangeLabelGroupBody, ChangePreviewBody, CombineBody, CombineLabels,
+    ConflictAnswer, CreateLabel, CreateLabelGroup, Edit, ForbiddenAnswer, Info, InvalidAnswer,
+    LabelBody, LabelChangePreviewQuery, LabelGroupBody, LabelGroupId, LabelId, LabelsBody,
+    LabelsQuery, NewLabelBody, NewLabelGroupBody, NotFoundAnswer, NotSignedInAnswer, OfferProject,
+    PreviewChangeBody, Response, Session, State, answer_authorized, body_id, path_id,
 };
 
 /// The labels of the organization with their groups. Open to everybody who is signed in: the
-/// people who put labels on issues choose from them.
+/// people who put labels on issues choose from them. With `project`, each group says whether that
+/// project offers it.
 #[utoipa::path(
     get,
     path = "/api/v1/labels",
     operation_id = "listLabels",
     tag = "tags",
-    responses((status = 200, description = "The groups and the labels.", body = LabelsBody), NotSignedInAnswer)
+    params(OfferProject),
+    responses((status = 200, description = "The groups and the labels.", body = LabelsBody), NotSignedInAnswer, NotFoundAnswer)
 )]
 pub(super) async fn list_labels(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
+    ApiQuery(asked): ApiQuery<OfferProject>,
 ) -> Result<Response, ApiError> {
     let labels = auth
         .api()?
-        .labels(info, LabelsQuery { session_token })
+        .labels(
+            info,
+            LabelsQuery {
+                session_token,
+                project: asked.project,
+            },
+        )
         .await?;
     answer_authorized(&labels.map(LabelsBody::from))
 }
 
-/// Creates a group of labels. Needs *Manage labels and tags*.
+/// Creates a group of labels for the whole organization or in a project. Needs *Manage labels and
+/// tags* where it is made.
 #[utoipa::path(
     post,
     path = "/api/v1/label-groups",
@@ -57,6 +67,7 @@ pub(super) async fn create_label_group(
             info,
             CreateLabelGroup {
                 session_token,
+                project: body.project,
                 name: body.name,
                 pick_one: body.pick_one,
             },
@@ -65,7 +76,7 @@ pub(super) async fn create_label_group(
     answer_authorized(&made.map(|group| LabelGroupBody::from(&group)))
 }
 
-/// Changes a group of labels. Needs *Manage labels and tags*.
+/// Changes a group of labels. Needs *Manage labels and tags* where the group was made.
 #[utoipa::path(
     patch,
     path = "/api/v1/label-groups/{group}",

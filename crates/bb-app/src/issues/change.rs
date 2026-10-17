@@ -19,6 +19,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::fields::{Item, ItemValues, PlannedValues};
 use crate::follow::started_following;
+use crate::offers::ensure_type_takes_issues_in;
 use crate::projects::Why;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
 use std::sync::Arc;
@@ -297,8 +298,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok((held, plan))
     }
 
-    /// The issue type a change moves an issue to: it has to exist and not be retired (an issue
-    /// keeps its type if it is retired already, so the type is only judged when it changes).
+    /// The issue type a change moves an issue to: it has to exist, not be retired and be offered in
+    /// the project of the issue (an issue keeps its type if it is retired or not offered already, so
+    /// the type is only judged when it changes).
     async fn writable_type(
         &self,
         wanted: IssueTypeId,
@@ -313,9 +315,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        if found.retired_at.is_some() {
-            return Err(ErrorCode::IssueTypeRetired.into());
-        }
+        self.ensure_type_takes_issues(&found, current.project)
+            .await?;
         Ok(wanted)
     }
 }
@@ -408,14 +409,13 @@ pub async fn change_issue<S: AuthStore>(
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 if written.issue_type != stored.issue_type {
-                    let retired = S::issue_types_in(transaction)
-                        .await?
-                        .iter()
-                        .find(|found| found.id == written.issue_type)
-                        .is_none_or(|found| found.retired_at.is_some());
-                    if retired {
-                        return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
-                    }
+                    ensure_type_takes_issues_in::<S>(
+                        transaction,
+                        written.project,
+                        written.issue_type,
+                        &stopped,
+                    )
+                    .await?;
                 }
                 // The workflow the status was judged on is still the one that counts.
                 ensure_written_status_in::<S>(transaction, &written, Some(&stored), &stopped)

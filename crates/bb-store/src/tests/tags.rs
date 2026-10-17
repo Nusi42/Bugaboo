@@ -191,6 +191,7 @@ async fn tag_03_combining_keeps_one_link_for_an_issue_that_had_both() -> TestRes
 
 fn group(source: &mut impl IdSource, name: &str) -> LabelGroup {
     LabelGroup {
+        project: None,
         id: LabelGroupId::generate(source).unwrap(),
         name: name.to_owned(),
         pick_one: true,

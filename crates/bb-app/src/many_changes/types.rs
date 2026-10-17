@@ -119,6 +119,20 @@ pub struct ManyChangeRunQuery {
     pub run: ManyChangeRunId,
 }
 
+/// Something a person should know about a change that will be made, beside what changes.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum ManyChangeNote {
+    /// The issue moves to a project that does not use its issue type (the type is retired, or the
+    /// project does not offer it). The issue keeps the type, as every issue keeps a retired type.
+    TypeNotUsed {
+        /// The name of the issue type.
+        issue_type: String,
+        /// The name of the project the issue moves to.
+        project: String,
+    },
+}
+
 /// What a row of the preview says about the issue.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -127,6 +141,8 @@ pub enum ManyChangeDetail {
     Changes {
         /// The fields.
         fields: Vec<FieldChangeView>,
+        /// What else the person should know about this change.
+        notes: Vec<ManyChangeNote>,
     },
     /// The relation that would be added, as the issue reads it.
     Relation {

@@ -1303,11 +1303,14 @@ export interface paths {
     };
     /**
      * The issue types in the order they are offered in, a page at a time, retired ones too. Open to
-     *     everybody who is signed in.
+     *     everybody who is signed in. With `project`, each type can say whether that project offers it.
      */
     get: operations["listIssueTypes"];
     put?: never;
-    /** Creates an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*. */
+    /**
+     * Creates an issue type for the whole organization or in a project. Needs the permission *Manage
+     *     issue types, kinds of relation and layouts* where it is made.
+     */
     post: operations["createIssueType"];
     delete?: never;
     options?: never;
@@ -1330,9 +1333,33 @@ export interface paths {
     head?: never;
     /**
      * Changes the name or the icon of an issue type, or retires it (or offers it again). Needs the
-     *     permission *Manage issue types, kinds of relation and layouts*.
+     *     permission *Manage issue types, kinds of relation and layouts* where the type was made.
      */
     patch: operations["changeIssueType"];
+    trace?: never;
+  };
+  "/api/v1/issue-types/{issue_type}/offers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Where an issue type is offered: the rows that say so, a page at a time. Open to everybody who is
+     *     signed in.
+     */
+    get: operations["listIssueTypeOffers"];
+    /**
+     * Changes where an issue type is offered: all the places together or none. Each place is judged on
+     *     its own: it needs the permission *Manage issue types, kinds of relation and layouts* there.
+     */
+    put: operations["changeIssueTypeOffers"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/issues/{issue}": {
@@ -1809,7 +1836,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Creates a group of labels. Needs *Manage labels and tags*. */
+    /**
+     * Creates a group of labels for the whole organization or in a project. Needs *Manage labels and
+     *     tags* where it is made.
+     */
     post: operations["createLabelGroup"];
     delete?: never;
     options?: never;
@@ -1830,8 +1860,32 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /** Changes a group of labels. Needs *Manage labels and tags*. */
+    /** Changes a group of labels. Needs *Manage labels and tags* where the group was made. */
     patch: operations["changeLabelGroup"];
+    trace?: never;
+  };
+  "/api/v1/label-groups/{group}/offers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Where a group of labels is offered: the rows that say so, a page at a time. Open to everybody who
+     *     is signed in.
+     */
+    get: operations["listLabelGroupOffers"];
+    /**
+     * Changes where a group of labels is offered: all the places together or none. Each place is
+     *     judged on its own: it needs the permission *Manage labels and tags* there.
+     */
+    put: operations["changeLabelGroupOffers"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/labels": {
@@ -1843,7 +1897,8 @@ export interface paths {
     };
     /**
      * The labels of the organization with their groups. Open to everybody who is signed in: the
-     *     people who put labels on issues choose from them.
+     *     people who put labels on issues choose from them. With `project`, each group says whether that
+     *     project offers it.
      */
     get: operations["listLabels"];
     put?: never;
@@ -3553,6 +3608,16 @@ export interface components {
        */
       version: number;
     };
+    /** @description The places to change together, on the version that was looked at. */
+    ChangeOffersBody: {
+      /** @description The places. A place may be named once. */
+      changes: components["schemas"]["OfferChangeBody"][];
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
     /** @description What renaming or combining a tag or a label would do to the issues the person sees. */
     ChangePreviewBody: {
       /** @description The first of them. */
@@ -4051,6 +4116,8 @@ export interface components {
       | "project.too_deep"
       | "project.preview_changed"
       | "issue.type_retired"
+      | "issue.type_not_offered"
+      | "label.not_offered"
       | "workflow.no_such_change"
       | "workflow.not_for_you"
       | "workflow.only_if"
@@ -4683,11 +4750,26 @@ export interface components {
     };
     /** @description An issue type: the fields that can be asked for. */
     IssueTypeItem: {
+      created_in?: components["schemas"]["PlaceRef"] | null;
       icon?: components["schemas"]["IssueIcon"] | null;
       /** @description The ID of the type. */
       id?: string | null;
+      /** @description Whether the person who asks may change that for the project. */
+      may_change_offer?: boolean | null;
+      /** @description Whether the person who asks looks after it. */
+      may_manage?: boolean | null;
       /** @description What it is called. */
       name?: string | null;
+      /**
+       * @description Whether the project the list is asked about offers it. Only when the request names a
+       *     `project` and asks for the field.
+       */
+      offered_here?: boolean | null;
+      /**
+       * @description The row that says so at exactly that project; left out while the project follows the place
+       *     above it.
+       */
+      own_offer?: boolean | null;
       /** @description Whether it is retired: old issues keep it, new ones cannot have it. */
       retired?: boolean | null;
       /**
@@ -4750,10 +4832,29 @@ export interface components {
     };
     /** @description A group of labels. */
     LabelGroupBody: {
+      /**
+       * @description Where it was made: the whole organization or a project. It is looked after where it was
+       *     made.
+       */
+      created_in: components["schemas"]["PlaceRef"];
       /** @description The ID of the group. */
       id: string;
+      /** @description Whether the person who asks may change that for the project. */
+      may_change_offer?: boolean | null;
+      /** @description Whether the person who asks looks after it. */
+      may_manage: boolean;
       /** @description What it is called. */
       name: string;
+      /**
+       * @description Whether the project the list is asked about offers it. Only when the request names a
+       *     `project`.
+       */
+      offered_here?: boolean | null;
+      /**
+       * @description The row that says so at exactly that project; left out while the project follows the place
+       *     above it.
+       */
+      own_offer?: boolean | null;
       /** @description Whether an issue has at most one label of the group. */
       pick_one: boolean;
       /** @description Whether it is retired: old issues keep its labels, new ones are not offered them. */
@@ -5147,6 +5248,8 @@ export interface components {
           fields: components["schemas"]["FieldChangeBody"][];
           /** @enum {string} */
           kind: "changes";
+          /** @description What else the person should know about this change. */
+          notes: components["schemas"]["ManyChangeNoteBody"][];
         }
       | {
           /** @description The issue at the other end. */
@@ -5156,6 +5259,15 @@ export interface components {
           /** @description What the issue reads (*blocks*). */
           name: string;
         };
+    /** @description Something a person should know about a change that will be made, beside what changes. */
+    ManyChangeNoteBody: {
+      /** @description The name of the issue type. */
+      issue_type: string;
+      /** @enum {string} */
+      kind: "type_not_used";
+      /** @description The name of the project the issue moves to. */
+      project: string;
+    };
     /** @description What happened to one issue of the selection. */
     ManyChangeOutcomeBody: {
       /** @description What the person asked for the issue by. */
@@ -5443,6 +5555,8 @@ export interface components {
       icon: components["schemas"]["IssueIcon"];
       /** @description What it is called. */
       name: string;
+      /** @description The project it is made in, by its ID or short name; left out for the whole organization. */
+      project?: string | null;
     };
     /** @description A label to make. */
     NewLabelBody: {
@@ -5458,6 +5572,8 @@ export interface components {
       name: string;
       /** @description Whether an issue has at most one label of the group. */
       pick_one: boolean;
+      /** @description The project it is made in, by its ID or short name; left out for the whole organization. */
+      project?: string | null;
     };
     /** @description The layout to make for a place. */
     NewLayoutBody: {
@@ -5631,6 +5747,34 @@ export interface components {
       | "followed_fields"
       | "run_ended"
       | "edit_notice";
+    /** @description One place to change. */
+    OfferChangeBody: {
+      /**
+       * @description `true` offers the subject there, `false` does not; left out takes the row away, so the place
+       *     follows the place above it again.
+       */
+      offered?: boolean | null;
+      /** @description The ID or short name of the project; left out for the whole organization. */
+      project?: string | null;
+    };
+    /** @description One row of where a subject is offered. */
+    OfferRowItem: {
+      /** @description Whether the person who asks may change the row. */
+      may_change?: boolean | null;
+      /** @description Whether the subject is offered there. */
+      offered?: boolean | null;
+      place?: components["schemas"]["PlaceRef"] | null;
+    };
+    /** @description Where a subject is offered after a change. */
+    OffersBody: {
+      /** @description Every row there is. */
+      rows: components["schemas"]["OfferRowItem"][];
+      /**
+       * Format: int64
+       * @description The version the subject has now.
+       */
+      version: number;
+    };
     /** @description One condition of *Only if …*, in the same words as *Must be filled in*. */
     OnlyIfRuleBody: {
       /** @description The key of the field: the word of a built-in field or the ID of an own field. */
@@ -6028,11 +6172,26 @@ export interface components {
     Page_IssueTypeItem: {
       /** @description The items of this page. */
       items: {
+        created_in?: components["schemas"]["PlaceRef"] | null;
         icon?: components["schemas"]["IssueIcon"] | null;
         /** @description The ID of the type. */
         id?: string | null;
+        /** @description Whether the person who asks may change that for the project. */
+        may_change_offer?: boolean | null;
+        /** @description Whether the person who asks looks after it. */
+        may_manage?: boolean | null;
         /** @description What it is called. */
         name?: string | null;
+        /**
+         * @description Whether the project the list is asked about offers it. Only when the request names a
+         *     `project` and asks for the field.
+         */
+        offered_here?: boolean | null;
+        /**
+         * @description The row that says so at exactly that project; left out while the project follows the place
+         *     above it.
+         */
+        own_offer?: boolean | null;
         /** @description Whether it is retired: old issues keep it, new ones cannot have it. */
         retired?: boolean | null;
         /**
@@ -6156,6 +6315,22 @@ export interface components {
         run_done?: boolean | null;
         /** @description A comment: the text, in Markdown. */
         text?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_OfferRowItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description Whether the person who asks may change the row. */
+        may_change?: boolean | null;
+        /** @description Whether the subject is offered there. */
+        offered?: boolean | null;
+        place?: components["schemas"]["PlaceRef"] | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -7445,9 +7620,9 @@ export interface components {
       | "not-allowed"
       | "nothing-to-change"
       | "changed-since"
-      | "type-missing"
       | "field-missing"
       | "tag-not-here"
+      | "label-not-here"
       | "relation-exists"
       | "same-issue"
       | "limit-reached"
@@ -14503,6 +14678,8 @@ export interface operations {
         cursor?: string;
         /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: number;
+        /** @description The ID or short name of a project. */
+        project?: string;
       };
       header?: never;
       path?: never;
@@ -14532,6 +14709,15 @@ export interface operations {
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -14682,6 +14868,195 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["IssueTypeItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIssueTypeOffers: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the issue type. */
+        issue_type: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The rows. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_OfferRowItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeIssueTypeOffers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the issue type. */
+        issue_type: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeOffersBody"];
+      };
+    };
+    responses: {
+      /** @description Every row, and the version of the type. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OffersBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -17473,9 +17848,201 @@ export interface operations {
       };
     };
   };
-  listLabels: {
+  listLabelGroupOffers: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The rows. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_OfferRowItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeLabelGroupOffers: {
     parameters: {
       query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeOffersBody"];
+      };
+    };
+    responses: {
+      /** @description Every row, and the version of the group. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OffersBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listLabels: {
+    parameters: {
+      query?: {
+        /** @description The ID or short name of a project. */
+        project?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -17504,6 +18071,15 @@ export interface operations {
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };

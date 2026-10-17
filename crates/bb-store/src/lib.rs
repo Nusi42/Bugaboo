@@ -29,6 +29,7 @@ mod layouts;
 mod many_changes;
 mod migrations;
 mod notifications;
+mod offers;
 mod paging;
 mod policy;
 mod projects;
@@ -173,6 +174,7 @@ mod test_support {
                 version: FIRST_VERSION,
             },
             IssueType {
+                project: None,
                 id: issue_type,
                 name: "Bug".to_owned(),
                 icon: IssueIcon::Bug,

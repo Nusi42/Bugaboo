@@ -321,6 +321,10 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("listIssueTypes", &[Quirk::KeysActAsThePerson]),
     Example::route("createIssueType"),
     Example::route("changeIssueType"),
+    Example::with("listIssueTypeOffers", &[Quirk::KeysActAsThePerson]),
+    Example::with("changeIssueTypeOffers", &[Quirk::AtTheTargetProject]),
+    Example::with("listLabelGroupOffers", &[Quirk::KeysActAsThePerson]),
+    Example::with("changeLabelGroupOffers", &[Quirk::AtTheTargetProject]),
     Example::with(
         "getFormLayout",
         &[Quirk::AtTheTargetProject, Quirk::HidesUnseen],

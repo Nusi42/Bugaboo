@@ -119,6 +119,8 @@ pub enum ProjectLabel {
     Hidden,
 }
 
+impl Masked for ProjectLabel {}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Who asks: the signed-in person behind a cookie, or the owner of an access key (`bb_...`,
     /// sent as `Authorization: Bearer`). Use cases that judge a permission start here; what

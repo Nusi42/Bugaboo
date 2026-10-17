@@ -13,9 +13,10 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::history::{ChangeValue, FieldChangeView};
 use bb_app::many_changes::{
-    ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeDetail, ManyChangeOutcome,
-    ManyChangePreview, ManyChangePreviewQuery, ManyChangeResult, ManyChangeRow, ManyChangeRunQuery,
-    ManyChangeRunStatus, ManyChangeRunView, ManyChangeSkipped, ManyChangeTarget,
+    ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeDetail, ManyChangeNote,
+    ManyChangeOutcome, ManyChangePreview, ManyChangePreviewQuery, ManyChangeResult, ManyChangeRow,
+    ManyChangeRunQuery, ManyChangeRunStatus, ManyChangeRunView, ManyChangeSkipped,
+    ManyChangeTarget,
 };
 use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
 use bb_core::issue::Priority;
@@ -242,6 +243,33 @@ impl From<&FieldChangeView> for FieldChangeBody {
     }
 }
 
+/// Something a person should know about a change that will be made, beside what changes.
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub(crate) enum ManyChangeNoteBody {
+    /// The issue moves to a project that does not use its issue type. It keeps the type.
+    TypeNotUsed {
+        /// The name of the issue type.
+        issue_type: String,
+        /// The name of the project the issue moves to.
+        project: String,
+    },
+}
+
+impl From<&ManyChangeNote> for ManyChangeNoteBody {
+    fn from(note: &ManyChangeNote) -> Self {
+        match note {
+            ManyChangeNote::TypeNotUsed {
+                issue_type,
+                project,
+            } => Self::TypeNotUsed {
+                issue_type: issue_type.clone(),
+                project: project.clone(),
+            },
+        }
+    }
+}
+
 /// What a row of the preview says will happen to the issue.
 #[derive(Serialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -250,6 +278,8 @@ pub(crate) enum ManyChangeDetailBody {
     Changes {
         /// The fields.
         fields: Vec<FieldChangeBody>,
+        /// What else the person should know about this change.
+        notes: Vec<ManyChangeNoteBody>,
     },
     /// The relation that would be added.
     Relation {
@@ -263,8 +293,9 @@ pub(crate) enum ManyChangeDetailBody {
 impl From<&ManyChangeDetail> for ManyChangeDetailBody {
     fn from(detail: &ManyChangeDetail) -> Self {
         match detail {
-            ManyChangeDetail::Changes { fields } => Self::Changes {
+            ManyChangeDetail::Changes { fields, notes } => Self::Changes {
                 fields: fields.iter().map(FieldChangeBody::from).collect(),
+                notes: notes.iter().map(ManyChangeNoteBody::from).collect(),
             },
             ManyChangeDetail::Relation { name, issue } => Self::Relation {
                 name: name.clone(),

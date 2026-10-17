@@ -16,13 +16,24 @@ export interface ManyChangePreviewViewProps {
 function changeLines(row: ManyChangeRow, plain: string): LongPreviewGroup["lines"] {
   const detail = row.detail;
   if (detail?.kind === "changes") {
-    return detail.fields.map((change) => ({
-      key: change.field,
-      content: t("many-changes.line-changes", {
-        field: fieldNameOf({ code: change.field, name: change.name }),
-        after: changeValueText(change.field, change.after) ?? t("common.nothing"),
-      }),
-    }));
+    return [
+      ...detail.fields.map((change) => ({
+        key: change.field,
+        content: t("many-changes.line-changes", {
+          field: fieldNameOf({ code: change.field, name: change.name }),
+          after: changeValueText(change.field, change.after) ?? t("common.nothing"),
+        }),
+      })),
+      // What the person should know besides what changes: the issue keeps a type the project does
+      // not use (M3-F124).
+      ...detail.notes.map((note) => ({
+        key: `note-${note.issue_type}`,
+        content: t("many-changes.note-type-not-used", {
+          type: note.issue_type,
+          project: note.project,
+        }),
+      })),
+    ];
   }
   if (detail?.kind === "relation") {
     return [

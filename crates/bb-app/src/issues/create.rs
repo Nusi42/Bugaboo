@@ -24,6 +24,7 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
+use crate::offers::ensure_type_takes_issues_in;
 use crate::projects::Why;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
 
@@ -157,9 +158,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        if issue_type.retired_at.is_some() {
-            return Err(ErrorCode::IssueTypeRetired.into());
-        }
+        self.ensure_type_takes_issues(&issue_type, project.id)
+            .await?;
         let now = self.now();
         let id = IssueId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
@@ -265,15 +265,15 @@ pub async fn create_issue<S: AuthStore>(
             .store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
-                    // The type may have been retired since the request began.
-                    let retired = S::issue_types_in(transaction)
-                        .await?
-                        .iter()
-                        .find(|found| found.id == issue.issue_type)
-                        .is_none_or(|found| found.retired_at.is_some());
-                    if retired {
-                        return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
-                    }
+                    // The type may have been retired, or the project may have stopped offering
+                    // it, since the request began.
+                    ensure_type_takes_issues_in::<S>(
+                        transaction,
+                        issue.project,
+                        issue.issue_type,
+                        &stopped,
+                    )
+                    .await?;
                     // The workflow the status was judged on is still the one that counts.
                     ensure_written_status_in::<S>(transaction, &issue, None, &stopped).await?;
                     // The mode and the code are judged after the lock on the codes of the

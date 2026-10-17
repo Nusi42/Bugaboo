@@ -841,8 +841,15 @@ pub const ERROR_HANDLE_CHANGED_LATELY: MessageKey = MessageKey::new("error.handl
 /// The message `error.issue.parent-circle`.
 pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.parent-circle");
 
+/// The message `error.issue.type-not-offered`.
+pub const ERROR_ISSUE_TYPE_NOT_OFFERED: MessageKey =
+    MessageKey::new("error.issue.type-not-offered");
+
 /// The message `error.issue.type-retired`.
 pub const ERROR_ISSUE_TYPE_RETIRED: MessageKey = MessageKey::new("error.issue.type-retired");
+
+/// The message `error.label.not-offered`.
+pub const ERROR_LABEL_NOT_OFFERED: MessageKey = MessageKey::new("error.label.not-offered");
 
 /// The message `error.label.pick-one-conflict`.
 pub const ERROR_LABEL_PICK_ONE_CONFLICT: MessageKey =
@@ -2348,6 +2355,10 @@ pub const MANY_CHANGES_SKIP_FIELD_MISSING: MessageKey =
 pub const MANY_CHANGES_SKIP_FIELD_RULE: MessageKey =
     MessageKey::new("many-changes-skip.field-rule");
 
+/// The message `many-changes-skip.label-not-here`.
+pub const MANY_CHANGES_SKIP_LABEL_NOT_HERE: MessageKey =
+    MessageKey::new("many-changes-skip.label-not-here");
+
 /// The message `many-changes-skip.limit-reached`.
 pub const MANY_CHANGES_SKIP_LIMIT_REACHED: MessageKey =
     MessageKey::new("many-changes-skip.limit-reached");
@@ -2377,10 +2388,6 @@ pub const MANY_CHANGES_SKIP_SAME_ISSUE: MessageKey =
 /// The message `many-changes-skip.tag-not-here`.
 pub const MANY_CHANGES_SKIP_TAG_NOT_HERE: MessageKey =
     MessageKey::new("many-changes-skip.tag-not-here");
-
-/// The message `many-changes-skip.type-missing`.
-pub const MANY_CHANGES_SKIP_TYPE_MISSING: MessageKey =
-    MessageKey::new("many-changes-skip.type-missing");
 
 /// The message `many-changes-skip.workflow`.
 pub const MANY_CHANGES_SKIP_WORKFLOW: MessageKey = MessageKey::new("many-changes-skip.workflow");
@@ -6821,6 +6828,21 @@ pub fn many_changes_line_relation(
     )
 }
 
+/// The message `many-changes.note-type-not-used`.
+#[must_use]
+pub fn many_changes_note_type_not_used(
+    project: impl std::fmt::Display,
+    type_: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.note-type-not-used"),
+        vec![
+            ("project", Value::Text(project.to_string())),
+            ("type", Value::Text(type_.to_string())),
+        ],
+    )
+}
+
 /// The message `many-changes.progress`.
 #[must_use]
 pub fn many_changes_progress(
@@ -9104,8 +9126,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That would create a circle of issues or a chain that is too long. Choose another issue.",
     ),
     (
+        "error.issue.type-not-offered",
+        "This project does not use that issue type. Choose another type or ask who looks after the project.",
+    ),
+    (
         "error.issue.type-retired",
         "That issue type is retired, so no new issues can be created with it. Choose another type.",
+    ),
+    (
+        "error.label.not-offered",
+        "This project does not use the group that label is in. Choose another label or ask who looks after labels.",
     ),
     (
         "error.label.pick-one-conflict",
@@ -10232,6 +10262,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A value of the issue breaks the rule of its field",
     ),
     (
+        "many-changes-skip.label-not-here",
+        "The project of the issue does not use the group that label is in",
+    ),
+    (
         "many-changes-skip.limit-reached",
         "It already has as many of these as it can hold",
     ),
@@ -10262,10 +10296,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "many-changes-skip.tag-not-here",
         "It has a tag that is not for the other project",
-    ),
-    (
-        "many-changes-skip.type-missing",
-        "The other project does not offer its issue type",
     ),
     (
         "many-changes-skip.workflow",
@@ -10310,6 +10340,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "many-changes.line-relation",
         "This issue · {name} · {issue}",
+    ),
+    (
+        "many-changes.note-type-not-used",
+        "{type} is not used in {project}. The issue keeps it.",
     ),
     ("many-changes.progress", "{done} of {total} issues done"),
     ("many-changes.progress-label", "How far the change is"),

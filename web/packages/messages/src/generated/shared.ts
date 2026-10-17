@@ -432,6 +432,8 @@ export const messages = {
   "issue-id-mode.counting": "Counting IDs",
   "error.issue.type-retired":
     "That issue type is retired, so no new issues can be created with it. Choose another type.",
+  "error.issue.type-not-offered":
+    "This project does not use that issue type. Choose another type or ask who looks after the project.",
   "setting.files.max-megabytes.name": "Biggest file",
   "setting.files.max-megabytes.help":
     "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
@@ -564,7 +566,8 @@ export const messages = {
   "many-changes-skip.not-allowed": "You may not change it this way",
   "many-changes-skip.nothing-to-change": "It is like that already",
   "many-changes-skip.changed-since": "It changed after the preview",
-  "many-changes-skip.type-missing": "The other project does not offer its issue type",
+  "many-changes-skip.label-not-here":
+    "The project of the issue does not use the group that label is in",
   "many-changes-skip.field-missing": "It has a value in a field the other project does not use",
   "many-changes-skip.tag-not-here": "It has a tag that is not for the other project",
   "many-changes-skip.relation-exists": "The relation is there already",
@@ -580,6 +583,8 @@ export const messages = {
   "many-changes-status.stopped": "Stopped on request",
   "error.tag.not-here":
     "That tag is only for other projects. Choose another tag or ask who looks after tags.",
+  "error.label.not-offered":
+    "This project does not use the group that label is in. Choose another label or ask who looks after labels.",
   "error.label.pick-one-conflict":
     "Some issues have more than one label of this label group already, so it cannot be a label group to pick one from. Take the extra labels off first.",
   "common.show-all": "Show all {count}",
@@ -590,6 +595,7 @@ export const messages = {
     "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
   "preview.label": "Issues in this change",
   "preview.nothing": "None of the issues would change.",
+  "many-changes.note-type-not-used": "{type} is not used in {project}. The issue keeps it.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
   "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",

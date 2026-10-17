@@ -26,6 +26,7 @@ async fn a_type(fixture: &Fixture<'_>) -> Result<String, Failure> {
                 session_token: fixture.admin_session().to_owned(),
                 cursor: None,
                 limit: 50,
+                project: None,
             },
         )
         .await
@@ -92,6 +93,7 @@ async fn a_new_type(fixture: &Fixture<'_>) -> Result<String, Failure> {
             Rig::info(),
             CreateIssueType {
                 session_token: fixture.admin_session().to_owned(),
+                project: None,
                 name: format!("Type {}", fixture.next_number()),
                 icon: IssueIcon::Bug,
             },
@@ -119,6 +121,16 @@ pub(super) async fn issue_request(
             "PATCH",
             format!("/api/v1/issue-types/{}", a_new_type(fixture).await?),
             Some(json!({"version": 1, "icon": "star"})),
+        ),
+        "listIssueTypeOffers" => (
+            "GET",
+            format!("/api/v1/issue-types/{}/offers", a_new_type(fixture).await?),
+            None,
+        ),
+        "changeIssueTypeOffers" => (
+            "PUT",
+            format!("/api/v1/issue-types/{}/offers", a_new_type(fixture).await?),
+            Some(json!({"version": 1, "changes": [{"project": target, "offered": false}]})),
         ),
         "listIssues" => ("GET", format!("/api/v1/projects/{target}/issues"), None),
         "listAssignablePeople" => (

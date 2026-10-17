@@ -32,6 +32,8 @@ pub(crate) enum IssueTypeRow {
     Id,
     Name,
     Icon,
+    /// The project the type was made in; none for the whole organization.
+    Project,
     Position,
     RetiredAt,
     Version,
@@ -347,6 +349,8 @@ pub(crate) enum LabelGroupRow {
     Name,
     NameKey,
     PickOne,
+    /// The project the group was made in; none for the whole organization.
+    Project,
     Position,
     RetiredAt,
     Version,
@@ -396,4 +400,16 @@ pub(crate) enum ManyChangeRunRow {
     Skipped,
     CreatedAt,
     FinishedAt,
+}
+
+/// Where an issue type or a group of labels is offered (ISS-02, TAG-02): one row per place and
+/// subject. `kind` and `subject` together name the subject, so one table serves both.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum OfferRow {
+    #[iden = "offer"]
+    Table,
+    Kind,
+    Subject,
+    Project,
+    Offered,
 }

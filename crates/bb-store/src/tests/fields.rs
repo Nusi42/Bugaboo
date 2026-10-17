@@ -349,6 +349,7 @@ async fn adr_0027_a_level_for_an_issue_type_is_stored_apart_and_found_with_the_r
                 AuthStorage::insert_issue_type(
                     tx,
                     &IssueType {
+                        project: None,
                         id: bug,
                         name: "Bug".to_owned(),
                         icon: IssueIcon::Bug,

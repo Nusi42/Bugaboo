@@ -92,6 +92,10 @@ error_codes! {
     MovePreviewChanged => ("project.preview_changed", 409),
     /// An issue type that was retired takes no new issues (ISS-02).
     IssueTypeRetired => ("issue.type_retired", 409),
+    /// The project does not offer that issue type (ISS-02).
+    IssueTypeNotOffered => ("issue.type_not_offered", 409),
+    /// The project does not offer the group that label is in (TAG-02).
+    LabelNotOffered => ("label.not_offered", 409),
     /// The workflow of the issue has no status change from the status the issue is in to that one
     /// (WF-01).
     WorkflowNoSuchChange => ("workflow.no_such_change", 409),

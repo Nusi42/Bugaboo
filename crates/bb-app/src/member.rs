@@ -133,4 +133,8 @@ pub(crate) mod label_group {
     pub(crate) const NAME: &str = "name";
     pub(crate) const PICK_ONE: &str = "pick-one";
     pub(crate) const RETIRED: &str = "retired";
+    /// The project the group was made in, in the event of the group.
+    pub(crate) const PROJECT: &str = "project";
+    /// Where the group is offered, in the event of the group.
+    pub(crate) const OFFERED: &str = "offered";
 }

@@ -41,6 +41,27 @@ async fn a_tag(fixture: &Fixture<'_>) -> Result<String, Failure> {
         .ok_or_else(|| "the tag is not on the issue".into())
 }
 
+/// A group of labels made by the administrator: its ID.
+async fn a_group(fixture: &Fixture<'_>) -> Result<String, Failure> {
+    Ok(fixture
+        .rig()
+        .api()
+        .create_label_group(
+            Rig::info(),
+            CreateLabelGroup {
+                session_token: fixture.admin_session().to_owned(),
+                project: None,
+                name: format!("group {}", fixture.next_number()),
+                pick_one: false,
+            },
+        )
+        .await
+        .map_err(|error| error.to_string())?
+        .into_value()
+        .id
+        .to_string())
+}
+
 /// A label made by the administrator: its ID.
 async fn a_label(fixture: &Fixture<'_>) -> Result<String, Failure> {
     Ok(fixture
@@ -155,27 +176,27 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             "/api/v1/label-groups".into(),
             Some(json!({"name": format!("group {}", fixture.next_number()), "pick_one": true})),
         ),
-        "changeLabelGroup" => {
-            let made = fixture
-                .rig()
-                .api()
-                .create_label_group(
-                    Rig::info(),
-                    CreateLabelGroup {
-                        session_token: fixture.admin_session().to_owned(),
-                        name: format!("group {}", fixture.next_number()),
-                        pick_one: false,
-                    },
-                )
-                .await
-                .map_err(|error| error.to_string())?
-                .into_value();
-            (
-                "PATCH",
-                format!("/api/v1/label-groups/{}", made.id),
-                Some(json!({"version": 1, "name": format!("renamed {}", fixture.next_number())})),
-            )
-        }
+        "changeLabelGroup" => (
+            "PATCH",
+            format!("/api/v1/label-groups/{}", a_group(fixture).await?),
+            Some(json!({"version": 1, "name": format!("renamed {}", fixture.next_number())})),
+        ),
+        "listLabelGroupOffers" => (
+            "GET",
+            format!("/api/v1/label-groups/{}/offers", a_group(fixture).await?),
+            None,
+        ),
+        "changeLabelGroupOffers" => (
+            "PUT",
+            format!("/api/v1/label-groups/{}/offers", a_group(fixture).await?),
+            Some(json!({
+                "version": 1,
+                "changes": [{
+                    "project": fixture.project(super::actors::Project::Target).to_string(),
+                    "offered": false,
+                }],
+            })),
+        ),
         "createLabel" => (
             "POST",
             "/api/v1/labels".into(),

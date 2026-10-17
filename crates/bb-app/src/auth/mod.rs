@@ -81,6 +81,7 @@ use crate::notifications::{
     SendTestEmail, SetMailPassword, Unread, UnreadQuery, change_handle, my_handle, notifications,
     read_notifications, send_test_email, set_mail_password, unread_notifications,
 };
+use crate::offers::{ChangeOffers, OfferRowPage, Offers, OffersQuery, change_offers, offers};
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, CreateGroup, DeleteGroup, GroupDetail,
     GroupList, GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery,
@@ -417,6 +418,10 @@ use_cases! {
     create_issue_type(CreateIssueType) -> Authorized<IssueTypeView>;
     /// Changes the name, icon or retired state of an issue type.
     change_issue_type(ChangeIssueType) -> Authorized<IssueTypeView>;
+    /// Shows where an issue type or a group of labels is offered.
+    offers(OffersQuery) -> Authorized<OfferRowPage>;
+    /// Changes where an issue type or a group of labels is offered.
+    change_offers(ChangeOffers) -> Authorized<Offers>;
     /// Lists the issues of a project a person sees.
     issues(IssuesQuery) -> Authorized<IssuePage>;
     /// Lists the people an issue of a project can be assigned to.

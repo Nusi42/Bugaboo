@@ -1,16 +1,18 @@
 //! Issue types (ISS-02): the list, making one, changing one, and the four of the first start.
 //!
-//! Types are the same in every project. Changing them needs *Manage issue types, kinds of
-//! relation and layouts* for the whole organization (M3-Q6). A type is never deleted: it is
-//! retired, so no new issues have it while the old ones keep it. A name is used once, without
+//! A type is made for the whole organization or in a project, and looked after by whoever holds
+//! *Manage issue types, kinds of relation and layouts* where it was made (M3-F22); where it is
+//! offered is data (`offers`). A type is never deleted: it is retired, so no new issues have it
+//! while the old ones keep it. A name is used once, without
 //! regard to capitals; that is judged inside the change, after the policy lock, so two people who
 //! make the same name at the same moment cannot both succeed.
 
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, FieldChange, RecordKind};
-use bb_core::id::IssueTypeId;
+use bb_core::id::{IssueTypeId, ProjectId};
 use bb_core::issue::{IssueIcon, IssueType, STARTING_ISSUE_TYPES};
 use bb_core::message::Message;
+use bb_core::offer::OfferSubject;
 use bb_core::paging::window;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
@@ -25,7 +27,41 @@ use crate::auth::{
     AppError, AuthStore, Ctx, Stops, by, change_failed, entity, fixed_entity, internal, set_to,
 };
 use crate::input::clean_name;
+use crate::offers::{Here, place_of};
 use crate::projects::Why;
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// An issue type as the person sees it: where it was made, and whether they look after it.
+    pub(crate) async fn issue_type_view(
+        &self,
+        actor: &crate::access::Actor,
+        issue_type: &IssueType,
+        here: Option<&Here>,
+    ) -> Result<IssueTypeView, AppError> {
+        let place = place_of(issue_type.project);
+        let here = match here {
+            Some(here) => {
+                let subject = self
+                    .offer_subject(OfferSubject::IssueType(issue_type.id))
+                    .await?;
+                Some(self.offered_here(actor, here, &subject).await?)
+            }
+            None => None,
+        };
+        Ok(IssueTypeView {
+            id: issue_type.id,
+            name: issue_type.name.clone(),
+            icon: issue_type.icon,
+            retired: issue_type.retired_at.is_some(),
+            created_in: self.place_label(actor, place).await?,
+            may_manage: self
+                .holds_at(actor, Permission::ManageIssueTypes, place)
+                .await?,
+            here,
+            version: issue_type.version,
+        })
+    }
+}
 
 /// Whether another type than `except` already has the name, without regard to capitals.
 fn name_taken(types: &[IssueType], name: &str, except: Option<IssueTypeId>) -> bool {
@@ -53,29 +89,36 @@ pub async fn issue_types<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let page = window(types.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+    let here = ctx.offers_here(&actor, input.project.as_deref()).await?;
+    let mut items = Vec::with_capacity(page.end - page.start);
+    for found in &types[page.start..page.end] {
+        items.push(ctx.issue_type_view(&actor, found, here.as_ref()).await?);
+    }
     Ok(held.authorize(IssueTypePage {
-        items: types[page.start..page.end]
-            .iter()
-            .map(IssueTypeView::from)
-            .collect(),
+        items,
         next_cursor: page.next,
     }))
 }
 
-/// Creates an issue type, at the end of the order.
+/// Creates an issue type, at the end of the order, for the whole organization or in a project.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage issue types, kinds of relation and layouts* for the whole
-/// organization, `request.invalid` for a name that cannot be one, `name.taken` for a name another
-/// type has.
+/// `access.forbidden` without *Manage issue types, kinds of relation and layouts* where it is made
+/// (`resource.not_found` for a project the person may not know), `request.invalid` for a name that
+/// cannot be one, `name.taken` for a name another type has.
 pub async fn create_issue_type<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CreateIssueType,
 ) -> Result<Authorized<IssueTypeView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    let place = ctx.offer_place(input.project.as_deref()).await?;
     let held = ctx
-        .require(&actor, Permission::ManageIssueTypes, Place::Organization)
+        .require(&actor, Permission::ManageIssueTypes, place)
         .await?;
+    let owner: Option<ProjectId> = match place {
+        Place::Organization => None,
+        Place::Project(project) => Some(project),
+    };
     let name = clean_name(&input.name)?;
     let types = ctx
         .store()
@@ -90,6 +133,7 @@ pub async fn create_issue_type<S: AuthStore>(
             .map_err(|error| AppError::Internal(error.to_string()))?,
         name,
         icon: input.icon,
+        project: owner,
         position: types
             .iter()
             .map(|found| found.position)
@@ -104,6 +148,10 @@ pub async fn create_issue_type<S: AuthStore>(
         vec![
             set_to(member::issue_type::NAME, json!(issue_type.name)),
             set_to(member::issue_type::ICON, json!(issue_type.icon.code())),
+            set_to(
+                member::issue_type::PROJECT,
+                json!(owner.map(|project| project.to_string())),
+            ),
         ],
     )?;
     let why = Why::default();
@@ -121,7 +169,7 @@ pub async fn create_issue_type<S: AuthStore>(
         })
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
-    Ok(held.authorize(IssueTypeView::from(&issue_type)))
+    Ok(held.authorize(ctx.issue_type_view(&actor, &issue_type, None).await?))
 }
 
 /// What a change of an issue type changes, before and after, for the event (and the version
@@ -160,7 +208,8 @@ fn differences(
 /// Changes the name, the icon or the retired state of an issue type: what is `Some` is changed.
 ///
 /// # Errors
-/// `access.forbidden` without the permission, `resource.not_found` for a type that is not there,
+/// `access.forbidden` without the permission where the type was made, `resource.not_found` for a
+/// type that is not there,
 /// `request.invalid` for a name that cannot be one or when nothing is asked, `name.taken` for a
 /// name another type has, `edit.version_changed` when somebody changed the type since it was
 /// looked at.
@@ -169,13 +218,6 @@ pub async fn change_issue_type<S: AuthStore>(
     input: ChangeIssueType,
 ) -> Result<Authorized<IssueTypeView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let held = ctx
-        .require(&actor, Permission::ManageIssueTypes, Place::Organization)
-        .await?;
-    if input.name.is_none() && input.icon.is_none() && input.retired.is_none() {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    let name = input.name.as_deref().map(clean_name).transpose()?;
     let types = ctx
         .store()
         .issue_types()
@@ -186,13 +228,17 @@ pub async fn change_issue_type<S: AuthStore>(
         .find(|found| found.id == input.issue_type)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?
         .clone();
+    let place = place_of(current.project);
+    let held = ctx
+        .require(&actor, Permission::ManageIssueTypes, place)
+        .await?;
+    if input.name.is_none() && input.icon.is_none() && input.retired.is_none() {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
+    let name = input.name.as_deref().map(clean_name).transpose()?;
     let record = entity(RecordKind::IssueType, current.id);
     if current.version != input.version {
-        return Err(AppError::stale(
-            record,
-            Place::Organization,
-            actor.person.id,
-        ));
+        return Err(AppError::stale(record, place, actor.person.id));
     }
     let name = name.unwrap_or_else(|| current.name.clone());
     if name_taken(&types, &name, Some(current.id)) {
@@ -214,7 +260,7 @@ pub async fn change_issue_type<S: AuthStore>(
         ..current.clone()
     };
     if differences.is_empty() {
-        return Ok(held.authorize(IssueTypeView::from(&current)));
+        return Ok(held.authorize(ctx.issue_type_view(&actor, &current, None).await?));
     }
     differences.push(counted_up(current.version));
     let event = ctx.event(by(actor.person.id), record.clone(), differences)?;
@@ -248,11 +294,11 @@ pub async fn change_issue_type<S: AuthStore>(
         .map_err(|error| {
             why.answer::<S>(&error, ErrorCode::VersionChanged).about(
                 &record,
-                Place::Organization,
+                place,
                 actor.person.id,
             )
         })?;
-    Ok(held.authorize(IssueTypeView::from(&after)))
+    Ok(held.authorize(ctx.issue_type_view(&actor, &after, None).await?))
 }
 
 /// Makes the issue types of the first start if there are none yet: *Bug, Task, Feature, Goal*,
@@ -283,6 +329,7 @@ pub async fn create_starting_issue_types<S: AuthStore>(
                 .map_err(|error| AppError::Internal(error.to_string()))?,
             name: Message::from(starting.name).render(),
             icon: starting.icon,
+            project: None,
             position,
             retired_at: None,
             version: FIRST_VERSION,

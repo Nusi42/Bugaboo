@@ -129,6 +129,10 @@ pub struct LabelGroup {
     /// Whether an issue has at most one label of the group.
     #[not_personal]
     pub pick_one: bool,
+    /// The project it was made in (offered there and below until a place says otherwise, and
+    /// looked after by whoever manages labels there); none for the whole organization.
+    #[not_personal]
+    pub project: Option<ProjectId>,
     /// The place in the order the groups are offered in.
     #[not_personal]
     pub position: i64,

@@ -2,10 +2,11 @@
 //!
 //! The person needs *Move issues* in the project the issue is in and in the project it goes to, and
 //! sees both. The issue gets a readable ID of the new project, in that project's mode, and the old
-//! one keeps working (`issue_alias`). M3 moves an issue only where it can live on without losing
-//! anything: the project offers its issue type, uses every own field the issue has a value in, and
-//! allows the tags it has. What cannot move is named, so the preview of a change to many issues
-//! says why an issue is skipped.
+//! one keeps working (`issue_alias`). An issue moves only where it can live on without losing
+//! anything: the project uses every own field the issue has a value in, and allows the tags it has.
+//! What cannot move is named, so the preview of a change to many issues says why an issue is
+//! skipped. An issue type the project does not use is no such reason: the issue keeps its type, the
+//! way every issue keeps a retired one, and the preview says so (M3-F124).
 
 use std::sync::Arc;
 
@@ -13,6 +14,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{IdSource, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, StatusGroup};
+use bb_core::offer::OfferSubject;
 use bb_core::project::{Project, ShortName};
 use bb_core::readable_id::{IssueCode, ReadableId};
 use bb_core::version::{counted_up, next as next_version};
@@ -27,6 +29,7 @@ use super::types::{IssueView, MoveIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::issues::member;
+use crate::many_changes::ManyChangeNote;
 use crate::projects::Why;
 use crate::workflows::ensure_status_in_force_in;
 
@@ -43,9 +46,23 @@ pub(crate) struct MovePlan {
     /// The status and status group the issue starts again in, when the workflow that counts in
     /// the project it goes to lacks the status it has (ADR-0031 amendment 3).
     restart: Option<(StatusKey, StatusGroup)>,
+    /// The name of the issue's type, when it is retired or the project it goes to does not offer
+    /// it: the issue keeps the type, and the preview says so (M3-F124).
+    pub(crate) type_not_used: Option<String>,
 }
 
 impl MovePlan {
+    /// What the preview says about the issue's type, when the issue keeps one that the project it
+    /// goes to does not use (M3-F124).
+    pub(crate) fn type_note(&self) -> Option<ManyChangeNote> {
+        self.type_not_used
+            .as_ref()
+            .map(|issue_type| ManyChangeNote::TypeNotUsed {
+                issue_type: issue_type.clone(),
+                project: self.target.name.clone(),
+            })
+    }
+
     /// The project the issue goes to.
     pub(crate) const fn target_id(&self) -> ProjectId {
         self.target.id
@@ -60,20 +77,27 @@ impl MovePlan {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Whether a project offers an issue type to its issues. Until types are limited to projects
-    /// (M3-F22) a project offers every type that is not retired; this is the one place that says
-    /// so, for a move and for the preview of one.
-    pub(crate) async fn offers_issue_type(
+    /// The name of the issue's type when the issue would keep a type that the project does not
+    /// use: the type is retired, or the project does not offer it. A retired type is not missing
+    /// (the issue keeps it, as every issue keeps a retired type).
+    async fn type_not_used_in(
         &self,
-        _project: ProjectId,
-        issue_type: IssueTypeId,
-    ) -> Result<bool, AppError> {
-        Ok(self
+        issue: &Issue,
+        project: ProjectId,
+    ) -> Result<Option<String>, AppError> {
+        let Some(found) = self
             .store()
-            .issue_type(issue_type)
+            .issue_type(issue.issue_type)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .is_some_and(|found| found.retired_at.is_none()))
+        else {
+            return Ok(None);
+        };
+        let used = found.retired_at.is_none()
+            && self
+                .offered_in(OfferSubject::IssueType(found.id), found.project, project)
+                .await?;
+        Ok((!used).then_some(found.name))
     }
 
     /// The project issues are moved into, as the person asks for it, and what they hold there: it
@@ -120,10 +144,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let already_there = target.id == issue.project;
         let mut restart = None;
+        let mut type_not_used = None;
         if !already_there {
-            if !self.offers_issue_type(target.id, issue.issue_type).await? {
-                return Err(ErrorCode::IssueTypeRetired.into());
-            }
+            type_not_used = self.type_not_used_in(&issue, target.id).await?;
             let chain = self.chain_of(target.id).await?;
             if !self.fields_follow(&issue, &chain).await? {
                 return Err(ErrorCode::FieldNotHere.into());
@@ -151,6 +174,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             held,
             already_there,
             restart,
+            type_not_used,
         })
     }
 }
@@ -161,8 +185,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// `resource.not_found` for an issue or a project that is not there for the person,
-/// `access.forbidden` without *Move issues* in either project, `issue.type_retired` when the
-/// project does not offer the issue's type, `field.not_here` when it does not use a field the
+/// `access.forbidden` without *Move issues* in either project, `field.not_here` when it does not use a field the
 /// issue has a value in, `tag.not_here` for a tag the project does not allow,
 /// `edit.version_changed` when somebody changed the issue since it was looked at.
 pub async fn move_issue<S: AuthStore>(
@@ -178,6 +201,7 @@ pub async fn move_issue<S: AuthStore>(
         held,
         already_there,
         restart,
+        type_not_used: _,
     } = plan;
     let place = Place::Project(issue.project);
     if issue.version != input.version {
@@ -276,7 +300,7 @@ struct MoveWrite {
 
 impl MoveWrite {
     /// Writes the move inside the change: the codes of the project it goes to are given out one
-    /// change at a time, the type is judged again on what is stored now, the issue gets a code of
+    /// change at a time, the issue gets a code of
     /// the new project, the old code is kept as a redirect, and the new readable ID is a second
     /// event of the issue (the first one could not name a code that is given out in the change).
     async fn run<S: AuthStore>(
@@ -288,14 +312,6 @@ impl MoveWrite {
         stopped: &Why,
     ) -> Result<IssueCode, S::Error> {
         S::lock_issue_codes(transaction, self.to).await?;
-        let offered = S::issue_types_in(transaction)
-            .await?
-            .iter()
-            .find(|found| found.id == self.issue_type)
-            .is_some_and(|found| found.retired_at.is_none());
-        if !offered {
-            return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
-        }
         // The workflow of the project it goes to still has the status the issue gets there.
         ensure_status_in_force_in::<S>(
             transaction,

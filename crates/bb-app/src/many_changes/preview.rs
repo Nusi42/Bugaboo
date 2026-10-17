@@ -91,7 +91,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let fields = self
                     .changes_as_read(reader, actor, &plan.held, &plan.issue, &plan.changes)
                     .await?;
-                Some(ManyChangeDetail::Changes { fields })
+                Some(ManyChangeDetail::Changes {
+                    fields,
+                    notes: plan.notes,
+                })
             }
             Planned::Relation { name, other } => {
                 self.line_of(actor, maker, &other)
