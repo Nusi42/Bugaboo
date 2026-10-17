@@ -5,11 +5,19 @@ use bb_core::issue::Issue;
 use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::workflows::{DirectoryRows, WorkflowStore};
+use crate::workflows::{DirectoryRows, StatusFilter, WorkflowStore};
 
 impl WorkflowStore for FakeStore {
     async fn workflow_uses_in(tx: &mut Tx) -> Result<Vec<WorkflowUse>, FakeError> {
         Ok(tx.state.workflow_uses.clone())
+    }
+
+    async fn lock_workflows(_tx: &mut Tx) -> Result<(), FakeError> {
+        Ok(())
+    }
+
+    async fn lock_workflows_shared(_tx: &mut Tx) -> Result<(), FakeError> {
+        Ok(())
     }
 
     async fn workflow_directory_in(tx: &mut Tx) -> Result<DirectoryRows, FakeError> {
@@ -70,6 +78,7 @@ impl WorkflowStore for FakeStore {
         tx: &mut Tx,
         projects: Option<Vec<ProjectId>>,
         issue_types: Option<Vec<IssueTypeId>>,
+        statuses: StatusFilter,
     ) -> Result<Vec<Issue>, FakeError> {
         let mut found: Vec<Issue> = tx
             .state
@@ -83,6 +92,11 @@ impl WorkflowStore for FakeStore {
                     && issue_types
                         .as_ref()
                         .is_none_or(|types| types.contains(&issue.issue_type))
+                    && match &statuses {
+                        StatusFilter::Any => true,
+                        StatusFilter::In(keys) => keys.contains(&issue.status),
+                        StatusFilter::NotIn(keys) => !keys.contains(&issue.status),
+                    }
             })
             .cloned()
             .collect();

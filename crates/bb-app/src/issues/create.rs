@@ -25,7 +25,7 @@ use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
 use crate::projects::Why;
-use crate::workflows::StatusCheck;
+use crate::workflows::{StatusCheck, ensure_written_status_in};
 
 /// How often a change is tried again when two writers drew the same random code at the same
 /// moment (the second one hits the unique key of the project's codes and draws another).
@@ -274,6 +274,8 @@ pub async fn create_issue<S: AuthStore>(
                     if retired {
                         return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
                     }
+                    // The workflow the status was judged on is still the one that counts.
+                    ensure_written_status_in::<S>(transaction, &issue, None, &stopped).await?;
                     // The mode and the code are judged after the lock on the codes of the
                     // project, so a change of the mode meanwhile is seen whole or not at all.
                     S::lock_issue_codes(transaction, issue.project).await?;

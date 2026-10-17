@@ -17,6 +17,7 @@ use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{GroupId, WorkflowId};
 use bb_core::issue::{Issue, StatusGroup};
+use bb_core::many_changes::MANY_CHANGES_ISSUES_MAX;
 use bb_core::own_fields::FieldFor;
 use bb_core::version::counted_up;
 use bb_core::workflow::{StatusKey, StoredWorkflow, WorkflowContent, check_name};
@@ -24,7 +25,7 @@ use bb_policy::{Authorized, Evaluation, Permission};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::strand::{Reach, count_stranded_in, places_of};
+use super::strand::{count_stranded_in, reach_of_workflow_in};
 use super::types::{PublishWorkflow, Published, StatusMoveInput, WorkflowSlot};
 use super::write::{summary, what_of};
 use crate::access::Actor;
@@ -102,9 +103,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         asked: &[StatusMoveInput],
     ) -> Result<Vec<Moving>, AppError> {
         let dropped = stored.content.dropped_by(content);
-        let sensible = asked
-            .iter()
-            .all(|each| dropped.contains(&each.from) && content.status(&each.to).is_some());
+        // A move goes only to the starting status of the workflow: nothing else is allowed to an
+        // issue outside its workflow (ADR-0031 amendment 3).
+        let sensible = asked.iter().all(|each| {
+            dropped.contains(&each.from)
+                && content.status(&each.to).is_some()
+                && content.initial() == Some(&each.to)
+        });
         if !sensible {
             return Err(ErrorCode::InvalidRequest.into());
         }
@@ -115,6 +120,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         let issues = self
             .governed_issues(&directory, stored.workflow.id, &dropped)
             .await?;
+        // One publish moves no more issues than one change to many issues takes (the job route of
+        // a bigger move is a follow-up).
+        if issues.len() > MANY_CHANGES_ISSUES_MAX {
+            return Err(ErrorCode::WorkflowStatusInUse.into());
+        }
         let mut planned = Vec::with_capacity(issues.len());
         for issue in issues {
             let target = asked
@@ -147,8 +157,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 assigned_to: None,
                 fields: BTreeMap::new(),
             };
-            if self.plan_issue_change(actor, &asked).await.is_err() {
-                skipped += 1;
+            match self.plan_issue_change(actor, &asked).await {
+                Ok(_) => {}
+                // A failure of the server is not a skipped issue.
+                Err(error @ AppError::Internal(_)) => {
+                    self.forget_workflows();
+                    return Err(error);
+                }
+                Err(_) => skipped += 1,
             }
         }
         self.forget_workflows();
@@ -191,11 +207,7 @@ async fn carry_out_moves<S: AuthStore>(
             .create(
                 entity(RecordKind::Issue, stored.id),
                 vec![
-                    FieldChange {
-                        field: issue_member::STATUS.to_owned(),
-                        before: Some(json!(stored.status.as_str())),
-                        after: Some(json!(each.target.as_str())),
-                    },
+                    issue_member::status_change(&stored.status, &each.target),
                     counted_up(stored.version),
                 ],
             )
@@ -238,13 +250,6 @@ pub async fn publish_workflow<S: AuthStore>(
         .plan_moves(&actor, &stored, &content, &input.moves)
         .await?;
     let id: WorkflowId = input.workflow;
-    let directory = ctx.workflow_directory().await?;
-    let tree = ctx
-        .store()
-        .project_tree()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let reach = Reach::of(&places_of(directory.uses(), id), &tree);
     let record = entity(RecordKind::Workflow, id);
     let name = input.name.trim().to_owned();
     let (before, after) = (summary(&stored.content), summary(&content));
@@ -279,6 +284,9 @@ pub async fn publish_workflow<S: AuthStore>(
     let (events, now) = (ctx.event_maker(by(actor.person.id)), ctx.now());
     ctx.save_text(actor.person.id, place, &save, &event, move |transaction| {
         Box::pin(async move {
+            S::lock_workflows(transaction).await?;
+            // The places are read now, with the lock: they are what is stored when the check runs.
+            let reach = reach_of_workflow_in::<S>(transaction, id).await?;
             if !S::replace_workflow(transaction, id, &written_name, &written, version).await? {
                 return Ok(Written::Stale);
             }

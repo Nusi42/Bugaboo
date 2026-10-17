@@ -4,11 +4,9 @@
 
 use bb_core::event::EntityRef;
 use bb_core::id::{ProjectId, WorkflowId};
-use bb_core::project::Project;
 use bb_core::workflow::WorkflowUse;
-use bb_policy::{Permission, Place};
+use bb_policy::{Permission, Place, Tree};
 
-use super::strand::chain_in;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::editing::RecordFacts;
@@ -20,7 +18,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// the workflow is used.
     pub(crate) async fn place_of_workflow(&self, id: WorkflowId) -> Result<Place, AppError> {
         let failed = |error| internal::<S>(&error);
-        let tree = self.store().project_tree().await.map_err(failed)?;
+        let tree = Tree::of(&self.store().project_tree().await.map_err(failed)?);
         let uses = self.store().workflow_uses().await.map_err(failed)?;
         Ok(place_from_uses(&tree, &uses, id))
     }
@@ -35,7 +33,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         chain: &[ProjectId],
     ) -> Result<bool, AppError> {
         let failed = |error| internal::<S>(&error);
-        let tree = self.store().project_tree().await.map_err(failed)?;
+        let tree = Tree::of(&self.store().project_tree().await.map_err(failed)?);
         let uses = self.store().workflow_uses().await.map_err(failed)?;
         let unused = !uses.iter().any(|used| used.workflow == id);
         if unused
@@ -85,13 +83,13 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// The place that holds a workflow, from the tree of the projects and the places workflows are
 /// used at.
-pub(crate) fn place_from_uses(tree: &[Project], uses: &[WorkflowUse], id: WorkflowId) -> Place {
+pub(crate) fn place_from_uses(tree: &Tree, uses: &[WorkflowUse], id: WorkflowId) -> Place {
     let mut common: Option<Vec<ProjectId>> = None;
     for used in uses.iter().filter(|used| used.workflow == id) {
         let Some(project) = used.project else {
             return Place::Organization;
         };
-        let chain = chain_in(tree, project);
+        let chain = tree.chain(project).unwrap_or_default();
         common = Some(match common {
             None => chain,
             Some(so_far) => so_far

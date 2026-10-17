@@ -4,7 +4,7 @@
 //! A workflow is saved as a whole: its statuses and status changes are deleted and written again in
 //! the one transaction that checks the version, so a reader never sees half a workflow.
 
-use bb_app::workflows::{DirectoryRows, WorkflowStore};
+use bb_app::workflows::{DirectoryRows, StatusFilter, WorkflowStore};
 use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::{Issue, StatusGroup};
 use bb_core::workflow::{
@@ -14,7 +14,7 @@ use bb_core::workflow::{
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction};
+use crate::db::{LockClass, Row, StoredId, Transaction};
 use crate::error::StoreError;
 use crate::issues::{issue_select, read_issue};
 use crate::schema::{IssueRow, WorkflowChangeRow, WorkflowRow, WorkflowStatusRow, WorkflowUseRow};
@@ -284,6 +284,16 @@ impl WorkflowStore for AuthStorage {
             .collect()
     }
 
+    async fn lock_workflows(transaction: &mut Transaction) -> Result<(), StoreError> {
+        transaction.advisory_lock(LockClass::Workflows, 0).await
+    }
+
+    async fn lock_workflows_shared(transaction: &mut Transaction) -> Result<(), StoreError> {
+        transaction
+            .advisory_lock_shared(LockClass::Workflows, 0)
+            .await
+    }
+
     async fn workflow_directory_in(
         transaction: &mut Transaction,
     ) -> Result<DirectoryRows, StoreError> {
@@ -464,9 +474,11 @@ impl WorkflowStore for AuthStorage {
         transaction: &mut Transaction,
         projects: Option<Vec<ProjectId>>,
         issue_types: Option<Vec<IssueTypeId>>,
+        statuses: StatusFilter,
     ) -> Result<Vec<Issue>, StoreError> {
         if projects.as_ref().is_some_and(Vec::is_empty)
             || issue_types.as_ref().is_some_and(Vec::is_empty)
+            || matches!(&statuses, StatusFilter::In(keys) if keys.is_empty())
         {
             return Ok(Vec::new());
         }
@@ -483,6 +495,20 @@ impl WorkflowStore for AuthStorage {
             select.and_where(
                 Expr::col(IssueRow::IssueType).is_in(issue_types.iter().map(|each| each.stored())),
             );
+        }
+        match &statuses {
+            StatusFilter::Any => {}
+            StatusFilter::In(keys) => {
+                select.and_where(
+                    Expr::col(IssueRow::Status).is_in(keys.iter().map(StatusKey::as_str)),
+                );
+            }
+            StatusFilter::NotIn(keys) if keys.is_empty() => {}
+            StatusFilter::NotIn(keys) => {
+                select.and_where(
+                    Expr::col(IssueRow::Status).is_not_in(keys.iter().map(StatusKey::as_str)),
+                );
+            }
         }
         transaction
             .fetch_all(&select)

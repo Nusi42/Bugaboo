@@ -417,6 +417,10 @@ pub(crate) enum LockClass {
     /// Changes of the names of tags, labels and groups of labels (key 0): two changes at the same
     /// moment cannot both take a name, and a *Pick one* group is judged on what is stored.
     TagsAndLabels = 6,
+    /// The workflows that count (key 0): a change to workflows takes it alone, and an issue that is
+    /// written with a status takes it together with the others who do, so an issue is never
+    /// written into a status that a workflow being published drops.
+    Workflows = 7,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through
@@ -491,6 +495,25 @@ impl Transaction {
             let mut select = SelectStatement::new();
             select.expr(
                 sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock"))
+                    .arg(class as i32)
+                    .arg(key),
+            );
+            self.fetch_all(&select).await?;
+        }
+        Ok(())
+    }
+
+    /// Like [`Self::advisory_lock`], but shared: any number of transactions hold it together, and
+    /// one that takes it alone waits for them all.
+    pub(crate) async fn advisory_lock_shared(
+        &mut self,
+        class: LockClass,
+        key: i32,
+    ) -> Result<(), StoreError> {
+        if matches!(self.inner, TxInner::Postgres(_)) {
+            let mut select = SelectStatement::new();
+            select.expr(
+                sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock_shared"))
                     .arg(class as i32)
                     .arg(key),
             );

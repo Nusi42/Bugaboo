@@ -18,7 +18,9 @@ use super::workflows::change;
 use super::workflows_rules::{assign, key, member, starting_role, status_of};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
+use crate::history::{HistoryQuery, HistoryWhat, history};
 use crate::issues::{DeleteIssue, RestoreIssue, change_issue, delete_issue, restore_issue};
+use crate::projects::{MovePreviewQuery, MoveProject, move_project, preview_move};
 use crate::roles::{CopyRole, SetFieldLevel, copy_role, set_level};
 use crate::workflows::{
     CreateWorkflow, DeleteWorkflow, PublishWorkflow, StatusMoveInput, TriedVerdict,
@@ -159,10 +161,7 @@ async fn wf_02_publishing_whose_moves_would_be_skipped_publishes_nothing() -> Ou
     let refused = published_with(&world, &editor, |sent| without_progress(sent, DONE))
         .await
         .err();
-    assert_eq!(
-        refused,
-        Some(AppError::Refused(ErrorCode::WorkflowStatusInUse))
-    );
+    assert_eq!(refused, Some(AppError::Refused(ErrorCode::InvalidRequest)));
     assert_eq!(status_of(&world, &admin, id).await?, IN_PROGRESS);
     let shown = a_workflow(&world, "ACME").await?;
     assert!(
@@ -210,27 +209,93 @@ async fn wf_03_an_issue_back_from_the_trash_starts_again_in_the_starting_status(
         },
     )
     .await?;
-    assert_eq!(status_of(&world, &admin, id).await?, REVIEW);
-    // Outside its workflow, it can go only to the starting status.
-    let version = crate::issues::issue(
+    // Back from the trash, the issue is outside its workflow, so it starts again in the starting
+    // status, and that has its history. It can go no other way without the rules.
+    assert_eq!(status_of(&world, &admin, id).await?, OPEN);
+    let page = history(
         &world.ctx(),
-        crate::issues::IssueQuery {
+        HistoryQuery {
             session_token: admin.clone(),
             issue: address.clone(),
+            tab: bb_core::history::HistoryTab::Changes,
+            cursor: None,
+            limit: 20,
         },
     )
     .await?
-    .into_value()
-    .issue
-    .version;
-    assert_eq!(
-        change_issue(&world.ctx(), change(&admin, &address, version, DONE)?)
-            .await
-            .err(),
-        Some(AppError::Refused(ErrorCode::WorkflowNoSuchChange))
-    );
-    change_issue(&world.ctx(), change(&admin, &address, version, OPEN)?).await?;
-    assert_eq!(status_of(&world, &admin, id).await?, OPEN);
+    .into_value();
+    let restarted = page.items.iter().any(|item| match &item.what {
+        HistoryWhat::Changes { fields } => fields.iter().any(|each| {
+            each.field == "status"
+                && matches!(
+                    &each.after,
+                    Some(crate::history::ChangeValue::Text { text }) if text == OPEN
+                )
+        }),
+        _ => false,
+    });
+    assert!(restarted, "the start again is in the history");
+    Ok(())
+}
+
+#[tokio::test]
+async fn wf_03_a_moved_project_sends_the_issues_its_workflow_lacks_to_the_starting_status()
+-> Outcome {
+    let world = World::new().await?;
+    let acme = a_project(&world, "ACME").await?;
+    let base = a_project(&world, "BASE").await?;
+    let admin = world.admin.session_token.clone();
+    // BASE has a workflow of its own whose statuses Simple lacks.
+    let editor = a_workflow(&world, "BASE").await?;
+    published_with(&world, &editor, |sent| {
+        sent.statuses = vec![
+            StatusDraft {
+                key: None,
+                name: "Intake".to_owned(),
+                group: StatusGroup::NotStarted,
+            },
+            StatusDraft {
+                key: None,
+                name: "Closed".to_owned(),
+                group: StatusGroup::Done,
+            },
+        ];
+        sent.changes = vec![ChangeDraft {
+            from: "Intake".to_owned(),
+            to: "Closed".to_owned(),
+            button: "Close".to_owned(),
+            rules: StatusRules::default(),
+        }];
+    })
+    .await?;
+    let id = an_issue(&world, acme).await?;
+    change_issue(
+        &world.ctx(),
+        change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
+    )
+    .await?;
+    let preview = preview_move(
+        &world.ctx(),
+        MovePreviewQuery {
+            session_token: admin.clone(),
+            project: acme,
+            to: Some(base),
+        },
+    )
+    .await?
+    .into_value();
+    move_project(
+        &world.ctx(),
+        MoveProject {
+            session_token: admin.clone(),
+            project: acme,
+            to: Some(base),
+            preview: preview.preview,
+        },
+    )
+    .await?;
+    // The projects below BASE use its workflow: the issue starts again, not in a status of Simple.
+    assert_eq!(status_of(&world, &admin, id).await?, "intake");
     Ok(())
 }
 

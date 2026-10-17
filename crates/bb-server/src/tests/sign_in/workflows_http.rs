@@ -191,3 +191,97 @@ async fn m3_f53_who_may_change_names_the_roles_held_in_the_project_over_http() -
     })
     .await
 }
+
+#[tokio::test]
+async fn wf_02_publishing_and_writing_an_issue_at_once_never_strand_an_issue() -> TestResult {
+    each_database("wf_02_publish_race", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut ben, _) = site
+            .person(bb_app::access::StartingRole::Administrator, "ben")
+            .await?;
+        for round in 0..6 {
+            // A project with a workflow of its own, an issue in In progress (which the publish
+            // drops, moving it to Open) and one in Open that a second person moves into it.
+            let short = format!("RACE{round}");
+            let project = ok(&ada
+                .send(
+                    "POST",
+                    PROJECTS,
+                    Some(json!({"short_name": short, "name": short})),
+                )
+                .await?)?
+            .clone();
+            let made = |title: &'static str| json!({"issue_type": site.kind, "title": title});
+            let path = format!("{PROJECTS}/{short}/issues");
+            let moving = key_of(&ada.send("POST", &path, Some(made("Moves"))).await?)?;
+            ok(&go(&mut ada, &moving, "in-progress").await?)?;
+            let other = key_of(&ada.send("POST", &path, Some(made("Races"))).await?)?;
+            let editor = ok(&ada
+                .send("POST", WORKFLOWS, Some(json!({"project": text_in(&project, "id")?})))
+                .await?)?
+            .clone();
+            let workflow = text_in(&editor["workflow"], "id")?;
+            let lock = ok(&ada
+                .send(
+                    "POST",
+                    LOCKS,
+                    Some(json!({
+                        "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
+                        "editor_id": AN_EDITOR,
+                    })),
+                )
+                .await?)?["lock_token"]
+                .clone();
+            let publish = json!({
+                "version": editor["workflow"]["version"],
+                "lock_token": lock,
+                "name": "Open or done",
+                "statuses": [
+                    {"key": "open", "name": "Open", "group": "not-started"},
+                    {"key": "done", "name": "Done", "group": "done"},
+                ],
+                "changes": [
+                    {"from": "open", "to": "done", "button": "Finish"},
+                    {"from": "done", "to": "open", "button": "Reopen"},
+                ],
+                "moves": [{"from": "in-progress", "to": "open"}],
+            });
+            let address = format!("{WORKFLOWS}/{workflow}");
+            let (published, written) = tokio::join!(
+                ada.send("PUT", &address, Some(publish)),
+                go(&mut ben, &other, "in-progress"),
+            );
+            let (published, written) = (published?, written?);
+            // Whatever order they met in, every issue is in a status its workflow has.
+            let statuses: Vec<String> = ok(&ada
+                .send(
+                    "GET",
+                    &format!("{WORKFLOWS}/editor?project={}", text_in(&project, "id")?),
+                    None,
+                )
+                .await?)?["statuses"]
+                .as_array()
+                .ok_or("no statuses")?
+                .iter()
+                .filter_map(|each| each["key"].as_str().map(str::to_owned))
+                .collect();
+            for issue in [&moving, &other] {
+                let read = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
+                let status = ok(&read)?["issue"]["status"]["key"]
+                    .as_str()
+                    .ok_or("no status")?
+                    .to_owned();
+                assert!(
+                    statuses.contains(&status),
+                    "round {round}: {issue} is in {status}, which {statuses:?} lack \
+                     (publish {}, write {})",
+                    published.status,
+                    written.status
+                );
+            }
+        }
+        Ok(())
+    })
+    .await
+}

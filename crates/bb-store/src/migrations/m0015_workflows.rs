@@ -10,13 +10,15 @@ use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::{Step, id_column};
 use crate::schema::{
-    IssueTypeRow, ProjectRow, WorkflowChangeRow, WorkflowRow, WorkflowStatusRow, WorkflowUseRow,
+    IssueRow, IssueTypeRow, ProjectRow, WorkflowChangeRow, WorkflowRow, WorkflowStatusRow,
+    WorkflowUseRow,
 };
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = workflows();
     steps.extend(contents());
     steps.extend(uses());
+    steps.extend(issues());
     steps
 }
 
@@ -140,6 +142,29 @@ fn uses() -> Vec<Step> {
                 .name("workflow_use_by_workflow")
                 .table(WorkflowUseRow::Table)
                 .col(WorkflowUseRow::Workflow)
+                .to_owned(),
+        ),
+    ]
+}
+
+/// What a change to the workflows looks up: the live issues of some projects or issue types that
+/// are in some statuses.
+fn issues() -> Vec<Step> {
+    vec![
+        Step::Index(
+            Index::create()
+                .name("issue_by_project_and_status")
+                .table(IssueRow::Table)
+                .col(IssueRow::Project)
+                .col(IssueRow::Status)
+                .to_owned(),
+        ),
+        Step::Index(
+            Index::create()
+                .name("issue_by_type_and_status")
+                .table(IssueRow::Table)
+                .col(IssueRow::IssueType)
+                .col(IssueRow::Status)
                 .to_owned(),
         ),
     ]

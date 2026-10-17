@@ -4,7 +4,7 @@
 
 use bb_app::issues::IssueStore as _;
 use bb_app::ports::{BoxFuture, ChangeStore};
-use bb_app::workflows::WorkflowStore;
+use bb_app::workflows::{StatusFilter, WorkflowStore};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{IdSource, WorkflowId};
 use bb_core::version::FIRST_VERSION;
@@ -207,24 +207,45 @@ async fn wf_02_the_live_issues_of_some_projects_and_types_are_found() -> TestRes
         let storage = &fixture.storage;
         let mut source = ids();
         let world = world(storage, &mut source, 4).await;
-        let all = storage.live_issues(None, None).await?;
+        let any = || StatusFilter::Any;
+        let all = storage.live_issues(None, None, any()).await?;
         assert_eq!(all.len(), 4);
         // The issues of a project, and of an issue type, and of neither.
         let project = world.project;
-        let in_project = storage.live_issues(Some(vec![project]), None).await?;
+        let in_project = storage
+            .live_issues(Some(vec![project]), None, any())
+            .await?;
         assert_eq!(in_project.len(), 4);
         assert!(
             storage
-                .live_issues(Some(Vec::new()), None)
+                .live_issues(Some(Vec::new()), None, any())
                 .await?
                 .is_empty()
         );
         let kind = world.issues[0].issue_type;
-        let of_type = storage.live_issues(None, Some(vec![kind])).await?;
+        let of_type = storage.live_issues(None, Some(vec![kind]), any()).await?;
         assert!(of_type.iter().all(|issue| issue.issue_type == kind));
         assert!(
             storage
-                .live_issues(None, Some(Vec::new()))
+                .live_issues(None, Some(Vec::new()), any())
+                .await?
+                .is_empty()
+        );
+
+        // By status: the one status the issues are in, none of them, and not that one.
+        let status = all[0].status.clone();
+        let with = storage
+            .live_issues(None, None, StatusFilter::In(vec![status.clone()]))
+            .await?;
+        let without = storage
+            .live_issues(None, None, StatusFilter::NotIn(vec![status]))
+            .await?;
+        assert_eq!(with.len() + without.len(), all.len());
+        assert!(with.iter().all(|issue| issue.status == all[0].status));
+        assert!(without.iter().all(|issue| issue.status != all[0].status));
+        assert!(
+            storage
+                .live_issues(None, None, StatusFilter::In(Vec::new()))
                 .await?
                 .is_empty()
         );
@@ -238,7 +259,7 @@ async fn wf_02_the_live_issues_of_some_projects_and_types_are_found() -> TestRes
             })
         })
         .await?;
-        assert_eq!(storage.live_issues(None, None).await?.len(), 3);
+        assert_eq!(storage.live_issues(None, None, any()).await?.len(), 3);
         Ok(())
     })
     .await

@@ -147,6 +147,21 @@ impl WorkflowDirectory {
             })
     }
 
+    /// The keys of the statuses that every workflow here has, the starting workflow too: an issue
+    /// in any other status may be in a status that the workflow governing it lacks.
+    pub(crate) fn statuses_of_every_workflow(&self) -> Vec<StatusKey> {
+        self.starting
+            .statuses
+            .iter()
+            .map(|status| status.key.clone())
+            .filter(|key| {
+                self.workflows
+                    .values()
+                    .all(|stored| stored.content.status(key).is_some())
+            })
+            .collect()
+    }
+
     /// Every place a workflow is used at.
     pub(crate) fn uses(&self) -> &[WorkflowUse] {
         &self.uses

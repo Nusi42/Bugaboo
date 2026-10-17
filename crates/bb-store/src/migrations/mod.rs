@@ -425,7 +425,7 @@ mod tests {
             "fffa0b40e2a8b74a36236e5d54896ec8d4a5078c82dcde3215f9ff610a4b6d2e",
             "672ecd2ebb383bd7483263729b11f4f2f3e2695825b42b86bbaf22330b12a4bf",
             "045061588034b6040764c6ba14cfd34631f165361100372b98f44a2812c6b790",
-            "babd94895a1c2c32df5e5ea5f721567b18133cbc114aa26ce2a9ded9d6d25634",
+            "16ed6f2372e8700c9a3158a53edbeb5e976ecf9737498802ee081c241ed286b2",
         ];
         for (definition, wanted) in ALL.iter().zip(APPLIED) {
             let checksum = definition.checksum().unwrap();

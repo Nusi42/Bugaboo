@@ -28,6 +28,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::issues::member;
 use crate::projects::Why;
+use crate::workflows::ensure_status_in_force_in;
 
 /// A move that the person may make, judged but not written yet.
 pub(crate) struct MovePlan {
@@ -52,11 +53,9 @@ impl MovePlan {
 
     /// The change of the status the move makes, before and after, when it makes one.
     pub(crate) fn status_change(&self) -> Option<FieldChange> {
-        self.restart.as_ref().map(|(status, _)| FieldChange {
-            field: member::STATUS.to_owned(),
-            before: Some(json!(self.issue.status.as_str())),
-            after: Some(json!(status.as_str())),
-        })
+        self.restart
+            .as_ref()
+            .map(|(status, _)| member::status_change(&self.issue.status, status))
     }
 }
 
@@ -297,6 +296,15 @@ impl MoveWrite {
         if !offered {
             return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
         }
+        // The workflow of the project it goes to still has the status the issue gets there.
+        ensure_status_in_force_in::<S>(
+            transaction,
+            self.to,
+            self.issue_type,
+            &self.status,
+            stopped,
+        )
+        .await?;
         let plan = code_plan_in::<S>(transaction, self.to).await?;
         let code = new_code_in::<S>(transaction, self.to, plan, ids).await?;
         if !S::move_issue(

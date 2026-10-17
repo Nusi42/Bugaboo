@@ -16,7 +16,7 @@ use bb_policy::{Authorized, Permission};
 use serde_json::{Value, json};
 
 use super::editor::starting_name;
-use super::strand::{Reach, count_stranded_in, places_of};
+use super::strand::{count_stranded_in, reach_of_place_in, reach_of_workflow_in};
 use super::types::{CreateWorkflow, DeleteWorkflow, UseWorkflow, WorkflowEditor};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::editing::let_go_for_delete;
@@ -127,7 +127,7 @@ pub async fn create_workflow<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::lock_policy(transaction).await?;
+                S::lock_workflows(transaction).await?;
                 let placed = S::workflow_uses_in(transaction).await?;
                 if placed.iter().any(|each| each.place() == place) {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
@@ -208,18 +208,13 @@ pub async fn use_workflow<S: AuthStore>(
         entity(RecordKind::Workflow, record),
         vec![change],
     )?;
-    let tree = ctx
-        .store()
-        .project_tree()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let reach = Reach::of(&[place], &tree);
     let why = Why::default();
     let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::lock_policy(transaction).await?;
+                S::lock_workflows(transaction).await?;
+                let reach = reach_of_place_in::<S>(transaction, place).await?;
                 match chosen {
                     Some(workflow) => {
                         let used = WorkflowUse {
@@ -270,13 +265,6 @@ pub async fn delete_workflow<S: AuthStore>(
     ctx.require(&actor, Permission::ManageWorkflows, place)
         .await?;
     let (id, version) = (input.workflow, input.version);
-    let directory = ctx.workflow_directory().await?;
-    let tree = ctx
-        .store()
-        .project_tree()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let reach = Reach::of(&places_of(directory.uses(), id), &tree);
     let record = entity(RecordKind::Workflow, id);
     let (statuses, changes) = summary(&stored.content);
     let event = ctx.event(
@@ -302,6 +290,9 @@ pub async fn delete_workflow<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
+                S::lock_workflows(transaction).await?;
+                // The places it is used at are read now, before the use is taken away with it.
+                let reach = reach_of_workflow_in::<S>(transaction, id).await?;
                 let_go_for_delete::<S>(transaction, &what, me, now, &stopped).await?;
                 if !S::delete_workflow(transaction, id, version).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));

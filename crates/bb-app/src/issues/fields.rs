@@ -139,7 +139,19 @@ impl From<&CreateIssue> for Given {
 /// reads: defined once, here. A field of the catalogue has the word of the catalogue
 /// (`Field::code`), so History filters by one mapping.
 pub(crate) mod member {
+    use bb_core::event::FieldChange;
     use bb_core::fields::Field;
+    use bb_core::workflow::StatusKey;
+    use serde_json::json;
+
+    /// The change of the status of an issue, as its history shows it: the one place that builds it.
+    pub(crate) fn status_change(before: &StatusKey, after: &StatusKey) -> FieldChange {
+        FieldChange {
+            field: STATUS.to_owned(),
+            before: Some(json!(before.as_str())),
+            after: Some(json!(after.as_str())),
+        }
+    }
 
     pub(crate) const PROJECT: &str = "project";
     pub(crate) const ISSUE_TYPE: &str = "issue-type";
