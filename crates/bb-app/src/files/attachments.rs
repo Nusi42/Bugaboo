@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::files::{Attachment, DownloadLink, LinkTarget, PreviewState, StoredFile};
+use bb_core::files::{Attachment, DownloadLink, LinkTarget, PreviewStatus, StoredFile};
 use bb_core::id::{AttachmentId, UserId};
 use bb_core::issue::Issue;
 use bb_core::version::{counted_up, next};
@@ -73,7 +73,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 attachment.added_by,
             )
             .await?;
-        let preview_link = if file.preview == PreviewState::Ready {
+        let preview_link = if attachment.preview == PreviewStatus::Ready {
             Some(self.link_for(attachment.id, LinkTarget::Preview, actor.person.id)?)
         } else {
             None
@@ -89,6 +89,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             added_at: attachment.added_at,
             version: attachment.version,
             download_link: self.link_for(attachment.id, LinkTarget::File, actor.person.id)?,
+            preview: attachment.preview,
             preview_link,
             may_delete: may_remove(held, issue, attachment, actor.person.id),
         })

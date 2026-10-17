@@ -7,7 +7,7 @@
 
 use std::io;
 
-use bb_core::files::{LinkTarget, MediaType, PreviewKind, PreviewState};
+use bb_core::files::{LinkTarget, MediaType, PreviewKind, PreviewStatus};
 use bb_core::id::UploadId;
 use bb_core::security_log::Digest;
 
@@ -114,13 +114,13 @@ pub trait FileStore: Send + Sync {
     -> BoxFuture<'_, io::Result<Option<FileBody>>>;
 
     /// Creates the preview of a stored file in a process of its own, with limits (ADR-0032 §4), and
-    /// keeps it: [`PreviewState::Ready`] when there is one, [`PreviewState::Without`] when the file
+    /// keeps it: [`PreviewStatus::Ready`] when there is one, [`PreviewStatus::Without`] when the file
     /// is too big, takes too long, is broken or crashes the process. Either way the server goes on.
     fn create_preview(
         &self,
         hash: Digest,
         kind: PreviewKind,
-    ) -> BoxFuture<'_, io::Result<PreviewState>>;
+    ) -> BoxFuture<'_, io::Result<PreviewStatus>>;
 
     /// Deletes a file and its preview. A file that is not there is no error.
     fn delete(&self, hash: Digest) -> BoxFuture<'_, io::Result<()>>;
@@ -192,7 +192,7 @@ impl FileStore for NoFileStore {
         &self,
         _hash: Digest,
         _kind: PreviewKind,
-    ) -> BoxFuture<'_, io::Result<PreviewState>> {
+    ) -> BoxFuture<'_, io::Result<PreviewStatus>> {
         unavailable()
     }
 

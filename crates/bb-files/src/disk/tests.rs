@@ -156,7 +156,7 @@ async fn att_04_a_preview_of_a_file_that_is_not_there_is_none_and_no_program_is_
         .create_preview(Digest::new([1; 32]), PreviewKind::Image)
         .await
         .unwrap();
-    assert_eq!(state, PreviewState::Without);
+    assert_eq!(state, PreviewStatus::Without);
 }
 
 /// Every file below `folder`.

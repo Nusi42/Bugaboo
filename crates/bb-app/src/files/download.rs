@@ -8,7 +8,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::files::{
-    DownloadLink, LinkTarget, PREVIEW_MEDIA_TYPE, PreviewState, UNKNOWN_MEDIA_TYPE,
+    DownloadLink, LinkTarget, PREVIEW_MEDIA_TYPE, PreviewStatus, UNKNOWN_MEDIA_TYPE,
 };
 
 use super::types::{DownloadQuery, FileDownload};
@@ -53,7 +53,7 @@ pub async fn download<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .ok_or_else(|| AppError::Internal("an attachment without its file".to_owned()))?;
-    if link.target == LinkTarget::Preview && file.preview != PreviewState::Ready {
+    if link.target == LinkTarget::Preview && attachment.preview != PreviewStatus::Ready {
         return Err(ErrorCode::NotFound.into());
     }
     let Some(body) = ctx

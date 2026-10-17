@@ -5,9 +5,9 @@
 use bb_core::ErrorCode;
 use bb_core::files::{
     ATTACHMENTS_PER_ISSUE_MAX, Attachment, BIGGEST_FILE_BYTES, MEGABYTE, OPEN_UPLOADS_BYTES_MAX,
-    OPEN_UPLOADS_MAX, TRASH_KEPT,
+    OPEN_UPLOADS_MAX, PreviewStatus, TRASH_KEPT,
 };
-use bb_core::id::{AttachmentId, IssueId};
+use bb_core::id::{AttachmentId, IssueId, UploadId};
 use bb_core::security_log::Digest;
 use bb_core::settings::{FILES_BLOCKED_TYPES, FILES_MAX_MEGABYTES, SettingValue};
 
@@ -427,6 +427,7 @@ fn fill_with_files(world: &World, issue: IssueId, count: usize, trashed: usize) 
             added_by: person,
             added_at: now,
             deleted_at: (at < trashed).then_some(now),
+            preview: PreviewStatus::Without,
             version: 1,
         });
     }
@@ -546,5 +547,98 @@ async fn att_01_a_part_is_refused_when_the_disk_has_no_room_and_the_upload_goes_
     .await?
     .into_value();
     assert_eq!(state.offset, 0);
+    Ok(())
+}
+
+impl World {
+    /// Runs the preview jobs that are waiting, as the job runner would, and takes them off the queue.
+    async fn run_preview_jobs(&self) -> Outcome {
+        let waiting: Vec<_> = {
+            let mut shared = self.store.lock();
+            let (preview, rest): (Vec<_>, Vec<_>) = shared
+                .state
+                .jobs
+                .drain(..)
+                .partition(|job| job.kind.as_str() == crate::jobs::kind::PREVIEW_FILE);
+            shared.state.jobs = rest;
+            preview
+        };
+        for job in waiting {
+            self.ctx().run_preview_step(&job.payload).await?;
+        }
+        Ok(())
+    }
+}
+
+/// The first bytes of a PNG, which the in-memory store takes for a picture.
+const A_PICTURE: &[u8] = b"\x89PNG\r\n\x1a\nthe rest of a picture";
+
+async fn finish(
+    world: &World,
+    upload: UploadId,
+) -> Result<bb_policy::Authorized<crate::files::AttachmentView>, AppError> {
+    finish_upload(
+        &world.ctx(),
+        FinishUpload {
+            session_token: token(world),
+            upload,
+        },
+    )
+    .await
+}
+
+#[tokio::test]
+async fn att_04_finishing_a_file_that_is_stored_already_answers_like_a_new_one() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?;
+    // The first of its content: its preview is on its way.
+    let first = finish(
+        &world,
+        an_upload(&world, issue, "first.png", A_PICTURE).await?,
+    )
+    .await?
+    .into_value();
+    assert_eq!(first.preview, PreviewStatus::Pending);
+    assert!(first.preview_link.is_none());
+    // The job makes the preview, and then the attachment says so.
+    world.run_preview_jobs().await?;
+    let first_listed = list(&world, issue).await?.items;
+    assert_eq!(first_listed[0].preview, PreviewStatus::Ready);
+    assert!(first_listed[0].preview_link.is_some());
+
+    // The same content again, by somebody who cannot know it is stored: the answer says the same
+    // as for the first one did, with no preview and no link taken from the other attachment.
+    let second = finish(
+        &world,
+        an_upload(&world, issue, "second.png", A_PICTURE).await?,
+    )
+    .await?
+    .into_value();
+    assert_eq!(second.preview, first.preview);
+    assert_eq!(second.preview_link, first.preview_link);
+    assert_eq!(
+        (second.media_type, second.size),
+        (first.media_type, first.size)
+    );
+    let listed = list(&world, issue).await?.items;
+    let own = |name: &str| listed.iter().find(|item| item.name == name).unwrap();
+    assert_eq!(own("second.png").preview, PreviewStatus::Pending);
+    assert!(own("second.png").preview_link.is_none());
+    // Nor can its preview be opened before its own job ran.
+    assert_eq!(world.files.previews_made(), 1);
+
+    // Its own job takes the preview that exists, as its own state; nothing is made again.
+    world.run_preview_jobs().await?;
+    let listed = list(&world, issue).await?.items;
+    assert_eq!(
+        listed
+            .iter()
+            .find(|item| item.name == "second.png")
+            .unwrap()
+            .preview,
+        PreviewStatus::Ready
+    );
+    assert_eq!(world.files.previews_made(), 1, "the preview was reused");
     Ok(())
 }

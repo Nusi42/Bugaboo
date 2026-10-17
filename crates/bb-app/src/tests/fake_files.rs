@@ -6,7 +6,7 @@ use std::io;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use bb_core::files::{
-    Attachment, LinkTarget, MediaType, PreviewKind, PreviewState, StoredFile, Upload,
+    Attachment, LinkTarget, MediaType, PreviewKind, PreviewStatus, StoredFile, Upload,
 };
 use bb_core::id::{AttachmentId, IssueId, UploadId};
 use bb_core::security_log::Digest;
@@ -142,10 +142,10 @@ impl AttachmentStore for FakeStore {
         Ok(shared.state.uploads.len() < before)
     }
 
-    async fn set_preview_state(
+    async fn set_preview_status(
         &self,
         hash: Digest,
-        state: PreviewState,
+        state: PreviewStatus,
     ) -> Result<bool, FakeError> {
         let mut shared = self.lock();
         let found = shared
@@ -154,6 +154,20 @@ impl AttachmentStore for FakeStore {
             .iter_mut()
             .find(|file| file.hash == hash);
         Ok(found.map(|file| file.preview = state).is_some())
+    }
+
+    async fn set_attachment_preview(
+        &self,
+        id: AttachmentId,
+        state: PreviewStatus,
+    ) -> Result<bool, FakeError> {
+        let mut shared = self.lock();
+        let found = shared
+            .state
+            .attachments
+            .iter_mut()
+            .find(|attachment| attachment.id == id);
+        Ok(found.map(|attachment| attachment.preview = state).is_some())
     }
 
     async fn purge_trashed_attachments(
@@ -263,6 +277,9 @@ struct Held {
     previews: HashMap<Digest, Vec<u8>>,
 }
 
+/// The first bytes of every PNG: a file that starts so is a picture.
+const PICTURE_START: &[u8] = b"\x89PNG";
+
 /// What a file that starts like a program of Windows says it is (the two letters every one starts
 /// with).
 const PROGRAM_START: &[u8] = b"MZ";
@@ -274,6 +291,7 @@ pub(crate) struct FakeFiles {
     held: Arc<Mutex<Held>>,
     turn: Arc<tokio::sync::Mutex<()>>,
     full: Arc<std::sync::atomic::AtomicBool>,
+    previews_made: Arc<std::sync::atomic::AtomicUsize>,
     gate: Arc<Mutex<Option<Gate>>>,
 }
 
@@ -282,6 +300,11 @@ impl FakeFiles {
         self.held
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// How many previews were created (not reused).
+    pub(crate) fn previews_made(&self) -> usize {
+        self.previews_made.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Makes the disk full: no part has room any more.
@@ -327,6 +350,12 @@ impl FileStore for FakeFiles {
                 media_type: MediaType::new("application/vnd.microsoft.portable-executable")
                     .unwrap_or_else(MediaType::unknown),
                 extension: Some("exe".to_owned()),
+            };
+        }
+        if head.starts_with(PICTURE_START) {
+            return Sniffed {
+                media_type: MediaType::new("image/png").unwrap_or_else(MediaType::unknown),
+                extension: Some("png".to_owned()),
             };
         }
         Sniffed {
@@ -438,10 +467,19 @@ impl FileStore for FakeFiles {
 
     fn create_preview(
         &self,
-        _hash: Digest,
+        hash: Digest,
         _kind: PreviewKind,
-    ) -> BoxFuture<'_, io::Result<PreviewState>> {
-        Box::pin(async { Ok(PreviewState::Without) })
+    ) -> BoxFuture<'_, io::Result<PreviewStatus>> {
+        let mut held = self.held();
+        let state = if held.files.contains_key(&hash) {
+            held.previews.insert(hash, b"a small picture".to_vec());
+            self.previews_made
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            PreviewStatus::Ready
+        } else {
+            PreviewStatus::Without
+        };
+        Box::pin(async move { Ok(state) })
     }
 
     fn delete(&self, hash: Digest) -> BoxFuture<'_, io::Result<()>> {

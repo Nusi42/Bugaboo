@@ -3107,7 +3107,13 @@ export interface components {
       media_type: string;
       /** @description The name of the file. */
       name: string;
-      /** @description The signed link of the preview, while the file has one. */
+      /**
+       * @description Where the preview of this attachment is: on its way (`pending`), `ready` or `without`. It is
+       *     the attachment's own state: a file that was stored before is `pending` as well, until its
+       *     own job has run.
+       */
+      preview: components["schemas"]["PreviewStatus"];
+      /** @description The signed link of the preview, once it is `ready`. */
       preview_url?: string | null;
       /**
        * Format: int64
@@ -5349,7 +5355,13 @@ export interface components {
         media_type: string;
         /** @description The name of the file. */
         name: string;
-        /** @description The signed link of the preview, while the file has one. */
+        /**
+         * @description Where the preview of this attachment is: on its way (`pending`), `ready` or `without`. It is
+         *     the attachment's own state: a file that was stored before is `pending` as well, until its
+         *     own job has run.
+         */
+        preview: components["schemas"]["PreviewStatus"];
+        /** @description The signed link of the preview, once it is `ready`. */
         preview_url?: string | null;
         /**
          * Format: int64
@@ -6087,6 +6099,11 @@ export interface components {
       /** @description The issues, by their readable or internal IDs. */
       issues: string[];
     };
+    /**
+     * @description Where the preview of a file is: on its way, there, or none (a type without one, or a file the preview could not be made of).
+     * @enum {string}
+     */
+    PreviewStatus: "pending" | "ready" | "without";
     /** @description How many things a preview says will change and how many it leaves alone. */
     PreviewSummaryBody: {
       /**

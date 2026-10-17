@@ -41,7 +41,7 @@ mod preview {
 
     use bb_app::context::SystemIds;
     use bb_app::files::FileStore as _;
-    use bb_core::files::{LinkTarget, PreviewKind, PreviewState};
+    use bb_core::files::{LinkTarget, PreviewKind, PreviewStatus};
     use bb_core::id::UploadId;
     use bb_core::security_log::Digest;
     use bb_files::fixtures::{Format, PDF, picture, pretending_png};
@@ -90,7 +90,7 @@ mod preview {
             let hash = stored(&files, &bytes).await;
             assert_eq!(
                 files.create_preview(hash, kind).await.unwrap(),
-                PreviewState::Ready
+                PreviewStatus::Ready
             );
             let png = preview_png(&files, hash).await.unwrap();
             assert!(png.starts_with(&[0x89, b'P', b'N', b'G']));
@@ -106,7 +106,7 @@ mod preview {
                 .create_preview(bomb, PreviewKind::Image)
                 .await
                 .unwrap(),
-            PreviewState::Without
+            PreviewStatus::Without
         );
         assert!(preview_png(&files, bomb).await.is_none());
         // Nothing is left of the try, and the next file is previewed as usual.
@@ -118,7 +118,7 @@ mod preview {
                 .create_preview(next, PreviewKind::Image)
                 .await
                 .unwrap(),
-            PreviewState::Ready
+            PreviewStatus::Ready
         );
     }
 
@@ -128,12 +128,12 @@ mod preview {
         let cut = stored(&files, &PDF[..PDF.len() / 2]).await;
         assert_eq!(
             files.create_preview(cut, PreviewKind::Pdf).await.unwrap(),
-            PreviewState::Without
+            PreviewStatus::Without
         );
         let whole = stored(&files, PDF).await;
         assert_eq!(
             files.create_preview(whole, PreviewKind::Pdf).await.unwrap(),
-            PreviewState::Ready
+            PreviewStatus::Ready
         );
     }
 
@@ -152,7 +152,7 @@ mod preview {
                 .create_preview(hash, PreviewKind::Image)
                 .await
                 .unwrap(),
-            PreviewState::Without
+            PreviewStatus::Without
         );
         // A child that takes longer than it may is stopped.
         let (_folder, files, hash) =
@@ -162,7 +162,7 @@ mod preview {
                 .create_preview(hash, PreviewKind::Image)
                 .await
                 .unwrap(),
-            PreviewState::Without
+            PreviewStatus::Without
         );
         // A program that is not there cannot be started: that is a failure of the job, which the
         // queue tries again, and not a verdict on the file.

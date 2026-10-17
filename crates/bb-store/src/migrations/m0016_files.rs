@@ -58,6 +58,9 @@ fn attachments() -> Vec<Step> {
                         .not_null(),
                 )
                 .col(ColumnDef::new(AttachmentRow::DeletedAt).big_integer())
+                // Where the preview of this attachment is, its own state and not the file's: a
+                // file that is stored already still gets a job of its own (ADR-0032 §4).
+                .col(ColumnDef::new(AttachmentRow::Preview).text().not_null())
                 .col(
                     ColumnDef::new(AttachmentRow::Version)
                         .big_integer()

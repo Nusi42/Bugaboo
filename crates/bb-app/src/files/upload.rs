@@ -10,8 +10,8 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::files::{
-    ATTACHMENTS_PER_ISSUE_MAX, Attachment, OPEN_UPLOADS_BYTES_MAX, OPEN_UPLOADS_MAX, PART_BYTES,
-    PreviewKind, PreviewState, StoredFile, Upload, clean_file_name,
+    ATTACHMENTS_PER_ISSUE_MAX, Attachment, MediaType, OPEN_UPLOADS_BYTES_MAX, OPEN_UPLOADS_MAX,
+    PART_BYTES, PreviewKind, PreviewStatus, StoredFile, Upload, clean_file_name,
 };
 use bb_core::id::{AttachmentId, CommentId, JobId, ProjectId, UploadId};
 use bb_core::version::FIRST_VERSION;
@@ -268,14 +268,20 @@ pub async fn cancel_upload<S: AuthStore>(
     Ok(crate::auth::Done)
 }
 
-/// The row of a file that has just been put together: it gets a preview if it is a kind that has
-/// one, and has none otherwise.
-fn stored_file_of(inspected: Inspected, now: Timestamp) -> StoredFile {
-    let preview = if PreviewKind::of_media_type(&inspected.sniffed.media_type).is_some() {
-        PreviewState::Pending
+/// Where the preview of a file of this type starts: on its way when the type has one, none
+/// otherwise. It depends on the type only, the same for a file that is new and for one that is
+/// stored already.
+fn first_preview_status(media_type: &MediaType) -> PreviewStatus {
+    if PreviewKind::of_media_type(media_type).is_some() {
+        PreviewStatus::Pending
     } else {
-        PreviewState::Without
-    };
+        PreviewStatus::Without
+    }
+}
+
+/// The row of a file that has just been put together.
+fn stored_file_of(inspected: Inspected, now: Timestamp) -> StoredFile {
+    let preview = first_preview_status(&inspected.sniffed.media_type);
     StoredFile {
         hash: inspected.hash,
         size: i64::try_from(inspected.size).unwrap_or(i64::MAX),
@@ -360,6 +366,7 @@ pub async fn finish_upload<S: AuthStore>(
         added_by: actor.person.id,
         added_at: now,
         deleted_at: None,
+        preview: first_preview_status(&inspected.sniffed.media_type),
         version: FIRST_VERSION,
     };
     let job = JobId::generate(&mut ids).map_err(|error| AppError::Internal(error.to_string()))?;
@@ -384,7 +391,7 @@ pub async fn finish_upload<S: AuthStore>(
     let (stored_attachment, stored_file, upload_id) = (attachment.clone(), file.clone(), upload.id);
     let (queue, payload) = (
         kind_name(kind::PREVIEW_FILE)?,
-        super::jobs::preview_payload(file.hash),
+        super::jobs::preview_payload(attachment.id),
     );
     let why = Why::default();
     let stopped = why.clone();
@@ -394,9 +401,12 @@ pub async fn finish_upload<S: AuthStore>(
                 if !S::delete_upload(transaction, upload_id).await? {
                     return Err(stopped.stop::<S>(ErrorCode::NotFound));
                 }
-                let new = S::insert_stored_file(transaction, &stored_file).await?;
+                S::insert_stored_file(transaction, &stored_file).await?;
                 S::insert_attachment(transaction, &stored_attachment).await?;
-                if new && stored_file.preview == PreviewState::Pending {
+                // Every attachment has a job of its own, also one of a file that is stored
+                // already: the job may find the preview made, but only when it runs, so the
+                // answer of this call is the same for a new file and for one that exists.
+                if stored_attachment.preview == PreviewStatus::Pending {
                     S::enqueue_job(transaction, job, &queue, &payload, now, now).await?;
                 }
                 Ok(())

@@ -7,7 +7,7 @@
 //! an attachment can never be deleted, whatever the order of two jobs.
 
 use bb_app::files::AttachmentStore;
-use bb_core::files::{Attachment, MediaType, PreviewState, StoredFile, Upload};
+use bb_core::files::{Attachment, MediaType, PreviewStatus, StoredFile, Upload};
 use bb_core::id::{AttachmentId, CommentId, IssueId, UploadId, UserId};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
@@ -42,7 +42,7 @@ fn read_stored_file(row: &Row) -> Result<StoredFile, StoreError> {
         size: row.get(StoredFileRow::Size)?,
         media_type: MediaType::new(&row.get::<String>(StoredFileRow::MediaType)?)
             .ok_or(StoreError::Corrupt("a file type"))?,
-        preview: PreviewState::from_code(&row.get::<String>(StoredFileRow::Preview)?)
+        preview: PreviewStatus::from_code(&row.get::<String>(StoredFileRow::Preview)?)
             .ok_or(StoreError::Corrupt("a preview state"))?,
         created_at: row.time(StoredFileRow::CreatedAt)?,
     })
@@ -60,6 +60,7 @@ fn attachment_select() -> SelectStatement {
             AttachmentRow::AddedBy,
             AttachmentRow::AddedAt,
             AttachmentRow::DeletedAt,
+            AttachmentRow::Preview,
             AttachmentRow::Version,
         ])
         .from(AttachmentRow::Table);
@@ -77,6 +78,8 @@ fn read_attachment(row: &Row) -> Result<Attachment, StoreError> {
         added_by: row.id::<UserId>(AttachmentRow::AddedBy)?,
         added_at: row.time(AttachmentRow::AddedAt)?,
         deleted_at: row.optional_time(AttachmentRow::DeletedAt)?,
+        preview: PreviewStatus::from_code(&row.get::<String>(AttachmentRow::Preview)?)
+            .ok_or(StoreError::Corrupt("a preview state"))?,
         version: row.get(AttachmentRow::Version)?,
     })
 }
@@ -306,16 +309,29 @@ impl AttachmentStore for AuthStorage {
         Ok(self.database().execute(&delete).await? > 0)
     }
 
-    async fn set_preview_state(
+    async fn set_preview_status(
         &self,
         hash: Digest,
-        state: PreviewState,
+        state: PreviewStatus,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
             .table(StoredFileRow::Table)
             .value(StoredFileRow::Preview, state.code())
             .and_where(Expr::col(StoredFileRow::Hash).eq(bytes_of(hash)));
+        Ok(self.database().execute(&update).await? > 0)
+    }
+
+    async fn set_attachment_preview(
+        &self,
+        id: AttachmentId,
+        state: PreviewStatus,
+    ) -> Result<bool, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(AttachmentRow::Table)
+            .value(AttachmentRow::Preview, state.code())
+            .and_where(Expr::col(AttachmentRow::Id).eq(id.stored()));
         Ok(self.database().execute(&update).await? > 0)
     }
 
@@ -421,6 +437,7 @@ impl AttachmentStore for AuthStorage {
                 AttachmentRow::AddedBy,
                 AttachmentRow::AddedAt,
                 AttachmentRow::DeletedAt,
+                AttachmentRow::Preview,
                 AttachmentRow::Version,
             ])
             .values([
@@ -432,6 +449,7 @@ impl AttachmentStore for AuthStorage {
                 Expr::val(attachment.added_by.stored()),
                 Expr::val(to_micros(attachment.added_at)),
                 Expr::val(attachment.deleted_at.map(to_micros)),
+                Expr::val(attachment.preview.code()),
                 Expr::val(attachment.version),
             ])
             .map_err(|_| StoreError::Corrupt("an attachment"))?;

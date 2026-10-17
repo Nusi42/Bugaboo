@@ -5,7 +5,7 @@
 use bb_app::files::AttachmentStore as _;
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::files::{
-    Attachment, MediaType, PreviewState, StoredFile, TRASH_KEPT, UNFINISHED_KEPT, Upload,
+    Attachment, MediaType, PreviewStatus, StoredFile, TRASH_KEPT, UNFINISHED_KEPT, Upload,
 };
 use bb_core::id::{AttachmentId, IdSource, UploadId};
 use bb_core::security_log::Digest;
@@ -28,7 +28,7 @@ fn file(byte: u8) -> StoredFile {
         hash: Digest::new([byte; 32]),
         size: 1000,
         media_type: MediaType::new("image/png").unwrap(),
-        preview: PreviewState::Pending,
+        preview: PreviewStatus::Pending,
         created_at: at(1),
     }
 }
@@ -48,6 +48,7 @@ fn attachment(
         added_by: world.person,
         added_at: at(2),
         deleted_at: None,
+        preview: PreviewStatus::Pending,
         version: FIRST_VERSION,
     }
 }
@@ -164,14 +165,14 @@ async fn att_04_the_state_of_a_preview_is_kept_with_the_file() -> TestResult {
         add(storage, &mut source, &png, &row).await?;
         assert!(
             storage
-                .set_preview_state(png.hash, PreviewState::Ready)
+                .set_preview_status(png.hash, PreviewStatus::Ready)
                 .await?
         );
         let stored = storage.stored_files(&[png.hash]).await?;
-        assert_eq!(stored[0].preview, PreviewState::Ready);
+        assert_eq!(stored[0].preview, PreviewStatus::Ready);
         assert!(
             !storage
-                .set_preview_state(Digest::new([9; 32]), PreviewState::Ready)
+                .set_preview_status(Digest::new([9; 32]), PreviewStatus::Ready)
                 .await?
         );
         Ok(())

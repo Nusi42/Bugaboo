@@ -114,7 +114,7 @@ words! {
 
 words! {
     /// Where the preview of a file is.
-    pub enum PreviewState {
+    pub enum PreviewStatus {
         /// A job will make it.
         Pending => "pending",
         /// It is there.
@@ -124,6 +124,11 @@ words! {
         Without => "without",
     }
 }
+
+words_in_api!(
+    PreviewStatus,
+    "Where the preview of a file is: on its way, there, or none (a type without one, or a file the preview could not be made of)."
+);
 
 words! {
     /// The kinds of file that have a preview.
@@ -201,7 +206,7 @@ pub struct StoredFile {
     pub media_type: MediaType,
     /// Where the preview is.
     #[not_personal]
-    pub preview: PreviewState,
+    pub preview: PreviewStatus,
     /// When the file was first stored.
     #[not_personal]
     pub created_at: Timestamp,
@@ -234,6 +239,11 @@ pub struct Attachment {
     /// When it went into the trash, while it is there.
     #[not_personal]
     pub deleted_at: Option<Timestamp>,
+    /// Where the preview of this attachment is. It is the attachment's own state, not the one of
+    /// the file: a file that is stored already still gets its own job, so nobody learns from an
+    /// answer that the same content was stored before (ADR-0032 §4).
+    #[not_personal]
+    pub preview: PreviewStatus,
     /// Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).
     #[not_personal]
     pub version: i64,

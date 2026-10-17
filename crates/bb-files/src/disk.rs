@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use bb_app::files::{ChunkReader, FileBody, FileHold, FileStore, Inspected, PartError, Sniffed};
 use bb_app::ports::BoxFuture;
-use bb_core::files::{DISK_KEPT_FREE_BYTES, LinkTarget, PreviewKind, PreviewState};
+use bb_core::files::{DISK_KEPT_FREE_BYTES, LinkTarget, PreviewKind, PreviewStatus};
 use bb_core::hex;
 use bb_core::id::UploadId;
 use bb_core::security_log::Digest;
@@ -285,11 +285,11 @@ impl FileStore for DiskFiles {
         &self,
         hash: Digest,
         kind: PreviewKind,
-    ) -> BoxFuture<'_, io::Result<PreviewState>> {
+    ) -> BoxFuture<'_, io::Result<PreviewStatus>> {
         Box::pin(async move {
             let input = self.content_path(hash);
             if tokio::fs::metadata(&input).await.is_err() {
-                return Ok(PreviewState::Without);
+                return Ok(PreviewStatus::Without);
             }
             let name = hex::encode(hash.as_bytes());
             let work = self
@@ -301,13 +301,13 @@ impl FileStore for DiskFiles {
             let outcome = preview::create(&self.command, kind, &input, &work).await?;
             if outcome != PreviewOutcome::Created {
                 tracing::info!(?outcome, kind = kind.code(), "a file got no preview");
-                return Ok(PreviewState::Without);
+                return Ok(PreviewStatus::Without);
             }
             let to = self.preview_path(hash);
             create_parent(&to).await?;
             remove(&to).await?;
             tokio::fs::rename(&work, &to).await?;
-            Ok(PreviewState::Ready)
+            Ok(PreviewStatus::Ready)
         })
     }
 

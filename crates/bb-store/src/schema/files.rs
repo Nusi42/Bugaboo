@@ -27,6 +27,7 @@ pub(crate) enum AttachmentRow {
     AddedBy,
     AddedAt,
     DeletedAt,
+    Preview,
     Version,
 }
 

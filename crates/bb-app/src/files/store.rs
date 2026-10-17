@@ -8,7 +8,7 @@
 
 use std::future::Future;
 
-use bb_core::files::{Attachment, PreviewState, StoredFile, Upload};
+use bb_core::files::{Attachment, PreviewStatus, StoredFile, Upload};
 use bb_core::id::{AttachmentId, IssueId, UploadId};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
@@ -50,7 +50,10 @@ pub trait AttachmentStore: CommentStore + 'static {
         /// when it was not there.
         fn delete_upload_row(id: UploadId) -> bool;
         /// Says where the preview of a file is; `false` when the file is not there.
-        fn set_preview_state(hash: Digest, state: PreviewState) -> bool;
+        fn set_preview_status(hash: Digest, state: PreviewStatus) -> bool;
+        /// Says where the preview of an attachment is (its own state, not the file's); `false`
+        /// when the attachment is not there.
+        fn set_attachment_preview(id: AttachmentId, state: PreviewStatus) -> bool;
         /// Deletes the attachments that went into the trash before `before` (they cannot be taken
         /// out of it any more), at most `limit`, and says how many.
         fn purge_trashed_attachments(before: Timestamp, limit: u64) -> u64;

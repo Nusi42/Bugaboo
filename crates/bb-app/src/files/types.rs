@@ -3,6 +3,7 @@
 //! that change no record yet (the upload is a file on its way, not an attachment), end in `Query`
 //! (ARCH-EVENTS). Everything that is given back is wrapped in `Authorized<T>` by the use case.
 
+use bb_core::files::PreviewStatus;
 use bb_core::id::{AttachmentId, CommentId, IssueId, UploadId};
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
@@ -138,7 +139,10 @@ pub struct AttachmentView {
     pub version: i64,
     /// The signed link that downloads the file (good for five minutes, for this viewer).
     pub download_link: String,
-    /// The signed link of the preview, while the file has one.
+    /// Where the preview of this attachment is: its own state, never taken from another attachment
+    /// of the same content.
+    pub preview: PreviewStatus,
+    /// The signed link of the preview, once this attachment's own preview is ready.
     pub preview_link: Option<String>,
     /// Whether the viewer may put it into the trash.
     pub may_delete: bool,

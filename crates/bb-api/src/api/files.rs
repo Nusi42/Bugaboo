@@ -22,7 +22,7 @@ use bb_app::files::{
     StartUploadQuery, UploadStateQuery, UploadView,
 };
 use bb_core::error_code::PROBLEM_CONTENT_TYPE;
-use bb_core::files::PART_BYTES;
+use bb_core::files::{PART_BYTES, PreviewStatus};
 use bb_core::id::{AttachmentId, CommentId, UploadId};
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -43,7 +43,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 const FILES_LIST: &str = "issue-files";
 
-const ITEM_FIELDS: [FieldSpec; 12] = [
+const ITEM_FIELDS: [FieldSpec; 13] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("issue"),
     FieldSpec::by_default("comment"),
@@ -54,6 +54,7 @@ const ITEM_FIELDS: [FieldSpec; 12] = [
     FieldSpec::by_default("added_at"),
     FieldSpec::by_default("version"),
     FieldSpec::by_default("download_url"),
+    FieldSpec::by_default("preview"),
     FieldSpec::by_default("preview_url"),
     FieldSpec::by_default("may_delete"),
 ];
@@ -99,7 +100,11 @@ pub(crate) struct AttachmentItem {
     /// The signed link that downloads the file: good for five minutes and for this reader only,
     /// and judged again when it is used.
     download_url: String,
-    /// The signed link of the preview, while the file has one.
+    /// Where the preview of this attachment is: on its way (`pending`), `ready` or `without`. It is
+    /// the attachment's own state: a file that was stored before is `pending` as well, until its
+    /// own job has run.
+    preview: PreviewStatus,
+    /// The signed link of the preview, once it is `ready`.
     #[serde(skip_serializing_if = "Option::is_none")]
     preview_url: Option<String>,
     /// Whether the reader may put it into the trash.
@@ -121,6 +126,7 @@ impl From<&AttachmentView> for AttachmentItem {
             added_at: view.added_at.to_string(),
             version: view.version,
             download_url: url_of(&view.download_link),
+            preview: view.preview,
             preview_url: view.preview_link.as_deref().map(url_of),
             may_delete: view.may_delete,
         }
@@ -692,6 +698,7 @@ mod tests {
             added_at: String::new(),
             version: 1,
             download_url: String::new(),
+            preview: PreviewStatus::Pending,
             preview_url: Some(String::new()),
             may_delete: true,
         };

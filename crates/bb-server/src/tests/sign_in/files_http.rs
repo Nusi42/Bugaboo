@@ -965,3 +965,42 @@ async fn att_01_a_person_who_lost_the_right_to_add_a_file_cannot_delete_it_eithe
     })
     .await
 }
+
+#[tokio::test]
+async fn att_04_finishing_a_file_that_somebody_else_stored_answers_like_a_new_one() -> TestResult {
+    each_database("att_04_same_answer", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let adas = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let (mut mia, _) = site.person(StartingRole::TeamMember, "mia").await?;
+        let miras = key_of(&site.create(&mut mia, "The tray is stuck").await?)?;
+        let same = picture(40, 30, Format::Png);
+
+        let first = upload(&mut ada, &adas, "shot.png", &same).await?;
+        run_jobs(&rig).await?;
+        // The preview of the first one is there. The same content, added by somebody who cannot
+        // know that: the answer says what it said for the first one, with no preview, no link
+        // and no state taken from the other attachment.
+        let second = upload(&mut mia, &miras, "shot.png", &same).await?;
+        assert_eq!(first["preview"], "pending");
+        assert_eq!(second["preview"], first["preview"]);
+        assert!(second["preview_url"].is_null());
+        assert_eq!(first["preview_url"], second["preview_url"]);
+        for member in ["media_type", "size", "may_delete", "name"] {
+            assert_eq!(second[member], first[member], "{member}");
+        }
+        let keys = |item: &Value| -> Vec<String> {
+            item.as_object()
+                .map(|object| object.keys().cloned().collect())
+                .unwrap_or_default()
+        };
+        assert_eq!(keys(&second), keys(&first));
+        // Its own job makes its state ready, and the files are one.
+        run_jobs(&rig).await?;
+        let listed = files(&mut mia, &miras).await?;
+        assert_eq!(listed[0]["preview"], "ready");
+        assert_eq!(on_disk(&rig, "content").len(), 1);
+        Ok(())
+    })
+    .await
+}
