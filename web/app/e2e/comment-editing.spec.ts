@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import type { Page } from "@playwright/test";
+import type { Page, Response } from "@playwright/test";
 
 import { ada, bob } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -35,6 +35,13 @@ async function addComment(page: Page, text: string): Promise<void> {
 /** Opens the tab of the comments. */
 async function showComments(page: Page): Promise<void> {
   await page.getByRole("tab", { name: t("history.tab-comments"), exact: true }).click();
+}
+
+/** Whether the answer is the one to the request that lets go of an edit lock. */
+function isRelease(answer: Response): boolean {
+  return (
+    answer.request().method() === "POST" && answer.url().endsWith("/api/v1/edit-locks/release")
+  );
 }
 
 /** The button that edits the comment. */
@@ -128,12 +135,16 @@ test("iss_05 a draft of a comment that was kept is offered when the editor opens
   const editor = page.getByRole("textbox", { name: t("comments.editing"), exact: true });
   const typed = "Words that must not be lost.";
   await editor.fill(typed);
-  // Close leaves the text as a draft and lets go of the lock.
+  // Close leaves the text as a draft and lets go of the lock. The release is a request, and a page
+  // that is read again while it is on its way cancels it: the lock then stays (the person is told
+  // they edit in another window), so the test goes on only when the server has answered it.
+  const released = page.waitForResponse(isRelease);
   await page
     .getByRole("button", { name: t("common.close"), exact: true })
     .first()
     .click();
   await expect(editor).toHaveCount(0);
+  expect((await released).ok()).toBe(true);
   // Later: the page is read again, the editor is opened, and the draft is offered; the lock is
   // free, so Continue puts the text back in the box.
   await page.reload();
