@@ -30,16 +30,18 @@ use super::auth::{
     AuthHandle, Info, InvalidAnswer, NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
 use super::body_id;
+use super::change_side::sides_of;
+use super::projects::ProjectRef;
 use super::relations::IssueRef;
 use crate::errors::{ApiError, ApiJson, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
-use bb_app::history::{ChangeValue, FieldChangeView};
+use bb_app::history::FieldChangeView;
 
 const NOTIFICATIONS_LIST: &str = "notifications";
 
 /// The fields of an item of the list that can be asked for. An item holds only the ones that
 /// belong to what it says.
-const NOTIFICATION_FIELDS: [FieldSpec; 20] = [
+const NOTIFICATION_FIELDS: [FieldSpec; 28] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("kind"),
     FieldSpec::by_default("at"),
@@ -60,6 +62,14 @@ const NOTIFICATION_FIELDS: [FieldSpec; 20] = [
     FieldSpec::by_default("after_text"),
     FieldSpec::by_default("before_value"),
     FieldSpec::by_default("after_value"),
+    FieldSpec::by_default("before_names"),
+    FieldSpec::by_default("after_names"),
+    FieldSpec::by_default("before_people"),
+    FieldSpec::by_default("after_people"),
+    FieldSpec::by_default("before_issue"),
+    FieldSpec::by_default("after_issue"),
+    FieldSpec::by_default("before_project"),
+    FieldSpec::by_default("after_project"),
 ];
 
 /// One item of the list of notifications.
@@ -123,6 +133,30 @@ pub(crate) struct NotificationEntry {
     /// The same for what the field is now.
     #[serde(skip_serializing_if = "Option::is_none")]
     after_value: Option<Value>,
+    /// A change of a field that is a list of names (labels, tags): what it was.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_names: Option<Vec<String>>,
+    /// The same for what the field is now.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_names: Option<Vec<String>>,
+    /// A change of a field that holds people: who they were, each as the reader may see people.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_people: Option<Vec<PersonRef>>,
+    /// The same for who they are now.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_people: Option<Vec<PersonRef>>,
+    /// A change of a field that is an issue: the issue it was, when the reader may see it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_issue: Option<IssueRef>,
+    /// The same for what it is now.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_issue: Option<IssueRef>,
+    /// A change of the project: the project the issue was in, when the reader may see it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_project: Option<ProjectRef>,
+    /// The same for the project it is in now.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_project: Option<ProjectRef>,
 }
 
 impl Masked for NotificationEntry {}
@@ -150,35 +184,14 @@ fn start(item: &NotificationItem) -> NotificationEntry {
         after_text: None,
         before_value: None,
         after_value: None,
-    }
-}
-
-/// A value of a change as words, or as the JSON of its kind for a value a screen words itself.
-fn value_of(value: Option<&ChangeValue>) -> (Option<String>, Option<Value>, Option<FieldType>) {
-    match value {
-        None => (None, None, None),
-        Some(ChangeValue::Typed { kind, value }) => (None, Some(value.clone()), Some(*kind)),
-        Some(ChangeValue::Text { text }) => (Some(text.clone()), None, None),
-        Some(ChangeValue::Names { names }) => (Some(names.join(", ")), None, None),
-        Some(ChangeValue::People { people }) => (
-            Some(
-                people
-                    .iter()
-                    .map(|person| match person {
-                        PersonRef::Name { name, .. } => name.clone(),
-                        PersonRef::Role { role } => role.clone(),
-                        PersonRef::Someone => String::new(),
-                        PersonRef::Former { label } => label.clone(),
-                    })
-                    .filter(|name| !name.is_empty())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            ),
-            None,
-            None,
-        ),
-        Some(ChangeValue::Issue { issue }) => (Some(issue.key.clone()), None, None),
-        Some(ChangeValue::Project { project }) => (Some(project.name.clone()), None, None),
+        before_names: None,
+        after_names: None,
+        before_people: None,
+        after_people: None,
+        before_issue: None,
+        after_issue: None,
+        before_project: None,
+        after_project: None,
     }
 }
 
@@ -187,11 +200,16 @@ fn change_entry(item: &NotificationItem, change: &FieldChangeView) -> Notificati
     let mut entry = start(item);
     entry.field = Some(change.field.clone());
     entry.field_name.clone_from(&change.name);
-    let (before, before_value, before_kind) = value_of(change.before.as_ref());
-    let (after, after_value, after_kind) = value_of(change.after.as_ref());
-    entry.field_kind = before_kind.or(after_kind);
-    (entry.before_text, entry.before_value) = (before, before_value);
-    (entry.after_text, entry.after_value) = (after, after_value);
+    let (before, after) = sides_of(change);
+    entry.field_kind = before.kind.or(after.kind);
+    (entry.before_text, entry.before_value) = (before.text, before.value);
+    (entry.before_names, entry.before_people) = (before.names, before.people);
+    entry.before_issue = before.issue;
+    entry.before_project = before.project;
+    (entry.after_text, entry.after_value) = (after.text, after.value);
+    (entry.after_names, entry.after_people) = (after.names, after.people);
+    entry.after_issue = after.issue;
+    entry.after_project = after.project;
     entry
 }
 
@@ -437,7 +455,7 @@ mod tests {
 
     #[test]
     fn perf_02_the_field_table_names_exactly_the_fields_of_an_item() {
-        let issue = IssueRef {
+        let issue = || IssueRef {
             id: String::new(),
             key: String::new(),
             project: ProjectRef {
@@ -455,12 +473,17 @@ mod tests {
             status: Some(Status::Open),
             status_group: Some(StatusGroup::NotStarted),
         };
+        let project = || ProjectRef {
+            id: String::new(),
+            short_name: String::new(),
+            name: String::new(),
+        };
         let item = NotificationEntry {
             id: String::new(),
             kind: NotificationKind::Mentioned,
             at: String::new(),
             read: false,
-            issue: Some(issue),
+            issue: Some(issue()),
             by: Some(PersonRef::Someone),
             comment: Some(String::new()),
             text: Some(String::new()),
@@ -476,6 +499,14 @@ mod tests {
             after_text: Some(String::new()),
             before_value: Some(Value::Null),
             after_value: Some(Value::Null),
+            before_names: Some(vec![]),
+            after_names: Some(vec![]),
+            before_people: Some(vec![]),
+            after_people: Some(vec![]),
+            before_issue: Some(issue()),
+            after_issue: Some(issue()),
+            before_project: Some(project()),
+            after_project: Some(project()),
         };
         crate::lean::assert_fields_are_the_keys_of(&NOTIFICATION_FIELDS, &item);
     }

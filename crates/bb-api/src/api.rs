@@ -48,6 +48,7 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod change_side;
 mod check_access;
 mod comments;
 mod editing;

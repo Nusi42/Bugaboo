@@ -94,6 +94,53 @@ async fn ntf_01_a_follower_hears_over_http_and_marks_what_was_read() -> TestResu
 }
 
 #[tokio::test]
+async fn ntf_01_the_people_of_a_change_stay_people_as_the_reader_may_see_them() -> TestResult {
+    each_database("ntf_01_people_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        rig.set_organization_switch("notifications.followed-fields-in-app", true)
+            .await?;
+        // A guest sees people of the kind *Assigned to* by their role only.
+        let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
+        let issue = key_of(&site.create(&mut gus, "Printer jams").await?)?;
+        let followed = gus
+            .send("PUT", &format!("{ISSUES}/{issue}/follow"), None)
+            .await?;
+        assert!(followed.status.is_success(), "{}", followed.body);
+        let (_bob, bob_id) = site
+            .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
+            .await?;
+        rig.clock.advance(5);
+        let version = version_of(&mut ada, &issue).await?;
+        let assigned = ada
+            .send(
+                "PATCH",
+                &format!("{ISSUES}/{issue}"),
+                Some(json!({"version": version, "assigned_to": [bob_id.to_string()]})),
+            )
+            .await?;
+        assert_eq!(assigned.status, StatusCode::OK, "{}", assigned.body);
+
+        let heard = items(&gus.send("GET", NOTIFICATIONS, None).await?);
+        let change = heard
+            .iter()
+            .find(|item| item["field"] == "assigned-to")
+            .ok_or("no change of the assignee")?;
+        assert!(change.get("after_text").is_none(), "{change}");
+        let people = change["after_people"].as_array().ok_or("no people")?;
+        assert_eq!(people.len(), 1);
+        let shown = people[0].to_string();
+        assert!(
+            !shown.contains("Bob Baker"),
+            "a guest is not told the name: {shown}"
+        );
+        assert!(shown.contains("Team member"), "the role is: {shown}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ntf_01_the_reader_resumes_after_a_restart_without_doubles() -> TestResult {
     each_database("ntf_01_restart", async |db| {
         let (rig, app) = rig_and_app(db).await?;

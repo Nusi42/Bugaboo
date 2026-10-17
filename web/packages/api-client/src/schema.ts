@@ -5128,12 +5128,24 @@ export interface components {
     NoticeKind: "finish_asked" | "taken_over" | "released";
     /** @description One item of the list of notifications. */
     NotificationEntry: {
+      after_issue?: components["schemas"]["IssueRef"] | null;
+      /** @description The same for what the field is now. */
+      after_names?: string[] | null;
+      /** @description The same for who they are now. */
+      after_people?: components["schemas"]["PersonRef"][] | null;
+      after_project?: components["schemas"]["ProjectRef"] | null;
       /** @description A change: what the field is now, in words. */
       after_text?: string | null;
       /** @description The same for what the field is now. */
       after_value?: unknown;
       /** @description When it happened. */
       at: string;
+      before_issue?: components["schemas"]["IssueRef"] | null;
+      /** @description A change of a field that is a list of names (labels, tags): what it was. */
+      before_names?: string[] | null;
+      /** @description A change of a field that holds people: who they were, each as the reader may see people. */
+      before_people?: components["schemas"]["PersonRef"][] | null;
+      before_project?: components["schemas"]["ProjectRef"] | null;
       /** @description A change: what the field was, in words. */
       before_text?: string | null;
       /**
@@ -5593,12 +5605,24 @@ export interface components {
     Page_NotificationEntry: {
       /** @description The items of this page. */
       items: {
+        after_issue?: components["schemas"]["IssueRef"] | null;
+        /** @description The same for what the field is now. */
+        after_names?: string[] | null;
+        /** @description The same for who they are now. */
+        after_people?: components["schemas"]["PersonRef"][] | null;
+        after_project?: components["schemas"]["ProjectRef"] | null;
         /** @description A change: what the field is now, in words. */
         after_text?: string | null;
         /** @description The same for what the field is now. */
         after_value?: unknown;
         /** @description When it happened. */
         at: string;
+        before_issue?: components["schemas"]["IssueRef"] | null;
+        /** @description A change of a field that is a list of names (labels, tags): what it was. */
+        before_names?: string[] | null;
+        /** @description A change of a field that holds people: who they were, each as the reader may see people. */
+        before_people?: components["schemas"]["PersonRef"][] | null;
+        before_project?: components["schemas"]["ProjectRef"] | null;
         /** @description A change: what the field was, in words. */
         before_text?: string | null;
         /**

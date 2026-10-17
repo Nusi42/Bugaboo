@@ -25210,6 +25210,42 @@
         "description": "One item of the list of notifications.",
         "required": ["id", "kind", "at", "read"],
         "properties": {
+          "after_issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "The same for what it is now."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after_names": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The same for what the field is now."
+          },
+          "after_people": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/PersonRef"
+            },
+            "description": "The same for who they are now."
+          },
+          "after_project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "The same for the project it is in now."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "after_text": {
             "type": ["string", "null"],
             "description": "A change: what the field is now, in words."
@@ -25220,6 +25256,42 @@
           "at": {
             "type": "string",
             "description": "When it happened."
+          },
+          "before_issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "A change of a field that is an issue: the issue it was, when the reader may see it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "before_names": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "A change of a field that is a list of names (labels, tags): what it was."
+          },
+          "before_people": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/PersonRef"
+            },
+            "description": "A change of a field that holds people: who they were, each as the reader may see people."
+          },
+          "before_project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "A change of the project: the project the issue was in, when the reader may see it."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "before_text": {
             "type": ["string", "null"],
@@ -26371,6 +26443,42 @@
               "description": "One item of the list of notifications.",
               "required": ["id", "kind", "at", "read"],
               "properties": {
+                "after_issue": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/IssueRef",
+                      "description": "The same for what it is now."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "after_names": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The same for what the field is now."
+                },
+                "after_people": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/PersonRef"
+                  },
+                  "description": "The same for who they are now."
+                },
+                "after_project": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectRef",
+                      "description": "The same for the project it is in now."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "after_text": {
                   "type": ["string", "null"],
                   "description": "A change: what the field is now, in words."
@@ -26381,6 +26489,42 @@
                 "at": {
                   "type": "string",
                   "description": "When it happened."
+                },
+                "before_issue": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/IssueRef",
+                      "description": "A change of a field that is an issue: the issue it was, when the reader may see it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "before_names": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A change of a field that is a list of names (labels, tags): what it was."
+                },
+                "before_people": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/PersonRef"
+                  },
+                  "description": "A change of a field that holds people: who they were, each as the reader may see people."
+                },
+                "before_project": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectRef",
+                      "description": "A change of the project: the project the issue was in, when the reader may see it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "before_text": {
                   "type": ["string", "null"],
