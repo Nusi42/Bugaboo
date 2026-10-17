@@ -214,7 +214,12 @@ async fn adr_0007_the_rows_the_jobs_and_the_place_of_the_reader_are_one_step() -
         // row, and the reader has not moved, so it reads the same events again.
         let second = row(&mut source, ana, None, 2)?;
         let failed = storage
-            .store_notifications(&[second.clone()], std::slice::from_ref(&job), 9, at(6))
+            .store_notifications(
+                std::slice::from_ref(&second),
+                std::slice::from_ref(&job),
+                9,
+                at(6),
+            )
             .await;
         assert!(failed.is_err(), "the job is there twice");
         assert_eq!(storage.database().outbox_position(&consumer()?).await?, 5);

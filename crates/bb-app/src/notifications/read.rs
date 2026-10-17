@@ -12,7 +12,9 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{CommentId, NotificationId, UserId};
 use bb_core::many_changes::ManyChangeStatus;
-use bb_core::notification::{AT_ONCE_MAX, Notification, NotificationFilter, NotificationKind};
+use bb_core::notification::{
+    AT_ONCE_MAX, LOOKED_AT_MAX, Notification, NotificationFilter, NotificationKind,
+};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place};
@@ -227,7 +229,10 @@ pub async fn notifications<S: AuthStore>(
     let mut items: Vec<NotificationItem> = Vec::new();
     let mut more = false;
     // Rows the person may not see any more are skipped, so more rows are read until the page is
-    // full or there are no more.
+    // full, there are no more, or the request has looked at as many as one may (then the page is
+    // shorter and the next one goes on from the last row looked at).
+    let mut looked_at = 0_usize;
+    let mut resume = None;
     'pages: loop {
         let rows = ctx
             .store()
@@ -236,6 +241,12 @@ pub async fn notifications<S: AuthStore>(
             .map_err(|error| internal::<S>(&error))?;
         let exhausted = rows.len() < usize::try_from(read_len(len)).unwrap_or(usize::MAX);
         for row in &rows {
+            if looked_at == LOOKED_AT_MAX {
+                more = true;
+                resume = before;
+                break 'pages;
+            }
+            looked_at += 1;
             if let Some(item) = ctx.notification_item(&mut reading, row).await? {
                 if items.len() == len {
                     more = true;
@@ -250,7 +261,10 @@ pub async fn notifications<S: AuthStore>(
         }
     }
     let cut = Cut { items, more };
-    let next_cursor = cut.next_cursor(|item| item.id.to_string());
+    let next_cursor = match resume {
+        Some(last) => Some(last.to_string()),
+        None => cut.next_cursor(|item| item.id.to_string()),
+    };
     Ok(held.authorize(NotificationPage {
         items: cut.items,
         next_cursor,

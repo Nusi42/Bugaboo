@@ -831,3 +831,71 @@ async fn sec_06_a_person_who_may_not_see_authors_does_not_see_who_did_it() -> Ou
     assert!(!shown.contains(&crew.bob.person.id.to_string()), "{shown}");
     Ok(())
 }
+
+#[tokio::test]
+async fn ntf_01_one_request_for_the_list_looks_at_a_bounded_number_of_rows_and_says_there_is_more()
+-> Outcome {
+    use bb_core::id::{IssueId, NotificationId};
+    use bb_core::notification::{LOOKED_AT_MAX, Notification};
+
+    use crate::context::SystemIds;
+
+    let mut crew = Crew::new().await?;
+    let (ada, bob) = (token(&crew.world), crew.bob.session_token.clone());
+    crew.change(&bob, Change::Status(Status::Done)).await?;
+    assert_eq!(crew.heard(&ada).await?.len(), 1);
+    let real = crew
+        .world
+        .store
+        .lock()
+        .state
+        .notifications
+        .iter()
+        .find(|row| row.recipient == crew.world.admin.person.id)
+        .cloned()
+        .ok_or("no notification")?;
+    // Newer than the real one, many rows about an issue that is not there (so Ada may not see
+    // them): more than one request may look at.
+    for number in 0..u16::try_from(LOOKED_AT_MAX + 100)? {
+        // A version 7 ID that sorts after any real one: the time part is all ones.
+        let mut bytes = [0xFF_u8; 16];
+        (bytes[6], bytes[8]) = (0x70, 0x80);
+        bytes[14..].copy_from_slice(&number.to_be_bytes());
+        crew.world
+            .store
+            .lock()
+            .state
+            .notifications
+            .push(Notification {
+                id: NotificationId::from_bytes(bytes)?,
+                issue: Some(IssueId::generate(&mut SystemIds)?),
+                ..real.clone()
+            });
+    }
+    let mut cursor = None;
+    let mut asked = 0;
+    let mut found = Vec::new();
+    loop {
+        let page = notifications(
+            &crew.world.ctx(),
+            NotificationsQuery {
+                session_token: ada.clone(),
+                filter: NotificationFilter::All,
+                cursor: cursor.clone(),
+                limit: 50,
+            },
+        )
+        .await
+        .map_err(text)?
+        .into_value();
+        asked += 1;
+        found.extend(page.items);
+        cursor = page.next_cursor;
+        if cursor.is_none() {
+            break;
+        }
+    }
+    assert!(asked >= 2, "the first request stops at the limit: {asked}");
+    assert_eq!(found.len(), 1, "and the next one goes on to the real one");
+    Ok(())
+}
