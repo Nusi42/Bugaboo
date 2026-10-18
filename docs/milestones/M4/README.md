@@ -19,6 +19,11 @@ M4 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | 3 | [WP-09](WP-09-issue-page-after-the-new-look.md) | The issue page after the new look (M3 follow-ups) | Builder | `bugaboo.win3` / `WIN3` |
 | 3 | [WP-11](WP-11-types-and-labels-per-project.md) | Issue types and labels per project, *Check access* per issue type (moved out of WP-04) | Builder | `bugaboo.win5` / `WIN5` |
 | 4 | [WP-10](WP-10-sample-organization-and-exit-demo.md) | Sample organization part 3, ten people with workflows, speed, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
+| Exit A | [WP-12](WP-12-exit-security-fixes.md) | Exit review: security, privacy and the notifications reader (added later) | Builder | `bugaboo.win3` / `WIN3` |
+| Exit A | [WP-13](WP-13-exit-words-and-e-mails.md) | Exit review: words, e-mails and user docs | Builder | `bugaboo.win4` / `WIN4` |
+| Exit A | [WP-14](WP-14-exit-screens.md) | Exit review: screens | Builder | `bugaboo.win5` / `WIN5` |
+| Exit A | [WP-15](WP-15-exit-structure.md) | Exit review: structure, checks and docs | Builder | `bugaboo.win2` / `WIN2` |
+| Exit B | [WP-16](WP-16-api-before-the-freeze.md) | The API before the freeze, ARCH-API-FREEZE | Builder | `bugaboo.win2` / `WIN2` |
 
 Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files were written in WP-01, after the maintainer's answers.
 
