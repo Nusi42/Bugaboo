@@ -28,6 +28,7 @@ const VERSION_SOURCE: &str = "crates/bb-core/src/version.rs";
 const TIME_SOURCE: &str = "crates/bb-core/src/time.rs";
 const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
+const FILES_SOURCE: &str = "crates/bb-core/src/files.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -614,6 +615,55 @@ export const decimalParts = {parts};
 
 /** How many digits a decimal number of an own field has after the point. */
 export const decimalDigits = {digits};
+"
+    ))
+}
+
+/// The value of a whole number that a constant says as a product of numbers (`4 * 1024 * 1024`).
+fn product_of(expr: &syn::Expr) -> Option<u128> {
+    match expr {
+        syn::Expr::Lit(syn::ExprLit {
+            lit: syn::Lit::Int(number),
+            ..
+        }) => number.base10_parse().ok(),
+        syn::Expr::Paren(inner) => product_of(&inner.expr),
+        syn::Expr::Binary(syn::ExprBinary {
+            left,
+            op: syn::BinOp::Mul(_),
+            right,
+            ..
+        }) => product_of(left)?.checked_mul(product_of(right)?),
+        _ => None,
+    }
+}
+
+/// The value of `const name`, a number or a product of numbers.
+fn product_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<u128> {
+    file.items
+        .iter()
+        .find_map(|item| match item {
+            syn::Item::Const(item) if item.ident == name => product_of(&item.expr),
+            _ => None,
+        })
+        .with_context(|| format!("{path} has no `const {name}` that is a number"))
+}
+
+/// The sizes of files as constants for the browser app and its tests: how big one part of an upload
+/// is, and what a megabyte is in the limit of a project. The tests take them from here and do not
+/// write them a second time.
+pub(super) fn files(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == FILES_SOURCE) else {
+        bail!("{FILES_SOURCE} is missing");
+    };
+    let file = syn::parse_file(text).with_context(|| format!("{FILES_SOURCE} is not Rust"))?;
+    let part = product_const(&file, FILES_SOURCE, "PART_BYTES")?;
+    let megabyte = product_const(&file, FILES_SOURCE, "MEGABYTE")?;
+    Ok(format!(
+        "{TS_HEADER}/** The most bytes one part of an upload holds. */
+export const partBytes = {part};
+
+/** The size of one megabyte in the limit of files: 1024 times 1024 bytes. */
+export const megabyte = {megabyte};
 "
     ))
 }

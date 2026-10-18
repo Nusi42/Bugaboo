@@ -8,6 +8,7 @@ import {
   chooseFiles,
   holdSecondPart,
   limitInWords,
+  MEGABYTE,
   limitOf,
   megabytes,
   type Pictured,
@@ -30,7 +31,6 @@ test.describe.configure({ mode: "serial" });
 
 const MILESTONE = "M4";
 const ISSUE = "WEB-1";
-const MEGABYTE = 1024 * 1024;
 
 /** How long the previews may take: the job runs every two seconds. */
 const PREVIEW_WAIT_MS = 30_000;

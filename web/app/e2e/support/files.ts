@@ -1,5 +1,6 @@
 import { crc32, deflateSync } from "node:zlib";
 
+import { megabyte as MEGABYTE, partBytes } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page, type Request } from "@playwright/test";
 
@@ -32,10 +33,9 @@ export interface Pictured {
   readonly buffer: Buffer;
 }
 
-/** The size of one part of an upload, in bytes (`PART_BYTES` of the server, said by every start). */
-export const PART_BYTES = 4 * 1024 * 1024;
-
-const MEGABYTE = 1024 * 1024;
+/** The sizes of the server, from the generated constants: one part of an upload, and a megabyte. */
+const PART_BYTES = partBytes;
+export { MEGABYTE, PART_BYTES };
 
 /** The first bytes of every PNG. */
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
