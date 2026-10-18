@@ -47,7 +47,7 @@ export function TestEmail() {
       <p {...partOf(part.text)}>{t("mail-server.test-intro", { email })}</p>
       <div {...partOf(part.row)}>
         <Button
-          look={buttonLook.primary}
+          look={buttonLook.plain}
           isPending={send.isPending}
           isDisabled={cooldown.secondsLeft > 0}
           onPress={() => {

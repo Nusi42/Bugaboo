@@ -1065,6 +1065,17 @@ part "choice-group.input:focus-visible + choice-group.label" "choice-group.input
     use "ring"
 }
 
+// Long words (how a connection is protected) stand under each other on a phone, as wide as the screen,
+// and not as ragged buttons side by side.
+part "app-layout[variant=phone] choice-group.choices[variant=stacked]" {
+    flex-direction column
+    align-items stretch
+}
+
+part "app-layout[variant=phone] choice-group.choices[variant=stacked] choice-group.label" {
+    flex 1
+}
+
 // ───────────── Overlay (sheets, menus, quick search) ─────────────
 //
 // The variant says where it opens from: center, bottom, start or top.
@@ -2353,6 +2364,22 @@ part "app-layout[variant=phone] card[variant=open-on-phone]" {
     border-radius 0
     background transparent
     box-shadow none
+}
+
+// The heading and, at the end of its row, what can be done with the card (R6: at the end of the header).
+part "card.header" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-4"
+}
+
+part "card.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
 }
 
 part "card.heading" {
@@ -11339,14 +11366,6 @@ part "form-section.title" {
 // notifications in it. An unread notification has the soft accent color and an accent edge: color
 // says state (R4), and the word *New* says it too (R5). The count on the menu is the one filled
 // pill of the menu.
-
-part "notifications-bar" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    justify-content flex-end
-    gap "$space-2 $space-4"
-}
 
 part "notification-group" {
     display flex

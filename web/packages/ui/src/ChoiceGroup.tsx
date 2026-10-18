@@ -20,6 +20,8 @@ export interface ChoiceGroupProps<Value extends string> {
   readonly onChange: (value: Value) => void;
   /** How a choice shows its name, next to the input; the usual label by default. */
   readonly renderLabel?: (choice: Choice<Value>) => ReactNode;
+  /** On a phone the choices stand under each other, as wide as the screen, where they are long words. */
+  readonly stacked?: boolean;
 }
 
 /** One choice out of a few, shown as buttons that sit side by side: themes, spacing and the like. */
@@ -29,12 +31,13 @@ export function ChoiceGroup<Value extends string>({
   value,
   onChange,
   renderLabel,
+  stacked = false,
 }: ChoiceGroupProps<Value>) {
   const group = useId();
   return (
     <fieldset {...partOf(part.choiceGroup)}>
       <legend {...partOf(part.choiceGroupLegend)}>{legend}</legend>
-      <div {...partOf(part.choiceGroupChoices)}>
+      <div {...partOf(part.choiceGroupChoices, { variants: [stacked && "stacked"] })}>
         {choices.map((choice) => (
           <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
             <input

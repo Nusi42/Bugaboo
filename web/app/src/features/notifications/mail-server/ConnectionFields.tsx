@@ -125,6 +125,7 @@ export function Protection({
     <div {...partOf(part.stack)}>
       <ChoiceGroup
         legend={wordsOf(found?.name_key ?? "")}
+        stacked
         choices={choices}
         value={value}
         onChange={onChange}

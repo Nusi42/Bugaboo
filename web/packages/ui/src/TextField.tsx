@@ -113,11 +113,6 @@ export function TextField({
       validate={(text) => problemOf(text, kind, requiredMessage, emailMessage)}
     >
       <Label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)}>{label}</Label>
-      {description === undefined ? null : (
-        <Text slot={descriptionSlot} {...partOf(part.fieldDescription)}>
-          {description}
-        </Text>
-      )}
       {kind === fieldKind.multiline ? (
         <TextArea {...partOf(part.fieldInput, { variants: [fieldShape.multiline] })} rows={4} />
       ) : (
@@ -125,6 +120,12 @@ export function TextField({
           {...partOf(part.fieldInput)}
           {...(date === undefined ? {} : { min: date.min, max: date.max })}
         />
+      )}
+      {/* The help stands under the box, so the boxes of a row start on one line however long the help is. */}
+      {description === undefined ? null : (
+        <Text slot={descriptionSlot} {...partOf(part.fieldDescription)}>
+          {description}
+        </Text>
       )}
       <FieldError {...partOf(part.fieldError)}>{errorMessage}</FieldError>
     </AriaTextField>
