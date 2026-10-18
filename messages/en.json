@@ -1635,6 +1635,7 @@
   "labels.tag-suggestions": "Tags to choose from",
   "labels.add-label": "Add a label",
   "labels.add-label-button": "Add label",
+  "labels.none-to-pick": "This project has no labels yet.",
   "labels.nothing-to-add": "Every label is on this issue already.",
   "labels.pick-label": "Choose a label",
   "many-changes.bar": "Change the issues you ticked",

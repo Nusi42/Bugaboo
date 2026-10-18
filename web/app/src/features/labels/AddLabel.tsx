@@ -24,7 +24,12 @@ export function AddLabel({ has, project, onAdd, pending }: AddLabelProps) {
   const [picked, setPicked] = useState(NONE);
   const offered = useLabelsToAdd(project, has);
   if (offered.length === 0) {
-    return <p {...partOf(part.muted)}>{t("labels.nothing-to-add")}</p>;
+    // With no label on the issue, "every label is on it" would say two things at once: there are none to pick.
+    return (
+      <p {...partOf(part.muted)}>
+        {t(has.length === 0 ? "labels.none-to-pick" : "labels.nothing-to-add")}
+      </p>
+    );
   }
   return (
     <Form
