@@ -60,7 +60,7 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 |---------|------------|-----|--------------|--------|
 | Mobile app | APP | random | iOS (`IOS`), Android (`AND`) | ≈ 4,800 |
 | Website | WEB | counting | Shop (`SHOP`), Blog (`BLOG`) | ≈ 3,000 |
-| Operations | OPS | random | — | ≈ 1,800, including restricted security issues |
+| Operations | OPS | counting | — | ≈ 1,800, including restricted security issues |
 | Handbook | DOC | counting | — | ≈ 400, mostly documents and tasks |
 
 ### What's inside
