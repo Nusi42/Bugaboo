@@ -13663,7 +13663,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("workflows.publish-where-over", "Issues in {status} go to"),
     ("workflows.remove-condition", "Stop checking {field}"),
-    ("workflows.rules-done", "Close"),
+    ("workflows.rules-done", "Keep these rules"),
     (
         "workflows.rules-intro",
         "From {from} to {to}. A rule that is left empty does not apply.",
