@@ -4,7 +4,7 @@
 //! change. The same rules run on the fakes of `bb-app`; here the statements are the database's.
 
 use axum::http::StatusCode;
-use bb_app::access::Permission;
+use bb_app::access::{Permission, StartingRole};
 use bb_testing::{Failure, TestDatabase, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -130,6 +130,8 @@ async fn refused_for_an_issue(db: &TestDatabase, unseen: bool) -> Result<(), Fai
     let kid = sub_project(&mut ada, &site).await?;
     let project = if unseen { "KID" } else { "ACME" };
     let issue = in_progress(&mut ada, &site, project, "In the middle").await?;
+    // An issue the lead sees and may change, for the control at the end.
+    let mine = in_progress(&mut ada, &site, "ACME", "Theirs to move").await?;
     let workflow = own_workflow(&mut ada, &site).await?;
     let mut rights = vec![
         Permission::SeeProjects,
@@ -148,17 +150,13 @@ async fn refused_for_an_issue(db: &TestDatabase, unseen: bool) -> Result<(), Fai
     let before = state(&mut ada, &issue).await?;
     let version = version_of_workflow(&mut lead, &site).await?;
     let lock = lock_workflow(&mut lead, &workflow).await?;
-    let refused = lead
-        .send(
-            "PUT",
-            &format!("{WORKFLOWS}/{workflow}"),
-            Some(publish(
-                &version,
-                &lock,
-                json!([{"from": "in-progress", "to": "open"}]),
-            )),
-        )
-        .await?;
+    let body = publish(
+        &version,
+        &lock,
+        json!([{"from": "in-progress", "to": "open"}]),
+    );
+    let path = format!("{WORKFLOWS}/{workflow}");
+    let refused = lead.send("PUT", &path, Some(body.clone())).await?;
     assert_eq!(
         (refused.status, refused.code()),
         (StatusCode::CONFLICT, "workflow.status_in_use"),
@@ -166,6 +164,27 @@ async fn refused_for_an_issue(db: &TestDatabase, unseen: bool) -> Result<(), Fai
         refused.body
     );
     assert_eq!(state(&mut ada, &issue).await?, before);
+    // The control: the same lead publishes the same workflow once they hold the rights to move
+    // what is in the dropped status (the starting role *Project lead*, who changes the status).
+    if unseen {
+        // The issue they do not see is out of *In progress*: only the one that is theirs is in it.
+        let (_, version) = state(&mut ada, &issue).await?;
+        let moved = ada
+            .send(
+                "PATCH",
+                &format!("{ISSUES}/{issue}"),
+                Some(json!({"version": version, "status": "open"})),
+            )
+            .await?;
+        ok(&moved)?;
+    }
+    let starting = site.org.starting_roles().await?;
+    let acme = site.acme.parse().map_err(|_| "no project ID")?;
+    let project_lead = starting[StartingRole::ProjectLead.code()];
+    site.org.give(&member, project_lead, acme).await?;
+    let published = lead.send("PUT", &path, Some(body)).await?;
+    ok(&published)?;
+    assert_eq!(state(&mut ada, &mine).await?.0, "open");
     Ok(())
 }
 
