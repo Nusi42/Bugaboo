@@ -13,7 +13,6 @@ export const messages = {
     "This form has not been customized yet. It shows the usual fields to every role.",
   "layouts.inherited-organization": "This form uses the layout of the whole organization.",
   "layouts.inherited-project": "This form uses the layout of {project}.",
-  "layouts.inherited-type": "It is only for {type}.",
   "layouts.customize-project": "Customize for {project}",
   "layouts.customize-organization": "Customize for the whole organization",
   "layouts.fixed": "The title and the issue type are always asked for.",
@@ -60,7 +59,7 @@ export const messages = {
   "layouts.use-inherited": "Reset to default",
   "layouts.use-inherited-title": "Reset to default?",
   "layouts.use-inherited-text":
-    "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
+    "The layout of this place is taken away. The place then uses the layout of the project above. This cannot be undone.",
   "layouts.delete-held":
     "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
 } as const;

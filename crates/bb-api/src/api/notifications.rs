@@ -27,6 +27,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::access_bodies::cursor_error;
+use super::access_keys::ProjectLabelBody;
 use super::auth::{
     AuthHandle, Info, InvalidAnswer, NotSignedInAnswer, Session, TooSoonAnswer, answer,
     answer_authorized, done,
@@ -43,7 +44,7 @@ const NOTIFICATIONS_LIST: &str = "notifications";
 
 /// The fields of an item of the list that can be asked for. An item holds only the ones that
 /// belong to what it says.
-const NOTIFICATION_FIELDS: [FieldSpec; 28] = [
+const NOTIFICATION_FIELDS: [FieldSpec; 29] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("kind"),
     FieldSpec::by_default("at"),
@@ -57,6 +58,7 @@ const NOTIFICATION_FIELDS: [FieldSpec; 28] = [
     FieldSpec::by_default("part"),
     FieldSpec::by_default("run"),
     FieldSpec::by_default("run_done"),
+    FieldSpec::by_default("issue_ids_failed"),
     FieldSpec::by_default("field"),
     FieldSpec::by_default("field_name"),
     FieldSpec::by_default("field_kind"),
@@ -112,6 +114,10 @@ pub(crate) struct NotificationEntry {
     /// The end of a run: whether it ended well.
     #[serde(skip_serializing_if = "Option::is_none")]
     run_done: Option<bool>,
+    /// Giving the issues of a project their new IDs gave up: the project, as the person may name
+    /// it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    issue_ids_failed: Option<ProjectLabelBody>,
     /// A change: the key of the field.
     #[serde(skip_serializing_if = "Option::is_none")]
     field: Option<String>,
@@ -179,6 +185,7 @@ fn start(item: &NotificationItem) -> NotificationEntry {
         part: None,
         run: None,
         run_done: None,
+        issue_ids_failed: None,
         field: None,
         field_name: None,
         field_kind: None,
@@ -238,6 +245,11 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
             let mut entry = start(item);
             entry.run = Some(run.to_string());
             entry.run_done = Some(*done);
+            vec![entry]
+        }
+        NotificationWhat::IssueIdsFailed { project } => {
+            let mut entry = start(item);
+            entry.issue_ids_failed = Some(ProjectLabelBody::from(project));
             vec![entry]
         }
         NotificationWhat::Plain => vec![start(item)],
@@ -487,6 +499,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use bb_app::access::ProjectLabel;
     use bb_core::issue::IssueIcon;
 
     use super::*;
@@ -532,6 +545,7 @@ mod tests {
             part: Some(String::new()),
             run: Some(String::new()),
             run_done: Some(true),
+            issue_ids_failed: Some(ProjectLabelBody::from(&ProjectLabel::Hidden)),
             field: Some(String::new()),
             field_name: Some(String::new()),
             field_kind: Some(FieldType::YesNo),

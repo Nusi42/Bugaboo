@@ -219,7 +219,6 @@ export interface MessageArguments {
     who: string | number;
   };
   "history.set": { after: string | number; field: string | number; who: string | number };
-  "history.set-people": { after: string | number; field: string | number; who: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
@@ -227,6 +226,7 @@ export interface MessageArguments {
   "invitations.expires": { when: string | number };
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
+  "issue-type.only-for": { type: string | number };
   "issue-types.created": { name: string | number };
   "issue-types.project-title": { project: string | number };
   "issues.ask-for-intro": { to: string | number };
@@ -277,7 +277,6 @@ export interface MessageArguments {
   "layouts.field-up": { name: string | number };
   "layouts.fields-of": { number: string | number };
   "layouts.inherited-project": { project: string | number };
-  "layouts.inherited-type": { type: string | number };
   "layouts.limited-form": { field: string | number; role: string | number };
   "layouts.limited-page": { field: string | number; role: string | number };
   "layouts.project-title": { project: string | number };
@@ -288,6 +287,8 @@ export interface MessageArguments {
   "layouts.section-named": { number: string | number; title: string | number };
   "layouts.section-remove": { number: string | number };
   "layouts.section-up": { number: string | number };
+  "list.many": { last: string | number; start: string | number };
+  "list.two": { first: string | number; second: string | number };
   "mail-server.test-done": { email: string | number };
   "mail-server.test-intro": { email: string | number };
   "mail-server.test-wait": { seconds: number };
@@ -297,7 +298,7 @@ export interface MessageArguments {
   "many-changes.line-changes": { after: string | number; field: string | number };
   "many-changes.line-relation": { issue: string | number; name: string | number };
   "many-changes.note-type-not-used": { project: string | number; type: string | number };
-  "many-changes.progress": { done: string | number; total: string | number };
+  "many-changes.progress": { done: string | number; total: number };
   "many-changes.project-picked": { name: string | number };
   "many-changes.result-done": { changed: number; skipped: number };
   "many-changes.skipped-line": { issue: string | number; reason: string | number };
@@ -307,6 +308,7 @@ export interface MessageArguments {
   "notifications.count-capped": { max: string | number };
   "notifications.finish-asked": { who: string | number };
   "notifications.group-name": { issue: string | number };
+  "notifications.issue-ids-failed": { project: string | number };
   "notifications.locked-way": { value: string | number; way: string | number };
   "notifications.mark-read-name": { what: string | number };
   "notifications.mentioned": { who: string | number };
@@ -468,5 +470,4 @@ export interface MessageArguments {
   "workflows.uses-organization": { name: string | number };
   "workflows.uses-project": { name: string | number; project: string | number };
   "workflows.uses-starting": { name: string | number };
-  "workflows.uses-type": { type: string | number };
 }

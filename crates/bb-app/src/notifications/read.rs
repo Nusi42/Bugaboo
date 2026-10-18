@@ -11,7 +11,7 @@ use std::collections::{HashMap, HashSet};
 use bb_core::ErrorCode;
 use bb_core::comment::Comment;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{CommentId, EntityId, IssueId, NotificationId, UserId};
+use bb_core::id::{CommentId, EntityId, IssueId, NotificationId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::{
@@ -22,7 +22,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place};
 use serde_json::json;
 
-use super::plan::{edit_note_of, run_status_of};
+use super::plan::{edit_note_of, renewal_failed, run_status_of};
 use super::types::{
     NotificationItem, NotificationPage, NotificationWhat, NotificationsQuery, ReadNotifications,
     Unread, UnreadQuery, Which,
@@ -198,6 +198,17 @@ impl<S: AuthStore> Ctx<'_, S> {
                         part: note.part,
                     }),
                 )
+            }
+            NotificationKind::RunEnded if renewal_failed(&row.changes) => {
+                let Some(project) = row
+                    .record
+                    .and_then(|record| ProjectId::from_bytes(record.to_bytes()).ok())
+                else {
+                    return Ok(None);
+                };
+                Ok(Some(NotificationWhat::IssueIdsFailed {
+                    project: self.project_label(actor, project).await?,
+                }))
             }
             NotificationKind::RunEnded => Ok(row.record.map(|run| NotificationWhat::RunEnded {
                 run,

@@ -12,6 +12,9 @@ pub const ISSUE: &str = "/issues/$issue";
 /// The page that takes an invitation link (the secret follows the `#`, so it never reaches a log).
 pub const INVITATION: &str = "/invitation";
 
+/// The page of the notifications of the person who is signed in.
+pub const NOTIFICATIONS: &str = "/notifications";
+
 /// The page to sign in.
 pub const SIGN_IN: &str = "/sign-in";
 

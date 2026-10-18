@@ -76,7 +76,7 @@ export const messages = {
   "handle.save": "Change my handle",
   "handle.changed": "Your handle is now @{handle}.",
   "handle.invalid":
-    "That is not a handle. Use only the letters a to z, digits, dots, dashes and underscores.",
+    "A handle can have only the letters a to z, digits, dots, dashes and underscores.",
   "handle.taken":
     "Somebody has this handle, or had it, or a group or a role has it. Choose another one.",
   "handle.rules": "How a handle works",

@@ -18,7 +18,7 @@ function usedNow(editor: Schema<"LayoutEditorBody">): string {
       : t("layouts.inherited-project", { project: from.project.name });
   return from.issue_type === null || from.issue_type === undefined
     ? where
-    : `${where} ${t("layouts.inherited-type", { type: from.issue_type.name })}`;
+    : `${where} ${t("issue-type.only-for", { type: from.issue_type.name })}`;
 }
 
 /**

@@ -63,7 +63,7 @@ export const messages = {
   "setting.auth.access-key-longest-days.help":
     "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
   "setting.auth.sign-up-enabled.help":
-    "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the address they give, and the account is created only when they open the address in it, so this works only while e-mail is on.",
+    "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the e-mail address they give, and the account is created only when they open the link in it, so this works only while e-mail is on.",
   "setting.content.image-hosts.name": "Hosts that images may come from",
   "setting.content.image-hosts.help":
     "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
@@ -218,6 +218,8 @@ export const messages = {
   "shortcut.title": "Keyboard shortcuts",
   "list.next": "Next",
   "list.previous": "Previous",
+  "list.two": "{first} and {second}",
+  "list.many": "{start}, and {last}",
   "focus.back": "Back to list",
   "appearance.light": "Theme when my device is light",
   "appearance.dark": "Theme when my device is dark",
@@ -406,10 +408,8 @@ export const messages = {
   "related-issues.kind-field": "What the relation means",
   "history.title": "History",
   "history.tabs": "What to show",
-  "history.system": "Bugaboo",
   "history.changed": "{who} changed {field} from {before} to {after}",
-  "history.set": "{who} set {field} to {after}",
-  "history.set-people": "{who} set {field}: {after}",
+  "history.set": "{who} set {field}: {after}",
   "history.cleared": "{who} cleared {field}",
   "history.changed-long-text": "{who} changed {field}",
   "history.people-none": "nobody",
@@ -426,15 +426,17 @@ export const messages = {
   "status.testing": "Testing",
   "status.in-review": "In review",
   "status.wont-fix": "Won't fix",
-  "error.workflow.no-such-change": "The workflow of this issue has no such status change.",
+  "error.workflow.no-such-change":
+    "This status change is not in the workflow of this issue any more. Choose one from the status button.",
   "error.workflow.not-for-you": "You may not change the status this way.",
   "error.workflow.only-if":
     "This status change is possible only when something else is true first.",
-  "error.workflow.cannot-fill": "This status change needs a field that you cannot fill in.",
+  "error.workflow.cannot-fill":
+    "This status change needs a field that you cannot fill in. Ask the person it is assigned to, or the project lead.",
   "error.workflow.status-in-use":
     "Some issues are still in a status that the workflow would no longer have. Choose where they go.",
   "error.workflow.invalid":
-    "The workflow breaks a rule: check the statuses, the status changes and their names.",
+    "The workflow cannot be published like this. It needs at least one status, every status and every button needs its own name, and no status change may go back to the same status.",
   "priority.low": "Low",
   "priority.normal": "Normal",
   "priority.high": "High",
@@ -444,7 +446,7 @@ export const messages = {
   "error.issue.type-retired":
     "That issue type is retired, so no new issues can be created with it. Choose another type.",
   "error.issue.type-not-offered":
-    "This project does not use that issue type. Choose another type or ask who looks after the project.",
+    "This project does not offer that issue type. Choose another type, or ask the project lead.",
   "setting.files.max-megabytes.name": "Biggest file",
   "setting.files.max-megabytes.help":
     "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
@@ -582,7 +584,7 @@ export const messages = {
   "many-changes-skip.changed-since": "It changed after the preview",
   "many-changes-skip.type-missing": "The other project did not offer its issue type",
   "many-changes-skip.label-not-here":
-    "The project of the issue does not use the group that label is in",
+    "The project of the issue does not offer the label group of that label",
   "many-changes-skip.field-missing": "It has a value in a field the other project does not use",
   "many-changes-skip.tag-not-here": "It has a tag that is not for the other project",
   "many-changes-skip.relation-exists": "The relation is there already",
@@ -599,7 +601,7 @@ export const messages = {
   "error.tag.not-here":
     "That tag is only for other projects. Choose another tag or ask who looks after tags.",
   "error.label.not-offered":
-    "This project does not use the group that label is in. Choose another label or ask who looks after labels.",
+    "This project does not offer the label group of that label. Choose another label, or ask who looks after labels.",
   "error.label.pick-one-conflict":
     "Some issues have more than one label of this label group already, so it cannot be a label group to pick one from. Take the extra labels off first.",
   "common.show-all": "Show all {count}",
@@ -618,8 +620,8 @@ export const messages = {
   "notification.kind.assigned": "An issue is assigned to you",
   "notification.kind.followed-activity":
     "A status change, a comment or a file on an issue you follow",
-  "notification.kind.followed-fields": "Other changes to fields of an issue you follow",
-  "notification.kind.run-ended": "Your run of many changes has ended",
+  "notification.kind.followed-fields": "Other changes to issues you follow",
+  "notification.kind.run-ended": "Your change to many issues has ended",
   "notification.kind.edit-notice":
     "Somebody asks you to finish editing, or takes your editing over",
   "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
@@ -650,12 +652,12 @@ export const messages = {
     "Other changes to issues you follow: by e-mail",
   "setting.notifications.followed-fields-by-mail.help":
     "Sends you an e-mail when somebody else changes other fields of an issue you follow. E-mail goes only when your organization has switched it on.",
-  "setting.notifications.run-ended-in-app.name": "Your run of many changes has ended: in the app",
+  "setting.notifications.run-ended-in-app.name": "Your change to many issues has ended: in the app",
   "setting.notifications.run-ended-in-app.help":
-    "Tells you under Notifications when a change to many issues that you asked for has ended, or when work you asked for gave up.",
-  "setting.notifications.run-ended-by-mail.name": "Your run of many changes has ended: by e-mail",
+    "Tells you under Notifications when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out.",
+  "setting.notifications.run-ended-by-mail.name": "Your change to many issues has ended: by e-mail",
   "setting.notifications.run-ended-by-mail.help":
-    "Sends you an e-mail when a change to many issues that you asked for has ended, or when work you asked for gave up. E-mail goes only when your organization has switched it on.",
+    "Sends you an e-mail when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out. E-mail goes only when your organization has switched it on.",
   "setting.notifications.edit-notice-in-app.name":
     "Somebody asks you to finish editing: in the app",
   "setting.notifications.edit-notice-in-app.help":
@@ -669,13 +671,13 @@ export const messages = {
     "Bugaboo sends e-mail only when this is on. Enter the mail server first and try it with Send me a test e-mail.",
   "setting.mail.host.name": "Mail server",
   "setting.mail.host.help":
-    "The host name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only the host name, without a path.",
+    "The name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only that name, without a path.",
   "setting.mail.port.name": "Mail server port",
   "setting.mail.port.help":
     "The port of the mail server, as the provider of your mail server tells you. It depends on how the connection is protected.",
   "setting.mail.security.name": "Protect the connection",
   "setting.mail.security.help":
-    "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same machine or in a place you trust: the password and the e-mails would travel in the clear.",
+    "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same computer or in a place you trust: the password and the e-mails could be read on the way.",
   "setting.mail.security.starttls": "Switch to encryption (usual)",
   "setting.mail.security.tls": "Encrypted from the start",
   "setting.mail.security.off": "No encryption",
@@ -691,12 +693,13 @@ export const messages = {
   "error.mail.rejected":
     "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
   "error.mail.unavailable":
-    "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
+    "Bugaboo could not reach the mail server. Check the mail server, its port and the connection, then try again.",
   "error.mail.off": "E-mail is not set up. Enter the mail server and switch e-mail on first.",
   "person.bugaboo": "Bugaboo",
+  "issue-type.only-for": "It is only for {type}.",
   "setting.security.log-keep-days.name": "Days to keep the security log",
   "setting.security.log-keep-days.help":
-    "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out.",
+    "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",
   "setting.logs.server-log-megabytes.name": "Size of the server log file",
   "setting.logs.server-log-megabytes.help":
     "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",
@@ -708,7 +711,7 @@ export const messages = {
   "issue-types.project-title": "Issue types of {project}",
   "labels.project-title": "Labels of {project}",
   "error.mail.insecure":
-    "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
+    "The mail server is set to send its user name or password without encryption to another computer. Switch encryption on, or use a mail server on this computer.",
   "nav.notifications": "Notifications",
   "nav.notification-settings": "Notification settings",
   "nav.handle": "Handle",

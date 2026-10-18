@@ -7,7 +7,7 @@ import { appPaths } from "@bugaboo/api-client";
  */
 export const paths = {
   home: "/",
-  notifications: "/notifications",
+  notifications: appPaths.notifications,
   setup: "/setup",
   signIn: appPaths.signIn,
   secondStep: "/sign-in/second-step",

@@ -25,6 +25,7 @@ use super::compose::compose;
 use super::plan::wants;
 use super::read::Reading;
 use super::types::NotificationItem;
+use super::value_words::Region;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::mailer::{MailFailure, MailMessage, MailServer};
@@ -273,6 +274,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             &items,
             more,
             layers.yes(&MAIL_SHORT),
+            &Region::of(&self.setting_layers_of(Some(recipient)).await?),
             &self.services.public_url,
         );
         let Some(composed) = composed else {

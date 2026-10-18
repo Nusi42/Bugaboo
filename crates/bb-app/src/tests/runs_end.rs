@@ -1,6 +1,7 @@
 //! Work that ends tells the person who asked for it (M3-F125, M3-F150, NTF-01): the end of a run of
 //! many changes, a run that failed, and the renewal of issue IDs whose job died.
 
+use bb_core::access::AppliesTo;
 use bb_core::notification::NotificationFilter;
 use bb_core::notification::NotificationKind;
 use serde_json::json;
@@ -9,7 +10,9 @@ use super::many_changes::run_with_a_step_waiting;
 use super::notifications::Crew;
 use super::scenarios::token;
 use super::world::{Outcome, World};
+use crate::access::ProjectLabel;
 use crate::notifications::{NotificationWhat, NotificationsQuery, notifications};
+use crate::roles::{AssignRole, Given, Subject, assign_role};
 
 async fn heard(world: &World) -> Result<Vec<crate::notifications::NotificationItem>, String> {
     Ok(notifications(
@@ -99,10 +102,46 @@ async fn ntf_01_a_renewal_of_issue_ids_that_died_tells_the_person_who_changed_th
     crew.world.ctx().renewal_gave_up(&payload).await?;
     let told = crew.heard(&crew.carol.session_token).await?;
     assert_eq!(told.len(), 1, "{told:?}");
-    assert!(matches!(
-        told[0].what,
-        NotificationWhat::RunEnded { done: false, .. }
-    ));
+    // The notification names the project, as the person may name it.
+    assert!(
+        matches!(
+            &told[0].what,
+            NotificationWhat::IssueIdsFailed { project: ProjectLabel::Visible { id, .. } }
+                if *id == crew.project
+        ),
+        "{told:?}"
+    );
     assert!(crew.heard(&crew.bob.session_token).await?.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn m4_f144_a_renewal_that_died_does_not_name_a_project_the_person_cannot_see_any_more()
+-> Outcome {
+    let crew = Crew::new().await?;
+    let payload =
+        json!({"project": crew.project.to_string(), "by": crew.carol.person.id.to_string()});
+    crew.world.ctx().renewal_gave_up(&payload).await?;
+    // Carol loses access to the project before she reads the notification.
+    assign_role(
+        &crew.world.ctx(),
+        AssignRole {
+            session_token: token(&crew.world),
+            subject: Subject::Person(crew.carol.person.id),
+            given: Given::NoAccess,
+            project: Some(crew.project),
+            applies_to: AppliesTo::ProjectAndSubProjects,
+        },
+    )
+    .await
+    .map_err(|error| error.to_string())?;
+    let told = crew.heard(&crew.carol.session_token).await?;
+    assert_eq!(told.len(), 1, "{told:?}");
+    assert!(matches!(
+        &told[0].what,
+        NotificationWhat::IssueIdsFailed {
+            project: ProjectLabel::Hidden
+        }
+    ));
     Ok(())
 }

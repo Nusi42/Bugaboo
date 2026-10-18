@@ -663,13 +663,19 @@ pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
         text_const(text, name)
             .with_context(|| format!("{APP_PATHS_SOURCE} has no `const {name}` that is text"))
     };
-    let (issue, invitation, sign_in) = (path("ISSUE")?, path("INVITATION")?, path("SIGN_IN")?);
+    let (issue, invitation, sign_in, notifications) = (
+        path("ISSUE")?,
+        path("INVITATION")?,
+        path("SIGN_IN")?,
+        path("NOTIFICATIONS")?,
+    );
     Ok(format!(
         "{TS_HEADER}/** The addresses of the app pages that the server links to (invitations, e-mails). */
 export const appPaths = {{
   issue: {issue:?},
   invitation: {invitation:?},
   signIn: {sign_in:?},
+  notifications: {notifications:?},
 }} as const;
 "
     ))
