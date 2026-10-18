@@ -2841,11 +2841,36 @@ part "projects.alert-line" {
     margin 0
 }
 
+// The pages of a project's settings in one row that scrolls sideways instead of wrapping into rows of
+// links (the review of M4, B project settings); the page that is open is marked, not underlined (R8).
 part "projects.tabs" {
-    display flex
-    flex-wrap wrap
-    gap "$space-4"
     use "list-reset"
+    display flex
+    gap "$space-1"
+    overflow-x auto
+    border-bottom "$border-width solid $border"
+}
+
+part "projects.tab" {
+    use "tab-label"
+    display inline-flex
+    align-items center
+    flex none
+    text-decoration none
+    white-space nowrap
+}
+
+part "projects.tab[hovered]" {
+    background "$bg-hover"
+}
+
+part "projects.tab[current]" {
+    color "$fg"
+    border-bottom-color "$accent"
+}
+
+part "projects.tab[focus-visible]" {
+    use "ring-inside"
 }
 
 // ───────────── Long previews (M2C-F80) ─────────────
@@ -3217,10 +3242,11 @@ part "shell.content:focus" {
     outline none
 }
 
+// The narrow content of the pages before sign-in starts on the same edge as the name of the product
+// above it and the choice of theme below it (R1), not centered between them.
 part "shell.narrow" {
     width "100%"
     max-width "$size-form"
-    margin 0 auto
 }
 
 part "shell.footer" {
@@ -4119,16 +4145,33 @@ part "list-editor.list" {
     min-width 0
 }
 
+// A row of the list is one button: pointing at it, or having it open, shows it (R8: a whole row is
+// clickable and is not underlined; R4: the open one is marked).
 part "list-editor.open" {
-    min-height "$size-control"
-    padding 0
-    use "bare-button"
-    color "$accent-fg"
+    use "surface-box"
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    box-sizing border-box
+    width "100%"
+    min-height "$size-row"
+    padding 0 "$pad-box"
+    color "$fg"
+    font-family "$font"
     font-size "$fs-md"
-    font-weight "$weight-bold"
     text-align start
-    text-decoration underline
-    text-underline-offset "$space-1"
+    cursor pointer
+}
+
+part "list-editor.name" {
+    min-width 0
+    font-weight "$weight-bold"
+    overflow-wrap anywhere
+}
+
+part "list-editor.open[hovered]" {
+    background "$bg-hover"
 }
 
 part "list-editor.open[focus-visible]" {
@@ -4136,8 +4179,10 @@ part "list-editor.open[focus-visible]" {
 }
 
 part "list-editor.open[state=open]" {
-    color "$fg"
-    text-decoration none
+    border-color "$accent"
+    background "$bg-selected"
+    color "$accent-fg"
+    use "marked"
 }
 
 part "list-editor.nothing" {

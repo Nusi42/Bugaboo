@@ -1,10 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Link, partOf, part } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
+import { Link } from "react-aria-components";
 
 import { projectPageAddress } from "../../shared/project-pages.ts";
 import { tabsOf } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
+
+/** The value of `aria-current` for the page that is open: a word of the ARIA standard. */
+const currentPage = "page";
 
 /**
  * The tabs of *Project settings*: the name and place of the project, *Who has which role* in it,
@@ -25,7 +29,11 @@ export function ProjectTabs({ project }: { readonly project: OneProject }) {
           const address = projectPageAddress(tab, shortName);
           return (
             <li key={tab.path}>
-              <Link href={address} current={pathname === address}>
+              <Link
+                href={address}
+                {...partOf(part.projectsTab)}
+                {...(pathname === address ? { "aria-current": currentPage } : {})}
+              >
                 {t(tab.tab ?? tab.name)}
               </Link>
             </li>

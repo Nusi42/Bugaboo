@@ -34,12 +34,12 @@ interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen">
   readonly label: string;
 }
 
-/** The rows: the name of an item opens it, and the rest of the row follows. */
+/** The rows: the whole row opens its item (R8), the name first and the rest of the row after it. */
 function Rows({ rows, label, openKey, onOpen }: RowsProps) {
   return (
     <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={label}>
       {rows.map((row) => (
-        <li key={row.key} {...partOf(part.item, { variants: ["spread", "slim"] })}>
+        <li key={row.key}>
           <Button
             {...partOf(part.listEditorOpen, { states: [row.key === openKey && "open"] })}
             aria-expanded={row.key === openKey}
@@ -47,9 +47,9 @@ function Rows({ rows, label, openKey, onOpen }: RowsProps) {
               onOpen(row.key);
             }}
           >
-            {row.name}
+            <span {...partOf(part.listEditorName)}>{row.name}</span>
+            {row.details}
           </Button>
-          {row.details}
         </li>
       ))}
     </ul>

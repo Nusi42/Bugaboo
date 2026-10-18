@@ -2306,12 +2306,43 @@ body {
 }
 
 [data-part="projects.tabs"] {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+[data-part="projects.tab"] {
+  padding: var(--space-2) var(--space-3);
+  min-height: var(--size-control);
+  box-sizing: border-box;
+  color: var(--fg-muted);
+  font-size: var(--fs-md);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  border-bottom: var(--space-1) solid transparent;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+[data-part="projects.tab"][data-hovered] {
+  background: var(--bg-hover);
+}
+
+[data-part="projects.tab"][data-current] {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+
+[data-part="projects.tab"][data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: calc(var(--ring-width) * -1);
 }
 
 [data-part="long-preview"] {
@@ -2708,7 +2739,6 @@ body {
 [data-part="shell.narrow"] {
   width: 100%;
   max-width: var(--size-form);
-  margin: 0 auto;
 }
 
 [data-part="shell.footer"] {
@@ -3692,18 +3722,32 @@ body {
 }
 
 [data-part="list-editor.open"] {
-  min-height: var(--size-control);
-  padding: 0;
-  border: 0;
-  background: transparent;
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--size-row);
+  padding: 0 var(--pad-box);
+  color: var(--fg);
   font-family: var(--font);
-  cursor: pointer;
-  color: var(--accent-fg);
   font-size: var(--fs-md);
-  font-weight: var(--weight-bold);
   text-align: start;
-  text-decoration: underline;
-  text-underline-offset: var(--space-1);
+  cursor: pointer;
+}
+
+[data-part="list-editor.name"] {
+  min-width: 0;
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+[data-part="list-editor.open"][data-hovered] {
+  background: var(--bg-hover);
 }
 
 [data-part="list-editor.open"][data-focus-visible] {
@@ -3712,8 +3756,15 @@ body {
 }
 
 [data-part="list-editor.open"][data-state~="open"] {
-  color: var(--fg);
-  text-decoration: none;
+  border-color: var(--accent);
+  background: var(--bg-selected);
+  color: var(--accent-fg);
+}
+
+@media (forced-colors: active) {
+  [data-part="list-editor.open"][data-state~="open"] {
+    outline: var(--ring-width) solid var(--accent);
+  }
 }
 
 [data-part="list-editor.nothing"] {
