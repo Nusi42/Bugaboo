@@ -9,8 +9,10 @@
 use std::collections::HashMap;
 
 use bb_core::ErrorCode;
+use bb_core::comment::Comment;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{CommentId, NotificationId, UserId};
+use bb_core::id::{CommentId, IssueId, NotificationId, UserId};
+use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::{
     AT_ONCE_MAX, LOOKED_AT_MAX, Notification, NotificationFilter, NotificationKind,
@@ -31,6 +33,12 @@ use crate::history::ChangeReader;
 use crate::member::notifications as member;
 use crate::relations::LineMaker;
 
+/// The comment a row is about, if it is about one.
+fn comment_of(row: &Notification) -> Option<CommentId> {
+    row.record
+        .and_then(|record| CommentId::from_bytes(record.to_bytes()).ok())
+}
+
 /// What a page of notifications is shaped with: the person, the issue lines and the people shown
 /// so far, which are looked up once for the page.
 pub(super) struct Reading<'a> {
@@ -39,6 +47,9 @@ pub(super) struct Reading<'a> {
     changes: ChangeReader,
     /// The people shown so far, by the kind they were shown as.
     people: HashMap<UserId, PersonRef>,
+    /// The issues and comments the rows of a batch name, read in one statement each (PERF-05).
+    issues: HashMap<IssueId, Issue>,
+    comments: HashMap<CommentId, Comment>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -50,7 +61,49 @@ impl<S: AuthStore> Ctx<'_, S> {
             maker: self.line_maker().await?,
             changes: self.change_reader().await?,
             people: HashMap::new(),
+            issues: HashMap::new(),
+            comments: HashMap::new(),
         })
+    }
+
+    /// Reads the issues and the comments that these rows name, one statement for each kind, so a
+    /// page costs the same however many rows it has. A row that names something not read here is
+    /// read on its own by `notification_item`.
+    pub(super) async fn read_what_rows_name(
+        &self,
+        reading: &mut Reading<'_>,
+        rows: &[Notification],
+    ) -> Result<(), AppError> {
+        let mut issues: Vec<IssueId> = rows
+            .iter()
+            .filter_map(|row| row.issue)
+            .filter(|id| !reading.issues.contains_key(id))
+            .collect();
+        issues.sort();
+        issues.dedup();
+        let mut comments: Vec<CommentId> = rows
+            .iter()
+            .filter_map(comment_of)
+            .filter(|id| !reading.comments.contains_key(id))
+            .collect();
+        comments.sort();
+        comments.dedup();
+        if !issues.is_empty() {
+            for issue in self.issues_named(&issues).await? {
+                reading.issues.insert(issue.id, issue);
+            }
+        }
+        if !comments.is_empty() {
+            for comment in self
+                .store()
+                .comments_by_ids(&comments)
+                .await
+                .map_err(|error| internal::<S>(&error))?
+            {
+                reading.comments.insert(comment.id, comment);
+            }
+        }
+        Ok(())
     }
 
     /// One notification as the person reads it now; `None` when there is nothing in it for them
@@ -61,9 +114,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         row: &Notification,
     ) -> Result<Option<NotificationItem>, AppError> {
         let actor = reading.actor;
+        // What a batch did not read first is read for this row alone.
+        self.read_what_rows_name(reading, std::slice::from_ref(row))
+            .await?;
         let (issue_line, held) = match row.issue {
             Some(id) => {
-                let Some(issue) = self.issues_named(&[id]).await?.into_iter().next() else {
+                let Some(issue) = reading.issues.get(&id).cloned() else {
                     return Ok(None);
                 };
                 let Some(line) = self.line_of(actor, &mut reading.maker, &issue).await? else {
@@ -91,10 +147,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             kind: row.kind,
             at: row.at,
             read: row.read_at.is_some(),
-            comment: row
-                .record
-                .and_then(|record| CommentId::from_bytes(record.to_bytes()).ok())
-                .filter(|_| matches!(what, NotificationWhat::Comment { .. })),
+            comment: comment_of(row).filter(|_| matches!(what, NotificationWhat::Comment { .. })),
             issue: issue_line.map(|(line, _)| line),
             by,
             what,
@@ -123,7 +176,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         reading: &mut Reading<'_>,
         held: &Evaluation,
-        issue: Option<&(crate::relations::IssueLine, bb_core::issue::Issue)>,
+        issue: Option<&(crate::relations::IssueLine, Issue)>,
         row: &Notification,
     ) -> Result<Option<NotificationWhat>, AppError> {
         let actor = reading.actor;
@@ -149,21 +202,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let Some((_, issue)) = issue else {
                     return Ok(None);
                 };
-                if let Some(comment) = row
-                    .record
-                    .and_then(|record| CommentId::from_bytes(record.to_bytes()).ok())
-                {
-                    let found = self
-                        .store()
-                        .comments_by_ids(&[comment])
-                        .await
-                        .map_err(|error| internal::<S>(&error))?
-                        .into_iter()
-                        .find(|found| found.deleted_at.is_none());
+                if let Some(comment) = comment_of(row) {
+                    let found = reading
+                        .comments
+                        .get(&comment)
+                        .filter(|found| found.deleted_at.is_none());
                     let Some(found) = found else {
                         return Ok(None);
                     };
-                    let view = self.comment_view(actor, held, issue, &found).await?;
+                    let view = self.comment_view(actor, held, issue, found).await?;
                     return Ok(Some(NotificationWhat::Comment { comment: view }));
                 }
                 // The fields as the person may see them now: what they lost sight of is left out.
@@ -195,6 +242,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await
             .map_err(|error| internal::<S>(&error))?;
+        self.read_what_rows_name(reading, &rows).await?;
         let mut count = 0;
         for row in &rows {
             if self.notification_item(reading, row).await?.is_some() {
@@ -240,6 +288,7 @@ pub async fn notifications<S: AuthStore>(
             .await
             .map_err(|error| internal::<S>(&error))?;
         let exhausted = rows.len() < usize::try_from(read_len(len)).unwrap_or(usize::MAX);
+        ctx.read_what_rows_name(&mut reading, &rows).await?;
         for row in &rows {
             if looked_at == LOOKED_AT_MAX {
                 more = true;

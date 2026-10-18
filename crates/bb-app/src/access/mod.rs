@@ -19,7 +19,7 @@ use std::sync::Arc;
 
 use bb_auth::looks_like_access_key;
 use bb_core::ErrorCode;
-use bb_core::access::{AppliesTo, Assignment};
+use bb_core::access::{AppliesTo, Assignment, PeopleLevel};
 use bb_core::id::{AccessKeyId, GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
@@ -299,9 +299,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(found) = self.person_known(person).await? else {
             return Ok(PersonRef::Someone);
         };
-        // The role label is the person's own role at the place the viewer looks at.
-        let role = if_there(self.evaluate(person, viewer.place()).await)?
-            .and_then(|theirs| theirs.first_role_name().map(str::to_owned));
+        // The role label is the person's own role at the place the viewer looks at. It is only
+        // shown to a viewer who sees people by their role, so only then is it looked for: the
+        // evaluation of the rights of each different person on a page was the biggest cost of a
+        // page of notifications (M3-F113, PERF-01).
+        let role = if viewer.people_level(kind, context) == PeopleLevel::RoleOnly {
+            if_there(self.evaluate(person, viewer.place()).await)?
+                .and_then(|theirs| theirs.first_role_name().map(str::to_owned))
+        } else {
+            None
+        };
         Ok(resolve(
             viewer,
             kind,

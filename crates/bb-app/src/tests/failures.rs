@@ -14,14 +14,14 @@ use jiff::Timestamp;
 use tracing_subscriber::fmt::MakeWriter;
 
 use super::world::{Outcome, PASSWORD, World};
-use crate::access::ProjectLabel;
+use crate::access::{PolicyStore as _, ProjectLabel};
 use crate::auth::{AppError, CreateInvitation, SignIn, create_invitation, sign_in};
 use crate::projects::{CreateProject, create_project};
 use crate::roles::{
-    AssignRole, CreateRole, Given, RemoveAssignment, Subject, assign_role, create_role,
-    remove_assignment,
+    AssignRole, CreateRole, Given, RemoveAssignment, SetPeopleLevel, Subject, assign_role,
+    create_role, remove_assignment, set_level,
 };
-use bb_core::access::AppliesTo;
+use bb_core::access::{AppliesTo, PeopleLevel};
 
 /// Collects what the server logs, so a test can read it.
 #[derive(Clone, Default)]
@@ -293,7 +293,6 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
     .into_value();
     let ctx = world.ctx();
     let actor = ctx.actor(&token).await?;
-    let viewer = ctx.evaluation_of(&actor, Place::Organization).await?;
     let ada = world.admin.person.id;
     // A project that does not exist is hidden, has no role label and may not be made in: facts.
     let nowhere =
@@ -312,6 +311,31 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
         ProjectLabel::Visible { .. }
     ));
 
+    // Ada sees the members of a project by their role only, so the label of a role is looked for.
+    let admin_role = ctx
+        .store()
+        .roles()
+        .await
+        .map_err(|error| format!("{error:?}"))?
+        .into_iter()
+        .find(|record| record.role.starting.is_some())
+        .map(|record| record.role.id)
+        .ok_or("no starting role")?;
+    set_level(
+        &ctx,
+        SetPeopleLevel {
+            session_token: token.clone(),
+            role: admin_role,
+            project: None,
+            kind: PeopleKind::ProjectMembers,
+            level: Some(PeopleLevel::RoleOnly),
+        },
+    )
+    .await?;
+    let role_only = world
+        .ctx()
+        .evaluation_of(&actor, Place::Organization)
+        .await?;
     // The store breaks. A new request cannot find out, and says so.
     world.store.fail_policy_reads(true);
     let ctx = world.ctx();
@@ -323,11 +347,12 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
         ctx.may_create_projects_beside(&actor, Some(made.id)).await,
         Err(AppError::Internal(_))
     ));
+    // The role label of a person is looked for only for a viewer who sees people by their role.
     assert!(matches!(
         ctx.person_ref(
-            &viewer,
+            &role_only,
             PeopleKind::ProjectMembers,
-            PeopleContext::Management,
+            PeopleContext::Ordinary,
             ada,
         )
         .await,
