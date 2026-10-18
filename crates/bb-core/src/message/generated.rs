@@ -2790,9 +2790,9 @@ pub const NOTIFICATIONS_HIDE_RESULT: MessageKey = MessageKey::new("notifications
 /// The message `notifications.in-app`.
 pub const NOTIFICATIONS_IN_APP: MessageKey = MessageKey::new("notifications.in-app");
 
-/// The message `notifications.issue-ids-failed`.
-pub const NOTIFICATIONS_ISSUE_IDS_FAILED: MessageKey =
-    MessageKey::new("notifications.issue-ids-failed");
+/// The message `notifications.issue-ids-failed-hidden`.
+pub const NOTIFICATIONS_ISSUE_IDS_FAILED_HIDDEN: MessageKey =
+    MessageKey::new("notifications.issue-ids-failed-hidden");
 
 /// The message `notifications.kind`.
 pub const NOTIFICATIONS_KIND: MessageKey = MessageKey::new("notifications.kind");
@@ -7362,12 +7362,12 @@ pub fn mail_server_test_wait(seconds: i64) -> Message {
 
 /// The message `mail.date-time`.
 #[must_use]
-pub fn mail_date_time(date: impl std::fmt::Display, time: impl std::fmt::Display) -> Message {
+pub fn mail_date_time(moment: impl std::fmt::Display, zone: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.date-time"),
         vec![
-            ("date", Value::Text(date.to_string())),
-            ("time", Value::Text(time.to_string())),
+            ("moment", Value::Text(moment.to_string())),
+            ("zone", Value::Text(zone.to_string())),
         ],
     )
 }
@@ -7450,6 +7450,30 @@ pub fn mail_subject_short(issue: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.subject-short"),
         vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `mail.time-am`.
+#[must_use]
+pub fn mail_time_am(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.time-am"),
+        vec![
+            ("hour", Value::Text(hour.to_string())),
+            ("minute", Value::Text(minute.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.time-pm`.
+#[must_use]
+pub fn mail_time_pm(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.time-pm"),
+        vec![
+            ("hour", Value::Text(hour.to_string())),
+            ("minute", Value::Text(minute.to_string())),
+        ],
     )
 }
 
@@ -7633,6 +7657,15 @@ pub fn notifications_group_name(issue: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.group-name"),
         vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `notifications.issue-ids-failed`.
+#[must_use]
+pub fn notifications_issue_ids_failed(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.issue-ids-failed"),
+        vec![("project", Value::Text(project.to_string()))],
     )
 }
 
@@ -11486,7 +11519,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You can send another test e-mail in {seconds, plural, one {# second} other {# seconds}}.",
     ),
     ("mail-server.title", "E-mail & notifications"),
-    ("mail.date-time", "{date}, {time} UTC"),
+    ("mail.date-time", "{moment} ({zone})"),
     (
         "mail.footer",
         "You get this e-mail because of your notification settings. You can change them in Bugaboo under {settings} › {page}.",
@@ -11532,6 +11565,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail.test-text",
         "This is a test e-mail from Bugaboo. If you can read it, Bugaboo can send e-mail.",
     ),
+    ("mail.time-am", "{hour}:{minute} AM"),
+    ("mail.time-pm", "{hour}:{minute} PM"),
     (
         "many-changes-skip.changed-since",
         "It changed after the preview",
@@ -11754,7 +11789,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.in-app", "In the app"),
     (
         "notifications.issue-ids-failed",
-        "Bugaboo could not give every issue of a project its new ID. Open the project settings to try again.",
+        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again.",
+    ),
+    (
+        "notifications.issue-ids-failed-hidden",
+        "Bugaboo could not give every issue of a project you cannot see its new ID.",
     ),
     ("notifications.kind", "What happens"),
     (

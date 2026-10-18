@@ -274,7 +274,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             &items,
             more,
             layers.yes(&MAIL_SHORT),
-            Region::of(&self.setting_layers_of(Some(recipient)).await?),
+            &Region::of(&self.setting_layers_of(Some(recipient)).await?),
             &self.services.public_url,
         );
         let Some(composed) = composed else {

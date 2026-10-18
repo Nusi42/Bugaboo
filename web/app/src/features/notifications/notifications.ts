@@ -107,8 +107,15 @@ export function sentencesOf(row: NotificationRow): readonly string[] {
     return [editNoticeSentence(row, who)];
   }
   if (row.kind === "run_ended") {
-    if (row.entries.some((entry) => entry.issue_ids_failed === true)) {
-      return [t("notifications.issue-ids-failed")];
+    const renewal = row.entries.find(
+      (entry) => entry.issue_ids_failed !== undefined,
+    )?.issue_ids_failed;
+    if (renewal !== undefined && renewal !== null) {
+      return [
+        renewal.shown === "visible" && renewal.name !== undefined && renewal.name !== null
+          ? t("notifications.issue-ids-failed", { project: renewal.name })
+          : t("notifications.issue-ids-failed-hidden"),
+      ];
     }
     return [
       row.entries.some((entry) => entry.run_done === false)

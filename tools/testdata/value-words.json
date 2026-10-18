@@ -1,0 +1,231 @@
+{
+  "about": "How the value of an own field is worded for a person. The e-mail (crates/bb-app/src/notifications/value_words.rs) and the screen (web/app/src/shared/own-value-text.ts) must give the expected words for every case; both tests read this file (M4-F141). A null expected means the value has no words for its kind. Only choices the server can know are here: not device.",
+  "regions": {
+    "usual": { "dateFormat": "year-month-day", "numberFormat": "point", "timeZone": "UTC" },
+    "german": {
+      "dateFormat": "day-month-year",
+      "numberFormat": "comma",
+      "timeZone": "Europe/Berlin"
+    },
+    "american": {
+      "dateFormat": "month-day-year",
+      "numberFormat": "point",
+      "timeZone": "America/Los_Angeles"
+    },
+    "french": { "dateFormat": "year-month-day", "numberFormat": "space", "timeZone": "UTC" }
+  },
+  "cases": [
+    { "name": "yes", "kind": "yes-no", "value": true, "region": "usual", "expected": "Yes" },
+    { "name": "no", "kind": "yes-no", "value": false, "region": "german", "expected": "No" },
+    {
+      "name": "yes-no given text",
+      "kind": "yes-no",
+      "value": "maybe",
+      "region": "usual",
+      "expected": null
+    },
+    {
+      "name": "hours and minutes",
+      "kind": "duration",
+      "value": 7500,
+      "region": "usual",
+      "expected": "2h 5m"
+    },
+    {
+      "name": "minutes only",
+      "kind": "duration",
+      "value": 2700,
+      "region": "usual",
+      "expected": "45m"
+    },
+    {
+      "name": "whole hours",
+      "kind": "duration",
+      "value": 7200,
+      "region": "usual",
+      "expected": "2h"
+    },
+    {
+      "name": "under a minute",
+      "kind": "duration",
+      "value": 30,
+      "region": "usual",
+      "expected": "0m"
+    },
+    {
+      "name": "duration given yes",
+      "kind": "duration",
+      "value": true,
+      "region": "usual",
+      "expected": null
+    },
+    {
+      "name": "whole number with a point",
+      "kind": "whole-number",
+      "value": 1234567,
+      "region": "usual",
+      "expected": "1,234,567"
+    },
+    {
+      "name": "whole number with a comma",
+      "kind": "whole-number",
+      "value": 1234567,
+      "region": "german",
+      "expected": "1.234.567"
+    },
+    {
+      "name": "whole number with a space",
+      "kind": "whole-number",
+      "value": 1234567,
+      "region": "french",
+      "expected": "1 234 567"
+    },
+    {
+      "name": "small whole number",
+      "kind": "whole-number",
+      "value": 12,
+      "region": "usual",
+      "expected": "12"
+    },
+    {
+      "name": "negative whole number",
+      "kind": "whole-number",
+      "value": -1234,
+      "region": "usual",
+      "expected": "-1,234"
+    },
+    {
+      "name": "decimal with a point",
+      "kind": "decimal",
+      "value": 1234.5,
+      "region": "usual",
+      "expected": "1,234.5"
+    },
+    {
+      "name": "decimal with a comma",
+      "kind": "decimal",
+      "value": 1234.5,
+      "region": "german",
+      "expected": "1.234,5"
+    },
+    {
+      "name": "decimal with a space",
+      "kind": "decimal",
+      "value": 1234.5,
+      "region": "french",
+      "expected": "1 234,5"
+    },
+    {
+      "name": "decimal rounded to three places",
+      "kind": "decimal",
+      "value": 1234.5678,
+      "region": "usual",
+      "expected": "1,234.568"
+    },
+    {
+      "name": "decimal below one",
+      "kind": "decimal",
+      "value": 0.25,
+      "region": "german",
+      "expected": "0,25"
+    },
+    {
+      "name": "day, year first",
+      "kind": "date",
+      "value": "2026-10-05",
+      "region": "usual",
+      "expected": "2026-10-05"
+    },
+    {
+      "name": "day, day first",
+      "kind": "date",
+      "value": "2026-10-05",
+      "region": "german",
+      "expected": "05.10.2026"
+    },
+    {
+      "name": "day, month first, west of Greenwich",
+      "kind": "date",
+      "value": "2026-10-05",
+      "region": "american",
+      "expected": "10/05/2026"
+    },
+    {
+      "name": "not a day",
+      "kind": "date",
+      "value": "someday",
+      "region": "usual",
+      "expected": null
+    },
+    {
+      "name": "moment in UTC",
+      "kind": "date-time",
+      "value": "2026-10-05T07:30:00Z",
+      "region": "usual",
+      "expected": "2026-10-05, 7:30 AM"
+    },
+    {
+      "name": "moment in Berlin in summer",
+      "kind": "date-time",
+      "value": "2026-10-05T07:30:00Z",
+      "region": "german",
+      "expected": "05.10.2026, 9:30 AM"
+    },
+    {
+      "name": "moment in Berlin in winter",
+      "kind": "date-time",
+      "value": "2026-12-05T07:30:00Z",
+      "region": "german",
+      "expected": "05.12.2026, 8:30 AM"
+    },
+    {
+      "name": "moment that is the next day in Berlin",
+      "kind": "date-time",
+      "value": "2026-10-05T23:30:00Z",
+      "region": "german",
+      "expected": "06.10.2026, 1:30 AM"
+    },
+    {
+      "name": "moment at noon",
+      "kind": "date-time",
+      "value": "2026-10-05T12:05:00Z",
+      "region": "usual",
+      "expected": "2026-10-05, 12:05 PM"
+    },
+    {
+      "name": "moment at midnight",
+      "kind": "date-time",
+      "value": "2026-10-05T00:00:00Z",
+      "region": "usual",
+      "expected": "2026-10-05, 12:00 AM"
+    },
+    {
+      "name": "moment that is the day before in Los Angeles",
+      "kind": "date-time",
+      "value": "2026-10-05T03:15:00Z",
+      "region": "american",
+      "expected": "10/04/2026, 8:15 PM"
+    },
+    {
+      "name": "not a moment",
+      "kind": "date-time",
+      "value": "later",
+      "region": "usual",
+      "expected": null
+    },
+    {
+      "name": "short text",
+      "kind": "text",
+      "value": "hello",
+      "region": "usual",
+      "expected": "hello"
+    },
+    {
+      "name": "web address",
+      "kind": "web-address",
+      "value": "https://example.com",
+      "region": "usual",
+      "expected": "https://example.com"
+    }
+  ]
+}
