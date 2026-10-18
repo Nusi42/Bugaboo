@@ -372,6 +372,44 @@ async fn sec_lm2_a_workflow_shared_by_sibling_projects_is_not_the_organizations(
 }
 
 #[tokio::test]
+async fn sec_l7_try_it_needs_check_access_as_well_as_manage_workflows() -> Outcome {
+    let world = World::new().await?;
+    let admin = world.admin.session_token.clone();
+    let project = a_project(&world, "ACME").await?;
+    let id = an_issue(&world, project).await?;
+    // A role that manages workflows and looks at issues, and nothing else.
+    let role = crate::roles::create_role(
+        &world.ctx(),
+        crate::roles::CreateRole {
+            session_token: admin.clone(),
+            name: "Workflow keeper".to_owned(),
+            permissions: vec![
+                bb_policy::Permission::SeeProjects,
+                bb_policy::Permission::SeeIssues,
+                bb_policy::Permission::ManageWorkflows,
+            ],
+            two_step: false,
+        },
+    )
+    .await?
+    .into_value();
+    let keeper = world.person("keeper@example.test").await?;
+    super::workflows_rules::assign(&world, &keeper, role.id, project).await?;
+    let tried = |who: &str| TryWorkflowQuery {
+        session_token: who.to_owned(),
+        issue: id.to_string(),
+        person: world.admin.person.id,
+    };
+    assert_eq!(
+        try_workflow(&world.ctx(), tried(&keeper.session_token))
+            .await
+            .err(),
+        Some(AppError::Refused(ErrorCode::Forbidden))
+    );
+    Ok(())
+}
+
+#[tokio::test]
 async fn wf_03_try_it_tells_what_a_person_would_get_and_why_not_the_rest() -> Outcome {
     let world = World::new().await?;
     let project = a_project(&world, "ACME").await?;

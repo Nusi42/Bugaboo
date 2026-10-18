@@ -181,6 +181,23 @@ async fn sec_03_check_access_does_not_name_a_type_the_checker_may_not_know() -> 
 }
 
 #[tokio::test]
+async fn sec_l6_who_may_change_does_not_name_a_type_the_reader_may_not_know() -> Outcome {
+    let g = groups().await?;
+    let question = new_type(&g.world, &g.lead, Some("ACME"), "Question").await?;
+    let sibling = lead_of(&g.world, "sam@example.test", g.other).await?;
+    let ask = |issue_type| crate::access::WhoMayChangeQuery {
+        session_token: sibling.session_token.clone(),
+        project: "OTHER".to_owned(),
+        field: bb_core::fields::Field::Priority.into(),
+        issue_type,
+    };
+    crate::access::who_may_change(&g.world.ctx(), ask(None)).await?;
+    let asked = crate::access::who_may_change(&g.world.ctx(), ask(Some(question.id))).await;
+    assert!(refused(&asked, ErrorCode::NotFound));
+    Ok(())
+}
+
+#[tokio::test]
 async fn sec_03_a_subject_in_use_on_an_issue_the_reader_reads_is_known() -> Outcome {
     let g = groups().await?;
     let question = new_type(&g.world, &g.lead, Some("ACME"), "Question").await?;

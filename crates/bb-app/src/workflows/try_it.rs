@@ -5,9 +5,10 @@
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
-use bb_core::access::FieldLevel;
+use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
+use bb_core::people_kinds::PeopleKind;
 use bb_core::workflow::judge::{Verdict, Why};
 use bb_policy::{Authorized, Permission, Place};
 
@@ -41,7 +42,8 @@ fn told(verdict: Verdict, rules_hide_a_field: bool) -> TriedVerdict {
 ///
 /// # Errors
 /// `resource.not_found` for an issue the person may not see or a person they may not know about,
-/// `access.forbidden` without *Manage workflows* in the project of the issue.
+/// `access.forbidden` without *Manage workflows* or *Check access* in the project of the issue,
+/// `resource.not_found` for a reader who is not shown the people of the project.
 pub async fn try_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: TryWorkflowQuery,
@@ -52,6 +54,12 @@ pub async fn try_workflow<S: AuthStore>(
     let held = ctx
         .require(&actor, Permission::ManageWorkflows, place)
         .await?;
+    // It tells as much about a person as *Check access*, so it asks for it too, and keeps to the
+    // same gate on people as *Who may change* (*Who sees people*).
+    ctx.require(&actor, Permission::CheckAccess, place).await?;
+    if held.kind_level(PeopleKind::ProjectMembers) < PeopleLevel::RoleOnly {
+        return Err(AppError::Refused(ErrorCode::NotFound));
+    }
     ctx.store()
         .person(input.person)
         .await

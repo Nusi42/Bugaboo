@@ -73,6 +73,7 @@ pub async fn who_may_change<S: AuthStore>(
     };
     // Fields are those of issues: a reader who holds no right to see issues there is refused.
     let held = ctx.require(&actor, Permission::SeeIssues, place).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     if held.field_level_for(input.issue_type, input.field) < FieldLevel::CanSee {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
