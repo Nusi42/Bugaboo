@@ -7,10 +7,9 @@
 
 use bb_app::tags::TagStore;
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId, UserId};
+use bb_core::names::name_key;
 use bb_core::own_fields::ChoiceColor;
-use bb_core::tags::{
-    IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject, name_key,
-};
+use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject};
 use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, LikeExpr, Order, Query, SelectStatement};
 

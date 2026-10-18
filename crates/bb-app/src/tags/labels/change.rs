@@ -3,8 +3,9 @@
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{LabelGroupId, LabelId};
+use bb_core::names::name_among;
 use bb_core::own_fields::{ChoiceColor, Edit};
-use bb_core::tags::{Label, name_key};
+use bb_core::tags::Label;
 use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
@@ -81,11 +82,13 @@ pub async fn create_label<S: AuthStore>(
             Box::pin(async move {
                 S::lock_tags_and_labels(transaction).await?;
                 let labels = S::labels_in(transaction).await?;
-                let key = name_key(&stored.name);
-                if labels
-                    .iter()
-                    .any(|other| other.group == stored.group && name_key(&other.name) == key)
-                {
+                if name_among(
+                    labels
+                        .iter()
+                        .filter(|other| other.group == stored.group)
+                        .map(|other| other.name.as_str()),
+                    &stored.name,
+                ) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 S::insert_label(transaction, &stored).await
@@ -331,10 +334,13 @@ impl LabelWrite {
     ) -> Result<(), S::Error> {
         S::lock_tags_and_labels(transaction).await?;
         let labels = S::labels_in(transaction).await?;
-        let key = name_key(&self.name);
-        if labels.iter().any(|other| {
-            other.id != self.id && other.group == self.group && name_key(&other.name) == key
-        }) {
+        if name_among(
+            labels
+                .iter()
+                .filter(|other| other.id != self.id && other.group == self.group)
+                .map(|other| other.name.as_str()),
+            &self.name,
+        ) {
             return Err(stopped.stop::<S>(ErrorCode::NameTaken));
         }
         if self.joins_pick_one && two_of_in::<S>(transaction, &self.crowd_ids).await? {

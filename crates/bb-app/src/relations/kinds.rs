@@ -10,6 +10,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::RelationKindId;
 use bb_core::message::Message;
+use bb_core::names::name_among;
 use bb_core::paging::window;
 use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
 use bb_core::version::{FIRST_VERSION, counted_up, next};
@@ -34,10 +35,9 @@ fn name_taken(kinds: &[RelationKind], names: [&str; 2], except: Option<RelationK
         .iter()
         .filter(|found| Some(found.id) != except)
         .any(|found| {
-            names.iter().any(|name| {
-                let lower = name.to_lowercase();
-                found.forward.to_lowercase() == lower || found.backward.to_lowercase() == lower
-            })
+            names
+                .iter()
+                .any(|name| name_among([found.forward.as_str(), found.backward.as_str()], name))
         })
 }
 

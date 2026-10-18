@@ -1,10 +1,9 @@
 //! The tags, labels and groups of labels part of the in-memory store.
 
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId};
+use bb_core::names::name_key;
 use bb_core::own_fields::ChoiceColor;
-use bb_core::tags::{
-    IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject, name_key,
-};
+use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject};
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};

@@ -29,9 +29,10 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId};
-use bb_core::offer::{can_meet, has_room};
+use bb_core::names::{Placed, name_among, taken_where_they_meet};
+use bb_core::offer::has_room;
 use bb_core::paging::window;
-use bb_core::tags::{LABELS_MAX, Label, LabelGroup, name_key};
+use bb_core::tags::{LABELS_MAX, Label, LabelGroup};
 use bb_policy::{Authorized, Evaluation, Permission, Place, Tree};
 use jiff::Timestamp;
 
@@ -72,10 +73,13 @@ impl Catalogue {
         group: Option<LabelGroupId>,
         except: Option<LabelId>,
     ) -> bool {
-        let key = name_key(name);
-        self.labels.iter().any(|other| {
-            Some(other.id) != except && other.group == group && name_key(&other.name) == key
-        })
+        name_among(
+            self.labels
+                .iter()
+                .filter(|other| Some(other.id) != except && other.group == group)
+                .map(|other| other.name.as_str()),
+            name,
+        )
     }
 
     /// The project a label's group was made in; none for a label in no group.
@@ -108,14 +112,17 @@ fn group_name_taken(
     owner: Option<ProjectId>,
     except: Option<LabelGroupId>,
 ) -> bool {
-    let key = name_key(name);
-    groups.iter().any(|other| {
-        Some(other.id) != except
-            && name_key(&other.name) == key
-            && can_meet(owner, other.project, |inside, outside| {
-                tree.is_within(inside, outside)
-            })
-    })
+    taken_where_they_meet(
+        groups,
+        name,
+        owner,
+        |inside, outside| tree.is_within(inside, outside),
+        |other| Placed {
+            name: &other.name,
+            project: other.project,
+            is_the_one_changed: Some(other.id) == except,
+        },
+    )
 }
 
 /// The projects whose issues a person may rewrite labels in: all of them for whoever holds *Manage
