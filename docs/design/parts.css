@@ -123,6 +123,14 @@ body {
   margin-inline-start: 0;
 }
 
+[data-part="button"][data-variant~="item"] {
+  justify-content: flex-start;
+  border-color: transparent;
+  background: transparent;
+  color: var(--fg);
+  text-align: start;
+}
+
 [data-part="button"][data-variant~="danger"] {
   border-color: var(--danger);
   color: var(--danger);
@@ -3283,6 +3291,25 @@ body {
 [data-part="in-place.input"]:focus {
   outline: var(--ring-width) solid var(--accent);
   outline-offset: var(--ring-offset);
+}
+
+[data-part="popover"] {
+  box-sizing: border-box;
+  border: var(--border-width) solid var(--border);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow);
+  min-width: var(--size-name);
+  padding: var(--space-2);
+  border-radius: var(--r-card);
+  color: var(--fg);
+}
+
+[data-part="action-menu.title"] {
+  margin: 0;
+  padding: var(--space-2) var(--pad-control);
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  font-weight: var(--weight-bold);
 }
 
 [data-part="action-menu"] {

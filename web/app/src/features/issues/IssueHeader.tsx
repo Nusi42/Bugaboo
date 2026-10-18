@@ -63,7 +63,7 @@ export function IssueHeader(props: IssueHeaderProps) {
               {show === "focus" ? t("issues.side-panel-view") : t("issues.open-full-page")}
             </Button>
           )}
-          <ActionMenu label={t("issues.more")} actions={actions} />
+          <ActionMenu label={t("issues.more")} actions={actions} cancelLabel={t("common.cancel")} />
         </div>
       </div>
       <Heading {...partOf(part.issueTitle)}>

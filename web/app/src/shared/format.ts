@@ -25,6 +25,11 @@ function unbroken(text: string): string {
   return text.replaceAll(" ", NO_BREAK_SPACE).replaceAll("-", NO_BREAK_HYPHEN);
 }
 
+/** The words as they are written for an e-mail or a file, where a space is a space and a hyphen a hyphen. */
+export function plainWords(text: string): string {
+  return text.replaceAll(NO_BREAK_SPACE, " ").replaceAll(NO_BREAK_HYPHEN, "-");
+}
+
 /** A day as numbers in the order the person chose: `31.12.2026`, `12/31/2026` or `2026-12-31`. */
 function numeric(moment: number, region: Region): string {
   const parts = new Intl.DateTimeFormat("en-US", {

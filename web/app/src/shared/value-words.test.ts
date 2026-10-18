@@ -2,14 +2,17 @@ import { fieldTypeWords, settingChoices } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import vectors from "../../../../tools/testdata/value-words.json";
+import { plainWords } from "./format.ts";
 import { ownValueText } from "./own-value-text.ts";
 import { deviceRegion, type Region } from "./region.ts";
 
 const NARROW_SPACE_BEFORE_AM_PM = / (?<period>AM|PM)/u;
 
-/** A space the browser may write before AM or PM is a plain one in the vectors. */
+/** A space the browser may write before AM or PM is a plain one in the vectors, and so is every space and hyphen that the screen holds together. */
 function plainSpaces(text: string | undefined): string | undefined {
-  return text?.replace(NARROW_SPACE_BEFORE_AM_PM, " $<period>");
+  return text === undefined
+    ? undefined
+    : plainWords(text).replace(NARROW_SPACE_BEFORE_AM_PM, " $<period>");
 }
 
 function found<T>(item: T | undefined, what: string): T {

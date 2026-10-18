@@ -722,6 +722,16 @@ part "button[variant=quiet][variant=square]:first-child" {
     margin-inline-start 0
 }
 
+// An entry of a list of actions (the status list, *More*): its words start at the start edge, and it
+// has no box until it is pointed at.
+part "button[variant=item]" {
+    justify-content flex-start
+    border-color transparent
+    background transparent
+    color "$fg"
+    text-align start
+}
+
 part "button[variant=danger]" {
     border-color "$danger"
     color "$danger"
@@ -3743,6 +3753,23 @@ part "in-place.input:focus" {
 }
 
 // The list of actions that opens from a button, inside the one overlay.
+// The list of an action menu on a computer opens under its button.
+part "popover" {
+    use "floating-box"
+    min-width "$size-name"
+    padding "$space-2"
+    border-radius "$r-card"
+    color "$fg"
+}
+
+part "action-menu.title" {
+    margin 0
+    padding "$space-2 $pad-control"
+    color "$fg-muted"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+}
+
 part "action-menu" {
     use "list-reset"
     display flex

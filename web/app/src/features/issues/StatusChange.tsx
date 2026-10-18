@@ -52,6 +52,7 @@ export function StatusChange({ blocks, changes }: StatusChangeProps) {
         label={word}
         id={statusId}
         menuLabel={t("issues.change-status")}
+        cancelLabel={t("common.cancel")}
         choices={statusActions(issue.status_changes ?? [], {
           ask: setAsking,
           make: (change) => {

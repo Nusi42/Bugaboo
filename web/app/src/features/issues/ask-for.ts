@@ -31,6 +31,7 @@ export function statusActions(
   return changes.map((change) => ({
     id: choiceIdOf(change),
     label: choiceLabelOf(change, changes),
+    group: change.to.group,
     onAction: () => {
       if (needsAsking(change)) {
         react.ask(change);
