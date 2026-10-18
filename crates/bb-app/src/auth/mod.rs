@@ -139,8 +139,8 @@ pub use access_keys::{
     require_session, see_server_status,
 };
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code};
-pub(crate) use ctx::EventMaker;
 pub use ctx::{AuthServices, Ctx, RequestInfo};
+pub(crate) use ctx::{EventMaker, locked};
 pub use error::AppError;
 pub(crate) use error::{Stops, change_failed, if_there, internal};
 pub(crate) use events::{by, changed, entity, fixed_entity, set_to};

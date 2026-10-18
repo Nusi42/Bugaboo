@@ -5,8 +5,9 @@
 //! and the developer tool `bb-sample` switch the feature on; a build of the whole workspace has it
 //! on for every crate (see `bb-store/Cargo.toml`), the program (`cargo build -p bb-server`) does not.
 
+use crate::auth::locked;
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex};
 
 use bb_core::event::{EntityKind, EntityRef, InvalidKind};
 use bb_core::id::{EntityId, ProjectId, UserId};
@@ -44,11 +45,11 @@ impl TestNotes {
 
     /// Puts the notes into a project: people need their permissions there.
     pub fn set_project(&self, project: ProjectId) {
-        *self.project.lock().unwrap_or_else(PoisonError::into_inner) = Some(project);
+        *locked(&self.project) = Some(project);
     }
 
     fn versions(&self) -> std::sync::MutexGuard<'_, BTreeMap<EntityId, i64>> {
-        self.versions.lock().unwrap_or_else(PoisonError::into_inner)
+        locked(&self.versions)
     }
 
     /// Creates a note with this ID, at version 1, and names it.
@@ -85,7 +86,7 @@ impl EditableRecords for TestNotes {
             .then(|| self.version(record))
             .flatten()
             .map(|version| RecordFacts {
-                place: Place::from(*self.project.lock().unwrap_or_else(PoisonError::into_inner)),
+                place: Place::from(*locked(&self.project)),
                 version,
                 edit: Permission::ChangeIssues,
             });
