@@ -123,3 +123,59 @@ async fn wf_03_change_many_issues_skips_an_issue_whose_type_hides_the_status_lev
     })
     .await
 }
+
+#[tokio::test]
+async fn wf_03_a_change_of_type_that_puts_the_status_back_needs_the_level_of_the_new_type()
+-> TestResult {
+    each_database("wf_03_reset_status_level", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let types = ada.send("GET", "/api/v1/issue-types", None).await?;
+        let bug = types.body["items"]
+            .as_array()
+            .and_then(|items| items.iter().find(|each| each["name"] == "Bug"))
+            .and_then(|found| found["id"].as_str())
+            .ok_or("no issue type Bug")?
+            .to_owned();
+        // Tim changes the status of a bug, and only sees it on every other type.
+        let (mut tim, _) = person_with_levels(
+            &site,
+            &rig,
+            "tim",
+            &SEE_AND_CHANGE,
+            &[
+                (Field::Title.into(), None, FieldLevel::CanChange),
+                (Field::Status.into(), None, FieldLevel::CanSee),
+                (Field::Status.into(), Some(&bug), FieldLevel::CanChange),
+            ],
+        )
+        .await?;
+        let (key, _) = issue_of_type(&site, &mut ada, &bug, "A bug in testing").await?;
+        let path = format!("{ISSUES}/{key}");
+        for (version, status) in [(1, "in-progress"), (2, "testing")] {
+            let moved = tim
+                .send(
+                    "PATCH",
+                    &path,
+                    Some(json!({"version": version, "status": status})),
+                )
+                .await?;
+            assert_eq!(moved.status, StatusCode::OK, "{}", moved.body);
+        }
+        // A task has no Testing: the type alone would put the status back to the starting status,
+        // which is a change of the status, and Tim only sees the status of a task.
+        let reset = tim
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": 3, "issue_type": site.kind})),
+            )
+            .await?;
+        assert_eq!(
+            (reset.status, reset.code()),
+            (StatusCode::FORBIDDEN, "workflow.not_for_you")
+        );
+        Ok(())
+    })
+    .await
+}

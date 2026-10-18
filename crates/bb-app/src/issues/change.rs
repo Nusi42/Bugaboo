@@ -130,7 +130,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         if next.status == current.status {
             return Ok(None);
         }
-        let chose_status = input.status.as_ref() == Some(&next.status);
         let own_filled = change
             .own
             .filled_after(change.stored.filled_fields(current.id.into()));
@@ -141,10 +140,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             chain: change.chain,
             issue_type: next.issue_type,
             reported_by: current.reported_by,
-            // A status the workflow of a new type puts the issue back into is no status the person
-            // chose; one the request names needs the *Status* level of the type it ends in.
-            may_change_status: !chose_status
-                || StatusCheck::may_change_status(held, next.issue_type, current.reported_by),
+            // Whether the person chose the status or the workflow of a new type put the issue back
+            // into one, it is a change of the status and needs the *Status* level of the type the
+            // issue ends in.
+            may_change_status: StatusCheck::may_change_status(
+                held,
+                next.issue_type,
+                current.reported_by,
+            ),
             assigned: change.assigned,
             description_filled: !current.description.is_empty(),
             own_filled: &own_filled,
