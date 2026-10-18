@@ -30,7 +30,7 @@ test("iss_09 ticking three issues and Send to testing skips the one whose workfl
   await expect(dialog.getByText(t("preview.summary", { changed: 2, skipped: 1 }))).toBeVisible();
   await expect(dialog.getByText(t("many-changes-skip.workflow"))).toBeVisible();
   await dialog
-    .getByRole("button", { name: t("many-changes.apply", { count: 3 }), exact: true })
+    .getByRole("button", { name: t("many-changes.apply", { count: 2 }), exact: true })
     .click();
   await expect(
     page.getByText(t("many-changes.result-done", { changed: 2, skipped: 0 })).first(),

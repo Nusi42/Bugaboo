@@ -45,7 +45,8 @@ export function ManyChangeDialog({
       }}
       title={t("many-changes.title", { action: actionName(kind), count: issues.length })}
       text={t("many-changes.dialog-text")}
-      confirmLabel={applyName(kind, issues.length)}
+      // The button names what it does: the issues the preview says will change, not every ticked one.
+      confirmLabel={applyName(kind, preview.data?.summary.will_change ?? issues.length)}
       cancelLabel={t("common.cancel")}
       confirmDisabled={!dialog.canApply}
       onConfirm={dialog.send}

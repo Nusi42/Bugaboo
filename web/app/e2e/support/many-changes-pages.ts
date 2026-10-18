@@ -70,7 +70,7 @@ export async function applyAndExpectSkipped(
   skipped: string,
 ): Promise<void> {
   await dialog
-    .getByRole("button", { name: t("many-changes.apply", { count: changed + 1 }), exact: true })
+    .getByRole("button", { name: t("many-changes.apply", { count: changed }), exact: true })
     .click();
   await expect(
     page.getByText(t("many-changes.result-done", { changed, skipped: 1 })).first(),
