@@ -17,9 +17,11 @@
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::sync::Arc;
 
 use bb_core::comment::Mention;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, FieldChange, RecordKind};
+use bb_core::fields::Field;
 use bb_core::id::{CommentId, EntityId, IssueId, JobId, NotificationId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
@@ -28,6 +30,7 @@ use bb_core::notification::{
 };
 use bb_core::person::Person;
 use bb_core::settings::Layers;
+use bb_policy::Evaluation;
 use serde_json::json;
 
 use super::mail::MailJob;
@@ -47,6 +50,9 @@ struct Round {
     people: HashMap<UserId, Option<Person>>,
     /// The values of the settings of the people looked up so far.
     layers: HashMap<UserId, Layers>,
+    /// What each person was found to see of each issue so far: their rights there, or none when
+    /// the issue is hidden from them. Many events about one issue judge a person's rights once.
+    seen: HashMap<(UserId, IssueId), Option<Arc<Evaluation>>>,
     /// Whether the organization has switched e-mail on.
     mail_on: bool,
     /// The rows made so far.
@@ -93,6 +99,37 @@ enum Keeps {
     File,
 }
 
+/// Whether a person with these settings could want to hear of an event as `kind` in the app or by
+/// e-mail. A kind that is not known yet (`None`) is decided by the fields the person sees: it is
+/// news of activity or of fields.
+/// News of activity needs a change of the status among the fields the person sees, so an event
+/// without one can only be news of fields.
+fn may_hear(
+    layers: &Layers,
+    kind: Option<NotificationKind>,
+    changes: &[FieldChange],
+    mail_on: bool,
+) -> bool {
+    let kinds: &[NotificationKind] = match (&kind, changes.is_empty()) {
+        (Some(kind), _) => std::slice::from_ref(kind),
+        (None, true) => &[],
+        (None, false)
+            if changes
+                .iter()
+                .any(|change| change.field == Field::Status.code()) =>
+        {
+            &[
+                NotificationKind::FollowedActivity,
+                NotificationKind::FollowedFields,
+            ]
+        }
+        (None, false) => &[NotificationKind::FollowedFields],
+    };
+    kinds
+        .iter()
+        .any(|kind| wants(layers, *kind, Via::App) || (mail_on && wants(layers, *kind, Via::Mail)))
+}
+
 /// The person who did it, if a person did.
 const fn doer(event: &DomainEvent) -> Option<UserId> {
     match event.actor {
@@ -119,6 +156,23 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         round.people.insert(id, found.clone());
         Ok(found)
+    }
+
+    /// What the person sees of the issue, judged once for the round.
+    async fn round_seen(
+        &self,
+        round: &mut Round,
+        person: Person,
+        issue: &Issue,
+    ) -> Result<Option<Arc<Evaluation>>, AppError> {
+        let key = (person.id, issue.id);
+        if let Some(known) = round.seen.get(&key) {
+            return Ok(known.clone());
+        }
+        let actor = Actor { person, key: None };
+        let seen = self.seen_in(&actor, issue, Where::Live).await?;
+        round.seen.insert(key, seen.clone());
+        Ok(seen)
     }
 
     /// The values of the settings of a person, read once for the round.
@@ -164,6 +218,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut round = Round {
             people: HashMap::new(),
             layers: HashMap::new(),
+            seen: HashMap::new(),
             mail_on: self.mail_is_on().await?,
             rows: Vec::new(),
             drops: Vec::new(),
@@ -537,13 +592,23 @@ impl<S: AuthStore> Ctx<'_, S> {
             if Some(hear.person) == by {
                 continue;
             }
+            // What the person wants is decided before their rights are looked at: most followers
+            // want no news of most changes, and judging their rights costs the most.
+            let mail_on = round.mail_on;
+            let layers = self.round_layers(round, hear.person).await?;
+            if !hear
+                .kinds
+                .iter()
+                .any(|kind| may_hear(layers, *kind, &subject.event.changes, mail_on))
+            {
+                continue;
+            }
             let Some(person) = self.round_person(round, hear.person).await? else {
                 continue;
             };
             let mut visible: Vec<FieldChange> = Vec::new();
             if let Some(issue) = subject.issue {
-                let actor = Actor { person, key: None };
-                let Some(held) = self.seen_in(&actor, issue, Where::Live).await? else {
+                let Some(held) = self.round_seen(round, person, issue).await? else {
                     if hear.follows {
                         round.drops.push((issue.id, hear.person));
                     }
