@@ -23,13 +23,13 @@ use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
 const AT_MOST: usize = 47;
 
 /// Counts the statements a database runs between one look and the next.
-struct Counter<'a> {
+pub(super) struct Counter<'a> {
     database: &'a Database,
     before: u64,
 }
 
 impl<'a> Counter<'a> {
-    fn on(database: &'a Database) -> Self {
+    pub(super) fn on(database: &'a Database) -> Self {
         Self {
             database,
             before: database.statements_run(),
@@ -37,12 +37,38 @@ impl<'a> Counter<'a> {
     }
 
     /// The statements run since the last time this was asked.
-    fn take(&mut self) -> usize {
+    pub(super) fn take(&mut self) -> usize {
         let now = self.database.statements_run();
         let ran = now - self.before;
         self.before = now;
         usize::try_from(ran).unwrap_or(usize::MAX)
     }
+}
+
+/// A longer page, or more rows behind a number, runs as many statements as a short one and no more
+/// than `at_most` (`what` says which, for the message of a failure).
+pub(super) fn assert_as_many_statements(on_few: usize, on_many: usize, at_most: usize, what: &str) {
+    assert!(on_few > 0, "the counter sees nothing");
+    assert_eq!(on_few, on_many, "{what} must not run more statements");
+    assert!(on_many <= at_most, "{on_many} statements");
+}
+
+/// The statements that a page of five and a page of forty run, after a read that warms the caches
+/// (not counted); each page has as many items as were asked for.
+pub(super) async fn five_and_forty(
+    browser: &mut Browser,
+    database: &Database,
+    path: impl Fn(u32) -> String,
+) -> Result<(usize, usize), Failure> {
+    let mut counter = Counter::on(database);
+    ok(&browser.send("GET", &path(5), None).await?)?;
+    counter.take();
+    let five = browser.send("GET", &path(5), None).await?;
+    assert_eq!(ok(&five)?["items"].as_array().map(Vec::len), Some(5));
+    let on_five = counter.take();
+    let forty = browser.send("GET", &path(40), None).await?;
+    assert_eq!(ok(&forty)?["items"].as_array().map(Vec::len), Some(40));
+    Ok((on_five, counter.take()))
 }
 
 /// The reads the issue page makes, by what they read.
@@ -246,23 +272,9 @@ async fn perf_05_a_page_of_forty_issues_runs_as_many_statements_as_a_page_of_fiv
                 )
                 .await?)?;
         }
-        let mut counter = Counter::on(&rig.database);
         let path = |limit: u32| format!("{PROJECTS}/{}/issues?limit={limit}", site.acme);
-        // Warm, then count.
-        ok(&ada.send("GET", &path(5), None).await?)?;
-        counter.take();
-        let five = ada.send("GET", &path(5), None).await?;
-        assert_eq!(ok(&five)?["items"].as_array().map(Vec::len), Some(5));
-        let on_five = counter.take();
-        let forty = ada.send("GET", &path(40), None).await?;
-        assert_eq!(ok(&forty)?["items"].as_array().map(Vec::len), Some(40));
-        let on_forty = counter.take();
-        assert!(on_five > 0, "the counter sees nothing");
-        assert_eq!(
-            on_five, on_forty,
-            "a longer page must not run more statements"
-        );
-        assert!(on_forty <= AT_MOST, "{on_forty} statements");
+        let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, path).await?;
+        assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page");
         Ok(())
     })
     .await
