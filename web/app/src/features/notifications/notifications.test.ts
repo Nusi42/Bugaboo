@@ -138,4 +138,13 @@ describe("ntf_01 a row says in a sentence what happened", () => {
       say(entry({ kind: "run_ended", issue: null, by: null, issue_ids_failed: true })),
     ).toEqual([t("notifications.issue-ids-failed")]);
   });
+
+  it("says who added a file, with its name when the file is still there", () => {
+    expect(
+      say(entry({ kind: "followed_activity", file_added: true, file_name: "jam.txt" })),
+    ).toEqual([t("history.file-added", { who: "Ben", name: "jam.txt" })]);
+    expect(say(entry({ kind: "followed_activity", file_added: true }))).toEqual([
+      t("history.file-added-unnamed", { who: "Ben" }),
+    ]);
+  });
 });

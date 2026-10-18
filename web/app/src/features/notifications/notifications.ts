@@ -116,6 +116,14 @@ export function sentencesOf(row: NotificationRow): readonly string[] {
         : t("notifications.run-done"),
     ];
   }
+  const file = row.entries.find((entry) => entry.file_added === true);
+  if (file !== undefined) {
+    return [
+      file.file_name === undefined || file.file_name === null
+        ? t("history.file-added-unnamed", { who })
+        : t("history.file-added", { who, name: file.file_name }),
+    ];
+  }
   if (isChange(row)) {
     return row.entries.map((entry) => changeSentence(entry));
   }

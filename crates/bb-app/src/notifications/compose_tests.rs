@@ -216,3 +216,19 @@ fn sec_l4_a_change_of_a_title_cannot_bring_format_characters_into_the_e_mail() {
         assert!(!text.contains(forbidden), "{forbidden:?} in {text:?}");
     }
 }
+
+#[test]
+fn ntf_02_a_file_added_is_worded_as_the_history_words_it() {
+    let said = |name: Option<&str>| {
+        lines_about(
+            Some(&ana()),
+            &NotificationWhat::File {
+                name: name.map(str::to_owned),
+            },
+            NotificationKind::FollowedActivity,
+            region(),
+        )
+    };
+    assert_eq!(said(Some("jam.txt")), ["Ana added the file jam.txt."]);
+    assert_eq!(said(None), ["Ana added a file."]);
+}

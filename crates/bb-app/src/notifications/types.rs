@@ -58,6 +58,11 @@ pub enum NotificationWhat {
     /// Giving the issues of a project their new IDs gave up; the person who asked for the new mode
     /// is told to try again in the project settings.
     IssueIdsFailed,
+    /// A file was added to the issue (not to a comment: that is part of the comment).
+    File {
+        /// The name of the file, read from the file itself; none once the file is gone for good.
+        name: Option<String>,
+    },
     /// Something about the issue that the person has no words for here (a mention of a comment
     /// that is gone, an assignment): the kind says what it is.
     Plain,

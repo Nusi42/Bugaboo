@@ -10,15 +10,30 @@ use bb_core::message::{self, Message};
 
 use super::read::Reading;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::projects::Shown;
 
 /// What the reader may know by name, read when a change first needs it.
 #[derive(Default)]
 pub(crate) struct KnownNames {
+    /// What the reader sees of the tree of projects, read once for both lists.
+    shown: Option<Shown>,
     types: Option<BTreeMap<IssueTypeId, String>>,
     labels: Option<BTreeSet<String>>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// What the reader sees of the tree of projects, read the first time it is asked for.
+    async fn shown_for<'k>(&self, reading: &'k mut Reading<'_>) -> Result<&'k Shown, AppError> {
+        if reading.names.shown.is_none() {
+            reading.names.shown = Some(self.shown_to(reading.actor).await?);
+        }
+        reading
+            .names
+            .shown
+            .as_ref()
+            .ok_or_else(|| AppError::Internal("the projects the reader sees".into()))
+    }
+
     /// What an issue type is called for this reader: its name where they may know it, else a
     /// neutral word.
     pub(super) async fn type_name_for(
@@ -32,8 +47,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .issue_types()
                 .await
                 .map_err(|error| internal::<S>(&error))?;
-            let shown = self.shown_to(reading.actor).await?;
-            let known = self.known_types(&shown, all).await?;
+            let shown = self.shown_for(reading).await?;
+            let known = self.known_types(shown, all).await?;
             reading.names.types =
                 Some(known.into_iter().map(|each| (each.id, each.name)).collect());
         }
@@ -57,9 +72,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             let failed = |error| internal::<S>(&error);
             let labels = self.store().labels().await.map_err(failed)?;
             let groups = self.store().label_groups().await.map_err(failed)?;
-            let shown = self.shown_to(reading.actor).await?;
+            let shown = self.shown_for(reading).await?;
             let known: BTreeSet<_> = self
-                .known_groups(&shown, groups)
+                .known_groups(shown, groups)
                 .await?
                 .into_iter()
                 .map(|group| group.id)

@@ -175,6 +175,10 @@ fn lines_about(
                 message::NOTIFICATIONS_ISSUE_IDS_FAILED,
             ))]
         }
+        (NotificationWhat::File { name }, _) => vec![sentence_of(&match name {
+            Some(name) => message::history_file_added(clean(name), who(by)),
+            None => message::history_file_added_unnamed(who(by)),
+        })],
         (NotificationWhat::Plain, NotificationKind::Assigned) => {
             vec![sentence_of(&message::notifications_assigned(who(by)))]
         }

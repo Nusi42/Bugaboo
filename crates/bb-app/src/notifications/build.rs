@@ -34,6 +34,7 @@ use super::mail::MailJob;
 use super::plan::{edit_note_of, followed_kind, newly_assigned, run_status_of, wants};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
+use crate::files::member as file_member;
 use crate::history::{issue_in, visible_changes};
 use crate::issues::{Where, member as issue_member};
 use crate::jobs::{QueuedJob, kind, kind_name};
@@ -88,6 +89,8 @@ enum Keeps {
     All,
     /// None: the row is about a comment, which is read when it is shown.
     Nothing,
+    /// Only the mark that the row is about a file; the file is read when the row is shown.
+    File,
 }
 
 /// The person who did it, if a person did.
@@ -213,7 +216,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &mut Round,
         event: &DomainEvent,
     ) -> Result<(), AppError> {
-        let kind_is = |kind: RecordKind| event.entity.kind == EntityKind::from(kind);
         if event
             .changes
             .iter()
@@ -221,19 +223,82 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return self.edit_note_event(round, event).await;
         }
-        if kind_is(RecordKind::Issue) {
-            return self.issue_event(round, event).await;
+        let Some(kind) = RecordKind::from_code(event.entity.kind.as_str()) else {
+            return Ok(());
+        };
+        // Every kind of record is either read here or listed as one that tells nobody anything:
+        // a new kind does not compile until it is one or the other.
+        match kind {
+            RecordKind::Issue => self.issue_event(round, event).await,
+            RecordKind::Comment => self.comment_event(round, event).await,
+            RecordKind::ChangeRun => self.run_event(round, event).await,
+            RecordKind::Project => self.renewal_event(round, event).await,
+            RecordKind::Attachment => self.file_event(round, event).await,
+            // The rest changes the setup of the organization or a person's own data; no follower
+            // of an issue hears of it.
+            RecordKind::AccessKey
+            | RecordKind::Field
+            | RecordKind::Assignment
+            | RecordKind::Follower
+            | RecordKind::Group
+            | RecordKind::Invitation
+            | RecordKind::IssueType
+            | RecordKind::Label
+            | RecordKind::LabelGroup
+            | RecordKind::Passkey
+            | RecordKind::Person
+            | RecordKind::Relation
+            | RecordKind::Layout
+            | RecordKind::RelationKind
+            | RecordKind::Workflow
+            | RecordKind::Role
+            | RecordKind::Session
+            | RecordKind::Setting
+            | RecordKind::SetupCode
+            | RecordKind::StartingRoles
+            | RecordKind::Tag => Ok(()),
         }
-        if kind_is(RecordKind::Comment) {
-            return self.comment_event(round, event).await;
+    }
+
+    /// A file added to an issue: the people who follow the issue hear of it. A file added to a
+    /// comment is part of the comment, and one taken away or brought back tells nobody.
+    async fn file_event(&self, round: &mut Round, event: &DomainEvent) -> Result<(), AppError> {
+        let on_a_comment = event
+            .changes
+            .iter()
+            .any(|change| change.field == file_member::COMMENT);
+        let added = event
+            .changes
+            .iter()
+            .any(|change| change.field == file_member::FILE);
+        if on_a_comment || !added {
+            return Ok(());
         }
-        if kind_is(RecordKind::ChangeRun) {
-            return self.run_event(round, event).await;
-        }
-        if kind_is(RecordKind::Project) {
-            return self.renewal_event(round, event).await;
-        }
-        Ok(())
+        let Some(issue_id) = issue_in(&event.changes, file_member::ISSUE, true) else {
+            return Ok(());
+        };
+        let failed = |error| internal::<S>(&error);
+        let Some(issue) = self.store().issue(issue_id).await.map_err(failed)? else {
+            return Ok(());
+        };
+        let followers = self.store().followers_of(issue_id).await.map_err(failed)?;
+        let hears = followers
+            .into_iter()
+            .filter(|found| found.since <= event.time)
+            .map(|found| Hears {
+                person: found.person,
+                kinds: vec![Some(NotificationKind::FollowedActivity)],
+                follows: true,
+                once: Once::Event(event.id),
+            })
+            .collect();
+        let subject = Subject {
+            event,
+            issue: Some(&issue),
+            record: Some(event.entity.id),
+            keeps: Keeps::File,
+        };
+        self.deliver(round, &subject, hears).await
     }
 
     /// The renewal of the issue IDs of a project gave up: the person who asked for the new mode is
@@ -497,6 +562,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Keeps::VisibleFields => visible,
                 Keeps::All => subject.event.changes.clone(),
                 Keeps::Nothing => Vec::new(),
+                Keeps::File => subject
+                    .event
+                    .changes
+                    .iter()
+                    .filter(|change| change.field == file_member::FILE)
+                    .cloned()
+                    .collect(),
             };
             for kind in &hear.kinds {
                 let kind = match kind {

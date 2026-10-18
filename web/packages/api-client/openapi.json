@@ -28802,6 +28802,14 @@
             "type": ["string", "null"],
             "description": "A change of an own field: its name."
           },
+          "file_added": {
+            "type": ["boolean", "null"],
+            "description": "A file was added to the issue."
+          },
+          "file_name": {
+            "type": ["string", "null"],
+            "description": "A file was added: its name, when the file is still there."
+          },
           "html": {
             "type": ["string", "null"],
             "description": "A comment: the text as safe HTML, made on the server for this person.",
@@ -30319,6 +30327,14 @@
                 "field_name": {
                   "type": ["string", "null"],
                   "description": "A change of an own field: its name."
+                },
+                "file_added": {
+                  "type": ["boolean", "null"],
+                  "description": "A file was added to the issue."
+                },
+                "file_name": {
+                  "type": ["string", "null"],
+                  "description": "A file was added: its name, when the file is still there."
                 },
                 "html": {
                   "type": ["string", "null"],

@@ -11,7 +11,8 @@ use std::collections::{HashMap, HashSet};
 use bb_core::ErrorCode;
 use bb_core::comment::Comment;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{CommentId, EntityId, IssueId, NotificationId, UserId};
+use bb_core::files::Attachment;
+use bb_core::id::{AttachmentId, CommentId, EntityId, IssueId, NotificationId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::{
@@ -29,6 +30,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal};
+use crate::files::member as file_member;
 use crate::history::ChangeReader;
 use crate::member::notifications as member;
 use crate::relations::LineMaker;
@@ -36,7 +38,18 @@ use crate::relations::LineMaker;
 /// The comment a row is about, if it is about one.
 fn comment_of(row: &Notification) -> Option<CommentId> {
     row.record
+        .filter(|_| file_of(row).is_none())
         .and_then(|record| CommentId::from_bytes(record.to_bytes()).ok())
+}
+
+/// The file a row is about, if it is about one: the build marked it with the member `file`.
+fn file_of(row: &Notification) -> Option<AttachmentId> {
+    row.changes
+        .iter()
+        .any(|change| change.field == file_member::FILE)
+        .then_some(row.record)
+        .flatten()
+        .and_then(|record| AttachmentId::from_bytes(record.to_bytes()).ok())
 }
 
 /// What a page of notifications is shaped with: the person, the issue lines and the people shown
@@ -50,6 +63,8 @@ pub(super) struct Reading<'a> {
     /// The issues and comments the rows of a batch name, read in one statement each (PERF-05).
     issues: HashMap<IssueId, Issue>,
     comments: HashMap<CommentId, Comment>,
+    /// The files the rows of a batch name.
+    files: HashMap<AttachmentId, Attachment>,
     /// Everything that was looked for, found or not: an issue or a comment that is gone (purged) is
     /// not looked for again by every row that names it.
     looked_for: HashSet<EntityId>,
@@ -66,6 +81,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             people: HashMap::new(),
             issues: HashMap::new(),
             comments: HashMap::new(),
+            files: HashMap::new(),
             looked_for: HashSet::new(),
         })
     }
@@ -92,6 +108,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect();
         comments.sort();
         comments.dedup();
+        let mut files: Vec<AttachmentId> = rows
+            .iter()
+            .filter_map(file_of)
+            .filter(|id| !reading.looked_for.contains(&EntityId::from(*id)))
+            .collect();
+        files.sort();
+        files.dedup();
+        reading
+            .looked_for
+            .extend(files.iter().copied().map(EntityId::from));
         reading
             .looked_for
             .extend(issues.iter().copied().map(EntityId::from));
@@ -101,6 +127,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !issues.is_empty() {
             for issue in self.issues_named(&issues).await? {
                 reading.issues.insert(issue.id, issue);
+            }
+        }
+        if !files.is_empty() {
+            for file in self
+                .store()
+                .attachments_by_ids(&files)
+                .await
+                .map_err(|error| internal::<S>(&error))?
+            {
+                reading.files.insert(file.id, file);
             }
         }
         if !comments.is_empty() {
@@ -215,6 +251,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let Some((_, issue)) = issue else {
                     return Ok(None);
                 };
+                if let Some(file) = file_of(row) {
+                    // Whoever sees the issue sees its files; the name is the one the file has now.
+                    let name = reading
+                        .files
+                        .get(&file)
+                        .filter(|found| found.deleted_at.is_none())
+                        .map(|found| found.name.clone());
+                    return Ok(Some(NotificationWhat::File { name }));
+                }
                 if let Some(comment) = comment_of(row) {
                     let found = reading
                         .comments

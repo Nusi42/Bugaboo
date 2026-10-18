@@ -43,7 +43,7 @@ const NOTIFICATIONS_LIST: &str = "notifications";
 
 /// The fields of an item of the list that can be asked for. An item holds only the ones that
 /// belong to what it says.
-const NOTIFICATION_FIELDS: [FieldSpec; 29] = [
+const NOTIFICATION_FIELDS: [FieldSpec; 31] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("kind"),
     FieldSpec::by_default("at"),
@@ -58,6 +58,8 @@ const NOTIFICATION_FIELDS: [FieldSpec; 29] = [
     FieldSpec::by_default("run"),
     FieldSpec::by_default("run_done"),
     FieldSpec::by_default("issue_ids_failed"),
+    FieldSpec::by_default("file_added"),
+    FieldSpec::by_default("file_name"),
     FieldSpec::by_default("field"),
     FieldSpec::by_default("field_name"),
     FieldSpec::by_default("field_kind"),
@@ -116,6 +118,12 @@ pub(crate) struct NotificationEntry {
     /// Giving the issues of a project their new IDs gave up.
     #[serde(skip_serializing_if = "Option::is_none")]
     issue_ids_failed: Option<bool>,
+    /// A file was added to the issue.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    file_added: Option<bool>,
+    /// A file was added: its name, when the file is still there.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    file_name: Option<String>,
     /// A change: the key of the field.
     #[serde(skip_serializing_if = "Option::is_none")]
     field: Option<String>,
@@ -184,6 +192,8 @@ fn start(item: &NotificationItem) -> NotificationEntry {
         run: None,
         run_done: None,
         issue_ids_failed: None,
+        file_added: None,
+        file_name: None,
         field: None,
         field_name: None,
         field_kind: None,
@@ -248,6 +258,12 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
         NotificationWhat::IssueIdsFailed => {
             let mut entry = start(item);
             entry.issue_ids_failed = Some(true);
+            vec![entry]
+        }
+        NotificationWhat::File { name } => {
+            let mut entry = start(item);
+            entry.file_added = Some(true);
+            entry.file_name.clone_from(name);
             vec![entry]
         }
         NotificationWhat::Plain => vec![start(item)],
@@ -543,6 +559,8 @@ mod tests {
             run: Some(String::new()),
             run_done: Some(true),
             issue_ids_failed: Some(true),
+            file_added: Some(true),
+            file_name: Some(String::new()),
             field: Some(String::new()),
             field_name: Some(String::new()),
             field_kind: Some(FieldType::YesNo),
