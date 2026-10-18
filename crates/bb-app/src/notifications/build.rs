@@ -16,7 +16,6 @@
 //! of ARCH-EVENTS.
 
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
 use std::sync::Arc;
 
 use bb_core::comment::Mention;
@@ -51,6 +50,8 @@ struct Round {
     people: HashMap<UserId, Option<Person>>,
     /// The values of the settings of the people looked up so far.
     layers: HashMap<UserId, Layers>,
+    /// The values of the organization alone, read once: the base of everybody's layers.
+    organization: Option<Layers>,
     /// What each person was found to see of each issue so far: their rights there, or none when
     /// the issue is hidden from them. Many events about one issue judge a person's rights once.
     seen: HashMap<(UserId, IssueId), Option<Arc<Evaluation>>>,
@@ -171,10 +172,41 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &'r mut Round,
         id: UserId,
     ) -> Result<&'r Layers, AppError> {
-        match round.layers.entry(id) {
-            Entry::Occupied(known) => Ok(known.into_mut()),
-            Entry::Vacant(slot) => Ok(slot.insert(self.setting_layers_of(Some(id)).await?)),
+        self.preload_layers(round, &[id]).await?;
+        round
+            .layers
+            .get(&id)
+            .ok_or_else(|| AppError::Internal("the settings of a person".into()))
+    }
+
+    /// Reads the settings of all these people that the round does not have yet: the organization's
+    /// values once for the round, and the people's own in one statement for all of them.
+    async fn preload_layers(&self, round: &mut Round, people: &[UserId]) -> Result<(), AppError> {
+        let missing: Vec<UserId> = people
+            .iter()
+            .copied()
+            .filter(|person| !round.layers.contains_key(person))
+            .collect();
+        if missing.is_empty() {
+            return Ok(());
         }
+        if round.organization.is_none() {
+            round.organization = Some(self.setting_layers_of(None).await?);
+        }
+        let mut own: HashMap<UserId, _> = self
+            .store()
+            .person_settings(missing.clone())
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .collect();
+        let base = round.organization.clone().unwrap_or_default();
+        for person in missing {
+            let mut layers = base.clone();
+            layers.person = own.remove(&person).unwrap_or_default();
+            round.layers.insert(person, layers);
+        }
+        Ok(())
     }
 
     /// Catches the notifications up with every event not yet read: the job runner does it at every
@@ -208,6 +240,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut round = Round {
             people: HashMap::new(),
             layers: HashMap::new(),
+            organization: None,
             seen: HashMap::new(),
             mail_on: self.mail_is_on().await?,
             rows: Vec::new(),
@@ -578,6 +611,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         hears: Vec<Hears>,
     ) -> Result<(), AppError> {
         let by = doer(subject.event);
+        // What every follower chose is read together, before the first one is judged.
+        let everyone: Vec<UserId> = hears.iter().map(|hear| hear.person).collect();
+        self.preload_layers(round, &everyone).await?;
         for hear in hears {
             if Some(hear.person) == by {
                 continue;

@@ -24,7 +24,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 
 use crate::auth::AuthStorage;
-use crate::db::{Database, Row, Transaction, to_micros};
+use crate::db::{Database, Row, STATEMENT_ITEMS, Transaction, to_micros};
 use crate::error::{SettingProblem, StoreError};
 use crate::projects::chain_of;
 use crate::schema::{PersonSettingRow, PolicyVersionRow, SettingRow as Columns};
@@ -544,6 +544,39 @@ pub(crate) fn resolved<T: SettingKind>(
 }
 
 impl SettingsStore for AuthStorage {
+    async fn person_settings(
+        &self,
+        people: Vec<UserId>,
+    ) -> Result<Vec<(UserId, BTreeMap<String, SettingValue>)>, StoreError> {
+        let mut found: BTreeMap<UserId, BTreeMap<String, SettingValue>> = BTreeMap::new();
+        for chunk in people.chunks(STATEMENT_ITEMS) {
+            let mut select = Query::select();
+            select
+                .columns([
+                    PersonSettingRow::Person,
+                    PersonSettingRow::Key,
+                    PersonSettingRow::Value,
+                ])
+                .from(PersonSettingRow::Table)
+                .and_where(
+                    Expr::col(PersonSettingRow::Person)
+                        .is_in(chunk.iter().map(|person| id_bytes(*person))),
+                );
+            for row in self.database().fetch_all(&select).await? {
+                if let Some((key, value)) = usable(
+                    &row.get::<String>(PersonSettingRow::Key)?,
+                    &row.get::<String>(PersonSettingRow::Value)?,
+                )? {
+                    found
+                        .entry(row.id::<UserId>(PersonSettingRow::Person)?)
+                        .or_default()
+                        .insert(key, value);
+                }
+            }
+        }
+        Ok(found.into_iter().collect())
+    }
+
     async fn setting_layers_in(
         transaction: &mut Transaction,
         project: Option<ProjectId>,

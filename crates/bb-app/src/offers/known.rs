@@ -41,6 +41,29 @@ pub(crate) fn label_is_known(group: Option<LabelGroupId>, known: &[LabelGroup]) 
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Every issue type, read once for a request.
+    pub(crate) async fn all_issue_types(&self) -> Result<Arc<Vec<IssueType>>, AppError> {
+        if let Some(known) = self
+            .known
+            .issue_types
+            .lock()
+            .ok()
+            .and_then(|each| each.clone())
+        {
+            return Ok(known);
+        }
+        let found = Arc::new(
+            self.store()
+                .issue_types()
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        );
+        if let Ok(mut each) = self.known.issue_types.lock() {
+            *each = Some(Arc::clone(&found));
+        }
+        Ok(found)
+    }
+
     /// The issue types in use on the issues the person reads, read once for a request.
     async fn used_types(&self, shown: &Shown) -> Result<Arc<Vec<IssueTypeId>>, AppError> {
         if let Some(known) = self
@@ -78,10 +101,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let failed = |error| internal::<S>(&error);
         let types: Vec<IssueTypeId> = self
-            .store()
-            .issue_types()
-            .await
-            .map_err(failed)?
+            .all_issue_types()
+            .await?
             .iter()
             .map(|found| found.id)
             .collect();

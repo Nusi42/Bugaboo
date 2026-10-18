@@ -84,6 +84,21 @@ pub(crate) fn put(state: &mut State, scope: Scope, key: &str, value: &SettingVal
 }
 
 impl SettingsStore for FakeStore {
+    async fn person_settings(
+        &self,
+        people: Vec<UserId>,
+    ) -> Result<Vec<(UserId, BTreeMap<String, SettingValue>)>, FakeError> {
+        Ok(self.read(|state| {
+            people
+                .iter()
+                .filter_map(|person| {
+                    let layers = layers_of(state, None, Some(*person));
+                    (!layers.person.is_empty()).then_some((*person, layers.person))
+                })
+                .collect()
+        }))
+    }
+
     async fn setting_layers_in(
         tx: &mut Tx,
         project: Option<ProjectId>,

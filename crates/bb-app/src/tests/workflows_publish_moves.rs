@@ -19,7 +19,9 @@ use super::scenarios_workflows::{
     a_workflow, lock_the_workflow_for, publish_of, published_by, published_with,
 };
 use super::workflows::change;
-use super::workflows_rules::{issue_in_progress, key, starting_role, status_of, with_rules};
+use super::workflows_rules::{
+    issue_in_progress, key, member, starting_role, status_of, with_rules,
+};
 use super::world::{Outcome, World};
 use crate::auth::{AppError, Started};
 use crate::issues::{IssueQuery, change_issue, issue};
@@ -605,5 +607,57 @@ async fn wf_02_a_move_into_a_status_made_new_in_the_draft_when_a_status_of_that_
     })
     .await?;
     assert_eq!(status_of(&world, &admin, id).await?, "done");
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_l5_a_rule_that_names_a_field_of_a_sibling_project_is_refused_like_a_missing_one()
+-> Outcome {
+    let world = World::new().await?;
+    let acme = a_project(&world, "ACME").await?;
+    let other = a_project(&world, "OTHER").await?;
+    // A field that is used in OTHER only; the lead of ACME may not know it.
+    let mut made = super::scenarios_fields::new_field(
+        &world,
+        "Budget",
+        bb_core::own_fields::FieldType::WholeNumber,
+        &[],
+    );
+    made.scope.projects = vec![other];
+    let sibling_field = crate::fields::create_field(&world.ctx(), made)
+        .await?
+        .into_value()
+        .id;
+    let missing_field = bb_core::id::FieldId::from_bytes([
+        0x01, 0x92, 0xb0, 0xf2, 0x6f, 0x6e, 0x7c, 0x11, 0x8a, 0x41, 0x2a, 0x8f, 0x0c, 0x3d, 0x7e,
+        0x51,
+    ])?;
+    let lead = member(&world, "lena@example.test", StartingRole::ProjectLead, acme).await?;
+    let editor = a_workflow(&world, "ACME").await?;
+    let naming = |field: bb_core::id::FieldId| {
+        move |sent: &mut PublishWorkflow| {
+            if let Some(first) = sent.changes.first_mut() {
+                first.rules.must_fill = vec![FieldKey::Own(field)];
+            }
+        }
+    };
+    let sibling = published_by(&world, &lead, &editor, naming(sibling_field))
+        .await
+        .err();
+    let missing = published_by(&world, &lead, &editor, naming(missing_field))
+        .await
+        .err();
+    assert_eq!(sibling, Some(AppError::Refused(ErrorCode::WorkflowInvalid)));
+    assert_eq!(sibling, missing);
+    // A field used everywhere can be named by the same lead.
+    let everywhere = super::scenarios_fields::a_field(
+        &world,
+        "Reason",
+        bb_core::own_fields::FieldType::WholeNumber,
+        &[],
+    )
+    .await?
+    .id;
+    published_by(&world, &lead, &editor, naming(everywhere)).await?;
     Ok(())
 }

@@ -40,10 +40,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         // Only the types of the issues the viewer reads are named, which they know by use
         // (`offers/known.rs`); a line of an issue they may not read is never made.
         let types = self
-            .store()
-            .issue_types()
-            .await
-            .map_err(|error| internal::<S>(&error))?
+            .all_issue_types()
+            .await?
             .iter()
             .map(|found| (found.id, IssueTypeRef::from(found)))
             .collect();

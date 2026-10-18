@@ -236,6 +236,9 @@ pub(crate) struct Known {
     /// of what they may know (`offers/known.rs`), read once for the request.
     pub(crate) used_types: Mutex<Option<Arc<Vec<bb_core::id::IssueTypeId>>>>,
     pub(crate) used_groups: Mutex<Option<Arc<Vec<bb_core::id::LabelGroupId>>>>,
+    /// Every issue type, read once for the request: the lines of issues, the rule of what a person
+    /// may know and the history all take their types from it.
+    pub(crate) issue_types: Mutex<Option<Arc<Vec<bb_core::issue::IssueType>>>>,
     /// The groups people are in, for the rule *Who can do it* of a status change.
     pub(crate) person_groups: Mutex<HashMap<UserId, Arc<Vec<bb_core::id::GroupId>>>>,
 }

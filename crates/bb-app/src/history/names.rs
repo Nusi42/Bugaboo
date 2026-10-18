@@ -1,7 +1,8 @@
 //! The names a reader may read in a change of an issue (LM1 of the M4 exit review): the issue type
 //! and the labels. An event keeps the names of its time, so a change can name a type or a label
 //! that the issue has not got any more and that the reader has never been told about. The one rule
-//! is `offers/known.rs`; this file asks it once for a page and shapes the two values.
+//! is `offers/known.rs`; this file asks it for what the page names, once, and shapes the two
+//! values.
 //!
 //! It fails closed. A label is judged by the group the event kept for it; an old event that kept a
 //! name only is judged by the labels that have the name now, and a name that no label has any more
@@ -12,6 +13,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use bb_core::fields::Field;
 use bb_core::id::{IssueTypeId, LabelGroupId};
 use bb_core::message::{self, Message};
+use bb_core::tags::LabelGroup;
 use serde_json::Value;
 
 use super::read::{Member, Reading};
@@ -21,46 +23,30 @@ use crate::offers::label_is_known;
 use crate::projects::Shown;
 use crate::tags::{EventLabel, event_labels};
 
-/// What the reader may know about labels, from the groups of labels they may know.
-struct LabelKnowledge {
-    /// The groups of labels the reader may know.
-    groups: BTreeSet<LabelGroupId>,
-    /// Whether they may know every group there is.
+/// What the reader may know about the names of old events that kept a name only, from the labels
+/// there are now.
+struct LegacyNames {
+    /// Whether they may know every group of labels there is.
     every_group: bool,
     /// The names that a label the reader may know has.
-    known_names: BTreeSet<String>,
+    known: BTreeSet<String>,
     /// The names that only labels of groups the reader may not know have.
-    hidden_names: BTreeSet<String>,
+    hidden: BTreeSet<String>,
 }
 
-impl LabelKnowledge {
-    /// Whether the reader may read this label of an event.
-    fn may_read(&self, label: &EventLabel) -> bool {
-        match label {
-            EventLabel::Grouped(each) => {
-                each.group.is_none_or(|group| self.groups.contains(&group))
-            }
-            EventLabel::Named(name) => {
-                if self.known_names.contains(name) {
-                    true
-                } else if self.hidden_names.contains(name) {
-                    false
-                } else {
-                    // No label has the name any more: nothing says where it was.
-                    self.every_group
-                }
-            }
-        }
-    }
-}
-
-/// What the reader may know by name, read when a change first needs it.
+/// What the reader may know by name, found when a change first names it.
 #[derive(Default)]
 pub(crate) struct KnownNames {
     /// What the reader sees of the tree of projects, read once for both lists.
     shown: Option<Shown>,
-    types: Option<BTreeMap<IssueTypeId, String>>,
-    labels: Option<LabelKnowledge>,
+    /// The issue types a change named: the name the reader may read, or none.
+    types: BTreeMap<IssueTypeId, Option<String>>,
+    /// Every group of labels there is, read once.
+    groups: Option<Vec<LabelGroup>>,
+    /// Whether the reader may know a group a change named.
+    known_groups: BTreeMap<LabelGroupId, bool>,
+    /// The labels of old events, read when an old event names one.
+    legacy: Option<LegacyNames>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -89,25 +75,124 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(None);
         };
-        if reading.names.types.is_none() {
-            let all = self
-                .store()
-                .issue_types()
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            let shown = self.shown_for(reading).await?;
-            let known = self.known_types(shown, all).await?;
-            reading.names.types =
-                Some(known.into_iter().map(|each| (each.id, each.name)).collect());
+        if !reading.names.types.contains_key(&id) {
+            // Only the type that is named is judged, from the types the request read once.
+            let named = self
+                .all_issue_types()
+                .await?
+                .iter()
+                .find(|found| found.id == id)
+                .cloned();
+            let known = match named {
+                Some(named) => {
+                    let shown = self.shown_for(reading).await?;
+                    self.known_types(shown, vec![named]).await?.pop()
+                }
+                None => None,
+            };
+            reading
+                .names
+                .types
+                .insert(id, known.map(|found| found.name));
         }
         let text = reading
             .names
             .types
-            .as_ref()
-            .and_then(|known| known.get(&id))
+            .get(&id)
             .cloned()
+            .flatten()
             .unwrap_or_else(|| Message::from(message::HISTORY_TYPE_UNKNOWN).render());
         Ok(Some(ChangeValue::Text { text }))
+    }
+
+    /// Every group of labels there is, read once for a reader.
+    async fn all_groups(&self, reading: &mut Reading<'_>) -> Result<Vec<LabelGroup>, AppError> {
+        if reading.names.groups.is_none() {
+            reading.names.groups = Some(
+                self.store()
+                    .label_groups()
+                    .await
+                    .map_err(|error| internal::<S>(&error))?,
+            );
+        }
+        Ok(reading.names.groups.clone().unwrap_or_default())
+    }
+
+    /// Whether the reader may know a group of labels a change named.
+    async fn group_known(
+        &self,
+        reading: &mut Reading<'_>,
+        group: LabelGroupId,
+    ) -> Result<bool, AppError> {
+        if let Some(known) = reading.names.known_groups.get(&group) {
+            return Ok(*known);
+        }
+        let named = self
+            .all_groups(reading)
+            .await?
+            .into_iter()
+            .find(|each| each.id == group);
+        let known = match named {
+            Some(named) => {
+                let shown = self.shown_for(reading).await?;
+                !self.known_groups(shown, vec![named]).await?.is_empty()
+            }
+            None => false,
+        };
+        reading.names.known_groups.insert(group, known);
+        Ok(known)
+    }
+
+    /// What the reader may know of the names of old events, from the labels there are now.
+    async fn legacy_names(&self, reading: &mut Reading<'_>) -> Result<(), AppError> {
+        if reading.names.legacy.is_some() {
+            return Ok(());
+        }
+        let held = self
+            .store()
+            .labels()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let groups = self.all_groups(reading).await?;
+        let every = groups.len();
+        let shown = self.shown_for(reading).await?;
+        let known_groups = self.known_groups(shown, groups).await?;
+        let (seen, unseen): (Vec<_>, Vec<_>) = held
+            .into_iter()
+            .partition(|label| label_is_known(label.group, &known_groups));
+        let known: BTreeSet<String> = seen.into_iter().map(|label| label.name).collect();
+        let hidden = unseen
+            .into_iter()
+            .map(|label| label.name)
+            .filter(|name| !known.contains(name))
+            .collect();
+        reading.names.legacy = Some(LegacyNames {
+            every_group: known_groups.len() == every,
+            known,
+            hidden,
+        });
+        Ok(())
+    }
+
+    /// Whether the reader may read this label of an event.
+    async fn label_readable(
+        &self,
+        reading: &mut Reading<'_>,
+        label: &EventLabel,
+    ) -> Result<bool, AppError> {
+        match label {
+            EventLabel::Grouped(each) => match each.group {
+                None => Ok(true),
+                Some(group) => self.group_known(reading, group).await,
+            },
+            EventLabel::Named(name) => {
+                self.legacy_names(reading).await?;
+                Ok(reading.names.legacy.as_ref().is_some_and(|legacy| {
+                    legacy.known.contains(name)
+                        || (!legacy.hidden.contains(name) && legacy.every_group)
+                }))
+            }
+        }
     }
 
     /// The value of a change to the labels: the labels the reader may read. Nothing left to show is
@@ -118,39 +203,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         value: &Value,
     ) -> Result<Option<ChangeValue>, AppError> {
         let labels = event_labels(value);
-        if reading.names.labels.is_none() {
-            let failed = |error| internal::<S>(&error);
-            let held = self.store().labels().await.map_err(failed)?;
-            let groups = self.store().label_groups().await.map_err(failed)?;
-            let every = groups.len();
-            let shown = self.shown_for(reading).await?;
-            let known_groups = self.known_groups(shown, groups).await?;
-            let known: BTreeSet<LabelGroupId> = known_groups.iter().map(|group| group.id).collect();
-            let (seen, unseen): (Vec<_>, Vec<_>) = held
-                .into_iter()
-                .partition(|label| label_is_known(label.group, &known_groups));
-            let known_names: BTreeSet<String> = seen.into_iter().map(|label| label.name).collect();
-            let hidden_names = unseen
-                .into_iter()
-                .map(|label| label.name)
-                .filter(|name| !known_names.contains(name))
-                .collect();
-            reading.names.labels = Some(LabelKnowledge {
-                every_group: known.len() == every,
-                groups: known,
-                known_names,
-                hidden_names,
-            });
-        }
         let wanted = !labels.is_empty();
-        let names: Vec<String> = match &reading.names.labels {
-            Some(knowledge) => labels
-                .iter()
-                .filter(|label| knowledge.may_read(label))
-                .map(|label| label.name().to_owned())
-                .collect(),
-            None => Vec::new(),
-        };
+        let mut names = Vec::new();
+        for label in &labels {
+            if self.label_readable(reading, label).await? {
+                names.push(label.name().to_owned());
+            }
+        }
         Ok((names.is_empty() != wanted).then_some(ChangeValue::Names { names }))
     }
 }
