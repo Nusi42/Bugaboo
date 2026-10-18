@@ -77,6 +77,15 @@ files = ["**/*.rs", "**/Cargo.toml"]
 status = "active"
 
 [[check]]
+id = "LINT-FILE-SIZE"
+title = "A Rust file has at most 800 lines unless it is named with a reason and the follow-up that splits it"
+rule = "coding-standards §2"
+tool = "xtask (counts the lines of every Rust file; tools/checks/size-exemptions.toml names the files over the ceiling, each with the most lines it may have)"
+when = ["commit", "ci"]
+files = ["**/*.rs", "tools/checks/size-exemptions.toml"]
+status = "active"
+
+[[check]]
 id = "LINT-TS"
 title = "oxlint finds no problems, including type-aware rules (TypeScript 7)"
 rule = "coding-standards §4"

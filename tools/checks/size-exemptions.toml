@@ -1,0 +1,43 @@
+# Rust files that are longer than the ceiling of LINT-FILE-SIZE (800 lines), coding-standards §2.
+# `lines` is the most a file may have: it may not grow, and an entry for a file that fits again
+# fails, so this list only shrinks. A file that is split by hand names the follow-up that splits it.
+# A file that a tool writes is listed under `generated` and needs no follow-up.
+
+[[exempt]]
+path = "crates/bb-api/src/permissions.rs"
+lines = 897
+reason = "The table of the permissions and what each route needs; it grew with the routes of M4. Split by area in M4-F130."
+
+[[exempt]]
+path = "crates/bb-app/src/fields/values.rs"
+lines = 808
+reason = "The values of own fields, one function per kind; only just over the ceiling. Split by kind in M4-F130."
+
+[[exempt]]
+path = "crates/bb-app/src/tests/fake_auth.rs"
+lines = 810
+reason = "The fake store of the sign-in tests; only just over the ceiling. Split by area in M4-F130."
+
+[[exempt]]
+path = "crates/bb-app/src/tests/notifications.rs"
+lines = 948
+reason = "The tests of the notifications reader; they move with the reader in WP-12. Split by feature in M4-F130."
+
+[[exempt]]
+path = "crates/bb-sample/src/organization.rs"
+lines = 814
+reason = "The description of the sample organization; only just over the ceiling. Split by area in M4-F130."
+
+[[exempt]]
+path = "crates/bb-server/src/tests/sign_in/files_http.rs"
+lines = 1128
+reason = "The tests of uploads, downloads and previews over HTTP, one flow after the other; a flow shares its helpers. Split into uploads, links and previews in M4-F130."
+
+[[exempt]]
+path = "crates/bb-store/src/db.rs"
+lines = 828
+reason = "The database handle with its locks and statement counter; the lock part is cut out with the lock-order guard. Split in M4-F130."
+
+[[generated]]
+path = "crates/bb-core/src/message/generated.rs"
+reason = "Written by cargo xtask gen from the message catalog; never edited by hand."
