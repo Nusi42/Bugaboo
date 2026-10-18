@@ -150,10 +150,10 @@ async fn statements_to_hear(
         } else {
             json!({"version": version, "title": format!("A better title {round}")})
         };
-        let changed = ada
+        let patched = ada
             .send("PATCH", &format!("{ISSUES}/{issue}"), Some(body))
             .await?;
-        assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+        assert_eq!(patched.status, StatusCode::OK, "{}", patched.body);
     }
     let mut counter = Counter::on(&rig.database);
     let read = catch_up(rig).await?;
