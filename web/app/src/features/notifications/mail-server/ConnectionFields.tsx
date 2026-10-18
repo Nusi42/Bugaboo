@@ -14,7 +14,7 @@ import {
 } from "@bugaboo/ui";
 
 import { messageOf } from "../../../shared/errors.ts";
-import { type MySettings } from "../../../shared/my-settings.ts";
+import { settingOf, type MySettings } from "../../../shared/my-settings.ts";
 import { wordsOf } from "../../settings/index.ts";
 import { useMailServerStatus, useSetMailPassword } from "./use-mail-server.ts";
 
@@ -51,7 +51,7 @@ export function SettingText({
   kind,
   error,
 }: SettingTextProps) {
-  const found = settings.settings.find((each) => each.key === settingKey);
+  const found = settingOf(settings, settingKey);
   return (
     <TextField
       label={wordsOf(found?.name_key ?? "")}
@@ -116,7 +116,7 @@ export function Protection({
   readonly value: string;
   readonly onChange: (next: string) => void;
 }) {
-  const found = settings.settings.find((each) => each.key === settingKeys.mailSecurity);
+  const found = settingOf(settings, settingKeys.mailSecurity);
   const choices = (found?.choices ?? []).map((choice) => ({
     value: choice.value,
     label: wordsOf(choice.label_key),
