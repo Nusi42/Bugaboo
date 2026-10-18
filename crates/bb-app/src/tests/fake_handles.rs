@@ -8,6 +8,20 @@ use jiff::Timestamp;
 use super::fake::{FakeError, FakeStore, Tx};
 use crate::notifications::HandleStore;
 
+/// When the person last changed their handle: the handle the account was given is no change.
+fn last_change(handles: &[PersonHandle], person: UserId) -> Option<Timestamp> {
+    let own: Vec<_> = handles
+        .iter()
+        .filter(|known| known.person == person)
+        .collect();
+    if own.len() < 2 {
+        return None;
+    }
+    own.iter()
+        .find(|known| known.current)
+        .map(|known| known.changed_at)
+}
+
 impl HandleStore for FakeStore {
     async fn handle_taken_in(tx: &mut Tx, handle: &str) -> Result<bool, FakeError> {
         Ok(tx.state.handles.iter().any(|known| known.handle == handle))
@@ -47,19 +61,11 @@ impl HandleStore for FakeStore {
         tx: &mut Tx,
         person: UserId,
     ) -> Result<Option<Timestamp>, FakeError> {
-        let own: Vec<_> = tx
-            .state
-            .handles
-            .iter()
-            .filter(|known| known.person == person)
-            .collect();
-        if own.len() < 2 {
-            return Ok(None);
-        }
-        Ok(own
-            .iter()
-            .find(|known| known.current)
-            .map(|known| known.changed_at))
+        Ok(last_change(&tx.state.handles, person))
+    }
+
+    async fn handle_changed_at(&self, person: UserId) -> Result<Option<Timestamp>, FakeError> {
+        Ok(self.read(|state| last_change(&state.handles, person)))
     }
 
     async fn people_without_handle(&self, limit: u64) -> Result<Vec<Person>, FakeError> {

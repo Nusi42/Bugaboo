@@ -24,6 +24,7 @@ mod concurrent;
 mod conflict_http;
 mod editing;
 mod exit_editing;
+mod exit_handle_probe;
 mod exit_hidden;
 mod exit_masks;
 mod exit_runs;

@@ -135,6 +135,27 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
+    /// Reserves a try of one person for a purpose (`handle`): the tries that are refused count
+    /// until the person is let through, and a person who keeps being refused waits. Only the person
+    /// counts, not the network, so a shared network is not held up by one of its people.
+    pub(crate) fn reserve_for_person(
+        &self,
+        purpose: &str,
+        person: UserId,
+    ) -> Result<Slot, AppError> {
+        let key = format!("{purpose}:{person}");
+        let tipped = self
+            .services
+            .limiter
+            .reserve(&key)
+            .map_err(|retry_after| AppError::Limited { retry_after })?;
+        Ok(Slot {
+            key,
+            network: None,
+            tipped,
+        })
+    }
+
     /// The reserved try gets its slot back: the server failed before the try could be checked, so
     /// it says nothing about the account (a request that was dropped stays counted).
     pub(crate) fn slot_given_back(&self, slot: &Slot) {

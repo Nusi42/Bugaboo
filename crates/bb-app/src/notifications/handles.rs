@@ -34,6 +34,10 @@ pub trait HandleStore: AccountStore + 'static {
     reads! {
         /// The handle a person has now.
         fn handle_of_person(person: UserId) -> Option<String>;
+        /// When the person last changed their handle, as a read that takes no lock: none while
+        /// they still have the one they were given with the account. The change judges the same
+        /// rule again under a lock (`handle_changed_in`).
+        fn handle_changed_at(person: UserId) -> Option<Timestamp>;
         /// The person who has this handle, or had it: a handle nobody else can take.
         fn person_with_handle(handle: &str) -> Option<UserId>;
         /// The person who has this handle now. A handle a person gave up names nobody in a new
@@ -58,6 +62,15 @@ pub trait HandleStore: AccountStore + 'static {
         /// as a former one. The change stops itself when somebody else has the handle.
         fn put_handle(person: UserId, handle: &str, at: Timestamp) -> ();
     }
+}
+
+/// Whether a person who changed their handle at `changed` has to wait yet: the one rule of how
+/// often a handle changes, read before anything is said about a handle and judged again inside the
+/// change.
+fn changed_lately(changed: Option<Timestamp>, now: Timestamp) -> bool {
+    changed
+        .and_then(|changed| changed.checked_add(change_every()).ok())
+        .is_some_and(|again| again > now)
 }
 
 /// The handle of the person who asks.
@@ -136,7 +149,12 @@ pub async fn my_handle<S: AuthStore>(
 /// `request.invalid` for a text that is no handle (it has a capital, a space, an `@`, a letter
 /// that is not ASCII, or is too long), `name.taken` when somebody has it or had it, or when it is
 /// the handle of a group or a role, `handle.changed_lately` when the person changed it a short
-/// time ago.
+/// time ago, `rate_limit.exceeded` for somebody who keeps asking for handles that are taken.
+///
+/// What is said about a handle is judged in this order: the days first (a person who has to wait
+/// learns nothing), then the tries (a person has a few refused tries and then waits), then whether
+/// the handle is taken. The one try left, once for each change, tells a person who may change their
+/// handle that a handle is taken (12-security, accepted).
 pub async fn change_handle<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangeHandle,
@@ -148,6 +166,21 @@ pub async fn change_handle<S: AuthStore>(
     }
     let person = actor.person.id;
     let failed = |error| internal::<S>(&error);
+    // Asking for the handle one has is no change, and says nothing about anybody else.
+    let before = ctx.store().handle_of_person(person).await.map_err(failed)?;
+    let held = ctx.evaluation_of(&actor, Place::Organization).await?;
+    if before.as_deref() == Some(handle.as_str()) {
+        return Ok(held.authorize(MyHandle { handle }));
+    }
+    let changed = ctx
+        .store()
+        .handle_changed_at(person)
+        .await
+        .map_err(failed)?;
+    if changed_lately(changed, ctx.now()) {
+        return Err(ErrorCode::HandleChangedLately.into());
+    }
+    let slot = ctx.reserve_for_person("handle", person)?;
     let owner = ctx
         .store()
         .person_with_handle(&handle)
@@ -155,13 +188,11 @@ pub async fn change_handle<S: AuthStore>(
         .map_err(failed)?;
     if owner.is_some_and(|owner| owner != person) || ctx.reserved_handles().await?.contains(&handle)
     {
+        // The refused try stays counted: nothing gives it back.
         return Err(ErrorCode::NameTaken.into());
     }
-    let before = ctx.store().handle_of_person(person).await.map_err(failed)?;
-    let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    if before.as_deref() == Some(handle.as_str()) {
-        return Ok(held.authorize(MyHandle { handle }));
-    }
+    // A handle that is free is no probe.
+    ctx.slot_succeeded(slot);
     let event = ctx.event(
         by(person),
         entity(RecordKind::Person, person),
@@ -179,11 +210,8 @@ pub async fn change_handle<S: AuthStore>(
             Box::pin(async move {
                 // Judged inside the change, under a lock: two changes of one person at the same
                 // moment cannot both pass.
-                let lately = S::handle_changed_in(transaction, person)
-                    .await?
-                    .and_then(|changed| changed.checked_add(change_every()).ok())
-                    .is_some_and(|again| again > now);
-                if lately {
+                let changed = S::handle_changed_in(transaction, person).await?;
+                if changed_lately(changed, now) {
                     return Err(stopped.stop::<S>(ErrorCode::HandleChangedLately));
                 }
                 // Somebody may have taken it since it was looked at: the store refuses the same
