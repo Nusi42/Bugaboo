@@ -34,14 +34,14 @@ const DEMO_M3 = "M3/demo";
  * for each theme (`<step>-<phone|computer>-<theme>.png`): the screen is checked in each theme, and
  * then the pictures are taken when a folder is wanted.
  */
-export async function goodInFourThemes(page: Page, step: string): Promise<void> {
+export async function goodInFourThemes(page: Page, step: string, folder = DEMO_M3): Promise<void> {
   // The checks first, in the window as it is: the window grown for a picture leaves the bars at
   // its edges in a state that no person ever sees.
   await expectGoodInEveryLook(page);
   await inOrder(
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
-      await shootWholeAs(page, picture(step, page), DEMO_M3, theme.id);
+      await shootWholeAs(page, picture(step, page), folder, theme.id);
     }),
   );
 }

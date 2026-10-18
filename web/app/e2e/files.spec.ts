@@ -9,12 +9,16 @@ import {
   bytesOf,
   expectActionsOnTileEdge,
   dropFile,
+  filesBlock,
   limitInWords,
   limitOf,
   megabytes,
   PART_BYTES,
   pasteFile,
+  PREVIEW_WAIT_MS,
+  previewOf,
   report,
+  rowOf,
   screenshot,
   watchUploads,
 } from "./support/files.ts";
@@ -28,23 +32,6 @@ import { prepareLook } from "./support/list-look.ts";
 
 test.use({ preparation: { run: prepareLook } });
 test.describe.configure({ mode: "serial" });
-
-/** How long a preview may take: the job runs every two seconds, and a picture is made at once. */
-const PREVIEW_WAIT_MS = 30_000;
-
-function filesBlock(page: Page) {
-  return page.getByRole("region", { name: t("files.title"), exact: true });
-}
-
-/** The row of a file by its name. */
-function rowOf(page: Page, name: string) {
-  return filesBlock(page).getByRole("listitem").filter({ hasText: name });
-}
-
-/** The small picture in the row of a file, once its preview is made. */
-function previewOf(page: Page, name: string) {
-  return rowOf(page, name).getByRole("img", { name: t("files.preview-of", { name }) });
-}
 
 test("att_01 a file that is chosen with Upload is added, and is a row with Download and Delete", async ({
   page,
