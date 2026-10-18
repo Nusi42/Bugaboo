@@ -2,13 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 
-import type {
-  FullConfig,
-  FullResult,
-  Reporter,
-  TestCase,
-  TestResult,
-} from "@playwright/test/reporter";
+import type { FullResult, Reporter } from "@playwright/test/reporter";
 
 import {
   ConnectionGuard,
@@ -17,6 +11,31 @@ import {
   type Sample,
 } from "./connections.ts";
 import { readPorts } from "./ports.ts";
+
+/** What the reporter reads of the config: the folders every project has. */
+interface Folders {
+  readonly projects: readonly { readonly testDir: string; readonly outputDir: string }[];
+}
+
+/** What the reporter reads of a test: the spec it is in and the project it runs in. */
+interface Spec {
+  readonly location: { readonly file: string };
+  readonly parent: {
+    readonly project: () =>
+      | { readonly name: string; readonly dependencies: readonly string[] }
+      | undefined;
+  };
+}
+
+/** What the reporter reads of the result of a test: the messages of its errors. */
+interface Failures {
+  readonly errors: readonly { readonly message?: string | undefined }[];
+}
+
+/** What the reporter reads of the start of a test: the worker it runs in. */
+interface Worker {
+  readonly parallelIndex: number;
+}
 
 /**
  * The commands that list the connections, as lines of `local:port remote:port state`; the first
@@ -84,7 +103,7 @@ export default class ConnectionGuardReporter implements Reporter {
   private timer: NodeJS.Timeout | undefined;
   private inFlight: Promise<void> = Promise.resolve();
 
-  public onBegin(config: FullConfig): void {
+  public onBegin(config: Folders): void {
     // Every project has the same folders: the config says them once.
     const [project] = config.projects;
     if (project === undefined) {
@@ -96,7 +115,7 @@ export default class ConnectionGuardReporter implements Reporter {
     this.plan();
   }
 
-  public onTestBegin(test: TestCase, result: TestResult): void {
+  public onTestBegin(test: Spec, result: Worker): void {
     const file = relative(this.specFolder, test.location.file).replaceAll("\\", "/");
     const project = test.parent.project()?.name ?? "";
     if ((test.parent.project()?.dependencies.length ?? 0) > 0) {
@@ -105,7 +124,7 @@ export default class ConnectionGuardReporter implements Reporter {
     this.specs[this.ports.e2eWorkersFrom + result.parallelIndex] = `${file} [${project}]`;
   }
 
-  public onTestEnd(test: TestCase, result: TestResult): void {
+  public onTestEnd(test: Spec, result: Failures): void {
     for (const error of result.errors) {
       if ((error.message ?? "").includes("ERR_NO_BUFFER_SPACE")) {
         const file = relative(this.specFolder, test.location.file).replaceAll("\\", "/");
@@ -125,10 +144,17 @@ export default class ConnectionGuardReporter implements Reporter {
     }
     const summary = this.guard.summary();
     const verdict = this.guard.verdict();
+    const ranOutOfPorts = this.guard.outOfPorts();
     mkdirSync(this.resultFolder, { recursive: true });
     writeFileSync(resolve(this.resultFolder, "connections.csv"), `${this.series.join("\n")}\n`);
-    writeFileSync(resolve(this.resultFolder, "connections.txt"), `${summary}\n${verdict ?? ""}\n`);
+    writeFileSync(
+      resolve(this.resultFolder, "connections.txt"),
+      `${summary}\n${verdict ?? ""}\n${ranOutOfPorts ?? ""}\n`,
+    );
     process.stdout.write(`${summary}\n`);
+    if (ranOutOfPorts !== undefined) {
+      console.error(ranOutOfPorts);
+    }
     if (verdict === undefined) {
       return undefined;
     }
