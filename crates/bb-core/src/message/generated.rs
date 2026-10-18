@@ -12210,7 +12210,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("projects.offered-in-save", "Save the line"),
     ("projects.offered-in-state", "Offered there?"),
-    ("projects.offered-in-take-away", "Take away"),
+    ("projects.offered-in-take-away", "Remove this line"),
     (
         "projects.offered-in-take-away-for",
         "Take away the line for {place}",
@@ -13683,7 +13683,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.publish-where-over", "Issues in {status} go to"),
     ("workflows.remove", "Remove"),
     ("workflows.remove-condition", "Stop checking {field}"),
-    ("workflows.rules-done", "Close"),
+    ("workflows.rules-done", "Keep these rules"),
     (
         "workflows.rules-intro",
         "From {from} to {to}. A rule that is left empty does not apply.",

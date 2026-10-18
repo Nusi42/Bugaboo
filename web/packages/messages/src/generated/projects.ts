@@ -92,7 +92,7 @@ export const messages = {
   "projects.offered-in-rows":
     "Offered where the lines say so. A project follows the project above it until it has a line of its own.",
   "projects.offered-in-list": "Where it is offered",
-  "projects.offered-in-take-away": "Take away",
+  "projects.offered-in-take-away": "Remove this line",
   "projects.offered-in-take-away-for": "Take away the line for {place}",
   "projects.offered-in-add": "Add a line",
   "projects.offered-in-pick-legend": "Pick a project",
