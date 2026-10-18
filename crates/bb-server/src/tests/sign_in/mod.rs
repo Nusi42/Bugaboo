@@ -27,6 +27,7 @@ mod exit_editing;
 mod exit_hidden;
 mod exit_masks;
 mod exit_runs;
+mod exit_status_by_type;
 mod exit_tags;
 mod fields_http;
 mod fields_names;
