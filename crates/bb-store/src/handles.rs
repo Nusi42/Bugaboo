@@ -12,8 +12,9 @@ use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use crate::auth::AuthStorage;
 use crate::auth::{person_columns, read_person};
-use crate::db::{LockClass, StoredId, Transaction, to_micros};
+use crate::db::{StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::{LockClass, lock_key};
 use crate::schema::{PersonHandleRow, PersonRow};
 
 impl HandleStore for AuthStorage {
@@ -74,12 +75,9 @@ impl HandleStore for AuthStorage {
         transaction: &mut Transaction,
         person: UserId,
     ) -> Result<Option<Timestamp>, StoreError> {
-        // The lock is named by the person: four random bytes of the ID.
-        let bytes = person.to_bytes();
-        let mut tail = [0_u8; 4];
-        tail.copy_from_slice(&bytes[12..]);
+        // The lock is named by the person.
         transaction
-            .advisory_lock(LockClass::Handles, i32::from_be_bytes(tail))
+            .advisory_lock(LockClass::Handles, lock_key(person.to_bytes()))
             .await?;
         let mut select = Query::select();
         select

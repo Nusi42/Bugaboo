@@ -31,6 +31,7 @@ pub mod mail;
 pub mod many_changes;
 pub mod message;
 pub mod migration;
+pub mod names;
 pub mod network;
 pub mod notification;
 pub mod offer;

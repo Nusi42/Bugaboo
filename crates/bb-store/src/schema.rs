@@ -409,7 +409,6 @@ stored_tables! {
         Comment => comment,
         Recipient => recipient,
         Via => via,
-        ReadAt => read_at,
     },
     StoredFileRow => bb_core::files::StoredFile {
         Hash => hash,

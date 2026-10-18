@@ -4,11 +4,10 @@
 //! shows it to the same roles. The roles stay in `layout_field_role` as they are for a field on the
 //! form; this table only says that the field is off the form, and which layout it is off.
 
-use sea_query::{ForeignKey, Index, Table};
+use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::{Step, id_column};
 use crate::schema::{LayoutOffFieldRow, LayoutRow};
-use sea_query::ColumnDef;
 
 pub(super) fn steps() -> Vec<Step> {
     vec![Step::Table(

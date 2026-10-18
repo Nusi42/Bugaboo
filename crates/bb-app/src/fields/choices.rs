@@ -12,6 +12,7 @@ use bb_core::event::{EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{ChoiceId, EntityId, FieldId, UserId};
 use bb_core::issue::IssueIcon;
+use bb_core::names::name_among;
 use bb_core::own_fields::{CHOICES_MAX, ChoiceColor, Edit, FieldChoice, FieldType};
 use bb_core::own_fields_value::FieldValue;
 use bb_core::version::{counted_up, next};
@@ -33,12 +34,15 @@ fn changed_member(choice: ChoiceId, part: &str) -> String {
     format!("{}.{choice}.{part}", member::CHOICE_CHANGED)
 }
 
-/// Whether another choice than `except` has the name, without regard to capitals.
+/// Whether another choice than `except` has the name (`bb_core::names`).
 fn name_taken(choices: &[FieldChoice], name: &str, except: Option<ChoiceId>) -> bool {
-    let lower = name.to_lowercase();
-    choices
-        .iter()
-        .any(|found| Some(found.id) != except && found.name.to_lowercase() == lower)
+    name_among(
+        choices
+            .iter()
+            .filter(|found| Some(found.id) != except)
+            .map(|found| found.name.as_str()),
+        name,
+    )
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

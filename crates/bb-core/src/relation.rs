@@ -11,6 +11,7 @@ use jiff::Timestamp;
 
 use crate::id::{IssueId, RelationId, RelationKindId, UserId};
 use crate::message::{self, MessageKey};
+use crate::names::same_name;
 use crate::personal::Entity;
 
 /// The most levels of sub-issues one chain may have. A deeper chain is refused, so the check for
@@ -117,7 +118,7 @@ impl RelationKind {
     /// person started from.
     #[must_use]
     pub fn is_symmetric(&self) -> bool {
-        self.forward.to_lowercase() == self.backward.to_lowercase()
+        same_name(&self.forward, &self.backward)
     }
 }
 

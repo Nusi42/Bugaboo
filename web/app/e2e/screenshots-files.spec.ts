@@ -8,9 +8,9 @@ import {
   chooseFiles,
   holdSecondPart,
   limitInWords,
-  MEGABYTE,
   limitOf,
   megabytes,
+  overTheLimit,
   type Pictured,
   report,
   screenshot,
@@ -103,7 +103,7 @@ async function takeTheBlock(page: Page, theme: Theme, project: string): Promise<
   ).toBeVisible();
   // A refusal does not outlive the page, so it is made for this look.
   const limit = await limitOf(page, ISSUE);
-  await chooseInBlock(page, megabytes("holiday-video.bin", limit / MEGABYTE + 1));
+  await chooseInBlock(page, overTheLimit("holiday-video.bin", limit));
   await expect(
     filesBlock(page).getByText(t("files.too-big", { limit: limitInWords(limit) })),
   ).toBeVisible();

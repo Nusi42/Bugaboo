@@ -28,7 +28,7 @@ use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
 use bb_policy::Tree;
 
-use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, internal};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, internal, locked};
 
 pub use change::change_project;
 pub use create::create_project;
@@ -104,11 +104,7 @@ pub(crate) struct Why(Arc<Mutex<Option<ErrorCode>>>);
 impl Why {
     /// Stops the change for `code`.
     pub(crate) fn stop<S: AuthStore>(&self, code: ErrorCode) -> S::Error {
-        // A lock that a panic poisoned still holds a value that is whole.
-        *self
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(code);
+        *locked(&self.0) = Some(code);
         S::aborted()
     }
 
@@ -121,10 +117,7 @@ impl Why {
 
     /// The reason the change gave for stopping itself, if it gave one.
     pub(crate) fn said(&self) -> Option<ErrorCode> {
-        *self
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        *locked(&self.0)
     }
 
     /// Like [`Self::answer`], for a change whose key used twice says another thing than its
@@ -136,10 +129,7 @@ impl Why {
         stopped: ErrorCode,
         duplicate: ErrorCode,
     ) -> AppError {
-        let said = *self
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let said = *locked(&self.0);
         change_failed::<S>(error, Stops::new(said.unwrap_or(stopped), duplicate))
     }
 }

@@ -212,9 +212,7 @@ export function refreshLayouts(): void {
 
 /** A save of a layout was refused: the draft it kept is read again. */
 export function refreshLayoutDraft(layout: string): void {
-  reread({
-    queryKey: queryKeys.layouts.draft(layout),
-  });
+  reread({ queryKey: queryKeys.layouts.draft(layout) });
 }
 
 /** The answers that show a workflow: the editor, the lists of workflows and what an issue can change to. */
@@ -253,11 +251,15 @@ function refreshRoutes(routes: readonly string[]): void {
   });
 }
 
+/** A file was added, deleted or brought back: its list and the history (M4-F50) are read again. */
+export function refreshIssueFiles(): void {
+  refreshHistory();
+  refreshReads(["/api/v1/issues/{issue}/files"]);
+}
+
 /** A sub-issue or a relation was added or taken away: what an issue stands among is read again. */
 export function refreshIssueRelations(): void {
-  reread({
-    queryKey: queryKeys.issueRelations.all,
-  });
+  reread({ queryKey: queryKeys.issueRelations.all });
   reread({ queryKey: queryKeys.history.all });
   refreshRoutes(["/api/v1/issues/{issue}/relations"]);
 }
@@ -270,12 +272,6 @@ export function refreshNotifications(): void {
 /** The mail server changed (its settings or its password): the answers about it are read again. */
 export function refreshMailServer(): void {
   refreshRoutes(["/api/v1/mail", "/api/v1/settings"]);
-}
-
-/** A file was added, deleted or brought back: the list of files and the history (M4-F50) are read again. */
-export function refreshIssueFiles(): void {
-  refreshHistory();
-  refreshReads(["/api/v1/issues/{issue}/files"]);
 }
 
 /** A field, a comment, a file or a follower changed: the history shows it the moment it was made. */

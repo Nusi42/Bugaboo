@@ -12,7 +12,7 @@ use bb_core::workflow::starter::{SIMPLE, STARTERS};
 use bb_core::workflow::{StatusKey, StoredWorkflow, Workflow, WorkflowContent, WorkflowUse, find};
 
 use super::types::StatusView;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 
 /// A workflow that is stored, with its content shared.
 pub(crate) struct Stored {
@@ -141,12 +141,7 @@ impl WorkflowDirectory {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The places workflows are used at, read once for the request.
     pub(crate) async fn workflow_directory(&self) -> Result<Arc<WorkflowDirectory>, AppError> {
-        let known = self
-            .known
-            .workflows
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone();
+        let known = locked(&self.known.workflows).clone();
         if let Some(directory) = known {
             return Ok(directory);
         }
@@ -156,22 +151,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?;
         let directory = Arc::new(WorkflowDirectory::build(rows.uses, rows.workflows));
-        *self
-            .known
-            .workflows
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Arc::clone(&directory));
+        *locked(&self.known.workflows) = Some(Arc::clone(&directory));
         Ok(directory)
     }
 
     /// Forgets what this request read about workflows: a change was made, and the next question
     /// reads the store again.
     pub(crate) fn forget_workflows(&self) {
-        *self
-            .known
-            .workflows
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
+        *locked(&self.known.workflows) = None;
     }
 
     /// The workflow that counts in a place whose projects from the top down are `chain`, for an

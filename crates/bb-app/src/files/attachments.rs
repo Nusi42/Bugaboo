@@ -13,10 +13,11 @@ use bb_core::files::{Attachment, DownloadLink, LinkTarget, PreviewStatus, Stored
 use bb_core::id::{AttachmentId, UserId};
 use bb_core::issue::Issue;
 use bb_core::version::{counted_up, next};
-use bb_policy::{Authorized, Evaluation, Permission};
+use bb_policy::{Authorized, Evaluation};
 use serde_json::json;
 
 use super::member;
+use super::rights::{may_add, may_remove};
 use super::types::{
     AttachmentView, DeleteAttachment, FileRules, FileRulesQuery, IssueFiles, IssueFilesQuery,
     RestoreAttachment,
@@ -24,24 +25,6 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::projects::Why;
-
-/// Whether `person` may put the attachment into the trash or take it out again: whoever may change
-/// issues, and the person who added it while they may still add it, which is the rule of comments
-/// (a file of the issue itself follows the right to change the issue, a file of a comment the right
-/// to comment). The one place that says it, for the button and for the change.
-pub(super) fn may_remove(
-    held: &Evaluation,
-    issue: &Issue,
-    attachment: &Attachment,
-    person: UserId,
-) -> bool {
-    held.allows(Permission::ChangeIssues)
-        || attachment.added_by == person
-            && match attachment.comment {
-                Some(_) => held.allows(Permission::Comment),
-                None => held.may_change_issue(issue.reported_by),
-            }
-}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The signed link that opens `target` of `attachment` for `person` for five minutes.
@@ -193,7 +176,7 @@ pub async fn file_rules<S: AuthStore>(
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
     let limits = ctx.file_limits(issue.project).await?;
     Ok(held.authorize(FileRules {
-        may_add: held.may_change_issue(issue.reported_by),
+        may_add: may_add(&held, &issue, None, actor.person.id),
         limit_bytes: limits.max_bytes,
     }))
 }

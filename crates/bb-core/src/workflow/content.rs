@@ -8,6 +8,7 @@ use super::{
 use crate::fields::{Field, FieldKey};
 use crate::id::WorkflowId;
 use crate::issue::StatusGroup;
+use crate::names::{name_among, same_name};
 
 /// A status as an editor sends it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -160,11 +161,10 @@ impl WorkflowContent {
             {
                 return Err(Problem::KeyTwice);
             }
-            let name = status.name.trim().to_lowercase();
-            if self.statuses[..at]
-                .iter()
-                .any(|each| each.name.trim().to_lowercase() == name)
-            {
+            if name_among(
+                self.statuses[..at].iter().map(|each| each.name.as_str()),
+                &status.name,
+            ) {
                 return Err(Problem::NameTwice);
             }
         }
@@ -347,13 +347,12 @@ pub fn status_named<'a>(
     text: &str,
     is_new: impl Fn(&WorkflowStatus) -> bool,
 ) -> Option<&'a WorkflowStatus> {
-    let wanted = text.trim().to_lowercase();
     statuses
         .iter()
         .find(|status| status.key.as_str() == text)
         .or_else(|| {
             statuses
                 .iter()
-                .find(|status| is_new(status) && status.name.trim().to_lowercase() == wanted)
+                .find(|status| is_new(status) && same_name(&status.name, text))
         })
 }

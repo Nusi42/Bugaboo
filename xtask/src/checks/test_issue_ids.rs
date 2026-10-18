@@ -11,27 +11,17 @@ use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
 
 /// The tests of the rules about issue IDs (docs/milestones/M3/WP-03-issues-core.md).
-const REQUIRED: [Required; 5] = [
-    Required {
-        name: "iss_01a_random_ids_use_the_readable_alphabet_and_never_repeat",
-        both_databases: false,
-    },
-    Required {
-        name: "iss_01a_random_ids_made_in_a_project_never_repeat",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_01a_counting_ids_count_per_project_without_gaps_under_ten_writers",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_01a_an_old_id_redirects_after_the_mode_changes",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_01a_an_old_id_keeps_working_after_the_issue_moves",
-        both_databases: true,
-    },
+pub(super) const REQUIRED: [Required; 8] = [
+    Required::anywhere("iss_01a_random_ids_use_the_readable_alphabet_and_never_repeat"),
+    Required::both("iss_01a_random_ids_made_in_a_project_never_repeat"),
+    Required::both("iss_01a_counting_ids_count_per_project_without_gaps_under_ten_writers"),
+    Required::both("iss_01a_an_old_id_redirects_after_the_mode_changes"),
+    Required::both("iss_01a_an_old_id_keeps_working_after_the_issue_moves"),
+    // What the security chapter cites with this check: a hidden issue answers like a missing one,
+    // and nothing in an answer counts.
+    Required::both("iss_01_a_hidden_issue_answers_not_found_like_a_missing_one"),
+    Required::both("iss_01_a_guest_sees_only_the_issues_they_reported"),
+    Required::both("priv_13_no_issue_answer_holds_a_count"),
 ];
 
 pub(crate) struct TestIssueIds;
@@ -43,7 +33,7 @@ impl Check for TestIssueIds {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         Ok(evaluate(
-            &crate_sources(context)?,
+            &crate_sources(context.repo)?,
             &REQUIRED,
             "The rules about issue IDs (ADR-0021) are held by it;",
         ))

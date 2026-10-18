@@ -147,16 +147,30 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
     file.items
         .iter()
         .find_map(|item| match item {
-            syn::Item::Const(item) if item.ident == name => match &*item.expr {
-                syn::Expr::Lit(syn::ExprLit {
-                    lit: syn::Lit::Int(number),
-                    ..
-                }) => Some(number.base10_digits().to_owned()),
-                _ => None,
-            },
+            syn::Item::Const(item) if item.ident == name => {
+                number_of(&item.expr).map(|number| number.to_string())
+            }
             _ => None,
         })
         .with_context(|| format!("{path} has no `const {name}` that is a number"))
+}
+
+/// The value of a whole number written as a literal or as a product of literals (`4 * 1024 * 1024`).
+fn number_of(expr: &syn::Expr) -> Option<u128> {
+    match expr {
+        syn::Expr::Lit(syn::ExprLit {
+            lit: syn::Lit::Int(number),
+            ..
+        }) => number.base10_parse().ok(),
+        syn::Expr::Binary(syn::ExprBinary {
+            left,
+            op: syn::BinOp::Mul(_),
+            right,
+            ..
+        }) => number_of(left)?.checked_mul(number_of(right)?),
+        syn::Expr::Paren(inner) => number_of(&inner.expr),
+        _ => None,
+    }
 }
 
 /// The vocabularies the browser lists or recognizes at run time (a drop-down of icons, the words of
@@ -619,50 +633,21 @@ export const decimalDigits = {digits};
     ))
 }
 
-/// The value of a whole number that a constant says as a product of numbers (`4 * 1024 * 1024`).
-fn product_of(expr: &syn::Expr) -> Option<u128> {
-    match expr {
-        syn::Expr::Lit(syn::ExprLit {
-            lit: syn::Lit::Int(number),
-            ..
-        }) => number.base10_parse().ok(),
-        syn::Expr::Paren(inner) => product_of(&inner.expr),
-        syn::Expr::Binary(syn::ExprBinary {
-            left,
-            op: syn::BinOp::Mul(_),
-            right,
-            ..
-        }) => product_of(left)?.checked_mul(product_of(right)?),
-        _ => None,
-    }
-}
-
-/// The value of `const name`, a number or a product of numbers.
-fn product_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<u128> {
-    file.items
-        .iter()
-        .find_map(|item| match item {
-            syn::Item::Const(item) if item.ident == name => product_of(&item.expr),
-            _ => None,
-        })
-        .with_context(|| format!("{path} has no `const {name}` that is a number"))
-}
-
-/// The sizes of files as constants for the browser app and its tests: how big one part of an upload
-/// is, and what a megabyte is in the limit of a project. The tests take them from here and do not
-/// write them a second time.
+/// The sizes of files that the server and the browser both name: how big one part of an upload is
+/// and what a megabyte is in the limits of files, so the tests of the browser do not write them a
+/// second time.
 pub(super) fn files(sources: &[Source]) -> anyhow::Result<String> {
     let Some((_, text)) = sources.iter().find(|(path, _)| path == FILES_SOURCE) else {
         bail!("{FILES_SOURCE} is missing");
     };
     let file = syn::parse_file(text).with_context(|| format!("{FILES_SOURCE} is not Rust"))?;
-    let part = product_const(&file, FILES_SOURCE, "PART_BYTES")?;
-    let megabyte = product_const(&file, FILES_SOURCE, "MEGABYTE")?;
+    let part = number_const(&file, FILES_SOURCE, "PART_BYTES")?;
+    let megabyte = number_const(&file, FILES_SOURCE, "MEGABYTE")?;
     Ok(format!(
-        "{TS_HEADER}/** The most bytes one part of an upload holds. */
+        "{TS_HEADER}/** The most bytes one part of an upload holds (`PART_BYTES` of the server). */
 export const partBytes = {part};
 
-/** The size of one megabyte in the limit of files: 1024 times 1024 bytes. */
+/** The size of one megabyte in the limits of files: the limit of a project is a whole number of them. */
 export const megabyte = {megabyte};
 "
     ))

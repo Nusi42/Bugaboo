@@ -12,7 +12,7 @@ use serde_json::json;
 use super::notifications::{Change, Crew, Status};
 use super::scenarios::{text, token};
 use super::world::{Outcome, World};
-use crate::jobs::{JobStore as _, kind, kind_name};
+use crate::jobs::{JobKind, JobStore as _};
 use crate::server_log::ServerLogFile;
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
@@ -70,7 +70,7 @@ async fn m1_f21_the_payload_of_a_dead_job_is_emptied_after_its_keep_period() -> 
         .store
         .queue_job(
             id,
-            &kind_name(kind::MAIL_SEND)?,
+            &JobKind::MailSend.name()?,
             &json!({"what": "changes"}),
             now,
             now,

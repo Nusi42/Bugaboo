@@ -98,6 +98,29 @@ impl<'a> Site<'a> {
         Ok((Browser::signed_in_as(self.app, &email).await?, member.id))
     }
 
+    /// A person with a role of their own making in one project (by its ID) and its sub-projects,
+    /// signed in; the member too, to give or take away more.
+    pub(super) async fn person_holding(
+        &self,
+        role: RoleId,
+        name: &str,
+        project: &str,
+    ) -> Result<(Browser, super::policy_rig::Member), Failure> {
+        let email = format!("{name}@example.test");
+        let started = self
+            .org
+            .rig
+            .person_called(&self.org.admin.session, &email, "Bob Builder")
+            .await?;
+        let member = super::policy_rig::Member {
+            id: started.person.id,
+            session: started.session_token,
+        };
+        let project = project.parse().map_err(|_| "no project ID")?;
+        self.org.give(&member, role, project).await?;
+        Ok((Browser::signed_in_as(self.app, &email).await?, member))
+    }
+
     /// A person with the starting role in ACME only, signed in: every other project is not there
     /// for them.
     pub(super) async fn person_in_acme(

@@ -43,7 +43,7 @@ sequenceDiagram
   A-->>B: rows (only requested ∩ visible fields)
 ```
 
-- LabelsAndTags, grouping and totals are only allowed on readable fields.
+- Sorting, grouping and totals are only allowed on readable fields.
 - Every query has a time limit, a page-size cap and a complexity limit.
 - The browser runs the **same parser** (WebAssembly) for instant feedback; the server's answer is the one that counts.
 

@@ -13,7 +13,7 @@ use sea_query::{ColumnDef, ForeignKey, Index, Table};
 use super::Step;
 use crate::schema::{
     CommentRow, CommentVersionRow, FollowerRow, HistoryEntryRow, IssueParentRow, IssueRow,
-    MentionRow, RelationKindRow, RelationRow,
+    MentionRow, RelationKindRow, RelationRow, Retired,
 };
 
 pub(super) fn steps() -> Vec<Step> {
@@ -229,7 +229,7 @@ fn comments() -> Vec<Step> {
                 .col(ColumnDef::new(MentionRow::Comment).blob().not_null())
                 .col(ColumnDef::new(MentionRow::Recipient).blob().not_null())
                 .col(ColumnDef::new(MentionRow::Via).text().not_null())
-                .col(ColumnDef::new(MentionRow::ReadAt).big_integer())
+                .col(ColumnDef::new(Retired::ReadAt).big_integer())
                 .primary_key(
                     Index::create()
                         .col(MentionRow::Comment)

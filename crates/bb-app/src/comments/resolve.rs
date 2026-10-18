@@ -10,7 +10,7 @@
 //! - A group puts the comment into each member's *Mentions*, a role into those who have it where
 //!   the issue is (a cap, `MENTION_RECIPIENTS_MAX`, keeps a big group from filling the table).
 
-use std::sync::{Arc, PoisonError};
+use std::sync::Arc;
 
 use bb_core::access::PeopleLevel;
 use bb_core::comment::{
@@ -26,7 +26,7 @@ use bb_markdown::{
 use bb_policy::{Evaluation, PeopleContext, row_reaches};
 
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 
 /// The most people a search for the people to offer after `@` reads (`mention_choices`).
 pub(super) const PEOPLE_LOOK_AT: u64 = 100;
@@ -73,22 +73,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         handle: &str,
     ) -> Result<Option<Named>, AppError> {
         let key = (issue.id, level, handle.to_owned());
-        let known = self
-            .known
-            .handles
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .get(&key)
-            .copied();
+        let known = locked(&self.known.handles).get(&key).copied();
         if let Some(known) = known {
             return Ok(known);
         }
         let named = self.look_up_handle(level, issue, handle).await?;
-        self.known
-            .handles
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .insert(key, named);
+        locked(&self.known.handles).insert(key, named);
         Ok(named)
     }
 
@@ -107,13 +97,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The names of the groups, read once for the request.
     async fn group_names(&self) -> Result<Arc<Vec<(GroupId, String)>>, AppError> {
-        if let Some(known) = self
-            .known
-            .group_names
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clone()
-        {
+        if let Some(known) = locked(&self.known.group_names).clone() {
             return Ok(known);
         }
         let names: Vec<(GroupId, String)> = self
@@ -125,23 +109,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|group| (group.id, group.name))
             .collect();
         let names = Arc::new(names);
-        *self
-            .known
-            .group_names
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner) = Some(Arc::clone(&names));
+        *locked(&self.known.group_names) = Some(Arc::clone(&names));
         Ok(names)
     }
 
     /// The names of the roles, read once for the request.
     async fn role_names(&self) -> Result<Arc<Vec<(RoleId, String)>>, AppError> {
-        if let Some(known) = self
-            .known
-            .role_names
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clone()
-        {
+        if let Some(known) = locked(&self.known.role_names).clone() {
             return Ok(known);
         }
         let names: Vec<(RoleId, String)> = self
@@ -153,11 +127,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|record| (record.role.id, record.role.name))
             .collect();
         let names = Arc::new(names);
-        *self
-            .known
-            .role_names
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner) = Some(Arc::clone(&names));
+        *locked(&self.known.role_names) = Some(Arc::clone(&names));
         Ok(names)
     }
 
@@ -231,11 +201,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             let named = match token.kind {
                 TokenKind::IssueId => {
-                    let known = self
-                        .known
-                        .issue_ids
-                        .lock()
-                        .unwrap_or_else(PoisonError::into_inner)
+                    let known = locked(&self.known.issue_ids)
                         .get(&(actor.person.id, written.to_owned()))
                         .copied();
                     let seen = if let Some(known) = known {
@@ -259,10 +225,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                             },
                             Err(_) => false,
                         };
-                        self.known
-                            .issue_ids
-                            .lock()
-                            .unwrap_or_else(PoisonError::into_inner)
+                        locked(&self.known.issue_ids)
                             .insert((actor.person.id, written.to_owned()), seen);
                         seen
                     };
@@ -391,7 +354,6 @@ impl<S: AuthStore> Ctx<'_, S> {
                     comment,
                     recipient: person,
                     via,
-                    read_at: None,
                 });
             }
         }

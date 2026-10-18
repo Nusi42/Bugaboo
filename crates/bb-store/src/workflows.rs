@@ -14,9 +14,10 @@ use bb_core::workflow::{
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{LockClass, Row, StoredId, Transaction};
+use crate::db::{Row, StoredId, Transaction};
 use crate::error::StoreError;
 use crate::issues::{issue_select, read_issue};
+use crate::locks::LockClass;
 use crate::schema::{IssueRow, WorkflowChangeRow, WorkflowRow, WorkflowStatusRow, WorkflowUseRow};
 
 fn read_key(text: &str) -> Result<StatusKey, StoreError> {
