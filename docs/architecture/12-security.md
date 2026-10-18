@@ -132,7 +132,7 @@ M3 stores text that people write and shows it to others, and lets several people
 
 ### Workflows, files and notifications (M4)
 
-M4 takes files from people, sends mail out of the server for the first time, and lets workflows decide who may change a status. Each row names the check or test that proves it; the packages add the test names ([M4 plan](../milestones/M4/README.md)).
+M4 takes files from people, sends mail out of the server for the first time, and lets workflows decide who may change a status. Each row names the check or test that proves it; the packages add the test names ([M4 plan](../milestones/M4/README.md)). A test named in a cell next to a check that holds a list of required tests must be in that list. Enforced by: DOC-PROVEN-BY.
 
 | STRIDE | Threat | Mitigation | Proven by |
 |--------|--------|-----------|-----------|

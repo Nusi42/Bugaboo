@@ -150,7 +150,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 - Load heavy features (timeline, editors, search-language WebAssembly) only when first opened.
 - New dependencies need a justification covering bundle size, maintenance status, license
   and security record.
-- Performance budgets (PERF-01…06) are CI gates, not aspirations.
+- Performance budgets (PERF-01…06) are CI gates, not aspirations. The tests that count statements for a list of five and a list of forty rows cannot be deleted or switched off unseen. Enforced by: PERF-N1.
 
 ---
 
