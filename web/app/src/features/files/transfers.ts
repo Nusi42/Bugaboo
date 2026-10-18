@@ -1,11 +1,10 @@
 import { ApiError } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
+import { refreshIssueFiles } from "../../shared/query-keys.ts";
 import { connection } from "./connection.ts";
-import { refreshFiles } from "./files.ts";
-import { formatSize } from "./size.ts";
 import { isTemporary, sendFile, type Transport } from "./transfer.ts";
 import {
   createTransferStore,
@@ -20,13 +19,13 @@ export type { Transfer, TransferStatus, TransferTarget } from "./transfer-store.
 export interface Dependencies {
   readonly transport: Transport;
   readonly wait: (milliseconds: number) => Promise<void>;
-  readonly refresh: () => Promise<void>;
+  readonly refresh: () => void;
 }
 
 /** The files on their way: one store for the whole app, so a transfer outlives its screen. */
 export interface Transfers {
-  /** Takes files to send to a target, one after the other. `limit` is the limit of the project in bytes. */
-  readonly add: (target: TransferTarget, files: readonly File[], limit: number) => void;
+  /** Takes files to send to a target, one after the other. */
+  readonly add: (target: TransferTarget, files: readonly File[]) => void;
   /** Forgets a transfer that was refused or lost, and throws its upload away. */
   readonly dismiss: (id: number) => void;
   /** Sends a transfer that was lost again, from where its upload stands. */
@@ -35,10 +34,15 @@ export interface Transfers {
   readonly snapshot: TransferStore["snapshot"];
 }
 
-/** Why a transfer ended in words: the limit of the project, a lost connection, or the server's reason. */
-function messageFor(error: unknown, transfer: Transfer): string {
-  if (error instanceof ApiError && error.problem?.code === "file.too_big") {
-    return t("files.too-big", { limit: formatSize(transfer.limit) });
+/** Whether the server refused the file for its size. */
+function isTooBig(error: unknown): boolean {
+  return error instanceof ApiError && error.problem?.code === "file.too_big";
+}
+
+/** Why a transfer ended in words: a lost connection, or the server's reason (a file that is too big is worded where it is shown). */
+function messageFor(error: unknown, transfer: Transfer): string | null {
+  if (isTooBig(error)) {
+    return null;
   }
   if (isTemporary(error)) {
     return t("files.lost", { name: transfer.name });
@@ -47,7 +51,7 @@ function messageFor(error: unknown, transfer: Transfer): string {
 }
 
 /** A transfer for a file that was chosen; an empty file is refused at once, in words. */
-function transferOf(id: number, target: TransferTarget, file: File, limit: number): Transfer {
+function transferOf(id: number, target: TransferTarget, file: File): Transfer {
   const empty = file.size === 0;
   return {
     id,
@@ -58,7 +62,7 @@ function transferOf(id: number, target: TransferTarget, file: File, limit: numbe
     status: empty ? "refused" : "waiting",
     message: empty ? t("files.empty", { name: file.name }) : null,
     canRetry: false,
-    limit,
+    tooBig: false,
     upload: null,
   };
 }
@@ -92,6 +96,7 @@ function refuse(
   store.replace(transfer.id, {
     status: "refused",
     message: messageFor(error, transfer),
+    tooBig: isTooBig(error),
     canRetry: again,
     upload: again ? open : null,
   });
@@ -132,7 +137,7 @@ async function sendOne(
       transfer.upload ?? undefined,
     );
     store.remove(transfer.id);
-    await deps.refresh();
+    deps.refresh();
   } catch (error) {
     refuse(deps, store, transfer, error);
   }
@@ -162,8 +167,8 @@ export function createTransfers(deps: Dependencies): Transfers {
   };
 
   return {
-    add: (target, chosen, limit) => {
-      const added = chosen.map((file) => transferOf(store.nextId(), target, file, limit));
+    add: (target, chosen) => {
+      const added = chosen.map((file) => transferOf(store.nextId(), target, file));
       const sendable = added.flatMap((each, at) => {
         const file = chosen[at];
         return file === undefined || each.status === "refused" ? [] : [[each.id, file] as const];
@@ -191,7 +196,7 @@ export const transfers: Transfers = createTransfers({
     new Promise((done) => {
       setTimeout(done, milliseconds);
     }),
-  refresh: refreshFiles,
+  refresh: refreshIssueFiles,
 });
 
 /** The files on their way to one target, as the screen of that target shows them. */
@@ -201,5 +206,21 @@ export function useTransfers(target: TransferTarget): readonly Transfer[] {
   return useMemo(
     () => all.filter((each) => each.target.issue === issue && each.target.comment === comment),
     [all, issue, comment],
+  );
+}
+
+/**
+ * Where files go when a person adds them to an issue (`comment` is `null`) or to a comment: the one
+ * way an upload starts, for *Upload*, a drop, a paste and *Add files* under a comment.
+ */
+export function useAddFiles(
+  issue: string,
+  comment: string | null,
+): (files: readonly File[]) => void {
+  return useCallback(
+    (files) => {
+      transfers.add({ issue, comment }, files);
+    },
+    [issue, comment],
   );
 }

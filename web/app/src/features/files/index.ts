@@ -16,5 +16,6 @@ export function registerFileBlocks(): void {
 }
 
 export { ChosenFilesPicker } from "./ChosenFilesPicker.tsx";
-export { useChosenFiles, useFilesToComment, type ChosenFiles } from "./chosen-files.ts";
+export { useChosenFiles, type ChosenFiles } from "./chosen-files.ts";
+export { useAddFiles } from "./transfers.ts";
 export { CommentFiles } from "./CommentFiles.tsx";

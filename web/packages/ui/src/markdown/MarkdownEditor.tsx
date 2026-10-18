@@ -10,7 +10,7 @@ import {
 } from "react-aria-components";
 
 import { partOf } from "../parts.ts";
-import { takePastedFiles } from "../pasted-files.ts";
+import { passPastedFiles } from "../pasted-files.ts";
 import { busyState, fieldShape } from "../props.ts";
 import { part } from "../tokens.ts";
 import { FormattingToolbar } from "./FormattingToolbar.tsx";
@@ -72,10 +72,7 @@ function WriteBox({
         rows={8}
         aria-busy={busy}
         onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
-          const files = onFiles === undefined ? [] : takePastedFiles(event);
-          if (onFiles !== undefined && files.length > 0) {
-            onFiles(files);
-          }
+          passPastedFiles(event, onFiles);
         }}
       />
     </AriaTextField>

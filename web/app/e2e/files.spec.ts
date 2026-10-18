@@ -184,11 +184,12 @@ test("att_01 a file is deleted and comes back with Undo", async ({ page }) => {
   await page.goto(issueAddress("WEB-1"));
   const row = rowOf(page, "report.txt");
   await row.getByRole("button", { name: t("files.delete-named", { name: "report.txt" }) }).click();
-  await expect(
-    rowOf(page, "report.txt").getByRole("button", { name: t("common.undo") }),
-  ).toBeVisible();
-  await rowOf(page, "report.txt")
-    .getByRole("button", { name: t("common.undo") })
+  // The file is gone from the list, and *Undo* is where every *Undo* is, with the sentence.
+  await expect(rowOf(page, "report.txt")).toHaveCount(0);
+  await expect(page.getByText(t("files.deleted", { name: "report.txt" }))).toBeVisible();
+  await page
+    .getByRole("button", { name: t("common.undo"), exact: true })
+    .last()
     .click();
   await expect(
     rowOf(page, "report.txt").getByRole("button", {

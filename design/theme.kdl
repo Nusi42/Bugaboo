@@ -4483,7 +4483,10 @@ part "files.actions" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    margin-inline-start "$size-phone-hang"
+    // Its first button hangs back by its padding like every text button (R1). On a phone the row
+    // stands under the text, so that is all; beside the text, on a computer, the row steps forward
+    // by the same amount and nothing hangs back.
+    margin-inline-start "calc($size-phone-hang + $pad-control)"
 }
 
 // The larger preview: as big as it is, never wider than the window.

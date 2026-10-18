@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
+import { useFileLimit } from "./files.ts";
 import { formatSize } from "./size.ts";
 import { transfers, type Transfer } from "./transfers.ts";
 
@@ -35,13 +36,18 @@ function Sending({ transfer }: { readonly transfer: Transfer }) {
 
 /** A file that was not added: the words that say why, and what to do about it. */
 function NotAdded({ transfer }: { readonly transfer: Transfer }) {
+  // The limit is read now, so the sentence names the limit the project has when it is shown.
+  const limit = useFileLimit(transfer.target.issue);
+  const reason = transfer.tooBig
+    ? t("files.too-big", { limit: formatSize(limit) })
+    : (transfer.message ?? "");
   return (
     <Alert tone={alertTone.danger}>
       <div {...partOf(part.filesRefusal)}>
         <span>
           {t("files.not-added", {
             name: transfer.name,
-            reason: transfer.message ?? "",
+            reason,
           })}
         </span>
         <div {...partOf(part.filesActions)}>

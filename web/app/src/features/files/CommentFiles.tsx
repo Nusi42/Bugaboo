@@ -2,9 +2,9 @@ import { t } from "@bugaboo/messages";
 import { FilePicker, partOf, part } from "@bugaboo/ui";
 
 import { FileRows } from "./FileRows.tsx";
-import { useFileLimit, useIssueFiles } from "./files.ts";
+import { useIssueFiles } from "./files.ts";
 import { TransferRows } from "./TransferRows.tsx";
-import { transfers, useTransfers } from "./transfers.ts";
+import { useAddFiles, useTransfers } from "./transfers.ts";
 
 /**
  * The files of a comment, in the same rows as the *Files* block, under the text of the comment.
@@ -22,7 +22,7 @@ export function CommentFiles({
   const list = useIssueFiles(issue);
   const sending = useTransfers({ issue, comment });
   const items = (list.data?.items ?? []).filter((each) => each.comment === comment);
-  const limit = useFileLimit(issue);
+  const add = useAddFiles(issue, comment);
   if (items.length === 0 && sending.length === 0 && !mayAdd) {
     return null;
   }
@@ -32,12 +32,7 @@ export function CommentFiles({
       <TransferRows items={sending} />
       {mayAdd ? (
         <div {...partOf(part.row)}>
-          <FilePicker
-            chooseLabel={t("files.add-to-comment")}
-            onFiles={(files) => {
-              transfers.add({ issue, comment }, files, limit);
-            }}
-          />
+          <FilePicker chooseLabel={t("files.add-to-comment")} onFiles={add} />
         </div>
       ) : null}
     </div>

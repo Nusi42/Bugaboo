@@ -6,12 +6,11 @@ import { waitsBetweenTries } from "./transfer.ts";
 import { createTransfers, type Transfer, type Transfers } from "./transfers.ts";
 
 const target = { issue: "WEB-1", comment: null } as const;
-const LIMIT = 25 * 1024 * 1024;
 
 /** Transfers on a fake server that never waits; `refreshed` counts the reads of the list after a file. */
 function setUp(failures: readonly (Readonly<ApiError> | undefined)[] = []) {
   const server = fakeUploads(failures);
-  const refreshed = vi.fn<() => Promise<void>>(() => Promise.resolve());
+  const refreshed = vi.fn<() => void>();
   const transfers = createTransfers({
     transport: server.transport,
     wait: () => Promise.resolve(),
@@ -44,7 +43,7 @@ const isRefused = (transfers: Transfers) => () => {
 describe("att_01 files on their way", () => {
   it("sends a file and takes it off the list, and the list of files is read again", async () => {
     const { transfers, refreshed, server } = setUp();
-    transfers.add(target, [file()], LIMIT);
+    transfers.add(target, [file()]);
     await vi.waitFor(() => {
       expect(refreshed).toHaveBeenCalledTimes(1);
     });
@@ -54,7 +53,7 @@ describe("att_01 files on their way", () => {
 
   it("refuses an empty file in words, with no upload to throw away", () => {
     const { transfers, server } = setUp();
-    transfers.add(target, [new File([], "empty.txt")], LIMIT);
+    transfers.add(target, [new File([], "empty.txt")]);
     expect(theTransfer(transfers).status).toBe("refused");
     transfers.dismiss(theTransfer(transfers).id);
     expect(server.cancelled).toEqual([]);
@@ -65,7 +64,7 @@ describe("att_01 files on their way", () => {
 describe("att_01 a transfer that was lost", () => {
   it("is kept with its upload, and goes on with that upload when tried again", async () => {
     const { transfers, server } = setUp(lostAfterTheFirstPart());
-    transfers.add(target, [file()], LIMIT);
+    transfers.add(target, [file()]);
     await vi.waitFor(isRefused(transfers));
     const lost = theTransfer(transfers);
     expect(lost.canRetry).toBe(true);
@@ -84,7 +83,7 @@ describe("att_01 a transfer that was lost", () => {
 
   it("throws its upload away when it is closed", async () => {
     const { transfers, server } = setUp(lostAfterTheFirstPart());
-    transfers.add(target, [file()], LIMIT);
+    transfers.add(target, [file()]);
     await vi.waitFor(isRefused(transfers));
     transfers.dismiss(theTransfer(transfers).id);
     expect(transfers.snapshot()).toEqual([]);
@@ -98,7 +97,7 @@ describe("att_01 a transfer that was refused", () => {
   it("throws its upload away at once when the refusal leaves it open", async () => {
     const full = new ApiError(507, problem("file.no_room", 507));
     const { transfers, server } = setUp([full]);
-    transfers.add(target, [file()], LIMIT);
+    transfers.add(target, [file()]);
     await vi.waitFor(isRefused(transfers));
     expect(theTransfer(transfers).canRetry).toBe(false);
     await vi.waitFor(() => {

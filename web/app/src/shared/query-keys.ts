@@ -272,14 +272,15 @@ export function refreshMailServer(): void {
   refreshRoutes(["/api/v1/mail", "/api/v1/settings"]);
 }
 
-/** A field of an issue changed: its history shows the change the moment it was made. */
-export function refreshIssueHistory(): void {
-  reread({ queryKey: queryKeys.history.all });
+/** A file was added, deleted or brought back: the list of files and the history (M4-F50) are read again. */
+export function refreshIssueFiles(): void {
+  refreshHistory();
+  refreshReads(["/api/v1/issues/{issue}/files"]);
 }
 
-/** A comment was written, changed or deleted, or a follower came or went: the history is read again. */
+/** A field, a comment, a file or a follower changed: the history shows it the moment it was made. */
 export function refreshHistory(): void {
-  refreshIssueHistory();
+  reread({ queryKey: queryKeys.history.all });
   reread({ queryKey: queryKeys.followers.all });
   refreshRoutes(["/api/v1/issues/{issue}/follow", "/api/v1/comments/{comment}/versions"]);
 }

@@ -1,6 +1,5 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
-import { useFileLimit } from "./files.ts";
 import { transfers } from "./transfers.ts";
 
 /** The files a person chose for a comment they have not posted yet. */
@@ -14,12 +13,10 @@ export interface ChosenFiles {
 
 /**
  * The files for a comment that is being written (UX §4.4): they wait on the device, and go to the
- * comment as soon as it is posted, because a comment has an ID only then. The limit of the
- * project is read once, for the words that refuse a file that is too big.
+ * comment as soon as it is posted, because a comment has an ID only then.
  */
 export function useChosenFiles(issue: string): ChosenFiles {
   const [files, setFiles] = useState<readonly File[]>([]);
-  const limit = useFileLimit(issue);
   return {
     files,
     add: (more) => {
@@ -29,7 +26,7 @@ export function useChosenFiles(issue: string): ChosenFiles {
       setFiles((all) => all.filter((each) => each !== file));
     },
     sendTo: (comment) => {
-      transfers.add({ issue, comment }, files, limit);
+      transfers.add({ issue, comment }, files);
       setFiles([]);
     },
   };
@@ -38,21 +35,4 @@ export function useChosenFiles(issue: string): ChosenFiles {
 /** What tells one chosen file from another in a list: the same file may be chosen twice. */
 export function chosenKey(file: File, at: number): string {
   return [file.name, file.size, file.lastModified, at].join("-");
-}
-
-/**
- * Where the files pasted into the box of an existing comment go: to that comment, as if they were
- * added with *Add files* under it.
- */
-export function useFilesToComment(
-  issue: string,
-  comment: string,
-): (files: readonly File[]) => void {
-  const limit = useFileLimit(issue);
-  return useCallback(
-    (files) => {
-      transfers.add({ issue, comment }, files, limit);
-    },
-    [issue, comment, limit],
-  );
 }
