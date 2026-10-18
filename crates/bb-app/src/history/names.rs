@@ -19,6 +19,8 @@ pub(crate) struct KnownNames {
     shown: Option<Shown>,
     types: Option<BTreeMap<IssueTypeId, String>>,
     labels: Option<BTreeSet<String>>,
+    /// Names that only labels of groups the reader may not know have.
+    hidden_labels: BTreeSet<String>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -62,7 +64,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The labels of `names` that the reader may know: those in a group of labels they may know,
-    /// or in none. A name that no label has any more is left out too.
+    /// or in none, and those no label has any more (a label that was combined or deleted: nothing
+    /// is left to say which group it was in). A name that only labels of groups the reader may not
+    /// know have is left out.
     pub(super) async fn label_names_for(
         &self,
         reading: &mut Reading<'_>,
@@ -79,18 +83,20 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .into_iter()
                 .map(|group| group.id)
                 .collect();
-            reading.names.labels = Some(
-                labels
-                    .into_iter()
-                    .filter(|label| label.group.is_none_or(|group| known.contains(&group)))
-                    .map(|label| label.name)
-                    .collect(),
-            );
+            let (seen, unseen): (Vec<_>, Vec<_>) = labels
+                .into_iter()
+                .partition(|label| label.group.is_none_or(|group| known.contains(&group)));
+            let seen: BTreeSet<String> = seen.into_iter().map(|label| label.name).collect();
+            reading.names.hidden_labels = unseen
+                .into_iter()
+                .map(|label| label.name)
+                .filter(|name| !seen.contains(name))
+                .collect();
+            reading.names.labels = Some(seen);
         }
-        let known = reading.names.labels.as_ref();
         Ok(names
             .into_iter()
-            .filter(|name| known.is_some_and(|known| known.contains(name)))
+            .filter(|name| !reading.names.hidden_labels.contains(name))
             .collect())
     }
 }
