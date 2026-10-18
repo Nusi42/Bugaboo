@@ -27,13 +27,14 @@ export const messages = {
   "many-changes.line-changes": "{field}: {after}",
   "many-changes.line-relation": "This issue · {name} · {issue}",
   "many-changes.line-delete": "Is deleted",
-  "many-changes.note-type-not-used": "{type} is not used in {project}. The issue keeps it.",
+  "many-changes.note-type-not-used": "{project} does not offer {type}. The issue keeps it.",
   "many-changes.background-note":
     "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
   "many-changes.result-done":
     "{changed, plural, =0 {No issue was} one {# issue was} other {# issues were}} changed{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
   "many-changes.progress-label": "How far the change is",
-  "many-changes.progress": "{done} of {total} issues done",
+  "many-changes.progress":
+    "{total, plural, one {{done} of # issue done} other {{done} of # issues done}}",
   "many-changes.stopped": "The change stopped. Some issues are changed and the rest are not.",
   "many-changes.skipped-list": "Issues that were skipped",
   "many-changes.skipped-line": "{issue}: {reason}",

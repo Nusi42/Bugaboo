@@ -28822,6 +28822,17 @@
               }
             ]
           },
+          "issue_ids_failed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLabelBody",
+                "description": "Giving the issues of a project their new IDs gave up: the project, as the person may name\nit."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "kind": {
             "$ref": "#/components/schemas/NotificationKind",
             "description": "What the notification is about."
@@ -30330,6 +30341,17 @@
                     {
                       "$ref": "#/components/schemas/IssueRef",
                       "description": "The issue it is about, when the person may see it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "issue_ids_failed": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectLabelBody",
+                      "description": "Giving the issues of a project their new IDs gave up: the project, as the person may name\nit."
                     },
                     {
                       "type": "null"

@@ -11,6 +11,7 @@ use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
 
+use crate::access::ProjectLabel;
 use crate::comments::CommentView;
 use crate::history::{FieldChangeView, HistoryWhat};
 use crate::relations::IssueLine;
@@ -54,6 +55,12 @@ pub enum NotificationWhat {
         run: EntityId,
         /// Whether it ended well: `false` for a run that failed.
         done: bool,
+    },
+    /// Giving the issues of a project their new IDs gave up; the person who asked for the new mode
+    /// is told to try again in the project settings.
+    IssueIdsFailed {
+        /// The project, as the person may name it.
+        project: ProjectLabel,
     },
     /// Something about the issue that the person has no words for here (a mention of a comment
     /// that is gone, an assignment): the kind says what it is.

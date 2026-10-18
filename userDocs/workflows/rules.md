@@ -1,8 +1,8 @@
 # Rules of a status change
 
-A status change can have four rules. One judge decides every status change with them: the issue page, the status button, [changing many issues](../issues/change-many.md) and *Try it* all get the same answer, and so does every other way into Bugaboo.
+A status change can have four rules. Bugaboo checks every status change the same way, wherever it happens: the issue page, the status button, [changing many issues](../issues/change-many.md) and *Try it* all get the same answer.
 
-- **Who can do it.** The roles, the groups, *the person assigned* and *the person who reported it* who may carry out the change. A change that names nobody is for everybody who may change the issue.
+- **Who can do it.** The roles, the groups, *the person it is assigned to* and *the person who reported it* who may carry out the change. A change that names nobody is for everybody who may change the issue.
 - **Only if …** Something that must be true first: a field has a value, or has none. The words are the same as for *Must be filled in*. A change refused for this reason says that something else must be true first, and names the field when you may see it.
 - **Must be filled in.** Fields that need a value before the change. The change is offered with those fields, and a change that leaves one empty is refused at that field with *Must be filled in*.
 - **Ask for.** Fields shown in a small form during the change. The change is offered with those fields, and the change has to carry them.
