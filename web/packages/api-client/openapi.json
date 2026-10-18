@@ -12159,7 +12159,7 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "manage-workflows"
+        "x-permission": "check-access"
       }
     },
     "/api/v1/issues/{issue}/sub-issues": {

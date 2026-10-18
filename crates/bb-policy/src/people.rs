@@ -76,6 +76,14 @@ impl Evaluation {
         MANAGERS.iter().any(|permission| self.allows(*permission))
     }
 
+    /// Whether the viewer is shown which roles the people of a project hold (*Who sees people* for
+    /// project members is at least *Role only*). The one answer for every screen that names the
+    /// roles of people: *Who may change*, *Try it*.
+    #[must_use]
+    pub fn may_know_roles_of_people(&self) -> bool {
+        self.kind_level(PeopleKind::ProjectMembers) >= PeopleLevel::RoleOnly
+    }
+
     /// How the viewer sees people of `kind` here. The viewer's level is the most open of their
     /// roles; in a management screen a person who manages people or roles always sees names.
     #[must_use]

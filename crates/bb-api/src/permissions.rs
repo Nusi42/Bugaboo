@@ -583,7 +583,7 @@ pub const ROUTES: &[Route] = &[
     ),
     route(
         "tryWorkflow",
-        Declared::Permission(Permission::ManageWorkflows),
+        Declared::Permission(Permission::CheckAccess),
         Answer::NeverStored,
     ),
     route(

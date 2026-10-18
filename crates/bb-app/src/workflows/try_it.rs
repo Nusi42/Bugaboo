@@ -5,10 +5,9 @@
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
-use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::access::FieldLevel;
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
-use bb_core::people_kinds::PeopleKind;
 use bb_core::workflow::judge::{Verdict, Why};
 use bb_policy::{Authorized, Permission, Place};
 
@@ -57,19 +56,10 @@ pub async fn try_workflow<S: AuthStore>(
     // It tells as much about a person as *Check access*, so it asks for it too, and keeps to the
     // same gate on people as *Who may change* (*Who sees people*).
     ctx.require(&actor, Permission::CheckAccess, place).await?;
-    if held.kind_level(PeopleKind::ProjectMembers) < PeopleLevel::RoleOnly {
+    if !held.may_know_roles_of_people() {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
-    ctx.store()
-        .person(input.person)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let theirs = ctx.evaluate(input.person, place).await?;
-    // Like *Check access*: whoever does not manage people reads the people who have a role there.
-    if !held.manages_people() && theirs.roles().is_empty() {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    }
+    let theirs = ctx.person_to_check(&held, input.person, place).await?;
     let chain = held.chain().to_vec();
     let directory = ctx.workflow_directory().await?;
     let workflow = directory.in_force(&chain, Some(issue.issue_type));

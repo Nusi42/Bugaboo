@@ -359,7 +359,13 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("publishWorkflow", &[Quirk::AtTheTargetProject]),
     Example::with("previewPublishWorkflow", &[Quirk::AtTheTargetProject]),
     Example::with("deleteWorkflow", &[Quirk::AtTheTargetProject]),
-    Example::with("tryWorkflow", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "tryWorkflow",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            Quirk::AlsoNeeds(Permission::ManageWorkflows),
+        ],
+    ),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
     Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),
     Example::with("createIssue", &[Quirk::NeedsToSeeTheProject]),
