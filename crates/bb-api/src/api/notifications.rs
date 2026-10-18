@@ -39,6 +39,7 @@ use super::relations::IssueRef;
 use crate::errors::{ApiError, ApiJson, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 use bb_app::history::FieldChangeView;
+use bb_core::history::FileEvent;
 
 const NOTIFICATIONS_LIST: &str = "notifications";
 
@@ -59,7 +60,7 @@ const NOTIFICATION_FIELDS: [FieldSpec; 31] = [
     FieldSpec::by_default("run"),
     FieldSpec::by_default("run_done"),
     FieldSpec::by_default("issue_ids_failed"),
-    FieldSpec::by_default("file_added"),
+    FieldSpec::by_default("file_event"),
     FieldSpec::by_default("file_name"),
     FieldSpec::by_default("field"),
     FieldSpec::by_default("field_name"),
@@ -120,10 +121,10 @@ pub(crate) struct NotificationEntry {
     /// it.
     #[serde(skip_serializing_if = "Option::is_none")]
     issue_ids_failed: Option<ProjectLabelBody>,
-    /// A file was added to the issue.
+    /// A file of the issue: what happened to it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    file_added: Option<bool>,
-    /// A file was added: its name, when the file is still there.
+    file_event: Option<FileEvent>,
+    /// A file of the issue: its name, when the file is still there.
     #[serde(skip_serializing_if = "Option::is_none")]
     file_name: Option<String>,
     /// A change: the key of the field.
@@ -194,7 +195,7 @@ fn start(item: &NotificationItem) -> NotificationEntry {
         run: None,
         run_done: None,
         issue_ids_failed: None,
-        file_added: None,
+        file_event: None,
         file_name: None,
         field: None,
         field_name: None,
@@ -262,9 +263,9 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
             entry.issue_ids_failed = Some(ProjectLabelBody::from(project));
             vec![entry]
         }
-        NotificationWhat::File { name } => {
+        NotificationWhat::File { event, name } => {
             let mut entry = start(item);
-            entry.file_added = Some(true);
+            entry.file_event = Some(*event);
             entry.file_name.clone_from(name);
             vec![entry]
         }
@@ -562,7 +563,7 @@ mod tests {
             run: Some(String::new()),
             run_done: Some(true),
             issue_ids_failed: Some(ProjectLabelBody::from(&ProjectLabel::Hidden)),
-            file_added: Some(true),
+            file_event: Some(FileEvent::Added),
             file_name: Some(String::new()),
             field: Some(String::new()),
             field_name: Some(String::new()),

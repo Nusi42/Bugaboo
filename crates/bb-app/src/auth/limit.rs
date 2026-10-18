@@ -79,7 +79,15 @@ pub(crate) const SECOND_STEP_TRIES: u32 = 10;
 /// The key under which the wrong codes of a half-finished sign-in are counted. Only a finished
 /// second step clears it.
 pub(crate) fn person_key(person: UserId) -> String {
-    format!("person:{person}")
+    purpose_key(PERSON_PURPOSE, &person)
+}
+
+/// The purpose of the tries that count against a person at sign-in.
+const PERSON_PURPOSE: &str = "person";
+
+/// The one way a key of the limit is written: what the tries are for, and whom they count against.
+fn purpose_key(purpose: &str, counted_against: &impl std::fmt::Display) -> String {
+    format!("{purpose}:{counted_against}")
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -122,17 +130,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .network
             .as_ref()
             .map_or_else(|| "unknown".to_owned(), ToString::to_string);
-        let key = format!("{NETWORK_KEY_PREFIX}{purpose}:{network}");
-        let tipped = self
-            .services
-            .limiter
-            .reserve(&key)
-            .map_err(|retry_after| AppError::Limited { retry_after })?;
-        Ok(Slot {
-            key,
-            network: None,
-            tipped,
-        })
+        self.reserve_alone(format!(
+            "{NETWORK_KEY_PREFIX}{}",
+            purpose_key(purpose, &network)
+        ))
     }
 
     /// Reserves a try of one person for a purpose (`handle`): the tries that are refused count
@@ -143,7 +144,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         purpose: &str,
         person: UserId,
     ) -> Result<Slot, AppError> {
-        let key = format!("{purpose}:{person}");
+        self.reserve_alone(purpose_key(purpose, &person))
+    }
+
+    /// Reserves a try of `key` alone: no network is counted besides it.
+    fn reserve_alone(&self, key: String) -> Result<Slot, AppError> {
         let tipped = self
             .services
             .limiter

@@ -13,7 +13,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::id::{IssueTypeId, LabelGroupId, ProjectId};
 use bb_core::issue::IssueType;
-use bb_core::tags::LabelGroup;
+use bb_core::tags::{Label, LabelGroup};
 
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -31,6 +31,13 @@ fn needs_use(shown: &Shown, owner: Option<ProjectId>) -> bool {
 /// it.
 fn is_known(shown: &Shown, owner: Option<ProjectId>, used: bool) -> bool {
     !needs_use(shown, owner) || used
+}
+
+/// Whether a label is known, given the groups of labels the person may know: it is in no group, or
+/// in one of them. The one definition of it, for the lists, the changes that name a label and the
+/// history.
+pub(crate) fn label_is_known(group: Option<LabelGroupId>, known: &[LabelGroup]) -> bool {
+    group.is_none_or(|group| known.iter().any(|each| each.id == group))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -130,6 +137,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .into_iter()
             .filter(|found| is_known(shown, found.project, used.contains(&found.id)))
             .collect())
+    }
+
+    /// Refuses (`resource.not_found`) a label that is in a group of labels the person may not
+    /// know: a label of a group nobody told them about is as good as not there.
+    pub(crate) async fn ensure_label_known(
+        &self,
+        actor: &Actor,
+        label: &Label,
+    ) -> Result<(), AppError> {
+        match label.group {
+            Some(group) => self.known_group(actor, group).await.map(|_| ()),
+            None => Ok(()),
+        }
     }
 
     /// The issue types a list holds: those the person may know, and, in a list about a project, only

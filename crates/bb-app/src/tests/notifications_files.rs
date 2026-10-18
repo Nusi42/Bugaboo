@@ -1,5 +1,6 @@
 //! Adding a file to an issue and the notifications (NTF-01, ADR-0033 §1): the followers hear of it.
 
+use bb_core::history::FileEvent;
 use bb_core::notification::NotificationKind;
 
 use super::notifications::{Crew, kinds};
@@ -54,7 +55,7 @@ async fn ntf_01_adding_a_file_tells_the_followers_and_not_the_one_who_added_it()
     let heard = crew.heard(&ada).await?;
     assert_eq!(kinds(&heard), [NotificationKind::FollowedActivity]);
     assert!(
-        matches!(&heard[0].what, NotificationWhat::File { name: Some(name) } if name == "jam.txt"),
+        matches!(&heard[0].what, NotificationWhat::File { event: FileEvent::Added, name: Some(name) } if name == "jam.txt"),
         "{:?}",
         heard[0].what
     );

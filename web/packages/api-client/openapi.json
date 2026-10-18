@@ -28802,13 +28802,20 @@
             "type": ["string", "null"],
             "description": "A change of an own field: its name."
           },
-          "file_added": {
-            "type": ["boolean", "null"],
-            "description": "A file was added to the issue."
+          "file_event": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FileEvent",
+                "description": "A file of the issue: what happened to it."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "file_name": {
             "type": ["string", "null"],
-            "description": "A file was added: its name, when the file is still there."
+            "description": "A file of the issue: its name, when the file is still there."
           },
           "html": {
             "type": ["string", "null"],
@@ -30335,13 +30342,20 @@
                   "type": ["string", "null"],
                   "description": "A change of an own field: its name."
                 },
-                "file_added": {
-                  "type": ["boolean", "null"],
-                  "description": "A file was added to the issue."
+                "file_event": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FileEvent",
+                      "description": "A file of the issue: what happened to it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "file_name": {
                   "type": ["string", "null"],
-                  "description": "A file was added: its name, when the file is still there."
+                  "description": "A file of the issue: its name, when the file is still there."
                 },
                 "html": {
                   "type": ["string", "null"],

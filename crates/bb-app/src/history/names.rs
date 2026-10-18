@@ -17,6 +17,7 @@ use serde_json::Value;
 use super::read::{Member, Reading};
 use super::types::ChangeValue;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::offers::label_is_known;
 use crate::projects::Shown;
 use crate::tags::{EventLabel, event_labels};
 
@@ -123,15 +124,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             let groups = self.store().label_groups().await.map_err(failed)?;
             let every = groups.len();
             let shown = self.shown_for(reading).await?;
-            let known: BTreeSet<LabelGroupId> = self
-                .known_groups(shown, groups)
-                .await?
-                .into_iter()
-                .map(|group| group.id)
-                .collect();
+            let known_groups = self.known_groups(shown, groups).await?;
+            let known: BTreeSet<LabelGroupId> = known_groups.iter().map(|group| group.id).collect();
             let (seen, unseen): (Vec<_>, Vec<_>) = held
                 .into_iter()
-                .partition(|label| label.group.is_none_or(|group| known.contains(&group)));
+                .partition(|label| label_is_known(label.group, &known_groups));
             let known_names: BTreeSet<String> = seen.into_iter().map(|label| label.name).collect();
             let hidden_names = unseen
                 .into_iter()

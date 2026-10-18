@@ -5,6 +5,7 @@
 //! and an issue they may not see any more is not named: the notification is left out whole.
 
 use bb_core::edit::NoticeKind;
+use bb_core::history::FileEvent;
 use bb_core::id::{CommentId, EntityId, NotificationId};
 use bb_core::notification::{NotificationFilter, NotificationKind};
 use bb_policy::{Masked, PersonRef};
@@ -64,6 +65,8 @@ pub enum NotificationWhat {
     },
     /// A file was added to the issue (not to a comment: that is part of the comment).
     File {
+        /// What happened to the file.
+        event: FileEvent,
         /// The name of the file, read from the file itself; none once the file is gone for good.
         name: Option<String>,
     },

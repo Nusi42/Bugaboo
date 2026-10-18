@@ -5825,9 +5825,8 @@ export interface components {
       field_kind?: components["schemas"]["FieldType"] | null;
       /** @description A change of an own field: its name. */
       field_name?: string | null;
-      /** @description A file was added to the issue. */
-      file_added?: boolean | null;
-      /** @description A file was added: its name, when the file is still there. */
+      file_event?: components["schemas"]["FileEvent"] | null;
+      /** @description A file of the issue: its name, when the file is still there. */
       file_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this person. */
       html?: SafeHtml;
@@ -6460,9 +6459,8 @@ export interface components {
         field_kind?: components["schemas"]["FieldType"] | null;
         /** @description A change of an own field: its name. */
         field_name?: string | null;
-        /** @description A file was added to the issue. */
-        file_added?: boolean | null;
-        /** @description A file was added: its name, when the file is still there. */
+        file_event?: components["schemas"]["FileEvent"] | null;
+        /** @description A file of the issue: its name, when the file is still there. */
         file_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this person. */
         html?: SafeHtml;

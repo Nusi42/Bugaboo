@@ -26,5 +26,6 @@ pub use store::OfferStore;
 pub use types::*;
 
 pub(crate) use here::{Here, Standing};
+pub(crate) use known::label_is_known;
 pub(crate) use place::{GroupOffers, ensure_type_takes_issues_in, group_offers_in};
 pub(crate) use subject::Subject;

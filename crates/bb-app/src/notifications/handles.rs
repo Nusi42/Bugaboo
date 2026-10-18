@@ -26,6 +26,9 @@ use crate::projects::Why;
 use crate::store_macros::{reads, writes};
 use bb_core::event::{Actor as EventActor, FieldChange};
 
+/// What the refused tries of a handle are counted for (`Ctx::reserve_for_person`).
+const TRIES_PURPOSE: &str = "handle";
+
 /// How many people without a handle one round of making them reads.
 const MISSING_AT_ONCE: u64 = 100;
 
@@ -180,7 +183,7 @@ pub async fn change_handle<S: AuthStore>(
     if changed_lately(changed, ctx.now()) {
         return Err(ErrorCode::HandleChangedLately.into());
     }
-    let slot = ctx.reserve_for_person("handle", person)?;
+    let slot = ctx.reserve_for_person(TRIES_PURPOSE, person)?;
     let owner = ctx
         .store()
         .person_with_handle(&handle)

@@ -108,6 +108,23 @@ pub(crate) fn followed_kind(visible: &[&FieldChange]) -> Option<NotificationKind
     }
 }
 
+/// The kinds a follower could be told a change as, before the fields they may see are known: the
+/// kind of all the changes, and the kind of the changes without the status (a reader who may not
+/// see the status). The one place that works out what [`followed_kind`] could say.
+pub(crate) fn possible_followed_kinds(changes: &[FieldChange]) -> Vec<NotificationKind> {
+    let all: Vec<&FieldChange> = changes.iter().collect();
+    let without_status: Vec<&FieldChange> = changes
+        .iter()
+        .filter(|change| change.field != Field::Status.code())
+        .collect();
+    let mut kinds: Vec<NotificationKind> = [followed_kind(&all), followed_kind(&without_status)]
+        .into_iter()
+        .flatten()
+        .collect();
+    kinds.dedup();
+    kinds
+}
+
 #[cfg(test)]
 mod tests {
     use bb_core::id::SequentialIds;

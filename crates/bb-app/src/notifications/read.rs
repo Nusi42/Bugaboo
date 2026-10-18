@@ -12,6 +12,7 @@ use bb_core::ErrorCode;
 use bb_core::comment::Comment;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::files::Attachment;
+use bb_core::history::FileEvent;
 use bb_core::id::{AttachmentId, CommentId, EntityId, IssueId, NotificationId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
@@ -30,6 +31,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal};
+use crate::files::is_listed;
 use crate::files::member as file_member;
 use crate::history::ChangeReader;
 use crate::member::notifications as member;
@@ -260,13 +262,20 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Ok(None);
                 };
                 if let Some(file) = file_of(row) {
-                    // Whoever sees the issue sees its files; the name is the one the file has now.
-                    let name = reading
+                    // Whoever sees the issue sees its files (the file is read as `visible_attachment`
+                    // reads it); a file that is gone or in the trash is no news. The name is the one
+                    // the file has now.
+                    let Some(found) = reading
                         .files
                         .get(&file)
-                        .filter(|found| found.deleted_at.is_none())
-                        .map(|found| found.name.clone());
-                    return Ok(Some(NotificationWhat::File { name }));
+                        .filter(|found| is_listed(found, false))
+                    else {
+                        return Ok(None);
+                    };
+                    return Ok(Some(NotificationWhat::File {
+                        event: FileEvent::Added,
+                        name: Some(found.name.clone()),
+                    }));
                 }
                 if let Some(comment) = comment_of(row) {
                     let found = reading

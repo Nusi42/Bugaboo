@@ -23,6 +23,7 @@ mod store;
 mod types;
 mod upload;
 
+pub(crate) use attachments::is_listed;
 pub use attachments::{delete_attachment, file_rules, issue_files, restore_attachment};
 pub use download::download;
 pub use file_store::{

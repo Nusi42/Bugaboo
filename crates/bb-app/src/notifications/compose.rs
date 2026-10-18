@@ -9,6 +9,7 @@
 use bb_core::app_paths;
 use bb_core::edit::NoticeKind;
 use bb_core::fields::Field;
+use bb_core::history::FileEvent;
 use bb_core::message::{self, Message};
 use bb_core::notification::{MAIL_ENTRIES_MAX, MAIL_TEXT_MAX, NotificationKind};
 use bb_core::text::{plain_line, plain_text};
@@ -139,6 +140,19 @@ fn news() -> String {
     sentence_of(&Message::from(message::NOTIFICATIONS_NEWS))
 }
 
+/// The sentence of the history for a file that was added, deleted or brought back.
+fn file_message(event: FileEvent, name: Option<&str>, by: Option<&PersonRef>) -> Message {
+    let who = who(by);
+    match (event, name) {
+        (FileEvent::Added, Some(name)) => message::history_file_added(clean(name), who),
+        (FileEvent::Added, None) => message::history_file_added_unnamed(who),
+        (FileEvent::Deleted, Some(name)) => message::history_file_deleted(clean(name), who),
+        (FileEvent::Deleted, None) => message::history_file_deleted_unnamed(who),
+        (FileEvent::Restored, Some(name)) => message::history_file_restored(clean(name), who),
+        (FileEvent::Restored, None) => message::history_file_restored_unnamed(who),
+    }
+}
+
 fn lines_about(
     by: Option<&PersonRef>,
     what: &NotificationWhat,
@@ -184,10 +198,9 @@ fn lines_about(
                 }
             })]
         }
-        (NotificationWhat::File { name }, _) => vec![sentence_of(&match name {
-            Some(name) => message::history_file_added(clean(name), who(by)),
-            None => message::history_file_added_unnamed(who(by)),
-        })],
+        (NotificationWhat::File { event, name }, _) => {
+            vec![sentence_of(&file_message(*event, name.as_deref(), by))]
+        }
         (NotificationWhat::Plain, NotificationKind::Assigned) => {
             vec![sentence_of(&message::notifications_assigned(who(by)))]
         }

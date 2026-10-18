@@ -21,7 +21,6 @@ use std::sync::Arc;
 
 use bb_core::comment::Mention;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, FieldChange, RecordKind};
-use bb_core::fields::Field;
 use bb_core::id::{CommentId, EntityId, IssueId, JobId, NotificationId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
@@ -34,7 +33,9 @@ use bb_policy::Evaluation;
 use serde_json::json;
 
 use super::mail::MailJob;
-use super::plan::{edit_note_of, followed_kind, newly_assigned, run_status_of, wants};
+use super::plan::{
+    edit_note_of, followed_kind, newly_assigned, possible_followed_kinds, run_status_of, wants,
+};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
 use crate::files::member as file_member;
@@ -110,20 +111,9 @@ fn may_hear(
     changes: &[FieldChange],
     mail_on: bool,
 ) -> bool {
-    let kinds: &[NotificationKind] = match (&kind, changes.is_empty()) {
-        (Some(kind), _) => std::slice::from_ref(kind),
-        (None, true) => &[],
-        (None, false)
-            if changes
-                .iter()
-                .any(|change| change.field == Field::Status.code()) =>
-        {
-            &[
-                NotificationKind::FollowedActivity,
-                NotificationKind::FollowedFields,
-            ]
-        }
-        (None, false) => &[NotificationKind::FollowedFields],
+    let kinds = match kind {
+        Some(kind) => vec![kind],
+        None => possible_followed_kinds(changes),
     };
     kinds
         .iter()
@@ -627,13 +617,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Keeps::VisibleFields => visible,
                 Keeps::All => subject.event.changes.clone(),
                 Keeps::Nothing => Vec::new(),
-                Keeps::File => subject
-                    .event
-                    .changes
-                    .iter()
-                    .filter(|change| change.field == file_member::FILE)
-                    .cloned()
-                    .collect(),
+                // Only the mark that the row is about a file, with no value: the hash of the content
+                // is nothing a notification needs to keep.
+                Keeps::File => vec![FieldChange {
+                    field: file_member::FILE.to_owned(),
+                    before: None,
+                    after: None,
+                }],
             };
             for kind in &hear.kinds {
                 let kind = match kind {

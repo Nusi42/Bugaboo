@@ -3,6 +3,7 @@
 //! sentence of the screen from its key and compare.
 
 use bb_core::edit::NoticeKind;
+use bb_core::history::FileEvent;
 use bb_core::id::SequentialIds;
 use bb_core::message::{self, Message};
 use bb_core::notification::NotificationKind;
@@ -241,6 +242,7 @@ fn ntf_02_a_file_added_is_worded_as_the_history_words_it() {
         lines_about(
             Some(&ana()),
             &NotificationWhat::File {
+                event: FileEvent::Added,
                 name: name.map(str::to_owned),
             },
             NotificationKind::FollowedActivity,
