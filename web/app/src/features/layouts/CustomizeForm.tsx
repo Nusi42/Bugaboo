@@ -11,7 +11,7 @@ function usedNow(editor: Schema<"LayoutEditorBody">): string {
     organization: t("layouts.inherited-organization"),
     hidden: t("layouts.inherited-hidden"),
     project: (project) => t("layouts.inherited-project", { project }),
-    type: (type) => t("layouts.inherited-type", { type }),
+    type: (type) => t("issue-type.only-for", { type }),
   });
 }
 

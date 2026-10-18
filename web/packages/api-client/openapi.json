@@ -28822,6 +28822,10 @@
               }
             ]
           },
+          "issue_ids_failed": {
+            "type": ["boolean", "null"],
+            "description": "Giving the issues of a project their new IDs gave up."
+          },
           "kind": {
             "$ref": "#/components/schemas/NotificationKind",
             "description": "What the notification is about."
@@ -30335,6 +30339,10 @@
                       "type": "null"
                     }
                   ]
+                },
+                "issue_ids_failed": {
+                  "type": ["boolean", "null"],
+                  "description": "Giving the issues of a project their new IDs gave up."
                 },
                 "kind": {
                   "$ref": "#/components/schemas/NotificationKind",

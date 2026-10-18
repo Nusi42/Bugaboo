@@ -538,7 +538,7 @@ sort by priority, highest first</div>
       <li>Grouped by issue or document, newest first: <i>"WEB-142 · Ana mentioned you · Ben changed the status"</i>.</li>
       <li>Each one has <i>Open</i> (jumps to the exact comment or change) and <i>Mark as read</i>.</li>
       <li><i>Customize</i> (top right) opens the notification settings directly: one row for each kind of event, each with <i>In the app</i> and <i>By e-mail</i> (ADR-0033). At the start you hear of mentions and of being assigned in the app and by e-mail, and of status changes, comments and files on issues you follow in the app only. You never hear of your own changes.</li>
-      <li>Filters on top: <i>All</i>, <i>Unread</i>, <i>Mentions</i>. The start page shows the newest unread notifications instead of the old <i>Mentions</i> block.</li>
+      <li>Filters on top: <i>All</i>, <i>Unread</i>, <i>Mentions</i>. The start page shows your newest unread notifications.</li>
       <li>E-mails say the issue ID and title, who changed what and the comment, only with what you may see, and a link. Changes to one issue within 5 minutes come in one e-mail. With <i>Short e-mails</i>, an organization leaves out all issue text.</li>
       <li>The notification of a run of many changes says how it ended and links to its result.</li>
     </ul>
@@ -721,11 +721,11 @@ sort by priority, highest first</div>
       <li>Each setting has a one-line explanation under its name.</li>
       <li><b>Where each setting appears</b> (the first part of its key decides; every setting has exactly one place):
         <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Settings</th><th>Menu item</th></tr></thead><tbody>
-          <tr><td><code>auth.sign-up-*</code></td><td>People › People, next to <i>Invite</i> (who can make their own account)</td></tr>
+          <tr><td><code>auth.sign-up-*</code></td><td>People › People, next to <i>Invite</i> (who can create their own account)</td></tr>
           <tr><td><code>security.session-*</code>, <code>security.two-step-required</code>, <code>auth.access-key-*</code></td><td>People › Sign-in rules (how long people stay signed in, two-step sign-in for everybody, how long access keys live)</td></tr>
           <tr><td><code>appearance.*</code> (the organization's defaults)</td><td>Look › Themes</td></tr>
         </tbody></table></div>
-        Two-step sign-in for one role is not a setting: it is the switch on the role page. A later topic (<code>mail.*</code>, <code>ai.*</code>, …) names its menu item here when it comes.</li>
+        Two-step sign-in for one role is not a setting: it is the switch on the role page. The settings of e-mail (<code>mail.*</code>) are on Connections › E-mail &amp; notifications. A later topic (<code>ai.*</code>, …) names its menu item here when it comes.</li>
       <li>A setting an administrator locked shows <i>Set by your organization</i> on lower levels, read-only, with the reason; <i>Reset to default</i> takes away the value set on this level.</li>
     </ul>
 
@@ -787,9 +787,9 @@ sort by priority, highest first</div>
 
     <h3 id="s5-4"><button type="button" class="sec" data-sec>§5.4</button>Workflow editor <span class="ids">WF</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Workflow for Bugs · plain list (default)</div><div class="frame-body"><div class="scr">
-      <div class="wfrow"><span class="muted">From</span><span class="pill st-ns">Open</span><span class="muted">you can go to:</span><span class="btn sm">In progress · "Start working"</span><span class="btn sm">Done · "Won't fix"</span></div>
-      <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">In progress</span><span class="muted">you can go to:</span><span class="btn sm">Testing · "Send to testing"</span><span class="btn sm">Open · "Stop working on it"</span></div>
-      <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">Testing</span><span class="muted">you can go to:</span><span class="btn sm">Done · "Mark as done"</span><span class="btn sm">In progress · "Send back to work"</span></div>
+      <div class="wfrow"><span class="muted">From</span><span class="pill st-ns">Open</span><span class="muted">you can go to:</span><span class="btn sm">In progress · "Start working"</span><span class="btn sm">Won't fix · "Close as won't fix"</span></div>
+      <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">In progress</span><span class="muted">you can go to:</span><span class="btn sm">Testing · "Send to testing"</span><span class="btn sm">Open · "Stop working"</span></div>
+      <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">Testing</span><span class="muted">you can go to:</span><span class="btn sm">Done · "Mark as done"</span><span class="btn sm">In progress · "Back to work"</span></div>
       <div class="wfrow u-border-bottom-0"><span class="muted">From</span><span class="pill st-done">Done</span><span class="muted">you can go to:</span><span class="btn sm">Open · "Reopen"</span></div>
     </div></div></div></div>
     <ul>

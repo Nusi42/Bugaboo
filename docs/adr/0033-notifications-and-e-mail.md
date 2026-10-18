@@ -18,8 +18,8 @@ Since M3, Bugaboo stores who follows an issue, who is mentioned, and the notes o
   | You are mentioned | on | on |
   | You are assigned | on | on |
   | A status change, a comment or a file on an issue you follow | on | off |
-  | Other changes to fields of issues you follow | off | off |
-  | Your run of many changes ended | on | off |
+  | Other changes to issues you follow | off | off |
+  | Your change to many issues has ended | on | off |
   | *Ask … to finish* and *Edit anyway* on your text | on | off |
 
 - A person is never told about their own changes.

@@ -24,7 +24,7 @@ The notifications are grouped by issue. The issue with the newest notification c
 - **Open** goes to the issue and to the exact comment or change. The comment or change is marked.
 - **Mark as read** takes one notification off the unread ones. **Mark all as read** does it for all of them.
 - **All**, **Unread** and **Mentions** at the top choose what the list shows.
-- **Customize**, at the top right, opens the settings of notifications.
+- **Customize**, at the top right, opens [Notification settings](customize.md).
 
 A notification that tells you a change to many issues has ended has **Show the result**.
 
@@ -32,7 +32,7 @@ The page shows the newest first and **Show earlier** adds older ones. Notificati
 
 ## The start page
 
-The start page shows the newest unread notifications, in place of the old *Mentions* block. **Show all notifications** goes to the page.
+The start page shows your newest unread notifications. **Show all notifications** goes to the page.
 
 ## Keeping up
 

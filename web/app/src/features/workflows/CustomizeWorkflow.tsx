@@ -11,7 +11,7 @@ function usedNow(editor: WorkflowEditor): string {
     organization: t("workflows.uses-organization", { name }),
     hidden: t("workflows.uses-hidden", { name }),
     project: (project) => t("workflows.uses-project", { name, project }),
-    type: (type) => t("workflows.uses-type", { type }),
+    type: (type) => t("issue-type.only-for", { type }),
   });
 }
 

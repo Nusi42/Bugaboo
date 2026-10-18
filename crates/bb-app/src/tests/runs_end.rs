@@ -99,10 +99,7 @@ async fn ntf_01_a_renewal_of_issue_ids_that_died_tells_the_person_who_changed_th
     crew.world.ctx().renewal_gave_up(&payload).await?;
     let told = crew.heard(&crew.carol.session_token).await?;
     assert_eq!(told.len(), 1, "{told:?}");
-    assert!(matches!(
-        told[0].what,
-        NotificationWhat::RunEnded { done: false, .. }
-    ));
+    assert!(matches!(told[0].what, NotificationWhat::IssueIdsFailed));
     assert!(crew.heard(&crew.bob.session_token).await?.is_empty());
     Ok(())
 }

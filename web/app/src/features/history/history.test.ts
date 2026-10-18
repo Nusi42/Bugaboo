@@ -53,7 +53,7 @@ describe("iss_06 the history in plain sentences", () => {
       changeSentence(change({ field: "priority", before_text: "normal", after_text: "critical" })),
     ).toBe("Ben changed Priority from Normal to Critical");
     expect(changeSentence(change({ field: "status", after_text: "in-progress" }))).toBe(
-      "Ben set Status to In progress",
+      "Ben set Status: In progress",
     );
   });
 
@@ -99,7 +99,7 @@ describe("iss_06 values the screen words itself", () => {
       ),
     ).toBe("Ben changed Billable from No to Yes");
     expect(changeSentence(change({ ...own, field_kind: "duration", after_value: 5400 }))).toBe(
-      "Ben set Billable to 1h 30m",
+      "Ben set Billable: 1h 30m",
     );
   });
 });
@@ -182,7 +182,7 @@ describe("tag_01 tags, labels and a move in the history", () => {
   it("says a tag was set when there were none, and cleared when the last one went", () => {
     expect(
       changeSentence(change({ field: "tags", before_names: [], after_names: ["login"] })),
-    ).toBe("Ben set Tags to login");
+    ).toBe("Ben set Tags: login");
     expect(
       changeSentence(change({ field: "tags", before_names: ["login"], after_names: [] })),
     ).toBe("Ben cleared Tags");

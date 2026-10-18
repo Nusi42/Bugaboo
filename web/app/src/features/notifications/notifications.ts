@@ -107,6 +107,9 @@ export function sentencesOf(row: NotificationRow): readonly string[] {
     return [editNoticeSentence(row, who)];
   }
   if (row.kind === "run_ended") {
+    if (row.entries.some((entry) => entry.issue_ids_failed === true)) {
+      return [t("notifications.issue-ids-failed")];
+    }
     return [
       row.entries.some((entry) => entry.run_done === false)
         ? t("notifications.run-failed")

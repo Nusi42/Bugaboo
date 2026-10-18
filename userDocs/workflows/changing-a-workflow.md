@@ -4,13 +4,11 @@ You find the editor under **Organization settings › Workflows**, and in the se
 
 Under **Try it** you pick an issue and a person and see which status changes they would get, and why not the others.
 
-A workflow is changed as a whole, under the **edit lock** that the person holds (the same lock as for descriptions and layouts), on the version they looked at. Until **Publish**, the changes are a draft that only the editor sees; two people cannot change one workflow at once, and a person who is told that somebody changed it first can look again.
+A workflow is changed as a whole, by one person at a time, as for descriptions and layouts: while you edit, others see *… is editing*. You change the version you looked at. Until **Publish**, the changes are a draft that only the editor sees; two people cannot change one workflow at once, and a person who is told that somebody changed it first can look again.
 
 ## Publish
 
-*Publish* replaces the statuses, the status changes and their rules by what was sent, and counts the version up. A workflow must have at least one status, names must differ, every status change must go between two statuses of the workflow, and a status change cannot go to the status it starts from.
-
-A new status gets its key from its name. A status change names a new status by its name.
+*Publish* makes your changes count for everybody. A workflow must have at least one status, names must differ, every status change must go between two statuses of the workflow, and a status change cannot go to the status it starts from.
 
 You can name in a rule only the fields you may see in that place and the groups you know. Rules that are in the workflow already stay as they are.
 
@@ -22,4 +20,4 @@ Taking a workflow away, or switching a place to another workflow, is refused whi
 
 ## Try it
 
-*Try it* picks an issue and a person and tells which status changes the person would get, and why not the others: the answer of the judge for each status change from the status the issue is in. It needs the permission **Manage workflows** in the project of the issue. A change whose rules name a field you may not see is answered with *Cannot be filled in*, and nothing about the field.
+*Try it* picks an issue and a person and tells which status changes the person would get, and why not the others: the answer for each status change from the status the issue is in. It needs the permission **Manage workflows** in the project of the issue. A change whose rules name a field you may not see is answered with *This status change needs a field that you cannot fill in…*, and nothing about the field.

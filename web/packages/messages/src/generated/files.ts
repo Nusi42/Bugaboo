@@ -24,7 +24,7 @@ export const messages = {
   "files.empty": "{name} is empty, so it was not added.",
   "files.lost": "The connection was lost, and {name} was not sent.",
   "files.not-added": "{name} was not added. {reason}",
-  "files.add-to-comment": "Add files",
+  "files.add-to-comment": "Upload files",
   "files.for-comment": "Files that go with the comment",
   "files.take-out": "Take {name} out",
   "files.take-out-short": "Take out",
