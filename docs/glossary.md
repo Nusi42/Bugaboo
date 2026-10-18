@@ -65,7 +65,7 @@ Rules:
 | **Retire**               | Stop offering a choice, label, issue type or field for new issues while old issues keep it | archive, deprecate (in UI) |
 | **Look** (of a field)    | How a field's value is shown: *Badge, Pill, Plain text, Progress bar, Avatar* | display style, renderer |
 | **Label group**          | A named group of labels (*area*, *platform*); a bare *Group* always means people | category (for labels) |
-| **Pick one group**       | A group of labels of which an issue can have only one (*area: login* or *area: billing*) | exclusive group, mutually exclusive |
+| **Label group to pick one from** | A label group of which an issue can have only one label (*area: login* or *area: billing*); the screens say *Pick one* on its switch | pick one group, exclusive group, mutually exclusive |
 | **Comment**              | What people write under an issue; it can be changed later, and its earlier versions are kept | note (for this), reply |
 | **Mention**              | Naming a person, group or role in a text with `@`, so they find it under *Mentions* | ping, tag (for people) |
 | **History** (of an issue) | The comments and changes of an issue in time order, with the tabs *Everything · Comments · Changes*; changes to fields you can't see are left out | activity (for this), audit log (in UI), timeline (for this) |
@@ -84,7 +84,7 @@ Rules:
 | **Only if …**            | Rule: something that must be true first                            | condition                          |
 | **Must be filled in**    | Rule: fields that need a value first. The box is named *Customer (required)*, and a refusal says *Must be filled in* at that box | validator                          |
 | **Ask for**              | Fields shown in a small form during the status change              | transition screen                  |
-| **Starting workflow**    | The workflow every issue type used before M4: *Open*, *In progress*, *Done*, and any status can follow any other. Since M4 it is the starter workflow *Simple* | default workflow (in UI) |
+| **Starting workflow** (docs only, before M4) | The workflow every issue type used before M4: *Open*, *In progress*, *Done*, and any status can follow any other. Since M4 the UI says *starter workflow*: the workflows that come with Bugaboo, such as *Simple* | default workflow (in UI) |
 | **Starter workflows**    | The workflows a new organization starts with, as copies it may change: *Simple*, *Bug* (with *Testing* and *Won't fix*) and *Development* (with *In review* and *Testing*) | template, scheme (in UI) |
 | **Publish** (a workflow) | Make the changed workflow count; until then the changes are a draft only the editor sees | deploy, activate (in UI) |
 | **Try it** (a workflow)  | Pick an issue and a person and see which status changes they would get, and why | simulate, dry run (in UI) |
@@ -150,7 +150,7 @@ Rules:
 | **Attachment**           | A file added to an issue or comment                                | —                                  |
 | **Version**              | A saved state of a page or file                                    | revision                           |
 | **Lock for editing**     | Stop others from changing a file while you work on it              | check out / check in               |
-| **… is editing**         | Shown when someone else is changing a long text right now (*"Ana is editing the description"*) | locked by, checked out by |
+| **… is editing**         | Shown when someone else is changing a long text right now (*"Ana is editing the description"*); the screens and the user docs never say *lock* for it | locked by, checked out by |
 | **Edit anyway**          | Take over a long text someone else is editing; they keep their unsaved text | force unlock, steal lock |
 | **Saving… / Saved / Not saved yet** | The three save states shown next to a change            | syncing, persisted, dirty          |
 | **Compare and save**     | See your text next to the newer version, then choose what to keep  | merge conflict, resolve conflict   |
@@ -189,7 +189,7 @@ Rules:
 | **Session**              | One place where you are signed in, for example one browser. *Where you're signed in* lists them and lets you end any | login session, token (in UI) |
 | **Where you're signed in** | The list of your sessions, with the browser, the system and when each was last used | active sessions, devices, logins |
 | **Sign up**              | Ask for your own account without an invitation, when an administrator allows it and e-mail is on: an e-mail with a link goes to your address, and opening it lets you choose your name and password | register, registration, self-service signup |
-| **Invitation**           | A link an administrator makes so that one person can make their account; it works once and runs out after 7 days | invite code, signup token |
+| **Invitation**           | A link an administrator creates so that one person can create their account; it works once and runs out after 7 days | invite code, signup token |
 | **Passkey**              | A way to sign in with your device (fingerprint, face or screen lock) instead of typing a password; can also be the second step | security key, WebAuthn, FIDO (in UI) |
 | **Code app**             | An app on your phone that shows a new six-digit code every 30 seconds; the first kind of second step | authenticator, authenticator app, OTP app, TOTP (in UI) |
 | **Second step**          | The check after the password: a code from the code app, a backup code or a passkey | verification step, challenge, factor |
@@ -221,7 +221,7 @@ Rules:
 | **My settings**          | Personal preferences                                               | profile settings, preferences      |
 | **Project settings**     | Settings of one project                                            | project admin                      |
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
-| **Reset to default**     | Take away the value set at this level, so the value from above counts again | clear override (in UI) |
+| **Reset to default**     | Take away the value set at this level, so the value from above counts again; also for a workflow or a layout that a place has of its own (it follows the project above again) | clear override, use the inherited … again (in UI) |
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
 | **Layout**               | Which fields appear where: on the *issue page*, in the *new-issue form*, on a *card* | screen, screen scheme      |
 | **Section**              | A titled group of fields in a layout; sections with the same *tab* are shown together under it | panel, block (in a layout) |
@@ -267,8 +267,12 @@ Rules:
 | **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |
 | **Notifications**        | Messages about things you follow or that involve you               | inbox, alerts                      |
 | **Mark as read**         | Take a notification off the unread ones                            | dismiss, acknowledge (in UI)       |
-| **Customize** (notifications) | Choose for each kind of event whether you hear of it in the app, by e-mail or not at all | subscription settings (in UI) |
+| **Customize**            | On *Notifications*: opens *Notification settings*. On a workflow or a layout: create a copy for this place that you can change | subscription settings (in UI) |
+| **Notification settings** | The page under *My settings* where you choose, for each kind of event, whether you hear of it in the app, by e-mail, in both or not at all | subscriptions, alert settings (in UI) |
 | **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
+| **E-mail & notifications** | The organization settings page where an administrator enters the mail server, sends a test e-mail and switches e-mail on | mail settings, SMTP (in UI) |
+| **Test e-mail**          | One e-mail that an administrator sends to themselves (*Send me a test e-mail*) to see that the mail server works | try it (for e-mail) |
+| **Link**                 | A web address that you open, in an e-mail or on a screen (to an issue, or to finish creating an account) | address (for a link) |
 | **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments) | — |
 | **Handle**               | A person's short unique name for mentions (`@ana.brandt`), changeable in *My settings* | username, nick (in UI) |
 

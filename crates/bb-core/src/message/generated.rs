@@ -10320,7 +10320,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.issue.type-not-offered",
-        "This project does not use that issue type. Choose another type or ask who looks after the project.",
+        "This project does not offer that issue type. Choose another type, or ask the project lead.",
     ),
     (
         "error.issue.type-retired",
@@ -10328,7 +10328,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.label.not-offered",
-        "This project does not use the group that label is in. Choose another label or ask who looks after labels.",
+        "This project does not offer the label group of that label. Choose another label, or ask who looks after labels.",
     ),
     (
         "error.label.pick-one-conflict",
@@ -10340,7 +10340,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.mail.insecure",
-        "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
+        "The mail server is set to send its user name or password without encryption to another computer. Switch encryption on, or use a mail server on this computer.",
     ),
     (
         "error.mail.off",
@@ -10352,7 +10352,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.mail.unavailable",
-        "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
+        "Bugaboo could not reach the mail server. Check the mail server, its port and the connection, then try again.",
     ),
     (
         "error.name.taken",
@@ -10716,7 +10716,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.used-types", "Issue types: {names}"),
     ("fields.value-of", "Value of {name}"),
     ("fields.yes", "Yes"),
-    ("files.add-to-comment", "Add files"),
+    ("files.add-to-comment", "Upload files"),
     ("files.added", "{size} · Added by {who}, {when}"),
     ("files.delete", "Delete"),
     ("files.delete-named", "Delete {name}"),
@@ -10943,7 +10943,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You can look after this server. Organization settings shows what you may do there.",
     ),
     ("home.title", "Welcome, {name}"),
-    ("invitation.ask-again", "Ask for a new link"),
+    ("invitation.ask-again", "Send me a new link"),
     (
         "invitation.incomplete",
         "This link is not complete. Open the whole link that you were sent.",
@@ -11328,7 +11328,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "labels.project-create-intro",
-        "A group created here is offered in this project and below.",
+        "A label group created here is offered in this project and below.",
     ),
     (
         "labels.project-create-label-intro",
@@ -11340,13 +11340,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "labels.project-create-title",
-        "Create a group of labels for this project",
+        "Create a label group for this project",
     ),
     (
         "labels.project-intro",
-        "Switch off the groups of labels this project does not use. Labels already on an issue stay on it.",
+        "Switch off the label groups this project does not offer. Labels already on an issue stay on it.",
     ),
-    ("labels.project-list", "Groups of labels of the project"),
+    ("labels.project-list", "Label groups of the project"),
     ("labels.project-title", "Labels of {project}"),
     ("labels.retire", "Retire"),
     (
@@ -11499,11 +11499,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "mail-server.no-encryption-note",
-        "Without encryption, a user name or a password is only accepted when the mail server is on this machine.",
+        "Without encryption, a user name or a password is only accepted when the mail server is on this computer.",
     ),
     (
         "mail-server.password-help",
-        "It is stored encrypted and never shown again. Leave the box empty to keep the password you have. If you change the host, the port or the user name, the password is removed: a new mail server needs its password again.",
+        "It is stored encrypted and never shown again. Leave the box empty to keep the password you have. If you change the mail server, the port or the user name, the password is removed: a new mail server needs its password again.",
     ),
     ("mail-server.password-new", "New password"),
     ("mail-server.password-none", "No password is set."),
@@ -11525,7 +11525,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Bugaboo sends one e-mail to your address, {email}, through the mail server as you saved it.",
     ),
     ("mail-server.test-send", "Send me a test e-mail"),
-    ("mail-server.test-title", "Try it"),
+    ("mail-server.test-title", "Test e-mail"),
     (
         "mail-server.test-wait",
         "You can send another test e-mail in {seconds, plural, one {# second} other {# seconds}}.",
@@ -11558,14 +11558,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail.line-taken-over",
         "{who} took over the editing. What you wrote is kept as your draft.",
     ),
-    ("mail.open", "Open it in Bugaboo: {address}"),
+    ("mail.open", "Link to the issue: {address}"),
     (
         "mail.sign-up-exists-subject",
         "Bugaboo: you already have an account",
     ),
     (
         "mail.sign-up-exists-text",
-        "Somebody, probably you, tried to sign up with this address, but it has an account already. Sign in here:\n\n{address}\n\nIf you did not do this, you do not need to do anything.",
+        "Somebody, probably you, tried to sign up with this e-mail address, but it has an account already. Sign in here:\n\n{address}\n\nIf you did not do this, you do not need to do anything.",
     ),
     (
         "mail.sign-up-subject",
@@ -11573,7 +11573,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "mail.sign-up-text",
-        "Open this address to choose your name and your password and finish creating your account. It works once, for {hours, plural, one {# hour} other {# hours}}.\n\n{address}\n\nIf you did not sign up, you do not need to do anything.",
+        "Open this link to choose your name and your password and finish creating your account. It works once, for {hours, plural, one {# hour} other {# hours}}.\n\n{address}\n\nIf you did not sign up, you do not need to do anything.",
     ),
     ("mail.subject", "Bugaboo: {issue} {title}"),
     (
@@ -11600,7 +11600,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "many-changes-skip.label-not-here",
-        "The project of the issue does not use the group that label is in",
+        "The project of the issue does not offer the label group of that label",
     ),
     (
         "many-changes-skip.limit-reached",
@@ -11685,7 +11685,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "many-changes.note-type-not-used",
-        "{type} is not used in {project}. The issue keeps it.",
+        "{project} does not offer {type}. The issue keeps it.",
     ),
     ("many-changes.progress", "{done} of {total} issues done"),
     ("many-changes.progress-label", "How far the change is"),
@@ -11776,12 +11776,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "notification.kind.followed-fields",
-        "Other changes to fields of an issue you follow",
+        "Other changes to issues you follow",
     ),
     ("notification.kind.mentioned", "You are mentioned"),
     (
         "notification.kind.run-ended",
-        "Your run of many changes has ended",
+        "Your change to many issues has ended",
     ),
     ("notifications.assigned", "{who} assigned this issue to you"),
     ("notifications.by-mail", "By e-mail"),
@@ -12576,10 +12576,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "creating the starting issue types and kinds of relation",
     ),
     ("sample.step.jobs", "running the jobs that were queued"),
-    (
-        "sample.step.labels",
-        "creating a group of labels or a label",
-    ),
+    ("sample.step.labels", "creating a label group or a label"),
     ("sample.step.levels", "setting what a role sees"),
     (
         "sample.step.notifications",
@@ -12958,7 +12955,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.sign-up-enabled.help",
-        "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the address they give, and the account is created only when they open the address in it, so this works only while e-mail is on.",
+        "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the e-mail address they give, and the account is created only when they open the link in it, so this works only while e-mail is on.",
     ),
     (
         "setting.auth.sign-up-enabled.name",
@@ -13026,7 +13023,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.mail.from.name", "Send e-mail from"),
     (
         "setting.mail.host.help",
-        "The host name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only the host name, without a path.",
+        "The name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only that name, without a path.",
     ),
     ("setting.mail.host.name", "Mail server"),
     (
@@ -13036,7 +13033,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.mail.port.name", "Mail server port"),
     (
         "setting.mail.security.help",
-        "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same machine or in a place you trust: the password and the e-mails would travel in the clear.",
+        "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same computer or in a place you trust: the password and the e-mails could be read on the way.",
     ),
     ("setting.mail.security.name", "Protect the connection"),
     ("setting.mail.security.off", "No encryption"),
@@ -13141,7 +13138,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.run-ended-by-mail.name",
-        "Your run of many changes has ended: by e-mail",
+        "Your change to many issues has ended: by e-mail",
     ),
     (
         "setting.notifications.run-ended-in-app.help",
@@ -13149,7 +13146,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.run-ended-in-app.name",
-        "Your run of many changes has ended: in the app",
+        "Your change to many issues has ended: in the app",
     ),
     (
         "setting.page.region-intro",
@@ -13469,7 +13466,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sign-up.check-text",
-        "If {email} can sign up here, we sent a link to it. Open the link to choose your name and your password. It works once, for {hours, plural, one {# hour} other {# hours}}.",
+        "If {email} can sign up here, Bugaboo sent a link to it. Open the link to choose your name and your password. It works once, for {hours, plural, one {# hour} other {# hours}}.",
     ),
     ("sign-up.check-title", "Check your e-mail"),
     (
@@ -13478,14 +13475,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("sign-up.have-account", "I already have an account"),
     ("sign-up.other-address", "Use another address"),
-    ("sign-up.resend", "Send a new link"),
+    ("sign-up.resend", "Send me a new link"),
     (
         "sign-up.resend-in",
         "You can ask for a new link in {minutes, plural, one {# minute} other {# minutes}}.",
     ),
     (
         "sign-up.resent",
-        "If {email} can sign up here, we sent a new link to it.",
+        "If {email} can sign up here, Bugaboo sent a new link to it.",
     ),
     ("sign-up.submit", "Send me an e-mail"),
     ("sign-up.title", "Create an account"),
@@ -13587,7 +13584,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.ask-for", "Ask for"),
     (
         "workflows.ask-for-help",
-        "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is long text with a lock of its own.",
+        "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is written on the issue page.",
     ),
     ("workflows.button-text", "Button text from {from} to {to}"),
     (
@@ -13716,18 +13713,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Pick an issue and a person to see which status changes they would get, and why.",
     ),
     ("workflows.try-title", "Try it"),
-    (
-        "workflows.use-inherited",
-        "Use the inherited workflow again",
-    ),
+    ("workflows.use-inherited", "Reset to default"),
     (
         "workflows.use-inherited-text",
-        "The workflow of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+        "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
     ),
-    (
-        "workflows.use-inherited-title",
-        "Use the inherited workflow again?",
-    ),
+    ("workflows.use-inherited-title", "Reset to default?"),
     (
         "workflows.uses-hidden",
         "These issues use the workflow {name}, which is set higher up.",
@@ -13742,7 +13733,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "workflows.uses-starting",
-        "These issues use the starting workflow {name}.",
+        "These issues use the starter workflow {name}.",
     ),
     ("workflows.uses-type", "It is only for {type}."),
     ("workflows.view", "View"),

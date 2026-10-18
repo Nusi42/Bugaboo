@@ -9,12 +9,12 @@ export const messages = {
   "workflows.uses-organization": "These issues use the workflow {name} of the whole organization.",
   "workflows.uses-project": "These issues use the workflow {name} of {project}.",
   "workflows.uses-hidden": "These issues use the workflow {name}, which is set higher up.",
-  "workflows.uses-starting": "These issues use the starting workflow {name}.",
+  "workflows.uses-starting": "These issues use the starter workflow {name}.",
   "workflows.uses-type": "It is only for {type}.",
-  "workflows.use-inherited": "Use the inherited workflow again",
-  "workflows.use-inherited-title": "Use the inherited workflow again?",
+  "workflows.use-inherited": "Reset to default",
+  "workflows.use-inherited-title": "Reset to default?",
   "workflows.use-inherited-text":
-    "The workflow of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+    "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
   "workflows.delete-held":
     "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
   "workflows.customize-project": "Customize for {project}",
@@ -64,7 +64,7 @@ export const messages = {
   "workflows.must-fill-help": "These fields need a value before the change can happen.",
   "workflows.ask-for": "Ask for",
   "workflows.ask-for-help":
-    "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is long text with a lock of its own.",
+    "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is written on the issue page.",
   "workflows.rules-done": "Done",
   "workflows.publish": "Publish",
   "workflows.draft-note": "These changes are a draft: they count only after you publish them.",

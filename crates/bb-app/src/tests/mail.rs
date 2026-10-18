@@ -167,7 +167,7 @@ async fn ntf_02_what_a_person_wrote_is_quoted_after_the_real_link_and_loses_what
     // The link of Bugaboo is the first line, before any text of a person.
     assert!(
         mail.text
-            .starts_with(&format!("Open it in Bugaboo: {PUBLIC_URL}/issues/")),
+            .starts_with(&format!("Link to the issue: {PUBLIC_URL}/issues/")),
         "{}",
         mail.text
     );
