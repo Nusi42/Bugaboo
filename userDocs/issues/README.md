@@ -21,7 +21,7 @@ Lists of issues come a page at a time. They never say how many issues there are,
 
 ## Status
 
-At the start every issue type uses the same three statuses: **Open**, **In progress** and **Done**. They belong to the groups *Not started*, *In progress* and *Done*, and any status can follow any other. When an issue moves into *Done* it gets its closed date; when it leaves *Done* the date goes.
+Each issue type has a workflow. At the start, Task and Goal use *Simple* (**Open**, **In progress**, **Done**), Bug uses *Bug* and Feature uses *Development*: see [Workflows](../workflows/README.md). The statuses belong to the groups *Not started*, *In progress* and *Done*. When an issue moves into *Done* it gets its closed date; when it leaves *Done* the date goes.
 
 ## Two people at once
 

@@ -14,9 +14,7 @@ Type `@` in a comment to name someone. Bugaboo offers people, groups and roles y
 
 - Naming a **group** or a **role** tells everyone in it.
 - What you may name follows *Who sees people*. If people may not see each other's names, for example as a guest, you can name a role but not a person. A name that cannot be resolved stays plain text.
-- Comments that name you are listed under **Mentions** on the start page, the unread ones first. **Mark as read** clears the *New* marks.
-
-Nothing is sent by e-mail yet, and there is no bell: that comes with the next version.
+- When a comment names you, you get a notification: see [Notifications](../notifications/notifications.md).
 
 ## History
 
