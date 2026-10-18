@@ -34,3 +34,4 @@ export {
   type OverlayName,
 } from "./overlay-state.ts";
 export { useNarrowSidebarWhile } from "./sidebar-state.ts";
+export { BarSlot } from "./bar-slot.ts";

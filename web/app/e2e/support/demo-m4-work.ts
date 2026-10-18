@@ -43,17 +43,5 @@ export async function theBugIsDone(page: Page): Promise<void> {
   await openTheBug(page);
   await chooseStatus(page, serverWord("workflow-change.mark-as-done"));
   await expectStatus(page, t("status.done"));
-  // The note that says what changed, with Undo, covers the buttons at the bottom of a phone for a
-  // while; the screen is looked at once it has gone.
-  await expect(
-    page.getByText(
-      t("issues.changed", { field: t("issue-field.status"), value: t("status.done") }),
-    ),
-  ).toBeHidden({ timeout: 20_000 });
-  // The bar at the bottom of a phone covers what scrolls under it, so a button of the page can be
-  // half under it wherever the page stops; at its end the bar covers only the history.
-  await page
-    .getByRole("textbox", { name: t("comments.write"), exact: true })
-    .scrollIntoViewIfNeeded();
   await good(page, "05-done");
 }

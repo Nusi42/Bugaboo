@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { applyWindowSize, resizeByKey, type ResizeKey } from "./use-window-resize.ts";
+import { notBelow } from "./window-size.ts";
 import { keyboardStep, type WindowElement, type WindowSize } from "./window-size.ts";
 import { firstShape, reduceShape, shapeAction } from "./window-shape.ts";
 
@@ -92,5 +93,13 @@ describe("ux_04 Ctrl and Alt with an arrow key resize a window by a step", () =>
     expect(set).toEqual([]);
     expect(other.prevented).toBe(false);
     expect(plain.prevented).toBe(false);
+  });
+});
+
+describe("ux_6_3 a window that is as tall as its content is not made taller by making it shorter", () => {
+  it("holds the smallest height, but not above the height the window began with", () => {
+    expect(notBelow({ width: 500, height: 100 }, 360, 700)).toEqual({ width: 500, height: 360 });
+    expect(notBelow({ width: 500, height: 150 }, 360, 220)).toEqual({ width: 500, height: 220 });
+    expect(notBelow({ width: 500, height: 900 }, 360, 700)).toEqual({ width: 500, height: 900 });
   });
 });

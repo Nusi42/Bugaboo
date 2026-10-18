@@ -1,11 +1,15 @@
 import { t } from "@bugaboo/messages";
+import { type Locator } from "@playwright/test";
 
 import { issueAddress, issuePanelAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
+import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
+import { chooseStatus } from "./support/issues.ts";
+import { serverWord } from "./support/server-words.ts";
 
 // The frames an issue opens in (UX §3.2, §3.3, §4.4, M3 WP-13): the side panel, the focus view and
 // the bar of a phone each say once what they have to say, and the buttons do what they name.
@@ -61,4 +65,34 @@ test("ux_04 on a phone the panel says Back to list, and the bar goes to the stat
     .getByRole("button", { name: t("issues.comment"), exact: true })
     .click();
   await expect(page.getByRole("textbox", { name: t("comments.write"), exact: true })).toBeFocused();
+});
+
+/** Where a place of the page starts and ends, from the top of the window. */
+function edgeOf(place: Locator): Promise<{ readonly top: number; readonly bottom: number }> {
+  return place.evaluate((element) => {
+    const { top, bottom } = element.getBoundingClientRect();
+    return { top, bottom };
+  });
+}
+
+test("ux_04 on a phone nothing of the page is under a bar, also when the issue is done and a note is up", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "phone", "only a phone has the bar");
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-3"));
+  await chooseStatus(page, serverWord("workflow-change.mark-as-done"));
+  // The note that says what changed, with Undo, is up now: it stands between the page and the bars.
+  const note = page.getByRole("status").filter({ hasText: t("common.undo") });
+  await expect(note).toBeVisible();
+  const bar = page.getByRole("toolbar", { name: t("issues.bar"), exact: true });
+  const pageEdge = await edgeOf(page.locator("main"));
+  const noteEdge = await edgeOf(note);
+  const barEdge = await edgeOf(bar);
+  // From the top: the page, then the note, then the bar. None covers another.
+  expect(pageEdge.bottom).toBeLessThanOrEqual(noteEdge.top);
+  expect(noteEdge.bottom).toBeLessThanOrEqual(barEdge.top);
+  // At the first place the page stands, no button is half under anything: axe checks the size of
+  // every target that is partly covered.
+  await expectGoodInEveryLook(page);
 });

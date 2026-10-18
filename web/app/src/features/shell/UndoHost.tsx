@@ -50,7 +50,7 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
  * instead of asking "Are you sure?". The region always exists, so screen readers announce a new
  * offer when it appears. The shortcut takes back the latest one.
  */
-export function UndoHost({ aboveBar = false }: { readonly aboveBar?: boolean }) {
+export function UndoHost({ inFlow = false }: { readonly inFlow?: boolean }) {
   const offers = useUndoOffers();
   useShortcuts(
     offers.length === 0
@@ -65,7 +65,7 @@ export function UndoHost({ aboveBar = false }: { readonly aboveBar?: boolean }) 
         },
   );
   return (
-    <div {...partOf(part.undoHost, { variants: [aboveBar && "above-bar"] })} role={politeStatus}>
+    <div {...partOf(part.undoHost, { variants: [inFlow && "in-flow"] })} role={politeStatus}>
       {offers
         .filter((offer) => offer.inline !== true)
         .map((offer) => (

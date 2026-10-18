@@ -115,7 +115,7 @@ tokens {
     size "size-col-person" "144px"
     size "size-col-labels" "160px"
     size "size-col-changed" "120px"
-    // A window (UX §6.3): it starts 760 wide, the smallest is 480 x 360, and the form follows its own width.
+    // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 480 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
     size "size-window" "760px"
     size "size-window-width-min" "480px"
     size "size-window-height-min" "360px"
@@ -1823,7 +1823,6 @@ part "overlay.modal[variant=window]" {
     width "min($window-width, 100%)"
     height "$window-height"
     min-width "min($size-window-width-min, 100%)"
-    min-height "min($size-window-height-min, 100%)"
     max-height "100%"
     border-radius "$r-card"
 }
@@ -3141,6 +3140,13 @@ part "app-layout.main" {
     padding "$space-4"
 }
 
+// What a phone shows under the page and above the bar of the app: the bar of the open issue. It is
+// a part of the column, not drawn over the page, so no part of the page is ever under it.
+part "app-layout.bar-slot" {
+    display flex
+    flex-direction column
+}
+
 part "app-layout.main:focus" {
     outline none
 }
@@ -3582,8 +3588,19 @@ part "undo-host.offer" {
     pointer-events auto
 }
 
-part "undo-host[variant=above-bar]" {
-    bottom "calc($size-bar + $space-4)"
+// On a phone the offers are not drawn over the page: they stand in the column of the app between the
+// page and the bars at the bottom, so they cover neither the page nor a bar, and the page above
+// them is a little shorter while there is one.
+part "undo-host[variant=in-flow]" {
+    position static
+    z-index auto
+    align-items stretch
+    gap 0
+}
+
+part "undo-host[variant=in-flow] undo-host.offer" {
+    margin "$space-2 $space-4 0"
+    max-width none
 }
 
 part "focus-view" {
@@ -3911,11 +3928,9 @@ part "issue-row.meta" {
     font-size "$fs-base"
 }
 
-// On a phone: the bar with the most used actions of an issue, above the bar of the app.
+// On a phone: the bar with the most used actions of an issue, in the slot above the bar of the app.
 part "issue-bar" {
     display flex
-    position sticky
-    bottom 0
     gap "$space-2"
     padding "$space-2"
     border-top "$border-width solid $border"
