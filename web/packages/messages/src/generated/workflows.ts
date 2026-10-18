@@ -64,7 +64,7 @@ export const messages = {
   "workflows.ask-for": "Ask for",
   "workflows.ask-for-help":
     "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is written on the issue page.",
-  "workflows.rules-done": "Close",
+  "workflows.rules-done": "Keep these rules",
   "workflows.publish": "Publish",
   "workflows.draft-note": "These changes are a draft: they count only after you publish them.",
   "workflows.lost":
