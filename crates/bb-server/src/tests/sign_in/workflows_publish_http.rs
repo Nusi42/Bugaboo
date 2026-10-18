@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_of, ok, text_in, version_of};
-use super::layouts_http::{AN_EDITOR, LOCKS};
+use super::workflows_http::lock_workflow;
 
 const WORKFLOWS: &str = "/api/v1/workflows";
 
@@ -71,21 +71,6 @@ async fn version_of_workflow(who: &mut Browser, site: &Site<'_>) -> Result<Value
         )
         .await?;
     Ok(ok(&editor)?["workflow"]["version"].clone())
-}
-
-/// The lock of the editor of the workflow, taken by `who`.
-async fn lock_for(who: &mut Browser, workflow: &str) -> Result<Value, Failure> {
-    let lock = who
-        .send(
-            "POST",
-            LOCKS,
-            Some(json!({
-                "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
-                "editor_id": AN_EDITOR,
-            })),
-        )
-        .await?;
-    Ok(ok(&lock)?["lock_token"].clone())
 }
 
 /// A workflow of *Open* and *Done* only.
@@ -162,7 +147,7 @@ async fn refused_for_an_issue(db: &TestDatabase, unseen: bool) -> Result<(), Fai
     }
     let before = state(&mut ada, &issue).await?;
     let version = version_of_workflow(&mut lead, &site).await?;
-    let lock = lock_for(&mut lead, &workflow).await?;
+    let lock = lock_workflow(&mut lead, &workflow).await?;
     let refused = lead
         .send(
             "PUT",
@@ -234,7 +219,7 @@ async fn wf_02_a_move_ignores_the_rules_of_the_old_change_and_closes_by_the_grou
         let workflow = own_workflow(&mut ada, &site).await?;
         // The old change into *Done* needs the description, which this issue lacks.
         let version = version_of_workflow(&mut ada, &site).await?;
-        let lock = lock_for(&mut ada, &workflow).await?;
+        let lock = lock_workflow(&mut ada, &workflow).await?;
         let needing = json!({
             "version": version,
             "lock_token": lock,
@@ -265,7 +250,7 @@ async fn wf_02_a_move_ignores_the_rules_of_the_old_change_and_closes_by_the_grou
         assert!(!refused.status.is_success(), "{}", refused.body);
         // The move of a publish follows no such rule, and closes the issue like *Done* does.
         let version = version_of_workflow(&mut ada, &site).await?;
-        let lock = lock_for(&mut ada, &workflow).await?;
+        let lock = lock_workflow(&mut ada, &workflow).await?;
         let moves = json!([{"from": "in-progress", "to": "done"}]);
         ok(&ada
             .send("PUT", &path, Some(publish(&version, &lock, moves)))
