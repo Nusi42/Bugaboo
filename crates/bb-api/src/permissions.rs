@@ -476,31 +476,11 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::Comment),
         Answer::NeverStored,
     ),
-    route(
-        "startUpload",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "getUpload",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::NeverStored,
-    ),
-    route(
-        "sendUploadPart",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "cancelUpload",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "finishUpload",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
+    route("startUpload", Declared::ByRecord, Answer::Ordinary),
+    route("getUpload", Declared::ByRecord, Answer::NeverStored),
+    route("sendUploadPart", Declared::ByRecord, Answer::Ordinary),
+    route("cancelUpload", Declared::ByRecord, Answer::Ordinary),
+    route("finishUpload", Declared::ByRecord, Answer::Ordinary),
     route(
         "listIssueFiles",
         Declared::Permission(Permission::SeeIssues),
@@ -511,16 +491,8 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
     ),
-    route(
-        "deleteAttachment",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "restoreAttachment",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
+    route("deleteAttachment", Declared::ByRecord, Answer::Ordinary),
+    route("restoreAttachment", Declared::ByRecord, Answer::Ordinary),
     route(
         "downloadFile",
         Declared::Permission(Permission::SeeIssues),

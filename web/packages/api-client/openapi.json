@@ -1244,7 +1244,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/attachments/{attachment}/restore": {
@@ -1343,7 +1343,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/auth/invitation/accept": {
@@ -12683,7 +12683,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/label-groups": {
@@ -22057,7 +22057,7 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       },
       "put": {
         "tags": ["files"],
@@ -22225,7 +22225,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       },
       "delete": {
         "tags": ["files"],
@@ -22305,7 +22305,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/uploads/{upload}/finish": {
@@ -22434,7 +22434,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/versions/check": {
