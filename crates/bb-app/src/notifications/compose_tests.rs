@@ -156,11 +156,27 @@ fn wp13_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
             NotificationKind::RunEnded,
             &region()
         ),
-        [format!(
-            "{}.",
-            Message::from(message::NOTIFICATIONS_ISSUE_IDS_FAILED_HIDDEN).render()
-        )]
+        ["Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more.".to_owned()]
     );
+}
+
+#[test]
+fn wp13_no_line_of_an_e_mail_ends_in_two_full_stops() {
+    let sentences = [
+        NotificationWhat::IssueIdsFailed {
+            project: ProjectLabel::Hidden,
+        },
+        NotificationWhat::Plain,
+        NotificationWhat::EditNotice {
+            notice: NoticeKind::TakenOver,
+            part: "description".to_owned(),
+        },
+    ];
+    for what in sentences {
+        for line in lines_about(Some(&ana()), &what, NotificationKind::Assigned, &region()) {
+            assert!(!line.contains(".."), "{line}");
+        }
+    }
 }
 
 #[test]
@@ -202,6 +218,31 @@ fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
         [format!(
             "{}.",
             Message::from(message::NOTIFICATIONS_NEWS).render()
+        )]
+    );
+}
+
+#[test]
+fn wp13_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue() {
+    let mut ids = SequentialIds::default();
+    let item = NotificationItem {
+        id: bb_core::id::NotificationId::generate(&mut ids).expect("an ID"),
+        kind: NotificationKind::RunEnded,
+        at: jiff::Timestamp::UNIX_EPOCH,
+        read: false,
+        issue: None,
+        comment: None,
+        by: None,
+        what: NotificationWhat::RunEnded {
+            run: bb_core::id::EntityId::from(bb_core::id::UserId::generate(&mut ids)),
+            done: true,
+        },
+    };
+    assert_eq!(
+        lines_of(&item, true, &region()),
+        [format!(
+            "{}.",
+            Message::from(message::NOTIFICATIONS_RUN_DONE).render()
         )]
     );
 }

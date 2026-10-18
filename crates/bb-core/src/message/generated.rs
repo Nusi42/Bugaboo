@@ -7384,15 +7384,6 @@ pub fn mail_footer(page: impl std::fmt::Display, settings: impl std::fmt::Displa
     )
 }
 
-/// The message `mail.line-mentioned`.
-#[must_use]
-pub fn mail_line_mentioned(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-mentioned"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
 /// The message `mail.open`.
 #[must_use]
 pub fn mail_open(address: impl std::fmt::Display) -> Message {
@@ -11524,7 +11515,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail.footer",
         "You get this e-mail because of your notification settings. You can change them in Bugaboo under {settings} › {page}.",
     ),
-    ("mail.line-mentioned", "{who} mentioned you in a comment:"),
     (
         "mail.line-more",
         "There is more than this e-mail holds. Open it in Bugaboo to read it all.",
@@ -11789,11 +11779,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.in-app", "In the app"),
     (
         "notifications.issue-ids-failed",
-        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again.",
+        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
     ),
     (
         "notifications.issue-ids-failed-hidden",
-        "Bugaboo could not give every issue of a project you cannot see its new ID.",
+        "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
     ),
     ("notifications.kind", "What happens"),
     (

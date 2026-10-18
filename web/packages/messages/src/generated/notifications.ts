@@ -32,9 +32,9 @@ export const messages = {
   "notifications.run-done": "Your change to many issues is done",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed":
-    "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again.",
+    "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
   "notifications.issue-ids-failed-hidden":
-    "Bugaboo could not give every issue of a project you cannot see its new ID.",
+    "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
   "notifications.show-result": "Show the result",
   "notifications.hide-result": "Hide the result",
   "notifications.show-all": "Show all notifications",
