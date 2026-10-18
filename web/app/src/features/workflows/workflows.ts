@@ -105,15 +105,26 @@ export function useDeleteWorkflow() {
   });
 }
 
-/** *Try it*: the status changes a person would get on an issue, and why not the others. */
-export function useTryIt() {
-  return useMutation({
-    mutationFn: async (input: { readonly issue: string; readonly person: string }) =>
-      dataOf(
-        await api.client.GET("/api/v1/issues/{issue}/status-changes", {
-          params: { path: { issue: input.issue }, query: { person: input.person } },
-        }),
-      ),
+/** What *Try it* was asked: an issue, by its readable ID, and a person. */
+export interface TryAsked {
+  readonly issue: string;
+  readonly person: string;
+}
+
+/**
+ * *Try it*: the status changes a person would get on an issue, and why not the others. It is a
+ * read, so it is a query: asked when the person asks, and kept like any other answer.
+ */
+export function useTried(asked: TryAsked | undefined) {
+  return useQuery({
+    ...api.query.queryOptions("get", "/api/v1/issues/{issue}/status-changes", {
+      params: {
+        path: { issue: asked?.issue ?? "" },
+        query: { person: asked?.person ?? "" },
+      },
+    }),
+    enabled: asked !== undefined,
+    retry: false,
   });
 }
 

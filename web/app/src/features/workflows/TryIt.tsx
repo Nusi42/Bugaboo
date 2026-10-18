@@ -6,7 +6,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { fieldNameOf } from "../../shared/field-names.ts";
 import { listText } from "../../shared/list-text.ts";
 import { PersonPicker } from "../access/index.ts";
-import { useTryIt, type Tried, type WorkflowEditor } from "./workflows.ts";
+import { useTried, type TryAsked, type Tried, type WorkflowEditor } from "./workflows.ts";
 
 type Verdict = Tried["changes"][number];
 
@@ -73,7 +73,8 @@ function Result({
 export function TryIt({ fields }: { readonly fields: WorkflowEditor["fields"] }) {
   const [issue, setIssue] = useState("");
   const [person, setPerson] = useState<string | undefined>();
-  const tried = useTryIt();
+  const [asked, setAsked] = useState<TryAsked | undefined>();
+  const tried = useTried(asked);
   return (
     <Card heading={t("workflows.try-title")}>
       <p {...partOf(part.muted)}>{t("workflows.try-text")}</p>
@@ -82,10 +83,17 @@ export function TryIt({ fields }: { readonly fields: WorkflowEditor["fields"] })
       <div {...partOf(part.row)}>
         <Button
           isDisabled={issue.trim() === "" || person === undefined}
-          isPending={tried.isPending}
+          isPending={tried.isFetching}
           onPress={() => {
-            if (person !== undefined) {
-              tried.mutate({ issue: issue.trim(), person });
+            if (person === undefined) {
+              return;
+            }
+            const next = { issue: issue.trim(), person };
+            // Asked again as it was: the answer is read again, as the rules may have changed.
+            if (asked?.issue === next.issue && asked.person === next.person) {
+              void tried.refetch();
+            } else {
+              setAsked(next);
             }
           }}
         >
@@ -93,8 +101,8 @@ export function TryIt({ fields }: { readonly fields: WorkflowEditor["fields"] })
         </Button>
       </div>
       {tried.isError ? <Alert tone={alertTone.danger}>{messageOf(tried.error)}</Alert> : null}
-      {tried.data === undefined ? null : (
-        <Result tried={tried.data} issue={issue.trim()} fields={fields} />
+      {tried.data === undefined || asked === undefined ? null : (
+        <Result tried={tried.data} issue={asked.issue} fields={fields} />
       )}
     </Card>
   );
