@@ -2201,6 +2201,9 @@ pub const LABELS_NONE_LABELS: MessageKey = MessageKey::new("labels.none-labels")
 /// The message `labels.none-tags`.
 pub const LABELS_NONE_TAGS: MessageKey = MessageKey::new("labels.none-tags");
 
+/// The message `labels.none-to-pick`.
+pub const LABELS_NONE_TO_PICK: MessageKey = MessageKey::new("labels.none-to-pick");
+
 /// The message `labels.nothing-to-add`.
 pub const LABELS_NOTHING_TO_ADD: MessageKey = MessageKey::new("labels.nothing-to-add");
 
@@ -7397,15 +7400,6 @@ pub fn mail_footer(page: impl std::fmt::Display, settings: impl std::fmt::Displa
     )
 }
 
-/// The message `mail.line-mentioned`.
-#[must_use]
-pub fn mail_line_mentioned(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-mentioned"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
 /// The message `mail.open`.
 #[must_use]
 pub fn mail_open(address: impl std::fmt::Display) -> Message {
@@ -11312,6 +11306,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.no-label-group", "No label group"),
     ("labels.none-labels", "No labels."),
     ("labels.none-tags", "No tags."),
+    ("labels.none-to-pick", "This project has no labels yet."),
     (
         "labels.nothing-to-add",
         "Every label is on this issue already.",
@@ -11483,7 +11478,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited", "Reset to default"),
     (
         "layouts.use-inherited-text",
-        "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
+        "The layout of this place is taken away. The place then uses the layout of the project above. This cannot be undone.",
     ),
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.many", "{start}, and {last}"),
@@ -11534,7 +11529,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail.footer",
         "You get this e-mail because of your notification settings. You can change them in Bugaboo under {settings} › {page}.",
     ),
-    ("mail.line-mentioned", "{who} mentioned you in a comment:"),
     (
         "mail.line-more",
         "There is more than this e-mail holds. Open it in Bugaboo to read it all.",
@@ -11799,11 +11793,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.in-app", "In the app"),
     (
         "notifications.issue-ids-failed",
-        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again.",
+        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
     ),
     (
         "notifications.issue-ids-failed-hidden",
-        "Bugaboo could not give every issue of a project you cannot see its new ID.",
+        "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
     ),
     ("notifications.kind", "What happens"),
     (
@@ -12559,7 +12553,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.step.dates", "working out the dates"),
     (
         "sample.step.editing",
-        "editing a text under a lock, or keeping a draft",
+        "editing a text while others see that you are editing it, or keeping a draft",
     ),
     ("sample.step.fields", "creating an own field"),
     (
@@ -13728,7 +13722,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.use-inherited", "Reset to default"),
     (
         "workflows.use-inherited-text",
-        "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+        "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status that the workflow of the project above does not have.",
     ),
     ("workflows.use-inherited-title", "Reset to default?"),
     (

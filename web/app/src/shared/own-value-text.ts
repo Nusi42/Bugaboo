@@ -35,6 +35,14 @@ function numberTextOf(value: unknown, region: Region): string | undefined {
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/u;
 
+/** A day that exists on the calendar: "2026-02-30" does not, and the browser would roll it over. */
+function isCalendarDay(value: string): boolean {
+  const moment = new Date(`${value}T00:00:00Z`);
+  return (
+    DAY.test(value) && !Number.isNaN(moment.getTime()) && moment.toISOString().startsWith(value)
+  );
+}
+
 /** A moment from the server; text that is no moment has no words (the browser would throw). */
 function momentTextOf(value: unknown, region: Region): string | undefined {
   return typeof value === "string" && !Number.isNaN(new Date(value).getTime())
@@ -48,11 +56,13 @@ const worded: Readonly<
 > = {
   "yes-no": (value) =>
     typeof value === "boolean" ? (value ? t("fields.yes") : t("fields.no")) : undefined,
-  duration: (value) => (typeof value === "number" ? durationText(value) : undefined),
+  duration: (value) => (typeof value === "number" && value >= 0 ? durationText(value) : undefined),
   "whole-number": numberTextOf,
   decimal: numberTextOf,
   date: (value, region) =>
-    typeof value === "string" && DAY.test(value) ? formatCalendarDay(value, region) : undefined,
+    typeof value === "string" && isCalendarDay(value)
+      ? formatCalendarDay(value, region)
+      : undefined,
   "date-time": momentTextOf,
   text: textOf,
   "long-text": textOf,

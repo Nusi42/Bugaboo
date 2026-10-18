@@ -126,7 +126,9 @@ fn change_line(by: Option<&PersonRef>, change: &FieldChangeView, region: &Region
 /// The lines about one notification: the sentences the screen says (`notifications.*`, the
 /// history), so the e-mail and the screen cannot say different things.
 fn lines_of(item: &NotificationItem, short: bool, region: &Region) -> Vec<String> {
-    if short {
+    // A short e-mail leaves out all issue text: what is about an issue says only that there is
+    // news. The end of a run and a failed renewal are about no issue and say what they say.
+    if short && item.issue.is_some() {
         return vec![news()];
     }
     lines_about(item.by.as_ref(), &item.what, item.kind, region)
@@ -144,14 +146,15 @@ fn lines_about(
     region: &Region,
 ) -> Vec<String> {
     match (what, kind) {
-        (NotificationWhat::Comment { comment }, NotificationKind::Mentioned) => vec![
-            message::mail_line_mentioned(who(by)).render(),
-            quoted(&comment.text),
-        ],
-        (NotificationWhat::Comment { comment }, _) => vec![
+        (NotificationWhat::Comment { comment }, kind) => vec![
             format!(
                 "{}{LEAD_IN}",
-                message::notifications_commented(who(by)).render()
+                if kind == NotificationKind::Mentioned {
+                    message::notifications_mentioned(who(by))
+                } else {
+                    message::notifications_commented(who(by))
+                }
+                .render()
             ),
             quoted(&comment.text),
         ],

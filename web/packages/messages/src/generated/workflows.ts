@@ -13,7 +13,7 @@ export const messages = {
   "workflows.use-inherited": "Reset to default",
   "workflows.use-inherited-title": "Reset to default?",
   "workflows.use-inherited-text":
-    "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+    "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status that the workflow of the project above does not have.",
   "workflows.delete-held":
     "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
   "workflows.customize-project": "Customize for {project}",

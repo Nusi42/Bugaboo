@@ -2,7 +2,9 @@ import { fieldTypeWords, settingChoices } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import vectors from "../../../../tools/testdata/value-words.json";
+import { changeValueText } from "./change-value.ts";
 import { plainWords } from "./format.ts";
+import { listText } from "./list-text.ts";
 import { ownValueText } from "./own-value-text.ts";
 import { deviceRegion, type Region } from "./region.ts";
 
@@ -52,6 +54,20 @@ describe("m4_f141 the screen words a value the way the e-mail does", () => {
   for (const vector of vectors.cases) {
     it(`gives ${vector.name} its words`, () => {
       expect(wordsFor(vector.kind, vector.value, vector.region)).toBe(vector.expected);
+    });
+  }
+});
+
+describe("m4_f141 a status, a priority and a list of names read the same in both", () => {
+  for (const word of vectors.words) {
+    it(`gives ${word.name} its word`, () => {
+      expect(changeValueText(word.field, { shown: "text", text: word.text })).toBe(word.expected);
+    });
+  }
+
+  for (const list of vectors.lists) {
+    it(`lists ${list.names.length} names`, () => {
+      expect(listText(list.names)).toBe(list.expected);
     });
   }
 });
