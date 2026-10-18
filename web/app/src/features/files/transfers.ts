@@ -4,7 +4,7 @@ import { useMemo, useSyncExternalStore } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { connection } from "./connection.ts";
-import { refreshFiles } from "./files.ts";
+import { refreshIssueFiles } from "../../shared/query-keys.ts";
 import { formatSize } from "./size.ts";
 import { isTemporary, sendFile, type Transport } from "./transfer.ts";
 import {
@@ -20,7 +20,7 @@ export type { Transfer, TransferStatus, TransferTarget } from "./transfer-store.
 export interface Dependencies {
   readonly transport: Transport;
   readonly wait: (milliseconds: number) => Promise<void>;
-  readonly refresh: () => Promise<void>;
+  readonly refresh: () => void;
 }
 
 /** The files on their way: one store for the whole app, so a transfer outlives its screen. */
@@ -132,7 +132,7 @@ async function sendOne(
       transfer.upload ?? undefined,
     );
     store.remove(transfer.id);
-    await deps.refresh();
+    deps.refresh();
   } catch (error) {
     refuse(deps, store, transfer, error);
   }
@@ -191,7 +191,7 @@ export const transfers: Transfers = createTransfers({
     new Promise((done) => {
       setTimeout(done, milliseconds);
     }),
-  refresh: refreshFiles,
+  refresh: refreshIssueFiles,
 });
 
 /** The files on their way to one target, as the screen of that target shows them. */

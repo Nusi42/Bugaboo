@@ -417,6 +417,15 @@ files = ["web/**/*.{ts,tsx}"]
 status = "active"
 
 [[check]]
+id = "ARCH-WEB-KEYS"
+title = "Query keys are written in shared/query-keys.ts only, and the browser tests take the sizes of files from the generated client"
+rule = "architecture §4 (browser app, one home for what several screens share)"
+tool = "xtask (reads web/app/src and web/app/e2e: no literal queryKey array outside query-keys.ts, no 1024 * 1024 in the end-to-end tests)"
+when = ["edit", "commit", "ci"]
+files = ["web/app/src/**/*.{ts,tsx}", "web/app/e2e/**/*.ts"]
+status = "active"
+
+[[check]]
 id = "ARCH-MAP-SYNC"
 title = "The module map in the architecture docs lists exactly the crates and packages that exist"
 rule = "architecture §4, COMP-06"

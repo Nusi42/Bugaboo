@@ -28,6 +28,7 @@ const VERSION_SOURCE: &str = "crates/bb-core/src/version.rs";
 const TIME_SOURCE: &str = "crates/bb-core/src/time.rs";
 const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
+const FILES_SOURCE: &str = "crates/bb-core/src/files.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -146,16 +147,30 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
     file.items
         .iter()
         .find_map(|item| match item {
-            syn::Item::Const(item) if item.ident == name => match &*item.expr {
-                syn::Expr::Lit(syn::ExprLit {
-                    lit: syn::Lit::Int(number),
-                    ..
-                }) => Some(number.base10_digits().to_owned()),
-                _ => None,
-            },
+            syn::Item::Const(item) if item.ident == name => {
+                number_of(&item.expr).map(|number| number.to_string())
+            }
             _ => None,
         })
         .with_context(|| format!("{path} has no `const {name}` that is a number"))
+}
+
+/// The value of a whole number written as a literal or as a product of literals (`4 * 1024 * 1024`).
+fn number_of(expr: &syn::Expr) -> Option<u128> {
+    match expr {
+        syn::Expr::Lit(syn::ExprLit {
+            lit: syn::Lit::Int(number),
+            ..
+        }) => number.base10_parse().ok(),
+        syn::Expr::Binary(syn::ExprBinary {
+            left,
+            op: syn::BinOp::Mul(_),
+            right,
+            ..
+        }) => number_of(left)?.checked_mul(number_of(right)?),
+        syn::Expr::Paren(inner) => number_of(&inner.expr),
+        _ => None,
+    }
 }
 
 /// The vocabularies the browser lists or recognizes at run time (a drop-down of icons, the words of
@@ -614,6 +629,26 @@ export const decimalParts = {parts};
 
 /** How many digits a decimal number of an own field has after the point. */
 export const decimalDigits = {digits};
+"
+    ))
+}
+
+/// The sizes of files that the server and the browser both name: how big one part of an upload is
+/// and what a megabyte is in the limits of files, so the tests of the browser do not write them a
+/// second time.
+pub(super) fn files(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == FILES_SOURCE) else {
+        bail!("{FILES_SOURCE} is missing");
+    };
+    let file = syn::parse_file(text).with_context(|| format!("{FILES_SOURCE} is not Rust"))?;
+    let part = number_const(&file, FILES_SOURCE, "PART_BYTES")?;
+    let megabyte = number_const(&file, FILES_SOURCE, "MEGABYTE")?;
+    Ok(format!(
+        "{TS_HEADER}/** The most bytes one part of an upload holds (`PART_BYTES` of the server). */
+export const partBytes = {part};
+
+/** The size of one megabyte in the limits of files: the limit of a project is a whole number of them. */
+export const megabyte = {megabyte};
 "
     ))
 }

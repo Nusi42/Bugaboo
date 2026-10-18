@@ -1,3 +1,4 @@
+import { partBytes } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
@@ -13,7 +14,6 @@ import {
   limitInWords,
   limitOf,
   megabytes,
-  PART_BYTES,
   pasteFile,
   PREVIEW_WAIT_MS,
   previewOf,
@@ -141,7 +141,7 @@ test.describe("att_01 an upload that is interrupted", () => {
     await breakSecondPartOnce(page, false);
     await sendBigFile(page, "lost-part.bin");
     expect(seen.started).toBe(1);
-    expect(seen.offsets).toEqual([0, PART_BYTES, PART_BYTES, 2 * PART_BYTES]);
+    expect(seen.offsets).toEqual([0, partBytes, partBytes, 2 * partBytes]);
   });
 
   test("a part whose answer was lost is not sent again: the upload goes on from where the server stands", async ({
@@ -152,7 +152,7 @@ test.describe("att_01 an upload that is interrupted", () => {
     await breakSecondPartOnce(page, true);
     await sendBigFile(page, "lost-answer.bin");
     expect(seen.started).toBe(1);
-    expect(seen.offsets).toEqual([0, PART_BYTES, 2 * PART_BYTES]);
+    expect(seen.offsets).toEqual([0, partBytes, 2 * partBytes]);
   });
 });
 

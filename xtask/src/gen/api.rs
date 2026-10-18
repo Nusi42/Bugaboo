@@ -19,6 +19,8 @@
 //!   `src/editing.generated.ts`;
 //! - the scale of own-field decimals (`crates/bb-core/src/own_fields.rs`) is written as
 //!   `src/fields.generated.ts`;
+//! - the size of a part of an upload and of a megabyte (`crates/bb-core/src/files.rs`) are written
+//!   as `src/files.generated.ts`;
 //! - the words of the vocabularies the browser lists (the icons of issue types) are read from the
 //!   API description into `src/words.generated.ts`;
 //! - the names of the properties the server renders as HTML (the mark `x-safe-html`) are written
@@ -66,6 +68,8 @@ pub(crate) const PAGING_PATH: &str = "web/packages/api-client/src/paging.generat
 pub(crate) const EDITING_PATH: &str = "web/packages/api-client/src/editing.generated.ts";
 /// The scale of own-field numbers, for the browser app.
 pub(crate) const FIELDS_PATH: &str = "web/packages/api-client/src/fields.generated.ts";
+/// The sizes of files the server and the browser both name.
+pub(crate) const FILES_PATH: &str = "web/packages/api-client/src/files.generated.ts";
 /// The names of the properties the server renders as HTML (mark `x-safe-html`).
 pub(crate) const SAFE_HTML_PATH: &str = "web/packages/api-client/src/safe-html.generated.ts";
 /// The words of the vocabularies the browser lists at run time.
@@ -94,6 +98,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         SETTING_KEYS_PATH,
         PAGING_PATH,
         EDITING_PATH,
+        FILES_PATH,
         WORDS_PATH,
         SAFE_HTML_PATH,
         BROWSER_NAMES_PATH,
@@ -139,6 +144,10 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         Generated::new(
             FIELDS_PATH,
             format_with_oxfmt(repo, FIELDS_PATH, &web_constants::fields(&sources)?)?,
+        ),
+        Generated::new(
+            FILES_PATH,
+            format_with_oxfmt(repo, FILES_PATH, &web_constants::files(&sources)?)?,
         ),
         Generated::new(
             WORDS_PATH,
