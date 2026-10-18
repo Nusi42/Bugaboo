@@ -18,6 +18,7 @@ mod download;
 mod file_store;
 mod jobs;
 pub(crate) mod member;
+mod rights;
 mod rules;
 mod store;
 mod types;
