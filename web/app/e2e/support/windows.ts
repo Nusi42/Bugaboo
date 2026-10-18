@@ -119,3 +119,25 @@ export async function footerButtons(page: Page) {
     create: await named(t("issues.create")),
   };
 }
+
+/** The box lies inside the screen: a window or a question is pinned to it and never floats in a taller page. */
+export async function expectInsideTheScreen(page: Page, box: Locator): Promise<void> {
+  const [inside, screen] = [await boxOf(box), pageSize(page)];
+  expect(inside.x).toBeGreaterThanOrEqual(0);
+  expect(inside.y).toBeGreaterThanOrEqual(0);
+  expect(inside.x + inside.width).toBeLessThanOrEqual(screen.width);
+  expect(inside.y + inside.height).toBeLessThanOrEqual(screen.height);
+}
+
+/** How many lines the words of an element take: the different tops of the boxes of its text. */
+export function linesOf(element: Locator): Promise<number> {
+  return element.evaluate((node) => {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    return new Set(
+      Array.from(range.getClientRects(), (rect: Readonly<Pick<DOMRect, "top">>) =>
+        Math.round(rect.top),
+      ),
+    ).size;
+  });
+}

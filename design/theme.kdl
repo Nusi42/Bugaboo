@@ -1758,9 +1758,13 @@ part "name-value" {
     padding "$space-1 0"
 }
 
+// The name stands at the height of the first line of its value: both are as high as a control and
+// centered in it (R1, the review of M4: the names sat above the middle of their values).
 part "name-value.name" {
+    display flex
+    align-items center
+    min-height "$size-control"
     margin 0
-    padding-top "$space-2"
     color "$fg-muted"
     font-size "$fs-sm"
 }
@@ -2176,6 +2180,14 @@ part "start-column" {
     align-items flex-start
     gap "$space-1"
     min-width 0
+}
+
+// A value of a row of the Details that is a column (the people of *Assigned to*): each line is as
+// high as a control, so the first one is level with its name.
+part "name-value.value start-column > span" {
+    display flex
+    align-items center
+    min-height "$size-control"
 }
 
 part "start-column > button[variant=quiet]" {

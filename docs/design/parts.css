@@ -1212,8 +1212,10 @@ body {
 }
 
 [data-part="name-value.name"] {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-control);
   margin: 0;
-  padding-top: var(--space-2);
   color: var(--fg-muted);
   font-size: var(--fs-sm);
 }
@@ -1612,6 +1614,12 @@ body {
   align-items: flex-start;
   gap: var(--space-1);
   min-width: 0;
+}
+
+[data-part="name-value.value"] [data-part="start-column"] > [data-part="span"] {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-control);
 }
 
 [data-part="start-column"] > [data-part="button"][data-variant~="quiet"] {
