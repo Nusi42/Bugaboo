@@ -6,12 +6,13 @@ use axum::http::StatusCode;
 use bb_app::access::Permission;
 use bb_core::access::FieldLevel;
 use bb_core::fields::Field;
-use bb_testing::{TestResult, each_database};
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
 use super::exit_masks::{issue_of_type, other_type, person_with_levels};
-use super::http::rig_and_app;
+use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, ok};
+use super::rig::Rig;
 
 const PREVIEW: &str = "/api/v1/many-changes/preview";
 
@@ -21,6 +22,27 @@ const SEE_AND_CHANGE: [Permission; 3] = [
     Permission::ChangeIssues,
 ];
 
+/// Tim changes the status of a task, but only sees it on the other types.
+async fn status_changer(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failure> {
+    let (tim, _) = person_with_levels(
+        site,
+        rig,
+        "tim",
+        &SEE_AND_CHANGE,
+        &[
+            (Field::Title.into(), None, FieldLevel::CanChange),
+            (Field::Status.into(), None, FieldLevel::CanSee),
+            (
+                Field::Status.into(),
+                Some(&site.kind),
+                FieldLevel::CanChange,
+            ),
+        ],
+    )
+    .await?;
+    Ok(tim)
+}
+
 #[tokio::test]
 async fn wf_03_the_status_level_of_the_new_type_counts_when_the_type_changes() -> TestResult {
     each_database("wf_03_status_level_new_type", async |db| {
@@ -28,22 +50,7 @@ async fn wf_03_the_status_level_of_the_new_type_counts_when_the_type_changes() -
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let other = other_type(&site, &mut ada).await?;
         // Tim changes the status of a task, but only sees it on the other type.
-        let (mut tim, _) = person_with_levels(
-            &site,
-            &rig,
-            "tim",
-            &SEE_AND_CHANGE,
-            &[
-                (Field::Title.into(), None, FieldLevel::CanChange),
-                (Field::Status.into(), None, FieldLevel::CanSee),
-                (
-                    Field::Status.into(),
-                    Some(&site.kind),
-                    FieldLevel::CanChange,
-                ),
-            ],
-        )
-        .await?;
+        let mut tim = status_changer(&site, &rig).await?;
         let (task, _) = issue_of_type(&site, &mut ada, &site.kind, "A task").await?;
         let path = format!("{ISSUES}/{task}");
         let both = tim
@@ -96,22 +103,7 @@ async fn wf_03_change_many_issues_skips_an_issue_whose_type_hides_the_status_lev
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let other = other_type(&site, &mut ada).await?;
-        let (mut tim, _) = person_with_levels(
-            &site,
-            &rig,
-            "tim",
-            &SEE_AND_CHANGE,
-            &[
-                (Field::Title.into(), None, FieldLevel::CanChange),
-                (Field::Status.into(), None, FieldLevel::CanSee),
-                (
-                    Field::Status.into(),
-                    Some(&site.kind),
-                    FieldLevel::CanChange,
-                ),
-            ],
-        )
-        .await?;
+        let mut tim = status_changer(&site, &rig).await?;
         let (task, _) = issue_of_type(&site, &mut ada, &site.kind, "A task").await?;
         let (seen, _) = issue_of_type(&site, &mut ada, &other, "Another type").await?;
         let preview = tim

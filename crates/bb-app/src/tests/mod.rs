@@ -38,6 +38,7 @@ mod many_changes;
 mod many_changes_property;
 mod moving;
 mod notifications;
+mod notifications_files;
 mod offers;
 mod offers_secrecy;
 mod recurring_jobs;

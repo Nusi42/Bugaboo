@@ -317,7 +317,7 @@ async fn unread_of(crew: &Crew) -> Result<usize, String> {
     .unread)
 }
 
-fn kinds(items: &[NotificationItem]) -> Vec<NotificationKind> {
+pub(super) fn kinds(items: &[NotificationItem]) -> Vec<NotificationKind> {
     items.iter().map(|item| item.kind).collect()
 }
 
@@ -944,60 +944,5 @@ async fn ntf_01_one_request_for_the_list_looks_at_a_bounded_number_of_rows_and_s
     }
     assert!(asked >= 2, "the first request stops at the limit: {asked}");
     assert_eq!(found.len(), 1, "and the next one goes on to the real one");
-    Ok(())
-}
-
-/// A file `name` on the issue of the crew, added by the session `who`.
-async fn add_file(crew: &Crew, who: &str, name: &str) -> Result<(), String> {
-    let started = crate::files::start_upload(
-        &crew.world.ctx(),
-        crate::files::StartUploadQuery {
-            session_token: who.to_owned(),
-            issue: crew.issue.to_string(),
-            comment: None,
-            name: name.to_owned(),
-            size: super::scenarios_files::A_FILE.len() as u64,
-        },
-    )
-    .await
-    .map_err(text)?
-    .into_value();
-    crate::files::send_part(
-        &crew.world.ctx(),
-        crate::files::SendPartQuery {
-            session_token: who.to_owned(),
-            upload: started.id,
-            offset: 0,
-            bytes: super::scenarios_files::A_FILE.to_vec(),
-        },
-    )
-    .await
-    .map_err(text)?;
-    crate::files::finish_upload(
-        &crew.world.ctx(),
-        crate::files::FinishUpload {
-            session_token: who.to_owned(),
-            upload: started.id,
-        },
-    )
-    .await
-    .map_err(text)?;
-    crew.world.clock.advance(1);
-    Ok(())
-}
-
-#[tokio::test]
-async fn ntf_01_adding_a_file_tells_the_followers_and_not_the_one_who_added_it() -> Outcome {
-    let crew = Crew::new().await?;
-    let (ada, bob) = (token(&crew.world), crew.bob.session_token.clone());
-    add_file(&crew, &bob, "jam.txt").await?;
-    let heard = crew.heard(&ada).await?;
-    assert_eq!(kinds(&heard), [NotificationKind::FollowedActivity]);
-    assert!(
-        matches!(&heard[0].what, NotificationWhat::File { name: Some(name) } if name == "jam.txt"),
-        "{:?}",
-        heard[0].what
-    );
-    assert!(crew.heard(&bob).await?.is_empty());
     Ok(())
 }
