@@ -55,6 +55,9 @@ pub enum NotificationWhat {
         /// Whether it ended well: `false` for a run that failed.
         done: bool,
     },
+    /// Giving the issues of a project their new IDs gave up; the person who asked for the new mode
+    /// is told to try again in the project settings.
+    IssueIdsFailed,
     /// Something about the issue that the person has no words for here (a mention of a comment
     /// that is gone, an assignment): the kind says what it is.
     Plain,

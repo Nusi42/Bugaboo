@@ -5830,6 +5830,8 @@ export interface components {
       /** @description The ID of the notification; the items of one notification share it. *Mark as read* names it. */
       id: string;
       issue?: components["schemas"]["IssueRef"] | null;
+      /** @description Giving the issues of a project their new IDs gave up. */
+      issue_ids_failed?: boolean | null;
       /** @description What the notification is about. */
       kind: components["schemas"]["NotificationKind"];
       notice?: components["schemas"]["NoticeKind"] | null;
@@ -6460,6 +6462,8 @@ export interface components {
         /** @description The ID of the notification; the items of one notification share it. *Mark as read* names it. */
         id: string;
         issue?: components["schemas"]["IssueRef"] | null;
+        /** @description Giving the issues of a project their new IDs gave up. */
+        issue_ids_failed?: boolean | null;
         /** @description What the notification is about. */
         kind: components["schemas"]["NotificationKind"];
         notice?: components["schemas"]["NoticeKind"] | null;

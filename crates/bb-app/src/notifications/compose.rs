@@ -173,6 +173,11 @@ fn lines_about(
                 message::NOTIFICATIONS_RUN_FAILED
             }))]
         }
+        (NotificationWhat::IssueIdsFailed, _) => {
+            vec![sentence_of(&Message::from(
+                message::NOTIFICATIONS_ISSUE_IDS_FAILED,
+            ))]
+        }
         (NotificationWhat::Plain, NotificationKind::Assigned) => {
             vec![sentence_of(&message::notifications_assigned(who(by)))]
         }
@@ -205,7 +210,12 @@ pub(crate) fn compose(
         ),
         // Work that is not about one issue ends in the notifications, so that is where the link goes.
         None => (
-            Message::from(message::MAIL_SUBJECT_RUN).render(),
+            Message::from(if matches!(first.what, NotificationWhat::IssueIdsFailed) {
+                message::MAIL_SUBJECT_IDS_FAILED
+            } else {
+                message::MAIL_SUBJECT_RUN
+            })
+            .render(),
             message::mail_open_notifications(format!("{public_url}{}", app_paths::NOTIFICATIONS)),
         ),
     };

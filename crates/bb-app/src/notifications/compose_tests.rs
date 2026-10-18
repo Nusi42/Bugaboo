@@ -146,6 +146,22 @@ fn wp13_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
 }
 
 #[test]
+fn wp13_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
+    assert_eq!(
+        lines_about(
+            None,
+            &NotificationWhat::IssueIdsFailed,
+            NotificationKind::RunEnded,
+            region()
+        ),
+        [format!(
+            "{}.",
+            Message::from(message::NOTIFICATIONS_ISSUE_IDS_FAILED).render()
+        )]
+    );
+}
+
+#[test]
 fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
     let ended = |done| {
         lines_about(

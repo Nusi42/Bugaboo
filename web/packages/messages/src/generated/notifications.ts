@@ -31,6 +31,8 @@ export const messages = {
     "{who} ended your editing because it was stuck, so others can edit again",
   "notifications.run-done": "Your change to many issues is done",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
+  "notifications.issue-ids-failed":
+    "Bugaboo could not give every issue of a project its new ID. Open the project settings to try again.",
   "notifications.show-result": "Show the result",
   "notifications.hide-result": "Hide the result",
   "notifications.show-all": "Show all notifications",

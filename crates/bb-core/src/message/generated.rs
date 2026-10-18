@@ -2444,6 +2444,9 @@ pub const MAIL_SIGN_UP_EXISTS_SUBJECT: MessageKey = MessageKey::new("mail.sign-u
 /// The message `mail.sign-up-subject`.
 pub const MAIL_SIGN_UP_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-subject");
 
+/// The message `mail.subject-ids-failed`.
+pub const MAIL_SUBJECT_IDS_FAILED: MessageKey = MessageKey::new("mail.subject-ids-failed");
+
 /// The message `mail.subject-run`.
 pub const MAIL_SUBJECT_RUN: MessageKey = MessageKey::new("mail.subject-run");
 
@@ -2786,6 +2789,10 @@ pub const NOTIFICATIONS_HIDE_RESULT: MessageKey = MessageKey::new("notifications
 
 /// The message `notifications.in-app`.
 pub const NOTIFICATIONS_IN_APP: MessageKey = MessageKey::new("notifications.in-app");
+
+/// The message `notifications.issue-ids-failed`.
+pub const NOTIFICATIONS_ISSUE_IDS_FAILED: MessageKey =
+    MessageKey::new("notifications.issue-ids-failed");
 
 /// The message `notifications.kind`.
 pub const NOTIFICATIONS_KIND: MessageKey = MessageKey::new("notifications.kind");
@@ -11530,6 +11537,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("mail.subject", "Bugaboo: {issue} {title}"),
     (
+        "mail.subject-ids-failed",
+        "Bugaboo: new issue IDs could not be given out",
+    ),
+    (
         "mail.subject-run",
         "Bugaboo: your change to many issues has ended",
     ),
@@ -11759,6 +11770,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.group-name", "Notifications about {issue}"),
     ("notifications.hide-result", "Hide the result"),
     ("notifications.in-app", "In the app"),
+    (
+        "notifications.issue-ids-failed",
+        "Bugaboo could not give every issue of a project its new ID. Open the project settings to try again.",
+    ),
     ("notifications.kind", "What happens"),
     (
         "notifications.locked-way",
