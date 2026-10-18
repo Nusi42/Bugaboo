@@ -2,7 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { changeSentence, whoOf } from "../../shared/change-sentence.ts";
-import type { IssueTarget } from "../../shared/paths.ts";
+import { addressInProject, paths, type IssueTarget } from "../../shared/paths.ts";
 
 /** One item of the list of notifications; a change has one for each field it changed. */
 export type NotificationItem = Schema<"NotificationEntry">;
@@ -92,6 +92,19 @@ export function targetOf(row: NotificationRow): IssueTarget | undefined {
     return { kind: "comment", comment };
   }
   return isChange(row) ? { kind: "change", at: row.at } : undefined;
+}
+
+/**
+ * Where a renewal of issue IDs that gave up sends the person: the settings of that project, so the
+ * notice is not a dead end. A project the person may not name has no address to give.
+ */
+export function projectSettingsOf(row: NotificationRow): string | undefined {
+  const project = row.entries.find(
+    (entry) => entry.issue_ids_failed !== undefined,
+  )?.issue_ids_failed;
+  return project?.shown === "visible" && typeof project.short_name === "string"
+    ? addressInProject(paths.projectSettings, project.short_name)
+    : undefined;
 }
 
 /** What happened, in words: one sentence, or one for each field a change touched. */

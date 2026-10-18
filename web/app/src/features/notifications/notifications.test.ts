@@ -1,9 +1,10 @@
-import { markSafeHtml } from "@bugaboo/api-client";
+import { markSafeHtml, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { describe, expect, it } from "vitest";
 
 import {
   groupsOf,
+  projectSettingsOf,
   rowsOf,
   sentencesOf,
   targetOf,
@@ -159,5 +160,17 @@ describe("m4_f144 a renewal of issue IDs that gave up names the project", () => 
         }),
       ),
     ).toEqual([t("notifications.issue-ids-failed-hidden")]);
+  });
+});
+
+const failed = (project: Schema<"ProjectLabelBody">) =>
+  rowOfItems(entry({ kind: "run_ended", issue: null, by: null, issue_ids_failed: project }));
+
+describe("m4_f144 the notice of a renewal that gave up leads to the settings of its project", () => {
+  it("goes to the settings of a project the person may name, and nowhere for a hidden one", () => {
+    expect(
+      projectSettingsOf(failed({ shown: "visible", id: "p", name: "Website", short_name: "WEB" })),
+    ).toBe("/p/WEB/settings");
+    expect(projectSettingsOf(failed({ shown: "hidden" }))).toBeUndefined();
   });
 });

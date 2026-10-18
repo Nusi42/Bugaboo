@@ -7,7 +7,7 @@ import { formatDateTime } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
 import { issueAddress, issueTargetAddress } from "../../shared/paths.ts";
 import { RunProgress } from "../many-changes/index.ts";
-import { sentencesOf, targetOf, type NotificationRow } from "./notifications.ts";
+import { projectSettingsOf, sentencesOf, targetOf, type NotificationRow } from "./notifications.ts";
 
 export interface NotificationViewProps {
   readonly row: NotificationRow;
@@ -50,17 +50,64 @@ function RunResult({ row }: { readonly row: NotificationRow }) {
   );
 }
 
+/** *Open* (the issue, or the settings of the project a renewal gave up on) and *Mark as read*. */
+function RowActions({
+  row,
+  what,
+  onRead,
+  isReading,
+}: Pick<NotificationViewProps, "row" | "onRead" | "isReading"> & { readonly what: string }) {
+  const navigate = useNavigate();
+  const key = row.issue?.key;
+  const target = targetOf(row);
+  const settings = projectSettingsOf(row);
+  return (
+    <div {...partOf(part.notificationActions)}>
+      {key === undefined ? null : (
+        <Button
+          aria-label={t("notifications.open-name", { what })}
+          onPress={() => {
+            void navigate({
+              href: target === undefined ? issueAddress(key) : issueTargetAddress(key, target),
+            });
+          }}
+        >
+          {t("notifications.open")}
+        </Button>
+      )}
+      {settings === undefined ? null : (
+        <Button
+          onPress={() => {
+            void navigate({ href: settings });
+          }}
+        >
+          {t("notifications.open-project-settings")}
+        </Button>
+      )}
+      {row.read ? null : (
+        <Button
+          look={buttonLook.quiet}
+          isPending={isReading}
+          aria-label={t("notifications.mark-read-name", { what })}
+          onPress={() => {
+            onRead(row.id);
+          }}
+        >
+          {t("notifications.mark-read")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 /**
  * One notification (UX §4.11): what happened and when, the text of a comment, and *Open*, which
  * goes to the exact comment or change, and *Mark as read*. An unread one is marked by its color
  * and by the word *New*.
  */
 export function NotificationView({ row, onRead, isReading }: NotificationViewProps) {
-  const navigate = useNavigate();
   const sentences = sentencesOf(row);
   const what = listText(sentences);
-  const key = row.issue?.key;
-  const target = targetOf(row);
   return (
     <li {...partOf(part.notification, { states: [!row.read && "unread"] })}>
       <div {...partOf(part.notificationHead)}>
@@ -75,32 +122,7 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
         ))}
       </ul>
       <CommentText row={row} />
-      <div {...partOf(part.notificationActions)}>
-        {key === undefined ? null : (
-          <Button
-            aria-label={t("notifications.open-name", { what })}
-            onPress={() => {
-              void navigate({
-                href: target === undefined ? issueAddress(key) : issueTargetAddress(key, target),
-              });
-            }}
-          >
-            {t("notifications.open")}
-          </Button>
-        )}
-        {row.read ? null : (
-          <Button
-            look={buttonLook.quiet}
-            isPending={isReading}
-            aria-label={t("notifications.mark-read-name", { what })}
-            onPress={() => {
-              onRead(row.id);
-            }}
-          >
-            {t("notifications.mark-read")}
-          </Button>
-        )}
-      </div>
+      <RowActions row={row} what={what} onRead={onRead} isReading={isReading} />
       <RunResult row={row} />
     </li>
   );
