@@ -4,6 +4,7 @@
 //! labels.
 
 use std::collections::BTreeMap;
+use std::future::Future;
 
 use bb_core::history::HistoryTab;
 use bb_core::id::{IssueId, IssueTypeId};
@@ -15,6 +16,7 @@ use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::history::{HistoryQuery, history};
 use crate::issues::{ChangeIssue, IssueQuery, MoveIssue, change_issue, issue, move_issue};
+use crate::ports::ChangeStore as _;
 use crate::tags::{RemoveLabel, remove_label};
 
 async fn version_of(world: &World, who: &str, issue_id: IssueId) -> Result<i64, AppError> {
@@ -124,5 +126,235 @@ async fn sec_03_the_history_names_a_type_and_a_label_only_where_the_reader_may_k
     assert!(!outside.contains("names: [\"login\"]"), "{outside}");
     let neutral = Message::from(message::HISTORY_TYPE_UNKNOWN).render();
     assert!(outside.contains(&neutral), "{outside}");
+    Ok(())
+}
+
+/// Makes the label `name` in the group *Area* of ACME.
+async fn area_label(g: &Groups, name: &str) -> Result<(bb_core::id::LabelId, i64), AppError> {
+    let made = crate::tags::create_label(
+        &g.world.ctx(),
+        crate::tags::CreateLabel {
+            session_token: g.lead.clone(),
+            name: name.to_owned(),
+            color: None,
+            group: Some(g.area),
+        },
+    )
+    .await?
+    .into_value();
+    Ok((made.id, made.version))
+}
+
+/// What the lead of OTHER, who follows the issue, was told in the three ways the issue is told:
+/// its history, its notifications and its e-mail, as one text.
+async fn all_that_was_told(
+    g: &Groups,
+    who: &crate::auth::Started,
+    issue_id: IssueId,
+) -> Result<String, AppError> {
+    g.world
+        .clock
+        .advance(bb_core::notification::MAIL_BATCH_SECONDS + 1);
+    while g.world.ctx().run_due_jobs().await? > 0 {}
+    let listed = crate::notifications::notifications(
+        &g.world.ctx(),
+        crate::notifications::NotificationsQuery {
+            session_token: who.session_token.clone(),
+            filter: bb_core::notification::NotificationFilter::All,
+            cursor: None,
+            limit: 50,
+        },
+    )
+    .await?
+    .into_value()
+    .items;
+    let mails: Vec<String> = g
+        .world
+        .mailer
+        .messages()
+        .into_iter()
+        .filter(|mail| mail.to == "sam@example.test")
+        .map(|mail| format!("{} {}", mail.subject, mail.text))
+        .collect();
+    Ok(format!(
+        "{} {:?} {:?}",
+        read(&g.world, &who.session_token, issue_id).await?,
+        listed,
+        mails
+    ))
+}
+
+/// Switches on e-mail, and the news of fields in the app and by e-mail, for everybody.
+async fn news_of_fields_everywhere(g: &Groups) -> Result<(), AppError> {
+    super::scenarios_notifications::switch_mail_on(&g.world)
+        .await
+        .map_err(AppError::Internal)?;
+    for via in [
+        bb_core::notification::Via::App,
+        bb_core::notification::Via::Mail,
+    ] {
+        crate::settings::change_setting(
+            &g.world.ctx(),
+            crate::settings::ChangeSetting {
+                session_token: g.admin.clone(),
+                scope: crate::settings::SettingsScope::Organization,
+                key: bb_core::notification::NotificationKind::FollowedFields
+                    .setting(via)
+                    .definition()
+                    .key()
+                    .to_owned(),
+                value: bb_core::settings::SettingValue::Bool(true),
+            },
+        )
+        .await?;
+    }
+    Ok(())
+}
+
+/// An issue that carries the label while it moves to OTHER, where `sam` follows it; then
+/// `change` happens to the label, the label is taken off and the group is unused again.
+async fn label_change_after_a_move<F, Fut>(
+    g: &Groups,
+    label: bb_core::id::LabelId,
+    change: F,
+) -> Result<(String, IssueId), AppError>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<bb_core::id::LabelId, AppError>>,
+{
+    news_of_fields_everywhere(g).await?;
+    let sam = lead_of(&g.world, "sam@example.test", g.other).await?;
+    let issue_id = an_issue(&g.world, g.acme)
+        .await
+        .map_err(AppError::Internal)?;
+    label_on(&g.world, &g.admin, issue_id, label).await?;
+    move_issue(
+        &g.world.ctx(),
+        MoveIssue {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            version: version_of(&g.world, &g.admin, issue_id).await?,
+            project: "OTHER".to_owned(),
+        },
+    )
+    .await?;
+    crate::follow::follow_issue(
+        &g.world.ctx(),
+        crate::follow::FollowIssue {
+            session_token: sam.session_token.clone(),
+            issue: issue_id.to_string(),
+        },
+    )
+    .await?;
+    g.world.clock.advance(1);
+    let on_it = change().await?;
+    remove_label(
+        &g.world.ctx(),
+        RemoveLabel {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            label: on_it,
+        },
+    )
+    .await?;
+    let told = all_that_was_told(g, &sam, issue_id).await?;
+    Ok((told, issue_id))
+}
+
+#[tokio::test]
+async fn sec_lm1_a_renamed_label_of_a_group_the_reader_does_not_know_shows_no_name() -> Outcome {
+    let g = groups().await?;
+    let (mango, version) = area_label(&g, "mango").await?;
+    let (told, issue_id) = label_change_after_a_move(&g, mango, || async {
+        crate::tags::change_label(
+            &g.world.ctx(),
+            crate::tags::ChangeLabel {
+                session_token: g.admin.clone(),
+                label: mango,
+                version,
+                name: Some("papaya".to_owned()),
+                color: None,
+                group: bb_core::own_fields::Edit::Keep,
+                retired: None,
+            },
+        )
+        .await?;
+        Ok(mango)
+    })
+    .await?;
+    assert!(!told.contains("mango"), "{told}");
+    assert!(!told.contains("papaya"), "{told}");
+    // The administrator knows the group, and reads the names the issue went through.
+    let known = read(&g.world, &g.admin, issue_id).await?;
+    assert!(known.contains("mango"), "{known}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_lm1_a_combined_label_of_a_group_the_reader_does_not_know_shows_no_name() -> Outcome {
+    let g = groups().await?;
+    let (mango, version) = area_label(&g, "mango").await?;
+    let (papaya, into_version) = area_label(&g, "papaya").await?;
+    let (told, issue_id) = label_change_after_a_move(&g, mango, || async {
+        crate::tags::combine_labels(
+            &g.world.ctx(),
+            crate::tags::CombineLabels {
+                session_token: g.admin.clone(),
+                label: mango,
+                version,
+                into: papaya,
+                into_version,
+            },
+        )
+        .await?;
+        Ok(papaya)
+    })
+    .await?;
+    assert!(!told.contains("mango"), "{told}");
+    assert!(!told.contains("papaya"), "{told}");
+    // The administrator knows the group, and reads the names the issue went through.
+    let known = read(&g.world, &g.admin, issue_id).await?;
+    assert!(known.contains("mango"), "{known}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_lm1_an_old_event_that_holds_a_name_only_is_hidden_when_no_label_has_it_any_more()
+-> Outcome {
+    let g = groups().await?;
+    let sam = lead_of(&g.world, "sam@example.test", g.other).await?;
+    let issue_id = an_issue(&g.world, g.acme)
+        .await
+        .map_err(AppError::Internal)?;
+    // An event as M4 wrote it before the groups were kept: names only, of a label that is gone.
+    let event = g.world.ctx().event(
+        bb_core::event::Actor::System,
+        crate::auth::entity(bb_core::event::RecordKind::Issue, issue_id),
+        vec![bb_core::event::FieldChange {
+            field: "labels".to_owned(),
+            before: Some(serde_json::json!(["ghost"])),
+            after: Some(serde_json::json!([])),
+        }],
+    )?;
+    g.world
+        .ctx()
+        .store()
+        .record_change(&event, |_| Box::pin(async { Ok(()) }))
+        .await
+        .map_err(|error| AppError::Internal(format!("{error:?}")))?;
+    move_issue(
+        &g.world.ctx(),
+        MoveIssue {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            version: version_of(&g.world, &g.admin, issue_id).await?,
+            project: "OTHER".to_owned(),
+        },
+    )
+    .await?;
+    let told = read(&g.world, &sam.session_token, issue_id).await?;
+    assert!(!told.contains("ghost"), "{told}");
+    // The administrator may know every group, and reads it.
+    assert!(read(&g.world, &g.admin, issue_id).await?.contains("ghost"));
     Ok(())
 }

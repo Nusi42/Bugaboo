@@ -136,10 +136,19 @@ async fn tag_02_a_pick_one_group_keeps_one_label_per_issue() -> Outcome {
     let last = about_issues(&world, "labels").pop().ok_or("no event")?;
     assert_eq!(
         last.changes[0].before,
-        Some(json!(["login", "urgent"])),
+        Some(json!([
+            {"name": "login", "group": area.to_string()},
+            {"name": "urgent", "group": null},
+        ])),
         "{last:?}"
     );
-    assert_eq!(last.changes[0].after, Some(json!(["urgent", "billing"])));
+    assert_eq!(
+        last.changes[0].after,
+        Some(json!([
+            {"name": "urgent", "group": null},
+            {"name": "billing", "group": area.to_string()},
+        ]))
+    );
     // The same label twice changes nothing and writes nothing.
     let before = world.store.event_count();
     labelled(&world, issue, billing).await?;
@@ -237,8 +246,17 @@ async fn tag_03_combining_two_labels_changes_every_issue_once_and_records_it() -
     assert_eq!(
         after,
         vec![
-            (Some(json!(["login", "sign-in"])), Some(json!(["sign-in"]))),
-            (Some(json!(["login"])), Some(json!(["sign-in"]))),
+            (
+                Some(json!([
+                    {"name": "login", "group": null},
+                    {"name": "sign-in", "group": null},
+                ])),
+                Some(json!([{"name": "sign-in", "group": null}])),
+            ),
+            (
+                Some(json!([{"name": "login", "group": null}])),
+                Some(json!([{"name": "sign-in", "group": null}])),
+            ),
         ]
     );
     Ok(())

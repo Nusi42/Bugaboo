@@ -17,6 +17,7 @@ use bb_core::tags::{TAG_PROJECTS_MAX, Tag, TagProject, name_key};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
+use super::refs::NameRef;
 use super::rewrite::{Combining, Replacement, Rewrite, Sorted};
 use super::types::{
     ChangeTag, CombineTags, TagChangePreview, TagChangePreviewQuery, TagPage, TagView, TagsQuery,
@@ -216,7 +217,7 @@ pub async fn tag_change_preview<S: AuthStore>(
                 rename: None,
                 into: Some(Replacement {
                     id: into.id.into(),
-                    name: into.name.clone(),
+                    named: NameRef::plain(into.name.clone()),
                 }),
             }
         }
@@ -416,7 +417,7 @@ pub async fn combine_tags<S: AuthStore>(
         rename: None,
         into: Some(Replacement {
             id: into.id.into(),
-            name: into.name.clone(),
+            named: NameRef::plain(into.name.clone()),
         }),
     };
     let (limited_from, limited_into) = (

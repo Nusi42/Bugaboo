@@ -28,6 +28,7 @@ use bb_policy::{Authorized, Evaluation, Permission, Place, Tree};
 use jiff::Timestamp;
 use serde_json::json;
 
+use super::refs::NameRef;
 use super::rewrite::{Combining, ISSUES_PER_READ, Replacement, Rewrite, Sorted};
 use super::types::{
     ChangeLabel, ChangeLabelGroup, CombineLabels, CreateLabel, CreateLabelGroup,
@@ -702,7 +703,10 @@ pub async fn label_change_preview<S: AuthStore>(
                 rename: None,
                 into: Some(Replacement {
                     id: into.id.into(),
-                    name: into.name.clone(),
+                    named: NameRef {
+                        name: into.name.clone(),
+                        group: into.group,
+                    },
                 }),
             }
         }
@@ -958,7 +962,10 @@ pub async fn combine_labels<S: AuthStore>(
         rename: None,
         into: Some(Replacement {
             id: into.id.into(),
-            name: into.name.clone(),
+            named: NameRef {
+                name: into.name.clone(),
+                group: into.group,
+            },
         }),
     };
     let Combining { event, events, why } =

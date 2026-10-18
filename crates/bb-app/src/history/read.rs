@@ -25,7 +25,7 @@ use bb_core::relation::{Direction, RelationKind};
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
-use super::names::KnownNames;
+use super::names::{KnownNames, leaves_nothing};
 use super::types::{
     ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
 };
@@ -309,8 +309,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
                 None => None,
             },
-            Member::Catalogue(field @ (Field::Tags | Field::Labels)) => {
-                let named: Vec<String> = value
+            Member::Catalogue(Field::Tags) => Some(ChangeValue::Names {
+                names: value
                     .as_array()
                     .map(|items| {
                         items
@@ -319,33 +319,16 @@ impl<S: AuthStore> Ctx<'_, S> {
                             .map(str::to_owned)
                             .collect()
                     })
-                    .unwrap_or_default();
-                if field == Field::Tags {
-                    return Ok(Some(ChangeValue::Names { names: named }));
-                }
-                // A label the reader may not know is not named; nothing left to show is no value.
-                let wanted = !named.is_empty();
-                let shown_names = self.label_names_for(reading, named).await?;
-                (shown_names.is_empty() != wanted)
-                    .then_some(ChangeValue::Names { names: shown_names })
-            }
+                    .unwrap_or_default(),
+            }),
+            Member::Catalogue(Field::Labels) => self.labels_value(reading, value).await?,
             Member::Catalogue(field) => match field.person_kind() {
                 Some(kind) => Some(self.people_in(reading.held, kind, value).await?),
                 None => Some(ChangeValue::Text {
                     text: plain_text(value),
                 }),
             },
-            Member::IssueType => {
-                let Some(id) = value
-                    .as_str()
-                    .and_then(|text| text.parse::<IssueTypeId>().ok())
-                else {
-                    return Ok(None);
-                };
-                Some(ChangeValue::Text {
-                    text: self.type_name_for(reading, id).await?,
-                })
-            }
+            Member::IssueType => self.type_value(reading, value).await?,
             Member::Project => match value
                 .as_str()
                 .and_then(|text| text.parse::<bb_core::id::ProjectId>().ok())
@@ -403,13 +386,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             if points_at_a_record && before.is_none() && after.is_none() {
                 continue;
             }
-            // Labels the reader may not know leave no label to show on either side.
-            let nothing = |value: &Option<ChangeValue>| match value {
-                None => true,
-                Some(ChangeValue::Names { names }) => names.is_empty(),
-                Some(_) => false,
-            };
-            if member == Member::Catalogue(Field::Labels) && nothing(&before) && nothing(&after) {
+            if leaves_nothing(member, before.as_ref(), after.as_ref()) {
                 continue;
             }
             let name = match member {
