@@ -42,6 +42,7 @@ const LOG_HASH = textLike(t("security-log.head", { seq: CHANGING, hash: CHANGING
 
 /** The screens that show what is new in every run, by their name in the file names. */
 const SCREENS_WITH_NEWS: ReadonlySet<string> = new Set([
+  "organization-settings",
   "people",
   "invitations",
   "server-status",
