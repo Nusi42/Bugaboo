@@ -49,12 +49,7 @@ fn read_comment(row: &Row) -> Result<Comment, StoreError> {
 fn mention_select() -> SelectStatement {
     let mut select = Query::select();
     select
-        .columns([
-            MentionRow::Comment,
-            MentionRow::Recipient,
-            MentionRow::Via,
-            MentionRow::ReadAt,
-        ])
+        .columns([MentionRow::Comment, MentionRow::Recipient, MentionRow::Via])
         .from(MentionRow::Table);
     select
 }
@@ -65,7 +60,6 @@ fn read_mention(row: &Row) -> Result<Mention, StoreError> {
         recipient: row.id::<UserId>(MentionRow::Recipient)?,
         via: MentionTarget::from_code(&row.get::<String>(MentionRow::Via)?)
             .ok_or(StoreError::Corrupt("a kind of mention"))?,
-        read_at: row.optional_time(MentionRow::ReadAt)?,
     })
 }
 
@@ -271,17 +265,11 @@ impl CommentStore for AuthStorage {
             let mut insert = Query::insert();
             insert
                 .into_table(MentionRow::Table)
-                .columns([
-                    MentionRow::Comment,
-                    MentionRow::Recipient,
-                    MentionRow::Via,
-                    MentionRow::ReadAt,
-                ])
+                .columns([MentionRow::Comment, MentionRow::Recipient, MentionRow::Via])
                 .values([
                     Expr::val(mention.comment.stored()),
                     Expr::val(mention.recipient.stored()),
                     Expr::val(mention.via.code()),
-                    Expr::val(mention.read_at.map(to_micros)),
                 ])
                 .map_err(|_| StoreError::Corrupt("a mention"))?;
             transaction.execute(&insert).await?;

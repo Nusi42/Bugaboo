@@ -604,7 +604,7 @@ pub(super) async fn run_with_a_step_waiting(
     use bb_core::id::{JobId, ManyChangeRunId};
     use bb_core::many_changes::{ManyChangeItem, ManyChangeRun};
 
-    use crate::jobs::{JobStore as _, kind, kind_name};
+    use crate::jobs::{JobKind, JobStore as _};
 
     let project = a_project(world, "ACME").await?;
     let mut items = Vec::new();
@@ -632,7 +632,7 @@ pub(super) async fn run_with_a_step_waiting(
         .store
         .queue_job(
             JobId::generate(&mut bb_core::id::SequentialIds::default())?,
-            &kind_name(kind::MANY_CHANGES_STEP)?,
+            &JobKind::ManyChangesStep.name()?,
             &crate::many_changes::step_payload(run.id),
             now,
             now,
@@ -673,7 +673,7 @@ async fn adr_0017_a_step_that_is_refused_is_not_started_again() -> Outcome {
     use bb_core::id::JobId;
     use bb_core::job::JobState;
 
-    use crate::jobs::{JobStore as _, kind, kind_name};
+    use crate::jobs::{JobKind, JobStore as _};
 
     let world = World::new().await?;
     let now = world.ctx().now();
@@ -682,7 +682,7 @@ async fn adr_0017_a_step_that_is_refused_is_not_started_again() -> Outcome {
         .store
         .queue_job(
             JobId::generate(&mut bb_core::id::SequentialIds::default())?,
-            &kind_name(kind::MANY_CHANGES_STEP)?,
+            &JobKind::ManyChangesStep.name()?,
             &serde_json::json!({}),
             now,
             now,

@@ -1,4 +1,4 @@
-//! File adapter: content-addressed storage, type checks, previews and scanning (ADR-0032).
+//! File adapter: content-addressed storage, type checks and previews (ADR-0032).
 //!
 //! [`DiskFiles`] keeps the bytes of files in the `files/` folder of the data folder: uploads are
 //! put together part by part, a finished file is stored once under the SHA-256 of its content,

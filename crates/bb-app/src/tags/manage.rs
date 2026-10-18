@@ -12,8 +12,9 @@ use std::collections::BTreeSet;
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{ProjectId, TagId};
+use bb_core::names::{name_among, same_name};
 use bb_core::paging::window;
-use bb_core::tags::{TAG_PROJECTS_MAX, Tag, TagProject, name_key};
+use bb_core::tags::{TAG_PROJECTS_MAX, Tag, TagProject};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
@@ -52,10 +53,13 @@ impl Catalogue {
 
     /// Whether another tag has this name.
     fn name_taken(&self, name: &str, except: TagId) -> bool {
-        let key = name_key(name);
-        self.tags
-            .iter()
-            .any(|tag| tag.id != except && name_key(&tag.name) == key)
+        name_among(
+            self.tags
+                .iter()
+                .filter(|tag| tag.id != except)
+                .map(|tag| tag.name.as_str()),
+            name,
+        )
     }
 }
 
@@ -345,7 +349,7 @@ pub async fn change_tag<S: AuthStore>(
                 let now = S::tags_in(transaction).await?;
                 if now
                     .iter()
-                    .any(|other| other.id != id && name_key(&other.name) == name_key(&written))
+                    .any(|other| other.id != id && same_name(&other.name, &written))
                 {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }

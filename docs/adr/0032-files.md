@@ -20,7 +20,7 @@ M4 lets people add files to issues and comments (ATT-01). A file is the most dan
 
 - **Parts:** an upload goes in parts. Bugaboo's own small protocol: start an upload (size, name), send parts with their offset, finish. An interrupted upload goes on from the last part the server has. An unfinished upload is deleted after a day. No extra library.
 - **Body limit:** each upload route sets its own body limit for a part. All other routes keep the 1 MiB limit (M1-F30).
-- **Size (M4-Q4):** at most 25 MB per file by default. A project may set less, and the organization up to 100 MB. A file over the limit is refused before its parts are stored.
+- **Size (M4-Q4):** at most 25 MiB per file by default. A project may set less, and the organization up to 100 MiB (a MiB is 1,048,576 bytes; the settings count in these units). A file over the limit is refused before its parts are stored.
 - **Type:** the real type is read from the content (`infer`), never trusted from the name or the browser (ATT-03). All types are accepted. The organization may list types it never accepts (for example `.exe`).
 - **Who may add:** a person who may change the issue (Guests on the issues they reported), or a person who may comment, for files on their own comment (M4-Q3).
 - **Who may delete:** whoever may change issues, and the person who added the file while they may still add one there (the rule of comments: the right to change the issue for a file of the issue, the right to comment for a file of a comment). *Undo* follows the same rule.
@@ -45,7 +45,7 @@ M4 lets people add files to issues and comments (ATT-01). A file is the most dan
 ### 5. Personal data
 
 - An attachment records who added it, and a file's content is personal data like a comment.
-- Files of a deleted issue go with the issue after the trash's 30 days.
+- Files of an issue in the trash are kept as long as the issue is. Nothing purges trashed issues yet, so the files of a deleted issue are kept until the purge of the trash exists (M9, with the deletion rules for personal data; M4-F131). Trashed attachments of a live issue go after 30 days (`files.clean-up`).
 - Enforced by: DATA-MARKS.
 
 ## Consequences

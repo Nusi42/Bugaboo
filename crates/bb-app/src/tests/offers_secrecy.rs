@@ -295,6 +295,19 @@ async fn sec_03_a_name_is_unique_among_the_subjects_that_can_meet_in_a_project()
 }
 
 #[tokio::test]
+async fn iss_02_a_type_and_a_group_of_labels_are_the_same_name_by_one_rule() -> Outcome {
+    let g = groups().await?;
+    // Spaces count as little as capitals, for a type and for a group alike.
+    new_type(&g.world, &g.lead, Some("ACME"), "Wide  question").await?;
+    let again = new_type(&g.world, &g.lead, Some("ACME"), "wide question").await;
+    assert!(refused(&again, ErrorCode::NameTaken));
+    group_in(&g.world, &g.lead, Some("ACME"), "Wide  area").await?;
+    let again = group_in(&g.world, &g.lead, Some("ACME"), " wide area ").await;
+    assert!(refused(&again, ErrorCode::NameTaken));
+    Ok(())
+}
+
+#[tokio::test]
 async fn sec_03_the_rows_of_a_subject_leave_out_a_place_the_reader_may_not_know() -> Outcome {
     let g = groups().await?;
     let bug = another_type(&g.world).await?;

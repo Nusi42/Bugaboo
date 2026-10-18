@@ -10,7 +10,7 @@ The code of M4 has one definition of each rule, the checks catch the mistakes M4
 
 ## Owns
 
-`crates/bb-core` (name keys), `crates/bb-store/src/{db.rs,files.rs,handles.rs,issues.rs,migrations}`, `crates/bb-app/src/{jobs.rs,issues/issue_types.rs,tags/labels.rs (split),files/upload.rs,files/attachments.rs}`, the read-once caches, `xtask/src/checks/**`, `tools/checks/**`, `docs/architecture/**` (not 12-security), the ADRs named below.
+`crates/bb-core` (name keys), `crates/bb-store/src/{db.rs,files.rs,handles.rs,issues.rs,migrations}` (migration 20 `m0020_mention_read_at`, which drops `mention.read_at`, M4-F83), `crates/bb-app/src/{jobs.rs,issues/issue_types.rs,tags/labels.rs (split),files/upload.rs,files/attachments.rs}`, the read-once caches, `xtask/src/checks/**`, `tools/checks/**`, `docs/architecture/**` (not 12-security), the ADRs named below.
 
 ## Tasks
 

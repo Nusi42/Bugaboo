@@ -28,7 +28,7 @@ use serde_json::Value;
 
 use super::fields::member;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, entity, internal};
-use crate::jobs::{kind, kind_name};
+use crate::jobs::JobKind;
 
 /// How many numbers a counting project tries before it gives up (which would mean the codes of the
 /// project are not what the rules make them).
@@ -326,7 +326,7 @@ pub(crate) async fn renew_or_queue_in<S: AuthStore>(
     }
     renew_step_in::<S>(transaction, renewal, source, events, at, MANY_CHANGES_STEP).await?;
     let job = JobId::generate(source).map_err(|_| S::aborted())?;
-    let name = kind_name(kind::RENEW_IDS).map_err(|_| S::aborted())?;
+    let name = JobKind::RenewIds.name().map_err(|_| S::aborted())?;
     let payload = serde_json::json!({
         PROJECT_KEY: renewal.project.to_string(),
         PERSON_KEY: person.to_string(),
@@ -452,7 +452,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             let job = JobId::generate(&mut self.ids())
                 .map_err(|error| AppError::Internal(error.to_string()))?;
             self.store()
-                .queue_job(job, &kind_name(kind::RENEW_IDS)?, payload, now, now)
+                .queue_job(job, &JobKind::RenewIds.name()?, payload, now, now)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
         }

@@ -19,26 +19,12 @@ use super::types::{
 };
 use crate::access::{Actor, ROLES_MAX};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::projects::ProjectRef;
+use crate::editing::EditorPlace;
 
-/// The place a workflow is asked for: the whole organization, or a project with its chain.
-pub(super) struct Where {
-    /// The project; none for the whole organization.
-    pub(super) project: Option<ProjectRef>,
-    /// The projects from the top down to the place; empty for the organization.
-    pub(super) chain: Vec<ProjectId>,
-    /// The issue type; none for all types.
-    pub(super) issue_type: Option<IssueTypeId>,
-}
+/// The place a workflow is asked for.
+pub(super) type Where = EditorPlace;
 
 impl Where {
-    /// The place for the permissions.
-    pub(super) fn place(&self) -> Place {
-        self.project
-            .as_ref()
-            .map_or(Place::Organization, |project| Place::Project(project.id))
-    }
-
     /// Where a workflow for exactly this place is used.
     pub(super) fn workflow_place(&self) -> WorkflowPlace {
         WorkflowPlace {
@@ -55,12 +41,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         project: Option<&str>,
         issue_type: Option<IssueTypeId>,
     ) -> Result<Where, AppError> {
-        let (found, chain) = self.place_of_request(project).await?;
-        Ok(Where {
-            project: found.as_ref().map(ProjectRef::from),
-            chain,
-            issue_type,
-        })
+        self.editor_place(project, issue_type, ()).await
     }
 
     /// The groups *Who can do it* can name: all of them for somebody who manages groups, and the

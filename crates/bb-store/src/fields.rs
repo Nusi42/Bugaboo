@@ -651,19 +651,6 @@ impl FieldStore for AuthStorage {
         transaction.execute(&update).await?;
         Ok(holders)
     }
-
-    async fn set_field_retired(
-        transaction: &mut Transaction,
-        field: FieldId,
-        at: Option<Timestamp>,
-    ) -> Result<(), StoreError> {
-        let mut update = Query::update();
-        update
-            .table(FieldRow::Table)
-            .value(FieldRow::RetiredAt, at.map(to_micros))
-            .and_where(Expr::col(FieldRow::Id).eq(field.stored()));
-        transaction.execute(&update).await.map(|_| ())
-    }
 }
 
 #[cfg(test)]

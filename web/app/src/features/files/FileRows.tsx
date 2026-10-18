@@ -6,7 +6,7 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { metaOf, type FileItem } from "./file-item.ts";
 import { DownloadButton, FileTile } from "./FileLinks.tsx";
-import { refreshFiles } from "./files.ts";
+import { refreshIssueFiles } from "../../shared/query-keys.ts";
 
 /** One file: what it is, who added it and when, and what the reader may do with it. */
 function FileRow({
@@ -21,7 +21,7 @@ function FileRow({
   const remove = api.query.useMutation("delete", "/api/v1/attachments/{attachment}", {
     onSuccess: () => {
       onDeleted(item);
-      void refreshFiles();
+      refreshIssueFiles();
     },
   });
   return (
@@ -62,7 +62,7 @@ function DeletedFile({
   const restore = api.query.useMutation("post", "/api/v1/attachments/{attachment}/restore", {
     onSuccess: () => {
       onRestored(item);
-      void refreshFiles();
+      refreshIssueFiles();
     },
   });
   return (

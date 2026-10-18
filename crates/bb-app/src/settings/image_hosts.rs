@@ -6,7 +6,7 @@ use bb_core::settings::{CONTENT_IMAGE_HOSTS, is_host, list_items};
 use bb_policy::{Authorized, Masked, Place};
 use serde::Serialize;
 
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 
 /// Who asks for the image hosts, signed in: the editor's preview needs them.
 pub struct ImageHostsQuery {
@@ -40,13 +40,11 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     fn known_image_hosts(&self) -> Option<Vec<String>> {
-        self.image_hosts.lock().ok().and_then(|known| known.clone())
+        locked(&self.image_hosts).clone()
     }
 
     fn remember_image_hosts(&self, hosts: Vec<String>) {
-        if let Ok(mut known) = self.image_hosts.lock() {
-            *known = Some(hosts);
-        }
+        *locked(&self.image_hosts) = Some(hosts);
     }
 
     /// The setting as the store has it now.

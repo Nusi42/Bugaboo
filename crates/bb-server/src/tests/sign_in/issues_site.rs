@@ -11,11 +11,19 @@ use bb_testing::Failure;
 use serde_json::{Value, json};
 
 use super::http::{ADA_EMAIL, Browser, Reply};
-use super::policy_rig::Org;
+use super::policy_rig::{Member, Org};
 use super::rig::Rig;
 
 pub(super) const PROJECTS: &str = "/api/v1/projects";
 pub(super) const ISSUES: &str = "/api/v1/issues";
+
+/// How a new person is given their role.
+enum Given<'a> {
+    /// For the whole organization.
+    Everywhere(RoleId),
+    /// For one project (by its ID) and its sub-projects.
+    In(RoleId, &'a str),
+}
 
 /// The organization of the tests: the administrator, the project ACME and the roles of the first
 /// start.
@@ -82,20 +90,11 @@ impl<'a> Site<'a> {
         name: &str,
         display_name: &str,
     ) -> Result<(Browser, UserId), Failure> {
-        let email = format!("{name}@example.test");
-        let started = self
-            .org
-            .rig
-            .person_called(&self.org.admin.session, &email, display_name)
+        let role = self.roles[role.code()];
+        let (browser, member) = self
+            .person_given(name, display_name, Given::Everywhere(role))
             .await?;
-        let member = super::policy_rig::Member {
-            id: started.person.id,
-            session: started.session_token,
-        };
-        self.org
-            .give_everywhere(&member, self.roles[role.code()])
-            .await?;
-        Ok((Browser::signed_in_as(self.app, &email).await?, member.id))
+        Ok((browser, member.id))
     }
 
     /// A person with the starting role in ACME only, signed in: every other project is not there
@@ -115,21 +114,52 @@ impl<'a> Site<'a> {
         name: &str,
         project: &str,
     ) -> Result<(Browser, UserId), Failure> {
+        let role = self.roles[role.code()];
+        let (browser, member) = self
+            .person_given(name, "Bob Builder", Given::In(role, project))
+            .await?;
+        Ok((browser, member.id))
+    }
+
+    /// A person with a role of their own making in one project (by its ID) and its sub-projects,
+    /// signed in; the member too, to give or take away more.
+    pub(super) async fn person_holding(
+        &self,
+        role: RoleId,
+        name: &str,
+        project: &str,
+    ) -> Result<(Browser, Member), Failure> {
+        self.person_given(name, "Bob Builder", Given::In(role, project))
+            .await
+    }
+
+    /// A new person, given the role the way `given` says, and signed in.
+    async fn person_given(
+        &self,
+        name: &str,
+        display_name: &str,
+        given: Given<'_>,
+    ) -> Result<(Browser, Member), Failure> {
         let email = format!("{name}@example.test");
         let started = self
             .org
             .rig
-            .person_called(&self.org.admin.session, &email, "Bob Builder")
+            .person_called(&self.org.admin.session, &email, display_name)
             .await?;
-        let member = super::policy_rig::Member {
+        let member = Member {
             id: started.person.id,
             session: started.session_token,
         };
-        let project = project.parse().map_err(|_| "no project ID")?;
-        self.org
-            .give(&member, self.roles[role.code()], project)
-            .await?;
-        Ok((Browser::signed_in_as(self.app, &email).await?, member.id))
+        match given {
+            Given::Everywhere(role) => {
+                self.org.give_everywhere(&member, role).await?;
+            }
+            Given::In(role, project) => {
+                let project = project.parse().map_err(|_| "no project ID")?;
+                self.org.give(&member, role, project).await?;
+            }
+        }
+        Ok((Browser::signed_in_as(self.app, &email).await?, member))
     }
 
     /// A person with no role anywhere: they exist, and they are no member of any project.

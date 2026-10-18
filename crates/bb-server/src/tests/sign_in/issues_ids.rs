@@ -517,7 +517,7 @@ async fn a_done_renewal_does_nothing(
     rig.storage
         .queue_job(
             JobId::generate(&mut SystemIds)?,
-            &TechnicalName::new(bb_app::jobs::kind::RENEW_IDS)?,
+            &TechnicalName::new(bb_app::jobs::JobKind::RenewIds.code())?,
             &json!({"project": site.acme, "by": by}),
             now,
             now,

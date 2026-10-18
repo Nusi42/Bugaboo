@@ -35,16 +35,6 @@ pub const LABELS_MAX: usize = 1000;
 /// The most projects one tag is limited to.
 pub const TAG_PROJECTS_MAX: usize = 200;
 
-/// The name by which tags and labels are told apart: lower case, with the spaces in it squeezed.
-/// Two names with the same key are the same name.
-#[must_use]
-pub fn name_key(name: &str) -> String {
-    name.split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
-        .to_lowercase()
-}
-
 /// Which issues a viewer reads when tags are looked up for them (SEC-06): every issue of the
 /// projects in `all`, and only the issues `person` reported in the projects in `own`. A project the
 /// viewer does not see, or where the field is hidden from them, is in neither list.
@@ -191,14 +181,8 @@ pub struct IssueLabel {
 
 #[cfg(test)]
 mod tests {
-    use super::{TagProject, name_key, tag_allowed_in};
+    use super::{TagProject, tag_allowed_in};
     use crate::id::{ProjectId, SequentialIds, TagId};
-
-    #[test]
-    fn tag_01_two_spellings_of_a_name_have_one_key() {
-        assert_eq!(name_key("  Login  Page "), name_key("login page"));
-        assert_ne!(name_key("login"), name_key("logins"));
-    }
 
     #[test]
     fn tag_01_a_limited_tag_is_allowed_only_in_its_projects() -> Result<(), crate::id::IdError> {

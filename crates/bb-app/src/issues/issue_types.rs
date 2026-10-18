@@ -13,7 +13,8 @@ use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::{IssueTypeId, ProjectId};
 use bb_core::issue::{ISSUE_TYPES_MAX, IssueIcon, IssueType, STARTING_ISSUE_TYPES};
 use bb_core::message::Message;
-use bb_core::offer::{can_meet, has_room};
+use bb_core::names::{Placed, taken_where_they_meet};
+use bb_core::offer::has_room;
 use bb_core::paging::window;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place, Tree};
@@ -61,8 +62,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Whether another type than `except` that can meet this one in a project already has the name,
-/// without regard to capitals.
+/// Whether another type than `except` that can meet this one in a project already has the name
+/// (`bb_core::names`).
 fn name_taken(
     types: &[IssueType],
     tree: &Tree,
@@ -70,14 +71,17 @@ fn name_taken(
     owner: Option<ProjectId>,
     except: Option<IssueTypeId>,
 ) -> bool {
-    let lower = name.to_lowercase();
-    types.iter().any(|found| {
-        Some(found.id) != except
-            && found.name.to_lowercase() == lower
-            && can_meet(owner, found.project, |inside, outside| {
-                tree.is_within(inside, outside)
-            })
-    })
+    taken_where_they_meet(
+        types,
+        name,
+        owner,
+        |inside, outside| tree.is_within(inside, outside),
+        |found| Placed {
+            name: &found.name,
+            project: found.project,
+            is_the_one_changed: Some(found.id) == except,
+        },
+    )
 }
 
 /// Lists the issue types in the order they are offered in, retired ones too. Any signed-in
@@ -251,13 +255,21 @@ async fn write_in<S: AuthStore>(
     }
     let types = S::issue_types_in(transaction).await?;
     let tree = tree_in::<S>(transaction).await?;
-    if name_taken(
-        &types,
-        &tree,
-        &written.name,
-        written.project,
-        Some(written.id),
-    ) {
+    // Only a name that is new or changed is judged: a type stored before names were told apart by
+    // one rule can still be given another icon or be retired.
+    let renamed = types
+        .iter()
+        .find(|stored| stored.id == written.id)
+        .is_none_or(|stored| stored.name != written.name);
+    if renamed
+        && name_taken(
+            &types,
+            &tree,
+            &written.name,
+            written.project,
+            Some(written.id),
+        )
+    {
         return Err(stopped.stop::<S>(ErrorCode::NameTaken));
     }
     let updated = S::update_issue_type(
@@ -315,7 +327,7 @@ pub async fn change_issue_type<S: AuthStore>(
     }
     let name = name.unwrap_or_else(|| current.name.clone());
     let tree = ctx.project_tree_now().await?;
-    if name_taken(&types, &tree, &name, current.project, Some(current.id)) {
+    if name != current.name && name_taken(&types, &tree, &name, current.project, Some(current.id)) {
         return Err(ErrorCode::NameTaken.into());
     }
     let icon = input.icon.unwrap_or(current.icon);

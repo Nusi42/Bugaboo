@@ -42,7 +42,7 @@ pub use visibility::{
 
 use serde::Serialize;
 
-use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
+use crate::auth::{AppError, AuthStore, Ctx, if_there, internal, locked};
 use crate::projects::sub_projects_in;
 
 /// Who asks: the signed-in person behind a session, or the owner of the access key a script
@@ -215,18 +215,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     fn cached_evaluation(&self, person: UserId, place: Place) -> Option<Arc<Evaluation>> {
         // A lock that a panic poisoned still holds a map that is whole: it only ever gets whole
         // insertions.
-        let cache = self
-            .evaluations
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let cache = locked(&self.evaluations);
         cache.get(&(person, place)).cloned()
     }
 
     fn remember_evaluation(&self, person: UserId, place: Place, evaluation: &Arc<Evaluation>) {
-        let mut cache = self
-            .evaluations
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = locked(&self.evaluations);
         cache.insert((person, place), Arc::clone(evaluation));
     }
 
@@ -264,13 +258,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The person with this ID, looked up once for the request.
     pub(crate) async fn person_known(&self, id: UserId) -> Result<Option<Person>, AppError> {
-        let known = self
-            .known
-            .people
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .get(&id)
-            .cloned();
+        let known = locked(&self.known.people).get(&id).cloned();
         if let Some(known) = known {
             return Ok(known);
         }
@@ -279,11 +267,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .person(id)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        self.known
-            .people
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .insert(id, found.clone());
+        locked(&self.known.people).insert(id, found.clone());
         Ok(found)
     }
 

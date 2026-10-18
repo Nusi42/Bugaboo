@@ -39,8 +39,6 @@ pub trait NotificationStore: FollowStore + CommentStore + 'static {
             before: Option<NotificationId>,
             limit: u64
         ) -> Vec<Notification>;
-        /// The notifications of a person with these IDs that exist.
-        fn notifications_by_ids(recipient: UserId, ids: &[NotificationId]) -> Vec<Notification>;
         /// The notifications of a person about one issue (or about no issue) whose e-mail waits and
         /// that happened at or before `until`, oldest first, at most `limit`.
         fn waiting_mail(

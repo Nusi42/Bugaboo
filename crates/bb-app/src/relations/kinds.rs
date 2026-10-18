@@ -10,6 +10,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::RelationKindId;
 use bb_core::message::Message;
+use bb_core::names::name_among;
 use bb_core::paging::window;
 use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
 use bb_core::version::{FIRST_VERSION, counted_up, next};
@@ -28,16 +29,28 @@ use crate::input::clean_name;
 use crate::member::relation_kind as member;
 use crate::projects::Why;
 
-/// Whether a name of the pair is one that another kind has already, in either direction.
-fn name_taken(kinds: &[RelationKind], names: [&str; 2], except: Option<RelationKindId>) -> bool {
+/// The names of a pair that are new or changed against the kind as it is stored (all of them for
+/// a kind that is not there yet): only these are judged.
+fn changed<'a>(before: Option<&RelationKind>, forward: &'a str, backward: &'a str) -> Vec<&'a str> {
+    let mut names = Vec::new();
+    if before.is_none_or(|stored| stored.forward != forward) {
+        names.push(forward);
+    }
+    if before.is_none_or(|stored| stored.backward != backward) {
+        names.push(backward);
+    }
+    names
+}
+
+/// Whether one of these names is one that another kind has already, in either direction.
+fn name_taken(kinds: &[RelationKind], names: &[&str], except: Option<RelationKindId>) -> bool {
     kinds
         .iter()
         .filter(|found| Some(found.id) != except)
         .any(|found| {
-            names.iter().any(|name| {
-                let lower = name.to_lowercase();
-                found.forward.to_lowercase() == lower || found.backward.to_lowercase() == lower
-            })
+            names
+                .iter()
+                .any(|name| name_among([found.forward.as_str(), found.backward.as_str()], name))
         })
 }
 
@@ -88,7 +101,7 @@ pub async fn create_relation_kind<S: AuthStore>(
         .relation_kinds()
         .await
         .map_err(|error| internal::<S>(&error))?;
-    if name_taken(&kinds, [&forward, &backward], None) {
+    if name_taken(&kinds, &[&forward, &backward], None) {
         return Err(ErrorCode::NameTaken.into());
     }
     let kind = RelationKind {
@@ -119,7 +132,7 @@ pub async fn create_relation_kind<S: AuthStore>(
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 let kinds = S::relation_kinds_in(transaction).await?;
-                if name_taken(&kinds, [&stored.forward, &stored.backward], None) {
+                if name_taken(&kinds, &[&stored.forward, &stored.backward], None) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 S::insert_relation_kind(transaction, &stored).await
@@ -202,7 +215,11 @@ pub async fn change_relation_kind<S: AuthStore>(
     }
     let forward = forward.unwrap_or_else(|| current.forward.clone());
     let backward = backward.unwrap_or_else(|| current.backward.clone());
-    if name_taken(&kinds, [&forward, &backward], Some(current.id)) {
+    if name_taken(
+        &kinds,
+        &changed(Some(&current), &forward, &backward),
+        Some(current.id),
+    ) {
         return Err(ErrorCode::NameTaken.into());
     }
     let now = ctx.now();
@@ -231,9 +248,10 @@ pub async fn change_relation_kind<S: AuthStore>(
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 let kinds = S::relation_kinds_in(transaction).await?;
+                let before = kinds.iter().find(|stored| stored.id == written.id);
                 if name_taken(
                     &kinds,
-                    [&written.forward, &written.backward],
+                    &changed(before, &written.forward, &written.backward),
                     Some(written.id),
                 ) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));

@@ -16,7 +16,7 @@ use bb_policy::Evaluation;
 
 use super::facts::IssueFacts;
 use super::types::{StatusChangeView, StatusView};
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 
 /// What a status change is judged on: the issue as it will be, and the person who changes it.
 pub(crate) struct StatusCheck<'a> {
@@ -87,13 +87,7 @@ fn refusal(verdict: Verdict) -> Option<AppError> {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The groups a person is in, read once for the request.
     async fn groups_of_person(&self, person: UserId) -> Result<Arc<Vec<GroupId>>, AppError> {
-        let known = self
-            .known
-            .person_groups
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .get(&person)
-            .cloned();
+        let known = locked(&self.known.person_groups).get(&person).cloned();
         if let Some(groups) = known {
             return Ok(groups);
         }
@@ -106,11 +100,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map(|group| group.id)
                 .collect(),
         );
-        self.known
-            .person_groups
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .insert(person, Arc::clone(&groups));
+        locked(&self.known.person_groups).insert(person, Arc::clone(&groups));
         Ok(groups)
     }
 
