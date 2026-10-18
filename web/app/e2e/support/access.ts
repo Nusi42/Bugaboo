@@ -45,6 +45,27 @@ export async function roleId(admin: ApiSession, name: string): Promise<string> {
   return found;
 }
 
+/**
+ * The fields a role cannot see, as the table of field permissions says them (one source with the
+ * server): a built-in field by its word, an own field by its ID.
+ */
+export async function fieldsHiddenFrom(
+  admin: ApiSession,
+  role: string,
+): Promise<readonly string[]> {
+  const table = dataOf(await admin.client.GET("/api/v1/field-permissions"));
+  const hidden: string[] = [];
+  for (const row of table.rows) {
+    for (const cell of row.cells) {
+      if (cell.role === role && cell.level === "hidden") {
+        hidden.push(row.subject);
+        break;
+      }
+    }
+  }
+  return hidden;
+}
+
 /** Makes a group through the API and returns its ID. */
 export async function createGroup(admin: ApiSession, name: string): Promise<string> {
   return dataOf(await admin.client.POST("/api/v1/groups", { body: { name } })).id;

@@ -3,7 +3,8 @@ import { dataOf } from "@bugaboo/api-client";
 import { screenshot } from "../../app/e2e/support/files.ts";
 import { uploadThroughApi } from "../../app/e2e/support/upload-api.ts";
 import { type Work } from "./book.ts";
-import { codeOf, type Context, tag } from "./context.ts";
+import { codeOf, type Context, HIDDEN_VALUE, tag } from "./context.ts";
+import { HIDDEN_FIELD_NAME } from "./organization.ts";
 import { pick } from "./random.ts";
 
 // What the people do besides editing (M4 WP-10): they move issues through a workflow whose status
@@ -46,7 +47,7 @@ export async function moveOn(context: Context, work: Work): Promise<void> {
         body: {
           version: found.issue.version ?? 0,
           status: change.to.key,
-          fields: { [context.hiddenField]: `Note ${tag(context)}` },
+          fields: { [context.hiddenField]: `${HIDDEN_VALUE} ${tag(context)}` },
           ...(asks ? { assigned_to: [context.holder] } : {}),
         },
       }),
@@ -92,6 +93,33 @@ export async function addFile(context: Context, work: Work): Promise<void> {
   context.book.fileAdded(work.key);
 }
 
+/**
+ * What a Guest reads names no issue but the ones they reported (a notification may be about none)
+ * and shows no field a Guest cannot see: not the own field's name or value, not a built-in field
+ * that the role hides.
+ */
+function checkWhatAGuestReads(
+  context: Context,
+  items: readonly { readonly issue?: { readonly key: string } | null }[],
+): void {
+  for (const item of items) {
+    const key = item.issue?.key;
+    if (key !== undefined && !context.issues.some((work) => work.key === key)) {
+      throw new Error(`A Guest was shown ${key}, which they did not report.`);
+    }
+    const text = JSON.stringify(item);
+    const shown = [
+      context.hiddenField,
+      HIDDEN_FIELD_NAME,
+      HIDDEN_VALUE,
+      ...context.hiddenFromGuests.map((field) => `"${field}"`),
+    ].find((hidden) => text.includes(hidden));
+    if (shown !== undefined) {
+      throw new Error(`A Guest was shown ${shown}: ${text}`);
+    }
+  }
+}
+
 /** Opens the notifications, reads the unread count, and marks the first ones as read. */
 export async function hear(context: Context): Promise<void> {
   const listed = dataOf(
@@ -99,16 +127,7 @@ export async function hear(context: Context): Promise<void> {
   );
   dataOf(await context.client.GET("/api/v1/notifications/unread"));
   if (context.guest) {
-    // What a Guest reads names only the issue they reported and shows no hidden field.
-    for (const item of listed.items) {
-      const key = item.issue?.key;
-      if (!context.issues.some((work) => work.key === key)) {
-        throw new Error(`A Guest was shown ${String(key)}, which they did not report.`);
-      }
-      if (JSON.stringify(item).includes(context.hiddenField)) {
-        throw new Error("A Guest was shown a hidden field.");
-      }
-    }
+    checkWhatAGuestReads(context, listed.items);
   }
   const ids: string[] = [];
   for (const each of listed.items.slice(0, MARKED_AT_ONCE)) {

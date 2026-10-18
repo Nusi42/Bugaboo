@@ -167,6 +167,14 @@ impl StartingRole {
         field_levels(field)[self.index()]
     }
 
+    /// The built-in fields the role cannot see.
+    pub fn hidden_fields(self) -> impl Iterator<Item = Field> {
+        Field::ALL
+            .iter()
+            .copied()
+            .filter(move |field| self.field_level(*field) == FieldLevel::Hidden)
+    }
+
     /// How the role sees people of a kind.
     #[must_use]
     pub fn people_level(self, kind: PeopleKind) -> PeopleLevel {

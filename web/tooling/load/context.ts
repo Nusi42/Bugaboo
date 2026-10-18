@@ -3,6 +3,9 @@ import { ApiError, dataOf, type Client } from "@bugaboo/api-client";
 import { type BookWriter, type Work } from "./book.ts";
 import { pick } from "./random.ts";
 
+/** What the people write into that field: no notification of a Guest may carry it. */
+export const HIDDEN_VALUE = "Only for the team";
+
 /** One person at work: who they are, what they work on, and when to stop. */
 export interface Context {
   readonly number: number;
@@ -21,6 +24,8 @@ export interface Context {
   readonly editUntil: number;
   /** The own field that Guests may not see, which the Team members write. */
   readonly hiddenField: string;
+  /** Every field Guests may not see, built-in ones by their word and own ones by their ID. */
+  readonly hiddenFromGuests: readonly string[];
   /** A Guest works on the issue they reported and hears of nothing else. */
   readonly guest: boolean;
 }

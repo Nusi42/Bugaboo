@@ -21,6 +21,8 @@ use super::{ISSUES, Person, Shared, book, version_in};
 
 /// What the own field that Guests cannot see is called.
 const HIDDEN_FIELD_NAME: &str = "Internal note";
+/// What the people write into that field: no notification of a Guest may carry it.
+const HIDDEN_VALUE: &str = "Only for the team";
 const NOTIFICATIONS: &str = "/api/v1/notifications";
 const WORKFLOWS: &str = "/api/v1/workflows";
 /// The side of the pictures people add, in pixels: small, and different for every file.
@@ -154,7 +156,7 @@ impl Person {
         let mut body = json!({
             "version": version,
             "status": target,
-            "fields": { hidden_field: format!("Note {}-{round}", self.number) },
+            "fields": { hidden_field: format!("{HIDDEN_VALUE} {}-{round}", self.number) },
         });
         if change["needs"]
             .as_array()
@@ -199,24 +201,40 @@ impl Person {
         Ok(())
     }
 
+    /// What a Guest reads names no issue but the ones they reported (a notification may be about
+    /// none), and shows no field a Guest cannot see: not the name or the value of the own field
+    /// the run hid, and not a built-in field that the starting role hides.
+    fn check_what_a_guest_reads(&self, items: &[Value]) -> Result<(), Failure> {
+        let built_in: Vec<String> = StartingRole::Guest
+            .hidden_fields()
+            .map(|field| format!("\"{}\"", field.code()))
+            .collect();
+        for item in items {
+            if let Some(key) = item["issue"]["key"].as_str()
+                && !self.issues.iter().any(|work| work.key == key)
+            {
+                return Err(format!("a Guest was shown {key}, which they did not report").into());
+            }
+            let text = item.to_string();
+            let own = [self.hidden_field.as_str(), HIDDEN_FIELD_NAME, HIDDEN_VALUE];
+            if let Some(shown) = own
+                .iter()
+                .copied()
+                .chain(built_in.iter().map(String::as_str))
+                .find(|hidden| text.contains(hidden))
+            {
+                return Err(format!("a Guest was shown {shown}: {text}").into());
+            }
+        }
+        Ok(())
+    }
+
     /// Opens the notifications, reads the unread count, and marks what is there as read.
     pub(super) async fn hear(&mut self) -> Result<(), Failure> {
         let listed = self.browser.send("GET", NOTIFICATIONS, None).await?;
         let items = ok(&listed)?["items"].as_array().ok_or("no notifications")?;
         if self.guest {
-            // What a Guest reads names only the issue they reported and shows no hidden field.
-            for item in items {
-                let key = item["issue"]["key"].as_str().unwrap_or_default();
-                if !self.issues.iter().any(|work| work.key == key) {
-                    return Err(
-                        format!("a Guest was shown {key}, which they did not report").into(),
-                    );
-                }
-                let text = item.to_string();
-                if text.contains(&self.hidden_field) || text.contains(HIDDEN_FIELD_NAME) {
-                    return Err(format!("a Guest was shown a hidden field: {text}").into());
-                }
-            }
+            self.check_what_a_guest_reads(items)?;
         }
         let ids: Vec<Value> = items
             .iter()
