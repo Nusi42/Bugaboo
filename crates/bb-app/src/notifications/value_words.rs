@@ -23,8 +23,8 @@ use jiff::civil::Date;
 use jiff::tz::TimeZone;
 use serde_json::Value;
 
-const SECONDS_PER_MINUTE: i64 = 60;
-const MINUTES_PER_HOUR: i64 = 60;
+const SECONDS_PER_MINUTE: f64 = 60.0;
+const MINUTES_PER_HOUR: f64 = 60.0;
 const HOURS_ON_A_CLOCK: i8 = 12;
 /// The digits in a group of a big number.
 const GROUP: usize = 3;
@@ -144,15 +144,7 @@ impl Region {
     }
 
     fn number(&self, number: &serde_json::Number) -> String {
-        let written = if number.is_f64() {
-            let rounded = format!("{:.DECIMALS_MOST$}", number.as_f64().unwrap_or_default());
-            rounded
-                .trim_end_matches('0')
-                .trim_end_matches('.')
-                .to_owned()
-        } else {
-            number.to_string()
-        };
+        let written = rounded_half_up(&number.to_string());
         let (sign, digits) = written
             .strip_prefix('-')
             .map_or(("", written.as_str()), |rest| ("-", rest));
@@ -169,6 +161,47 @@ impl Region {
         } else {
             format!("{sign}{grouped}{}{decimals}", self.numbers.decimal)
         }
+    }
+}
+
+/// A number as plain digits with at most [`DECIMALS_MOST`] decimals, rounded half up on the digits
+/// as they are written (the browser's rule: 0.0625 is 0.063, not 0.062).
+fn rounded_half_up(written: &str) -> String {
+    let (sign, digits) = written
+        .strip_prefix('-')
+        .map_or(("", written), |rest| ("-", rest));
+    let Some((whole, decimals)) = digits.split_once('.') else {
+        return written.to_owned();
+    };
+    if decimals.len() <= DECIMALS_MOST {
+        return written.to_owned();
+    }
+    let (kept, rest) = decimals.split_at(DECIMALS_MOST);
+    let mut digits: Vec<u8> = format!("{whole}{kept}").bytes().collect();
+    if rest.starts_with(['5', '6', '7', '8', '9']) {
+        // Carry: 9 becomes 0 and the digit before it goes up; a new leading 1 if all were nines.
+        let mut at = digits.len();
+        loop {
+            if at == 0 {
+                digits.insert(0, b'1');
+                break;
+            }
+            at -= 1;
+            if digits[at] == b'9' {
+                digits[at] = b'0';
+            } else {
+                digits[at] += 1;
+                break;
+            }
+        }
+    }
+    let text = String::from_utf8_lossy(&digits).into_owned();
+    let (whole, kept) = text.split_at(text.len() - DECIMALS_MOST);
+    let kept = kept.trim_end_matches('0');
+    if kept.is_empty() {
+        format!("{sign}{whole}")
+    } else {
+        format!("{sign}{whole}.{kept}")
     }
 }
 
@@ -219,7 +252,10 @@ fn typed_words(kind: FieldType, value: &Value, region: &Region) -> Option<String
             })
             .render(),
         ),
-        (FieldType::Duration, Value::Number(seconds)) => seconds.as_i64().map(duration_text),
+        (FieldType::Duration, Value::Number(seconds)) => seconds
+            .as_f64()
+            .filter(|seconds| *seconds >= 0.0)
+            .map(duration_text),
         (FieldType::WholeNumber | FieldType::Decimal, Value::Number(number)) => {
             Some(region.number(number))
         }
@@ -244,19 +280,20 @@ fn typed_words(kind: FieldType, value: &Value, region: &Region) -> Option<String
     }
 }
 
-/// Seconds as "2h 5m", "45m" or "0m": whole minutes.
-fn duration_text(seconds: i64) -> String {
-    let minutes_all = seconds / SECONDS_PER_MINUTE;
-    let (hours, minutes) = (
-        minutes_all / MINUTES_PER_HOUR,
-        minutes_all % MINUTES_PER_HOUR,
-    );
+/// Seconds as "2h 5m", "45m" or "0m": whole minutes; a part of a second is dropped like the rest of
+/// a minute.
+fn duration_text(seconds: f64) -> String {
+    let minutes_all = (seconds / SECONDS_PER_MINUTE).floor();
+    let hours = (minutes_all / MINUTES_PER_HOUR).floor();
+    let minutes = minutes_all - hours * MINUTES_PER_HOUR;
     let hour = Message::from(message::FIELDS_UNIT_HOUR).render();
     let minute = Message::from(message::FIELDS_UNIT_MINUTE).render();
-    match (hours, minutes) {
-        (0, minutes) => format!("{minutes}{minute}"),
-        (hours, 0) => format!("{hours}{hour}"),
-        (hours, minutes) => format!("{hours}{hour} {minutes}{minute}"),
+    if hours == 0.0 {
+        format!("{minutes}{minute}")
+    } else if minutes == 0.0 {
+        format!("{hours}{hour}")
+    } else {
+        format!("{hours}{hour} {minutes}{minute}")
     }
 }
 
@@ -291,9 +328,25 @@ mod tests {
     }
 
     #[derive(Deserialize)]
+    struct Word {
+        name: String,
+        field: String,
+        text: String,
+        expected: String,
+    }
+
+    #[derive(Deserialize)]
+    struct List {
+        names: Vec<String>,
+        expected: String,
+    }
+
+    #[derive(Deserialize)]
     struct Vectors {
         regions: std::collections::BTreeMap<String, Choices>,
         cases: Vec<Case>,
+        words: Vec<Word>,
+        lists: Vec<List>,
     }
 
     #[test]
@@ -309,6 +362,18 @@ mod tests {
             );
             let words = typed_words(case.kind, &case.value, &region);
             assert_eq!(words, case.expected, "case {}", case.name);
+        }
+        for word in vectors.words {
+            let said = word_of(Field::from_code(&word.field), &word.text);
+            assert_eq!(said, word.expected, "word {}", word.name);
+        }
+        for list in vectors.lists {
+            assert_eq!(
+                list_text(&list.names),
+                list.expected,
+                "list {:?}",
+                list.names
+            );
         }
     }
 
@@ -385,29 +450,5 @@ mod tests {
         let berlin = Region::from_choices(None, None, Some("Europe/Berlin"));
         let winter = typed_words(FieldType::DateTime, &json!("2026-12-05T07:30:00Z"), &berlin);
         assert_eq!(winter.as_deref(), Some("2026-12-05, 8:30 AM"));
-    }
-
-    #[test]
-    fn names_are_listed_like_on_the_screen() {
-        let names = |count: usize| {
-            list_text(
-                &["Ana", "Ben", "Cem", "Dee"][..count]
-                    .iter()
-                    .map(|name| (*name).to_owned())
-                    .collect::<Vec<_>>(),
-            )
-        };
-        assert_eq!(names(1), "Ana");
-        assert_eq!(names(2), "Ana and Ben");
-        assert_eq!(names(3), "Ana, Ben, and Cem");
-        assert_eq!(names(4), "Ana, Ben, Cem, and Dee");
-    }
-
-    #[test]
-    fn a_status_and_a_priority_are_words_and_other_text_stays() {
-        assert_eq!(word_of(Some(Field::Status), "in-progress"), "In progress");
-        assert_eq!(word_of(Some(Field::Priority), "high"), "High");
-        assert_eq!(word_of(Some(Field::Priority), "urgent!"), "urgent!");
-        assert_eq!(word_of(None, "open"), "open");
     }
 }
