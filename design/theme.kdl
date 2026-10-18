@@ -4322,36 +4322,6 @@ part "progress" {
     accent-color "$accent"
 }
 
-part "history.tabs" {
-    display flex
-    gap "$space-1"
-    border-bottom "$border-width solid $border"
-}
-
-part "history.tab" {
-    padding "$space-2 $space-3"
-    min-height "$size-control"
-    box-sizing border-box
-    color "$fg-muted"
-    font-size "$fs-md"
-    font-weight "$weight-bold"
-    cursor pointer
-    border-bottom "$space-1 solid transparent"
-}
-
-part "history.tab[hovered]" {
-    background "$bg-hover"
-}
-
-part "history.tab[selected]" {
-    color "$fg"
-    border-bottom-color "$accent"
-}
-
-part "history.tab[focus-visible]" {
-    use "ring-inside"
-}
-
 // One entry of the history: who, when, and what happened.
 part "history.entry" {
     display flex
@@ -11264,31 +11234,36 @@ part "drop-slot[state=over]" {
     background "$accent-soft"
 }
 
-part "form-tabs" {
+// ───────────── Tabs (packages/ui) ─────────────
+//
+// The row of tabs and the panel of the open tab: the history, the notifications and the sections
+// of a form all use these.
+
+part "tabs" {
     display flex
     flex-wrap wrap
     gap "$space-1"
     border-bottom "$border-width solid $border"
 }
 
-part "form-tab" {
+part "tab" {
     use "tab-label"
 }
 
-part "form-tab[hovered]" {
+part "tab[hovered]" {
     background "$bg-hover"
 }
 
-part "form-tab[selected]" {
+part "tab[selected]" {
     color "$fg"
     border-bottom-color "$accent"
 }
 
-part "form-tab[focus-visible]" {
+part "tab[focus-visible]" {
     use "ring-inside"
 }
 
-part "form-panel" {
+part "tab-panel" "form-panel" {
     display flex
     flex-direction column
     gap "$space-3"

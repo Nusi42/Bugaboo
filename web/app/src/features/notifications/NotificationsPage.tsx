@@ -1,8 +1,7 @@
 import { notificationFilterWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Button, buttonLook, Card, Link, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, Card, Link, Tabs, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
-import { Tab, TabList, TabPanel, Tabs } from "react-aria-components";
 
 import { paths } from "../../shared/paths.ts";
 import { useUnreadNotifications } from "../../shared/unread-notifications.ts";
@@ -46,23 +45,12 @@ export function NotificationsPage() {
         <Link href={paths.notificationSettings}>{t("notifications.customize")}</Link>
       </div>
       <Tabs
-        selectedKey={filter}
-        onSelectionChange={(key) => {
-          setFilter(notificationFilterWords.find((each) => each === key) ?? "all");
-        }}
+        label={t("notifications.filters")}
+        tabs={notificationFilterWords.map((each) => ({ id: each, label: t(filterName[each]) }))}
+        selected={filter}
+        onSelect={setFilter}
       >
-        <TabList aria-label={t("notifications.filters")} {...partOf(part.formTabs)}>
-          {notificationFilterWords.map((each) => (
-            <Tab key={each} id={each} {...partOf(part.formTab)}>
-              {t(filterName[each])}
-            </Tab>
-          ))}
-        </TabList>
-        {notificationFilterWords.map((each) => (
-          <TabPanel key={each} id={each} {...partOf(part.formPanel)}>
-            <NotificationEntries filter={each} />
-          </TabPanel>
-        ))}
+        {(each) => <NotificationEntries filter={each} />}
       </Tabs>
     </Card>
   );

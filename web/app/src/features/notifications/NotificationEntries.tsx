@@ -1,5 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
-import { t } from "@bugaboo/messages";
+import { t, type MessageKey } from "@bugaboo/messages";
 import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -15,9 +15,20 @@ const nothingMessage = {
   mentions: "notifications.nothing-mentions",
 } as const;
 
-/** The notifications of one filter, newest first, grouped by issue, with *Show earlier* under them. */
-export function NotificationEntries({ filter }: { readonly filter: Schema<"NotificationFilter"> }) {
-  const list = useNotificationList(filter);
+export interface NotificationEntriesProps {
+  readonly filter: Schema<"NotificationFilter">;
+  /** Only the newest this many, without *Show earlier* (the start page); every page of them without it. */
+  readonly newest?: number;
+  /** What to say when there are none, where the filter's own words do not fit. */
+  readonly nothing?: MessageKey;
+}
+
+/**
+ * The notifications of one filter, newest first, grouped by issue, with *Show earlier* under them.
+ * The page of notifications and the block of the start page are this one list.
+ */
+export function NotificationEntries({ filter, newest, nothing }: NotificationEntriesProps) {
+  const list = useNotificationList(filter, newest);
   const read = useReadNotifications();
   const rows = rowsOf(itemsOf(list.data?.pages));
   return (
@@ -25,7 +36,7 @@ export function NotificationEntries({ filter }: { readonly filter: Schema<"Notif
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
       {read.isError ? <Alert tone={alertTone.danger}>{messageOf(read.error)}</Alert> : null}
       {rows.length === 0 && list.isSuccess && !list.hasNextPage ? (
-        <p {...partOf(part.muted)}>{t(nothingMessage[filter])}</p>
+        <p {...partOf(part.muted)}>{t(nothing ?? nothingMessage[filter])}</p>
       ) : null}
       <NotificationGroups
         rows={rows}
@@ -34,7 +45,7 @@ export function NotificationEntries({ filter }: { readonly filter: Schema<"Notif
           read.mutate({ body: { ids: [id] } });
         }}
       />
-      {list.hasNextPage ? (
+      {newest === undefined && list.hasNextPage ? (
         <Button
           isPending={list.isFetchingNextPage}
           onPress={() => {
