@@ -64,33 +64,53 @@ export async function someIssues(session: ApiSession, count: number): Promise<re
   return found.flat().slice(0, count);
 }
 
+/** One kind of read of the issue page: its name, and the request. */
+export type PageRead = readonly [kind: string, ask: () => Promise<unknown>];
+
+/** The reads of the issue page: the issue, its relations, sub-issues, history, labels and followers. */
+export function pageReads(session: ApiSession, issue: string): readonly PageRead[] {
+  const params = { path: { issue } };
+  return [
+    ["issue", () => session.client.GET("/api/v1/issues/{issue}", { params })],
+    ["relations", () => session.client.GET("/api/v1/issues/{issue}/relations", { params })],
+    ["sub-issues", () => session.client.GET("/api/v1/issues/{issue}/sub-issues", { params })],
+    [
+      "related-issues",
+      () => session.client.GET("/api/v1/issues/{issue}/related-issues", { params }),
+    ],
+    ["history", () => session.client.GET("/api/v1/issues/{issue}/history", { params })],
+    [
+      "labels-and-tags",
+      () => session.client.GET("/api/v1/issues/{issue}/labels-and-tags", { params }),
+    ],
+    ["follow", () => session.client.GET("/api/v1/issues/{issue}/follow", { params })],
+    ["followers", () => session.client.GET("/api/v1/issues/{issue}/followers", { params })],
+  ];
+}
+
+/** Asks for all the reads at once, as the browser asks, and times each and the whole. */
+export async function readAll(
+  reads: readonly PageRead[],
+  whole: string,
+  times: Readonly<Times>,
+): Promise<void> {
+  const all = await timed(() =>
+    Promise.all(
+      reads.map(async ([kind, ask]) => {
+        times.add(kind, (await timed(ask)).ms);
+      }),
+    ),
+  );
+  times.add(whole, all.ms);
+}
+
 /** One read of the issue page, asked for the way the browser asks: all at once. */
 export async function readPage(
   session: ApiSession,
   issue: string,
   times: Readonly<Times>,
 ): Promise<void> {
-  const params = { path: { issue } };
-  const read = async (kind: string, ask: () => Promise<unknown>): Promise<void> => {
-    times.add(kind, (await timed(ask)).ms);
-  };
-  const whole = await timed(() =>
-    Promise.all([
-      read("issue", () => session.client.GET("/api/v1/issues/{issue}", { params })),
-      read("relations", () => session.client.GET("/api/v1/issues/{issue}/relations", { params })),
-      read("sub-issues", () => session.client.GET("/api/v1/issues/{issue}/sub-issues", { params })),
-      read("related-issues", () =>
-        session.client.GET("/api/v1/issues/{issue}/related-issues", { params }),
-      ),
-      read("history", () => session.client.GET("/api/v1/issues/{issue}/history", { params })),
-      read("labels-and-tags", () =>
-        session.client.GET("/api/v1/issues/{issue}/labels-and-tags", { params }),
-      ),
-      read("follow", () => session.client.GET("/api/v1/issues/{issue}/follow", { params })),
-      read("followers", () => session.client.GET("/api/v1/issues/{issue}/followers", { params })),
-    ]),
-  );
-  times.add("the whole page, all reads at once", whole.ms);
+  await readAll(pageReads(session, issue), "the whole page, all reads at once", times);
 }
 
 /** Reads the first pages of the list of a project, as the list screen does when a person scrolls. */
