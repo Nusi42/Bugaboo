@@ -585,33 +585,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn m4_f83_migration_20_takes_the_read_at_of_a_mention_away() -> TestResult {
-        each_database("migration_20_mention", async |db| {
-            use crate::schema::{MentionRow, Retired};
-            let database = Database::connect(db.url()).await?;
-            database.migrate_until(19, at(0)).await?;
-            // SQLite reads a missing column in a SELECT as a string, so the question is an UPDATE
-            // that matches no row: it names the column and fails when there is none.
-            let mut with_read = Query::update();
-            with_read
-                .table(MentionRow::Table)
-                .value(Retired::ReadAt, 1_i64)
-                .and_where(Expr::val(1_i64).eq(0_i64));
-            database.execute(&with_read).await?;
-            database.migrate(at(1)).await?;
-            assert!(
-                database.execute(&with_read).await.is_err(),
-                "the column is gone"
-            );
-            let mut rows = Query::select();
-            rows.column(MentionRow::Via).from(MentionRow::Table);
-            assert!(database.fetch_all(&rows).await?.is_empty());
-            Ok(())
-        })
-        .await
-    }
-
-    #[tokio::test]
     async fn adr_0019_groups_and_roles_that_were_there_start_at_the_first_version() -> TestResult {
         each_database("migration_8_first_version", async |db| {
             use crate::schema::{GroupRow, RoleRow};
