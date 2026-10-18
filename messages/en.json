@@ -450,7 +450,7 @@
   "window.taller": "Taller",
   "window.shorter": "Shorter",
   "common.nothing": "nothing",
-  "common.issue-id": "Issue ID, for example WEB-142",
+  "common.issue-id": "Issue ID, for example WEB\u2011142",
   "shell.search": "Search",
   "shell.more": "More",
   "shell.narrow": "Narrow the menu",

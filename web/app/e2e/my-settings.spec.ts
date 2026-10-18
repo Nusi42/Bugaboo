@@ -232,7 +232,7 @@ test("cfg_04 times follow the region the person chose", async ({ page }) => {
   );
   await saved(page);
   await page.goto(paths.sessions);
-  await expect(page.getByText(/\d{4}-\d{2}-\d{2}, /u).first()).toBeVisible();
+  await expect(page.getByText(/\d{4}\u2011\d{2}\u2011\d{2},\s/u).first()).toBeVisible();
   // Reset to default brings the usual writing back.
   await page.goto(paths.region);
   await page
@@ -242,7 +242,7 @@ test("cfg_04 times follow the region the person chose", async ({ page }) => {
     .click();
   await saved(page);
   await page.goto(paths.sessions);
-  await expect(page.getByText(/\d{4}-\d{2}-\d{2}, /u)).toHaveCount(0);
+  await expect(page.getByText(/\d{4}\u2011\d{2}\u2011\d{2},\s/u)).toHaveCount(0);
 });
 
 test("cfg_06 the sign-in rules are drawn from the registry and saved at once", async ({ page }) => {

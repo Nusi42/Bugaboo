@@ -13,6 +13,18 @@ const dateStyles = {
   date: { dateStyle: "long" },
 } as const;
 
+/** A space that does not break the line, and a hyphen that does not (U+00A0, U+2011). */
+const NO_BREAK_SPACE = " ";
+const NO_BREAK_HYPHEN = "‑";
+
+/**
+ * Dates and times never wrap in the middle (UX review of M4, A4): a line breaks before a date,
+ * not inside it. The spaces and the hyphens of the text become ones that hold it together.
+ */
+function unbroken(text: string): string {
+  return text.replaceAll(" ", NO_BREAK_SPACE).replaceAll("-", NO_BREAK_HYPHEN);
+}
+
 /** A day as numbers in the order the person chose: `31.12.2026`, `12/31/2026` or `2026-12-31`. */
 function numeric(moment: number, region: Region): string {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -43,8 +55,8 @@ function numeric(moment: number, region: Region): string {
 export function formatDateTime(moment: string, region: Region = currentRegion()): string {
   const date = new Date(moment).getTime();
   if (region.dateFormat === "device") {
-    return new Intl.DateTimeFormat(locale, { ...dateStyles.dateTime, ...zoneOf(region) }).format(
-      date,
+    return unbroken(
+      new Intl.DateTimeFormat(locale, { ...dateStyles.dateTime, ...zoneOf(region) }).format(date),
     );
   }
   const time = new Intl.DateTimeFormat(locale, {
@@ -52,25 +64,29 @@ export function formatDateTime(moment: string, region: Region = currentRegion())
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
-  return `${numeric(date, region)}, ${time}`;
+  return unbroken(`${numeric(date, region)}, ${time}`);
 }
 
 /** The time of day of a moment from the server, in the person's time zone: "10:42". */
 export function formatTime(moment: string, region: Region = currentRegion()): string {
-  return new Intl.DateTimeFormat(locale, {
-    ...zoneOf(region),
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(moment).getTime());
+  return unbroken(
+    new Intl.DateTimeFormat(locale, {
+      ...zoneOf(region),
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(moment).getTime()),
+  );
 }
 
 /** A day from the server as people write it: "October 5, 2026". */
 export function formatDate(moment: string, region: Region = currentRegion()): string {
   const date = new Date(moment).getTime();
   if (region.dateFormat === "device") {
-    return new Intl.DateTimeFormat(locale, { ...dateStyles.date, ...zoneOf(region) }).format(date);
+    return unbroken(
+      new Intl.DateTimeFormat(locale, { ...dateStyles.date, ...zoneOf(region) }).format(date),
+    );
   }
-  return numeric(date, region);
+  return unbroken(numeric(date, region));
 }
 
 /** The language tag that writes numbers the way each choice does; the device uses its own. */

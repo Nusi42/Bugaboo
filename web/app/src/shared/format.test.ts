@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { daysUntil, formatAgo, formatDate, formatSince, splitUptime } from "./format.ts";
+import {
+  daysUntil,
+  formatAgo,
+  formatDate,
+  formatDateTime,
+  formatSince,
+  formatTime,
+  splitUptime,
+} from "./format.ts";
+import { deviceRegion, type Region } from "./region.ts";
 
 describe("ops_08 formatting for the status page", () => {
   it("splits an uptime into days, hours and minutes", () => {
@@ -21,7 +30,7 @@ describe("ops_08 formatting for the status page", () => {
   });
 
   it("writes a day the way people say it", () => {
-    expect(formatDate("2026-10-05T12:00:00Z")).toBe("October 5, 2026");
+    expect(formatDate("2026-10-05T12:00:00Z")).toBe("October 5, 2026");
   });
 });
 
@@ -39,5 +48,33 @@ describe("iss_17 how long ago something happened", () => {
   it("writes a short span for a line like since 2 min", () => {
     expect(formatSince("2026-10-05T11:58:00Z", now)).toBe("2 min");
     expect(formatSince("2026-10-05T09:00:00Z", now)).toBe("3 hr");
+  });
+});
+
+describe("ux_a4 a date or a time never wraps", () => {
+  const regions = ["year-month-day", "day-month-year", "month-day-year", "device"] as const;
+  const region = (dateFormat: (typeof regions)[number]): Region => ({
+    ...deviceRegion,
+    dateFormat,
+    timeZone: "UTC",
+  });
+
+  it("holds every moment together with spaces and hyphens that do not break", () => {
+    for (const dateFormat of regions) {
+      const text = [
+        formatDateTime("2026-10-18T01:16:00Z", region(dateFormat)),
+        formatDate("2026-10-18T01:16:00Z", region(dateFormat)),
+        formatTime("2026-10-18T13:16:00Z", region(dateFormat)),
+      ];
+      for (const each of text) {
+        expect(each).not.toMatch(/[ -]/u);
+      }
+    }
+  });
+
+  it("keeps the numbers as they were", () => {
+    expect(formatDateTime("2026-10-18T01:16:00Z", region("year-month-day"))).toBe(
+      "2026‑10‑18, 1:16 AM",
+    );
   });
 });
