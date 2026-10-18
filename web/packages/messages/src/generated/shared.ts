@@ -426,15 +426,17 @@ export const messages = {
   "status.testing": "Testing",
   "status.in-review": "In review",
   "status.wont-fix": "Won't fix",
-  "error.workflow.no-such-change": "The workflow of this issue has no such status change.",
+  "error.workflow.no-such-change":
+    "This status change is not in the workflow of this issue any more. Choose one from the status button.",
   "error.workflow.not-for-you": "You may not change the status this way.",
   "error.workflow.only-if":
     "This status change is possible only when something else is true first.",
-  "error.workflow.cannot-fill": "This status change needs a field that you cannot fill in.",
+  "error.workflow.cannot-fill":
+    "This status change needs a field that you cannot fill in. Ask the person it is assigned to, or the project lead.",
   "error.workflow.status-in-use":
     "Some issues are still in a status that the workflow would no longer have. Choose where they go.",
   "error.workflow.invalid":
-    "The workflow breaks a rule: check the statuses, the status changes and their names.",
+    "The workflow cannot be published like this. It needs at least one status, every status and every button needs its own name, and no status change may go back to the same status.",
   "priority.low": "Low",
   "priority.normal": "Normal",
   "priority.high": "High",
@@ -652,10 +654,10 @@ export const messages = {
     "Sends you an e-mail when somebody else changes other fields of an issue you follow. E-mail goes only when your organization has switched it on.",
   "setting.notifications.run-ended-in-app.name": "Your change to many issues has ended: in the app",
   "setting.notifications.run-ended-in-app.help":
-    "Tells you under Notifications when a change to many issues that you asked for has ended, or when work you asked for gave up.",
+    "Tells you under Notifications when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out.",
   "setting.notifications.run-ended-by-mail.name": "Your change to many issues has ended: by e-mail",
   "setting.notifications.run-ended-by-mail.help":
-    "Sends you an e-mail when a change to many issues that you asked for has ended, or when work you asked for gave up. E-mail goes only when your organization has switched it on.",
+    "Sends you an e-mail when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out. E-mail goes only when your organization has switched it on.",
   "setting.notifications.edit-notice-in-app.name":
     "Somebody asks you to finish editing: in the app",
   "setting.notifications.edit-notice-in-app.help":
@@ -696,7 +698,7 @@ export const messages = {
   "person.bugaboo": "Bugaboo",
   "setting.security.log-keep-days.name": "Days to keep the security log",
   "setting.security.log-keep-days.help":
-    "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out.",
+    "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",
   "setting.logs.server-log-megabytes.name": "Size of the server log file",
   "setting.logs.server-log-megabytes.help":
     "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",

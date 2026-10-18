@@ -7566,15 +7566,12 @@ pub fn many_changes_note_type_not_used(
 
 /// The message `many-changes.progress`.
 #[must_use]
-pub fn many_changes_progress(
-    done: impl std::fmt::Display,
-    total: impl std::fmt::Display,
-) -> Message {
+pub fn many_changes_progress(done: impl std::fmt::Display, total: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.progress"),
         vec![
             ("done", Value::Text(done.to_string())),
-            ("total", Value::Text(total.to_string())),
+            ("total", Value::Number(total)),
         ],
     )
 }
@@ -10438,15 +10435,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.workflow.cannot-fill",
-        "This status change needs a field that you cannot fill in.",
+        "This status change needs a field that you cannot fill in. Ask the person it is assigned to, or the project lead.",
     ),
     (
         "error.workflow.invalid",
-        "The workflow breaks a rule: check the statuses, the status changes and their names.",
+        "The workflow cannot be published like this. It needs at least one status, every status and every button needs its own name, and no status change may go back to the same status.",
     ),
     (
         "error.workflow.no-such-change",
-        "The workflow of this issue has no such status change.",
+        "This status change is not in the workflow of this issue any more. Choose one from the status button.",
     ),
     (
         "error.workflow.not-for-you",
@@ -10876,7 +10873,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "handle.invalid",
-        "That is not a handle. Use only the letters a to z, digits, dots, dashes and underscores.",
+        "A handle can have only the letters a to z, digits, dots, dashes and underscores.",
     ),
     ("handle.label", "Your handle"),
     (
@@ -11687,7 +11684,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "many-changes.note-type-not-used",
         "{project} does not offer {type}. The issue keeps it.",
     ),
-    ("many-changes.progress", "{done} of {total} issues done"),
+    (
+        "many-changes.progress",
+        "{total, plural, one {{done} of # issue done} other {{done} of # issues done}}",
+    ),
     ("many-changes.progress-label", "How far the change is"),
     ("many-changes.project-legend", "Move to"),
     (
@@ -13134,7 +13134,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.run-ended-by-mail.help",
-        "Sends you an e-mail when a change to many issues that you asked for has ended, or when work you asked for gave up. E-mail goes only when your organization has switched it on.",
+        "Sends you an e-mail when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out. E-mail goes only when your organization has switched it on.",
     ),
     (
         "setting.notifications.run-ended-by-mail.name",
@@ -13142,7 +13142,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.run-ended-in-app.help",
-        "Tells you under Notifications when a change to many issues that you asked for has ended, or when work you asked for gave up.",
+        "Tells you under Notifications when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out.",
     ),
     (
         "setting.notifications.run-ended-in-app.name",
@@ -13205,7 +13205,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.region.time-zone.name", "Time zone"),
     (
         "setting.security.log-keep-days.help",
-        "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out.",
+        "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",
     ),
     (
         "setting.security.log-keep-days.name",
@@ -13572,7 +13572,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflow-change.send-to-testing", "Send to testing"),
     ("workflow-change.start-working", "Start working"),
     ("workflow-change.stop-working", "Stop working"),
-    ("workflow-change.wont-fix", "Won't fix"),
+    ("workflow-change.wont-fix", "Close as won't fix"),
     ("workflow.bug", "Bug"),
     ("workflow.development", "Development"),
     ("workflow.simple", "Simple"),
@@ -13674,11 +13674,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "workflows.publish-where",
-        "{count, plural, one {# issue is} other {# issues are}} in {status}. They go to",
+        "{count, plural, one {# issue is in {status}. It goes to} other {# issues are in {status}. They go to}}",
     ),
     ("workflows.publish-where-over", "Issues in {status} go to"),
     ("workflows.remove-condition", "Stop checking {field}"),
-    ("workflows.rules-done", "Done"),
+    ("workflows.rules-done", "Close"),
     (
         "workflows.rules-intro",
         "From {from} to {to}. A rule that is left empty does not apply.",
@@ -13744,7 +13744,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.who-groups", "Groups"),
     (
         "workflows.who-help",
-        "Name nobody and everybody who may change the issue can do it. A rule only narrows who can do it: it never gives a right that the person does not have.",
+        "If you choose nobody, everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
     ),
     ("workflows.who-reporter", "The person who reported it"),
     ("workflows.who-roles", "Roles"),

@@ -47,7 +47,7 @@ export const messages = {
   "workflows.rules-intro": "From {from} to {to}. A rule that is left empty does not apply.",
   "workflows.who": "Who can do it",
   "workflows.who-help":
-    "Name nobody and everybody who may change the issue can do it. A rule only narrows who can do it: it never gives a right that the person does not have.",
+    "If you choose nobody, everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
   "workflows.who-roles": "Roles",
   "workflows.who-groups": "Groups",
   "workflows.who-assigned": "The person it is assigned to",
@@ -65,7 +65,7 @@ export const messages = {
   "workflows.ask-for": "Ask for",
   "workflows.ask-for-help":
     "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is written on the issue page.",
-  "workflows.rules-done": "Done",
+  "workflows.rules-done": "Close",
   "workflows.publish": "Publish",
   "workflows.draft-note": "These changes are a draft: they count only after you publish them.",
   "workflows.lost":
@@ -77,7 +77,7 @@ export const messages = {
   "workflows.publish-text":
     "Issues are still in statuses that you removed. Choose a status for each group of issues. They move when you publish, and each move is written in the history.",
   "workflows.publish-where":
-    "{count, plural, one {# issue is} other {# issues are}} in {status}. They go to",
+    "{count, plural, one {# issue is in {status}. It goes to} other {# issues are in {status}. They go to}}",
   "workflows.publish-where-over": "Issues in {status} go to",
   "workflows.publish-unseen":
     "{count, plural, one {# of them is an issue} other {# of them are issues}} that you cannot see.",

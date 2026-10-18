@@ -297,7 +297,7 @@ export interface MessageArguments {
   "many-changes.line-changes": { after: string | number; field: string | number };
   "many-changes.line-relation": { issue: string | number; name: string | number };
   "many-changes.note-type-not-used": { project: string | number; type: string | number };
-  "many-changes.progress": { done: string | number; total: string | number };
+  "many-changes.progress": { done: string | number; total: number };
   "many-changes.project-picked": { name: string | number };
   "many-changes.result-done": { changed: number; skipped: number };
   "many-changes.skipped-line": { issue: string | number; reason: string | number };
