@@ -1,3 +1,4 @@
+import { t } from "@bugaboo/messages";
 import type { MenuAction } from "@bugaboo/ui";
 import { use } from "react";
 import { createPortal } from "react-dom";
@@ -21,17 +22,20 @@ export function PhoneBar({ actions }: { readonly actions: readonly MenuAction[] 
   if (slot === null) {
     return null;
   }
+  // A landmark of its own, so the bar is not outside every landmark of the page.
   return createPortal(
-    <IssueBar
-      onStatus={() => {
-        // The same as the key for the status: a status the person may not change has no list.
-        openStatusMenu();
-      }}
-      onComment={() => {
-        goTo(historyId)?.querySelector("textarea")?.focus();
-      }}
-      actions={actions}
-    />,
+    <section aria-label={t("issues.bar")}>
+      <IssueBar
+        onStatus={() => {
+          // The same as the key for the status: a status the person may not change has no list.
+          openStatusMenu();
+        }}
+        onComment={() => {
+          goTo(historyId)?.querySelector("textarea")?.focus();
+        }}
+        actions={actions}
+      />
+    </section>,
     slot,
   );
 }

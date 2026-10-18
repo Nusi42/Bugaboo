@@ -86,6 +86,10 @@ test("ux_04 on a phone nothing of the page is under a bar, also when the issue i
   const note = page.getByRole("status").filter({ hasText: t("common.undo") });
   await expect(note).toBeVisible();
   const bar = page.getByRole("toolbar", { name: t("issues.bar"), exact: true });
+  // The bar is in a landmark of its own, not outside every landmark of the page.
+  await expect(
+    page.getByRole("region", { name: t("issues.bar"), exact: true }).getByRole("toolbar"),
+  ).toBeVisible();
   const pageEdge = await edgeOf(page.locator("main"));
   const noteEdge = await edgeOf(note);
   const barEdge = await edgeOf(bar);
