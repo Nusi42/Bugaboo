@@ -13,7 +13,7 @@ bugaboo/
 │   ├── bb-markdown/        Markdown → safe HTML, issue-number chips — no I/O, also WebAssembly
 │   ├── bb-app/             use cases per feature (ports = traits for storage, files, mail, AI)
 │   ├── bb-store/           database adapter: schema, migrations, repositories, search compiler
-│   ├── bb-files/           file adapter: content-addressed storage, type checks, previews, scanning
+│   ├── bb-files/           file adapter: content-addressed storage, type checks, previews (a virus scan is V1, ATT-05)
 │   ├── bb-auth/            passwords, passkeys, two-step codes, sessions, access keys, OIDC, OAuth 2.1
 │   ├── bb-ai/              AI provider adapters, context builder, tool registry
 │   ├── bb-mcp/             MCP server (uses the tool registry)
@@ -128,7 +128,7 @@ Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows no
 
 ### bb-app — use cases by feature
 
-Built so far (M0 to M4 WP-06): `auth` (signing in), `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*, the starting roles), `projects`, `settings`, `issues` (issues, types, IDs, the trash), `fields` (own fields and their choices), `relations` (relations, sub-issues, kinds of relation), `tags` (tags, labels, groups of labels), `comments` (comments, mentions), `follow`, `history` (the history read from the events), `editing` (edit locks, drafts, the check of versions, the structured conflict), `layouts` (the issue page and the new-issue form), `many_changes` (changing many issues, with the run that goes on in the background), `notifications` (the reader of the outbox that tells people, their e-mail, handles and the confirming of an address; M4), `jobs` (the queue as the use cases see it, and what each kind of job does), `first_start` (what a new server makes before anyone signs in), `preview`, `status`. Planned: `workflows`, `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `attachments`, `assistant`, `privacy`, `themes`, `admin`.
+Built so far (M0 to M4): `auth` (signing in), `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*, the starting roles), `projects`, `settings`, `issues` (issues, types, IDs, the trash), `fields` (own fields and their choices), `relations` (relations, sub-issues, kinds of relation), `tags` (tags, labels, groups of labels), `comments` (comments, mentions), `follow`, `history` (the history read from the events), `editing` (edit locks, drafts, the check of versions, the structured conflict), `layouts` (the issue page and the new-issue form), `many_changes` (changing many issues, with the run that goes on in the background), `notifications` (the reader of the outbox that tells people, their e-mail, handles and the confirming of an address; M4), `jobs` (the queue as the use cases see it, and what each kind of job does), `first_start` (what a new server makes before anyone signs in), `workflows` (the judge's inputs, the editor, *Publish* with its preview and the check that no issue is stranded; M4), `offers` (where issue types and groups of labels are offered, and what a person may know of them; M4), `files` (uploads in parts, attachments with the trash and *Undo*, signed downloads, previews and the daily clean-up; M4), `preview`, `status`. Planned: `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `assistant`, `privacy`, `themes`, `admin`.
 
 Every use case has the same shape:
 
@@ -153,6 +153,20 @@ sqlx connection pools, migrations (defined once with the query builder, run on b
 ### bb-testing
 
 Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). `each_database` runs one async test body against every database named in `BB_TEST_DATABASES` (`sqlite`, `postgres`; default `sqlite`), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (`Pool::Sqlite` or `Pool::Postgres`), and records what ran for ARCH-DB-PARITY. It depends on `bb-dev-words` only, which names the databases and the variables. How it is wired to `cargo xtask db` and `cargo xtask ci` is in [testing](11-testing.md#database-tests).
+
+### bb-files
+
+The file adapter (ADR-0032): it implements the port `FileStore` of `bb-app` and keeps the bytes in the `files/` folder of the data folder. An upload is put together part by part; a finished file is stored once under the SHA-256 of its content (`DiskFiles`); the real type is read from the content (`sniff`), never from the name. A preview is made by the program itself, started as a child process (`bugaboo preview`) with an empty environment, the bytes on standard input, no path and limits on memory, pixels, input size and time (`preview`); a file that cannot be previewed just has none. The server never serves the folder: a file leaves only through a signed link that `bb-app` judges again at every use. A virus scan (ATT-05) and a second storage (S3-compatible, ATT-06) are not built; the port has room for both.
+
+- **May depend on:** `bb-app` (the port), `bb-core`. Nothing depends on it except `bb-server`, and `bb-sample` with its feature `testing`.
+- **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
+
+### bb-notify
+
+The delivery adapter for e-mail (NTF-02, ADR-0033): it implements the port `Mailer` of `bb-app` over SMTP with `lettre`. Every e-mail is plain text and nothing else (no HTML, no picture, no attachment), a subject is one line, and what the crate logs is a class of failure and never the answer of the mail server, which can repeat an address (DATA-LOGS). Webhooks are planned for the same crate and not built.
+
+- **May depend on:** `bb-app` (the port), `bb-core`. Nothing depends on it except `bb-server`.
+- **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
 
 ### bb-jobs
 
