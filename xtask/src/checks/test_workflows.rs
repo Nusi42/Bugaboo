@@ -14,182 +14,75 @@ use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
 
 /// The tests of the rules of a status change (docs/milestones/M4/WP-04-workflows-on-the-server.md).
-const REQUIRED: [Required; 43] = [
-    Required {
-        name: "wf_01_an_m3_database_keeps_every_status_after_the_upgrade",
-        both_databases: true,
-    },
-    Required {
-        name: "wf_01_a_project_finds_its_workflow_like_a_layout",
-        both_databases: true,
-    },
-    Required {
-        name: "wf_01_a_workflow_comes_back_as_stored_and_a_save_needs_the_version_it_started_from",
-        both_databases: true,
-    },
-    Required {
-        name: "wf_02_publishing_without_a_status_moves_its_issues_with_history",
-        both_databases: false,
-    },
-    Required {
-        name: "wf_02_publishing_without_a_status_moves_its_issues_over_http",
-        both_databases: true,
-    },
-    Required {
-        name: "wf_03_who_can_do_it_allows_only_the_named_roles_and_people",
-        both_databases: false,
-    },
-    Required {
-        name: "wf_03_only_if_refuses_with_a_sentence",
-        both_databases: false,
-    },
-    Required {
-        name: "wf_03_a_rule_never_gives_a_right_change_issues_does_not",
-        both_databases: false,
-    },
-    Required {
-        name: "wf_03_whatever_the_rules_are_they_give_no_right_and_name_no_hidden_field",
-        both_databases: false,
-    },
-    Required {
-        name: "wf_04_must_be_filled_in_names_the_missing_field",
-        both_databases: false,
-    },
-    Required {
-        name: "wf_04_ask_for_never_asks_for_a_hidden_field",
-        both_databases: false,
-    },
-    Required {
-        name: "wf_06_a_new_organization_has_the_three_starter_workflows",
-        both_databases: false,
-    },
-    Required {
-        name: "wf_06_a_new_organization_offers_the_three_starter_workflows_over_http",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_09_many_changes_skip_an_issue_whose_workflow_does_not_allow_it",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_06_a_refusal_of_a_status_change_names_no_field_the_person_cannot_see",
-        both_databases: false,
-    },
-    Required {
-        name: "m3_f53_who_may_change_names_the_roles_held_in_the_project_over_http",
-        both_databases: true,
-    },
+pub(super) const REQUIRED: [Required; 48] = [
+    Required::both("wf_01_an_m3_database_keeps_every_status_after_the_upgrade"),
+    Required::both("wf_01_a_project_finds_its_workflow_like_a_layout"),
+    Required::both(
+        "wf_01_a_workflow_comes_back_as_stored_and_a_save_needs_the_version_it_started_from",
+    ),
+    Required::anywhere("wf_02_publishing_without_a_status_moves_its_issues_with_history"),
+    Required::both("wf_02_publishing_without_a_status_moves_its_issues_over_http"),
+    Required::anywhere("wf_03_who_can_do_it_allows_only_the_named_roles_and_people"),
+    Required::anywhere("wf_03_only_if_refuses_with_a_sentence"),
+    Required::anywhere("wf_03_a_rule_never_gives_a_right_change_issues_does_not"),
+    Required::anywhere("wf_03_whatever_the_rules_are_they_give_no_right_and_name_no_hidden_field"),
+    Required::anywhere("wf_04_must_be_filled_in_names_the_missing_field"),
+    Required::anywhere("wf_04_ask_for_never_asks_for_a_hidden_field"),
+    Required::anywhere("wf_06_a_new_organization_has_the_three_starter_workflows"),
+    Required::both("wf_06_a_new_organization_offers_the_three_starter_workflows_over_http"),
+    Required::anywhere("iss_09_many_changes_skip_an_issue_whose_workflow_does_not_allow_it"),
+    Required::anywhere("sec_06_a_refusal_of_a_status_change_names_no_field_the_person_cannot_see"),
+    Required::both("m3_f53_who_may_change_names_the_roles_held_in_the_project_over_http"),
     // Where an issue type or a group of labels is offered is found by the same walk as a workflow
     // (docs/milestones/M4/WP-11-types-and-labels-per-project.md).
-    Required {
-        name: "iss_02_a_project_offers_only_its_issue_types",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_02_an_upgraded_database_offers_every_type_everywhere",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_02_a_retired_type_is_not_missing_on_a_move",
-        both_databases: true,
-    },
-    Required {
-        name: "sec_03_a_project_lead_manages_the_types_of_their_project_only",
-        both_databases: true,
-    },
-    Required {
-        name: "tag_02_a_label_group_of_a_project_is_offered_there_and_below",
-        both_databases: true,
-    },
-    Required {
-        name: "sec_03_check_access_names_the_level_per_issue_type",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_02_a_sub_project_follows_its_parent_until_it_has_its_own_row",
-        both_databases: false,
-    },
+    Required::both("iss_02_a_project_offers_only_its_issue_types"),
+    Required::both("iss_02_an_upgraded_database_offers_every_type_everywhere"),
+    Required::both("iss_02_a_retired_type_is_not_missing_on_a_move"),
+    Required::both("sec_03_a_project_lead_manages_the_types_of_their_project_only"),
+    Required::both("tag_02_a_label_group_of_a_project_is_offered_there_and_below"),
+    Required::both("sec_03_check_access_names_the_level_per_issue_type"),
+    Required::anywhere("iss_02_a_sub_project_follows_its_parent_until_it_has_its_own_row"),
     // Who may know a subject, the names, the limits and the upgrade (review of WP-11).
-    Required {
-        name: "sec_03_a_subject_created_in_a_project_is_unknown_outside_it",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_check_access_does_not_name_a_type_the_checker_may_not_know",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_a_subject_in_use_on_an_issue_the_reader_reads_is_known",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_a_name_is_unique_among_the_subjects_that_can_meet_in_a_project",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_the_rows_of_a_subject_leave_out_a_place_the_reader_may_not_know",
-        both_databases: false,
-    },
-    Required {
-        name: "iss_02_each_place_has_its_own_limit_of_issue_types",
-        both_databases: false,
-    },
-    Required {
-        name: "tag_02_each_place_has_its_own_limit_of_groups_and_of_labels",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_a_label_of_a_project_is_not_rewritten_in_projects_its_lead_does_not_manage",
-        both_databases: false,
-    },
-    Required {
-        name: "tag_02_a_list_about_a_project_holds_only_the_subjects_that_can_reach_it",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_a_subject_created_in_a_project_is_not_there_for_a_guest_a_sibling_lead_or_a_key",
-        both_databases: true,
-    },
-    Required {
-        name: "perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_forty_as_for_five",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_09_a_stored_run_that_skipped_for_a_missing_type_is_still_read",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_02_a_subject_refers_to_its_project_and_a_group_name_may_repeat",
-        both_databases: true,
-    },
-    Required {
-        name: "sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offers",
-        both_databases: true,
-    },
-    Required {
-        name: "iss_02_the_rows_of_a_subject_are_found_by_the_subject",
-        both_databases: true,
-    },
-    Required {
-        name: "sec_03_a_visible_sub_project_under_a_hidden_parent_knows_what_reaches_it",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_an_issue_of_a_type_the_writer_does_not_know_is_not_found",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_no_screen_names_a_type_of_a_project_the_reader_does_not_know",
-        both_databases: true,
-    },
-    Required {
-        name: "sec_06_a_group_in_use_is_unknown_to_a_reader_whose_role_hides_the_labels",
-        both_databases: false,
-    },
-    Required {
-        name: "sec_03_a_lead_who_knows_a_project_they_cannot_see_is_told_the_same_by_the_list_and_the_put",
-        both_databases: false,
-    },
+    Required::anywhere("sec_03_a_subject_created_in_a_project_is_unknown_outside_it"),
+    Required::anywhere("sec_03_check_access_does_not_name_a_type_the_checker_may_not_know"),
+    Required::anywhere("sec_03_a_subject_in_use_on_an_issue_the_reader_reads_is_known"),
+    Required::anywhere("sec_03_a_name_is_unique_among_the_subjects_that_can_meet_in_a_project"),
+    Required::anywhere("sec_03_the_rows_of_a_subject_leave_out_a_place_the_reader_may_not_know"),
+    Required::anywhere("iss_02_each_place_has_its_own_limit_of_issue_types"),
+    Required::anywhere("tag_02_each_place_has_its_own_limit_of_groups_and_of_labels"),
+    Required::anywhere(
+        "sec_03_a_label_of_a_project_is_not_rewritten_in_projects_its_lead_does_not_manage",
+    ),
+    Required::anywhere("tag_02_a_list_about_a_project_holds_only_the_subjects_that_can_reach_it"),
+    Required::both(
+        "sec_03_a_subject_created_in_a_project_is_not_there_for_a_guest_a_sibling_lead_or_a_key",
+    ),
+    Required::both(
+        "perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_forty_as_for_five",
+    ),
+    Required::both("iss_09_a_stored_run_that_skipped_for_a_missing_type_is_still_read"),
+    Required::both("iss_02_a_subject_refers_to_its_project_and_a_group_name_may_repeat"),
+    Required::both("sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offers"),
+    Required::both("iss_02_the_rows_of_a_subject_are_found_by_the_subject"),
+    Required::anywhere("sec_03_a_visible_sub_project_under_a_hidden_parent_knows_what_reaches_it"),
+    Required::anywhere("sec_03_an_issue_of_a_type_the_writer_does_not_know_is_not_found"),
+    Required::both("sec_03_no_screen_names_a_type_of_a_project_the_reader_does_not_know"),
+    Required::anywhere("sec_06_a_group_in_use_is_unknown_to_a_reader_whose_role_hides_the_labels"),
+    Required::anywhere(
+        "sec_03_a_lead_who_knows_a_project_they_cannot_see_is_told_the_same_by_the_list_and_the_put",
+    ),
+    // What a Publish moves, judged with the rights of the publisher (ADR-0031 amendments 11 and 12).
+    Required::anywhere(
+        "wf_02_a_publish_with_an_issue_the_publisher_does_not_see_publishes_nothing",
+    ),
+    Required::anywhere(
+        "wf_02_a_publish_with_an_issue_whose_status_the_publisher_may_not_change_publishes_nothing",
+    ),
+    Required::anywhere(
+        "wf_02_a_move_ignores_the_rules_of_the_old_change_and_closes_by_the_group_of_the_target",
+    ),
+    Required::anywhere("wf_02_the_preview_names_what_the_publisher_sees_and_only_counts_the_rest"),
+    Required::anywhere("sec_03_a_project_lead_manages_the_label_groups_of_their_project_only"),
 ];
 
 pub(crate) struct TestWorkflows;
@@ -201,7 +94,7 @@ impl Check for TestWorkflows {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         Ok(evaluate(
-            &crate_sources(context)?,
+            &crate_sources(context.repo)?,
             &REQUIRED,
             "The rules of a status change (ADR-0031) are held by it;",
         ))

@@ -1,17 +1,84 @@
-//! The part that the checks of "these tests must exist" share (TEST-ISSUE-IDS, TEST-WORKFLOWS): a
-//! list of test names, found in the Rust files of the product crates, and for each one whether it
-//! has to run on both databases (ARCH-DB-PARITY). The lists and the words of the findings are the
-//! checks' own.
+//! The one implementation of "these tests must exist" (TEST-ISSUE-IDS, TEST-WORKFLOWS, TEST-UPLOADS,
+//! TEST-EDIT-LOCKS, PERF-N1, ARCH-LOCK-ORDER): a list of test names, found in the Rust files of the
+//! product crates. A name counts only when the test can run:
+//!
+//! - it has a test attribute (`#[test]`, `#[tokio::test]`),
+//! - no `#[ignore]` in any form (`#[ignore = "…"]`, `#[cfg_attr(…, ignore)]`) and no `cfg(…)` on the
+//!   function or on a block around it (`#[cfg(test)]` alone is fine: a test only runs under it),
+//! - its file is part of the crate: a chain of `mod name;` (or `#[path = "…"]`) leads from a crate
+//!   root (`lib.rs`, `main.rs`, a file in `tests/`) to it, without a `cfg` on the way,
+//! - and, when the list asks for it, the test runs on both databases (ARCH-DB-PARITY).
+//!
+//! The lists and the words of the findings are the checks' own.
 
-use super::{Context, Finding};
+use std::collections::{HashMap, HashSet};
+
+use super::Finding;
 use crate::docs::text::has_extension;
+use crate::repo::Repo;
 use crate::rust_source::strip_comments;
 use crate::source::{Source, read_text};
 
-/// A test that has to exist, and whether it has to run on both databases.
+/// A test that has to exist.
 pub(super) struct Required {
     pub(super) name: &'static str,
     pub(super) both_databases: bool,
+    /// Only a test in a file below this path counts (empty: anywhere in the crates).
+    pub(super) within: &'static str,
+}
+
+impl Required {
+    /// A test anywhere in the crates.
+    pub(super) const fn anywhere(name: &'static str) -> Self {
+        Self {
+            name,
+            both_databases: false,
+            within: "",
+        }
+    }
+
+    /// A test anywhere in the crates that runs on both databases.
+    pub(super) const fn both(name: &'static str) -> Self {
+        Self {
+            name,
+            both_databases: true,
+            within: "",
+        }
+    }
+
+    /// The same test, but only in a file below `path` (a file or a folder).
+    pub(super) const fn within(self, path: &'static str) -> Self {
+        Self {
+            name: self.name,
+            both_databases: self.both_databases,
+            within: path,
+        }
+    }
+}
+
+/// Every check that holds a list of required tests, by ID: DOC-PROVEN-BY reads the lists to see that
+/// a test the docs cite as proof is required by the check they cite.
+pub(super) fn lists() -> [(&'static str, &'static [Required]); 5] {
+    use super::Check as _;
+    [
+        (
+            super::test_issue_ids::TestIssueIds.id(),
+            &super::test_issue_ids::REQUIRED,
+        ),
+        (
+            super::test_workflows::TestWorkflows.id(),
+            &super::test_workflows::REQUIRED,
+        ),
+        (
+            super::test_uploads::TestUploads.id(),
+            &super::test_uploads::REQUIRED,
+        ),
+        (
+            super::test_edit_locks::TestEditLocks.id(),
+            &super::test_edit_locks::REQUIRED,
+        ),
+        (super::perf_n1::PerfN1.id(), &super::perf_n1::REQUIRED),
+    ]
 }
 
 /// What runs a test on both databases.
@@ -19,30 +86,248 @@ const BOTH_DATABASES: &str = "each_database(";
 
 /// Every Rust file of the crates, the folders of tests too: the tests are there. Whatever changed,
 /// all of them are read.
-pub(super) fn crate_sources(context: &Context<'_>) -> anyhow::Result<Vec<Source>> {
+pub(super) fn crate_sources(repo: &Repo) -> anyhow::Result<Vec<Source>> {
     let mut sources = Vec::new();
-    for file in context.repo.all_files()? {
+    for file in repo.all_files()? {
         if file.starts_with("crates/") && has_extension(&file, "rs") {
-            let text = read_text(context.repo, &file)?;
+            let text = read_text(repo, &file)?;
             sources.push((file, text));
         }
     }
     Ok(sources)
 }
 
-/// The body of the function `name`: from its `fn` up to the next function at the same level.
-fn body_of<'a>(text: &'a str, name: &str) -> Option<&'a str> {
-    let start = text.find(&format!("fn {name}("))?;
-    let rest = &text[start..];
-    let end = rest[1..]
-        .find("\n#[")
-        .or_else(|| rest[1..].find("\nfn "))
-        .map_or(rest.len(), |at| at + 1);
-    Some(&rest[..end])
+/// The modules a file declares with `mod name;` and no `cfg` in their attributes, each with the
+/// file it names by `#[path = "…"]`, if it does. Takes code whose comments are blank.
+fn declarations(code: &str) -> Vec<(String, Option<String>)> {
+    let mut modules = Vec::new();
+    for (at, _) in code.match_indices("mod ") {
+        let rest = &code[at + 4..];
+        let Some(end) = rest.find([';', '{']) else {
+            continue;
+        };
+        if !rest[end..].starts_with(';') || rest[..end].trim().contains(char::is_whitespace) {
+            continue;
+        }
+        let attributes = attributes_before(&code[..at]);
+        if has_cfg(attributes) {
+            continue;
+        }
+        modules.push((rest[..end].trim().to_owned(), path_attribute(attributes)));
+    }
+    modules
+}
+
+/// The text of `#[path = "…"]` among the attributes.
+fn path_attribute(attributes: &str) -> Option<String> {
+    let after = &attributes[attributes.find("path")? + 4..];
+    let after = after.trim_start().strip_prefix('=')?.trim_start();
+    let after = after.strip_prefix('"')?;
+    Some(after[..after.find('"')?].to_owned())
+}
+
+/// The attributes of the item that starts right after `before`: everything since the end of the
+/// item before it.
+fn attributes_before(before: &str) -> &str {
+    let start = before.rfind(['}', ';', '{']).map_or(0, |end| end + 1);
+    &before[start..]
+}
+
+/// Whether attributes can switch an item off: a `cfg(…)` among them. `#[cfg(test)]` alone does not,
+/// because a test only runs under it (a module of tests that clippy lets unwrap is written so).
+fn has_cfg(attributes: &str) -> bool {
+    attributes.replace("#[cfg(test)]", "").contains("cfg(")
+}
+
+/// Whether a block that encloses the position `at` has `cfg(` in its attributes (a `mod` that is
+/// switched off around the tests).
+fn inside_switched_off_block(code: &str, at: usize) -> bool {
+    let mut open: Vec<bool> = Vec::new();
+    let mut header_start = 0;
+    for (index, character) in code[..at].char_indices() {
+        match character {
+            '{' => {
+                open.push(has_cfg(&code[header_start..index]));
+                header_start = index + 1;
+            }
+            '}' => {
+                open.pop();
+                header_start = index + 1;
+            }
+            ';' => header_start = index + 1,
+            _ => {}
+        }
+    }
+    open.contains(&true)
+}
+
+/// Whether the function whose `fn` stands at `at` is a test that is not switched off. The
+/// attributes are everything between the end of the item before it (`}` or `;`) and the function;
+/// comments are already blank in `code`, so a doc comment between the attributes does not hide one,
+/// and an attribute over several lines is read whole. `ignore` anywhere in them counts as off, and
+/// so does `cfg(` in them or in the attributes of a block around the function.
+fn is_live_test(code: &str, at: usize) -> bool {
+    let attributes = attributes_before(&code[..at]);
+    attributes.contains("test]")
+        && !attributes.contains("ignore")
+        && !has_cfg(attributes)
+        && !inside_switched_off_block(code, at)
+}
+
+/// The text of the function that starts at `at`: up to the next item of the same level (or the
+/// end of the block around it).
+fn body_at(code: &str, at: usize) -> &str {
+    let line_start = code[..at].rfind('\n').map_or(0, |start| start + 1);
+    let line = &code[line_start..];
+    let indent = line.len() - line.trim_start().len();
+    let mut offset = at;
+    for (index, line) in code[at..].split_inclusive('\n').enumerate() {
+        let start = offset;
+        offset += line.len();
+        if index == 0 {
+            continue;
+        }
+        let trimmed = line.trim_start();
+        let depth = line.len() - trimmed.len();
+        let starts_item = ["#[", "fn ", "async fn ", "pub ", "mod ", "use ", "const "]
+            .iter()
+            .any(|word| trimmed.starts_with(word));
+        if !trimmed.trim().is_empty() && ((depth <= indent && starts_item) || depth < indent) {
+            return &code[at..start];
+        }
+    }
+    &code[at..]
+}
+
+/// Where every file of the crates is declared as a module, so that "does a crate root reach this
+/// file" is a walk up.
+struct Tree {
+    /// For a file, the files that declare it (without a `cfg`).
+    declared_by: HashMap<String, Vec<String>>,
+}
+
+impl Tree {
+    fn of(code: &[(&str, String)]) -> Self {
+        let mut declared_by: HashMap<String, Vec<String>> = HashMap::new();
+        for (path, text) in code {
+            let (folder, file) = path.rsplit_once('/').unwrap_or(("", path));
+            // The modules of a root or of a `mod.rs` are beside it, those of `a.rs` in `a/`.
+            let children = if is_root(path) || file == "mod.rs" {
+                folder.to_owned()
+            } else {
+                format!("{folder}/{}", file.trim_end_matches(".rs"))
+            };
+            for (name, explicit) in declarations(text) {
+                let targets = explicit.map_or_else(
+                    || {
+                        vec![
+                            format!("{children}/{name}.rs"),
+                            format!("{children}/{name}/mod.rs"),
+                        ]
+                    },
+                    |relative| vec![join(folder, &relative)],
+                );
+                for target in targets {
+                    declared_by
+                        .entry(target)
+                        .or_default()
+                        .push((*path).to_owned());
+                }
+            }
+        }
+        Self { declared_by }
+    }
+
+    /// Whether a chain of declarations leads from a crate root to the file.
+    fn reaches(&self, path: &str) -> bool {
+        self.walk(path, &mut HashSet::new())
+    }
+
+    fn walk(&self, path: &str, seen: &mut HashSet<String>) -> bool {
+        if is_root(path) {
+            return true;
+        }
+        if !seen.insert(path.to_owned()) {
+            return false;
+        }
+        self.declared_by
+            .get(path)
+            .is_some_and(|declarers| declarers.iter().any(|from| self.walk(from, seen)))
+    }
+}
+
+/// `folder/relative`, with `..` resolved.
+fn join(folder: &str, relative: &str) -> String {
+    let mut parts: Vec<&str> = folder.split('/').filter(|part| !part.is_empty()).collect();
+    for part in relative.split('/') {
+        match part {
+            ".." => {
+                parts.pop();
+            }
+            "." | "" => {}
+            other => parts.push(other),
+        }
+    }
+    parts.join("/")
+}
+
+/// Whether Cargo builds the file by itself: `crates/<crate>/src/{lib,main}.rs`, `build.rs`, a file in
+/// `src/bin/`, or one directly in `tests/`, `benches/` or `examples/`.
+fn is_root(path: &str) -> bool {
+    let parts: Vec<&str> = path.split('/').collect();
+    matches!(
+        parts.as_slice(),
+        ["crates", _, "src", "lib.rs" | "main.rs"]
+            | ["crates", _, "build.rs"]
+            | ["crates", _, "src", "bin", _]
+            | ["crates", _, "tests" | "benches" | "examples", _]
+    )
+}
+
+/// What is wrong with one required test, or nothing.
+enum Verdict<'a> {
+    Fine,
+    Missing,
+    /// The test exists but cannot run: where, and why.
+    SwitchedOff(&'a str, &'static str),
+    /// It runs on one database only: where.
+    OneDatabase(&'a str),
+}
+
+const NO_ATTRIBUTE: &str = "it has no test attribute, or an `#[ignore]` or a `cfg` switches it off";
+const NO_MODULE: &str = "no `mod` leads to its file from the root of the crate (or only behind a \
+                         `cfg`), so it never runs";
+
+/// What is wrong with the test `each`, looking at every function of that name.
+fn judge<'a>(code: &'a [(&'a str, String)], tree: &Tree, each: &Required) -> Verdict<'a> {
+    let needle = format!("fn {}(", each.name);
+    let mut off = None;
+    let mut one_database = None;
+    for (path, text) in code {
+        if !path.starts_with(each.within) {
+            continue;
+        }
+        for (at, _) in text.match_indices(&needle) {
+            if !is_live_test(text, at) {
+                off = Some((*path, NO_ATTRIBUTE));
+            } else if !tree.reaches(path) {
+                off = off.or(Some((*path, NO_MODULE)));
+            } else if each.both_databases && !body_at(text, at).contains(BOTH_DATABASES) {
+                one_database = Some(*path);
+            } else {
+                return Verdict::Fine;
+            }
+        }
+    }
+    match (one_database, off) {
+        (Some(path), _) => Verdict::OneDatabase(path),
+        (None, Some((path, why))) => Verdict::SwitchedOff(path, why),
+        (None, None) => Verdict::Missing,
+    }
 }
 
 /// The findings for the tests of `required` that are missing (`why_needed` finishes the sentence
-/// "The test … is missing. …") or run on one database only.
+/// "The test … is missing. …"), switched off, or run on one database only.
 pub(super) fn evaluate(
     sources: &[Source],
     required: &[Required],
@@ -52,31 +337,191 @@ pub(super) fn evaluate(
         .iter()
         .map(|(path, text)| (path.as_str(), strip_comments(text)))
         .collect();
-    let mut findings = Vec::new();
-    for each in required {
-        let found = code
-            .iter()
-            .find_map(|(path, text)| body_of(text, each.name).map(|body| (*path, body)));
-        match found {
-            None => findings.push(Finding::general(format!(
+    let tree = Tree::of(&code);
+    required
+        .iter()
+        .filter_map(|each| match judge(&code, &tree, each) {
+            Verdict::Fine => None,
+            Verdict::Missing => Some(Finding::general(format!(
                 "The test `{}` is missing. {why_needed} write it again or, if the rule changed, \
                  change this list.",
                 each.name
             ))),
-            Some((path, body)) if each.both_databases && !body.contains(BOTH_DATABASES) => {
-                findings.push(Finding::at(
-                    path,
-                    format!(
-                        "The test `{}` has to run on both databases: wrap it in `each_database` \
-                         (ARCH-DB-PARITY).",
-                        each.name
-                    ),
-                ));
-            }
-            Some(_) => {}
+            Verdict::SwitchedOff(path, why) => Some(Finding::at(
+                path,
+                format!("The test `{}` cannot run: {why}. {why_needed}", each.name),
+            )),
+            Verdict::OneDatabase(path) => Some(Finding::at(
+                path,
+                format!(
+                    "The test `{}` has to run on both databases: wrap it in `each_database` \
+                     (ARCH-DB-PARITY).",
+                    each.name
+                ),
+            )),
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A crate with a root that declares `mod tests;`, and the text of that module.
+    fn crate_with(tests: &str) -> Vec<Source> {
+        vec![
+            ("crates/x/src/lib.rs".to_owned(), "mod tests;\n".to_owned()),
+            ("crates/x/src/tests.rs".to_owned(), tests.to_owned()),
+        ]
+    }
+
+    const NAME: &str = "x_01_a_thing_works";
+
+    fn found(sources: &[Source]) -> usize {
+        evaluate(sources, &[Required::anywhere(NAME)], "").len()
+    }
+
+    #[test]
+    fn good_example_a_live_test_in_a_declared_module() {
+        let text = format!("#[tokio::test]\nasync fn {NAME}() {{}}\n");
+        assert_eq!(found(&crate_with(&text)), 0);
+        let plain = format!("#[test]\nfn {NAME}() {{}}\n");
+        assert_eq!(found(&crate_with(&plain)), 0);
+    }
+
+    #[test]
+    fn bad_example_a_test_in_a_module_nobody_declares() {
+        let text = format!("#[test]\nfn {NAME}() {{}}\n");
+        let sources = vec![
+            ("crates/x/src/lib.rs".to_owned(), "mod other;\n".to_owned()),
+            ("crates/x/src/tests.rs".to_owned(), text),
+        ];
+        assert_eq!(found(&sources), 1);
+    }
+
+    #[test]
+    fn bad_example_a_module_declared_only_behind_a_cfg_or_only_by_a_dead_file() {
+        let text = format!("#[test]\nfn {NAME}() {{}}\n");
+        for root in [
+            "#[cfg(feature = \"later\")]\nmod tests;\n",
+            "#[cfg(any())]\nmod tests;\n",
+        ] {
+            let sources = vec![
+                ("crates/x/src/lib.rs".to_owned(), root.to_owned()),
+                ("crates/x/src/tests.rs".to_owned(), text.clone()),
+            ];
+            assert_eq!(found(&sources), 1, "{root}");
+        }
+        // A file that only a file nobody declares declares.
+        let sources = vec![
+            ("crates/x/src/lib.rs".to_owned(), String::new()),
+            ("crates/x/src/dead.rs".to_owned(), "mod tests;\n".to_owned()),
+            ("crates/x/src/dead/tests.rs".to_owned(), text),
+        ];
+        assert_eq!(found(&sources), 1);
+    }
+
+    #[test]
+    fn good_example_modules_reached_by_a_path_attribute_a_mod_rs_or_a_tests_folder() {
+        let text = format!("#[test]\nfn {NAME}() {{}}\n");
+        let by_path = vec![
+            (
+                "crates/x/src/lib.rs".to_owned(),
+                "#[cfg(test)]\n#[path = \"deep/tests.rs\"]\nmod tests;\n".to_owned(),
+            ),
+            ("crates/x/src/deep/tests.rs".to_owned(), text.clone()),
+        ];
+        assert_eq!(found(&by_path), 0);
+        let nested = vec![
+            ("crates/x/src/lib.rs".to_owned(), "mod a;\n".to_owned()),
+            ("crates/x/src/a/mod.rs".to_owned(), "mod b;\n".to_owned()),
+            ("crates/x/src/a/b.rs".to_owned(), "mod c;\n".to_owned()),
+            ("crates/x/src/a/b/c.rs".to_owned(), text.clone()),
+        ];
+        assert_eq!(found(&nested), 0);
+        let integration = vec![
+            (
+                "crates/x/tests/all.rs".to_owned(),
+                "mod cases;\n".to_owned(),
+            ),
+            ("crates/x/tests/cases.rs".to_owned(), text),
+        ];
+        assert_eq!(found(&integration), 0);
+    }
+
+    #[test]
+    fn bad_example_a_test_that_is_no_test_any_more_or_hides_in_a_comment() {
+        for text in [
+            format!("fn {NAME}() {{}}\n"),
+            format!("// #[test]\n// fn {NAME}() {{}}\n"),
+            String::new(),
+        ] {
+            assert_eq!(found(&crate_with(&text)), 1, "{text}");
         }
     }
-    findings
+
+    #[test]
+    fn bad_example_a_test_that_is_switched_off() {
+        for attributes in [
+            "#[test]\n#[ignore]",
+            "#[ignore]\n#[test]",
+            "#[test]\n#[ignore = \"later\"]",
+            "#[test]\n#[ignore =\n    \"later\"]",
+            "#[test]\n#[cfg_attr(windows, ignore)]",
+            "#[test]\n/// Later.\n#[ignore]",
+            "#[test]\n#[cfg_attr(\n    windows,\n    ignore\n)]",
+            "#[cfg(any())]\n#[test]",
+            "#[test]\n#[cfg(not(test))]",
+        ] {
+            let text = format!("{attributes}\nfn {NAME}() {{}}\n");
+            assert_eq!(found(&crate_with(&text)), 1, "{attributes}");
+        }
+        for block in [
+            "#[cfg(any())]\nmod later {\n#[test]\nfn NAME() {}\n}",
+            "#[cfg(any())]\nmod later {\nmod inner {\n#[test]\nfn NAME() {}\n}\n}",
+        ] {
+            let text = block.replace("NAME", NAME);
+            assert_eq!(found(&crate_with(&text)), 1, "{block}");
+        }
+    }
+
+    #[test]
+    fn good_example_doc_comments_cfg_test_and_other_attributes_are_fine() {
+        for text in [
+            format!(
+                "/// What it proves.\n#[tokio::test]\n#[doc(hidden)]\nasync fn {NAME}() {{}}\n"
+            ),
+            format!("#[cfg(test)]\nmod inner {{\n#[test]\nfn {NAME}() {{ if true {{}} }}\n}}\n"),
+            format!("mod ordinary {{\n#[test]\nfn {NAME}() {{ if true {{}} }}\n}}\n"),
+        ] {
+            assert_eq!(found(&crate_with(&text)), 0, "{text}");
+        }
+    }
+
+    #[test]
+    fn a_test_has_to_be_where_the_list_says() {
+        let text = format!("#[test]\nfn {NAME}() {{}}\n");
+        let sources = crate_with(&text);
+        let there = [Required::anywhere(NAME).within("crates/x/src/tests.rs")];
+        assert!(evaluate(&sources, &there, "").is_empty());
+        let elsewhere = [Required::anywhere(NAME).within("crates/y/")];
+        assert_eq!(evaluate(&sources, &elsewhere, "").len(), 1);
+    }
+
+    #[test]
+    fn both_databases_look_at_the_test_and_not_at_the_one_after_it() {
+        let text = format!(
+            "mod tests {{\n    #[test]\n    fn {NAME}() {{\n        body();\n    }}\n\n    #[test]\n    fn other() {{\n        each_database(\"x\");\n    }}\n}}\n"
+        );
+        assert_eq!(
+            evaluate(&crate_with(&text), &[Required::both(NAME)], "").len(),
+            1
+        );
+        let both = format!(
+            "mod tests {{\n    #[test]\n    fn {NAME}() {{\n        each_database(\"x\");\n    }}\n}}\n"
+        );
+        assert!(evaluate(&crate_with(&both), &[Required::both(NAME)], "").is_empty());
+    }
 }
 
 /// What the example tests of a check prove, once for every check that has a list of tests.
@@ -84,10 +529,12 @@ pub(super) fn evaluate(
 pub(super) mod examples {
     use std::fmt::Write as _;
 
-    use super::{Required, evaluate};
+    use super::{Required, crate_sources, evaluate};
+    use crate::repo::Repo;
     use crate::source::Source;
 
-    /// A file with every required test, each with `wrapper` as its body.
+    /// A crate whose root declares `tests`, with every required test in it, each with `wrapper`
+    /// as its body.
     fn all_tests(required: &[Required], wrapper: &str) -> Vec<Source> {
         let mut text = String::new();
         for each in required {
@@ -102,7 +549,28 @@ async fn {}() {{
                 each.name
             );
         }
-        vec![("crates/x/src/tests.rs".to_owned(), text)]
+        vec![
+            ("crates/x/src/lib.rs".to_owned(), "mod tests;\n".to_owned()),
+            ("crates/x/src/tests.rs".to_owned(), text),
+        ]
+    }
+
+    /// The list of a check that names where its tests are is met by this repository.
+    pub(in super::super) fn this_repository_has_every_test(required: &[Required]) {
+        let found: Vec<_> = evaluate(
+            &crate_sources(&Repo::discover().unwrap()).unwrap(),
+            required,
+            "",
+        )
+        .into_iter()
+        .map(|finding| finding.message)
+        .collect();
+        assert!(found.is_empty(), "{found:?}");
+    }
+
+    /// Nothing at all: every test of the list is found missing.
+    pub(in super::super) fn without_the_sources_every_test_is_missing(required: &[Required]) {
+        assert_eq!(evaluate(&[], required, "").len(), required.len());
     }
 
     /// Every test exists and runs on both databases: no finding.

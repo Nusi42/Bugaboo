@@ -34,6 +34,7 @@ mod dep_register;
 mod dev_ports;
 mod doc_adr_enforced;
 mod doc_generated;
+mod doc_proven_by;
 mod exemptions;
 mod fmt_css;
 mod fmt_md;
@@ -62,6 +63,7 @@ pub(crate) mod meta_suppress;
 pub(crate) mod meta_wiring;
 mod node_tool;
 mod perf_bundle;
+mod perf_n1;
 mod plan_trace;
 mod required_tests;
 mod sec_cookies;
@@ -238,12 +240,14 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(test_issue_ids::TestIssueIds),
         Box::new(test_sample_data::TestSampleData),
         Box::new(test_uploads::TestUploads),
+        Box::new(perf_n1::PerfN1),
         Box::new(test_workflows::TestWorkflows),
         Box::new(txt_catalog::TxtCatalog),
         Box::new(txt_literal::TxtLiteral),
         Box::new(txt_terms::TxtTerms),
         Box::new(doc_generated::DocGenerated),
         Box::new(doc_adr_enforced::DocAdrEnforced),
+        Box::new(doc_proven_by::DocProvenBy),
         Box::new(plan_trace::PlanTrace),
         Box::new(arch_map_sync::ArchMapSync),
         Box::new(perf_bundle::PerfBundle),
