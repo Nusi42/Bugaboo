@@ -24,8 +24,9 @@ use sea_query::{
 };
 use sha2::{Digest as _, Sha256};
 
-use crate::db::{Database, LockClass, Row, Transaction, from_micros, to_micros};
+use crate::db::{Database, Row, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
+use crate::locks::LockClass;
 use crate::schema::Migration;
 
 mod m0001_initial;

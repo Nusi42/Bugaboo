@@ -444,6 +444,15 @@ files = ["**/Cargo.toml", "crates/*/src/lib.rs", "crates/*/src/main.rs", "xtask/
 status = "active"
 
 [[check]]
+id = "ARCH-LOCK-ORDER"
+title = "Advisory locks are taken in one order; a transaction refuses a lower class than one it holds, on both databases"
+rule = "architecture §07, ADR-0031 amendment 5"
+tool = "xtask (the tests of the guard in bb-store exist by name and run on both databases; the SQL of an advisory lock is written in db.rs only, so every lock passes the guard)"
+when = ["commit", "ci"]
+files = ["crates/bb-store/**"]
+status = "active"
+
+[[check]]
 id = "ARCH-DB-PARITY"
 title = "Repository tests ran on both SQLite and PostgreSQL"
 rule = "ADR-0003"

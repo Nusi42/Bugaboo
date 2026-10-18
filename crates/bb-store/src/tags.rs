@@ -783,7 +783,7 @@ impl TagStore for AuthStorage {
 
     async fn lock_tags_and_labels(transaction: &mut Transaction) -> Result<(), StoreError> {
         transaction
-            .advisory_lock(crate::db::LockClass::TagsAndLabels, 0)
+            .advisory_lock(crate::locks::LockClass::TagsAndLabels, 0)
             .await
     }
 }

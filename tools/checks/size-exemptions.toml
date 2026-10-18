@@ -33,11 +33,6 @@ path = "crates/bb-server/src/tests/sign_in/files_http.rs"
 lines = 1128
 reason = "The tests of uploads, downloads and previews over HTTP, one flow after the other; a flow shares its helpers. Split into uploads, links and previews in M4-F130."
 
-[[exempt]]
-path = "crates/bb-store/src/db.rs"
-lines = 828
-reason = "The database handle with its locks and statement counter; the lock part is cut out with the lock-order guard. Split in M4-F130."
-
 [[generated]]
 path = "crates/bb-core/src/message/generated.rs"
 reason = "Written by cargo xtask gen from the message catalog; never edited by hand."

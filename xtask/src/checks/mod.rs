@@ -13,6 +13,7 @@ mod arch_errors;
 mod arch_events;
 mod arch_http_edge;
 mod arch_lean;
+mod arch_lock_order;
 mod arch_map_sync;
 mod arch_no_counters;
 mod arch_no_unsafe;
@@ -205,6 +206,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_wasm::ArchWasm),
         Box::new(arch_http_edge::ArchHttpEdge),
         Box::new(arch_lean::ArchLean),
+        Box::new(arch_lock_order::ArchLockOrder),
         Box::new(arch_versioned::ArchVersioned),
         Box::new(arch_web_api::ArchWebApi),
         Box::new(arch_web_features::ArchWebFeatures),

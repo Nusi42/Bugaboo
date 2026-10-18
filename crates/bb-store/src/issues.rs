@@ -16,8 +16,9 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement, UpdateStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Database, LockClass, Reader, Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, Reader, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::{LockClass, lock_key};
 use crate::schema::{AssignedPersonRow, IssueAliasRow, IssueCounterRow, IssueRow, IssueTypeRow};
 
 fn type_select() -> SelectStatement {
@@ -636,12 +637,9 @@ impl IssueStore for AuthStorage {
         transaction: &mut Transaction,
         project: ProjectId,
     ) -> Result<(), StoreError> {
-        // The lock is named by the project: four random bytes of its ID.
-        let bytes = project.to_bytes();
-        let mut tail = [0_u8; 4];
-        tail.copy_from_slice(&bytes[12..]);
+        // The lock is named by the project.
         transaction
-            .advisory_lock(LockClass::IssueCodes, i32::from_be_bytes(tail))
+            .advisory_lock(LockClass::IssueCodes, lock_key(project.to_bytes()))
             .await
     }
 

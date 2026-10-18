@@ -28,8 +28,9 @@ use sea_query::{Expr, ExprTrait as _, Order, Query};
 use self::levels::Which;
 pub(crate) use self::loading::{Wanted, load_policy};
 use crate::auth::AuthStorage;
-use crate::db::{LockClass, Reader, StoredId, Transaction, to_micros};
+use crate::db::{Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::LockClass;
 use crate::projects::{chain_of, insert_project, project_by_short_name, project_in};
 use crate::schema::{LegacyAdministratorRow, StartingRolesMadeRow};
 

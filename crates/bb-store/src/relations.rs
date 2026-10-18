@@ -13,9 +13,10 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{LockClass, Row, StoredId, Transaction, to_micros};
+use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::issues::{issue_select, read_issue};
+use crate::locks::LockClass;
 use crate::schema::{IssueParentRow, IssueRow, RelationKindRow, RelationRow};
 
 fn kind_select() -> SelectStatement {
