@@ -76,7 +76,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 
 - **Comments explain *why*, not *what*.** Names should make the *what* obvious.
 - **Small units:** one responsibility per function and module. A file over ~400 lines
-  needs a reason, and a Rust file over 800 lines fails unless `tools/checks/size-exemptions.toml` names it with the follow-up that splits it. Enforced by: LINT-FILE-SIZE.
+  needs a reason, and a Rust file over 800 lines fails unless `tools/checks/size-exemptions.toml` names it with the follow-up that splits it. **A named file may not grow:** its entry holds the most lines it may have, so a package that needs more room in it splits it first (rule from the review of WP-15). Enforced by: LINT-FILE-SIZE.
 - **Errors are values:** domain errors are typed and handled. Never silently swallow one.
 - **No dead code:** no commented-out code, unused exports or unused dependencies.
 - **No orphan TODOs:** every `TODO` must reference an issue (`TODO(BUG-123): …`). Enforced by: LINT-HYGIENE.
