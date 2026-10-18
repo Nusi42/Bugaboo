@@ -145,7 +145,7 @@ fn by_mail(rig: &Rig, role: StartingRole) -> Delivered {
         entry: words::ENTRY_MAIL,
         role,
         heard: mail.is_some(),
-        status_shown: text.contains("done"),
+        status_shown: text.to_lowercase().contains("done"),
         author: author_in(&text, "Administrator"),
     }
 }
