@@ -4,7 +4,7 @@ import type { MenuAction } from "@bugaboo/ui";
 
 import type { IssueValues } from "./issue-values.ts";
 import type { NewIssueValues } from "./new-issue-form.ts";
-import { choiceIdOf } from "./status-choices.ts";
+import { choiceIdOf, choiceLabelOf } from "./status-choices.ts";
 
 /** A status change the person may make now, as the issue answer lists it. */
 export type OfferedChange = Schema<"StatusChangeRef">;
@@ -30,7 +30,7 @@ export function statusActions(
 ): readonly MenuAction[] {
   return changes.map((change) => ({
     id: choiceIdOf(change),
-    label: change.button,
+    label: choiceLabelOf(change, changes),
     onAction: () => {
       if (needsAsking(change)) {
         react.ask(change);
