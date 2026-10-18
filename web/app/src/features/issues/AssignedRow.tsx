@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, type ChangeStatus } from "@bugaboo/ui";
+import { Button, buttonLook, partOf, part, type ChangeStatus } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { namedPerson, personName } from "../../shared/person.ts";
@@ -63,18 +63,20 @@ export function AssignedRow({ issue, mask, status, onChange }: AssignedRowProps)
         reason={canChange ? undefined : readOnlyReason(name)}
         status={canChange ? status : undefined}
       >
-        {people.map((person) => (
-          <span key={namedPerson(person)?.id ?? personName(person)}>{personName(person)}</span>
-        ))}
-        {canChange ? (
-          <ChangeAssigned
-            name={name}
-            empty={people.length === 0}
-            onPress={() => {
-              setPicking(true);
-            }}
-          />
-        ) : null}
+        <div {...partOf(part.startColumn)}>
+          {people.map((person) => (
+            <span key={namedPerson(person)?.id ?? personName(person)}>{personName(person)}</span>
+          ))}
+          {canChange ? (
+            <ChangeAssigned
+              name={name}
+              empty={people.length === 0}
+              onPress={() => {
+                setPicking(true);
+              }}
+            />
+          ) : null}
+        </div>
       </DetailRow>
       <AssignedPicker
         isOpen={picking}

@@ -573,6 +573,16 @@ mixin "hang-start" {
     margin-inline-start "calc(-1 * $pad-control)"
 }
 
+// The buttons that answer a question or end a form (R6): quiet buttons stand on the start edge
+// (R1), the one filled button at the end. On a phone they are stacked, the main one first.
+mixin "answer-row" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content flex-end
+    gap "$space-3"
+}
+
 // Text for screen readers only: out of sight, still read.
 mixin "hidden-text" {
     position absolute
@@ -698,6 +708,18 @@ part "button[variant=quiet]" {
     border-color transparent
     background transparent
     color "$accent-fg"
+}
+
+// One start edge (R1): a text button that begins a line stands where the text around it starts,
+// so it hangs back by its own padding (the arrow of the bar, the first button of a row of the
+// Details, "Change" under a name, the toolbar of a comment, the buttons of a window's footer).
+part "button[variant=quiet]:first-child" {
+    use "hang-start"
+}
+
+// An icon has no padding to hang back by.
+part "button[variant=quiet][variant=square]:first-child" {
+    margin-inline-start 0
 }
 
 part "button[variant=danger]" {
@@ -1902,7 +1924,9 @@ part "window.control[variant=close]" {
     border-start-end-radius "$r-card"
 }
 
+// *Back* stands at the start of the title bar, as on a page (R1, UX review of M4, A10).
 part "window.control[variant=back]" {
+    order -1
     width auto
     padding 0 "$pad-control"
     gap "$space-1"
@@ -1947,11 +1971,7 @@ part "window.footer-note button[variant=quiet]" {
 }
 
 part "window.footer-actions" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    justify-content flex-end
-    gap "$space-3"
+    use "answer-row"
 }
 
 // The places to drag: the four edges and the four corners.
@@ -2116,6 +2136,20 @@ part "stack" {
     flex-direction column
     gap "$space-4"
     min-width 0
+}
+
+// Things under each other on the start edge, with text buttons among them: a button that stands
+// in the column hangs back by its padding, so its text starts where the text above starts (R1).
+part "start-column" {
+    display flex
+    flex-direction column
+    align-items flex-start
+    gap "$space-1"
+    min-width 0
+}
+
+part "start-column > button[variant=quiet]" {
+    use "hang-start"
 }
 
 part "text" {
@@ -2426,15 +2460,31 @@ part "confirm.title" {
 }
 
 part "confirm.actions" {
-    display flex
-    flex-wrap wrap
-    justify-content flex-end
-    gap "$space-3"
+    use "answer-row"
 }
 
+// The text buttons of an answer row stand on the start edge, the others at the end.
+part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" {
+    margin-inline-end auto
+}
+
+// On a phone the question starts at the top and its answers are at the bottom, one under the
+// other and as wide as the screen, the main one first (the thumb reaches it).
 part "overlay.modal[variant=full] confirm.dialog" {
     flex 1
-    justify-content center
+}
+
+part "overlay.modal[variant=full] confirm.actions" {
+    margin-top auto
+}
+
+part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" {
+    flex-direction column-reverse
+    align-items stretch
+}
+
+part "overlay[variant=full] confirm.actions button[variant=quiet]:first-child" "overlay[variant=full] window.footer-actions button[variant=quiet]:first-child" {
+    margin-inline 0
 }
 
 // ───────────── Setup ─────────────
@@ -3277,6 +3327,7 @@ part "sidebar.who" {
 }
 
 part "nav-item" {
+    position relative
     use "touch-row"
     box-sizing border-box
     width "100%"
@@ -3625,16 +3676,6 @@ part "focus-view.bar" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-}
-
-// One start edge (R1): the arrow of the first button stands where the text below it starts.
-part "focus-view.bar button[variant=quiet]:first-child" {
-    use "hang-start"
-}
-
-// The same for a quiet button that begins the value of a row of the Details.
-part "name-value.value button[variant=quiet]:first-child" {
-    use "hang-start"
 }
 
 // ───────────── Issues (features/issues, packages/ui: InPlaceText, ActionMenu) ─────────────
@@ -11366,6 +11407,17 @@ part "nav-item.count" "bottom-bar.count" {
     }
 }
 
+// In the narrow menu there is no room after the icon: the number sits on the corner of the icon,
+// inside the menu (UX review of M4, A5).
+part "sidebar[variant=narrow] nav-item.count" {
+    position absolute
+    top 0
+    inset-inline-end 0
+    min-width 0
+    padding 0 "$space-1"
+    font-size "$fs-xs"
+}
+
 // The icon of a tab of the bar, with the number after it.
 part "bottom-bar.icon" {
     order -1
@@ -11415,15 +11467,10 @@ part "history.entry[state=highlighted]" {
     background "$accent-soft"
 }
 
-// The row with *Use the standard choices*: the button holds text, so it pulls itself back by its own
-// padding and its words stand on the start edge of the rows above (R1).
+// The row with *Use the standard choices*: its first button hangs back like every text button (R1).
 part "customize-actions" {
     display flex
     flex-wrap wrap
-}
-
-part "customize-actions button[variant=quiet]:first-child" {
-    use "hang-start"
 }
 
 // ───────────── Workflows (M4 WP-07) ─────────────
