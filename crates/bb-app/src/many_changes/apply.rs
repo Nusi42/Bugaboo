@@ -25,7 +25,7 @@ use super::types::{
 };
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, set_to};
 use crate::issues::{ChangeIssue, DeleteIssue, MoveIssue, change_issue, delete_issue, move_issue};
-use crate::jobs::{kind, kind_name};
+use crate::jobs::JobKind;
 use crate::relations::{AddRelation, LineMaker, add_relation};
 use crate::tags::{AddLabel, add_label};
 
@@ -203,7 +203,7 @@ pub async fn apply_many_changes<S: AuthStore>(
         ],
     )?;
     let (stored, now) = (run.clone(), ctx.now());
-    let name = kind_name(kind::MANY_CHANGES_STEP)?;
+    let name = JobKind::ManyChangesStep.name()?;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {

@@ -21,50 +21,72 @@ use crate::store_macros::{reads, writes};
 /// How many starts a job gets before it goes to the dead-letter list.
 pub const JOB_ATTEMPTS_MAX: u32 = 5;
 
-/// The kinds of job, each with the name the queue stores.
-pub mod kind {
-    /// One step of a change to many issues (`many-changes`); the payload names the run.
-    pub const MANY_CHANGES_STEP: &str = "many-changes.step";
-    /// One step of giving the issues of a project new IDs after its mode of IDs changed
-    /// (`issues::ids`); the payload names the project and the person who changed the mode.
-    pub const RENEW_IDS: &str = "issues.renew-ids";
-    /// Clearing what outlived its keep period (drafts, notes for people who were editing, lock
-    /// rows that ran out): the use case `purge_drafts`. It comes back every day.
-    pub const PURGE_DRAFTS: &str = "editing.purge-drafts";
-    /// The history catching up with the events (M3-F71): `Ctx::catch_up_history`. It comes back
-    /// every day.
-    pub const CATCH_UP_HISTORY: &str = "history.catch-up";
-    /// One e-mail (`notifications`): the payload names the kind of e-mail, who gets it and about
-    /// what. Queued by the reader of notifications and by signing up.
-    pub const MAIL_SEND: &str = "mail.send";
-    /// Deleting the notifications that outlived their keep period, and the payloads of the jobs
-    /// that died before theirs ran out (PRIV-05, M1-F21). It comes back every day.
-    pub const PURGE_NOTIFICATIONS: &str = "notifications.purge";
-    /// Deleting the oldest blocks of the security log that outlived its keep period (M1-F21). It
-    /// comes back every day.
-    pub const PRUNE_SECURITY_LOG: &str = "security-log.prune";
-    /// Deleting the sessions nobody can use any more and the links of finished sign-ups (M1-F43).
-    /// It comes back every day.
-    pub const PURGE_SESSIONS: &str = "sessions.purge";
-    /// Starting a new file of the log of a server that has no console (M1-F61). It comes back
-    /// every day.
-    pub const ROTATE_SERVER_LOG: &str = "server-log.rotate";
-    /// The preview of an attachment, made in a process of its own (`files::jobs`, ADR-0032); the
-    /// payload names the attachment.
-    pub const PREVIEW_FILE: &str = "files.preview";
-    /// Clearing old uploads, attachments that stayed in the trash and files nothing points to
-    /// (`files::jobs`). It comes back every day.
-    pub const CLEAN_UP_FILES: &str = "files.clean-up";
-    /// The kinds that come back every day, see [`super::DAILY`].
-    pub const DAILY_JOBS: [&str; 7] = [
-        CATCH_UP_HISTORY,
-        CLEAN_UP_FILES,
-        PURGE_DRAFTS,
-        PURGE_NOTIFICATIONS,
-        PRUNE_SECURITY_LOG,
-        PURGE_SESSIONS,
-        ROTATE_SERVER_LOG,
-    ];
+bb_core::words! {
+    /// The kinds of job, each with the name the queue stores. [`JobKind::is_daily`] says which
+    /// come back every day; `Ctx::do_job` and `Ctx::job_gave_up` match on every kind, so a new kind
+    /// has to be given its work there.
+    pub enum JobKind {
+        /// One step of a change to many issues; the payload names the run.
+        ManyChangesStep => "many-changes.step",
+        /// One step of giving the issues of a project new IDs after its mode of IDs changed
+        /// (`issues::ids`); the payload names the project and the person who changed the mode.
+        RenewIds => "issues.renew-ids",
+        /// Clearing what outlived its keep period (drafts, notes for people who were editing, lock
+        /// rows that ran out): the use case `purge_drafts`.
+        PurgeDrafts => "editing.purge-drafts",
+        /// The history catching up with the events (M3-F71): `Ctx::catch_up_history`.
+        CatchUpHistory => "history.catch-up",
+        /// One e-mail (`notifications`): the payload names the kind of e-mail, who gets it and
+        /// about what. Queued by the reader of notifications and by signing up.
+        MailSend => "mail.send",
+        /// Deleting the notifications that outlived their keep period, and the payloads of the
+        /// jobs that died before theirs ran out (PRIV-05, M1-F21).
+        PurgeNotifications => "notifications.purge",
+        /// Deleting the oldest blocks of the security log that outlived its keep period (M1-F21).
+        PruneSecurityLog => "security-log.prune",
+        /// Deleting the sessions nobody can use any more and the links of finished sign-ups
+        /// (M1-F43).
+        PurgeSessions => "sessions.purge",
+        /// Starting a new file of the log of a server that has no console (M1-F61).
+        RotateServerLog => "server-log.rotate",
+        /// The preview of an attachment, made in a process of its own (`files::jobs`, ADR-0032);
+        /// the payload names the attachment.
+        PreviewFile => "files.preview",
+        /// Clearing old uploads, attachments that stayed in the trash and files nothing points to
+        /// (`files::jobs`).
+        CleanUpFiles => "files.clean-up",
+    }
+}
+
+impl JobKind {
+    /// Whether the kind comes back every day (see [`DAILY`]). A `match` without a catch-all, so a
+    /// new kind has to say.
+    #[must_use]
+    pub const fn is_daily(self) -> bool {
+        match self {
+            Self::CatchUpHistory
+            | Self::CleanUpFiles
+            | Self::PurgeDrafts
+            | Self::PurgeNotifications
+            | Self::PruneSecurityLog
+            | Self::PurgeSessions
+            | Self::RotateServerLog => true,
+            Self::ManyChangesStep | Self::RenewIds | Self::MailSend | Self::PreviewFile => false,
+        }
+    }
+
+    /// The kinds that come back every day.
+    pub fn daily() -> impl Iterator<Item = Self> {
+        Self::ALL.iter().copied().filter(|kind| kind.is_daily())
+    }
+
+    /// The name of the kind as the queue stores it.
+    ///
+    /// # Errors
+    /// An internal error when the word is not a technical name (it is one, by the tests).
+    pub fn name(self) -> Result<TechnicalName, AppError> {
+        TechnicalName::new(self.code()).map_err(|error| AppError::Internal(error.to_string()))
+    }
 }
 
 /// How long after a daily job its next round is due.
@@ -150,14 +172,6 @@ pub trait JobStore: ChangeStore + 'static {
     }
 }
 
-/// The name of a kind of job as the queue stores it.
-///
-/// # Errors
-/// An internal error when the name is not a technical name (it is one of [`kind`]).
-pub(crate) fn kind_name(name: &str) -> Result<TechnicalName, AppError> {
-    TechnicalName::new(name).map_err(|error| AppError::Internal(error.to_string()))
-}
-
 /// How a job failed: the technical code the queue keeps, and whether another start can help.
 struct JobFailure {
     code: TechnicalName,
@@ -191,20 +205,55 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// job again later or, after its last start (or at once, for a failure that is permanent),
     /// puts it on the dead-letter list.
     async fn do_job(&self, job: &Job) -> Result<(), JobFailure> {
-        match job.kind.as_str() {
-            kind::MANY_CHANGES_STEP => Box::pin(self.run_many_changes_step(&job.payload))
+        match JobKind::from_code(job.kind.as_str()) {
+            Some(JobKind::ManyChangesStep) => Box::pin(self.run_many_changes_step(&job.payload))
                 .await
                 .map_err(|error| {
                     tracing::warn!(cause = %error, "a step of a change to many issues failed");
                     JobFailure::of(&error, FAILED, job)
                 }),
-            kind::RENEW_IDS => Box::pin(self.renew_ids_step(&job.payload))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
-                    JobFailure::of(&error, FAILED, job)
-                }),
-            kind::PURGE_DRAFTS => Box::pin(self.run_daily(kind::PURGE_DRAFTS, async {
+            Some(JobKind::RenewIds) => {
+                Box::pin(self.renew_ids_step(&job.payload))
+                    .await
+                    .map_err(|error| {
+                        tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
+                        JobFailure::of(&error, FAILED, job)
+                    })
+            }
+            Some(JobKind::PreviewFile | JobKind::CleanUpFiles) => self.do_files_job(job).await,
+            Some(
+                JobKind::PurgeDrafts
+                | JobKind::CatchUpHistory
+                | JobKind::PurgeNotifications
+                | JobKind::PruneSecurityLog
+                | JobKind::PurgeSessions
+                | JobKind::RotateServerLog,
+            ) => self.do_daily_job(job).await,
+            Some(JobKind::MailSend) => {
+                Box::pin(self.run_mail_job(&job.payload))
+                    .await
+                    .map_err(|error| {
+                        // The class only: the answer of the mail server can hold an address.
+                        tracing::warn!(
+                            refused = matches!(error, AppError::Refused(_)),
+                            "an e-mail did not go"
+                        );
+                        JobFailure::of(&error, FAILED, job)
+                    })
+            }
+            None => {
+                tracing::error!(kind = job.kind.as_str(), "a job of a kind nobody knows");
+                Err(JobFailure::unknown_kind(job))
+            }
+        }
+    }
+
+    /// The daily jobs that keep the data tidy: old drafts, the history catching up, old
+    /// notifications, the security log, sessions and the server log. Each queues its next round
+    /// first (`run_daily`).
+    async fn do_daily_job(&self, job: &Job) -> Result<(), JobFailure> {
+        match JobKind::from_code(job.kind.as_str()) {
+            Some(JobKind::PurgeDrafts) => Box::pin(self.run_daily(JobKind::PurgeDrafts, async {
                 purge_drafts(self, PurgeDraftsQuery).await.map(|drafts| {
                     tracing::info!(drafts, "old drafts were cleared");
                 })
@@ -214,29 +263,20 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old drafts could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
-            kind::CATCH_UP_HISTORY => Box::pin(self.run_daily(kind::CATCH_UP_HISTORY, async {
-                self.catch_up_history().await.map(|events| {
-                    tracing::info!(events, "the history caught up with the events");
-                })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "the history could not catch up");
-                JobFailure::of(&error, FAILED, job)
-            }),
-            kind::PREVIEW_FILE | kind::CLEAN_UP_FILES => self.do_files_job(job).await,
-            kind::MAIL_SEND => Box::pin(self.run_mail_job(&job.payload))
+            Some(JobKind::CatchUpHistory) => {
+                Box::pin(self.run_daily(JobKind::CatchUpHistory, async {
+                    self.catch_up_history().await.map(|events| {
+                        tracing::info!(events, "the history caught up with the events");
+                    })
+                }))
                 .await
                 .map_err(|error| {
-                    // The class only: the answer of the mail server can hold an address.
-                    tracing::warn!(
-                        refused = matches!(error, AppError::Refused(_)),
-                        "an e-mail did not go"
-                    );
+                    tracing::warn!(cause = %error, "the history could not catch up");
                     JobFailure::of(&error, FAILED, job)
-                }),
-            kind::PURGE_NOTIFICATIONS => {
-                Box::pin(self.run_daily(kind::PURGE_NOTIFICATIONS, async {
+                })
+            }
+            Some(JobKind::PurgeNotifications) => {
+                Box::pin(self.run_daily(JobKind::PurgeNotifications, async {
                     self.purge_old_notifications().await.map(|purged| {
                         tracing::info!(
                             notifications = purged.notifications,
@@ -251,54 +291,57 @@ impl<S: AuthStore> Ctx<'_, S> {
                     JobFailure::of(&error, FAILED, job)
                 })
             }
-            kind::PRUNE_SECURITY_LOG => Box::pin(self.run_daily(kind::PRUNE_SECURITY_LOG, async {
-                self.prune_old_security_log().await.map(|entries| {
-                    tracing::info!(entries, "old entries of the security log were deleted");
+            Some(JobKind::PruneSecurityLog) => {
+                Box::pin(self.run_daily(JobKind::PruneSecurityLog, async {
+                    self.prune_old_security_log().await.map(|entries| {
+                        tracing::info!(entries, "old entries of the security log were deleted");
+                    })
+                }))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "the security log could not be pruned");
+                    JobFailure::of(&error, FAILED, job)
                 })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "the security log could not be pruned");
-                JobFailure::of(&error, FAILED, job)
-            }),
-            kind::PURGE_SESSIONS => Box::pin(self.run_daily(kind::PURGE_SESSIONS, async {
-                self.purge_dead_sessions().await.map(|()| {
-                    tracing::info!("sessions nobody can use were deleted");
-                })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "old sessions could not be deleted");
-                JobFailure::of(&error, FAILED, job)
-            }),
-            kind::ROTATE_SERVER_LOG => Box::pin(self.run_daily(kind::ROTATE_SERVER_LOG, async {
-                self.rotate_old_server_log().await.map(|rotated| {
-                    tracing::info!(rotated, "the server log was looked at");
-                })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "the server log could not be rotated");
-                JobFailure::of(&error, FAILED, job)
-            }),
-            other => {
-                tracing::error!(kind = other, "a job of a kind nobody knows");
-                Err(JobFailure::unknown_kind(job))
             }
+            Some(JobKind::PurgeSessions) => {
+                Box::pin(self.run_daily(JobKind::PurgeSessions, async {
+                    self.purge_dead_sessions().await.map(|()| {
+                        tracing::info!("sessions nobody can use were deleted");
+                    })
+                }))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "old sessions could not be deleted");
+                    JobFailure::of(&error, FAILED, job)
+                })
+            }
+            Some(JobKind::RotateServerLog) => {
+                Box::pin(self.run_daily(JobKind::RotateServerLog, async {
+                    self.rotate_old_server_log().await.map(|rotated| {
+                        tracing::info!(rotated, "the server log was looked at");
+                    })
+                }))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "the server log could not be rotated");
+                    JobFailure::of(&error, FAILED, job)
+                })
+            }
+            _ => Err(JobFailure::unknown_kind(job)),
         }
     }
 
     /// The jobs of files (`files::jobs`, ADR-0032): the preview of an attachment, and the daily
     /// clean-up of what nothing needs any more.
     async fn do_files_job(&self, job: &Job) -> Result<(), JobFailure> {
-        match job.kind.as_str() {
-            kind::PREVIEW_FILE => Box::pin(self.run_preview_step(&job.payload)).await.map_err(
-                |error| {
+        match JobKind::from_code(job.kind.as_str()) {
+            Some(JobKind::PreviewFile) => Box::pin(self.run_preview_step(&job.payload))
+                .await
+                .map_err(|error| {
                     tracing::warn!(cause = %error, "the preview of a file could not be created");
                     JobFailure::of(&error, FAILED, job)
-                },
-            ),
-            kind::CLEAN_UP_FILES => Box::pin(self.run_daily(kind::CLEAN_UP_FILES, async {
+                }),
+            Some(JobKind::CleanUpFiles) => Box::pin(self.run_daily(JobKind::CleanUpFiles, async {
                 self.clean_up_files().await.map(|cleaned| {
                     tracing::info!(
                         uploads = cleaned.uploads,
@@ -322,15 +365,25 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// renewal of issue IDs has no record of its own, so its death is an event of the project that
     /// the person who asked is told of (M3-F150).
     async fn job_gave_up(&self, job: &Job) {
-        let ended = match job.kind.as_str() {
-            kind::MANY_CHANGES_STEP => self.fail_many_changes_run(&job.payload).await,
-            kind::RENEW_IDS => {
+        let ended = match JobKind::from_code(job.kind.as_str()) {
+            Some(JobKind::ManyChangesStep) => self.fail_many_changes_run(&job.payload).await,
+            Some(JobKind::RenewIds) => {
                 tracing::error!("renewing issue IDs gave up; the job is on the dead-letter list");
                 self.renewal_gave_up(&job.payload).await
             }
-            kind::MAIL_SEND => self.mail_job_gave_up(&job.payload).await,
-            kind::PREVIEW_FILE => self.preview_gave_up(&job.payload).await,
-            _ => Ok(()),
+            Some(JobKind::MailSend) => self.mail_job_gave_up(&job.payload).await,
+            Some(JobKind::PreviewFile) => self.preview_gave_up(&job.payload).await,
+            // The daily kinds come back by themselves and leave no work that people can see.
+            Some(
+                JobKind::PurgeDrafts
+                | JobKind::CatchUpHistory
+                | JobKind::PurgeNotifications
+                | JobKind::PruneSecurityLog
+                | JobKind::PurgeSessions
+                | JobKind::RotateServerLog
+                | JobKind::CleanUpFiles,
+            )
+            | None => Ok(()),
         };
         if let Err(error) = ended {
             tracing::error!(cause = %error, "the work of a dead job could not be ended");
@@ -343,10 +396,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// starts again within the day (see [`Ctx::start_daily_jobs`]) does not add a second chain.
     async fn run_daily(
         &self,
-        name: &str,
+        kind: JobKind,
         work: impl Future<Output = Result<(), AppError>>,
     ) -> Result<(), AppError> {
-        let kind = kind_name(name)?;
+        let kind = kind.name()?;
         let now = self.now();
         let waits = self
             .store()
@@ -378,8 +431,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// An internal error when the store fails.
     pub async fn start_daily_jobs(&self) -> Result<(), AppError> {
-        for name in kind::DAILY_JOBS {
-            self.queue_daily(&kind_name(name)?, self.now()).await?;
+        for kind in JobKind::daily() {
+            self.queue_daily(&kind.name()?, self.now()).await?;
         }
         Ok(())
     }
@@ -434,6 +487,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     fn worker_name(&self) -> Result<TechnicalName, AppError> {
         let id = JobId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
-        kind_name(&format!("worker.{}", id.to_string().replace('-', "_")))
+        TechnicalName::new(&format!("worker.{}", id.to_string().replace('-', "_")))
+            .map_err(|error| AppError::Internal(error.to_string()))
     }
 }

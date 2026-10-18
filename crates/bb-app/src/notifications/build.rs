@@ -36,7 +36,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
 use crate::history::{issue_in, visible_changes};
 use crate::issues::{Where, member as issue_member};
-use crate::jobs::{QueuedJob, kind, kind_name};
+use crate::jobs::{JobKind, QueuedJob};
 use crate::member::{comment, follower};
 
 /// What one batch of events looks up once: people, their settings, the followers that lost
@@ -195,7 +195,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             jobs.push(QueuedJob {
                 id: JobId::generate(&mut self.ids())
                     .map_err(|error| AppError::Internal(error.to_string()))?,
-                kind: kind_name(kind::MAIL_SEND)?,
+                kind: JobKind::MailSend.name()?,
                 payload: MailJob::Changes {
                     recipient: row.recipient,
                     issue: row.issue,

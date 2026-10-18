@@ -22,6 +22,7 @@ use crate::files::{
     UploadStateQuery, cancel_upload, delete_attachment, download, finish_upload, issue_files,
     send_part, start_upload, upload_state,
 };
+use crate::jobs::JobKind;
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
 const DAY: i64 = bb_core::time::SECONDS_PER_DAY;
@@ -559,7 +560,7 @@ impl World {
                 .state
                 .jobs
                 .drain(..)
-                .partition(|job| job.kind.as_str() == crate::jobs::kind::PREVIEW_FILE);
+                .partition(|job| job.kind.as_str() == JobKind::PreviewFile.code());
             shared.state.jobs = rest;
             preview
         };

@@ -28,7 +28,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
-use crate::jobs::{kind, kind_name};
+use crate::jobs::JobKind;
 use crate::projects::Why;
 
 /// The bytes of a part, or a count, as the number the API says.
@@ -423,7 +423,7 @@ pub async fn finish_upload<S: AuthStore>(
     let (stored_attachment, stored_file, upload_id) = (attachment.clone(), file.clone(), upload.id);
     let issue_id = issue.id;
     let (queue, payload) = (
-        kind_name(kind::PREVIEW_FILE)?,
+        JobKind::PreviewFile.name()?,
         super::jobs::preview_payload(attachment.id),
     );
     let why = Why::default();
