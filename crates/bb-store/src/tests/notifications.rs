@@ -242,8 +242,10 @@ async fn adr_0007_the_rows_the_jobs_and_the_place_of_the_reader_are_one_step() -
             .await;
         assert!(failed.is_err(), "the job is there twice");
         assert_eq!(storage.database().outbox_position(&consumer()?).await?, 5);
-        let found = storage.notifications_by_ids(ana, &[second.id]).await?;
-        assert!(found.is_empty());
+        let found = storage
+            .notifications_of(ana, NotificationFilter::All, None, 10)
+            .await?;
+        assert!(found.iter().all(|each| each.id != second.id));
         Ok(())
     })
     .await

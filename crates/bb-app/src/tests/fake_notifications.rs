@@ -90,21 +90,6 @@ impl NotificationStore for FakeStore {
         }))
     }
 
-    async fn notifications_by_ids(
-        &self,
-        recipient: UserId,
-        ids: &[NotificationId],
-    ) -> Result<Vec<Notification>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .notifications
-                .iter()
-                .filter(|row| row.recipient == recipient && ids.contains(&row.id))
-                .cloned()
-                .collect()
-        }))
-    }
-
     async fn waiting_mail(
         &self,
         recipient: UserId,

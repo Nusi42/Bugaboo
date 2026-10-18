@@ -75,8 +75,6 @@ pub trait FieldStore: IssueStore + 'static {
             from: ChoiceId,
             into: ChoiceId
         ) -> Vec<(EntityKind, EntityId)>;
-        /// Retires a field by date (or offers it again with `None`).
-        fn set_field_retired(field: FieldId, at: Option<Timestamp>) -> ();
     }
 
     /// Counts the versions of many items up at once, as [`Self::touch_item`] does for one, and
