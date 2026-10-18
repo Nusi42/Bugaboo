@@ -16,9 +16,9 @@
 
 use std::sync::Arc;
 
-use axum::extract::{FromRequestParts, Request, State};
+use axum::extract::{FromRequestParts, MatchedPath, Request, State};
 use axum::http::request::Parts;
-use axum::http::{Method, StatusCode, header};
+use axum::http::{StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
 use bb_app::auth::{AppError, AuthApi, RequestInfo, Started};
@@ -117,8 +117,11 @@ impl<S: Send + Sync> FromRequestParts<S> for Info {
             .and_then(|value| value.to_str().ok())
             .map(Device::from_user_agent)
             .unwrap_or_default();
-        let background =
-            parts.method == Method::GET && parts.headers.contains_key(BACKGROUND_HEADER);
+        let background = parts.headers.contains_key(BACKGROUND_HEADER)
+            && parts
+                .extensions
+                .get::<MatchedPath>()
+                .is_some_and(|route| crate::permissions::is_read(&parts.method, route.as_str()));
         Ok(Self(RequestInfo {
             network,
             device,

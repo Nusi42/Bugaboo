@@ -869,6 +869,24 @@ pub const ROUTES: &[Route] = &[
 pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
+/// The reads that use `POST` because they carry a list in the body, by operation ID: the check of
+/// the versions of the records on a screen. With the rest of the reads (`GET`), they are the
+/// requests that may carry the mark of a background read (`cookies::BACKGROUND_HEADER`).
+pub const READS_BY_POST: &[&str] = &["checkVersions"];
+
+/// Whether the request with this method to this route (as the API description writes it) only
+/// reads, so that it may be marked as a background read nobody asked for. The one rule: a method
+/// that changes nothing, or a read that is declared in [`READS_BY_POST`].
+#[must_use]
+pub fn is_read(method: &Method, route: &str) -> bool {
+    !crate::api::changes(method)
+        || crate::openapi::operations().iter().any(|operation| {
+            operation.method == *method
+                && operation.path == route
+                && READS_BY_POST.contains(&operation.id.as_str())
+        })
+}
+
 /// The row of the route with this operation ID, if it is declared.
 #[must_use]
 pub fn declared(operation_id: &str) -> Option<&'static Route> {

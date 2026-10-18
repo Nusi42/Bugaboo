@@ -683,3 +683,33 @@ async fn sec_12_over_http_the_background_header_counts_as_use_only_on_a_post() -
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_12_the_check_of_versions_in_a_tab_left_open_does_not_keep_a_session_alive()
+-> TestResult {
+    each_database("sec_12_versions_background", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        ada.set_header(bb_api::cookies::BACKGROUND_HEADER, "1");
+        // A tab with an issue asks for the versions on its screen every half minute. Twenty
+        // minutes in, the session stands and the check is answered ...
+        rig.clock.advance(20 * 60);
+        let check = ada
+            .send(
+                "POST",
+                "/api/v1/versions/check",
+                Some(json!({"records": []})),
+            )
+            .await?;
+        assert_eq!(check.status, StatusCode::OK, "{}", check.body);
+        // ... but it was no use: twenty minutes later the session is gone.
+        rig.clock.advance(20 * 60);
+        ada.clear_headers();
+        let gone = ada
+            .send("GET", "/api/v1/notifications/unread", None)
+            .await?;
+        assert_eq!(gone.status, StatusCode::UNAUTHORIZED, "{}", gone.body);
+        Ok(())
+    })
+    .await
+}
