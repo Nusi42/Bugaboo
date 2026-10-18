@@ -156,14 +156,18 @@ impl SignUpStore for AuthStorage {
             .from_table(Columns::Table)
             .and_where(Expr::col(Columns::CreatedAt).lt(to_micros(before)))
             .cond_where(finished);
-        let removed = transaction.execute(&delete).await?;
-        // The memory of an e-mail that went is as old as the link: after that, a new one may go.
+        transaction.execute(&delete).await
+    }
+
+    async fn forget_old_sign_up_mail(
+        transaction: &mut Transaction,
+        before: Timestamp,
+    ) -> Result<u64, StoreError> {
         let mut forget = Query::delete();
         forget
             .from_table(Mail::Table)
             .and_where(Expr::col(Mail::SentAt).lt(to_micros(before)));
-        transaction.execute(&forget).await?;
-        Ok(removed)
+        transaction.execute(&forget).await
     }
 }
 

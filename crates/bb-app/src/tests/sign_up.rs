@@ -272,6 +272,23 @@ async fn auth_the_job_that_clears_sessions_removes_the_links_that_are_done() -> 
     Ok(())
 }
 
+#[tokio::test]
+async fn gdpr_the_memory_of_an_e_mail_goes_when_it_is_no_use_any_more() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    assert_eq!(world.store.lock().state.sign_up_mail.len(), 1);
+    // Within the ten minutes it blocks the next e-mail, so it stays.
+    world.ctx().purge_dead_sessions().await.map_err(text)?;
+    assert_eq!(world.store.lock().state.sign_up_mail.len(), 1);
+    // After them it only keeps what is not needed: the job removes it, long before the link goes.
+    world.clock.advance(RESEND_AFTER_MINUTES * 60 + 1);
+    world.ctx().purge_dead_sessions().await.map_err(text)?;
+    assert!(world.store.lock().state.sign_up_mail.is_empty());
+    assert_eq!(world.store.lock().state.sign_up_invitations.len(), 1);
+    Ok(())
+}
+
 /// Changes the rule of signing up, from the version it has (`world` makes version 1).
 async fn set_the_rule(
     world: &World,

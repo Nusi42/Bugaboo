@@ -70,9 +70,14 @@ impl SignUpStore for FakeStore {
         tx.state.sign_up_invitations.retain(|known| {
             !(known.created_at < before && (known.used_at.is_some() || known.expires_at <= now))
         });
+        Ok(u64::try_from(count - tx.state.sign_up_invitations.len()).unwrap_or(u64::MAX))
+    }
+
+    async fn forget_old_sign_up_mail(tx: &mut Tx, before: Timestamp) -> Result<u64, FakeError> {
+        let count = tx.state.sign_up_mail.len();
         tx.state
             .sign_up_mail
             .retain(|known| known.sent_at >= before);
-        Ok(u64::try_from(count - tx.state.sign_up_invitations.len()).unwrap_or(u64::MAX))
+        Ok(u64::try_from(count - tx.state.sign_up_mail.len()).unwrap_or(u64::MAX))
     }
 }

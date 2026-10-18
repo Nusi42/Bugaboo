@@ -52,6 +52,9 @@ pub trait SignUpStore: ChangeStore + 'static {
         /// Deletes the links that were made before `before` and are used up or have run out;
         /// returns how many.
         fn delete_old_sign_up_invitations(before: Timestamp, now: Timestamp) -> u64;
+        /// Forgets the e-mails that went before `before`; returns how many. The memory of an
+        /// e-mail is needed only for `RESEND_AFTER_MINUTES` (GDPR: nothing kept without a use).
+        fn forget_old_sign_up_mail(before: Timestamp) -> u64;
     }
 }
 
@@ -222,11 +225,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(send_failure_for_job)
     }
 
-    /// Deletes the links of sign-ups that were used or ran out a day ago. Returns how many went.
+    /// Deletes the links of sign-ups that were used or ran out a day ago, and the memory of the
+    /// e-mails that went longer ago than they are needed. Returns how many links went.
     pub(crate) async fn delete_old_sign_up_links(&self) -> Result<u64, AppError> {
         let now = self.now();
         let before = now
             .checked_sub(SignedDuration::from_hours(KEEP_HOURS))
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let resent = now
+            .checked_sub(SignedDuration::from_mins(RESEND_AFTER_MINUTES))
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let event = self.event(
             EventActor::System,
@@ -240,6 +247,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
+                    S::forget_old_sign_up_mail(transaction, resent).await?;
                     S::delete_old_sign_up_invitations(transaction, before, now).await
                 })
             })
