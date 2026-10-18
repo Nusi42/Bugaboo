@@ -220,15 +220,17 @@ impl<S: AuthStore> Ctx<'_, S> {
                         JobFailure::of(&error, FAILED, job)
                     })
             }
-            Some(JobKind::PreviewFile | JobKind::CleanUpFiles) => self.do_files_job(job).await,
+            Some(kind @ (JobKind::PreviewFile | JobKind::CleanUpFiles)) => {
+                self.do_files_job(job, kind).await
+            }
             Some(
-                JobKind::PurgeDrafts
+                kind @ (JobKind::PurgeDrafts
                 | JobKind::CatchUpHistory
                 | JobKind::PurgeNotifications
                 | JobKind::PruneSecurityLog
                 | JobKind::PurgeSessions
-                | JobKind::RotateServerLog,
-            ) => self.do_daily_job(job).await,
+                | JobKind::RotateServerLog),
+            ) => self.do_daily_job(job, kind).await,
             Some(JobKind::MailSend) => {
                 Box::pin(self.run_mail_job(&job.payload))
                     .await
@@ -251,9 +253,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The daily jobs that keep the data tidy: old drafts, the history catching up, old
     /// notifications, the security log, sessions and the server log. Each queues its next round
     /// first (`run_daily`).
-    async fn do_daily_job(&self, job: &Job) -> Result<(), JobFailure> {
-        match JobKind::from_code(job.kind.as_str()) {
-            Some(JobKind::PurgeDrafts) => Box::pin(self.run_daily(JobKind::PurgeDrafts, async {
+    async fn do_daily_job(&self, job: &Job, kind: JobKind) -> Result<(), JobFailure> {
+        match kind {
+            JobKind::PurgeDrafts => Box::pin(self.run_daily(JobKind::PurgeDrafts, async {
                 purge_drafts(self, PurgeDraftsQuery).await.map(|drafts| {
                     tracing::info!(drafts, "old drafts were cleared");
                 })
@@ -263,19 +265,17 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old drafts could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
-            Some(JobKind::CatchUpHistory) => {
-                Box::pin(self.run_daily(JobKind::CatchUpHistory, async {
-                    self.catch_up_history().await.map(|events| {
-                        tracing::info!(events, "the history caught up with the events");
-                    })
-                }))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "the history could not catch up");
-                    JobFailure::of(&error, FAILED, job)
+            JobKind::CatchUpHistory => Box::pin(self.run_daily(JobKind::CatchUpHistory, async {
+                self.catch_up_history().await.map(|events| {
+                    tracing::info!(events, "the history caught up with the events");
                 })
-            }
-            Some(JobKind::PurgeNotifications) => {
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "the history could not catch up");
+                JobFailure::of(&error, FAILED, job)
+            }),
+            JobKind::PurgeNotifications => {
                 Box::pin(self.run_daily(JobKind::PurgeNotifications, async {
                     self.purge_old_notifications().await.map(|purged| {
                         tracing::info!(
@@ -291,7 +291,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     JobFailure::of(&error, FAILED, job)
                 })
             }
-            Some(JobKind::PruneSecurityLog) => {
+            JobKind::PruneSecurityLog => {
                 Box::pin(self.run_daily(JobKind::PruneSecurityLog, async {
                     self.prune_old_security_log().await.map(|entries| {
                         tracing::info!(entries, "old entries of the security log were deleted");
@@ -303,45 +303,46 @@ impl<S: AuthStore> Ctx<'_, S> {
                     JobFailure::of(&error, FAILED, job)
                 })
             }
-            Some(JobKind::PurgeSessions) => {
-                Box::pin(self.run_daily(JobKind::PurgeSessions, async {
-                    self.purge_dead_sessions().await.map(|()| {
-                        tracing::info!("sessions nobody can use were deleted");
-                    })
-                }))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "old sessions could not be deleted");
-                    JobFailure::of(&error, FAILED, job)
+            JobKind::PurgeSessions => Box::pin(self.run_daily(JobKind::PurgeSessions, async {
+                self.purge_dead_sessions().await.map(|()| {
+                    tracing::info!("sessions nobody can use were deleted");
                 })
-            }
-            Some(JobKind::RotateServerLog) => {
-                Box::pin(self.run_daily(JobKind::RotateServerLog, async {
-                    self.rotate_old_server_log().await.map(|rotated| {
-                        tracing::info!(rotated, "the server log was looked at");
-                    })
-                }))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "the server log could not be rotated");
-                    JobFailure::of(&error, FAILED, job)
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "old sessions could not be deleted");
+                JobFailure::of(&error, FAILED, job)
+            }),
+            JobKind::RotateServerLog => Box::pin(self.run_daily(JobKind::RotateServerLog, async {
+                self.rotate_old_server_log().await.map(|rotated| {
+                    tracing::info!(rotated, "the server log was looked at");
                 })
-            }
-            _ => Err(JobFailure::unknown_kind(job)),
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "the server log could not be rotated");
+                JobFailure::of(&error, FAILED, job)
+            }),
+            // Not a job of this function: `do_job` sends each kind to its own.
+            JobKind::ManyChangesStep
+            | JobKind::RenewIds
+            | JobKind::MailSend
+            | JobKind::PreviewFile
+            | JobKind::CleanUpFiles => Err(JobFailure::unknown_kind(job)),
         }
     }
 
     /// The jobs of files (`files::jobs`, ADR-0032): the preview of an attachment, and the daily
     /// clean-up of what nothing needs any more.
-    async fn do_files_job(&self, job: &Job) -> Result<(), JobFailure> {
-        match JobKind::from_code(job.kind.as_str()) {
-            Some(JobKind::PreviewFile) => Box::pin(self.run_preview_step(&job.payload))
-                .await
-                .map_err(|error| {
+    async fn do_files_job(&self, job: &Job, kind: JobKind) -> Result<(), JobFailure> {
+        match kind {
+            JobKind::PreviewFile => Box::pin(self.run_preview_step(&job.payload)).await.map_err(
+                |error| {
                     tracing::warn!(cause = %error, "the preview of a file could not be created");
                     JobFailure::of(&error, FAILED, job)
-                }),
-            Some(JobKind::CleanUpFiles) => Box::pin(self.run_daily(JobKind::CleanUpFiles, async {
+                },
+            ),
+            JobKind::CleanUpFiles => Box::pin(self.run_daily(JobKind::CleanUpFiles, async {
                 self.clean_up_files().await.map(|cleaned| {
                     tracing::info!(
                         uploads = cleaned.uploads,
@@ -356,7 +357,16 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old files could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
-            _ => Err(JobFailure::unknown_kind(job)),
+
+            JobKind::ManyChangesStep
+            | JobKind::RenewIds
+            | JobKind::MailSend
+            | JobKind::PurgeDrafts
+            | JobKind::CatchUpHistory
+            | JobKind::PurgeNotifications
+            | JobKind::PruneSecurityLog
+            | JobKind::PurgeSessions
+            | JobKind::RotateServerLog => Err(JobFailure::unknown_kind(job)),
         }
     }
 
