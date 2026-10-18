@@ -1,4 +1,10 @@
-import { giveRole, roleId, roleName, setFieldLevel } from "../../app/e2e/support/access.ts";
+import {
+  fieldsHiddenFrom,
+  giveRole,
+  roleId,
+  roleName,
+  setFieldLevel,
+} from "../../app/e2e/support/access.ts";
 import {
   ada,
   createAdmin,
@@ -18,8 +24,8 @@ import { type Work } from "./book.ts";
 /** How many issues the people share: few, so that they meet. */
 const ISSUES = 6;
 
-/** The own field that the Team members write and Guests may not see. */
-const HIDDEN_FIELD = "Internal note";
+/** What the own field that the Team members write and Guests may not see is called. */
+export const HIDDEN_FIELD_NAME = "Internal note";
 
 /** The people of a run: the administrator first, then Team members, and the Guest last. */
 function peopleOf(count: number): readonly Person[] {
@@ -44,6 +50,8 @@ export interface Prepared {
   readonly guestsIssue: Work;
   /** The key of the own field that Guests may not see. */
   readonly hiddenField: string;
+  /** Every field Guests may not see: the built-in ones their role hides and the own field. */
+  readonly hiddenFromGuests: readonly string[];
 }
 
 /**
@@ -56,12 +64,9 @@ export async function prepare(server: Instance, count: number): Promise<Prepared
   await countIssueIds(admin);
   await createProject(admin, "LOAD", "Load");
   await askForWhoWorks(admin, "LOAD");
-  const field = await createOwnField(admin, HIDDEN_FIELD, "text");
-  await setFieldLevel(
-    admin,
-    { role: await roleId(admin, roleName.guest), field: field.id },
-    "hidden",
-  );
+  const field = await createOwnField(admin, HIDDEN_FIELD_NAME, "text");
+  const guestRole = await roleId(admin, roleName.guest);
+  await setFieldLevel(admin, { role: guestRole, field: field.id }, "hidden");
   const shared: Work[] = [];
   await inOrder(
     Array.from({ length: ISSUES }, (_, at) => async () => {
@@ -95,5 +100,6 @@ export async function prepare(server: Instance, count: number): Promise<Prepared
     issues: [...shared, guestsIssue],
     guestsIssue,
     hiddenField: field.id,
+    hiddenFromGuests: await fieldsHiddenFrom(admin, guestRole),
   };
 }

@@ -125,10 +125,12 @@ function carried(file: Pictured): Carried {
 }
 
 /**
- * Pastes the file as a screenshot from the clipboard is pasted: a paste event with the file in
- * its data, on the element that has the focus (the page, when none has).
+ * Pastes the file as a screenshot from the clipboard is pasted, on the element that has the focus.
+ * The page takes a paste only once its place to drop files is there, so this waits for it.
  */
 export async function pasteFile(page: Page, file: Pictured): Promise<void> {
+  const place = filesBlock(page).getByRole("button", { name: t("files.drop-place"), exact: true });
+  await expect(place).toBeVisible();
   await page.evaluate((sent) => {
     const bytes = Uint8Array.from(atob(sent.base64), (letter) => Number(letter.codePointAt(0)));
     const data = new DataTransfer();

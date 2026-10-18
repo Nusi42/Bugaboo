@@ -31,19 +31,25 @@ pub(crate) async fn create(
     let ctx = world.services.ctx(world.request());
     let step = Step::Workflows;
     world.tick();
-    let editor = json(
-        create_workflow(
-            &ctx,
-            CreateWorkflow {
-                session_token: token.to_owned(),
-                project: Some(plan.project.clone()),
-                issue_type: None,
-            },
-        )
-        .await,
-        step,
-    )?;
-    let workflow: WorkflowId = id_in(&editor["workflow"], "id")?;
+    // The administrator's own editor, as the use case answered it (the sample is one process
+    // without an attacker, so the mask is not looked at).
+    let mut shown = None;
+    let _ = create_workflow(
+        &ctx,
+        CreateWorkflow {
+            session_token: token.to_owned(),
+            project: Some(plan.project.clone()),
+            issue_type: None,
+        },
+    )
+    .await
+    .map_err(|error| SampleError::step(step, &error))?
+    .map(|editor| shown = Some(editor));
+    let editor = shown.ok_or_else(|| SampleError::NotMade("workflow".to_owned()))?;
+    let workflow: WorkflowId = editor
+        .workflow
+        .map(|slot| slot.id)
+        .ok_or_else(|| SampleError::NotMade("workflow".to_owned()))?;
 
     world.tick();
     let lock = json(
@@ -70,7 +76,7 @@ pub(crate) async fn create(
     // What the editor shows, with the name and with the one status change that starts work asking
     // for the person; every other rule stays as it is.
     let mut publish = PublishWorkflow::from_editor(token.to_owned(), &editor, lock_token)
-        .map_err(SampleError::NotMade)?;
+        .map_err(|error| SampleError::step(step, &error))?;
     plan.name.clone_into(&mut publish.name);
     for change in &mut publish.changes {
         if change.from == OPEN && change.to == IN_PROGRESS {

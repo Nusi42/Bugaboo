@@ -263,7 +263,7 @@ pub struct RuleField {
 }
 
 /// What the editor shows for a place.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WorkflowEditor {
     /// The project of the place; none for the whole organization.
     pub project: Option<ProjectRef>,
@@ -290,72 +290,60 @@ pub struct WorkflowEditor {
 
 impl Masked for WorkflowEditor {}
 
+/// The editor has no workflow of its own, so there is nothing to publish.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NoWorkflowOfItsOwn;
+
+#[cfg(any(test, feature = "testing"))]
+impl std::fmt::Display for NoWorkflowOfItsOwn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("the place has no workflow of its own")
+    }
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl std::error::Error for NoWorkflowOfItsOwn {}
+
+#[cfg(any(test, feature = "testing"))]
 impl PublishWorkflow {
-    /// What *Publish* sends for a workflow exactly as the editor shows it (`editor` is the answer of
-    /// the editor as JSON, the way a client reads it), with nothing changed: the one place that
-    /// turns what the editor shows into what *Publish* takes, so a tool or a test that changes one
-    /// rule changes that one and keeps the others.
+    /// What *Publish* sends for a workflow exactly as the editor shows it, with nothing changed:
+    /// the one place that turns what the editor shows into what *Publish* takes, so a tool or a
+    /// test that changes one rule changes that one and keeps the others.
     ///
     /// # Errors
-    /// A word for the first part of the answer that is not what an editor answers.
+    /// [`NoWorkflowOfItsOwn`] when the editor shows the workflow of another place.
     pub fn from_editor(
         session_token: String,
-        editor: &serde_json::Value,
+        editor: &WorkflowEditor,
         lock_token: LockToken,
-    ) -> Result<Self, String> {
-        let word = |value: &serde_json::Value, member: &str| -> Result<String, String> {
-            value[member]
-                .as_str()
-                .map(str::to_owned)
-                .ok_or_else(|| format!("the editor has no {member}"))
-        };
-        let slot = &editor["workflow"];
-        let list = |member: &str| -> Result<&Vec<serde_json::Value>, String> {
-            editor[member]
-                .as_array()
-                .ok_or_else(|| format!("the editor has no {member}"))
-        };
-        let statuses = list("statuses")?
-            .iter()
-            .map(|status| {
-                let group = word(status, "group")?;
-                Ok(StatusDraft {
-                    key: Some(
-                        word(status, "key")?
-                            .parse()
-                            .map_err(|_| "a status has no key".to_owned())?,
-                    ),
-                    name: word(status, "name")?,
-                    group: StatusGroup::from_code(&group)
-                        .ok_or_else(|| format!("{group} is no status group"))?,
-                })
-            })
-            .collect::<Result<Vec<_>, String>>()?;
-        let changes = list("changes")?
-            .iter()
-            .map(|change| {
-                Ok(ChangeDraft {
-                    from: word(change, "from")?,
-                    to: word(change, "to")?,
-                    button: word(change, "button")?,
-                    rules: serde_json::from_value(change["rules"].clone())
-                        .map_err(|error| error.to_string())?,
-                })
-            })
-            .collect::<Result<Vec<_>, String>>()?;
+    ) -> Result<Self, NoWorkflowOfItsOwn> {
+        let slot = editor.workflow.ok_or(NoWorkflowOfItsOwn)?;
         Ok(Self {
             session_token,
-            workflow: slot["id"]
-                .as_str()
-                .and_then(|id| id.parse().ok())
-                .ok_or("the editor has no workflow of its own")?,
-            version: slot["version"]
-                .as_i64()
-                .ok_or("the workflow has no version")?,
+            workflow: slot.id,
+            version: slot.version,
             lock_token,
-            name: word(editor, "name")?,
-            statuses,
-            changes,
+            name: editor.name.clone(),
+            statuses: editor
+                .statuses
+                .iter()
+                .map(|status| StatusDraft {
+                    key: Some(status.key.clone()),
+                    name: status.name.clone(),
+                    group: status.group,
+                })
+                .collect(),
+            changes: editor
+                .changes
+                .iter()
+                .map(|change| ChangeDraft {
+                    from: change.from.to_string(),
+                    to: change.to.to_string(),
+                    button: change.button.clone(),
+                    rules: change.rules.clone(),
+                })
+                .collect(),
             moves: Vec::new(),
         })
     }

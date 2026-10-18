@@ -24,7 +24,10 @@ function summary(book: BookWriter, options: LoadOptions): string {
  * must hold afterwards is judged by `bb-load-check` (`cargo xtask load` runs it), not here.
  */
 export async function run(server: Instance, options: LoadOptions): Promise<string> {
-  const { sessions, ids, issues, guestsIssue, hiddenField } = await prepare(server, options.people);
+  const { sessions, ids, issues, guestsIssue, hiddenField, hiddenFromGuests } = await prepare(
+    server,
+    options.people,
+  );
   const book = newBook();
   const guestAt = sessions.length - 1;
   book.guest(ids[guestAt] ?? "");
@@ -45,6 +48,7 @@ export async function run(server: Instance, options: LoadOptions): Promise<strin
         deadline,
         editUntil,
         hiddenField,
+        hiddenFromGuests,
         guest: number === guestAt,
       } satisfies Context),
     ),

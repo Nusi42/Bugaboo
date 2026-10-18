@@ -22,8 +22,6 @@
 //!   lock once the leases are over, and after the purge no row is left.
 
 use bb_app::access::StartingRole;
-use bb_core::access::FieldLevel;
-use bb_core::fields::Field;
 
 use crate::book::{Book, DraftEnd, last_drafts};
 use crate::facts::{Facts, IssueFacts, LockRow, NotificationFacts};
@@ -148,9 +146,8 @@ fn files_are_kept(book: &Book, issue: &IssueFacts) -> Option<String> {
 /// The fields a Guest may not see: the built-in ones the starting role hides, and the own fields the
 /// run hid from Guests.
 fn hidden_from_guests(book: &Book) -> Vec<String> {
-    Field::ALL
-        .iter()
-        .filter(|field| StartingRole::Guest.field_level(**field) == FieldLevel::Hidden)
+    StartingRole::Guest
+        .hidden_fields()
         .map(|field| field.code().to_owned())
         .chain(book.hidden_from_guests.iter().cloned())
         .collect()

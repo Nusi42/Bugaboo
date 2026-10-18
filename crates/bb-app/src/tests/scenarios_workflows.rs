@@ -77,12 +77,8 @@ pub(crate) fn publish_of(
     editor: &WorkflowEditor,
     lock_token: LockToken,
 ) -> Result<PublishWorkflow, String> {
-    slot_of(editor)?;
-    PublishWorkflow::from_editor(
-        token(world),
-        &serde_json::to_value(editor).map_err(|error| error.to_string())?,
-        lock_token,
-    )
+    PublishWorkflow::from_editor(token(world), editor, lock_token)
+        .map_err(|error| error.to_string())
 }
 
 /// Publishes the workflow of a project as Ada after `change` changed what the editor showed; the
