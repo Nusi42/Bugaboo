@@ -16,7 +16,7 @@ use std::collections::{HashMap, HashSet};
 use super::Finding;
 use crate::docs::text::has_extension;
 use crate::repo::Repo;
-use crate::rust_source::strip_comments;
+use crate::rust_source::{strip, strip_comments};
 use crate::source::{Source, read_text};
 
 /// A test that has to exist.
@@ -101,25 +101,69 @@ pub(super) fn crate_sources(repo: &Repo) -> anyhow::Result<Vec<Source>> {
     Ok(sources)
 }
 
-/// The modules a file declares with `mod name;` and no `cfg` in their attributes, each with the
-/// file it names by `#[path = "…"]`, if it does. Takes code whose comments are blank.
-fn declarations(code: &str) -> Vec<(String, Option<String>)> {
+/// A module a file declares with `mod name;`.
+struct Declared {
+    name: String,
+    /// The file it names by `#[path = "…"]`, if it does.
+    path: Option<String>,
+    /// The inline modules (`mod a { mod b; }`) around the declaration, outermost first: the files
+    /// of a module declared inside them are looked for in folders of these names.
+    inline: Vec<String>,
+}
+
+/// The modules a file declares with `mod name;` and no `cfg` in their attributes. `blank` is the
+/// code with comments and strings blanked (a `mod x;` in a string is no module), `kept` the same
+/// code with the strings kept, from which the `#[path]` is read; both have the same positions.
+fn declarations(blank: &str, kept: &str) -> Vec<Declared> {
     let mut modules = Vec::new();
-    for (at, _) in code.match_indices("mod ") {
-        let rest = &code[at + 4..];
+    for (at, _) in blank.match_indices("mod ") {
+        let rest = &blank[at + 4..];
         let Some(end) = rest.find([';', '{']) else {
             continue;
         };
         if !rest[end..].starts_with(';') || rest[..end].trim().contains(char::is_whitespace) {
             continue;
         }
-        let attributes = attributes_before(&code[..at]);
+        let attributes = attributes_before(&blank[..at]);
         if has_cfg(attributes) {
             continue;
         }
-        modules.push((rest[..end].trim().to_owned(), path_attribute(attributes)));
+        let kept_attributes = &kept[at - attributes.len()..at];
+        modules.push(Declared {
+            name: rest[..end].trim().to_owned(),
+            path: path_attribute(kept_attributes),
+            inline: inline_modules(blank, at),
+        });
     }
     modules
+}
+
+/// The names of the inline modules that the position `at` is inside, outermost first.
+fn inline_modules(code: &str, at: usize) -> Vec<String> {
+    let mut open: Vec<Option<String>> = Vec::new();
+    let mut header_start = 0;
+    for (index, character) in code[..at].char_indices() {
+        match character {
+            '{' => {
+                let header = attributes_before(&code[header_start..index]);
+                let words: Vec<&str> = header.split_whitespace().collect();
+                let named = words
+                    .iter()
+                    .position(|word| *word == "mod")
+                    .and_then(|place| words.get(place + 1))
+                    .map(|name| (*name).to_owned());
+                open.push(named);
+                header_start = index + 1;
+            }
+            '}' => {
+                open.pop();
+                header_start = index + 1;
+            }
+            ';' => header_start = index + 1,
+            _ => {}
+        }
+    }
+    open.into_iter().flatten().collect()
 }
 
 /// The text of `#[path = "…"]` among the attributes.
@@ -165,6 +209,16 @@ fn inside_switched_off_block(code: &str, at: usize) -> bool {
     open.contains(&true)
 }
 
+/// Whether the attributes hold a test attribute: `#[test]`, `#[tokio::test]`, also with arguments
+/// (`#[tokio::test(flavor = "multi_thread")]`). `cfg(test)` is a condition, not a test attribute.
+fn has_test_attribute(attributes: &str) -> bool {
+    attributes.match_indices("test").any(|(at, word)| {
+        let before = attributes[..at].chars().next_back();
+        let after = attributes[at + word.len()..].chars().next();
+        matches!(before, Some('[' | ':')) && matches!(after, Some(']' | '('))
+    })
+}
+
 /// Whether the function whose `fn` stands at `at` is a test that is not switched off. The
 /// attributes are everything between the end of the item before it (`}` or `;`) and the function;
 /// comments are already blank in `code`, so a doc comment between the attributes does not hide one,
@@ -172,7 +226,7 @@ fn inside_switched_off_block(code: &str, at: usize) -> bool {
 /// so does `cfg(` in them or in the attributes of a block around the function.
 fn is_live_test(code: &str, at: usize) -> bool {
     let attributes = attributes_before(&code[..at]);
-    attributes.contains("test]")
+    has_test_attribute(attributes)
         && !attributes.contains("ignore")
         && !has_cfg(attributes)
         && !inside_switched_off_block(code, at)
@@ -211,9 +265,9 @@ struct Tree {
 }
 
 impl Tree {
-    fn of(code: &[(&str, String)]) -> Self {
+    fn of(code: &[(&str, String, String)]) -> Self {
         let mut declared_by: HashMap<String, Vec<String>> = HashMap::new();
-        for (path, text) in code {
+        for (path, text, blank) in code {
             let (folder, file) = path.rsplit_once('/').unwrap_or(("", path));
             // The modules of a root or of a `mod.rs` are beside it, those of `a.rs` in `a/`.
             let children = if is_root(path) || file == "mod.rs" {
@@ -221,15 +275,20 @@ impl Tree {
             } else {
                 format!("{folder}/{}", file.trim_end_matches(".rs"))
             };
-            for (name, explicit) in declarations(text) {
+            for declared in declarations(blank, text) {
+                let Declared {
+                    name,
+                    path: explicit,
+                    inline,
+                } = declared;
+                // The files of a module are in a folder per inline module around its declaration.
+                let base = join(&children, &inline.join("/"));
                 let targets = explicit.map_or_else(
-                    || {
-                        vec![
-                            format!("{children}/{name}.rs"),
-                            format!("{children}/{name}/mod.rs"),
-                        ]
+                    || vec![format!("{base}/{name}.rs"), format!("{base}/{name}/mod.rs")],
+                    |relative| {
+                        let from = if inline.is_empty() { folder } else { &base };
+                        vec![join(from, &relative)]
                     },
-                    |relative| vec![join(folder, &relative)],
                 );
                 for target in targets {
                     declared_by
@@ -303,11 +362,11 @@ const NO_MODULE: &str = "no `mod` leads to its file from the root of the crate (
                          `cfg`), so it never runs";
 
 /// What is wrong with the test `each`, looking at every function of that name.
-fn judge<'a>(code: &'a [(&'a str, String)], tree: &Tree, each: &Required) -> Verdict<'a> {
+fn judge<'a>(code: &'a [(&'a str, String, String)], tree: &Tree, each: &Required) -> Verdict<'a> {
     let needle = format!("fn {}(", each.name);
     let mut off = None;
     let mut one_database = None;
-    for (path, text) in code {
+    for (path, _, text) in code {
         if !path.starts_with(each.within) {
             continue;
         }
@@ -337,9 +396,9 @@ pub(super) fn evaluate(
     required: &[Required],
     why_needed: &str,
 ) -> Vec<Finding> {
-    let code: Vec<(&str, String)> = sources
+    let code: Vec<(&str, String, String)> = sources
         .iter()
-        .map(|(path, text)| (path.as_str(), strip_comments(text)))
+        .map(|(path, text)| (path.as_str(), strip_comments(text), strip(text)))
         .collect();
     let tree = Tree::of(&code);
     required
@@ -500,6 +559,96 @@ mod tests {
         ] {
             assert_eq!(found(&crate_with(&text)), 0, "{text}");
         }
+    }
+
+    #[test]
+    fn good_example_a_test_attribute_with_arguments_is_still_a_test() {
+        for attribute in [
+            "#[tokio::test(flavor = \"multi_thread\", worker_threads = 4)]",
+            "#[tokio::test(flavor = \"multi_thread\")]",
+            "#[sqlx::test]",
+        ] {
+            let text = format!(
+                "{attribute}
+async fn {NAME}() {{}}
+"
+            );
+            assert_eq!(found(&crate_with(&text)), 0, "{attribute}");
+        }
+        // A condition on `test` is no test attribute.
+        let only_cfg = format!(
+            "#[cfg(test)]
+fn {NAME}() {{}}
+"
+        );
+        assert_eq!(found(&crate_with(&only_cfg)), 1);
+    }
+
+    #[test]
+    fn bad_example_a_module_declared_in_a_string_or_a_comment_is_no_module() {
+        let text = format!(
+            "#[test]
+fn {NAME}() {{}}
+"
+        );
+        for root in [
+            "const TEXT: &str = \"mod tests;\";
+",
+            "// mod tests;
+const TEXT: &str = r#\"
+mod tests;
+\"#;
+",
+        ] {
+            let sources = vec![
+                ("crates/x/src/lib.rs".to_owned(), root.to_owned()),
+                ("crates/x/src/tests.rs".to_owned(), text.clone()),
+            ];
+            assert_eq!(found(&sources), 1, "{root}");
+        }
+    }
+
+    #[test]
+    fn good_and_bad_example_a_module_inside_an_inline_module_is_in_a_folder_of_its_name() {
+        let text = format!(
+            "#[test]
+fn {NAME}() {{}}
+"
+        );
+        let sources = |at: &str| {
+            vec![
+                (
+                    "crates/x/src/lib.rs".to_owned(),
+                    "mod outer {
+    mod inner {
+        mod tests;
+    }
+}
+"
+                    .to_owned(),
+                ),
+                (at.to_owned(), text.clone()),
+            ]
+        };
+        assert_eq!(found(&sources("crates/x/src/outer/inner/tests.rs")), 0);
+        assert_eq!(found(&sources("crates/x/src/tests.rs")), 1);
+        // A path attribute inside an inline module is relative to the folders of the modules.
+        let with_path = |at: &str| {
+            vec![
+                (
+                    "crates/x/src/lib.rs".to_owned(),
+                    "mod outer {
+    #[path = \"deep/tests.rs\"]
+    mod tests;
+}
+"
+                    .to_owned(),
+                ),
+                (at.to_owned(), text.clone()),
+            ]
+        };
+        assert_eq!(found(&with_path("crates/x/src/outer/deep/tests.rs")), 0);
+        assert_eq!(found(&with_path("crates/x/src/deep/tests.rs")), 1);
     }
 
     #[test]
