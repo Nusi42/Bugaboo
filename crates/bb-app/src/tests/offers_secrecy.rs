@@ -35,7 +35,7 @@ fn at(project: &str, offered: Option<bool>) -> OfferChange {
     }
 }
 
-async fn new_type(
+pub(super) async fn new_type(
     world: &World,
     who: &str,
     project: Option<&str>,

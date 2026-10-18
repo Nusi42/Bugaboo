@@ -27,6 +27,7 @@ mod fake_workflows;
 mod files;
 mod handles;
 mod hidden;
+mod history_known;
 mod keep;
 mod key_scope;
 mod keys;

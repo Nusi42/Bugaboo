@@ -154,6 +154,15 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<LabelPlan, AppError> {
         let Kept { issue, .. } = self.issue_to_sort(actor, issue, Field::Labels).await?;
         let state = self.label_state(issue.id).await?;
+        // A label of a group the person may not know is not there for them.
+        let group = state
+            .labels
+            .iter()
+            .find(|found| found.id == label)
+            .and_then(|found| found.group);
+        if let Some(group) = group {
+            self.known_group(actor, group).await?;
+        }
         let offers = self.group_offers(issue.project).await?;
         let addition = judge_label(label, &state.labels, &state.groups, &state.held, &offers)?;
         let before = label_names(&state.labels, &state.held);

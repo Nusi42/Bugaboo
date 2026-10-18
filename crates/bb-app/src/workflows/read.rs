@@ -59,6 +59,9 @@ pub async fn project_statuses<S: AuthStore>(
         .issue_types()
         .await
         .map_err(|error| internal::<S>(&error))?;
+    // Only the types the person may know (`offers/known.rs`).
+    let shown = ctx.shown_to(&actor).await?;
+    let types = ctx.known_types(&shown, types).await?;
     let mut changes: Vec<ProjectChange> = Vec::new();
     // Only the types that can reach the project: the statuses of a type created in another project
     // are no business of this one (and nothing about that type is told).

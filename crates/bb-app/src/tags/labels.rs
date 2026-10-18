@@ -236,10 +236,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         ))
     }
 
-    /// Refuses (`resource.not_found`) a label that is not there.
-    pub(crate) async fn label_exists(&self, label: LabelId) -> Result<(), AppError> {
-        self.label_catalogue().await?.label(label)?;
-        Ok(())
+    /// Refuses (`resource.not_found`) a label that is not there or that is in a group of labels
+    /// the person may not know (`offers/known.rs`).
+    pub(crate) async fn label_known(&self, actor: &Actor, label: LabelId) -> Result<(), AppError> {
+        let group = self.label_catalogue().await?.label(label)?.group;
+        match group {
+            Some(group) => self.known_group(actor, group).await.map(|_| ()),
+            None => Ok(()),
+        }
     }
 
     async fn label_catalogue(&self) -> Result<Catalogue, AppError> {

@@ -34,13 +34,6 @@ pub(crate) struct LineMaker {
     workflows: HashMap<(ProjectId, IssueTypeId), Arc<WorkflowContent>>,
 }
 
-impl LineMaker {
-    /// What an issue type is called.
-    pub(crate) fn type_name(&self, id: IssueTypeId) -> Option<&str> {
-        self.types.get(&id).map(|found| found.name.as_str())
-    }
-}
-
 impl<S: AuthStore> Ctx<'_, S> {
     /// The maker of lines for a request.
     pub(crate) async fn line_maker(&self) -> Result<LineMaker, AppError> {
