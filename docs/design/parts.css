@@ -4019,8 +4019,12 @@ body {
 
 [data-part="markdown.toolbar"] {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: 0;
+  overflow-x: auto;
+}
+
+[data-part="markdown.toolbar"] [data-part="button"] {
+  flex: none;
 }
 
 [data-part="markdown.panel"] {

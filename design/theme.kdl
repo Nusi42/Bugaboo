@@ -4416,10 +4416,16 @@ part "markdown.tab[focus-visible]" {
     use "ring-inside"
 }
 
+// One row that scrolls sideways where it is too narrow, not a row that leaves one button alone on the
+// next line (the review of M4, B issue page).
 part "markdown.toolbar" {
     display flex
-    flex-wrap wrap
-    gap "$space-1"
+    gap 0
+    overflow-x auto
+}
+
+part "markdown.toolbar button" {
+    flex none
 }
 
 part "markdown.panel" {
