@@ -36,6 +36,7 @@ mod mail;
 mod many_changes;
 mod many_changes_property;
 mod moving;
+mod names_stored;
 mod notifications;
 mod offers;
 mod offers_secrecy;

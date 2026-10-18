@@ -8,7 +8,7 @@ use super::{
 use crate::fields::{Field, FieldKey};
 use crate::id::WorkflowId;
 use crate::issue::StatusGroup;
-use crate::names::{name_among, same_name};
+use crate::names::same_name;
 
 /// A status as an editor sends it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -145,6 +145,22 @@ impl WorkflowContent {
     /// # Errors
     /// Names the first rule that is broken.
     pub fn check(&self) -> Result<(), Problem> {
+        self.check_since(&[])
+    }
+
+    /// The same for a workflow saved over `stored`: two names that are the same name (see
+    /// `bb_core::names`) are a problem only when one of them is new or changed. A status that is
+    /// there with the same key and the same words stays as it is, so a workflow stored before names
+    /// were told apart by one rule can still be saved.
+    ///
+    /// # Errors
+    /// Names the first rule that is broken.
+    pub fn check_since(&self, stored: &[WorkflowStatus]) -> Result<(), Problem> {
+        let settled = |status: &WorkflowStatus| {
+            stored
+                .iter()
+                .any(|each| each.key == status.key && each.name == status.name)
+        };
         if self.statuses.is_empty() {
             return Err(Problem::NoStatus);
         }
@@ -161,10 +177,9 @@ impl WorkflowContent {
             {
                 return Err(Problem::KeyTwice);
             }
-            if name_among(
-                self.statuses[..at].iter().map(|each| each.name.as_str()),
-                &status.name,
-            ) {
+            if self.statuses[..at].iter().any(|each| {
+                (!settled(each) || !settled(status)) && same_name(&each.name, &status.name)
+            }) {
                 return Err(Problem::NameTwice);
             }
         }
@@ -246,12 +261,16 @@ impl WorkflowContent {
 
     /// The workflow an editor sends: a new status gets a key made from its name (one that is not
     /// used), and a status change names its two statuses by a key or, for a new status, by its
-    /// name. The result is checked.
+    /// name. The result is checked against the statuses `stored`.
     ///
     /// # Errors
     /// Names the first rule that is broken; a status change that names a status the editor did not
     /// send is [`Problem::UnknownStatus`].
-    pub fn from_drafts(statuses: &[StatusDraft], changes: &[ChangeDraft]) -> Result<Self, Problem> {
+    pub fn from_drafts(
+        statuses: &[StatusDraft],
+        changes: &[ChangeDraft],
+        stored: &[WorkflowStatus],
+    ) -> Result<Self, Problem> {
         let mut taken: Vec<String> = statuses
             .iter()
             .filter_map(|draft| draft.key.as_ref())
@@ -291,7 +310,7 @@ impl WorkflowContent {
             statuses: made,
             changes: made_changes,
         };
-        content.check()?;
+        content.check_since(stored)?;
         Ok(content)
     }
 

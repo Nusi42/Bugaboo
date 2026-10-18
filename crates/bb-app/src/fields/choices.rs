@@ -237,7 +237,8 @@ pub async fn change_choice<S: AuthStore>(
     let mut after = before.clone();
     if let Some(name) = &input.name {
         after.name = clean_name(name)?;
-        if name_taken(&definition.choices, &after.name, Some(after.id)) {
+        if after.name != before.name && name_taken(&definition.choices, &after.name, Some(after.id))
+        {
             return Err(ErrorCode::NameTaken.into());
         }
     }
@@ -295,7 +296,14 @@ pub async fn change_choice<S: AuthStore>(
             let taken = known
                 .iter()
                 .find(|found| found.field.id == stored.field)
-                .is_some_and(|found| name_taken(&found.choices, &stored.name, Some(stored.id)));
+                .is_some_and(|found| {
+                    let renamed = found
+                        .choices
+                        .iter()
+                        .find(|choice| choice.id == stored.id)
+                        .is_none_or(|choice| choice.name != stored.name);
+                    renamed && name_taken(&found.choices, &stored.name, Some(stored.id))
+                });
             if taken {
                 return Err(stopped.stop::<S>(ErrorCode::NameTaken));
             }

@@ -126,8 +126,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         drafts: Drafts<'_>,
     ) -> Result<WorkflowContent, AppError> {
         check_name(drafts.name).map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
-        let content = WorkflowContent::from_drafts(drafts.statuses, drafts.changes)
-            .map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
+        let content =
+            WorkflowContent::from_drafts(drafts.statuses, drafts.changes, &stored.content.statuses)
+                .map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
         let definitions = self.field_catalogue().await?;
         let known_groups: Vec<GroupId> = self
             .groups_offered(actor, &stored.content)

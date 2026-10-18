@@ -432,7 +432,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut after = current.clone();
         if let Some(name) = &input.name {
             after.field.name = clean_name(name)?;
-            if name_taken(definitions, &after.field.name, Some(after.field.id)) {
+            if after.field.name != current.field.name
+                && name_taken(definitions, &after.field.name, Some(after.field.id))
+            {
                 return Err(ErrorCode::NameTaken.into());
             }
         }
@@ -538,7 +540,11 @@ pub async fn change_field<S: AuthStore>(
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 let known = S::field_definitions_in(transaction).await?;
-                if name_taken(&known, &written.field.name, Some(written.field.id)) {
+                let renamed = known
+                    .iter()
+                    .find(|stored| stored.field.id == written.field.id)
+                    .is_none_or(|stored| stored.field.name != written.field.name);
+                if renamed && name_taken(&known, &written.field.name, Some(written.field.id)) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 if S::update_field(transaction, &written.field, &written.scope, version).await? {
