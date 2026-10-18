@@ -463,7 +463,7 @@ export interface MessageArguments {
   "workflows.status-down": { name: string | number };
   "workflows.status-remove": { name: string | number };
   "workflows.status-up": { name: string | number };
-  "workflows.try-in": { key: string | number; status: string | number };
+  "workflows.try-in-status": { key: string | number };
   "workflows.try-needs": { fields: string | number };
   "workflows.try-on-field": { field: string | number; reason: string | number };
   "workflows.uses-hidden": { name: string | number };

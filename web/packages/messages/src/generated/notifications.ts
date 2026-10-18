@@ -13,6 +13,7 @@ export const messages = {
   "notifications.mark-read": "Mark as read",
   "notifications.mark-read-name": "Mark as read: {what}",
   "notifications.open": "Open",
+  "notifications.open-project-settings": "Open the project settings",
   "notifications.open-name": "Open: {what}",
   "notifications.new": "New",
   "notifications.more": "Show earlier",

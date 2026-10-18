@@ -743,6 +743,15 @@ part "button[disabled]" {
     }
 }
 
+// A main button that cannot be pressed yet is not a pale copy of the filled one, whose white words
+// are hard to read: it is a plain box with muted words (the review of M4, A14).
+part "button[variant=primary][disabled]" {
+    opacity 1
+    border-color "$border"
+    background "$bg-sunken"
+    color "$fg-muted"
+}
+
 part "button[state=busy]" {
     use "busy"
 }
@@ -2378,9 +2387,22 @@ part "save-status" {
     use "quiet-text"
 }
 
+// Red means something did not happen (R4); a change that is not saved yet only says so.
 part "save-status[state=not-saved]" {
-    color "$danger"
+    color "$fg"
     font-weight "$weight-bold"
+}
+
+// The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).
+part "save-bar" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-3"
+}
+
+part "save-bar button[variant=primary]" {
+    margin-inline-start auto
 }
 
 part "skeleton.line" {
@@ -11470,22 +11492,41 @@ part "workflow-statuses" {
     gap "$space-4"
 }
 
+// A status of the plain list: its group's color on the start edge (R4) with its icon in front of the
+// name (R5), then what is changed about it, then the status changes that start in it. One box
+// (R3, the review of M4 A9): the status changes inside it are rows with a line between, not boxes.
 part "workflow-status" {
     use "surface-box"
     display flex
     flex-direction column
     gap "$space-3"
-    padding "$space-4"
+    padding "$pad-box"
+    border-inline-start "$size-edge solid $border"
 }
 
-part "workflow-status.head" {
+part "workflow-status[state=group-not-started]" {
+    border-inline-start-color "$st-ns"
+}
+
+part "workflow-status[state=group-in-progress]" {
+    border-inline-start-color "$st-ip"
+}
+
+part "workflow-status[state=group-done]" {
+    border-inline-start-color "$st-done"
+}
+
+part "workflow-status.title" {
     display flex
     flex-wrap wrap
-    align-items flex-end
-    gap "$space-3"
+    align-items center
+    gap "$space-2"
 }
 
 part "workflow-status.name" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
     margin 0
     color "$fg"
     font-size "$fs-md"
@@ -11493,27 +11534,75 @@ part "workflow-status.name" {
     overflow-wrap anywhere
 }
 
+// The name and the group side by side where there is room, under each other on a phone.
+part "workflow-status.head" {
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax(min($size-name, 100%), 1fr))"
+    align-items end
+    gap "$space-3"
+}
+
+// What moves or takes away a status: buttons with words, as wide as a finger on a phone.
+part "workflow-status.tools" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
 part "workflow-changes" {
     use "list-reset"
     display flex
     flex-direction column
-    gap "$space-2"
 }
 
+// One status change: where it leads, the words of its button, its rules and a way to take it away.
+// The columns are the same in every row, so *Rules* and *Remove* stand in a line down the list.
 part "workflow-change" {
-    use "sunken-box"
-    display flex
-    flex-wrap wrap
-    align-items flex-end
-    gap "$space-3"
-    padding "$space-3"
+    display grid
+    grid-template-columns "minmax(0, 1fr) minmax(0, 2fr) auto auto"
+    align-items end
+    gap "$space-2" "$space-3"
+    padding "$space-3 0"
+    border-top "$border-width solid $border-subtle"
+}
+
+part "app-layout[variant=phone] workflow-change" {
+    grid-template-columns "minmax(0, 1fr) auto"
+    align-items center
 }
 
 part "workflow-change.to" {
-    min-width "$size-name"
-    font-weight "$weight-bold"
-    line-height "$size-control"
-    overflow-wrap anywhere
+    min-width 0
+    padding-bottom "$space-2"
+}
+
+part "workflow-change.field" {
+    min-width 0
+}
+
+part "app-layout[variant=phone] workflow-change.field" {
+    grid-column "1 / -1"
+    grid-row 2
+}
+
+part "app-layout[variant=phone] workflow-change.remove" {
+    grid-column 2
+    grid-row 1
+}
+
+part "workflow-change.rules" {
+    display flex
+    flex-direction column
+    align-items flex-start
+}
+
+part "app-layout[variant=phone] workflow-change.rules" {
+    grid-column "1 / -1"
+    grid-row 3
+    flex-direction row
+    align-items center
+    gap "$space-3"
 }
 
 part "workflow-add" {

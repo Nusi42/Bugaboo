@@ -2826,6 +2826,10 @@ pub const NOTIFICATIONS_NOTHING_UNREAD: MessageKey =
 /// The message `notifications.open`.
 pub const NOTIFICATIONS_OPEN: MessageKey = MessageKey::new("notifications.open");
 
+/// The message `notifications.open-project-settings`.
+pub const NOTIFICATIONS_OPEN_PROJECT_SETTINGS: MessageKey =
+    MessageKey::new("notifications.open-project-settings");
+
 /// The message `notifications.run-done`.
 pub const NOTIFICATIONS_RUN_DONE: MessageKey = MessageKey::new("notifications.run-done");
 
@@ -4872,6 +4876,9 @@ pub const WORKFLOWS_CREATE_STATUS: MessageKey = MessageKey::new("workflows.creat
 pub const WORKFLOWS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("workflows.customize-organization");
 
+/// The message `workflows.down`.
+pub const WORKFLOWS_DOWN: MessageKey = MessageKey::new("workflows.down");
+
 /// The message `workflows.draft-changed`.
 pub const WORKFLOWS_DRAFT_CHANGED: MessageKey = MessageKey::new("workflows.draft-changed");
 
@@ -4939,6 +4946,9 @@ pub const WORKFLOWS_PUBLISH_TEXT: MessageKey = MessageKey::new("workflows.publis
 /// The message `workflows.publish-title`.
 pub const WORKFLOWS_PUBLISH_TITLE: MessageKey = MessageKey::new("workflows.publish-title");
 
+/// The message `workflows.remove`.
+pub const WORKFLOWS_REMOVE: MessageKey = MessageKey::new("workflows.remove");
+
 /// The message `workflows.rules-done`.
 pub const WORKFLOWS_RULES_DONE: MessageKey = MessageKey::new("workflows.rules-done");
 
@@ -4980,6 +4990,9 @@ pub const WORKFLOWS_TRY_TEXT: MessageKey = MessageKey::new("workflows.try-text")
 
 /// The message `workflows.try-title`.
 pub const WORKFLOWS_TRY_TITLE: MessageKey = MessageKey::new("workflows.try-title");
+
+/// The message `workflows.up`.
+pub const WORKFLOWS_UP: MessageKey = MessageKey::new("workflows.up");
 
 /// The message `workflows.use-inherited`.
 pub const WORKFLOWS_USE_INHERITED: MessageKey = MessageKey::new("workflows.use-inherited");
@@ -9411,15 +9424,12 @@ pub fn workflows_status_up(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `workflows.try-in`.
+/// The message `workflows.try-in-status`.
 #[must_use]
-pub fn workflows_try_in(key: impl std::fmt::Display, status: impl std::fmt::Display) -> Message {
+pub fn workflows_try_in_status(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("workflows.try-in"),
-        vec![
-            ("key", Value::Text(key.to_string())),
-            ("status", Value::Text(status.to_string())),
-        ],
+        MessageKey::new("workflows.try-in-status"),
+        vec![("key", Value::Text(key.to_string()))],
     )
 }
 
@@ -9994,7 +10004,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.done", "Done"),
-    ("common.issue-id", "Issue ID, for example WEB-142"),
+    ("common.issue-id", "Issue ID, for example WEB‑142"),
     ("common.loading", "Loading…"),
     ("common.nothing", "nothing"),
     ("common.off", "Off"),
@@ -11819,6 +11829,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.open", "Open"),
     ("notifications.open-name", "Open: {what}"),
     (
+        "notifications.open-project-settings",
+        "Open the project settings",
+    ),
+    (
         "notifications.released",
         "{who} ended your editing because it was stuck, so others can edit again",
     ),
@@ -13603,6 +13617,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "workflows.delete-held",
         "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
     ),
+    ("workflows.down", "Move down"),
     (
         "workflows.draft-changed",
         "This workflow changed while you were editing, and you see it as it is now. Your changes are kept.",
@@ -13672,6 +13687,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {# issue is in {status}. It goes to} other {# issues are in {status}. They go to}}",
     ),
     ("workflows.publish-where-over", "Issues in {status} go to"),
+    ("workflows.remove", "Remove"),
     ("workflows.remove-condition", "Stop checking {field}"),
     ("workflows.rules-done", "Close"),
     (
@@ -13696,7 +13712,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.test-filled", "has a value"),
     ("workflows.try-allowed", "Allowed."),
     ("workflows.try-go", "Show the status changes"),
-    ("workflows.try-in", "{key} is in {status}."),
+    ("workflows.try-in-status", "{key} is in this status:"),
     (
         "workflows.try-needs",
         "Possible once these fields have a value: {fields}.",
@@ -13708,6 +13724,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Pick an issue and a person to see which status changes they would get, and why.",
     ),
     ("workflows.try-title", "Try it"),
+    ("workflows.up", "Move up"),
     ("workflows.use-inherited", "Reset to default"),
     (
         "workflows.use-inherited-text",

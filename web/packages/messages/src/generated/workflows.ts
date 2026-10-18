@@ -25,6 +25,9 @@ export const messages = {
   "workflows.status-name": "Name of the status",
   "workflows.status-group": "Status group",
   "workflows.starts-here": "New issues start here",
+  "workflows.up": "Move up",
+  "workflows.down": "Move down",
+  "workflows.remove": "Remove",
   "workflows.status-up": "Move {name} up",
   "workflows.status-down": "Move {name} down",
   "workflows.status-remove": "Remove {name}",
@@ -90,7 +93,7 @@ export const messages = {
   "workflows.try-text":
     "Pick an issue and a person to see which status changes they would get, and why.",
   "workflows.try-go": "Show the status changes",
-  "workflows.try-in": "{key} is in {status}.",
+  "workflows.try-in-status": "{key} is in this status:",
   "workflows.try-none": "No status change starts here.",
   "workflows.try-allowed": "Allowed.",
   "workflows.try-needs": "Possible once these fields have a value: {fields}.",

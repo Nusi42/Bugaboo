@@ -1,5 +1,16 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card, TextField, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  Card,
+  Icon,
+  iconName,
+  StatusPill,
+  TextField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -46,8 +57,9 @@ function Result({
 }) {
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.text)}>
-        {t("workflows.try-in", { key: issue, status: tried.status.name })}
+      <p {...partOf(part.row)}>
+        <span>{t("workflows.try-in-status", { key: issue })}</span>
+        <StatusPill group={tried.status.group} label={tried.status.name} />
       </p>
       {tried.changes.length === 0 ? (
         <p {...partOf(part.muted)}>{t("workflows.try-none")}</p>
@@ -55,8 +67,9 @@ function Result({
         <ul {...partOf(part.workflowTried)}>
           {tried.changes.map((change) => (
             <li key={change.to.key} {...partOf(part.workflowTry)}>
+              <Icon name={change.verdict === "allowed" ? iconName.check : iconName.close} />
               <strong>{change.button}</strong>
-              <span {...partOf(part.muted)}>{change.to.name}</span>
+              <StatusPill group={change.to.group} label={change.to.name} />
               <span>{sentenceOf(change, fields)}</span>
             </li>
           ))}

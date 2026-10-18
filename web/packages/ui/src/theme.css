@@ -877,6 +877,13 @@ body {
   }
 }
 
+[data-part="button"][data-variant~="primary"][data-disabled] {
+  opacity: 1;
+  border-color: var(--border);
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+}
+
 [data-part="button"][data-state~="busy"] {
   cursor: progress;
   opacity: var(--opacity-busy);
@@ -2560,8 +2567,19 @@ body {
 }
 
 [data-part="save-status"][data-state~="not-saved"] {
-  color: var(--danger);
+  color: var(--fg);
   font-weight: var(--weight-bold);
+}
+
+[data-part="save-bar"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+[data-part="save-bar"] [data-part="button"][data-variant~="primary"] {
+  margin-inline-start: auto;
 }
 
 [data-part="skeleton.line"] {
@@ -5367,22 +5385,52 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4);
+  padding: var(--pad-box);
+  border-inline-start: var(--size-edge) solid var(--border);
 }
 
-[data-part="workflow-status.head"] {
+[data-part="workflow-status"][data-state~="group-not-started"] {
+  border-inline-start-color: var(--st-ns);
+}
+
+[data-part="workflow-status"][data-state~="group-in-progress"] {
+  border-inline-start-color: var(--st-ip);
+}
+
+[data-part="workflow-status"][data-state~="group-done"] {
+  border-inline-start-color: var(--st-done);
+}
+
+[data-part="workflow-status.title"] {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-3);
+  align-items: center;
+  gap: var(--space-2);
 }
 
 [data-part="workflow-status.name"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
   color: var(--fg);
   font-size: var(--fs-md);
   font-weight: var(--weight-bold);
   overflow-wrap: anywhere;
+}
+
+[data-part="workflow-status.head"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--size-name), 100%), 1fr));
+  align-items: end;
+  gap: var(--space-3);
+}
+
+[data-part="workflow-status.tools"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 [data-part="workflow-changes"] {
@@ -5391,25 +5439,53 @@ body {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
 }
 
 [data-part="workflow-change"] {
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--r-ctl);
-  background: var(--bg-sunken);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto auto;
+  align-items: end;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: var(--border-width) solid var(--border-subtle);
+}
+
+[data-part="app-layout"][data-variant~="phone"] [data-part="workflow-change"] {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
 }
 
 [data-part="workflow-change.to"] {
-  min-width: var(--size-name);
-  font-weight: var(--weight-bold);
-  line-height: var(--size-control);
-  overflow-wrap: anywhere;
+  min-width: 0;
+  padding-bottom: var(--space-2);
+}
+
+[data-part="workflow-change.field"] {
+  min-width: 0;
+}
+
+[data-part="app-layout"][data-variant~="phone"] [data-part="workflow-change.field"] {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+[data-part="app-layout"][data-variant~="phone"] [data-part="workflow-change.remove"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+[data-part="workflow-change.rules"] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+[data-part="app-layout"][data-variant~="phone"] [data-part="workflow-change.rules"] {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 [data-part="workflow-add"] {
