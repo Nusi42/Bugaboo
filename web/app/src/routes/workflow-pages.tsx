@@ -13,11 +13,11 @@ const routes = placeEditorRoutes({
   projectPath: paths.projectWorkflows,
   search: workflowsSearch,
   address: workflowsAddress,
-  Organization: lazyRouteComponent(
+  OrganizationScreen: lazyRouteComponent(
     () => import("../features/workflows/index.ts"),
     "OrganizationWorkflowsScreen",
   ),
-  Project: lazyRouteComponent(
+  ProjectScreen: lazyRouteComponent(
     () => import("../features/workflows/index.ts"),
     "ProjectWorkflowsScreen",
   ),

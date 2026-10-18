@@ -19,16 +19,16 @@ type Screen<Props> = ((props: Props) => ReactNode) & {
 };
 
 /** What the routes of an editor that works on a place (layouts, workflows) are made of. */
-export interface PlaceEditorRoutes<Open> {
+export interface PlaceEditorRoutes<Open, Organization extends string, Project extends string> {
   /** The path of the screen of the whole organization, and the one of a project. */
-  readonly organizationPath: string;
-  readonly projectPath: string;
+  readonly organizationPath: Organization;
+  readonly projectPath: Project;
   /** What the address says is open (the form, the issue type), read from its search part. */
   readonly search: (search: Readonly<Record<string, unknown>>) => Open;
   /** The address of what is open at a place. */
   readonly address: (shortName: string | undefined, open: Open) => string;
-  readonly Organization: Screen<PlaceScreenProps<Open>>;
-  readonly Project: Screen<PlaceScreenProps<Open> & { readonly address: string }>;
+  readonly OrganizationScreen: Screen<PlaceScreenProps<Open>>;
+  readonly ProjectScreen: Screen<PlaceScreenProps<Open> & { readonly address: string }>;
 }
 
 /**
@@ -36,19 +36,21 @@ export interface PlaceEditorRoutes<Open> {
  * settings of a project. The layouts and the workflows have the same two, and differ only in what
  * is open and which screens show it.
  */
-export function placeEditorRoutes<Open>(config: Readonly<PlaceEditorRoutes<Open>>) {
-  const { Organization, Project } = config;
+export function placeEditorRoutes<Open, Organization extends string, Project extends string>(
+  config: Readonly<PlaceEditorRoutes<Open, Organization, Project>>,
+) {
+  const { OrganizationScreen, ProjectScreen } = config;
   const organization = createRoute({
     getParentRoute: () => organizationSettingsRoute,
     path: config.organizationPath,
     validateSearch: config.search,
-    loader: loadsScreen(Organization),
+    loader: loadsScreen(OrganizationScreen),
     component: function OrganizationEditor() {
       const open = useSearch({ strict: false });
       const navigate = useNavigate();
       return (
         <OnlyWith path={config.organizationPath}>
-          <Organization
+          <OrganizationScreen
             open={config.search(open)}
             onOpen={(_, next: Open) => {
               void navigate({ href: config.address(undefined, next) });
@@ -62,13 +64,13 @@ export function placeEditorRoutes<Open>(config: Readonly<PlaceEditorRoutes<Open>
     getParentRoute: () => appRoute,
     path: config.projectPath,
     validateSearch: config.search,
-    loader: loadsScreen(Project),
+    loader: loadsScreen(ProjectScreen),
     component: function ProjectEditor() {
       const address = useAddressPart(routeParam.project);
       const open = useSearch({ strict: false });
       const navigate = useNavigate();
       return address === undefined ? null : (
-        <Project
+        <ProjectScreen
           address={address}
           open={config.search(open)}
           onOpen={(shortName: string | undefined, next: Open) => {

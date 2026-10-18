@@ -8,8 +8,8 @@ export function offerChangeBody(
   project: string | null,
   offered: boolean | null,
 ): {
-  readonly version: number;
-  readonly changes: readonly { project?: string; offered?: boolean }[];
+  version: number;
+  changes: { project?: string; offered?: boolean }[];
 } {
   return {
     version,

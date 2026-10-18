@@ -101,11 +101,14 @@ const layoutRoutes = placeEditorRoutes({
   projectPath: paths.projectLayouts,
   search: layoutsSearch,
   address: layoutsAddress,
-  Organization: lazyRouteComponent(
+  OrganizationScreen: lazyRouteComponent(
     () => import("../features/layouts/index.ts"),
     "OrganizationLayoutsScreen",
   ),
-  Project: lazyRouteComponent(() => import("../features/layouts/index.ts"), "ProjectLayoutsScreen"),
+  ProjectScreen: lazyRouteComponent(
+    () => import("../features/layouts/index.ts"),
+    "ProjectLayoutsScreen",
+  ),
 });
 
 /** *Organization settings › Layouts*: the forms of the whole organization. */
