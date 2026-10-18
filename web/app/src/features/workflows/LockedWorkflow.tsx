@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { useState } from "react";
 
 import { editedThing, LockedEditor } from "../../shared/editing/index.ts";
-import type { Draft } from "./draft-model.ts";
+import { useLeftDraft } from "./left-draft.ts";
 import { DraftWorkflow } from "./DraftWorkflow.tsx";
 import { whatOf, type WorkflowEditor } from "./workflows.ts";
 
@@ -18,7 +17,7 @@ export function LockedWorkflow({
   readonly workflow: string;
 }) {
   const version = editor.workflow?.version;
-  const [left, setLeft] = useState<Draft | undefined>();
+  const [left, setLeft] = useLeftDraft(workflow, version);
   return (
     <LockedEditor
       what={whatOf(workflow)}
