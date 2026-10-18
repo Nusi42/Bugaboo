@@ -4,6 +4,7 @@
 
 use bb_core::event::EntityRef;
 use bb_core::id::{ProjectId, WorkflowId};
+use bb_core::offer::reaches;
 use bb_core::workflow::WorkflowUse;
 use bb_policy::{Permission, Place, Tree};
 
@@ -44,10 +45,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Ok(false);
         }
-        Ok(match place_from_uses(&tree, &uses, id) {
-            Place::Project(project) => chain.contains(&project),
-            Place::Organization => true,
-        })
+        Ok(reaches(place_from_uses(&tree, &uses, id).project(), chain))
     }
 
     /// The facts of a workflow for the editing use cases; `None` when there is no such workflow or
