@@ -203,3 +203,16 @@ fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
         )]
     );
 }
+
+#[test]
+fn sec_l4_a_change_of_a_title_cannot_bring_format_characters_into_the_e_mail() {
+    let title = change(
+        "title",
+        Some(word("Old\u{202E}gnp.exe")),
+        Some(word("New\u{200B}\u{2028}Bcc: spy@example.test")),
+    );
+    let text = line(&title);
+    for forbidden in ['\u{202E}', '\u{200B}', '\u{2028}', '\n', '\r'] {
+        assert!(!text.contains(forbidden), "{forbidden:?} in {text:?}");
+    }
+}
