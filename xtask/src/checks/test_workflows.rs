@@ -14,7 +14,7 @@ use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
 
 /// The tests of the rules of a status change (docs/milestones/M4/WP-04-workflows-on-the-server.md).
-pub(super) const REQUIRED: [Required; 49] = [
+pub(super) const REQUIRED: [Required; 53] = [
     Required::both("wf_01_an_m3_database_keeps_every_status_after_the_upgrade"),
     Required::both("wf_01_a_project_finds_its_workflow_like_a_layout"),
     Required::both(
@@ -83,6 +83,19 @@ pub(super) const REQUIRED: [Required; 49] = [
     ),
     Required::anywhere("wf_02_the_preview_names_what_the_publisher_sees_and_only_counts_the_rest"),
     Required::anywhere("sec_03_a_project_lead_manages_the_label_groups_of_their_project_only"),
+    // The same moves and the same preview on both databases (the tests above run on the fakes).
+    Required::both(
+        "wf_02_a_publish_with_an_issue_the_publisher_does_not_see_publishes_nothing_over_http",
+    ),
+    Required::both(
+        "wf_02_a_publish_with_an_issue_whose_status_the_publisher_may_not_change_publishes_nothing_over_http",
+    ),
+    Required::both(
+        "wf_02_a_move_ignores_the_rules_of_the_old_change_and_closes_by_the_group_of_the_target_over_http",
+    ),
+    Required::both(
+        "wf_02_the_preview_names_what_the_publisher_sees_and_only_counts_the_rest_over_http",
+    ),
     // One rule for "the same name" (bb_core::names).
     Required::anywhere("iss_02_a_type_and_a_group_of_labels_are_the_same_name_by_one_rule"),
 ];
