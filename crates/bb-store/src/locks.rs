@@ -73,28 +73,58 @@ impl LockClass {
     }
 }
 
-/// The advisory locks a transaction has taken so far: the highest class, which is all the order
-/// needs. Taking a class again (another key, or shared and then alone) is allowed here; the order
-/// of keys inside one class is the caller's.
+/// How a lock is held: alone, or together with others who hold it shared.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Mode {
+    Alone,
+    Shared,
+}
+
+/// Whether a wrong order is a failure of the call. It is in a debug build, in the tests of this
+/// crate, and in every build that has the `testing` feature (the test builds of the server, also
+/// `cargo test --release`); the program a person runs only logs it, so a mistake that slipped
+/// through never stops a change that would have worked.
+const STRICT: bool = cfg!(any(debug_assertions, test, feature = "testing"));
+
+/// The advisory locks a transaction has taken so far, each with how it holds it. Taking a class
+/// that is held already (another key, or the same again) is allowed whatever else is held; a class
+/// that is new has to rank above every class held; and a class held shared cannot be taken alone
+/// by the same transaction, because two transactions that do that wait for each other for ever.
+/// The order of keys inside one class is the caller's.
 #[derive(Debug, Default)]
 pub(crate) struct Held {
-    highest: Option<LockClass>,
+    taken: Vec<(LockClass, Mode)>,
 }
 
 impl Held {
-    /// Notes that the transaction takes `class`.
+    /// Notes that the transaction takes `class` in this `mode`.
     ///
     /// # Errors
-    /// `InvalidInput` in a debug or test build when a class of a higher place is held already: a
-    /// bug in the code that took the locks, never a case for a person. A release build only notes.
-    pub(crate) fn take(&mut self, class: LockClass) -> Result<(), StoreError> {
-        if cfg!(debug_assertions) && self.highest.is_some_and(|held| held.rank() > class.rank()) {
-            return Err(StoreError::InvalidInput(
-                "an advisory lock was taken out of the order of `LockClass`",
-            ));
+    /// `InvalidInput` when a class of a higher place is held and this one is new, or when the class
+    /// is held shared and is taken alone: a bug in the code that took the locks, never a case for a
+    /// person. The program only logs it (see `STRICT`).
+    pub(crate) fn take(&mut self, class: LockClass, mode: Mode) -> Result<(), StoreError> {
+        let held = |wanted: Mode| self.taken.contains(&(class, wanted));
+        let again = held(Mode::Alone) || held(Mode::Shared);
+        let lower = !again
+            && self
+                .taken
+                .iter()
+                .any(|(each, _)| each.rank() > class.rank());
+        let upgrade = mode == Mode::Alone && held(Mode::Shared) && !held(Mode::Alone);
+        if lower || upgrade {
+            let why = if upgrade {
+                "an advisory lock held shared was taken alone by the same transaction"
+            } else {
+                "an advisory lock was taken out of the order of `LockClass`"
+            };
+            if STRICT {
+                return Err(StoreError::InvalidInput(why));
+            }
+            tracing::error!(class = ?class, "{why}");
         }
-        if self.highest.is_none_or(|held| held.rank() < class.rank()) {
-            self.highest = Some(class);
+        if !self.taken.contains(&(class, mode)) {
+            self.taken.push((class, mode));
         }
         Ok(())
     }
@@ -130,20 +160,44 @@ mod tests {
     fn arch_lock_order_the_classes_in_the_written_order_and_the_same_class_again_are_allowed() {
         let mut held = Held::default();
         for class in ORDER {
-            assert!(held.take(class).is_ok(), "{class:?}");
-            assert!(held.take(class).is_ok(), "{class:?} again");
+            assert!(held.take(class, Mode::Alone).is_ok(), "{class:?}");
+            assert!(held.take(class, Mode::Alone).is_ok(), "{class:?} again");
         }
-        // A lower class after a higher one is the bug; the same one again is not.
-        assert!(held.take(LockClass::IssueFiles).is_ok());
+        // A class that is held is taken again even though higher ones are held.
+        assert!(held.take(LockClass::Policy, Mode::Alone).is_ok());
+        assert!(held.take(LockClass::IssueFiles, Mode::Alone).is_ok());
     }
 
     #[test]
     fn arch_lock_order_a_class_taken_after_a_higher_one_is_refused() {
         for (low, high) in ORDER.iter().zip(ORDER.iter().skip(1)) {
-            let mut held = Held::default();
-            held.take(*high).unwrap();
-            assert!(held.take(*low).is_err(), "{low:?} after {high:?}");
+            for mode in [Mode::Alone, Mode::Shared] {
+                let mut held = Held::default();
+                held.take(*high, Mode::Alone).unwrap();
+                assert!(held.take(*low, mode).is_err(), "{low:?} after {high:?}");
+            }
         }
+    }
+
+    #[test]
+    fn arch_lock_order_a_class_held_shared_cannot_be_taken_alone() {
+        let mut held = Held::default();
+        held.take(LockClass::Workflows, Mode::Shared).unwrap();
+        // Shared again, with others in between, is fine; alone is the deadlock of two upgrades.
+        held.take(LockClass::IssueCodes, Mode::Alone).unwrap();
+        assert!(held.take(LockClass::Workflows, Mode::Shared).is_ok());
+        assert!(held.take(LockClass::Workflows, Mode::Alone).is_err());
+        // Alone first and shared after is not an upgrade, and alone again is not one either.
+        let mut held = Held::default();
+        held.take(LockClass::Workflows, Mode::Alone).unwrap();
+        assert!(held.take(LockClass::Workflows, Mode::Shared).is_ok());
+        assert!(held.take(LockClass::Workflows, Mode::Alone).is_ok());
+    }
+
+    #[test]
+    fn arch_lock_order_a_wrong_order_fails_in_every_test_build_release_ones_included() {
+        // `cargo test --release` has no debug assertions, and must not let a wrong order pass.
+        const { assert!(STRICT) };
     }
 
     #[test]
