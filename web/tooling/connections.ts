@@ -15,6 +15,14 @@
  */
 export const MOST_LEFTOVER_CONNECTIONS = 1_800;
 
+/**
+ * More connections in TIME_WAIT than this on the whole computer mean that other work (another work
+ * folder testing, a build) is on it. It says so and fails nothing: what is left over by other
+ * folders is not what the run did (M4-F22). A computer on which the tests of a folder ran alone
+ * had under 100; one on which other folders tested had over 4,000.
+ */
+export const BUSY_COMPUTER_TIME_WAIT = 3_000;
+
 /** The pause after a look at the computer before the next one starts (a look takes seconds). */
 export const PAUSE_BETWEEN_LOOKS_MS = 1000;
 
@@ -128,6 +136,8 @@ export class ConnectionGuard {
   private mostOnTheComputer = 0;
   private looks = 0;
   private failedLooks = 0;
+  /** The specs that failed because the computer ran out of ports. */
+  private readonly outOfPortsIn: string[] = [];
 
   private readonly limit: number;
 
@@ -163,6 +173,34 @@ export class ConnectionGuard {
     };
   }
 
+  /** Notes that a test failed with `net::ERR_NO_BUFFER_SPACE` (the computer has no ports left). */
+  public recordOutOfPorts(spec: string): void {
+    this.outOfPortsIn.push(spec);
+  }
+
+  /** The line that says other work is on the computer, when it is; else nothing. */
+  private busyNote(): string {
+    return this.mostOnTheComputer > BUSY_COMPUTER_TIME_WAIT
+      ? ` Other work is on this computer: it held ${String(this.mostOnTheComputer)} in TIME_WAIT.`
+      : "";
+  }
+
+  /**
+   * The sentence about a run in which a test ran out of ports, with the count of the whole computer
+   * next to the count of the run, so a reviewer sees whether it was the run or the neighbours; `undefined`
+   * when none did. It does not fail the run: the test that failed has done that.
+   */
+  public outOfPorts(): string | undefined {
+    if (this.outOfPortsIn.length === 0) {
+      return undefined;
+    }
+    return (
+      `${String(this.outOfPortsIn.length)} tests failed with net::ERR_NO_BUFFER_SPACE (the first in ${this.outOfPortsIn[0] ?? ""}). ` +
+      `The tests of this run left at most ${String(this.peak.left)} connections in TIME_WAIT and CLOSE_WAIT; ` +
+      `the whole computer had at most ${String(this.mostOnTheComputer)} in TIME_WAIT.${this.busyNote()}`
+    );
+  }
+
   /** What was reached, in one line for the end of the run. */
   public summary(): string {
     const { counts, port, spec } = this.peak;
@@ -175,7 +213,7 @@ export class ConnectionGuard {
       `(${String(counts.timeWait)} in TIME_WAIT, ${String(counts.closeWait)} in CLOSE_WAIT), ` +
       `at most ${String(this.mostOpen)} open, in ${String(this.looks)} looks (${String(this.failedLooks)} failed); ` +
       `the whole computer had at most ${String(this.mostOnTheComputer)} in TIME_WAIT (for information); ` +
-      `the limit is ${String(this.limit)}.${where}`
+      `the limit is ${String(this.limit)}.${where}${this.busyNote()}`
     );
   }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BUSY_COMPUTER_TIME_WAIT,
   ConnectionGuard,
   countConnections,
   leftOver,
@@ -138,5 +139,29 @@ describe("test_07 the connection guard does not pass what it could not see (M4 W
   it("has a limit that is a positive whole number, set once", () => {
     expect(Number.isInteger(MOST_LEFTOVER_CONNECTIONS)).toBe(true);
     expect(MOST_LEFTOVER_CONNECTIONS).toBeGreaterThan(0);
+  });
+});
+
+describe("test_07 the guard says when other work is on the computer, and names that count when ports ran out (M4-F22)", () => {
+  it("prints a line above the busy level and none below it, and never fails for it", () => {
+    const busy = new ConnectionGuard(100);
+    busy.record({ ...sampleOf(47410, calm), machineTimeWait: BUSY_COMPUTER_TIME_WAIT + 1 }, {});
+    expect(busy.summary()).toContain("Other work is on this computer");
+    expect(busy.verdict()).toBeUndefined();
+    const quiet = new ConnectionGuard(100);
+    quiet.record({ ...sampleOf(47410, calm), machineTimeWait: BUSY_COMPUTER_TIME_WAIT }, {});
+    expect(quiet.summary()).not.toContain("Other work is on this computer");
+  });
+
+  it("names the count of the whole computer in the sentence about a run that ran out of ports", () => {
+    const guard = new ConnectionGuard(100);
+    guard.record({ ...sampleOf(47410, calm), machineTimeWait: 4126 }, {});
+    expect(guard.outOfPorts()).toBeUndefined();
+    guard.recordOutOfPorts("fields-issue.spec.ts [phone]");
+    const sentence = guard.outOfPorts();
+    expect(sentence).toContain("ERR_NO_BUFFER_SPACE");
+    expect(sentence).toContain("fields-issue.spec.ts [phone]");
+    expect(sentence).toContain("4126");
+    expect(sentence).toContain("Other work is on this computer");
   });
 });

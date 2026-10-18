@@ -105,6 +105,16 @@ export default class ConnectionGuardReporter implements Reporter {
     this.specs[this.ports.e2eWorkersFrom + result.parallelIndex] = `${file} [${project}]`;
   }
 
+  public onTestEnd(test: TestCase, result: TestResult): void {
+    for (const error of result.errors) {
+      if ((error.message ?? "").includes("ERR_NO_BUFFER_SPACE")) {
+        const file = relative(this.specFolder, test.location.file).replaceAll("\\", "/");
+        this.guard.recordOutOfPorts(`${file} [${test.parent.project()?.name ?? ""}]`);
+        return;
+      }
+    }
+  }
+
   public async onEnd(): Promise<{ status: FullResult["status"] } | undefined> {
     this.stopped = true;
     clearTimeout(this.timer);
