@@ -70,7 +70,7 @@ fn wp13_people_are_set_after_a_colon_and_nobody_is_a_word() {
         line(&change("assigned-to", None, people(vec![ana()]))),
         format!(
             "{}.",
-            message::history_set_people("Ana", "Assigned to", "Ana").render()
+            message::history_set("Ana", "Assigned to", "Ana").render()
         )
     );
     assert_eq!(

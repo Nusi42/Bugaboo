@@ -115,9 +115,6 @@ fn change_line(by: Option<&PersonRef>, change: &FieldChangeView, region: Region)
     let after = side_text(field, change.after.as_ref(), region);
     let sentence = match (before, after) {
         (Some(before), Some(after)) => message::history_changed(after, before, field_name, by),
-        (None, Some(after)) if matches!(change.after, Some(ChangeValue::People { .. })) => {
-            message::history_set_people(after, field_name, by)
-        }
         (None, Some(after)) => message::history_set(after, field_name, by),
         (Some(_), None) => message::history_cleared(field_name, by),
         (None, None) => message::history_changed_long_text(field_name, by),
