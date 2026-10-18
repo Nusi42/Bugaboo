@@ -14,6 +14,7 @@ use std::sync::Arc;
 use bb_core::access::{Assignment, GroupMember};
 use bb_core::fields::FieldKey;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
+use bb_core::offer::reaches;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{DEPTH_MAX, Project};
 
@@ -257,7 +258,7 @@ impl Policy {
     ) -> Inputs {
         let rows: Vec<Row> = rows
             .iter()
-            .filter(|row| row.project.is_none_or(|project| chain.contains(&project)))
+            .filter(|row| reaches(row.project, &chain))
             .copied()
             .collect();
         let role_ids: BTreeSet<RoleId> = rows.iter().filter_map(|row| row.role).collect();
