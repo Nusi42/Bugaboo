@@ -107,10 +107,6 @@ export const queryKeys = {
     /** A page-by-page list of notifications; it starts with the route like `api.query` keys do. */
     list: (filter: string, size: number) => ["get", "/api/v1/notifications", "list", filter, size],
   },
-  mentions: {
-    all: ["mentions"],
-    choices: (issue: string, search: string) => ["mentions", "choices", issue, search],
-  },
   issues: {
     all: ["issues"],
     lists: () => ["issues", "list"],
@@ -276,11 +272,15 @@ export function refreshMailServer(): void {
   refreshRoutes(["/api/v1/mail", "/api/v1/settings"]);
 }
 
+/** A field of an issue changed: its history shows the change the moment it was made. */
+export function refreshIssueHistory(): void {
+  reread({ queryKey: queryKeys.history.all });
+}
+
 /** A comment was written, changed or deleted, or a follower came or went: the history is read again. */
 export function refreshHistory(): void {
-  reread({ queryKey: queryKeys.history.all });
+  refreshIssueHistory();
   reread({ queryKey: queryKeys.followers.all });
-  reread({ queryKey: queryKeys.mentions.all });
   refreshRoutes(["/api/v1/issues/{issue}/follow", "/api/v1/comments/{comment}/versions"]);
 }
 

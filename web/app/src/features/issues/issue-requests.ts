@@ -1,7 +1,7 @@
 import { api } from "../../shared/api.ts";
 import { inOrder } from "../../shared/in-order.ts";
 import { queryClient } from "../../shared/query-client.ts";
-import { queryKeys } from "../../shared/query-keys.ts";
+import { queryKeys, refreshIssueHistory } from "../../shared/query-keys.ts";
 import { versionOf } from "../../shared/version.ts";
 import { isDetail, type IssueEdit } from "./issue-values.ts";
 
@@ -27,6 +27,7 @@ export async function sendChange(id: string, edit: IssueEdit): Promise<number | 
     api.client.PATCH("/api/v1/issues/{issue}", { params: { path: { issue: id } }, body }),
   );
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
+  refreshIssueHistory();
   return answer.data?.version ?? undefined;
 }
 
