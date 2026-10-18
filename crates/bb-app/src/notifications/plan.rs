@@ -12,6 +12,7 @@ use bb_core::notification::{NotificationKind, Via};
 use bb_core::settings::Layers;
 use serde_json::Value;
 
+use crate::issues::member as issue_member;
 use crate::member::{edit_lock, run};
 
 /// Whether a person in the layers they have wants to hear of `kind` this way. The organization's
@@ -27,6 +28,13 @@ pub(crate) fn run_status_of(changes: &[FieldChange]) -> Option<ManyChangeStatus>
         .find(|change| change.field == run::STATUS)
         .and_then(|change| change.after.as_ref()?.as_str())
         .and_then(ManyChangeStatus::from_code)
+}
+
+/// Whether the event says that giving a project's issues their new IDs gave up.
+pub(crate) fn renewal_failed(changes: &[FieldChange]) -> bool {
+    changes
+        .iter()
+        .any(|change| change.field == issue_member::ISSUE_IDS_FAILED)
 }
 
 /// The people an event assigned the issue to: in the members after and not in those before.

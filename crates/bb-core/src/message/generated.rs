@@ -1643,9 +1643,6 @@ pub const HISTORY_NOTHING: MessageKey = MessageKey::new("history.nothing");
 /// The message `history.people-none`.
 pub const HISTORY_PEOPLE_NONE: MessageKey = MessageKey::new("history.people-none");
 
-/// The message `history.system`.
-pub const HISTORY_SYSTEM: MessageKey = MessageKey::new("history.system");
-
 /// The message `history.tab-changes`.
 pub const HISTORY_TAB_CHANGES: MessageKey = MessageKey::new("history.tab-changes");
 
@@ -2441,26 +2438,17 @@ pub const MAIL_SERVER_TEST_TITLE: MessageKey = MessageKey::new("mail-server.test
 /// The message `mail-server.title`.
 pub const MAIL_SERVER_TITLE: MessageKey = MessageKey::new("mail-server.title");
 
-/// The message `mail.footer`.
-pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
-
 /// The message `mail.line-more`.
 pub const MAIL_LINE_MORE: MessageKey = MessageKey::new("mail.line-more");
-
-/// The message `mail.line-news`.
-pub const MAIL_LINE_NEWS: MessageKey = MessageKey::new("mail.line-news");
-
-/// The message `mail.line-run-done`.
-pub const MAIL_LINE_RUN_DONE: MessageKey = MessageKey::new("mail.line-run-done");
-
-/// The message `mail.line-run-failed`.
-pub const MAIL_LINE_RUN_FAILED: MessageKey = MessageKey::new("mail.line-run-failed");
 
 /// The message `mail.sign-up-exists-subject`.
 pub const MAIL_SIGN_UP_EXISTS_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-exists-subject");
 
 /// The message `mail.sign-up-subject`.
 pub const MAIL_SIGN_UP_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-subject");
+
+/// The message `mail.subject-ids-failed`.
+pub const MAIL_SUBJECT_IDS_FAILED: MessageKey = MessageKey::new("mail.subject-ids-failed");
 
 /// The message `mail.subject-run`.
 pub const MAIL_SUBJECT_RUN: MessageKey = MessageKey::new("mail.subject-run");
@@ -2804,6 +2792,10 @@ pub const NOTIFICATIONS_HIDE_RESULT: MessageKey = MessageKey::new("notifications
 
 /// The message `notifications.in-app`.
 pub const NOTIFICATIONS_IN_APP: MessageKey = MessageKey::new("notifications.in-app");
+
+/// The message `notifications.issue-ids-failed`.
+pub const NOTIFICATIONS_ISSUE_IDS_FAILED: MessageKey =
+    MessageKey::new("notifications.issue-ids-failed");
 
 /// The message `notifications.kind`.
 pub const NOTIFICATIONS_KIND: MessageKey = MessageKey::new("notifications.kind");
@@ -6554,23 +6546,6 @@ pub fn history_set(
     )
 }
 
-/// The message `history.set-people`.
-#[must_use]
-pub fn history_set_people(
-    after: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("history.set-people"),
-        vec![
-            ("after", Value::Text(after.to_string())),
-            ("field", Value::Text(field.to_string())),
-            ("who", Value::Text(who.to_string())),
-        ],
-    )
-}
-
 /// The message `home.title`.
 #[must_use]
 pub fn home_title(name: impl std::fmt::Display) -> Message {
@@ -6631,6 +6606,15 @@ pub fn invitations_take_back_title(email: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("invitations.take-back-title"),
         vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `issue-type.only-for`.
+#[must_use]
+pub fn issue_type_only_for(type_: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issue-type.only-for"),
+        vec![("type", Value::Text(type_.to_string()))],
     )
 }
 
@@ -7220,15 +7204,6 @@ pub fn layouts_inherited_project(project: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `layouts.inherited-type`.
-#[must_use]
-pub fn layouts_inherited_type(type_: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("layouts.inherited-type"),
-        vec![("type", Value::Text(type_.to_string()))],
-    )
-}
-
 /// The message `layouts.limited-form`.
 #[must_use]
 pub fn layouts_limited_form(
@@ -7337,6 +7312,30 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `list.many`.
+#[must_use]
+pub fn list_many(last: impl std::fmt::Display, start: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("list.many"),
+        vec![
+            ("last", Value::Text(last.to_string())),
+            ("start", Value::Text(start.to_string())),
+        ],
+    )
+}
+
+/// The message `list.two`.
+#[must_use]
+pub fn list_two(first: impl std::fmt::Display, second: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("list.two"),
+        vec![
+            ("first", Value::Text(first.to_string())),
+            ("second", Value::Text(second.to_string())),
+        ],
+    )
+}
+
 /// The message `mail-server.test-done`.
 #[must_use]
 pub fn mail_server_test_done(email: impl std::fmt::Display) -> Message {
@@ -7364,59 +7363,27 @@ pub fn mail_server_test_wait(seconds: i64) -> Message {
     )
 }
 
-/// The message `mail.line-assigned`.
+/// The message `mail.date-time`.
 #[must_use]
-pub fn mail_line_assigned(who: impl std::fmt::Display) -> Message {
+pub fn mail_date_time(date: impl std::fmt::Display, time: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("mail.line-assigned"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
-/// The message `mail.line-changed`.
-#[must_use]
-pub fn mail_line_changed(
-    field: impl std::fmt::Display,
-    value: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-changed"),
+        MessageKey::new("mail.date-time"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("value", Value::Text(value.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("date", Value::Text(date.to_string())),
+            ("time", Value::Text(time.to_string())),
         ],
     )
 }
 
-/// The message `mail.line-cleared`.
+/// The message `mail.footer`.
 #[must_use]
-pub fn mail_line_cleared(field: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn mail_footer(page: impl std::fmt::Display, settings: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("mail.line-cleared"),
+        MessageKey::new("mail.footer"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("page", Value::Text(page.to_string())),
+            ("settings", Value::Text(settings.to_string())),
         ],
-    )
-}
-
-/// The message `mail.line-commented`.
-#[must_use]
-pub fn mail_line_commented(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-commented"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
-/// The message `mail.line-finish-asked`.
-#[must_use]
-pub fn mail_line_finish_asked(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-finish-asked"),
-        vec![("who", Value::Text(who.to_string()))],
     )
 }
 
@@ -7429,20 +7396,20 @@ pub fn mail_line_mentioned(who: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `mail.line-taken-over`.
-#[must_use]
-pub fn mail_line_taken_over(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-taken-over"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
 /// The message `mail.open`.
 #[must_use]
 pub fn mail_open(address: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.open"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.open-notifications`.
+#[must_use]
+pub fn mail_open_notifications(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.open-notifications"),
         vec![("address", Value::Text(address.to_string()))],
     )
 }
@@ -7569,15 +7536,12 @@ pub fn many_changes_note_type_not_used(
 
 /// The message `many-changes.progress`.
 #[must_use]
-pub fn many_changes_progress(
-    done: impl std::fmt::Display,
-    total: impl std::fmt::Display,
-) -> Message {
+pub fn many_changes_progress(done: impl std::fmt::Display, total: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.progress"),
         vec![
             ("done", Value::Text(done.to_string())),
-            ("total", Value::Text(total.to_string())),
+            ("total", Value::Number(total)),
         ],
     )
 }
@@ -9495,15 +9459,6 @@ pub fn workflows_uses_starting(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `workflows.uses-type`.
-#[must_use]
-pub fn workflows_uses_type(type_: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("workflows.uses-type"),
-        vec![("type", Value::Text(type_.to_string()))],
-    )
-}
-
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access-keys.choice.everything", "Everything I can do"),
@@ -10323,7 +10278,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.issue.type-not-offered",
-        "This project does not use that issue type. Choose another type or ask who looks after the project.",
+        "This project does not offer that issue type. Choose another type, or ask the project lead.",
     ),
     (
         "error.issue.type-retired",
@@ -10331,7 +10286,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.label.not-offered",
-        "This project does not use the group that label is in. Choose another label or ask who looks after labels.",
+        "This project does not offer the label group of that label. Choose another label, or ask who looks after labels.",
     ),
     (
         "error.label.pick-one-conflict",
@@ -10343,7 +10298,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.mail.insecure",
-        "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
+        "The mail server is set to send its user name or password without encryption to another computer. Switch encryption on, or use a mail server on this computer.",
     ),
     (
         "error.mail.off",
@@ -10355,7 +10310,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.mail.unavailable",
-        "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
+        "Bugaboo could not reach the mail server. Check the mail server, its port and the connection, then try again.",
     ),
     (
         "error.name.taken",
@@ -10441,15 +10396,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.workflow.cannot-fill",
-        "This status change needs a field that you cannot fill in.",
+        "This status change needs a field that you cannot fill in. Ask the person it is assigned to, or the project lead.",
     ),
     (
         "error.workflow.invalid",
-        "The workflow breaks a rule: check the statuses, the status changes and their names.",
+        "The workflow cannot be published like this. It needs at least one status, every status and every button needs its own name, and no status change may go back to the same status.",
     ),
     (
         "error.workflow.no-such-change",
-        "The workflow of this issue has no such status change.",
+        "This status change is not in the workflow of this issue any more. Choose one from the status button.",
     ),
     (
         "error.workflow.not-for-you",
@@ -10719,7 +10674,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.used-types", "Issue types: {names}"),
     ("fields.value-of", "Value of {name}"),
     ("fields.yes", "Yes"),
-    ("files.add-to-comment", "Add files"),
+    ("files.add-to-comment", "Upload files"),
     ("files.added", "{size} · Added by {who}, {when}"),
     ("files.delete", "Delete"),
     ("files.delete-named", "Delete {name}"),
@@ -10879,7 +10834,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "handle.invalid",
-        "That is not a handle. Use only the letters a to z, digits, dots, dashes and underscores.",
+        "A handle can have only the letters a to z, digits, dots, dashes and underscores.",
     ),
     ("handle.label", "Your handle"),
     (
@@ -10933,9 +10888,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "history.relation-removed",
         "{who} took away a relation: this issue · {name} · {issue}",
     ),
-    ("history.set", "{who} set {field} to {after}"),
-    ("history.set-people", "{who} set {field}: {after}"),
-    ("history.system", "Bugaboo"),
+    ("history.set", "{who} set {field}: {after}"),
     ("history.tab-changes", "Changes"),
     ("history.tab-comments", "Comments"),
     ("history.tab-everything", "Everything"),
@@ -10947,7 +10900,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You can look after this server. Organization settings shows what you may do there.",
     ),
     ("home.title", "Welcome, {name}"),
-    ("invitation.ask-again", "Ask for a new link"),
+    ("invitation.ask-again", "Send me a new link"),
     (
         "invitation.incomplete",
         "This link is not complete. Open the whole link that you were sent.",
@@ -11031,6 +10984,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-type.bug", "Bug"),
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
+    ("issue-type.only-for", "It is only for {type}."),
     ("issue-type.task", "Task"),
     ("issue-types.all-types", "All issue types"),
     ("issue-types.create", "Create the issue type"),
@@ -11332,7 +11286,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "labels.project-create-intro",
-        "A group created here is offered in this project and below.",
+        "A label group created here is offered in this project and below.",
     ),
     (
         "labels.project-create-label-intro",
@@ -11344,13 +11298,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "labels.project-create-title",
-        "Create a group of labels for this project",
+        "Create a label group for this project",
     ),
     (
         "labels.project-intro",
-        "Switch off the groups of labels this project does not use. Labels already on an issue stay on it.",
+        "Switch off the label groups this project does not offer. Labels already on an issue stay on it.",
     ),
-    ("labels.project-list", "Groups of labels of the project"),
+    ("labels.project-list", "Label groups of the project"),
     ("labels.project-title", "Labels of {project}"),
     ("labels.retire", "Retire"),
     (
@@ -11432,7 +11386,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "layouts.inherited-project",
         "This form uses the layout of {project}.",
     ),
-    ("layouts.inherited-type", "It is only for {type}."),
     (
         "layouts.intro",
         "A layout says which fields a form shows, in which sections, and for which roles. A Guest can get a short form and a Team member the full one. A layout never shows a field to a role whose field permissions hide it.",
@@ -11494,8 +11447,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
     ),
     ("layouts.use-inherited-title", "Reset to default?"),
+    ("list.many", "{start}, and {last}"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    ("list.two", "{first} and {second}"),
     ("mail-server.connection", "Connection"),
     (
         "mail-server.intro",
@@ -11503,11 +11458,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "mail-server.no-encryption-note",
-        "Without encryption, a user name or a password is only accepted when the mail server is on this machine.",
+        "Without encryption, a user name or a password is only accepted when the mail server is on this computer.",
     ),
     (
         "mail-server.password-help",
-        "It is stored encrypted and never shown again. Leave the box empty to keep the password you have. If you change the host, the port or the user name, the password is removed: a new mail server needs its password again.",
+        "It is stored encrypted and never shown again. Leave the box empty to keep the password you have. If you change the mail server, the port or the user name, the password is removed: a new mail server needs its password again.",
     ),
     ("mail-server.password-new", "New password"),
     ("mail-server.password-none", "No password is set."),
@@ -11529,47 +11484,34 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Bugaboo sends one e-mail to your address, {email}, through the mail server as you saved it.",
     ),
     ("mail-server.test-send", "Send me a test e-mail"),
-    ("mail-server.test-title", "Try it"),
+    ("mail-server.test-title", "Test e-mail"),
     (
         "mail-server.test-wait",
         "You can send another test e-mail in {seconds, plural, one {# second} other {# seconds}}.",
     ),
     ("mail-server.title", "E-mail & notifications"),
+    ("mail.date-time", "{date}, {time} UTC"),
     (
         "mail.footer",
-        "You get this e-mail because of your notification settings in Bugaboo. You can change them under Customize.",
-    ),
-    ("mail.line-assigned", "{who} assigned this issue to you."),
-    ("mail.line-changed", "{who} changed {field} to {value}."),
-    ("mail.line-cleared", "{who} cleared {field}."),
-    ("mail.line-commented", "{who} wrote a comment:"),
-    (
-        "mail.line-finish-asked",
-        "{who} asks you to finish editing.",
+        "You get this e-mail because of your notification settings. You can change them in Bugaboo under {settings} › {page}.",
     ),
     ("mail.line-mentioned", "{who} mentioned you in a comment:"),
     (
         "mail.line-more",
         "There is more than this e-mail holds. Open it in Bugaboo to read it all.",
     ),
-    ("mail.line-news", "There is news on this issue."),
-    ("mail.line-run-done", "Your change to many issues is done."),
+    ("mail.open", "Link to the issue: {address}"),
     (
-        "mail.line-run-failed",
-        "Your change to many issues stopped before it was done.",
+        "mail.open-notifications",
+        "Link to your notifications: {address}",
     ),
-    (
-        "mail.line-taken-over",
-        "{who} took over the editing. What you wrote is kept as your draft.",
-    ),
-    ("mail.open", "Open it in Bugaboo: {address}"),
     (
         "mail.sign-up-exists-subject",
         "Bugaboo: you already have an account",
     ),
     (
         "mail.sign-up-exists-text",
-        "Somebody, probably you, tried to sign up with this address, but it has an account already. Sign in here:\n\n{address}\n\nIf you did not do this, you do not need to do anything.",
+        "Somebody, probably you, tried to sign up with this e-mail address, but it has an account already. Sign in here:\n\n{address}\n\nIf you did not do this, you do not need to do anything.",
     ),
     (
         "mail.sign-up-subject",
@@ -11577,9 +11519,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "mail.sign-up-text",
-        "Open this address to choose your name and your password and finish creating your account. It works once, for {hours, plural, one {# hour} other {# hours}}.\n\n{address}\n\nIf you did not sign up, you do not need to do anything.",
+        "Open this link to choose your name and your password and finish creating your account. It works once, for {hours, plural, one {# hour} other {# hours}}.\n\n{address}\n\nIf you did not sign up, you do not need to do anything.",
     ),
     ("mail.subject", "Bugaboo: {issue} {title}"),
+    (
+        "mail.subject-ids-failed",
+        "Bugaboo: new issue IDs could not be given out",
+    ),
     (
         "mail.subject-run",
         "Bugaboo: your change to many issues has ended",
@@ -11604,7 +11550,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "many-changes-skip.label-not-here",
-        "The project of the issue does not use the group that label is in",
+        "The project of the issue does not offer the label group of that label",
     ),
     (
         "many-changes-skip.limit-reached",
@@ -11689,9 +11635,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "many-changes.note-type-not-used",
-        "{type} is not used in {project}. The issue keeps it.",
+        "{project} does not offer {type}. The issue keeps it.",
     ),
-    ("many-changes.progress", "{done} of {total} issues done"),
+    (
+        "many-changes.progress",
+        "{total, plural, one {{done} of # issue done} other {{done} of # issues done}}",
+    ),
     ("many-changes.progress-label", "How far the change is"),
     ("many-changes.project-legend", "Move to"),
     (
@@ -11780,12 +11729,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "notification.kind.followed-fields",
-        "Other changes to fields of an issue you follow",
+        "Other changes to issues you follow",
     ),
     ("notification.kind.mentioned", "You are mentioned"),
     (
         "notification.kind.run-ended",
-        "Your run of many changes has ended",
+        "Your change to many issues has ended",
     ),
     ("notifications.assigned", "{who} assigned this issue to you"),
     ("notifications.by-mail", "By e-mail"),
@@ -11807,6 +11756,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.group-name", "Notifications about {issue}"),
     ("notifications.hide-result", "Hide the result"),
     ("notifications.in-app", "In the app"),
+    (
+        "notifications.issue-ids-failed",
+        "Bugaboo could not give every issue of a project its new ID. Open the project settings to try again.",
+    ),
     ("notifications.kind", "What happens"),
     (
         "notifications.locked-way",
@@ -11830,7 +11783,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.nothing-unread", "You have read everything."),
     ("notifications.open", "Open"),
     ("notifications.open-name", "Open: {what}"),
-    ("notifications.released", "{who} let go of the editing"),
+    (
+        "notifications.released",
+        "{who} ended your editing because it was stuck, so others can edit again",
+    ),
     (
         "notifications.run-done",
         "Your change to many issues is done",
@@ -12580,10 +12536,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "creating the starting issue types and kinds of relation",
     ),
     ("sample.step.jobs", "running the jobs that were queued"),
-    (
-        "sample.step.labels",
-        "creating a group of labels or a label",
-    ),
+    ("sample.step.labels", "creating a label group or a label"),
     ("sample.step.levels", "setting what a role sees"),
     (
         "sample.step.notifications",
@@ -12962,7 +12915,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.sign-up-enabled.help",
-        "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the address they give, and the account is created only when they open the address in it, so this works only while e-mail is on.",
+        "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the e-mail address they give, and the account is created only when they open the link in it, so this works only while e-mail is on.",
     ),
     (
         "setting.auth.sign-up-enabled.name",
@@ -13030,7 +12983,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.mail.from.name", "Send e-mail from"),
     (
         "setting.mail.host.help",
-        "The host name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only the host name, without a path.",
+        "The name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only that name, without a path.",
     ),
     ("setting.mail.host.name", "Mail server"),
     (
@@ -13040,7 +12993,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.mail.port.name", "Mail server port"),
     (
         "setting.mail.security.help",
-        "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same machine or in a place you trust: the password and the e-mails would travel in the clear.",
+        "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same computer or in a place you trust: the password and the e-mails could be read on the way.",
     ),
     ("setting.mail.security.name", "Protect the connection"),
     ("setting.mail.security.off", "No encryption"),
@@ -13141,19 +13094,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.run-ended-by-mail.help",
-        "Sends you an e-mail when a change to many issues that you asked for has ended, or when work you asked for gave up. E-mail goes only when your organization has switched it on.",
+        "Sends you an e-mail when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out. E-mail goes only when your organization has switched it on.",
     ),
     (
         "setting.notifications.run-ended-by-mail.name",
-        "Your run of many changes has ended: by e-mail",
+        "Your change to many issues has ended: by e-mail",
     ),
     (
         "setting.notifications.run-ended-in-app.help",
-        "Tells you under Notifications when a change to many issues that you asked for has ended, or when work you asked for gave up.",
+        "Tells you under Notifications when a change to many issues that you asked for has ended, or when new issue IDs for a project could not be given out.",
     ),
     (
         "setting.notifications.run-ended-in-app.name",
-        "Your run of many changes has ended: in the app",
+        "Your change to many issues has ended: in the app",
     ),
     (
         "setting.page.region-intro",
@@ -13212,7 +13165,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.region.time-zone.name", "Time zone"),
     (
         "setting.security.log-keep-days.help",
-        "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out.",
+        "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",
     ),
     (
         "setting.security.log-keep-days.name",
@@ -13473,7 +13426,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sign-up.check-text",
-        "If {email} can sign up here, we sent a link to it. Open the link to choose your name and your password. It works once, for {hours, plural, one {# hour} other {# hours}}.",
+        "If {email} can sign up here, Bugaboo sent a link to it. Open the link to choose your name and your password. It works once, for {hours, plural, one {# hour} other {# hours}}.",
     ),
     ("sign-up.check-title", "Check your e-mail"),
     (
@@ -13482,14 +13435,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("sign-up.have-account", "I already have an account"),
     ("sign-up.other-address", "Use another address"),
-    ("sign-up.resend", "Send a new link"),
+    ("sign-up.resend", "Send me a new link"),
     (
         "sign-up.resend-in",
         "You can ask for a new link in {minutes, plural, one {# minute} other {# minutes}}.",
     ),
     (
         "sign-up.resent",
-        "If {email} can sign up here, we sent a new link to it.",
+        "If {email} can sign up here, Bugaboo sent a new link to it.",
     ),
     ("sign-up.submit", "Send me an e-mail"),
     ("sign-up.title", "Create an account"),
@@ -13579,7 +13532,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflow-change.send-to-testing", "Send to testing"),
     ("workflow-change.start-working", "Start working"),
     ("workflow-change.stop-working", "Stop working"),
-    ("workflow-change.wont-fix", "Won't fix"),
+    ("workflow-change.wont-fix", "Close as won't fix"),
     ("workflow.bug", "Bug"),
     ("workflow.development", "Development"),
     ("workflow.simple", "Simple"),
@@ -13591,7 +13544,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.ask-for", "Ask for"),
     (
         "workflows.ask-for-help",
-        "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is long text with a lock of its own.",
+        "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is written on the issue page.",
     ),
     ("workflows.button-text", "Button text from {from} to {to}"),
     (
@@ -13681,11 +13634,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "workflows.publish-where",
-        "{count, plural, one {# issue is} other {# issues are}} in {status}. They go to",
+        "{count, plural, one {# issue is in {status}. It goes to} other {# issues are in {status}. They go to}}",
     ),
     ("workflows.publish-where-over", "Issues in {status} go to"),
     ("workflows.remove-condition", "Stop checking {field}"),
-    ("workflows.rules-done", "Done"),
+    ("workflows.rules-done", "Close"),
     (
         "workflows.rules-intro",
         "From {from} to {to}. A rule that is left empty does not apply.",
@@ -13720,18 +13673,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Pick an issue and a person to see which status changes they would get, and why.",
     ),
     ("workflows.try-title", "Try it"),
-    (
-        "workflows.use-inherited",
-        "Use the inherited workflow again",
-    ),
+    ("workflows.use-inherited", "Reset to default"),
     (
         "workflows.use-inherited-text",
-        "The workflow of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+        "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
     ),
-    (
-        "workflows.use-inherited-title",
-        "Use the inherited workflow again?",
-    ),
+    ("workflows.use-inherited-title", "Reset to default?"),
     (
         "workflows.uses-hidden",
         "These issues use the workflow {name}, which is set higher up.",
@@ -13746,9 +13693,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "workflows.uses-starting",
-        "These issues use the starting workflow {name}.",
+        "These issues use the starter workflow {name}.",
     ),
-    ("workflows.uses-type", "It is only for {type}."),
     ("workflows.view", "View"),
     ("workflows.view-drawing", "Drawing"),
     ("workflows.view-list", "List"),
@@ -13757,7 +13703,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.who-groups", "Groups"),
     (
         "workflows.who-help",
-        "Name nobody and everybody who may change the issue can do it. A rule only narrows who can do it: it never gives a right that the person does not have.",
+        "If you choose nobody, everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
     ),
     ("workflows.who-reporter", "The person who reported it"),
     ("workflows.who-roles", "Roles"),

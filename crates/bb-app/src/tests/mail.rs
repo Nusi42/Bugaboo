@@ -6,6 +6,7 @@ use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
 use bb_core::job::JobState;
 use bb_core::mail::TEST_EMAIL_EVERY_SECONDS;
+use bb_core::message;
 use bb_core::notification::{
     MAIL_BATCH_SECONDS, MAIL_ENTRIES_MAX, MailState, NotificationKind, Via,
 };
@@ -111,11 +112,9 @@ async fn ntf_02_an_e_mail_goes_when_mail_is_on_and_says_who_did_what_with_the_ad
     assert_eq!(server.host, "mail.example.test");
     assert_eq!(server.password.as_str(), "a made-up mail password");
     assert!(mail.subject.contains("The login button does nothing"));
-    assert!(
-        mail.text.contains("Bob Baker changed Status to"),
-        "{}",
-        mail.text
-    );
+    // The e-mail says what the history of the issue says, with a full stop.
+    let said = message::history_changed("Done", "Open", "Status", "Bob Baker").render();
+    assert!(mail.text.contains(&format!("{said}.")), "{}", mail.text);
     assert!(mail.text.contains(&format!("{PUBLIC_URL}/issues/")));
     Ok(())
 }
@@ -167,7 +166,7 @@ async fn ntf_02_what_a_person_wrote_is_quoted_after_the_real_link_and_loses_what
     // The link of Bugaboo is the first line, before any text of a person.
     assert!(
         mail.text
-            .starts_with(&format!("Open it in Bugaboo: {PUBLIC_URL}/issues/")),
+            .starts_with(&format!("Link to the issue: {PUBLIC_URL}/issues/")),
         "{}",
         mail.text
     );
@@ -183,9 +182,7 @@ async fn ntf_02_what_a_person_wrote_is_quoted_after_the_real_link_and_loses_what
         1,
         "only the real footer is not quoted: {unquoted:?}"
     );
-    assert!(
-        unquoted[0].starts_with("You get this e-mail because of your notification settings in")
-    );
+    assert!(unquoted[0].starts_with("You get this e-mail because of your notification settings."));
     assert!(!mail.text.contains('\u{202E}') && !mail.text.contains('\u{200B}'));
     Ok(())
 }

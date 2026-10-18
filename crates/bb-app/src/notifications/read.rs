@@ -22,7 +22,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place};
 use serde_json::json;
 
-use super::plan::{edit_note_of, run_status_of};
+use super::plan::{edit_note_of, renewal_failed, run_status_of};
 use super::types::{
     NotificationItem, NotificationPage, NotificationWhat, NotificationsQuery, ReadNotifications,
     Unread, UnreadQuery, Which,
@@ -198,6 +198,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                         part: note.part,
                     }),
                 )
+            }
+            NotificationKind::RunEnded if renewal_failed(&row.changes) => {
+                Ok(Some(NotificationWhat::IssueIdsFailed))
             }
             NotificationKind::RunEnded => Ok(row.record.map(|run| NotificationWhat::RunEnded {
                 run,

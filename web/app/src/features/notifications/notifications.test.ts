@@ -134,5 +134,8 @@ describe("ntf_01 a row says in a sentence what happened", () => {
     expect(
       say(entry({ kind: "run_ended", issue: null, by: null, run: "r", run_done: false })),
     ).toEqual([t("notifications.run-failed")]);
+    expect(
+      say(entry({ kind: "run_ended", issue: null, by: null, issue_ids_failed: true })),
+    ).toEqual([t("notifications.issue-ids-failed")]);
   });
 });

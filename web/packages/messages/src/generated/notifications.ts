@@ -27,9 +27,12 @@ export const messages = {
   "notifications.news": "There is news on this issue",
   "notifications.finish-asked": "{who} asks you to finish editing",
   "notifications.taken-over": "{who} took over the editing. What you wrote is kept as your draft",
-  "notifications.released": "{who} let go of the editing",
+  "notifications.released":
+    "{who} ended your editing because it was stuck, so others can edit again",
   "notifications.run-done": "Your change to many issues is done",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
+  "notifications.issue-ids-failed":
+    "Bugaboo could not give every issue of a project its new ID. Open the project settings to try again.",
   "notifications.show-result": "Show the result",
   "notifications.hide-result": "Hide the result",
   "notifications.show-all": "Show all notifications",
@@ -47,12 +50,12 @@ export const messages = {
   "mail-server.password-set": "A password is set.",
   "mail-server.password-none": "No password is set.",
   "mail-server.password-help":
-    "It is stored encrypted and never shown again. Leave the box empty to keep the password you have. If you change the host, the port or the user name, the password is removed: a new mail server needs its password again.",
+    "It is stored encrypted and never shown again. Leave the box empty to keep the password you have. If you change the mail server, the port or the user name, the password is removed: a new mail server needs its password again.",
   "mail-server.password-remove": "Remove the password",
   "mail-server.no-encryption-note":
-    "Without encryption, a user name or a password is only accepted when the mail server is on this machine.",
+    "Without encryption, a user name or a password is only accepted when the mail server is on this computer.",
   "mail-server.save": "Save the mail server",
-  "mail-server.test-title": "Try it",
+  "mail-server.test-title": "Test e-mail",
   "mail-server.test-intro":
     "Bugaboo sends one e-mail to your address, {email}, through the mail server as you saved it.",
   "mail-server.test-send": "Send me a test e-mail",
