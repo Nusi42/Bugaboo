@@ -63,7 +63,7 @@ export function ShellOverlays({ layout, ...person }: ShellOverlaysProps) {
       ))}
       <QuickSearch />
       <ShortcutHelp />
-      <UndoHost aboveBar={phone} />
+      {phone ? null : <UndoHost />}
     </>
   );
 }

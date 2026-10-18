@@ -11,6 +11,7 @@ use std::collections::{BTreeSet, HashMap};
 use bb_app::access::{PolicyStore as _, StartingRole};
 use bb_app::auth::{AccountStore as _, SecondStepStore as _};
 use bb_core::event::{Actor, DomainEvent, EntityRef};
+use bb_core::fields::Field;
 use bb_core::id::{EntityId, UserId};
 use bb_core::technical::TechnicalName;
 use serde::Serialize;
@@ -243,6 +244,28 @@ fn labelled(labels: &mut Labels, field: &str, value: serde_json::Value) -> serde
                 .map(|item| labelled(labels, field, item))
                 .collect(),
         ),
+        // A value made of named parts (the places a workflow is used at): each part is labelled as
+        // the kind of record its name says.
+        serde_json::Value::Object(parts) => serde_json::Value::Object(
+            parts
+                .into_iter()
+                .map(|(name, part)| {
+                    let part = labelled(labels, &name, part);
+                    (name, part)
+                })
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+/// A list of labels in the order of the labels.
+fn sorted(value: serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Array(mut items) => {
+            items.sort_by_key(ToString::to_string);
+            serde_json::Value::Array(items)
+        }
         other => other,
     }
 }
@@ -266,16 +289,19 @@ fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
                     Some(id) => (labels.label(OWN_FIELD, id), OWN_FIELD),
                     None => (change.field.clone(), change.field.as_str()),
                 };
+                // The people an issue is assigned to are a set: the order they are listed in comes
+                // from their random IDs, so the dump lists them by label.
+                let set = change.field == Field::AssignedTo.code();
+                let mut value = |value: &Option<serde_json::Value>| {
+                    value.clone().map(|value| {
+                        let value = labelled(labels, kind, value);
+                        if set { sorted(value) } else { value }
+                    })
+                };
                 DumpChange {
                     field,
-                    before: change
-                        .before
-                        .clone()
-                        .map(|value| labelled(labels, kind, value)),
-                    after: change
-                        .after
-                        .clone()
-                        .map(|value| labelled(labels, kind, value)),
+                    before: value(&change.before),
+                    after: value(&change.after),
                 }
             })
             .collect(),

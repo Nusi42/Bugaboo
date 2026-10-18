@@ -89,6 +89,64 @@ pub struct IssuePlan {
     pub comments: u32,
     /// How many of a hundred comments were edited.
     pub edited_comments_percent: u32,
+    /// How the people of the sample work together: workflows, files, notifications.
+    pub work: WorkPlan,
+}
+
+/// How the people of the sample work together (M4 WP-10): the workflow a project has of its own,
+/// the files on issues and comments, and what Contributors, Guests and Viewers do. The counts are
+/// those of the full sample and are scaled like the issues.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkPlan {
+    /// The project that has a workflow of its own, and what the workflow is called.
+    pub own_workflow: OwnWorkflow,
+    /// How many files issues and comments carry.
+    pub files: FilesPlan,
+    /// Issues that Contributors and Guests reported themselves.
+    pub reports: ReportsPlan,
+    /// How many status changes the Team members make in the last days, under the workflows.
+    pub team_status_changes: u32,
+    /// How many changes Contributors make to the issues they reported (a Contributor can change
+    /// the title and the tags of their own issues, not the status).
+    pub contributor_changes: u32,
+    /// How many issues the Viewers follow together (they only read and follow).
+    pub viewer_follows: u32,
+    /// How many of a hundred notifications of a Viewer or a Guest were read.
+    pub read_percent: u32,
+}
+
+/// The workflow a project has of its own: the starting workflow with a status change that asks
+/// for the person who does the work (*Ask for*).
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OwnWorkflow {
+    /// The short name of the project.
+    pub project: String,
+    /// What the workflow is called.
+    pub name: String,
+}
+
+/// The files of the sample.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilesPlan {
+    /// How many files the full sample has.
+    pub total: u32,
+    /// How many of a hundred files are pictures (the rest are PDFs).
+    pub pictures_percent: u32,
+    /// How many of a hundred files belong to a comment (the rest to an issue).
+    pub on_comments_percent: u32,
+}
+
+/// The issues Contributors and Guests report.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReportsPlan {
+    /// Together, all Contributors.
+    pub contributors: u32,
+    /// Together, all Guests.
+    pub guests: u32,
 }
 
 /// The share of an issue type.

@@ -7,6 +7,24 @@ import { onThisLayout } from "./layout.ts";
 import { partIn } from "./parts.ts";
 import { boxOf, textStartOf } from "./windows.ts";
 
+/** How long a preview may take: the job runs every two seconds, and a picture is made at once. */
+export const PREVIEW_WAIT_MS = 30_000;
+
+/** The block of the files of the issue that is open. */
+export function filesBlock(page: Page): Locator {
+  return page.getByRole("region", { name: t("files.title"), exact: true });
+}
+
+/** The row of a file by its name. */
+export function rowOf(page: Page, name: string): Locator {
+  return filesBlock(page).getByRole("listitem").filter({ hasText: name });
+}
+
+/** The small picture in the row of a file, once its preview is made. */
+export function previewOf(page: Page, name: string): Locator {
+  return rowOf(page, name).getByRole("img", { name: t("files.preview-of", { name }) });
+}
+
 /** A file of the tests: what a person has on their device, with the type the device says. */
 export interface Pictured {
   readonly name: string;

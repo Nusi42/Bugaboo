@@ -92,6 +92,20 @@ impl Evaluation {
         }
     }
 
+    /// Whether the viewer is shown the role label of `person` as `kind` says: when they see people
+    /// by their role there, and the person is not themselves (they see their own name). The one
+    /// rule: [`resolve`] shows a role label exactly when this is true, and a caller that looks the
+    /// label up asks it first, so nobody's rights are evaluated for a label that is never shown.
+    #[must_use]
+    pub fn shows_role_label(
+        &self,
+        kind: PeopleKind,
+        context: PeopleContext,
+        person: UserId,
+    ) -> bool {
+        self.person() != Some(person) && self.people_level(kind, context) == PeopleLevel::RoleOnly
+    }
+
     /// Whether a picture of a person may be shown: only where the kind of the place also gives
     /// *Names*.
     #[must_use]
@@ -145,17 +159,19 @@ pub fn resolve(
             PersonRef::Someone
         };
     }
+    if viewer.shows_role_label(kind, context, target.id) {
+        return target
+            .role
+            .map_or(PersonRef::Someone, |role| PersonRef::Role {
+                role: role.to_owned(),
+            });
+    }
     match level {
         PeopleLevel::Names => PersonRef::Name {
             id: target.id,
             name: target.name.to_owned(),
         },
-        PeopleLevel::RoleOnly => target
-            .role
-            .map_or(PersonRef::Someone, |role| PersonRef::Role {
-                role: role.to_owned(),
-            }),
-        PeopleLevel::Hidden => PersonRef::Someone,
+        PeopleLevel::RoleOnly | PeopleLevel::Hidden => PersonRef::Someone,
     }
 }
 

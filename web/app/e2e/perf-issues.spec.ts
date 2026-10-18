@@ -10,6 +10,16 @@ import {
   sampleSubProject,
 } from "./support/sample.ts";
 import { fieldOf } from "./support/fields.ts";
+import {
+  changeStatus,
+  FILES_EACH,
+  giveFiles,
+  ISSUES_WITH_FILES,
+  readNotifications,
+  readPageWithFiles,
+  STATUS_CHANGES,
+} from "./support/perf-work.ts";
+import { ownId } from "./support/accounts.ts";
 import { inOrder } from "./support/sequence.ts";
 import {
   choiceNamed,
@@ -100,5 +110,59 @@ test("perf_f60_combining_a_choice_with_another_on_the_sample_holds_the_change_un
   times.add("combine: one choice into another, on the sample", combined.ms);
   writeNumbers("perf-f60-combine", build, times);
   expect(combined.ms).toBeLessThan(COMBINE_BUDGET_MS);
+  await session.dispose();
+});
+
+/** How many people read their notifications, and how often each of them does. */
+const NOTIFICATION_READERS = 10;
+const NOTIFICATION_ROUNDS = 6;
+
+test("perf_01_issue_page_with_files_stays_under_100_ms_p95_on_the_sample", async ({ server }) => {
+  test.setTimeout(300_000);
+  const session = await signInThroughApi(server, sampleAdministrator());
+  const keys = await someIssues(session, PAGES);
+  // The sample has files on some issues; these get a few more, so the pages read have files.
+  await giveFiles(session, keys.slice(0, ISSUES_WITH_FILES), FILES_EACH);
+  const warm = new Times();
+  await inOrder(keys.slice(0, 10).map((key) => () => readPageWithFiles(session, key, warm)));
+  const times = new Times();
+  await inOrder(keys.map((key) => () => readPageWithFiles(session, key, times)));
+  writeNumbers("perf-01-issue-page-with-files", build, times);
+  expectInBudget(times);
+  await session.dispose();
+});
+
+test("perf_01_notifications_page_stays_under_100_ms_p95_on_the_sample", async ({ server }) => {
+  test.setTimeout(300_000);
+  const people = sampleEverywhere(roleName.teamMember, NOTIFICATION_READERS);
+  const sessions = await Promise.all(people.map((person) => signInThroughApi(server, person)));
+  const times = new Times();
+  await readNotifications(firstOf(sessions), new Times());
+  await inOrder(
+    Array.from(
+      { length: NOTIFICATION_ROUNDS },
+      () => () => inOrder(sessions.map((session) => () => readNotifications(session, times))),
+    ),
+  );
+  writeNumbers("perf-01-notifications", build, times);
+  expectInBudget(times);
+  await Promise.all(sessions.map((session) => session.dispose()));
+});
+
+test("perf_01_a_status_change_through_the_judge_stays_under_100_ms_p95_on_the_sample", async ({
+  server,
+}) => {
+  test.setTimeout(300_000);
+  const session = await signInThroughApi(server, sampleAdministrator());
+  const keys = await someIssues(session, STATUS_CHANGES);
+  const me = await ownId(session);
+  await changeStatus(session, firstOf(keys), me, new Times());
+  const times = new Times();
+  await inOrder(keys.map((key) => () => changeStatus(session, key, me, times)));
+  // Every issue was moved: a change that was left out would make the numbers say less than they do.
+  const samples = Object.values(times.summaries()).reduce((all, each) => all + each.requests, 0);
+  expect(samples).toBe(STATUS_CHANGES);
+  writeNumbers("perf-01-status-change", build, times);
+  expectInBudget(times);
   await session.dispose();
 });

@@ -52,6 +52,15 @@ export function resizedBy(
   return { width: from.width + 2 * x * by.x, height: from.height + 2 * y * by.y };
 }
 
+/**
+ * The size with a height that is not below `smallest`, unless the window was lower than that when
+ * the change began (a window that is as tall as its content is shorter than the smallest height
+ * and is not made taller by a step that makes it shorter).
+ */
+export function notBelow(size: WindowSize, smallest: number, began: number): WindowSize {
+  return { width: size.width, height: Math.max(size.height, Math.min(smallest, began)) };
+}
+
 /** How far an arrow key changes the size, in pixels (UX §6.3, UX-04). */
 export const keyboardStep = 24;
 

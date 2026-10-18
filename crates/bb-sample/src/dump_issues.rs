@@ -23,6 +23,7 @@ use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
 use jiff::Timestamp;
 use serde::Serialize;
 
+use crate::dump_work::DumpWork;
 use crate::error::SampleError;
 use crate::generate::Sample;
 
@@ -60,6 +61,8 @@ pub(crate) struct DumpIssues {
     edited_comments: u64,
     edit_locks: u64,
     drafts: u64,
+    /// The people working together: workflows, files, notifications.
+    work: DumpWork,
 }
 
 impl DumpIssues {
@@ -169,6 +172,7 @@ impl Sample {
                 .await?;
             dump.drafts += u64::from(kept.is_some());
         }
+        dump.work = self.work(events, &issues).await?;
         Ok(dump)
     }
 

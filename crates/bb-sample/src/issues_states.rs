@@ -47,6 +47,7 @@ impl Maker<'_, '_> {
                 .map(|made| (made.id, DraftTarget::Editing(draft_on.clone())))
                 .into_iter()
                 .collect(),
+            ..LeftBehind::default()
         };
         let ctx = self.world.services.ctx(self.world.request());
         let token = self.hands.token(holder).await?;

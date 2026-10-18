@@ -7,9 +7,13 @@ rust-version.workspace = true
 publish.workspace = true
 
 [features]
-# `PreviewCommand::in_process`: previews made inside the test instead of by a child process, for
-# the tests of the server that do not start the program. Only `[dev-dependencies]` switch it on;
-# the tests of the child process itself use the real program.
+# `PreviewCommand::in_process` and the files of `fixtures`: previews made inside the process that
+# asks instead of by a child process, for the tests of the server that do not start the program and
+# for the developer tool `bb-sample`, which makes its own previews. Every other crate switches it on
+# in `[dev-dependencies]` only (ARCH-DEPS); the tests of the child process itself use the real
+# program. A build of the whole workspace has it in this crate, because cargo gives one crate the
+# features that any member asks for; the program is built with `cargo build -p bb-server`
+# (`cargo xtask build`), which does not have it.
 testing = []
 
 [dependencies]

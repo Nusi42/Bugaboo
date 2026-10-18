@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 
 import { inOrder } from "./sequence.ts";
 import { settingDefaults } from "@bugaboo/api-client";
@@ -144,12 +144,14 @@ export function shootWholeAs(
   name: string,
   milestone: string,
   theme: string,
+  mask: readonly Locator[] = [],
 ): Promise<void> {
   return withWholePage(page, async () => {
     await expectLook(page, theme);
     await page.screenshot({
       path: join(folderOf(milestone), `${name}-${theme}.png`),
       fullPage: true,
+      mask: [...mask],
     });
   });
 }
@@ -169,9 +171,10 @@ export async function shotWholeAs(
   name: string,
   milestone: string,
   theme: string,
+  mask: readonly Locator[] = [],
 ): Promise<void> {
   await page.waitForTimeout(SETTLING_FOR_SHOT_MS);
-  await shootWholeAs(page, name, milestone, theme);
+  await shootWholeAs(page, name, milestone, theme, mask);
 }
 
 /** The same with the window grown to the height of the page, then put back. */

@@ -68,6 +68,16 @@ pub enum Step {
     Editing,
     /// Reading the history of the issues from the events.
     History,
+    /// Creating the workflow of a project.
+    Workflows,
+    /// Adding a file to an issue or a comment.
+    Files,
+    /// Following an issue.
+    Following,
+    /// Reading or marking notifications.
+    Notifications,
+    /// Running the jobs that were queued.
+    Jobs,
 }
 
 impl Step {
@@ -101,6 +111,11 @@ impl Step {
             Self::Comment => message::SAMPLE_STEP_COMMENT,
             Self::Editing => message::SAMPLE_STEP_EDITING,
             Self::History => message::SAMPLE_STEP_HISTORY,
+            Self::Workflows => message::SAMPLE_STEP_WORKFLOWS,
+            Self::Files => message::SAMPLE_STEP_FILES,
+            Self::Following => message::SAMPLE_STEP_FOLLOWING,
+            Self::Notifications => message::SAMPLE_STEP_NOTIFICATIONS,
+            Self::Jobs => message::SAMPLE_STEP_JOBS,
         })
     }
 }

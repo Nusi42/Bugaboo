@@ -15,6 +15,7 @@ use jiff::Timestamp;
 use serde_json::Value;
 
 mod issues;
+mod work;
 
 use crate::{
     ACCESS_KEYS, DEFAULT_SEED, EMAIL_DOMAIN, LATER_SECONDS, Later, NameList, Options, Organization,

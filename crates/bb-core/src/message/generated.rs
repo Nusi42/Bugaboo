@@ -3653,12 +3653,18 @@ pub const SAMPLE_STEP_EDITING: MessageKey = MessageKey::new("sample.step.editing
 /// The message `sample.step.fields`.
 pub const SAMPLE_STEP_FIELDS: MessageKey = MessageKey::new("sample.step.fields");
 
+/// The message `sample.step.files`.
+pub const SAMPLE_STEP_FILES: MessageKey = MessageKey::new("sample.step.files");
+
 /// The message `sample.step.first-administrator`.
 pub const SAMPLE_STEP_FIRST_ADMINISTRATOR: MessageKey =
     MessageKey::new("sample.step.first-administrator");
 
 /// The message `sample.step.first-start`.
 pub const SAMPLE_STEP_FIRST_START: MessageKey = MessageKey::new("sample.step.first-start");
+
+/// The message `sample.step.following`.
+pub const SAMPLE_STEP_FOLLOWING: MessageKey = MessageKey::new("sample.step.following");
 
 /// The message `sample.step.group`.
 pub const SAMPLE_STEP_GROUP: MessageKey = MessageKey::new("sample.step.group");
@@ -3678,11 +3684,17 @@ pub const SAMPLE_STEP_ISSUE: MessageKey = MessageKey::new("sample.step.issue");
 /// The message `sample.step.issue-types`.
 pub const SAMPLE_STEP_ISSUE_TYPES: MessageKey = MessageKey::new("sample.step.issue-types");
 
+/// The message `sample.step.jobs`.
+pub const SAMPLE_STEP_JOBS: MessageKey = MessageKey::new("sample.step.jobs");
+
 /// The message `sample.step.labels`.
 pub const SAMPLE_STEP_LABELS: MessageKey = MessageKey::new("sample.step.labels");
 
 /// The message `sample.step.levels`.
 pub const SAMPLE_STEP_LEVELS: MessageKey = MessageKey::new("sample.step.levels");
+
+/// The message `sample.step.notifications`.
+pub const SAMPLE_STEP_NOTIFICATIONS: MessageKey = MessageKey::new("sample.step.notifications");
 
 /// The message `sample.step.password-hasher`.
 pub const SAMPLE_STEP_PASSWORD_HASHER: MessageKey = MessageKey::new("sample.step.password-hasher");
@@ -3710,6 +3722,9 @@ pub const SAMPLE_STEP_SIGNING_OUT: MessageKey = MessageKey::new("sample.step.sig
 
 /// The message `sample.step.tags`.
 pub const SAMPLE_STEP_TAGS: MessageKey = MessageKey::new("sample.step.tags");
+
+/// The message `sample.step.workflows`.
+pub const SAMPLE_STEP_WORKFLOWS: MessageKey = MessageKey::new("sample.step.workflows");
 
 /// The message `save.not-saved`.
 pub const SAVE_NOT_SAVED: MessageKey = MessageKey::new("save.not-saved");
@@ -12539,10 +12554,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("sample.step.fields", "creating an own field"),
     (
+        "sample.step.files",
+        "adding a file to an issue or a comment",
+    ),
+    (
         "sample.step.first-administrator",
         "creating the first administrator",
     ),
     ("sample.step.first-start", "getting the organization ready"),
+    ("sample.step.following", "following an issue"),
     ("sample.step.group", "creating a group"),
     ("sample.step.group-member", "putting a person into a group"),
     (
@@ -12555,11 +12575,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.issue-types",
         "creating the starting issue types and kinds of relation",
     ),
+    ("sample.step.jobs", "running the jobs that were queued"),
     (
         "sample.step.labels",
         "creating a group of labels or a label",
     ),
     ("sample.step.levels", "setting what a role sees"),
+    (
+        "sample.step.notifications",
+        "reading or marking notifications",
+    ),
     (
         "sample.step.password-hasher",
         "creating the password hasher",
@@ -12578,6 +12603,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.step.signing-in", "signing in to do the work"),
     ("sample.step.signing-out", "signing out"),
     ("sample.step.tags", "putting a tag or a label on an issue"),
+    (
+        "sample.step.workflows",
+        "creating the workflow of a project",
+    ),
     ("save.not-saved", "Not saved yet"),
     ("save.saved", "Saved"),
     ("save.saved-at", "Saved · {time}"),

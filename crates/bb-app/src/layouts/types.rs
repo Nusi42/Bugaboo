@@ -160,7 +160,7 @@ pub struct LayoutSlot {
 }
 
 /// Where the layout that counts at a place comes from, when it is not set there.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct InheritedFrom {
     /// It is set for the whole organization.
     pub whole_organization: bool,

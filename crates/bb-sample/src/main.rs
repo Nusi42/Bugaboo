@@ -17,6 +17,7 @@ use jiff::Timestamp;
 // (`unused_crate_dependencies`).
 use bb_app as _;
 use bb_auth as _;
+use bb_files as _;
 use bb_store as _;
 use getrandom as _;
 use serde as _;
@@ -95,7 +96,7 @@ async fn start() -> Result<String, SampleError> {
 
 #[tokio::main]
 async fn main() -> ExitCode {
-    match start().await {
+    match Box::pin(start()).await {
         Ok(done) => {
             // Nobody to tell when the console is gone: the sample is made either way.
             let _ = writeln!(std::io::stdout(), "{done}");

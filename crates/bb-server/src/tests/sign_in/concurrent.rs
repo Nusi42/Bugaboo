@@ -2,7 +2,9 @@
 //! architecture §11, ADR-0019), on both databases.
 //!
 //! Ten people, each with a browser of their own, change the same few issues together: short values,
-//! descriptions under their locks, comments and reads. Some editors vanish without letting go, and
+//! descriptions under their locks, comments and reads, status changes under a workflow that asks for
+//! who does the work, files, and notifications. One of the ten is a Guest, who works on the issue they
+//! reported and hears of nothing else. Some editors vanish without letting go, and
 //! some type for longer than the lease lasts. The clock of the test runs on until the last person
 //! is done, so leases really run out. Two cases are played out first, alone and by construction
 //! (an editor who vanishes, one who is too slow), so that what the run is for never depends on how
@@ -20,6 +22,8 @@ use bb_core::edit::{DRAFT_KEPT_BY, LEASE_SECONDS};
 use bb_load_check::{
     Afterwards, Book, DraftEnd, Drafted, Kept, Seen, Work, check, lock_rows, locks_beyond_lease,
 };
+
+mod work;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 use tokio::task::JoinSet;
@@ -29,6 +33,7 @@ use super::issues_site::{ISSUES, Site, ok};
 use super::rig::{Rig, TestClock};
 
 const LOCKS: &str = "/api/v1/edit-locks";
+/// Ten people: nine Team members and a Guest.
 const PEOPLE: usize = 10;
 const ISSUE_COUNT: usize = 4;
 const ROUNDS: usize = 14;
@@ -75,6 +80,10 @@ struct Person {
     issues: Vec<Work>,
     book: Shared,
     clock: Arc<TestClock>,
+    /// The own field that Guests may not see, which the Team members write.
+    hidden_field: String,
+    /// A Guest works on their own issue only; the Team members work on all of them.
+    guest: bool,
 }
 
 impl Person {
@@ -114,7 +123,8 @@ impl Person {
                 book(&self.book)?.kept.push(Kept {
                     key: work.key.clone(),
                     version: version_in(&reply.body)?,
-                    text: None,
+                    title: Some(title),
+                    ..Kept::default()
                 });
                 return Ok(());
             }
@@ -234,6 +244,7 @@ impl Person {
                 key: work.key.clone(),
                 version: version_in(&saved.body)?,
                 text: Some(text.clone()),
+                ..Kept::default()
             });
             return self.drafted(work, &text, DraftEnd::Saved, None);
         }
@@ -260,13 +271,38 @@ impl Person {
     async fn rounds(mut self) -> Result<(), Failure> {
         for round in 0..ROUNDS {
             let work = self.issue(round).clone();
-            match (self.number + round) % 4 {
+            if self.guest {
+                self.guest_round(&work, round).await?;
+                continue;
+            }
+            match (self.number + round) % 7 {
                 0 => self.change(&work, round).await?,
                 1 | 2 => self.describe(&work, round).await?,
-                _ => {
+                3 => {
                     self.comment(&work, round).await?;
                     self.read(&work).await?;
                 }
+                4 | 5 => {
+                    let hidden = self.hidden_field.clone();
+                    self.move_on(&work, round, &hidden).await?;
+                }
+                _ => {
+                    self.add_file(&work, round).await?;
+                    self.hear().await?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// A Guest comments on, adds a file to and reads their own issue, and reads their notifications.
+    async fn guest_round(&mut self, work: &Work, round: usize) -> Result<(), Failure> {
+        match round % 3 {
+            0 => self.comment(work, round).await?,
+            1 => self.add_file(work, round).await?,
+            _ => {
+                self.read(work).await?;
+                self.hear().await?;
             }
         }
         Ok(())
@@ -277,13 +313,17 @@ fn token_of(body: &Value) -> Option<String> {
     body["lock_token"].as_str().map(str::to_owned)
 }
 
-/// The people, each with a browser, and the issues they share (which the book names).
+/// The people, each with a browser, and the issues they share (which the book names): nine Team
+/// members who share the issues, and a Guest who has one issue of their own. The project has a
+/// workflow of its own that asks for who does the work, and an own field that Guests may not see.
 async fn the_crowd(
     rig: &Rig,
     site: &Site<'_>,
     admin: &mut Browser,
     shared: &Shared,
 ) -> Result<Vec<Person>, Failure> {
+    work::workflow_that_asks(site, admin).await?;
+    let hidden_field = work::field_hidden_from_guests(site, rig, admin).await?;
     let mut issues = Vec::new();
     for at in 0..ISSUE_COUNT {
         let made = site.create(admin, &format!("Shared issue {at}")).await?;
@@ -291,23 +331,45 @@ async fn the_crowd(
         issues.push(Work {
             id: body["id"].as_str().ok_or("no id")?.to_owned(),
             key: body["key"].as_str().ok_or("no key")?.to_owned(),
+            reporter: None,
         });
     }
-    book(shared)?.issues.clone_from(&issues);
+    let (mut guest, guest_id) = site.person(StartingRole::Guest, "crowdguest").await?;
+    let guests_issue = work::guests_issue(site, &mut guest, &guest_id.to_string()).await?;
+    let mut everything = issues.clone();
+    everything.push(guests_issue.clone());
+    book(shared)?.issues.clone_from(&everything);
+    work::note_who_is_judged(shared, &guest_id.to_string(), &hidden_field)?;
+    let person = |number, holder: String, browser, issues, guest| Person {
+        number,
+        holder,
+        browser,
+        issues,
+        book: Arc::clone(shared),
+        clock: Arc::clone(&rig.clock),
+        hidden_field: hidden_field.clone(),
+        guest,
+    };
     let mut people = Vec::new();
-    for number in 0..PEOPLE {
+    for number in 0..PEOPLE - 1 {
         let (browser, holder) = site
             .person(StartingRole::TeamMember, &format!("crowd{number}"))
             .await?;
-        people.push(Person {
+        people.push(person(
             number,
-            holder: holder.to_string(),
+            holder.to_string(),
             browser,
-            issues: issues.clone(),
-            book: Arc::clone(shared),
-            clock: Arc::clone(&rig.clock),
-        });
+            everything.clone(),
+            false,
+        ));
     }
+    people.push(person(
+        PEOPLE - 1,
+        guest_id.to_string(),
+        guest,
+        vec![guests_issue],
+        true,
+    ));
     Ok(people)
 }
 
@@ -380,6 +442,15 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
         let book = std::mem::take(&mut *book(&shared)?);
         let ended = |ending| book.drafted.iter().any(|each| each.ending == ending);
         assert!(book.kept.iter().any(|each| each.text.is_some()));
+        assert!(
+            book.kept.iter().any(|each| each.title.is_some()),
+            "no title was kept"
+        );
+        assert!(
+            book.kept.iter().any(|each| each.status.is_some()),
+            "no status was changed under the workflow"
+        );
+        assert!(!book.files.is_empty(), "no file was added");
         assert!(ended(DraftEnd::Refused), "no save was refused");
         assert!(ended(DraftEnd::Vanished), "no editor vanished");
         // Once the leases are over nobody holds a lock, and the purge takes the rows.
@@ -393,6 +464,12 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
         };
         let found = check(&rig.database, &book, &afterwards).await?;
         assert!(found.is_empty(), "{found:#?}");
+        // The rule about what a Guest is told is not empty: the Guest was told of their issue.
+        let guest = book.guests.first().ok_or("no Guest in the book")?.parse()?;
+        assert!(
+            !rig.database.stored_notifications(guest).await?.is_empty(),
+            "the Guest was told of nothing, so the rule was never put to the test"
+        );
         Ok(())
     })
     .await

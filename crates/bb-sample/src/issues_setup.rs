@@ -142,6 +142,7 @@ impl Setup {
             fields.push(create_one_field(world, token, plan, names, &types, &projects).await?);
         }
         let labels = create_labels(world, token, names).await?;
+        crate::own_workflow::create(world, token, &names.work.own_workflow).await?;
         Ok(Self {
             types,
             kinds,

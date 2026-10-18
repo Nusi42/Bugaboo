@@ -390,3 +390,34 @@ fn priv_13_a_label_is_never_made_from_the_id_of_the_person() {
     let counted = former_user_label(&mut sequential, &|_| false).unwrap();
     assert_eq!(counted.len(), 4);
 }
+
+#[test]
+fn priv_12_a_role_label_is_shown_exactly_when_the_viewer_sees_roles_and_it_is_not_themselves() {
+    let bea = UserId::from_random([2; 16]);
+    for kind in PeopleKind::ALL.iter().copied() {
+        for level in PeopleLevel::ALL.iter().copied() {
+            let world = viewer_world(kind, level);
+            let viewer = world.at(world.acme);
+            let labelled = viewer.shows_role_label(kind, PeopleContext::Ordinary, bea);
+            assert_eq!(
+                labelled,
+                level == PeopleLevel::RoleOnly,
+                "{kind:?} as {level:?}"
+            );
+            // `resolve` shows a role label exactly when the predicate says so.
+            let shown = resolve(
+                &viewer,
+                kind,
+                PeopleContext::Ordinary,
+                target(bea, Some("a Team member")),
+            );
+            assert_eq!(matches!(shown, PersonRef::Role { .. }), labelled);
+        }
+    }
+    // Nobody is shown their own role: they see their name.
+    let world = viewer_world(PeopleKind::Authors, PeopleLevel::RoleOnly);
+    let viewer = world.at(world.acme);
+    if let Some(me) = viewer.person() {
+        assert!(!viewer.shows_role_label(PeopleKind::Authors, PeopleContext::Ordinary, me));
+    }
+}

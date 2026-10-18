@@ -6,6 +6,8 @@ export interface Work {
   readonly id: string;
   /** Its readable ID. */
   readonly key: string;
+  /** The ID of the Guest who reported it; none for an issue the team made. A Guest hears only of the issues they reported. */
+  readonly reporter?: string;
 }
 
 /** A change the server kept. */
@@ -16,6 +18,10 @@ export interface Kept {
   readonly version: number;
   /** The description, when the change was a save of the description. */
   readonly text?: string;
+  /** The title, when the change was a new title (M3-F93). */
+  readonly title?: string;
+  /** The key of the status, when the change was a status change under the workflow. */
+  readonly status?: string;
 }
 
 /** A version of an issue that a person read. */
@@ -59,4 +65,10 @@ export interface Book {
   readonly drafted: readonly Drafted[];
   /** What the people saw break a rule while they worked. */
   readonly broken: readonly string[];
+  /** The readable ID of the issue of every file that was added. */
+  readonly files: readonly string[];
+  /** The IDs of the Guests of the run: what they are told is judged by what a Guest may see. */
+  readonly guests: readonly string[];
+  /** The keys of the own fields the run hid from Guests. */
+  readonly hidden_from_guests: readonly string[];
 }

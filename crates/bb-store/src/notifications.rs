@@ -118,6 +118,29 @@ async fn insert(transaction: &mut Transaction, row: &Notification) -> Result<boo
     Ok(transaction.execute(&insert).await? > 0)
 }
 
+impl Database {
+    /// Every notification a person has, whatever the filter: what a check of a run of many people
+    /// compares with what they may see.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_notifications(
+        &self,
+        recipient: UserId,
+    ) -> Result<Vec<Notification>, StoreError> {
+        let mut select = select();
+        select
+            .and_where(Expr::col(NotificationRow::Recipient).eq(recipient.stored()))
+            .order_by(NotificationRow::Id, Order::Asc);
+        self.fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_notification)
+            .collect()
+    }
+}
+
 impl NotificationStore for AuthStorage {
     async fn notification_events(&self, limit: u64) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
         Ok(self

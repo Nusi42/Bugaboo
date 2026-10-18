@@ -14,7 +14,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{LockClass, Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, LockClass, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{AttachmentRow, StoredFileRow, UploadRow};
 
@@ -128,6 +128,36 @@ fn pointed_to() -> SelectStatement {
     select
 }
 
+/// The files of an issue that are not in the trash, oldest first.
+async fn live_attachments(
+    database: &Database,
+    issue: IssueId,
+) -> Result<Vec<Attachment>, StoreError> {
+    let mut select = attachment_select();
+    select
+        .and_where(Expr::col(AttachmentRow::Issue).eq(issue.stored()))
+        .and_where(Expr::col(AttachmentRow::DeletedAt).is_null())
+        .order_by(AttachmentRow::Id, Order::Asc);
+    database
+        .fetch_all(&select)
+        .await?
+        .iter()
+        .map(read_attachment)
+        .collect()
+}
+
+impl Database {
+    /// The files of an issue that are not in the trash: what a check of a run of many people
+    /// compares with what they added.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_attachments(&self, issue: IssueId) -> Result<Vec<Attachment>, StoreError> {
+        live_attachments(self, issue).await
+    }
+}
+
 impl AttachmentStore for AuthStorage {
     async fn attachment_in(
         transaction: &mut Transaction,
@@ -172,17 +202,7 @@ impl AttachmentStore for AuthStorage {
     }
 
     async fn attachments_of_issue(&self, issue: IssueId) -> Result<Vec<Attachment>, StoreError> {
-        let mut select = attachment_select();
-        select
-            .and_where(Expr::col(AttachmentRow::Issue).eq(issue.stored()))
-            .and_where(Expr::col(AttachmentRow::DeletedAt).is_null())
-            .order_by(AttachmentRow::Id, Order::Asc);
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_attachment)
-            .collect()
+        live_attachments(self.database(), issue).await
     }
 
     async fn attachments_by_ids(

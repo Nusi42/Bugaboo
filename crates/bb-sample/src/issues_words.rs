@@ -39,6 +39,13 @@ pub(crate) struct CommentWords {
     pub(crate) edits: Vec<String>,
 }
 
+/// The first words of the names of files.
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct FileWords {
+    pub(crate) pictures: Vec<String>,
+    pub(crate) documents: Vec<String>,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 struct Customers {
     names: Vec<String>,
@@ -54,6 +61,7 @@ pub(crate) struct IssueWords {
     pub(crate) feature: Templates,
     pub(crate) goal: Templates,
     pub(crate) comments: CommentWords,
+    pub(crate) files: FileWords,
     customers: Customers,
 }
 
@@ -86,7 +94,9 @@ impl IssueWords {
             || [&words.bug, &words.task, &words.feature, &words.goal]
                 .iter()
                 .any(|templates| templates.titles.is_empty())
-            || words.customers.names.is_empty();
+            || words.customers.names.is_empty()
+            || words.files.pictures.is_empty()
+            || words.files.documents.is_empty();
         if empty {
             return Err(SampleError::NamesRepeated);
         }

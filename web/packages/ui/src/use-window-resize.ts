@@ -5,6 +5,7 @@ import type { WindowResize } from "./WindowFrame.tsx";
 import {
   keyboardStep,
   menuStep,
+  notBelow,
   resizedBy,
   sizeAfterStep,
   stepOfArrow,
@@ -13,6 +14,19 @@ import {
   type WindowElement,
   type WindowSize,
 } from "./window-size.ts";
+
+/** The smallest height a person can make a window, from the theme file (`size-window-height-min`). */
+function smallestHeight(): number {
+  // A test of the logic has no page and so no theme: there is no smallest height then.
+  if (typeof document === "undefined") {
+    return 0;
+  }
+  const written = getComputedStyle(document.documentElement).getPropertyValue(
+    "--size-window-height-min",
+  );
+  const found = Number(/[\d.]+/u.exec(written)?.[0]);
+  return Number.isNaN(found) ? 0 : found;
+}
 
 /** The size of a window on the page right now. */
 function sizeOf(element: Pick<WindowElement, "getBoundingClientRect">): WindowSize {
@@ -48,7 +62,8 @@ function stepBy(
   if (frame === null) {
     return;
   }
-  applyWindowSize(frame, sizeAfterStep(sizeOf(frame), step, by));
+  const now = sizeOf(frame);
+  applyWindowSize(frame, notBelow(sizeAfterStep(now, step, by), smallestHeight(), now.height));
   onResized?.(sizeOf(frame));
 }
 
@@ -109,7 +124,10 @@ export function useWindowResize(
         const began = drag;
         if (began !== null && frame !== null) {
           const by = { x: event.clientX - began.x, y: event.clientY - began.y };
-          applyWindowSize(frame, resizedBy(began.from, began.edge, by));
+          applyWindowSize(
+            frame,
+            notBelow(resizedBy(began.from, began.edge, by), smallestHeight(), began.from.height),
+          );
         }
       },
       onPointerUp: finish,

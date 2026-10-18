@@ -159,3 +159,46 @@ pub fn pdf_bomb(unpacked_bytes: u64) -> Vec<u8> {
     pdf.extend_from_slice(b"\nendstream\nendobj\ntrailer\n<< /Root 1 0 R /Size 6 >>\n%%EOF\n");
     pdf
 }
+
+/// A small picture that looks different for every `number`: bands of colour that move and change
+/// with the number, so no two files of a sample are the same file (a file is stored once by its
+/// content, ATT-02). The bytes are empty if the picture cannot be written, which no format of the
+/// previews does; JPEG has no transparency, so a picture is written without it.
+#[must_use]
+pub fn varied_picture(number: u32, width: u32, height: u32, format: ImageFormat) -> Vec<u8> {
+    let image = DynamicImage::ImageRgba8(RgbaImage::from_fn(width, height, |x, y| {
+        let band = (x + y + number * 7) / 24;
+        let channel =
+            |shift: u32| u8::try_from((band * (37 + shift) + number * 11) % 200 + 40).unwrap_or(40);
+        Rgba([channel(0), channel(19), channel(41), 255])
+    }));
+    let image = if format == ImageFormat::Jpeg {
+        DynamicImage::ImageRgb8(image.to_rgb8())
+    } else {
+        image
+    };
+    let mut bytes = Cursor::new(Vec::new());
+    image
+        .write_to(&mut bytes, format)
+        .map(|()| bytes.into_inner())
+        .unwrap_or_default()
+}
+
+/// A PDF of one page, 200 by 100 points, with a rectangle whose place and size follow `number`, so
+/// no two files of a sample are the same file.
+#[must_use]
+pub fn varied_pdf(number: u32) -> Vec<u8> {
+    let (x, y) = (10 + number % 60, 10 + number / 3 % 30);
+    let (width, height) = (40 + number % 90, 20 + number / 7 % 40);
+    let content = format!("0.2 0.4 0.8 rg {x} {y} {width} {height} re f");
+    format!(
+        "%PDF-1.4\n\
+1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\
+2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n\
+3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>\nendobj\n\
+4 0 obj\n<< /Length {} >>\nstream\n{content}\nendstream\nendobj\n\
+trailer\n<< /Root 1 0 R /Size 5 >>\n%%EOF\n",
+        content.len()
+    )
+    .into_bytes()
+}

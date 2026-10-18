@@ -146,6 +146,8 @@ export interface Asked {
   readonly method: string;
   readonly headers: Readonly<Record<string, string>>;
   readonly body: string;
+  /** The bytes of a part of an upload, which go out as they are instead of the text. */
+  readonly bytes?: () => Uint8Array;
 }
 
 /** What the server answered. */
@@ -231,7 +233,7 @@ function once(asked: Asked, origin: string): Promise<{ answered: Answered; reuse
         }),
       );
     });
-    out.end(asked.body === "" ? undefined : asked.body);
+    out.end(asked.bytes?.() ?? (asked.body === "" ? undefined : asked.body));
   });
 }
 

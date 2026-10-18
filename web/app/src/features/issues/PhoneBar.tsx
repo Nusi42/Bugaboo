@@ -1,6 +1,9 @@
 import type { MenuAction } from "@bugaboo/ui";
+import { use } from "react";
+import { createPortal } from "react-dom";
 
 import { openStatusMenu } from "./bar-targets.ts";
+import { BarSlot } from "../shell/index.ts";
 import { historyId } from "./history-id.ts";
 import { IssueBar } from "./IssueBar.tsx";
 
@@ -13,7 +16,12 @@ function goTo(id: string): HTMLElement | null {
 
 /** The bar of the most used actions of an open issue on a phone: the status, a comment, *More*. */
 export function PhoneBar({ actions }: { readonly actions: readonly MenuAction[] }) {
-  return (
+  // The bar stands in the slot of the column of the app, under the page, and not over it.
+  const slot = use(BarSlot);
+  if (slot === null) {
+    return null;
+  }
+  return createPortal(
     <IssueBar
       onStatus={() => {
         // The same as the key for the status: a status the person may not change has no list.
@@ -23,6 +31,7 @@ export function PhoneBar({ actions }: { readonly actions: readonly MenuAction[] 
         goTo(historyId)?.querySelector("textarea")?.focus();
       }}
       actions={actions}
-    />
+    />,
+    slot,
   );
 }

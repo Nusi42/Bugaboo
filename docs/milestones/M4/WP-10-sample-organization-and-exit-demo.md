@@ -28,7 +28,7 @@ The sample organization uses workflows, files and notifications like a real team
 4. **Speed:**
    - the issue page with files, the notifications page, and a status change through the judge, against the budgets (PERF-01), in a release build;
    - one batch read of the authors on a page (M3-F113), if the notifications page shows it is needed.
-5. **Jobs for an access key (M3-F121):** decide with the lead whether a key may start a job over 1,000 issues, with its limits. If yes, build it.
+5. **Jobs for an access key (M3-F121):** decided by the lead: not in M4. A key keeps getting `auth.access_key_not_allowed` for a change over 1,000 issues; the follow-up moved to M5 (automation) in `docs/milestones/M3/follow-ups.md`.
 6. **The exit demo** (04-milestones, M4):
    - move a bug from Open to Done through its workflow, with *Ask for*;
    - paste a screenshot onto it;
