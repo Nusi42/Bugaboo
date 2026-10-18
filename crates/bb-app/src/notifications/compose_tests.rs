@@ -223,10 +223,11 @@ fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
 }
 
 #[test]
-fn wp13_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue() {
+fn wp13_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue()
+-> Result<(), bb_core::id::IdError> {
     let mut ids = SequentialIds::default();
     let item = NotificationItem {
-        id: bb_core::id::NotificationId::generate(&mut ids).expect("an ID"),
+        id: bb_core::id::NotificationId::generate(&mut ids)?,
         kind: NotificationKind::RunEnded,
         at: jiff::Timestamp::UNIX_EPOCH,
         read: false,
@@ -245,4 +246,5 @@ fn wp13_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue() {
             Message::from(message::NOTIFICATIONS_RUN_DONE).render()
         )]
     );
+    Ok(())
 }
