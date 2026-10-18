@@ -11,7 +11,7 @@ use std::collections::{HashMap, HashSet};
 use bb_core::ErrorCode;
 use bb_core::comment::Comment;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{CommentId, EntityId, IssueId, NotificationId, UserId};
+use bb_core::id::{CommentId, EntityId, IssueId, NotificationId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::{
@@ -200,7 +200,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 )
             }
             NotificationKind::RunEnded if renewal_failed(&row.changes) => {
-                Ok(Some(NotificationWhat::IssueIdsFailed))
+                let Some(project) = row
+                    .record
+                    .and_then(|record| ProjectId::from_bytes(record.to_bytes()).ok())
+                else {
+                    return Ok(None);
+                };
+                Ok(Some(NotificationWhat::IssueIdsFailed {
+                    project: self.project_label(actor, project).await?,
+                }))
             }
             NotificationKind::RunEnded => Ok(row.record.map(|run| NotificationWhat::RunEnded {
                 run,

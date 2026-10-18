@@ -28823,8 +28823,15 @@
             ]
           },
           "issue_ids_failed": {
-            "type": ["boolean", "null"],
-            "description": "Giving the issues of a project their new IDs gave up."
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLabelBody",
+                "description": "Giving the issues of a project their new IDs gave up: the project, as the person may name\nit."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "kind": {
             "$ref": "#/components/schemas/NotificationKind",
@@ -30341,8 +30348,15 @@
                   ]
                 },
                 "issue_ids_failed": {
-                  "type": ["boolean", "null"],
-                  "description": "Giving the issues of a project their new IDs gave up."
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectLabelBody",
+                      "description": "Giving the issues of a project their new IDs gave up: the project, as the person may name\nit."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "kind": {
                   "$ref": "#/components/schemas/NotificationKind",
