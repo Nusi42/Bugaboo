@@ -4,7 +4,9 @@
 
 use bb_core::ErrorCode;
 use bb_core::settings::SettingValue;
-use bb_core::sign_up_invitation::{HOURS, RESEND_AFTER_MINUTES};
+use bb_core::sign_up_invitation::{
+    HOURS, MAIL_MEMORY_MINUTES, MAILS_PER_HOUR_MAX, RESEND_AFTER_MINUTES,
+};
 use bb_core::time::SECONDS_PER_DAY;
 
 use super::scenarios::{text, token};
@@ -273,16 +275,34 @@ async fn auth_the_job_that_clears_sessions_removes_the_links_that_are_done() -> 
 }
 
 #[tokio::test]
+async fn sec_the_server_sends_only_so_many_sign_up_e_mails_in_an_hour() -> Outcome {
+    let world = world(true).await?;
+    let cap = usize::try_from(MAILS_PER_HOUR_MAX).map_err(text)?;
+    for number in 0..cap + 3 {
+        sign_up_for(&world, &format!("n{number}@example.test")).await?;
+    }
+    run_jobs(&world).await?;
+    assert_eq!(world.mailer.messages().len(), cap);
+    // An hour later the cap counts again from nothing.
+    world.clock.advance(MAIL_MEMORY_MINUTES * 60 + 1);
+    sign_up_for(&world, "late@example.test").await?;
+    run_jobs(&world).await?;
+    assert_eq!(world.mailer.messages().len(), cap + 1);
+    Ok(())
+}
+
+#[tokio::test]
 async fn gdpr_the_memory_of_an_e_mail_goes_when_it_is_no_use_any_more() -> Outcome {
     let world = world(true).await?;
     sign_up_for(&world, EVE).await?;
     run_jobs(&world).await?;
     assert_eq!(world.store.lock().state.sign_up_mail.len(), 1);
-    // Within the ten minutes it blocks the next e-mail, so it stays.
+    // Within the hour it blocks the next e-mail and counts for the cap, so it stays.
+    world.clock.advance(RESEND_AFTER_MINUTES * 60 + 1);
     world.ctx().purge_dead_sessions().await.map_err(text)?;
     assert_eq!(world.store.lock().state.sign_up_mail.len(), 1);
-    // After them it only keeps what is not needed: the job removes it, long before the link goes.
-    world.clock.advance(RESEND_AFTER_MINUTES * 60 + 1);
+    // After it only keeps what is not needed: the job removes it, long before the link goes.
+    world.clock.advance(MAIL_MEMORY_MINUTES * 60);
     world.ctx().purge_dead_sessions().await.map_err(text)?;
     assert!(world.store.lock().state.sign_up_mail.is_empty());
     assert_eq!(world.store.lock().state.sign_up_invitations.len(), 1);

@@ -20,7 +20,10 @@ use bb_core::id::{InvitationId, JobId};
 use bb_core::message::{self, Message};
 use bb_core::security_log::Digest;
 use bb_core::sign_in::SecurityAction;
-use bb_core::sign_up_invitation::{KEEP_HOURS, RESEND_AFTER_MINUTES, SignUpInvitation, lasts};
+use bb_core::sign_up_invitation::{
+    KEEP_HOURS, MAIL_MEMORY_MINUTES, MAILS_PER_HOUR_MAX, RESEND_AFTER_MINUTES, SignUpInvitation,
+    lasts,
+};
 use jiff::{SignedDuration, Timestamp};
 
 use super::ctx::Ctx;
@@ -32,10 +35,15 @@ use crate::jobs::{kind, kind_name};
 use crate::mailer::MailMessage;
 use crate::notifications::{MailJob, send_failure_for_job};
 use crate::ports::ChangeStore;
-use crate::store_macros::writes;
+use crate::store_macros::{reads, writes};
 
 /// What signing up needs from storage.
 pub trait SignUpStore: ChangeStore + 'static {
+    reads! {
+        /// How many e-mails went for sign-ups since this moment (the cap of the server per hour).
+        fn sign_up_mail_since(since: Timestamp) -> u64;
+    }
+
     writes! {
         /// Says that an e-mail goes to the address with this digest for the sign-up `invitation`:
         /// `true` when none went since `since` (or the one that went was for this very sign-up, a
@@ -53,7 +61,7 @@ pub trait SignUpStore: ChangeStore + 'static {
         /// returns how many.
         fn delete_old_sign_up_invitations(before: Timestamp, now: Timestamp) -> u64;
         /// Forgets the e-mails that went before `before`; returns how many. The memory of an
-        /// e-mail is needed only for `RESEND_AFTER_MINUTES` (GDPR: nothing kept without a use).
+        /// e-mail is needed only for `MAIL_MEMORY_MINUTES` (GDPR: nothing kept without a use).
         fn forget_old_sign_up_mail(before: Timestamp) -> u64;
     }
 }
@@ -118,6 +126,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(settings.sign_up_enabled && listed)
     }
 
+    /// Whether the server has sent `MAILS_PER_HOUR_MAX` sign-up e-mails in the last hour.
+    async fn sign_up_mail_cap_reached(&self) -> Result<bool, AppError> {
+        let since = self
+            .now()
+            .checked_sub(SignedDuration::from_hours(1))
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let sent = self
+            .store()
+            .sign_up_mail_since(since)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(sent >= MAILS_PER_HOUR_MAX)
+    }
+
     /// Takes the one e-mail an address gets in `RESEND_AFTER_MINUTES` minutes, for the sign-up
     /// `invitation`. `false` when one went already.
     async fn claim_sign_up_mail(
@@ -164,6 +186,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(());
         };
         if !self.sign_up_allows(&email).await? {
+            return Ok(());
+        }
+        if self.sign_up_mail_cap_reached().await? {
+            // The server has sent as many sign-up e-mails this hour as it will: this one is dropped.
+            tracing::warn!("the cap of sign-up e-mails for an hour is reached");
             return Ok(());
         }
         if !self.claim_sign_up_mail(address, invitation).await? {
@@ -233,7 +260,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .checked_sub(SignedDuration::from_hours(KEEP_HOURS))
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let resent = now
-            .checked_sub(SignedDuration::from_mins(RESEND_AFTER_MINUTES))
+            .checked_sub(SignedDuration::from_mins(MAIL_MEMORY_MINUTES))
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let event = self.event(
             EventActor::System,

@@ -78,6 +78,22 @@ impl AuthStorage {
 }
 
 impl SignUpStore for AuthStorage {
+    async fn sign_up_mail_since(&self, since: Timestamp) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(
+                Expr::col(Mail::Address).count(),
+                crate::schema::Computed::Total,
+            )
+            .from(Mail::Table)
+            .and_where(Expr::col(Mail::SentAt).gt(to_micros(since)));
+        match self.database.fetch_optional(&select).await? {
+            Some(row) => u64::try_from(row.get::<i64>(crate::schema::Computed::Total)?)
+                .map_err(|_| StoreError::Corrupt("a count")),
+            None => Ok(0),
+        }
+    }
+
     async fn claim_sign_up_mail(
         transaction: &mut Transaction,
         address: &Digest,

@@ -24,6 +24,15 @@ pub const fn lasts() -> SignedDuration {
 /// somebody else.
 pub const RESEND_AFTER_MINUTES: i64 = 10;
 
+/// How many sign-up e-mails the whole server sends in an hour, to any address. Signing up asks for
+/// no proof of the address, so without a cap for the server it could be used to send mail to
+/// strangers (the route has a limit for each network, which many networks together get around).
+pub const MAILS_PER_HOUR_MAX: u64 = 100;
+
+/// How long the memory of an e-mail that went is kept, in minutes: as long as it is needed, which
+/// is the longer of the wait for the same address and the hour that the cap counts over.
+pub const MAIL_MEMORY_MINUTES: i64 = 60;
+
 /// How long after the link ran out its row stays before the job that clears sessions deletes it, in
 /// hours.
 pub const KEEP_HOURS: i64 = 24;

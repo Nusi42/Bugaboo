@@ -24,6 +24,19 @@ impl FakeStore {
 }
 
 impl SignUpStore for FakeStore {
+    async fn sign_up_mail_since(&self, since: Timestamp) -> Result<u64, FakeError> {
+        Ok(self.read(|state| {
+            u64::try_from(
+                state
+                    .sign_up_mail
+                    .iter()
+                    .filter(|known| known.sent_at > since)
+                    .count(),
+            )
+            .unwrap_or(u64::MAX)
+        }))
+    }
+
     async fn claim_sign_up_mail(
         tx: &mut Tx,
         address: &Digest,

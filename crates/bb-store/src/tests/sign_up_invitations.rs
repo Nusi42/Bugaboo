@@ -191,12 +191,16 @@ async fn gdpr_the_memory_of_an_e_mail_is_forgotten_after_the_time_it_is_needed()
         // Both are remembered: another e-mail to them waits.
         assert!(!claim_mail(&storage, &mut source, &old, two, 0, 250).await?);
         assert!(!claim_mail(&storage, &mut source, &young, two, 0, 250).await?);
+        assert_eq!(storage.sign_up_mail_since(at(0)).await?, 2);
         let change = event(&mut source, 9);
         let gone = ChangeStore::record_change(&storage, &change, move |tx| {
             Box::pin(async move { AuthStorage::forget_old_sign_up_mail(tx, at(150)).await })
         })
         .await?;
         assert_eq!(gone, 1);
+        // The read for the cap counts what went since a moment, and what is forgotten no more.
+        assert_eq!(storage.sign_up_mail_since(at(0)).await?, 1);
+        assert_eq!(storage.sign_up_mail_since(at(200)).await?, 0);
         // The old one is forgotten (an e-mail may go), the young one is not.
         assert!(claim_mail(&storage, &mut source, &old, two, 0, 300).await?);
         assert!(!claim_mail(&storage, &mut source, &young, two, 0, 300).await?);
