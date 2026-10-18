@@ -2,7 +2,13 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { t } from "@bugaboo/messages";
-import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
+import {
+  type Browser,
+  type BrowserContext,
+  expect,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 
 import { pickTheme, type Theme, expectLook } from "./checks.ts";
 import { sampleStartMs } from "./sample.ts";
@@ -85,12 +91,14 @@ export interface Shot {
   readonly title: string;
   readonly theme: Theme;
   readonly device: Device;
+  /** What the server makes new on every run (a moment, a secret): painted over in the picture. */
+  readonly mask?: readonly Locator[];
 }
 
 /** Takes the whole open screen in the theme it shows, and remembers it for the gallery. */
 export async function takePicture(page: Page, shot: Shot): Promise<void> {
   const name = `${numbered(shot.order)}-${shot.screen}-${shot.device}`;
-  await shotWholeAs(page, name, SHOWCASE, shot.theme.id);
+  await shotWholeAs(page, name, SHOWCASE, shot.theme.id, shot.mask);
   const file = `${name}-${shot.theme.id}.png`;
   taken.set(file, {
     file,

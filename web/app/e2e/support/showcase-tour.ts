@@ -1,3 +1,4 @@
+import { maskOf, settle } from "./showcase-masks.ts";
 import { type Browser, type Page } from "@playwright/test";
 
 import { chooseTheme, type Theme } from "./checks.ts";
@@ -75,7 +76,15 @@ async function tourOf(
     stopsOf(who, device).map(({ screen, order }) => async () => {
       await screen.open({ page, ids });
       await way.show();
-      await takePicture(page, { order, screen: screen.slug, title: screen.title, theme, device });
+      await settle(screen.slug, page);
+      await takePicture(page, {
+        order,
+        screen: screen.slug,
+        title: screen.title,
+        theme,
+        device,
+        mask: maskOf(screen.slug, page),
+      });
     }),
   );
   await context.close();
