@@ -7,6 +7,11 @@ export function codeOf(error: unknown): ErrorCode | undefined {
   return error instanceof ApiError ? error.problem?.code : undefined;
 }
 
+/** The seconds the server asks to wait before trying again, if the error is an answer that says so. */
+export function retryAfterSecondsOf(error: unknown): number | undefined {
+  return error instanceof ApiError ? error.retryAfterSeconds : undefined;
+}
+
 /** The field a refusal is about (the word of a built-in field or the ID of an own field), if it names one. */
 export function fieldOf(error: unknown): string | undefined {
   return error instanceof ApiError ? (error.problem?.field ?? undefined) : undefined;

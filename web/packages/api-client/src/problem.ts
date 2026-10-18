@@ -50,12 +50,15 @@ export class ApiError extends Error {
   readonly status: number;
   /** The problem the server sent, if it sent one. */
   readonly problem: Readonly<Problem> | undefined;
+  /** How many seconds the server asks to wait before trying again (`Retry-After`), if it said. */
+  readonly retryAfterSeconds: number | undefined;
 
-  constructor(status: number, problem: Readonly<Problem> | undefined) {
+  constructor(status: number, problem: Readonly<Problem> | undefined, retryAfterSeconds?: number) {
     super(problem?.code ?? `http ${String(status)}`);
     this.name = "ApiError";
     this.status = status;
     this.problem = problem;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 
   /** The key of the message to show to the person. */

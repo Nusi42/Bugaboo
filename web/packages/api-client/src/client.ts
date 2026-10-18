@@ -36,15 +36,22 @@ function tokenFromPage(): string | undefined {
   return readCookie(CSRF_COOKIE, document.cookie);
 }
 
+/** The seconds of a `Retry-After` header; nothing when there is none or it is not a whole number of seconds. */
+function retryAfterOf(response: Response): number | undefined {
+  const text = response.headers.get("retry-after");
+  return text !== null && /^\d+$/u.test(text) ? Number(text) : undefined;
+}
+
 /** Turns an answer that is not a success into an {@link ApiError}, with the problem if there is one. */
 async function errorOf(response: Response): Promise<ApiError> {
+  const retryAfter = retryAfterOf(response);
   if (response.headers.get("content-type")?.includes(PROBLEM_CONTENT_TYPE) === true) {
     const body: unknown = await response.json().catch(() => null);
     if (isProblem(body)) {
-      return new ApiError(response.status, body);
+      return new ApiError(response.status, body, retryAfter);
     }
   }
-  return new ApiError(response.status, undefined);
+  return new ApiError(response.status, undefined, retryAfter);
 }
 
 /** Whether an answer is JSON the client may read (not a problem, which has its own type). */

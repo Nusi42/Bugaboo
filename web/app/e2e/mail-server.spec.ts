@@ -89,9 +89,17 @@ test("ntf_02 a wrong password is refused in words, and the button then waits", a
   // A page that was opened again does not know about the wait, and the server says it: too soon.
   await page.reload();
   await sendTestEmail(page);
-  await expect(
-    page.getByRole("region", { name: t("mail-server.test-title") }).getByRole("status"),
-  ).toContainText(t("mail-server.test-wait", { seconds: testEmailEverySeconds }));
+  // It names the time that is left, not the whole of the ten seconds (M4-F142).
+  const waits = page.getByRole("region", { name: t("mail-server.test-title") }).getByRole("status");
+  const marker = 77;
+  const [before = "", after = ""] = t("mail-server.test-wait", { seconds: marker }).split(
+    String(marker),
+  );
+  await expect(waits).toContainText(before);
+  const text = String(await waits.textContent());
+  const left = Number(text.slice(text.indexOf(before) + before.length).split(after)[0]);
+  expect(left).toBeGreaterThan(0);
+  expect(left).toBeLessThanOrEqual(testEmailEverySeconds);
 });
 
 test("ntf_02 a user name or a password without encryption is refused for another machine", async ({
