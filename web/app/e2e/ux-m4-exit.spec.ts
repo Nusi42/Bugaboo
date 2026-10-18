@@ -1,9 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { openIssueWithDetails, signIn } from "./support/flows.ts";
+import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
+import { signIn } from "./support/flows.ts";
 import { newIssueDialog, openNewIssueDialog, prepareWeb } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
+import { partIn } from "./support/parts.ts";
 import { openAction, tickIssues } from "./support/many-changes-pages.ts";
 import { boxOf, expectInsideTheScreen, footerButtons, linesOf } from "./support/windows.ts";
 
@@ -27,6 +29,7 @@ test("ux_a1 the new-issue window stays inside the screen, with its main button a
   page,
 }) => {
   await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
   await openNewIssueDialog(page);
   await expectInsideTheScreen(page, newIssueDialog(page));
   const { cancel, another, create } = await footerButtons(page);
@@ -79,8 +82,9 @@ test("ux_a2 a question of many changes is inside the screen, and its filled butt
 
 test("ux_a4 a date or a time of the issue page is on one line", async ({ page }) => {
   await signIn(page, ada);
-  await openIssueWithDetails(page, "WEB-1");
-  const date = page.getByText(/\d{4}\u2011\d{2}\u2011\d{2},/u).first();
+  await page.goto(issueAddress("WEB-1"));
+  // The moment a change was made, in the history under the issue.
+  const date = partIn(page, "history.when").first();
   await expect(date).toBeVisible();
   expect(await linesOf(date)).toBe(1);
 });
