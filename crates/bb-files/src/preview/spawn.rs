@@ -38,7 +38,8 @@ enum Runner {
         program: PathBuf,
         arguments: Vec<OsString>,
     },
-    /// The tests of the server make the preview themselves.
+    /// The process that asks makes the preview itself: the tests of the server and the developer tool
+    /// that makes the sample (the feature `testing`).
     #[cfg(any(test, feature = "testing"))]
     InProcess,
 }
@@ -56,8 +57,9 @@ impl PreviewCommand {
         }
     }
 
-    /// A command that makes the preview in the process that asks, without a child (tests of the
-    /// server only; the limits on pixels, size and output still hold, a crash is not survived).
+    /// A command that makes the preview in the process that asks, without a child (the tests of the
+    /// server and the developer tool that makes the sample, never the program that ships; the limits
+    /// on pixels, size and output still hold, a crash is not survived).
     #[cfg(any(test, feature = "testing"))]
     #[must_use]
     pub const fn in_process() -> Self {

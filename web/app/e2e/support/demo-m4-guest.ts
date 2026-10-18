@@ -2,9 +2,10 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { theTwo } from "./demo-m3-state.ts";
-import { good, openTheBug } from "./demo-m4-page.ts";
+import { good } from "./demo-m4-page.ts";
 import { BUG, CUSTOMER, guest, made } from "./demo-m4-state.ts";
 import { signIn } from "./flows.ts";
+import { issuePath } from "./mailbox.ts";
 import { openNotifications } from "./notifications.ts";
 
 // The steps of the exit demo of M4 that are the Guest's (`m4-exit-demo.spec.ts`): the Guest follows
@@ -18,6 +19,11 @@ export async function theGuestHearsInTheApp(page: Page): Promise<void> {
   await expect(page.getByText(t("status.done")).first()).toBeVisible();
   await expect(page.getByText(CUSTOMER)).toHaveCount(0);
   await expect(page.getByText(theTwo().second.name)).toHaveCount(0);
+  // The Team member who did it is not named either: the Guest reads the role.
+  await expect(page.getByText(theTwo().first.name)).toHaveCount(0);
+  await expect(
+    page.getByText(t("person.role", { role: t("starting-role.team-member") })).first(),
+  ).toBeVisible();
   await good(page, "06-the-guest-hears-in-the-app");
 }
 
@@ -32,9 +38,15 @@ export async function theGuestHearsByMail(page: Page): Promise<void> {
   for (const mail of toTheGuest()) {
     expect(mail.text).not.toContain(CUSTOMER);
     expect(mail.text).not.toContain(theTwo().second.name);
+    expect(mail.text).not.toContain(theTwo().first.name);
   }
-  // The links of the e-mail open the bug of the Guest.
+  // The link of the e-mail opens the bug of the Guest.
+  const mail = toTheGuest().find((each) => each.text.includes(BUG));
+  if (mail === undefined) {
+    throw new Error("The e-mail about the bug has gone.");
+  }
   await signIn(page, guest);
-  await openTheBug(page);
+  await page.goto(issuePath(mail));
+  await expect(page.getByRole("heading", { name: BUG })).toBeVisible();
   await good(page, "07-the-guest-opens-the-bug");
 }

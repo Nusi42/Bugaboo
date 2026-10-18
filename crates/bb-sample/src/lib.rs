@@ -48,6 +48,9 @@ mod relations;
 mod tests;
 mod together;
 mod together_files;
+mod together_reading;
+mod together_reports;
+mod together_team;
 
 pub use bb_dev_words::sample::{Layout, OrganizationNames, ProjectNames, SubProjectNames};
 pub use clock::SampleClock;

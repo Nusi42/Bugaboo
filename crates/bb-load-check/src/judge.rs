@@ -156,22 +156,24 @@ fn hidden_from_guests(book: &Book) -> Vec<String> {
         .collect()
 }
 
-/// A notification of a Guest is about an issue they reported and keeps no field they may not see.
+/// A notification of a Guest is about an issue of the book that they reported (one about any other
+/// issue, also one the book does not name, is found) and keeps no field they may not see.
 fn guests_hear_only_what_they_may(book: &Book, notifications: &[NotificationFacts]) -> Vec<String> {
     let hidden = hidden_from_guests(book);
     let mut found = Vec::new();
     for each in notifications {
-        let reported = each.issue.as_ref().and_then(|key| {
-            book.issues
+        if let Some(issue) = &each.issue {
+            let reported = book
+                .issues
                 .iter()
-                .find(|work| &work.key == key)
-                .and_then(|work| work.reporter.as_ref())
-        });
-        if each.issue.is_some() && reported != Some(&each.recipient) {
-            found.push(format!(
-                "a Guest was told of {}, which they did not report",
-                each.issue.as_deref().unwrap_or_default()
-            ));
+                .find(|work| &work.id == issue)
+                .is_some_and(|work| work.reporter.as_ref() == Some(&each.recipient));
+            if !reported {
+                found.push(format!(
+                    "a Guest was told of {}, which they did not report",
+                    book.name_of(issue)
+                ));
+            }
         }
         for field in each.fields.iter().filter(|field| hidden.contains(field)) {
             found.push(format!(
@@ -397,7 +399,7 @@ mod tests {
             ],
             notifications: vec![NotificationFacts {
                 recipient: "guest".to_owned(),
-                issue: Some("A-2".to_owned()),
+                issue: Some("id-2".to_owned()),
                 fields: vec!["status".to_owned()],
             }],
             locks: Vec::new(),
@@ -551,13 +553,15 @@ mod tests {
     #[test]
     fn test_concurrent_sec_06_a_guest_is_told_only_of_what_they_reported_and_may_see() {
         let (book, mut facts) = good_run();
-        // About an issue the team made.
-        facts.notifications[0].issue = Some("A-1".to_owned());
-        let found = judge(&book, &facts, &afterwards());
-        assert_eq!(found.len(), 1, "{found:?}");
-        assert!(found[0].contains("did not report"), "{found:?}");
+        // About an issue the team made, and about one that the book does not name at all.
+        for issue in ["id-1", "id-unknown"] {
+            facts.notifications[0].issue = Some(issue.to_owned());
+            let found = judge(&book, &facts, &afterwards());
+            assert_eq!(found.len(), 1, "{issue}: {found:?}");
+            assert!(found[0].contains("did not report"), "{found:?}");
+        }
         // A field the starting role hides from Guests, and one the run hid.
-        facts.notifications[0].issue = Some("A-2".to_owned());
+        facts.notifications[0].issue = Some("id-2".to_owned());
         for field in ["cost-center", "secret-field"] {
             facts.notifications[0].fields = vec!["status".to_owned(), field.to_owned()];
             let found = judge(&book, &facts, &afterwards());

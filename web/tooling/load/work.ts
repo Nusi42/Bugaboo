@@ -1,6 +1,7 @@
 import { dataOf } from "@bugaboo/api-client";
 
 import { screenshot } from "../../app/e2e/support/files.ts";
+import { uploadThroughApi } from "../../app/e2e/support/upload-api.ts";
 import { type Work } from "./book.ts";
 import { codeOf, type Context, tag } from "./context.ts";
 import { pick } from "./random.ts";
@@ -79,14 +80,8 @@ async function issueMovedSince(
 /** Adds a small picture to the issue, in one part. */
 export async function addFile(context: Context, work: Work): Promise<void> {
   const picture = screenshot(`picture-${tag(context)}.png`, PICTURE_SIDE, PICTURE_SIDE);
-  let started;
   try {
-    started = dataOf(
-      await context.client.POST("/api/v1/issues/{issue}/uploads", {
-        params: { path: { issue: work.key } },
-        body: { name: picture.name, size: picture.buffer.length },
-      }),
-    );
+    await uploadThroughApi(context.client, work.key, picture);
   } catch (error) {
     // An issue holds only so many files: when it is full, nobody can add one.
     if (codeOf(error) === ISSUE_IS_FULL) {
@@ -94,20 +89,6 @@ export async function addFile(context: Context, work: Work): Promise<void> {
     }
     throw error;
   }
-  dataOf(
-    await context.client.PUT("/api/v1/uploads/{upload}", {
-      params: { path: { upload: started.id }, query: { offset: 0 } },
-      // The route takes the bytes as they are: the serializer hands over the part itself.
-      body: "",
-      bodySerializer: () => picture.buffer,
-      headers: { "content-type": "application/octet-stream" },
-    }),
-  );
-  dataOf(
-    await context.client.POST("/api/v1/uploads/{upload}/finish", {
-      params: { path: { upload: started.id } },
-    }),
-  );
   context.book.fileAdded(work.key);
 }
 
@@ -117,6 +98,18 @@ export async function hear(context: Context): Promise<void> {
     await context.client.GET("/api/v1/notifications", { params: { query: {} } }),
   );
   dataOf(await context.client.GET("/api/v1/notifications/unread"));
+  if (context.guest) {
+    // What a Guest reads names only the issue they reported and shows no hidden field.
+    for (const item of listed.items) {
+      const key = item.issue?.key;
+      if (!context.issues.some((work) => work.key === key)) {
+        throw new Error(`A Guest was shown ${String(key)}, which they did not report.`);
+      }
+      if (JSON.stringify(item).includes(context.hiddenField)) {
+        throw new Error("A Guest was shown a hidden field.");
+      }
+    }
+  }
   const ids: string[] = [];
   for (const each of listed.items.slice(0, MARKED_AT_ONCE)) {
     ids.push(each.id);

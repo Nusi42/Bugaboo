@@ -73,6 +73,9 @@ pub(crate) struct DumpWork {
     /// Status changes after the people began to work together, by role (the Team members are the
     /// Administrators and the Team members).
     status_changes: BTreeMap<String, u64>,
+    /// Status changes that also named who does the work: the changes that *Ask for* it (the only
+    /// way a status change sets *Assigned to* in the sample).
+    asked_for_who: u64,
     /// Changes Contributors made to what they reported, after the people began to work together.
     own_changes: BTreeMap<String, u64>,
     /// Issues followed by Viewers.
@@ -237,7 +240,7 @@ impl Sample {
             let kind: &EntityKind = &event.entity.kind;
             let changes = |field: &str| event.changes.iter().find(|change| change.field == field);
             if kind.as_str() == issue
-                && changes("title").is_some_and(|change| change.before.is_none())
+                && changes(Field::Title.code()).is_some_and(|change| change.before.is_none())
                 && (role == "contributor" || role == "guest")
             {
                 *work.reports.entry(role.clone()).or_default() += 1;
@@ -252,9 +255,15 @@ impl Sample {
             if kind.as_str() == issue
                 && later
                 && role == "contributor"
-                && changes("title").is_none_or(|change| change.before.is_some())
+                && changes(Field::Title.code()).is_none_or(|change| change.before.is_some())
             {
                 *work.own_changes.entry(role.clone()).or_default() += 1;
+            }
+            if kind.as_str() == issue
+                && changes(Field::Status.code()).is_some_and(|change| change.before.is_some())
+                && changes(Field::AssignedTo.code()).is_some_and(|change| change.after.is_some())
+            {
+                work.asked_for_who += 1;
             }
             if kind.as_str() == follower
                 && role == "viewer"

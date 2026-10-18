@@ -44,7 +44,8 @@ pub struct IssueFacts {
 pub struct NotificationFacts {
     /// The ID of the person it is for.
     pub recipient: String,
-    /// The readable ID of the issue it is about, when it is about one of the run.
+    /// The ID of the issue it is about, as the row has it: an issue that is none of the run's is
+    /// kept too, so the judge can find it.
     pub issue: Option<String>,
     /// The fields of the changes it keeps.
     pub fields: Vec<String>,
@@ -162,12 +163,7 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
         for row in database.stored_notifications(person).await? {
             facts.notifications.push(NotificationFacts {
                 recipient: guest.clone(),
-                issue: row.issue.and_then(|issue| {
-                    book.issues
-                        .iter()
-                        .find(|work| work.id == issue.to_string())
-                        .map(|work| work.key.clone())
-                }),
+                issue: row.issue.map(|issue| issue.to_string()),
                 fields: row.changes.into_iter().map(|change| change.field).collect(),
             });
         }

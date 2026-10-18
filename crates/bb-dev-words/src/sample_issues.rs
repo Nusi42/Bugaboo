@@ -267,6 +267,7 @@ pub(crate) mod tests {
             },
             "status_changes": { "team_member": counts.team_status_changes },
             "own_changes": { "contributor": counts.contributor_changes },
+            "asked_for_who": 3,
             "follows": { "viewer": counts.viewer_follows },
         })
     }

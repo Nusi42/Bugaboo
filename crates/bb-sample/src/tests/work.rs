@@ -5,6 +5,7 @@
 
 use std::collections::BTreeMap;
 
+use bb_core::fields::Field;
 use bb_testing::{Failure, TestResult, each_database};
 use jiff::Timestamp;
 use serde_json::Value;
@@ -67,7 +68,7 @@ async fn m3_f111_every_role_does_only_what_the_role_may() -> TestResult {
             let mut made_by: BTreeMap<&str, &str> = BTreeMap::new();
             for event in events {
                 let entity = event["entity"].as_str().unwrap_or_default();
-                if entity.starts_with("issue#") && has_change(event, "title", true) {
+                if entity.starts_with("issue#") && has_change(event, Field::Title.code(), true) {
                     made_by.insert(entity, event["actor"].as_str().unwrap_or_default());
                 }
             }
@@ -91,10 +92,11 @@ async fn m3_f111_every_role_does_only_what_the_role_may() -> TestResult {
                         }
                         // A Guest never sets a status, a priority or an assignment.
                         if role == "guest" && kind == "issue" {
-                            for field in ["status", "priority", "assigned_to"] {
+                            for field in [Field::Status, Field::Priority, Field::AssignedTo] {
                                 assert!(
-                                    !has_change(event, field, false),
-                                    "a Guest changed {field}"
+                                    !has_change(event, field.code(), false),
+                                    "a Guest changed {}",
+                                    field.code()
                                 );
                             }
                         }
@@ -111,12 +113,9 @@ async fn m3_f111_every_role_does_only_what_the_role_may() -> TestResult {
                 }
                 *seen.entry(role.clone()).or_default() += 1;
             }
-            for role in ["contributor", "guest", "viewer", "team_member"] {
-                let role = role.replace('_', "-");
+            for role in ["contributor", "guest", "viewer"] {
                 assert!(
-                    seen.get(&role).copied().unwrap_or(0) > 0
-                        || role == "team-member"
-                        || role == "administrator",
+                    seen.get(role).copied().unwrap_or(0) > 0,
                     "{role} did nothing"
                 );
             }
@@ -187,6 +186,10 @@ async fn wf_04_the_project_with_a_workflow_of_its_own_asks_for_the_person_who_st
         .ok_or("the workflow of the project is missing")?;
     assert_eq!(own["asks"].as_u64(), Some(1));
     // The issues of that project went through the change that asks: the person who started the
-    // work is among the people assigned.
+    // work was named in the same change.
+    assert!(
+        work["asked_for_who"].as_u64().unwrap_or(0) > 0,
+        "no status change asked for who does the work"
+    );
     Ok(())
 }

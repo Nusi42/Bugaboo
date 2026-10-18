@@ -2,6 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 
 import { type ApiSession } from "./api.ts";
 import { screenshot } from "./files.ts";
+import { uploadThroughApi } from "./upload-api.ts";
 import { pageReads, readAll } from "./perf-reads.ts";
 import { timed, type Times } from "./perf.ts";
 import { inOrder } from "./sequence.ts";
@@ -58,26 +59,7 @@ export async function giveFiles(
           PICTURE_SIDE + at,
           PICTURE_SIDE + number,
         );
-        const started = dataOf(
-          await session.client.POST("/api/v1/issues/{issue}/uploads", {
-            params: { path: { issue } },
-            body: { name: picture.name, size: picture.buffer.length },
-          }),
-        );
-        dataOf(
-          await session.client.PUT("/api/v1/uploads/{upload}", {
-            params: { path: { upload: started.id }, query: { offset: 0 } },
-            // The route takes the bytes as they are: the serializer hands over the part itself.
-            body: "",
-            bodySerializer: () => picture.buffer,
-            headers: { "content-type": "application/octet-stream" },
-          }),
-        );
-        dataOf(
-          await session.client.POST("/api/v1/uploads/{upload}/finish", {
-            params: { path: { upload: started.id } },
-          }),
-        );
+        await uploadThroughApi(session.client, issue, picture);
       }),
     ),
   );
@@ -129,15 +111,18 @@ export async function changeStatus(
     return;
   }
   const asks = button.needs.some((need) => need.field === "assigned-to");
-  const changed = await timed(() =>
-    session.client.PATCH("/api/v1/issues/{issue}", {
-      params: { path: { issue } },
-      body: {
-        version: found.issue.version ?? 0,
-        status: button.to.key,
-        ...(asks ? { assigned_to: [person] } : {}),
-      },
-    }),
+  // The answer is read, so a refusal is an error of the test and never a fast change.
+  const changed = await timed(async () =>
+    dataOf(
+      await session.client.PATCH("/api/v1/issues/{issue}", {
+        params: { path: { issue } },
+        body: {
+          version: found.issue.version ?? 0,
+          status: button.to.key,
+          ...(asks ? { assigned_to: [person] } : {}),
+        },
+      }),
+    ),
   );
   times.add(
     asks ? "write: a status change that asks for who works" : "write: a status change",

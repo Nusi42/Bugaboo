@@ -253,6 +253,15 @@ export async function turnMailOn(admin: ApiSession, mailbox: Mailbox): Promise<v
   );
 }
 
+/** The path of the issue that an e-mail links to, as a person opens it: the link of the e-mail. */
+export function issuePath(mail: Mail): string {
+  const found = /https?:\/\/\S+\/issues\/[^\s"<>)]+/u.exec(mail.text);
+  if (found === null) {
+    throw new Error(`no link to an issue in the e-mail: ${mail.text}`);
+  }
+  return new URL(found[0]).pathname;
+}
+
 /** The address of the invitation page in an e-mail: the path and the secret after the hash sign. */
 export function invitationPath(mail: Mail): string {
   const found = /https?:\/\/\S+\/invitation#\S+/u.exec(mail.text);

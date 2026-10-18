@@ -121,6 +121,10 @@ impl WorkPlan {
             number(&work["own_changes"]["contributor"]),
             counts.contributor_changes,
         );
+        judge.present(
+            "status changes that asked for who does the work",
+            number(&work["asked_for_who"]),
+        );
         judge.near(
             "the issues Viewers follow",
             number(&work["follows"]["viewer"]),
@@ -206,6 +210,7 @@ mod tests {
             ("reports.contributor", json!(1), "contributors"),
             ("status_changes.team_member", json!(1), "Team members"),
             ("own_changes.contributor", json!(1), "Contributors"),
+            ("asked_for_who", json!(0), "asked for who"),
             ("follows.viewer", json!(0), "follow"),
             ("workflows", json!([]), "workflows"),
             ("own_workflow_projects", json!([]), "of its own"),

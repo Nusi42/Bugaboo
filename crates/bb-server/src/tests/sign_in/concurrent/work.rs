@@ -19,6 +19,8 @@ use super::super::layouts_http::{AN_EDITOR, LOCKS};
 use super::super::rig::Rig;
 use super::{ISSUES, Person, Shared, book, version_in};
 
+/// What the own field that Guests cannot see is called.
+const HIDDEN_FIELD_NAME: &str = "Internal note";
 const NOTIFICATIONS: &str = "/api/v1/notifications";
 const WORKFLOWS: &str = "/api/v1/workflows";
 /// The side of the pictures people add, in pixels: small, and different for every file.
@@ -46,22 +48,21 @@ pub(super) async fn workflow_that_asks(
         )
         .await?)?["lock_token"]
         .clone();
+    // The rules as the editor shows them; only the change that starts work gets one more.
     let changes: Vec<Value> = editor["changes"]
         .as_array()
         .ok_or("no status changes")?
         .iter()
         .map(|change| {
-            let asks = change["from"] == "open" && change["to"] == "in-progress";
+            let mut rules = change["rules"].clone();
+            if change["from"] == "open" && change["to"] == "in-progress" {
+                rules["ask_for"] = json!(["assigned-to"]);
+            }
             json!({
                 "from": change["from"],
                 "to": change["to"],
                 "button": change["button"],
-                "rules": {
-                    "who": {"roles": [], "groups": [], "assigned": false, "reported_by": false},
-                    "only_if": [],
-                    "must_fill": [],
-                    "ask_for": if asks { json!(["assigned-to"]) } else { json!([]) },
-                },
+                "rules": rules,
             })
         })
         .collect();
@@ -96,7 +97,7 @@ pub(super) async fn field_hidden_from_guests(
 ) -> Result<String, Failure> {
     let made = create_field(
         admin,
-        json!({"name": "Internal note", "kind": "text", "applies_to": "issues"}),
+        json!({"name": HIDDEN_FIELD_NAME, "kind": "text", "applies_to": "issues"}),
     )
     .await?;
     let field = id_in(&made)?;
@@ -201,9 +202,23 @@ impl Person {
     /// Opens the notifications, reads the unread count, and marks what is there as read.
     pub(super) async fn hear(&mut self) -> Result<(), Failure> {
         let listed = self.browser.send("GET", NOTIFICATIONS, None).await?;
-        let ids: Vec<Value> = ok(&listed)?["items"]
-            .as_array()
-            .ok_or("no notifications")?
+        let items = ok(&listed)?["items"].as_array().ok_or("no notifications")?;
+        if self.guest {
+            // What a Guest reads names only the issue they reported and shows no hidden field.
+            for item in items {
+                let key = item["issue"]["key"].as_str().unwrap_or_default();
+                if !self.issues.iter().any(|work| work.key == key) {
+                    return Err(
+                        format!("a Guest was shown {key}, which they did not report").into(),
+                    );
+                }
+                let text = item.to_string();
+                if text.contains(&self.hidden_field) || text.contains(HIDDEN_FIELD_NAME) {
+                    return Err(format!("a Guest was shown a hidden field: {text}").into());
+                }
+            }
+        }
+        let ids: Vec<Value> = items
             .iter()
             .take(20)
             .map(|each| each["id"].clone())

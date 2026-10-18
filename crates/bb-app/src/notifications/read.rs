@@ -6,12 +6,12 @@
 //! is not counted), the fields are read with the mask the person has now, and the people are
 //! shown as the kinds of people information say for this person now.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use bb_core::ErrorCode;
 use bb_core::comment::Comment;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{CommentId, IssueId, NotificationId, UserId};
+use bb_core::id::{CommentId, EntityId, IssueId, NotificationId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::{
@@ -50,6 +50,9 @@ pub(super) struct Reading<'a> {
     /// The issues and comments the rows of a batch name, read in one statement each (PERF-05).
     issues: HashMap<IssueId, Issue>,
     comments: HashMap<CommentId, Comment>,
+    /// Everything that was looked for, found or not: an issue or a comment that is gone (purged) is
+    /// not looked for again by every row that names it.
+    looked_for: HashSet<EntityId>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -63,6 +66,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             people: HashMap::new(),
             issues: HashMap::new(),
             comments: HashMap::new(),
+            looked_for: HashSet::new(),
         })
     }
 
@@ -77,17 +81,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut issues: Vec<IssueId> = rows
             .iter()
             .filter_map(|row| row.issue)
-            .filter(|id| !reading.issues.contains_key(id))
+            .filter(|id| !reading.looked_for.contains(&EntityId::from(*id)))
             .collect();
         issues.sort();
         issues.dedup();
         let mut comments: Vec<CommentId> = rows
             .iter()
             .filter_map(comment_of)
-            .filter(|id| !reading.comments.contains_key(id))
+            .filter(|id| !reading.looked_for.contains(&EntityId::from(*id)))
             .collect();
         comments.sort();
         comments.dedup();
+        reading
+            .looked_for
+            .extend(issues.iter().copied().map(EntityId::from));
+        reading
+            .looked_for
+            .extend(comments.iter().copied().map(EntityId::from));
         if !issues.is_empty() {
             for issue in self.issues_named(&issues).await? {
                 reading.issues.insert(issue.id, issue);

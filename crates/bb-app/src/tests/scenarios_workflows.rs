@@ -6,7 +6,6 @@ use bb_core::edit::EditLock;
 use bb_core::event::{EntityRef, RecordKind};
 use bb_core::id::{EditorId, IssueTypeId, LockToken, UserId};
 use bb_core::technical::TechnicalName;
-use bb_core::workflow::{ChangeDraft, StatusDraft};
 use jiff::Timestamp;
 
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -78,34 +77,12 @@ pub(crate) fn publish_of(
     editor: &WorkflowEditor,
     lock_token: LockToken,
 ) -> Result<PublishWorkflow, String> {
-    let slot = slot_of(editor)?;
-    Ok(PublishWorkflow {
-        session_token: token(world),
-        workflow: slot.id,
-        version: slot.version,
+    slot_of(editor)?;
+    PublishWorkflow::from_editor(
+        token(world),
+        &serde_json::to_value(editor).map_err(|error| error.to_string())?,
         lock_token,
-        name: editor.name.clone(),
-        statuses: editor
-            .statuses
-            .iter()
-            .map(|status| StatusDraft {
-                key: Some(status.key.clone()),
-                name: status.name.clone(),
-                group: status.group,
-            })
-            .collect(),
-        changes: editor
-            .changes
-            .iter()
-            .map(|change| ChangeDraft {
-                from: change.from.to_string(),
-                to: change.to.to_string(),
-                button: change.button.clone(),
-                rules: change.rules.clone(),
-            })
-            .collect(),
-        moves: Vec::new(),
-    })
+    )
 }
 
 /// Publishes the workflow of a project as Ada after `change` changed what the editor showed; the

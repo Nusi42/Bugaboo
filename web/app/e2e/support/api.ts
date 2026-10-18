@@ -41,12 +41,13 @@ function responseOf(answer: Answered): Response {
 
 /** Sends what the client made through the context of a browser, and gives back what the server said. */
 async function send(context: APIRequestContext, asked: Request, origin: string): Promise<Response> {
-  const body = await asked.text();
+  // The bytes of a part of an upload must not be read as text.
+  const body = isAPart(asked) ? Buffer.from(await asked.arrayBuffer()) : await asked.text();
   const answer = await context.fetch(asked.url, {
     method: asked.method,
     // The server only takes changes that come from its own pages.
     headers: { origin, ...Object.fromEntries(asked.headers) },
-    ...(body === "" ? {} : { data: body }),
+    ...(body.length === 0 ? {} : { data: body }),
     maxRedirects: 0,
   });
   const headers: (readonly [string, string])[] = [];
@@ -56,8 +57,13 @@ async function send(context: APIRequestContext, asked: Request, origin: string):
   return responseOf({ status: answer.status(), headers, body: await answer.text() });
 }
 
-/** The bytes of a part of an upload, which must not be read as text. */
-async function bytesOf(asked: Request): Promise<{ body: string; bytes: () => Uint8Array }> {
+/** Whether the request sends the bytes of a part of an upload. */
+function isAPart(asked: Request): boolean {
+  return asked.headers.get("content-type") === "application/octet-stream";
+}
+
+/** The bytes of a part of an upload, taken as they are. */
+async function uploadPartOf(asked: Request): Promise<{ body: string; bytes: () => Uint8Array }> {
   const bytes = new Uint8Array(await asked.arrayBuffer());
   return { body: "", bytes: () => bytes };
 }
@@ -75,9 +81,7 @@ async function sendPooled(jar: CookieJar, asked: Request, origin: string): Promi
         ...(cookie === undefined ? {} : { cookie }),
         ...Object.fromEntries(asked.headers),
       },
-      ...(asked.headers.get("content-type") === "application/octet-stream"
-        ? await bytesOf(asked)
-        : { body: await asked.text() }),
+      ...(isAPart(asked) ? await uploadPartOf(asked) : { body: await asked.text() }),
     },
     origin,
   );

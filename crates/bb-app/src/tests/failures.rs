@@ -293,7 +293,6 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
     .into_value();
     let ctx = world.ctx();
     let actor = ctx.actor(&token).await?;
-    let ada = world.admin.person.id;
     // A project that does not exist is hidden, has no role label and may not be made in: facts.
     let nowhere =
         ProjectId::from_parts(Timestamp::UNIX_EPOCH, [0; 10]).map_err(|e| e.to_string())?;
@@ -311,6 +310,7 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
         ProjectLabel::Visible { .. }
     ));
 
+    let other = world.person("bea@example.test").await?.person.id;
     // Ada sees the members of a project by their role only, so the label of a role is looked for.
     let admin_role = ctx
         .store()
@@ -347,13 +347,14 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
         ctx.may_create_projects_beside(&actor, Some(made.id)).await,
         Err(AppError::Internal(_))
     ));
-    // The role label of a person is looked for only for a viewer who sees people by their role.
+    // The role label of another person is looked for only for a viewer who sees people by their
+    // role (a person is never shown their own role).
     assert!(matches!(
         ctx.person_ref(
             &role_only,
             PeopleKind::ProjectMembers,
             PeopleContext::Ordinary,
-            ada,
+            other,
         )
         .await,
         Err(AppError::Internal(_))

@@ -159,6 +159,9 @@ test("perf_01_a_status_change_through_the_judge_stays_under_100_ms_p95_on_the_sa
   await changeStatus(session, firstOf(keys), me, new Times());
   const times = new Times();
   await inOrder(keys.map((key) => () => changeStatus(session, key, me, times)));
+  // Every issue was moved: a change that was left out would make the numbers say less than they do.
+  const samples = Object.values(times.summaries()).reduce((all, each) => all + each.requests, 0);
+  expect(samples).toBe(STATUS_CHANGES);
   writeNumbers("perf-01-status-change", build, times);
   expectInBudget(times);
   await session.dispose();

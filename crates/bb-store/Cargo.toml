@@ -9,7 +9,8 @@ publish.workspace = true
 [features]
 # Test hooks that must not be in the program: `Database::migrate_up_to` (an older database),
 # `Database::rename_table_for_tests` (a store that fails half way), and the plain reads of the
-# invariants of a load run (`events_of_kind`, `edit_lock_rows`, `stored_draft`, `stored_issue`),
+# invariants of a load run (`events_of_kind`, `edit_lock_rows`, `stored_draft`, `stored_issue`,
+# `stored_notifications`, `stored_attachments`),
 # which ignore draft keeping, the trash and paging. Only `[dev-dependencies]` and the developer
 # tools `bb-sample` and `bb-load-check` switch it on (ARCH-DEPS), as for `fake-ids` of `bb-core`
 # (M1-F56). A build of the whole workspace (`cargo build --workspace`) has the hooks in every
