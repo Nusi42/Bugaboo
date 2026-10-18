@@ -61,10 +61,7 @@ export async function requireFoundInVersion(page: Page): Promise<void> {
     .getByRole("group", { name: t("workflows.must-fill") })
     .getByText(foundInVersion, { exact: true })
     .click();
-  await rules
-    .getByRole("button", { name: t("workflows.rules-done"), exact: true })
-    .last()
-    .click();
+  await rules.getByRole("button", { name: t("workflows.rules-done"), exact: true }).click();
   await expect(rules).toHaveCount(0);
 }
 
