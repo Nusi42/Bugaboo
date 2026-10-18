@@ -1,6 +1,7 @@
 import { notificationFilterWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Button, buttonLook, Card, Link, Tabs, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, Card, Tabs } from "@bugaboo/ui";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { paths } from "../../shared/paths.ts";
@@ -23,27 +24,40 @@ const filterName = {
  */
 export function NotificationsPage() {
   usePageTitle(t("notifications.title"));
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<Schema<"NotificationFilter">>("all");
   const unread = useUnreadNotifications() ?? 0;
   const readAll = useReadNotifications();
   // *Mark all as read* goes up to the newest one on the screen: a later one stays unread.
   const newest = useNewestNotification();
   return (
-    <Card heading={t("notifications.title")} level={1}>
-      <div {...partOf(part.notificationsBar)}>
-        {unread === 0 || newest === undefined ? null : (
+    <Card
+      heading={t("notifications.title")}
+      level={1}
+      actions={
+        <>
+          {unread === 0 || newest === undefined ? null : (
+            <Button
+              look={buttonLook.quiet}
+              isPending={readAll.isPending}
+              onPress={() => {
+                readAll.mutate({ body: { up_to: newest } });
+              }}
+            >
+              {t("notifications.mark-all-read")}
+            </Button>
+          )}
           <Button
             look={buttonLook.quiet}
-            isPending={readAll.isPending}
             onPress={() => {
-              readAll.mutate({ body: { up_to: newest } });
+              void navigate({ href: paths.notificationSettings });
             }}
           >
-            {t("notifications.mark-all-read")}
+            {t("notifications.customize")}
           </Button>
-        )}
-        <Link href={paths.notificationSettings}>{t("notifications.customize")}</Link>
-      </div>
+        </>
+      }
+    >
       <Tabs
         label={t("notifications.filters")}
         tabs={notificationFilterWords.map((each) => ({ id: each, label: t(filterName[each]) }))}
