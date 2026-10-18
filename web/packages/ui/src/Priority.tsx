@@ -1,14 +1,14 @@
-import { ArrowDown, ArrowUp, ChevronsUp, Minus, type LucideIcon } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUp, Equal, type LucideIcon } from "lucide-react";
 
 import { partOf } from "./parts.ts";
 import type { PriorityWord } from "./status.ts";
 import { part } from "./tokens.ts";
 
-/** The drawing of each priority: a double arrow up, an arrow up, a line, an arrow down. */
+/** The drawing of each priority: a double arrow up, an arrow up, an equals sign (a line alone read as a stray dash), an arrow down. */
 const glyphs: Readonly<Record<PriorityWord, LucideIcon>> = {
   critical: ChevronsUp,
   high: ArrowUp,
-  normal: Minus,
+  normal: Equal,
   low: ArrowDown,
 };
 
