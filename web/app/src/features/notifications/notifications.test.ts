@@ -134,9 +134,31 @@ describe("ntf_01 a row says in a sentence what happened", () => {
     expect(
       say(entry({ kind: "run_ended", issue: null, by: null, run: "r", run_done: false })),
     ).toEqual([t("notifications.run-failed")]);
+  });
+});
+
+describe("m4_f144 a renewal of issue IDs that gave up names the project", () => {
+  it("names a project the person may name, and says so for one they cannot see", () => {
     expect(
-      say(entry({ kind: "run_ended", issue: null, by: null, issue_ids_failed: true })),
-    ).toEqual([t("notifications.issue-ids-failed")]);
+      say(
+        entry({
+          kind: "run_ended",
+          issue: null,
+          by: null,
+          issue_ids_failed: { shown: "visible", id: "p", name: "Website" },
+        }),
+      ),
+    ).toEqual([t("notifications.issue-ids-failed", { project: "Website" })]);
+    expect(
+      say(
+        entry({
+          kind: "run_ended",
+          issue: null,
+          by: null,
+          issue_ids_failed: { shown: "hidden" },
+        }),
+      ),
+    ).toEqual([t("notifications.issue-ids-failed-hidden")]);
   });
 
   it("says who added a file, with its name when the file is still there", () => {

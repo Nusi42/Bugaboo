@@ -1,27 +1,37 @@
 //! The words of the values in an e-mail: a status, a priority, yes or no, a length of time, a
 //! number, a day, a moment and a list of names, worded the way the screen words them (the history
-//! of an issue, `web/app/src/shared/change-value.ts`), so a person reads one thing in both places.
+//! of an issue, `web/app/src/shared/own-value-text.ts` and `format.ts`), so a person reads one
+//! thing in both places. The test vectors in `tools/testdata/value-words.json` hold the two
+//! implementations together: a test here and a test in the browser app both read them.
 //!
 //! The screen writes days, moments and numbers the way the person chose under *Region*, and lets
-//! the browser fill in what the person left on *device*. A server does not know the device and has
-//! no list of time zones, so an e-mail writes a day in the order the person chose (the usual
-//! year, month, day while they chose none), a number with the marks they chose, and a moment in
-//! UTC, and says so.
+//! the browser fill in what the person left on *device*. A server does not know the device, so an
+//! e-mail takes what the organization chose for that setting, and the usual way (year, month, day;
+//! a point before decimals; UTC) when the organization chose nothing either. A moment is followed
+//! by the name of its time zone, because an e-mail is read away from the screen.
 
 use bb_core::fields::Field;
 use bb_core::issue::Priority;
 use bb_core::message::{self, Message};
 use bb_core::own_fields::FieldType;
-use bb_core::settings::{Layers, REGION_DATE_FORMAT, REGION_NUMBER_FORMAT};
+use bb_core::settings::{
+    DEVICE, Layers, REGION_DATE_FORMAT, REGION_NUMBER_FORMAT, REGION_TIME_ZONE, Setting, Text,
+};
 use bb_core::workflow::starter::STARTERS;
 use jiff::Timestamp;
 use jiff::civil::Date;
+use jiff::tz::TimeZone;
 use serde_json::Value;
 
-const SECONDS_PER_MINUTE: i64 = 60;
-const MINUTES_PER_HOUR: i64 = 60;
+const SECONDS_PER_MINUTE: f64 = 60.0;
+const MINUTES_PER_HOUR: f64 = 60.0;
+const HOURS_ON_A_CLOCK: i8 = 12;
 /// The digits in a group of a big number.
 const GROUP: usize = 3;
+/// How many decimals a number is written with at the most (as the browser writes it).
+const DECIMALS_MOST: usize = 3;
+/// The zone of a person and an organization who chose none.
+const UTC: &str = "UTC";
 
 /// In which order a day is written; the values of the setting *Date format*.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -39,26 +49,54 @@ struct NumberMarks {
 }
 
 /// What the person chose under *Region* that an e-mail can follow.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Region {
     dates: DateOrder,
     numbers: NumberMarks,
+    zone_name: String,
+    zone: TimeZone,
+}
+
+/// The value of a setting of *Region* for an e-mail: the person's, or the organization's where the
+/// person left it on *device*, or `None` where both did.
+fn chosen(layers: &Layers, setting: &Setting<Text>) -> Option<String> {
+    let mut value = layers.text(setting);
+    if value == DEVICE {
+        let mut organization = layers.clone();
+        organization.person.clear();
+        value = organization.text(setting);
+    }
+    (value != DEVICE).then_some(value)
 }
 
 impl Region {
-    /// What the layers of a person say; what is left on *device* is written in the usual way.
+    /// What the layers of a person say.
     pub(crate) fn of(layers: &Layers) -> Self {
-        let dates = match layers.text(&REGION_DATE_FORMAT).as_str() {
-            "day-month-year" => DateOrder::DayMonthYear,
-            "month-day-year" => DateOrder::MonthDayYear,
+        Self::from_choices(
+            chosen(layers, &REGION_DATE_FORMAT).as_deref(),
+            chosen(layers, &REGION_NUMBER_FORMAT).as_deref(),
+            chosen(layers, &REGION_TIME_ZONE).as_deref(),
+        )
+    }
+
+    /// The region for the values of the three settings; `None` is *device* with nothing to take
+    /// its place. A zone that the time-zone data does not know counts as none.
+    pub(crate) fn from_choices(
+        date_format: Option<&str>,
+        number_format: Option<&str>,
+        time_zone: Option<&str>,
+    ) -> Self {
+        let dates = match date_format {
+            Some("day-month-year") => DateOrder::DayMonthYear,
+            Some("month-day-year") => DateOrder::MonthDayYear,
             _ => DateOrder::YearMonthDay,
         };
-        let numbers = match layers.text(&REGION_NUMBER_FORMAT).as_str() {
-            "comma" => NumberMarks {
+        let numbers = match number_format {
+            Some("comma") => NumberMarks {
                 group: ".",
                 decimal: ",",
             },
-            "space" => NumberMarks {
+            Some("space") => NumberMarks {
                 group: "\u{202F}",
                 decimal: ",",
             },
@@ -67,10 +105,18 @@ impl Region {
                 decimal: ".",
             },
         };
-        Self { dates, numbers }
+        let (zone_name, zone) = time_zone
+            .and_then(|name| TimeZone::get(name).ok().map(|zone| (name.to_owned(), zone)))
+            .unwrap_or_else(|| (UTC.to_owned(), TimeZone::UTC));
+        Self {
+            dates,
+            numbers,
+            zone_name,
+            zone,
+        }
     }
 
-    fn day(self, date: Date) -> String {
+    fn day(&self, date: Date) -> String {
         let (year, month, day) = (date.year(), date.month(), date.day());
         match self.dates {
             DateOrder::DayMonthYear => format!("{day:02}.{month:02}.{year:04}"),
@@ -79,8 +125,26 @@ impl Region {
         }
     }
 
-    fn number(self, number: &serde_json::Number) -> String {
-        let written = number.to_string();
+    /// A day and a time of day in the zone of the person, as the screen writes them: the day in
+    /// the person's order, the time on a clock of twelve hours.
+    fn moment(&self, moment: Timestamp) -> String {
+        let zoned = moment.to_zoned(self.zone.clone());
+        let hour = zoned.hour();
+        let on_clock = match hour % HOURS_ON_A_CLOCK {
+            0 => HOURS_ON_A_CLOCK,
+            hour => hour,
+        };
+        let minute = format!("{:02}", zoned.minute());
+        let time = if hour < HOURS_ON_A_CLOCK {
+            message::mail_time_am(on_clock, minute)
+        } else {
+            message::mail_time_pm(on_clock, minute)
+        };
+        format!("{}, {}", self.day(zoned.date()), time.render())
+    }
+
+    fn number(&self, number: &serde_json::Number) -> String {
+        let written = rounded_half_up(&number.to_string());
         let (sign, digits) = written
             .strip_prefix('-')
             .map_or(("", written.as_str()), |rest| ("-", rest));
@@ -97,6 +161,47 @@ impl Region {
         } else {
             format!("{sign}{grouped}{}{decimals}", self.numbers.decimal)
         }
+    }
+}
+
+/// A number as plain digits with at most [`DECIMALS_MOST`] decimals, rounded half up on the digits
+/// as they are written (the browser's rule: 0.0625 is 0.063, not 0.062).
+fn rounded_half_up(written: &str) -> String {
+    let (sign, digits) = written
+        .strip_prefix('-')
+        .map_or(("", written), |rest| ("-", rest));
+    let Some((whole, decimals)) = digits.split_once('.') else {
+        return written.to_owned();
+    };
+    if decimals.len() <= DECIMALS_MOST {
+        return written.to_owned();
+    }
+    let (kept, rest) = decimals.split_at(DECIMALS_MOST);
+    let mut digits: Vec<u8> = format!("{whole}{kept}").bytes().collect();
+    if rest.starts_with(['5', '6', '7', '8', '9']) {
+        // Carry: 9 becomes 0 and the digit before it goes up; a new leading 1 if all were nines.
+        let mut at = digits.len();
+        loop {
+            if at == 0 {
+                digits.insert(0, b'1');
+                break;
+            }
+            at -= 1;
+            if digits[at] == b'9' {
+                digits[at] = b'0';
+            } else {
+                digits[at] += 1;
+                break;
+            }
+        }
+    }
+    let text = String::from_utf8_lossy(&digits).into_owned();
+    let (whole, kept) = text.split_at(text.len() - DECIMALS_MOST);
+    let kept = kept.trim_end_matches('0');
+    if kept.is_empty() {
+        format!("{sign}{whole}")
+    } else {
+        format!("{sign}{whole}.{kept}")
     }
 }
 
@@ -124,9 +229,20 @@ pub(crate) fn word_of(field: Option<Field>, text: &str) -> String {
     known.map_or_else(|| text.to_owned(), |key| Message::from(key).render())
 }
 
-/// A value of an own field that the screen words itself; `None` for a value that does not fit the
-/// kind (the screen shows nothing for it either).
-pub(crate) fn typed_text(kind: FieldType, value: &Value, region: Region) -> Option<String> {
+/// A value of an own field that the screen words itself, as an e-mail words it: a moment is
+/// followed by the name of its time zone. `None` for a value that does not fit the kind (the
+/// screen shows nothing for it either).
+pub(crate) fn typed_text(kind: FieldType, value: &Value, region: &Region) -> Option<String> {
+    let words = typed_words(kind, value, region)?;
+    Some(if kind == FieldType::DateTime {
+        message::mail_date_time(words, &region.zone_name).render()
+    } else {
+        words
+    })
+}
+
+/// The words of a value of an own field, as the screen words them for the same region.
+fn typed_words(kind: FieldType, value: &Value, region: &Region) -> Option<String> {
     match (kind, value) {
         (FieldType::YesNo, Value::Bool(yes)) => Some(
             Message::from(if *yes {
@@ -136,7 +252,10 @@ pub(crate) fn typed_text(kind: FieldType, value: &Value, region: Region) -> Opti
             })
             .render(),
         ),
-        (FieldType::Duration, Value::Number(seconds)) => seconds.as_i64().map(duration_text),
+        (FieldType::Duration, Value::Number(seconds)) => seconds
+            .as_f64()
+            .filter(|seconds| *seconds >= 0.0)
+            .map(duration_text),
         (FieldType::WholeNumber | FieldType::Decimal, Value::Number(number)) => {
             Some(region.number(number))
         }
@@ -144,17 +263,7 @@ pub(crate) fn typed_text(kind: FieldType, value: &Value, region: Region) -> Opti
             day.parse::<Date>().ok().map(|day| region.day(day))
         }
         (FieldType::DateTime, Value::String(moment)) => {
-            let moment = moment
-                .parse::<Timestamp>()
-                .ok()?
-                .to_zoned(jiff::tz::TimeZone::UTC);
-            Some(
-                message::mail_date_time(
-                    region.day(moment.date()),
-                    format!("{:02}:{:02}", moment.hour(), moment.minute()),
-                )
-                .render(),
-            )
+            moment.parse::<Timestamp>().ok().map(|at| region.moment(at))
         }
         (FieldType::WholeNumber | FieldType::Decimal, Value::String(text)) => Some(text.clone()),
         (
@@ -171,134 +280,175 @@ pub(crate) fn typed_text(kind: FieldType, value: &Value, region: Region) -> Opti
     }
 }
 
-/// Seconds as "2h 5m", "45m" or "0m": whole minutes.
-fn duration_text(seconds: i64) -> String {
-    let minutes_all = seconds / SECONDS_PER_MINUTE;
-    let (hours, minutes) = (
-        minutes_all / MINUTES_PER_HOUR,
-        minutes_all % MINUTES_PER_HOUR,
-    );
+/// Seconds as "2h 5m", "45m" or "0m": whole minutes; a part of a second is dropped like the rest of
+/// a minute.
+fn duration_text(seconds: f64) -> String {
+    let minutes_all = (seconds / SECONDS_PER_MINUTE).floor();
+    let hours = (minutes_all / MINUTES_PER_HOUR).floor();
+    let minutes = minutes_all - hours * MINUTES_PER_HOUR;
     let hour = Message::from(message::FIELDS_UNIT_HOUR).render();
     let minute = Message::from(message::FIELDS_UNIT_MINUTE).render();
-    match (hours, minutes) {
-        (0, minutes) => format!("{minutes}{minute}"),
-        (hours, 0) => format!("{hours}{hour}"),
-        (hours, minutes) => format!("{hours}{hour} {minutes}{minute}"),
+    if hours == 0.0 {
+        format!("{minutes}{minute}")
+    } else if minutes == 0.0 {
+        format!("{hours}{hour}")
+    } else {
+        format!("{hours}{hour} {minutes}{minute}")
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use bb_core::settings::{OrganizationValue, SettingValue};
+    use serde::Deserialize;
     use serde_json::json;
 
     use super::*;
 
-    const fn region(dates: DateOrder, group: &'static str, decimal: &'static str) -> Region {
-        Region {
-            dates,
-            numbers: NumberMarks { group, decimal },
+    /// The vectors that the browser app reads too (`web/app/src/shared/value-words.test.ts`).
+    const VECTORS: &str = include_str!("../../../../tools/testdata/value-words.json");
+
+    #[derive(Deserialize)]
+    struct Choices {
+        #[serde(rename = "dateFormat")]
+        date_format: String,
+        #[serde(rename = "numberFormat")]
+        number_format: String,
+        #[serde(rename = "timeZone")]
+        time_zone: String,
+    }
+
+    #[derive(Deserialize)]
+    struct Case {
+        name: String,
+        kind: FieldType,
+        value: Value,
+        region: String,
+        expected: Option<String>,
+    }
+
+    #[derive(Deserialize)]
+    struct Word {
+        name: String,
+        field: String,
+        text: String,
+        expected: String,
+    }
+
+    #[derive(Deserialize)]
+    struct List {
+        names: Vec<String>,
+        expected: String,
+    }
+
+    #[derive(Deserialize)]
+    struct Vectors {
+        regions: std::collections::BTreeMap<String, Choices>,
+        cases: Vec<Case>,
+        words: Vec<Word>,
+        lists: Vec<List>,
+    }
+
+    #[test]
+    fn m4_f141_the_words_are_the_ones_the_browser_test_expects() {
+        let vectors: Vectors = serde_json::from_str(VECTORS).expect("the vectors are JSON");
+        assert!(vectors.cases.len() > 20, "the vectors are not empty");
+        for case in vectors.cases {
+            let choices = vectors.regions.get(&case.region).expect("a known region");
+            let region = Region::from_choices(
+                Some(&choices.date_format),
+                Some(&choices.number_format),
+                Some(&choices.time_zone),
+            );
+            let words = typed_words(case.kind, &case.value, &region);
+            assert_eq!(words, case.expected, "case {}", case.name);
+        }
+        for word in vectors.words {
+            let said = word_of(Field::from_code(&word.field), &word.text);
+            assert_eq!(said, word.expected, "word {}", word.name);
+        }
+        for list in vectors.lists {
+            assert_eq!(
+                list_text(&list.names),
+                list.expected,
+                "list {:?}",
+                list.names
+            );
         }
     }
 
-    const USUAL: Region = region(DateOrder::YearMonthDay, ",", ".");
+    fn layers(person: &[(&str, &str)], organization: &[(&str, &str)]) -> Layers {
+        let mut layers = Layers::default();
+        for (key, value) in person {
+            layers
+                .person
+                .insert((*key).to_owned(), SettingValue::Text((*value).to_owned()));
+        }
+        for (key, value) in organization {
+            layers.organization.insert(
+                (*key).to_owned(),
+                OrganizationValue {
+                    value: SettingValue::Text((*value).to_owned()),
+                    locked: false,
+                },
+            );
+        }
+        layers
+    }
 
-    fn text(kind: FieldType, value: &Value, region: Region) -> Option<String> {
-        typed_text(kind, value, region)
+    const MOMENT: &str = "2026-10-05T07:30:00Z";
+
+    fn moment_in(layers: &Layers) -> Option<String> {
+        typed_text(FieldType::DateTime, &json!(MOMENT), &Region::of(layers))
     }
 
     #[test]
-    fn yes_and_no_are_the_words_of_the_screen() {
-        assert_eq!(
-            text(FieldType::YesNo, &json!(true), USUAL).as_deref(),
-            Some("Yes")
+    fn m4_f140_a_moment_is_in_the_zone_of_the_person_and_names_it() {
+        let own = layers(
+            &[
+                ("region.time-zone", "Europe/Berlin"),
+                ("region.date-format", "day-month-year"),
+            ],
+            &[],
         );
         assert_eq!(
-            text(FieldType::YesNo, &json!(false), USUAL).as_deref(),
-            Some("No")
-        );
-    }
-
-    #[test]
-    fn a_length_of_time_is_hours_and_whole_minutes() {
-        let seconds = |seconds: i64| text(FieldType::Duration, &json!(seconds), USUAL);
-        assert_eq!(seconds(7_500).as_deref(), Some("2h 5m"));
-        assert_eq!(seconds(2_700).as_deref(), Some("45m"));
-        assert_eq!(seconds(7_200).as_deref(), Some("2h"));
-        assert_eq!(seconds(30).as_deref(), Some("0m"));
-    }
-
-    #[test]
-    fn numbers_follow_the_marks_the_person_chose() {
-        let comma = region(DateOrder::YearMonthDay, ".", ",");
-        assert_eq!(
-            text(FieldType::Decimal, &json!(1234.5), USUAL).as_deref(),
-            Some("1,234.5")
-        );
-        assert_eq!(
-            text(FieldType::Decimal, &json!(1234.5), comma).as_deref(),
-            Some("1.234,5")
-        );
-        assert_eq!(
-            text(FieldType::WholeNumber, &json!(-1_234_567), USUAL).as_deref(),
-            Some("-1,234,567")
-        );
-        assert_eq!(
-            text(FieldType::WholeNumber, &json!(12), USUAL).as_deref(),
-            Some("12")
+            moment_in(&own).as_deref(),
+            Some("05.10.2026, 9:30 AM (Europe/Berlin)")
         );
     }
 
     #[test]
-    fn a_day_follows_the_order_the_person_chose() {
-        let day = json!("2026-10-05");
-        let order =
-            |dates| text(FieldType::Date, &day, region(dates, ",", ".")).unwrap_or_default();
-        assert_eq!(order(DateOrder::YearMonthDay), "2026-10-05");
-        assert_eq!(order(DateOrder::DayMonthYear), "05.10.2026");
-        assert_eq!(order(DateOrder::MonthDayYear), "10/05/2026");
+    fn m4_f140_a_person_on_device_gets_the_zone_of_the_organization() {
+        let on_device = layers(
+            &[("region.time-zone", "device")],
+            &[("region.time-zone", "Europe/Berlin")],
+        );
+        assert_eq!(
+            moment_in(&on_device).as_deref(),
+            Some("2026-10-05, 9:30 AM (Europe/Berlin)")
+        );
+        // Nothing chosen by the person gives the same.
+        let nothing = layers(&[], &[("region.time-zone", "Europe/Berlin")]);
+        assert_eq!(moment_in(&nothing), moment_in(&on_device));
     }
 
     #[test]
-    fn a_moment_is_written_in_utc_and_says_so() {
-        let moment = json!("2026-10-05T09:30:00Z");
+    fn m4_f140_where_nobody_chose_a_zone_it_is_utc() {
         assert_eq!(
-            text(FieldType::DateTime, &moment, USUAL).as_deref(),
-            Some("2026-10-05, 09:30 UTC")
+            moment_in(&layers(&[], &[])).as_deref(),
+            Some("2026-10-05, 7:30 AM (UTC)")
+        );
+        // A name the time-zone data does not know counts as none.
+        assert_eq!(
+            moment_in(&layers(&[("region.time-zone", "Mars/Olympus")], &[])).as_deref(),
+            Some("2026-10-05, 7:30 AM (UTC)")
         );
     }
 
     #[test]
-    fn a_value_that_does_not_fit_its_kind_has_no_words() {
-        assert_eq!(text(FieldType::YesNo, &json!("maybe"), USUAL), None);
-        assert_eq!(
-            text(FieldType::Text, &json!("hello"), USUAL).as_deref(),
-            Some("hello")
-        );
-        assert_eq!(text(FieldType::Duration, &json!(true), USUAL), None);
-        assert_eq!(text(FieldType::Date, &json!("not a day"), USUAL), None);
-    }
-
-    #[test]
-    fn names_are_listed_like_on_the_screen() {
-        let names = |count: usize| {
-            list_text(
-                &["Ana", "Ben", "Cem", "Dee"][..count]
-                    .iter()
-                    .map(|name| (*name).to_owned())
-                    .collect::<Vec<_>>(),
-            )
-        };
-        assert_eq!(names(1), "Ana");
-        assert_eq!(names(2), "Ana and Ben");
-        assert_eq!(names(3), "Ana, Ben, and Cem");
-        assert_eq!(names(4), "Ana, Ben, Cem, and Dee");
-    }
-
-    #[test]
-    fn a_status_and_a_priority_are_words_and_other_text_stays() {
-        assert_eq!(word_of(Some(Field::Status), "in-progress"), "In progress");
-        assert_eq!(word_of(Some(Field::Priority), "high"), "High");
-        assert_eq!(word_of(Some(Field::Priority), "urgent!"), "urgent!");
-        assert_eq!(word_of(None, "open"), "open");
+    fn m4_f140_the_zone_data_follows_summer_time() {
+        let berlin = Region::from_choices(None, None, Some("Europe/Berlin"));
+        let winter = typed_words(FieldType::DateTime, &json!("2026-12-05T07:30:00Z"), &berlin);
+        assert_eq!(winter.as_deref(), Some("2026-12-05, 8:30 AM"));
     }
 }

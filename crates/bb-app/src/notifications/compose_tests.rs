@@ -41,7 +41,7 @@ fn change(field: &str, before: Option<ChangeValue>, after: Option<ChangeValue>) 
 }
 
 fn line(change: &FieldChangeView) -> String {
-    change_line(Some(&ana()), change, region())
+    change_line(Some(&ana()), change, &region())
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn wp13_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
                 part: "description".to_owned(),
             },
             NotificationKind::EditNotice,
-            region(),
+            &region(),
         )
     };
     assert_eq!(
@@ -150,15 +150,33 @@ fn wp13_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
     assert_eq!(
         lines_about(
             None,
-            &NotificationWhat::IssueIdsFailed,
+            &NotificationWhat::IssueIdsFailed {
+                project: ProjectLabel::Hidden
+            },
             NotificationKind::RunEnded,
-            region()
+            &region()
         ),
-        [format!(
-            "{}.",
-            Message::from(message::NOTIFICATIONS_ISSUE_IDS_FAILED).render()
-        )]
+        ["Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more.".to_owned()]
     );
+}
+
+#[test]
+fn wp13_no_line_of_an_e_mail_ends_in_two_full_stops() {
+    let sentences = [
+        NotificationWhat::IssueIdsFailed {
+            project: ProjectLabel::Hidden,
+        },
+        NotificationWhat::Plain,
+        NotificationWhat::EditNotice {
+            notice: NoticeKind::TakenOver,
+            part: "description".to_owned(),
+        },
+    ];
+    for what in sentences {
+        for line in lines_about(Some(&ana()), &what, NotificationKind::Assigned, &region()) {
+            assert!(!line.contains(".."), "{line}");
+        }
+    }
 }
 
 #[test]
@@ -173,7 +191,7 @@ fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
                 done,
             },
             NotificationKind::RunEnded,
-            region(),
+            &region(),
         )
     };
     assert_eq!(
@@ -195,7 +213,7 @@ fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
             None,
             &NotificationWhat::Plain,
             NotificationKind::FollowedFields,
-            region()
+            &region()
         ),
         [format!(
             "{}.",
@@ -226,9 +244,36 @@ fn ntf_02_a_file_added_is_worded_as_the_history_words_it() {
                 name: name.map(str::to_owned),
             },
             NotificationKind::FollowedActivity,
-            region(),
+            &region(),
         )
     };
     assert_eq!(said(Some("jam.txt")), ["Ana added the file jam.txt."]);
     assert_eq!(said(None), ["Ana added a file."]);
+}
+
+#[test]
+fn wp13_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue()
+-> Result<(), bb_core::id::IdError> {
+    let mut ids = SequentialIds::default();
+    let item = NotificationItem {
+        id: bb_core::id::NotificationId::generate(&mut ids)?,
+        kind: NotificationKind::RunEnded,
+        at: jiff::Timestamp::UNIX_EPOCH,
+        read: false,
+        issue: None,
+        comment: None,
+        by: None,
+        what: NotificationWhat::RunEnded {
+            run: bb_core::id::EntityId::from(bb_core::id::UserId::generate(&mut ids)),
+            done: true,
+        },
+    };
+    assert_eq!(
+        lines_of(&item, true, &region()),
+        [format!(
+            "{}.",
+            Message::from(message::NOTIFICATIONS_RUN_DONE).render()
+        )]
+    );
+    Ok(())
 }

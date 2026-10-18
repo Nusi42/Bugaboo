@@ -27,6 +27,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::access_bodies::cursor_error;
+use super::access_keys::ProjectLabelBody;
 use super::auth::{
     AuthHandle, Info, InvalidAnswer, NotSignedInAnswer, Session, TooSoonAnswer, answer,
     answer_authorized, done,
@@ -115,9 +116,10 @@ pub(crate) struct NotificationEntry {
     /// The end of a run: whether it ended well.
     #[serde(skip_serializing_if = "Option::is_none")]
     run_done: Option<bool>,
-    /// Giving the issues of a project their new IDs gave up.
+    /// Giving the issues of a project their new IDs gave up: the project, as the person may name
+    /// it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    issue_ids_failed: Option<bool>,
+    issue_ids_failed: Option<ProjectLabelBody>,
     /// A file was added to the issue.
     #[serde(skip_serializing_if = "Option::is_none")]
     file_added: Option<bool>,
@@ -255,9 +257,9 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
             entry.run_done = Some(*done);
             vec![entry]
         }
-        NotificationWhat::IssueIdsFailed => {
+        NotificationWhat::IssueIdsFailed { project } => {
             let mut entry = start(item);
-            entry.issue_ids_failed = Some(true);
+            entry.issue_ids_failed = Some(ProjectLabelBody::from(project));
             vec![entry]
         }
         NotificationWhat::File { name } => {
@@ -513,6 +515,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use bb_app::access::ProjectLabel;
     use bb_core::issue::IssueIcon;
 
     use super::*;
@@ -558,7 +561,7 @@ mod tests {
             part: Some(String::new()),
             run: Some(String::new()),
             run_done: Some(true),
-            issue_ids_failed: Some(true),
+            issue_ids_failed: Some(ProjectLabelBody::from(&ProjectLabel::Hidden)),
             file_added: Some(true),
             file_name: Some(String::new()),
             field: Some(String::new()),

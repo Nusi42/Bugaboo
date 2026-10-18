@@ -86,6 +86,11 @@ export function formatNumber(value: number, region: Region = currentRegion()): s
   return new Intl.NumberFormat(numberLocales[region.numberFormat]).format(value);
 }
 
+/** A day on the calendar ("2026-10-05") as people write it; the time zone never moves it to another day. */
+export function formatCalendarDay(day: string, region: Region = currentRegion()): string {
+  return formatDate(`${day}T00:00:00Z`, { ...region, timeZone: "UTC" });
+}
+
 /** A day (milliseconds since 1970, a date on the person's own calendar) as people write it: "October 5, 2026". */
 export function formatDay(moment: number, region: Region = currentRegion()): string {
   // A day on the person's own calendar, picked on this device: the zone of the region does not

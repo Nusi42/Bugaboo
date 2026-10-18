@@ -308,6 +308,7 @@ export interface MessageArguments {
   "notifications.count-capped": { max: string | number };
   "notifications.finish-asked": { who: string | number };
   "notifications.group-name": { issue: string | number };
+  "notifications.issue-ids-failed": { project: string | number };
   "notifications.locked-way": { value: string | number; way: string | number };
   "notifications.mark-read-name": { what: string | number };
   "notifications.mentioned": { who: string | number };

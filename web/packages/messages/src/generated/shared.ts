@@ -412,6 +412,8 @@ export const messages = {
   "history.set": "{who} set {field}: {after}",
   "history.cleared": "{who} cleared {field}",
   "history.changed-long-text": "{who} changed {field}",
+  "history.file-added": "{who} added the file {name}",
+  "history.file-added-unnamed": "{who} added a file",
   "history.people-none": "nobody",
   "history.type-unknown": "another issue type",
   "error.issue.parent-circle":

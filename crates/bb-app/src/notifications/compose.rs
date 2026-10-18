@@ -16,6 +16,7 @@ use bb_policy::PersonRef;
 
 use super::types::{NotificationItem, NotificationWhat};
 use super::value_words::{Region, list_text, typed_text, word_of};
+use crate::access::ProjectLabel;
 use crate::history::{ChangeValue, FieldChangeView};
 
 /// One e-mail: the subject on one line, and the text.
@@ -77,7 +78,7 @@ fn who_inside(person: &PersonRef) -> String {
 
 /// One side of a change in words, as the history of the issue words it; `None` when the side holds
 /// no value.
-fn side_text(field: Option<Field>, value: Option<&ChangeValue>, region: Region) -> Option<String> {
+fn side_text(field: Option<Field>, value: Option<&ChangeValue>, region: &Region) -> Option<String> {
     let text = match value? {
         ChangeValue::Text { text } => word_of(field, text),
         ChangeValue::Names { names } => {
@@ -108,7 +109,7 @@ fn field_name(change: &FieldChangeView) -> String {
 
 /// The line about one change of a field: the sentence of the history of the issue, which the
 /// screen says too, with a full stop.
-fn change_line(by: Option<&PersonRef>, change: &FieldChangeView, region: Region) -> String {
+fn change_line(by: Option<&PersonRef>, change: &FieldChangeView, region: &Region) -> String {
     let (by, field_name) = (who(by), field_name(change));
     let field = Field::from_code(&change.field);
     let before = side_text(field, change.before.as_ref(), region);
@@ -124,8 +125,10 @@ fn change_line(by: Option<&PersonRef>, change: &FieldChangeView, region: Region)
 
 /// The lines about one notification: the sentences the screen says (`notifications.*`, the
 /// history), so the e-mail and the screen cannot say different things.
-fn lines_of(item: &NotificationItem, short: bool, region: Region) -> Vec<String> {
-    if short {
+fn lines_of(item: &NotificationItem, short: bool, region: &Region) -> Vec<String> {
+    // A short e-mail leaves out all issue text: what is about an issue says only that there is
+    // news. The end of a run and a failed renewal are about no issue and say what they say.
+    if short && item.issue.is_some() {
         return vec![news()];
     }
     lines_about(item.by.as_ref(), &item.what, item.kind, region)
@@ -140,17 +143,18 @@ fn lines_about(
     by: Option<&PersonRef>,
     what: &NotificationWhat,
     kind: NotificationKind,
-    region: Region,
+    region: &Region,
 ) -> Vec<String> {
     match (what, kind) {
-        (NotificationWhat::Comment { comment }, NotificationKind::Mentioned) => vec![
-            message::mail_line_mentioned(who(by)).render(),
-            quoted(&comment.text),
-        ],
-        (NotificationWhat::Comment { comment }, _) => vec![
+        (NotificationWhat::Comment { comment }, kind) => vec![
             format!(
                 "{}{LEAD_IN}",
-                message::notifications_commented(who(by)).render()
+                if kind == NotificationKind::Mentioned {
+                    message::notifications_mentioned(who(by))
+                } else {
+                    message::notifications_commented(who(by))
+                }
+                .render()
             ),
             quoted(&comment.text),
         ],
@@ -170,10 +174,15 @@ fn lines_about(
                 message::NOTIFICATIONS_RUN_FAILED
             }))]
         }
-        (NotificationWhat::IssueIdsFailed, _) => {
-            vec![sentence_of(&Message::from(
-                message::NOTIFICATIONS_ISSUE_IDS_FAILED,
-            ))]
+        (NotificationWhat::IssueIdsFailed { project }, _) => {
+            vec![sentence_of(&match project {
+                ProjectLabel::Visible { name, .. } => {
+                    message::notifications_issue_ids_failed(clean(name))
+                }
+                ProjectLabel::Hidden => {
+                    Message::from(message::NOTIFICATIONS_ISSUE_IDS_FAILED_HIDDEN)
+                }
+            })]
         }
         (NotificationWhat::File { name }, _) => vec![sentence_of(&match name {
             Some(name) => message::history_file_added(clean(name), who(by)),
@@ -195,7 +204,7 @@ pub(crate) fn compose(
     items: &[NotificationItem],
     more: bool,
     short: bool,
-    region: Region,
+    region: &Region,
     public_url: &str,
 ) -> Option<Composed> {
     let first = items.first()?;
@@ -211,11 +220,13 @@ pub(crate) fn compose(
         ),
         // Work that is not about one issue ends in the notifications, so that is where the link goes.
         None => (
-            Message::from(if matches!(first.what, NotificationWhat::IssueIdsFailed) {
-                message::MAIL_SUBJECT_IDS_FAILED
-            } else {
-                message::MAIL_SUBJECT_RUN
-            })
+            Message::from(
+                if matches!(first.what, NotificationWhat::IssueIdsFailed { .. }) {
+                    message::MAIL_SUBJECT_IDS_FAILED
+                } else {
+                    message::MAIL_SUBJECT_RUN
+                },
+            )
             .render(),
             message::mail_open_notifications(format!("{public_url}{}", app_paths::NOTIFICATIONS)),
         ),

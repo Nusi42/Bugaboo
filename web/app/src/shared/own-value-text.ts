@@ -7,7 +7,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { formatDate, formatDateTime, formatNumber } from "./format.ts";
+import { formatCalendarDay, formatDateTime, formatNumber } from "./format.ts";
+import { currentRegion, type Region } from "./region.ts";
 
 export const SECONDS_PER_MINUTE = 60;
 const MINUTES_PER_HOUR = 60;
@@ -28,19 +29,41 @@ function textOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-function numberTextOf(value: unknown): string | undefined {
-  return typeof value === "number" ? formatNumber(value) : textOf(value);
+function numberTextOf(value: unknown, region: Region): string | undefined {
+  return typeof value === "number" ? formatNumber(value, region) : textOf(value);
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/u;
+
+/** A day that exists on the calendar: "2026-02-30" does not, and the browser would roll it over. */
+function isCalendarDay(value: string): boolean {
+  const moment = new Date(`${value}T00:00:00Z`);
+  return (
+    DAY.test(value) && !Number.isNaN(moment.getTime()) && moment.toISOString().startsWith(value)
+  );
+}
+
+/** A moment from the server; text that is no moment has no words (the browser would throw). */
+function momentTextOf(value: unknown, region: Region): string | undefined {
+  return typeof value === "string" && !Number.isNaN(new Date(value).getTime())
+    ? formatDateTime(value, region)
+    : undefined;
 }
 
 /** How a value of each kind is worded; the kinds that are only words are the text itself. */
-const worded: Readonly<Record<Schema<"FieldType">, (value: unknown) => string | undefined>> = {
+const worded: Readonly<
+  Record<Schema<"FieldType">, (value: unknown, region: Region) => string | undefined>
+> = {
   "yes-no": (value) =>
     typeof value === "boolean" ? (value ? t("fields.yes") : t("fields.no")) : undefined,
-  duration: (value) => (typeof value === "number" ? durationText(value) : undefined),
+  duration: (value) => (typeof value === "number" && value >= 0 ? durationText(value) : undefined),
   "whole-number": numberTextOf,
   decimal: numberTextOf,
-  date: (value) => (typeof value === "string" ? formatDate(`${value}T00:00:00Z`) : undefined),
-  "date-time": (value) => (typeof value === "string" ? formatDateTime(value) : undefined),
+  date: (value, region) =>
+    typeof value === "string" && isCalendarDay(value)
+      ? formatCalendarDay(value, region)
+      : undefined,
+  "date-time": momentTextOf,
   text: textOf,
   "long-text": textOf,
   "web-address": textOf,
@@ -56,6 +79,10 @@ const worded: Readonly<Record<Schema<"FieldType">, (value: unknown) => string | 
  * A value of an own field that the screen words itself, as people read it (yes or no, a length of
  * time, a number, a day, a moment); `undefined` for a value that does not fit the kind.
  */
-export function ownValueText(kind: Schema<"FieldType">, value: unknown): string | undefined {
-  return worded[kind](value);
+export function ownValueText(
+  kind: Schema<"FieldType">,
+  value: unknown,
+  region: Region = currentRegion(),
+): string | undefined {
+  return worded[kind](value, region);
 }
