@@ -1,13 +1,13 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 
 import type { LayoutsOpen } from "../../shared/paths.ts";
-import { QueryGate } from "../shell/index.ts";
+import { PlaceEditorCard, placeInherits } from "../projects/index.ts";
 import { CustomizeForm } from "./CustomizeForm.tsx";
 import { FormChooser } from "./FormChooser.tsx";
 import { kindOf, useLayoutEditor, type EditorQuery } from "./layouts.ts";
-import { LockedEditor } from "./LockedEditor.tsx";
+import { LockedLayout } from "./LockedLayout.tsx";
 import { RemoveLayout } from "./RemoveLayout.tsx";
 
 export interface LayoutsCardProps {
@@ -34,8 +34,8 @@ function Open({
   }
   return (
     <>
-      <LockedEditor key={slot.id} editor={editor} layout={slot.id} />
-      <RemoveLayout slot={slot} />
+      <LockedLayout key={slot.id} editor={editor} layout={slot.id} />
+      {placeInherits(query) ? <RemoveLayout slot={slot} /> : null}
     </>
   );
 }
@@ -49,9 +49,10 @@ export function LayoutsCard({ project, heading, open, onOpen }: LayoutsCardProps
   const query: EditorQuery = { project, issueType: open.type, kind };
   const editor = useLayoutEditor(query);
   return (
-    <Card heading={heading} level={1}>
-      <div {...partOf(part.stack)}>
-        <p {...partOf(part.muted)}>{t("layouts.intro")}</p>
+    <PlaceEditorCard
+      heading={heading}
+      intro={t("layouts.intro")}
+      chooser={
         <FormChooser
           kind={kind}
           type={open.type}
@@ -59,11 +60,12 @@ export function LayoutsCard({ project, heading, open, onOpen }: LayoutsCardProps
             onOpen({ form: nextKind, type });
           }}
         />
-        <p {...partOf(part.muted)}>{t("layouts.fixed")}</p>
-        <QueryGate error={editor.error} data={editor.data}>
-          {(found) => <Open key={[kind, open.type].join("|")} editor={found} query={query} />}
-        </QueryGate>
-      </div>
-    </Card>
+      }
+      notes={<p {...partOf(part.muted)}>{t("layouts.fixed")}</p>}
+      error={editor.error}
+      data={editor.data}
+    >
+      {(found) => <Open key={[kind, open.type].join("|")} editor={found} query={query} />}
+    </PlaceEditorCard>
   );
 }

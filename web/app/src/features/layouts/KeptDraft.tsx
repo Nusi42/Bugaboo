@@ -1,8 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { DraftNote } from "../../shared/editing/index.ts";
 import { formatAgo } from "../../shared/format.ts";
 import { useNow } from "../../shared/use-now.ts";
 import { type Draft } from "./editor-model.ts";
@@ -34,29 +34,26 @@ export function KeptDraft({ editor, layout, onRestore }: KeptDraftProps) {
   const when = formatAgo(kept.saved_at, now);
   const restored = restoredDraft(editor, kept.text);
   return (
-    <Alert>
-      <div {...partOf(part.issueNote)}>
-        <span>{t("layouts.draft-changed", { when })}</span>
-        {restored === undefined ? null : (
-          <Button
-            look={buttonLook.primary}
-            onPress={() => {
-              onRestore(restored);
-              setBack(true);
-            }}
-          >
-            {t("layouts.draft-restore")}
-          </Button>
-        )}
-        <Button
-          isPending={drop.isPending}
-          onPress={() => {
-            drop.mutate();
-          }}
-        >
-          {t("editing.changes-drop")}
-        </Button>
-      </div>
-    </Alert>
+    <DraftNote
+      text={t("layouts.draft-changed", { when })}
+      take={
+        restored === undefined
+          ? undefined
+          : {
+              label: t("layouts.draft-restore"),
+              onPress: () => {
+                onRestore(restored);
+                setBack(true);
+              },
+            }
+      }
+      drop={{
+        label: t("editing.changes-drop"),
+        isPending: drop.isPending,
+        onPress: () => {
+          drop.mutate();
+        },
+      }}
+    />
   );
 }

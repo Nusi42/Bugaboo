@@ -58,6 +58,16 @@ test("wf_02 Try it names why a Contributor gets no Mark as done", async ({ page 
   await expect(markAsDone).toContainText(t("error.workflow.not-for-you"));
 });
 
+test("wf_02 the whole organization has nothing to inherit, so there is no way back to it", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openSimple(page);
+  await expect(
+    page.getByRole("button", { name: t("workflows.use-inherited"), exact: true }),
+  ).toHaveCount(0);
+});
+
 test("wf_02 the phone shows the plain list and a computer may also draw", async ({ page }) => {
   await signIn(page, ada);
   await openSimpleToChange(page);

@@ -4,7 +4,7 @@ import { Alert, alertTone, Card, partOf, part } from "@bugaboo/ui";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { projectPages } from "../../shared/project-pages.ts";
-import { OfferedHere, ProjectGate, ProjectTabs } from "../projects/index.ts";
+import { offerChangeBody, ProjectOffers, ProjectSettingsScreen } from "../projects/index.ts";
 import { CreateLabelForm } from "./CreateLabelForm.tsx";
 import { CreateLabelGroupForm } from "./CreateLabelGroupForm.tsx";
 import { refreshLabels, useLabels, type LabelGroup } from "./labels.ts";
@@ -21,33 +21,30 @@ function Groups({
     onSuccess: refreshLabels,
   });
   return (
-    <div {...partOf(part.stack)}>
-      <ul {...partOf(part.list)} aria-label={t("labels.project-list")}>
-        {groups.map((group) => (
-          <OfferedHere
-            key={group.id}
-            name={group.name}
-            beside={
-              group.retired ? <span {...partOf(part.muted)}>{t("labels.retired")}</span> : undefined
-            }
-            offered={group.offered_here ?? true}
-            own={group.own_offer ?? undefined}
-            mayChange={group.may_change_offer === true}
-            isPending={change.isPending}
-            onChange={(offered) => {
-              change.mutate({
-                params: { path: { group: group.id } },
-                body: {
-                  version: group.version,
-                  changes: [{ project, ...(offered === null ? {} : { offered }) }],
-                },
-              });
-            }}
-          />
-        ))}
-      </ul>
-      {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
-    </div>
+    <ProjectOffers
+      label={t("labels.project-list")}
+      offers={groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        beside: group.retired ? (
+          <span {...partOf(part.muted)}>{t("labels.retired")}</span>
+        ) : undefined,
+        offered: group.offered_here,
+        own: group.own_offer,
+        mayChange: group.may_change_offer,
+      }))}
+      isPending={change.isPending}
+      error={change.error}
+      onChange={(id, offered) => {
+        const group = groups.find((each) => each.id === id);
+        if (group !== undefined) {
+          change.mutate({
+            params: { path: { group: id } },
+            body: offerChangeBody(group.version, project, offered),
+          });
+        }
+      }}
+    />
   );
 }
 
@@ -81,13 +78,10 @@ function ProjectLabels({ project, name }: { readonly project: string; readonly n
  */
 export function ProjectLabelsScreen({ address }: { readonly address: string }) {
   return (
-    <ProjectGate address={address} page={projectPages.labels}>
+    <ProjectSettingsScreen address={address} page={projectPages.labels}>
       {(project) => (
-        <div {...partOf(part.stack)}>
-          <ProjectTabs project={project} />
-          <ProjectLabels project={project.project.short_name} name={project.project.name} />
-        </div>
+        <ProjectLabels project={project.project.short_name} name={project.project.name} />
       )}
-    </ProjectGate>
+    </ProjectSettingsScreen>
   );
 }

@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
 
 import type { WorkflowsOpen } from "../../shared/paths.ts";
 import { projectPages } from "../../shared/project-pages.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { ProjectGate, ProjectTabs } from "../projects/index.ts";
+import { ProjectSettingsScreen } from "../projects/index.ts";
 import { WorkflowsCard } from "./WorkflowsCard.tsx";
 
 export interface WorkflowsScreenProps {
@@ -21,21 +20,18 @@ export interface ProjectWorkflowsScreenProps extends WorkflowsScreenProps {
 /** `/p/WEB/settings/workflows`: the workflows of a project, below the tabs of its settings. */
 export function ProjectWorkflowsScreen({ address, open, onOpen }: ProjectWorkflowsScreenProps) {
   return (
-    <ProjectGate address={address} page={projectPages.workflows}>
+    <ProjectSettingsScreen address={address} page={projectPages.workflows}>
       {(project) => (
-        <div {...partOf(part.stack)}>
-          <ProjectTabs project={project} />
-          <WorkflowsCard
-            project={project.project.short_name}
-            heading={t("workflows.project-title", { project: project.project.name })}
-            open={open}
-            onOpen={(next) => {
-              onOpen(project.project.short_name, next);
-            }}
-          />
-        </div>
+        <WorkflowsCard
+          project={project.project.short_name}
+          heading={t("workflows.project-title", { project: project.project.name })}
+          open={open}
+          onOpen={(next) => {
+            onOpen(project.project.short_name, next);
+          }}
+        />
       )}
-    </ProjectGate>
+    </ProjectSettingsScreen>
   );
 }
 
