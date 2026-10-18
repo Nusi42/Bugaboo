@@ -12,6 +12,7 @@ use bb_api_words::sec_matrix as words;
 use bb_app::access::{Permission, StartingRole};
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
+use bb_core::message::{Message, STATUS_DONE};
 use bb_core::people_kinds::PeopleKind;
 use bb_testing::{Failure, TestDatabase};
 use serde_json::{Value, json};
@@ -145,7 +146,8 @@ fn by_mail(rig: &Rig, role: StartingRole) -> Delivered {
         entry: words::ENTRY_MAIL,
         role,
         heard: mail.is_some(),
-        status_shown: text.contains("done"),
+        // The e-mail says the status in words, the same words as the screen (the catalog).
+        status_shown: text.contains(&Message::from(STATUS_DONE).render()),
         author: author_in(&text, "Administrator"),
     }
 }
