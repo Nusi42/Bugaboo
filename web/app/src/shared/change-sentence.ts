@@ -31,7 +31,7 @@ export type ChangeWords = Pick<
 
 /** Who did it, at the start of a sentence; Bugaboo itself when nobody is named. */
 export function whoOf(entry: { readonly by?: ChangeWords["by"] | undefined }): string {
-  return entry.by === undefined || entry.by === null ? t("history.system") : personName(entry.by);
+  return entry.by === undefined || entry.by === null ? t("person.bugaboo") : personName(entry.by);
 }
 
 /** The value of one side of a history entry in the one shape of a change's value, if it has any. */

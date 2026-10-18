@@ -10,7 +10,6 @@ export const messages = {
   "workflows.uses-project": "These issues use the workflow {name} of {project}.",
   "workflows.uses-hidden": "These issues use the workflow {name}, which is set higher up.",
   "workflows.uses-starting": "These issues use the starter workflow {name}.",
-  "workflows.uses-type": "It is only for {type}.",
   "workflows.use-inherited": "Reset to default",
   "workflows.use-inherited-title": "Reset to default?",
   "workflows.use-inherited-text":

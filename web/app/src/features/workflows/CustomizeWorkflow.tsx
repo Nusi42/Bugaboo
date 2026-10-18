@@ -18,7 +18,7 @@ function usedNow(editor: WorkflowEditor): string {
       : t("workflows.uses-project", { name, project: from.project.name });
   return from.issue_type === null || from.issue_type === undefined
     ? where
-    : `${where} ${t("workflows.uses-type", { type: from.issue_type.name })}`;
+    : `${where} ${t("issue-type.only-for", { type: from.issue_type.name })}`;
 }
 
 /**

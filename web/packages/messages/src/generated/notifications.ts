@@ -27,7 +27,8 @@ export const messages = {
   "notifications.news": "There is news on this issue",
   "notifications.finish-asked": "{who} asks you to finish editing",
   "notifications.taken-over": "{who} took over the editing. What you wrote is kept as your draft",
-  "notifications.released": "{who} let go of the editing",
+  "notifications.released":
+    "{who} ended your editing because it was stuck, so others can edit again",
   "notifications.run-done": "Your change to many issues is done",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.show-result": "Show the result",

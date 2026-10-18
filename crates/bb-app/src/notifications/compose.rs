@@ -15,6 +15,7 @@ use bb_core::text::{plain_line, plain_text};
 use bb_policy::PersonRef;
 
 use super::types::{NotificationItem, NotificationWhat};
+use super::value_words::{Region, list_text, typed_text, word_of};
 use crate::history::{ChangeValue, FieldChangeView};
 
 /// One e-mail: the subject on one line, and the text.
@@ -27,6 +28,18 @@ pub(crate) struct Composed {
 /// What starts each line of a person's text in an e-mail, so a line they wrote cannot pass for the
 /// text of Bugaboo: a link or a footer of their making is a quoted line.
 const QUOTE: &str = "> ";
+
+/// What ends a sentence of Bugaboo in an e-mail: the screen says it without, a line of an e-mail
+/// has it.
+const SENTENCE_END: &str = ".";
+
+/// What ends the line before a comment that is quoted below it.
+const LEAD_IN: &str = ":";
+
+/// A sentence of the screen as a line of an e-mail.
+fn sentence_of(message: &Message) -> String {
+    format!("{}{SENTENCE_END}", message.render())
+}
 
 /// Text of a person for the middle of a line.
 fn clean(text: &str) -> String {
@@ -52,24 +65,36 @@ fn who(person: Option<&PersonRef>) -> String {
     }
 }
 
-/// A value of a change in words.
-fn value_text(value: &ChangeValue) -> String {
-    let text = match value {
-        ChangeValue::Text { text } => text.clone(),
-        ChangeValue::Names { names } => names.join(", "),
-        ChangeValue::People { people } => people
-            .iter()
-            .map(|person| who(Some(person)))
-            .collect::<Vec<_>>()
-            .join(", "),
-        ChangeValue::Typed { value, .. } => match value.as_str() {
-            Some(text) => text.to_owned(),
-            None => value.to_string(),
-        },
+/// A person in the middle of a sentence, where a role reads *a person with the role Lead*.
+fn who_inside(person: &PersonRef) -> String {
+    match person {
+        PersonRef::Name { name, .. } => clean(name),
+        PersonRef::Role { role } => message::person_role_inside(clean(role)).render(),
+        PersonRef::Someone => Message::from(message::PERSON_SOMEONE_INSIDE).render(),
+        PersonRef::Former { label } => message::person_former_inside(clean(label)).render(),
+    }
+}
+
+/// One side of a change in words, as the history of the issue words it; `None` when the side holds
+/// no value.
+fn side_text(field: Option<Field>, value: Option<&ChangeValue>, region: Region) -> Option<String> {
+    let text = match value? {
+        ChangeValue::Text { text } => word_of(field, text),
+        ChangeValue::Names { names } => {
+            list_text(&names.iter().map(|name| clean(name)).collect::<Vec<_>>())
+        }
+        ChangeValue::People { people } if people.is_empty() => {
+            Message::from(message::HISTORY_PEOPLE_NONE).render()
+        }
+        ChangeValue::People { people } => {
+            list_text(&people.iter().map(who_inside).collect::<Vec<_>>())
+        }
+        ChangeValue::Typed { kind, value } => typed_text(*kind, value, region)?,
         ChangeValue::Issue { issue } => issue.key.clone(),
         ChangeValue::Project { project } => project.name.clone(),
     };
-    clean(&text)
+    let text = clean(&text);
+    (!text.is_empty()).then_some(text)
 }
 
 /// What a field is called: the name of an own field, or the name from the catalogue.
@@ -81,68 +106,94 @@ fn field_name(change: &FieldChangeView) -> String {
     }
 }
 
-/// The line about one change of a field.
-fn change_line(by: Option<&PersonRef>, change: &FieldChangeView) -> String {
-    let (by, field) = (who(by), field_name(change));
-    match change.after.as_ref().map(value_text) {
-        Some(value) if !value.is_empty() => message::mail_line_changed(field, value, by).render(),
-        _ => message::mail_line_cleared(field, by).render(),
-    }
+/// The line about one change of a field: the sentence of the history of the issue, which the
+/// screen says too, with a full stop.
+fn change_line(by: Option<&PersonRef>, change: &FieldChangeView, region: Region) -> String {
+    let (by, field_name) = (who(by), field_name(change));
+    let field = Field::from_code(&change.field);
+    let before = side_text(field, change.before.as_ref(), region);
+    let after = side_text(field, change.after.as_ref(), region);
+    let sentence = match (before, after) {
+        (Some(before), Some(after)) => message::history_changed(after, before, field_name, by),
+        (None, Some(after)) if matches!(change.after, Some(ChangeValue::People { .. })) => {
+            message::history_set_people(after, field_name, by)
+        }
+        (None, Some(after)) => message::history_set(after, field_name, by),
+        (Some(_), None) => message::history_cleared(field_name, by),
+        (None, None) => message::history_changed_long_text(field_name, by),
+    };
+    sentence_of(&sentence)
 }
 
-/// The lines about one notification.
-fn lines_of(item: &NotificationItem, short: bool) -> Vec<String> {
-    let by = item.by.as_ref();
+/// The lines about one notification: the sentences the screen says (`notifications.*`, the
+/// history), so the e-mail and the screen cannot say different things.
+fn lines_of(item: &NotificationItem, short: bool, region: Region) -> Vec<String> {
     if short {
-        return vec![Message::from(message::MAIL_LINE_NEWS).render()];
+        return vec![news()];
     }
-    match (&item.what, item.kind) {
+    lines_about(item.by.as_ref(), &item.what, item.kind, region)
+}
+
+/// *There is news on this issue*, the sentence for what has no words of its own.
+fn news() -> String {
+    sentence_of(&Message::from(message::NOTIFICATIONS_NEWS))
+}
+
+fn lines_about(
+    by: Option<&PersonRef>,
+    what: &NotificationWhat,
+    kind: NotificationKind,
+    region: Region,
+) -> Vec<String> {
+    match (what, kind) {
         (NotificationWhat::Comment { comment }, NotificationKind::Mentioned) => vec![
             message::mail_line_mentioned(who(by)).render(),
             quoted(&comment.text),
         ],
         (NotificationWhat::Comment { comment }, _) => vec![
-            message::mail_line_commented(who(by)).render(),
+            format!(
+                "{}{LEAD_IN}",
+                message::notifications_commented(who(by)).render()
+            ),
             quoted(&comment.text),
         ],
         (NotificationWhat::Changes { fields }, _) => fields
             .iter()
-            .map(|change| change_line(by, change))
+            .map(|change| change_line(by, change, region))
             .collect(),
-        (NotificationWhat::EditNotice { notice, .. }, _) => vec![match notice {
-            NoticeKind::FinishAsked => message::mail_line_finish_asked(who(by)).render(),
-            NoticeKind::TakenOver | NoticeKind::Released => {
-                message::mail_line_taken_over(who(by)).render()
-            }
-        }],
-        (NotificationWhat::RunEnded { done, .. }, _) => vec![
-            Message::from(if *done {
-                message::MAIL_LINE_RUN_DONE
+        (NotificationWhat::EditNotice { notice, .. }, _) => vec![sentence_of(&match notice {
+            NoticeKind::FinishAsked => message::notifications_finish_asked(who(by)),
+            NoticeKind::TakenOver => message::notifications_taken_over(who(by)),
+            NoticeKind::Released => message::notifications_released(who(by)),
+        })],
+        (NotificationWhat::RunEnded { done, .. }, _) => {
+            vec![sentence_of(&Message::from(if *done {
+                message::NOTIFICATIONS_RUN_DONE
             } else {
-                message::MAIL_LINE_RUN_FAILED
-            })
-            .render(),
-        ],
-        (NotificationWhat::Plain, NotificationKind::Assigned) => {
-            vec![message::mail_line_assigned(who(by)).render()]
+                message::NOTIFICATIONS_RUN_FAILED
+            }))]
         }
-        (NotificationWhat::Plain, _) => vec![Message::from(message::MAIL_LINE_NEWS).render()],
+        (NotificationWhat::Plain, NotificationKind::Assigned) => {
+            vec![sentence_of(&message::notifications_assigned(who(by)))]
+        }
+        (NotificationWhat::Plain, _) => vec![news()],
     }
 }
 
 /// The e-mail for the notifications of one person about one issue (or about no issue), oldest
-/// first. `more` says that more waited than the e-mail holds. `address` is where the issue is in
-/// Bugaboo, from the public address of the server.
+/// first. `more` says that more waited than the e-mail holds. `region` is how the reader writes
+/// days and numbers. `public_url` is the public address of the server, for the link.
 /// `None` when there is nothing to say.
 #[must_use]
 pub(crate) fn compose(
     items: &[NotificationItem],
     more: bool,
     short: bool,
+    region: Region,
     public_url: &str,
 ) -> Option<Composed> {
     let first = items.first()?;
-    let (subject, address) = match &first.issue {
+    let (subject, open) = match &first.issue {
         Some(issue) => (
             match (&issue.title, short) {
                 (Some(title), false) => {
@@ -150,18 +201,24 @@ pub(crate) fn compose(
                 }
                 _ => message::mail_subject_short(issue.key.clone()).render(),
             },
-            Some(format!("{public_url}{}", app_paths::issue(&issue.key))),
+            message::mail_open(format!("{public_url}{}", app_paths::issue(&issue.key))),
         ),
-        None => (Message::from(message::MAIL_SUBJECT_RUN).render(), None),
+        // Work that is not about one issue ends in the notifications, so that is where the link goes.
+        None => (
+            Message::from(message::MAIL_SUBJECT_RUN).render(),
+            message::mail_open_notifications(format!("{public_url}{}", app_paths::NOTIFICATIONS)),
+        ),
     };
     // The link of Bugaboo comes first, before any text of a person.
     let mut text = String::new();
-    if let Some(address) = address {
-        text.push_str(&message::mail_open(address).render());
-        text.push_str("\n\n");
-    }
+    text.push_str(&open.render());
+    text.push_str(
+        "
+
+",
+    );
     for item in items.iter().take(MAIL_ENTRIES_MAX) {
-        for line in lines_of(item, short) {
+        for line in lines_of(item, short, region) {
             text.push_str(&line);
             text.push('\n');
         }
@@ -171,7 +228,17 @@ pub(crate) fn compose(
         text.push_str(&Message::from(message::MAIL_LINE_MORE).render());
         text.push_str("\n\n");
     }
-    text.push_str(&Message::from(message::MAIL_FOOTER).render());
+    text.push_str(
+        &message::mail_footer(
+            Message::from(message::NAV_NOTIFICATION_SETTINGS).render(),
+            Message::from(message::NAV_MY_SETTINGS).render(),
+        )
+        .render(),
+    );
     text.push('\n');
     Some(Composed { subject, text })
 }
+
+#[cfg(test)]
+#[path = "compose_tests.rs"]
+mod tests;

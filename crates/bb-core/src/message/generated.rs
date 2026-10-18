@@ -1643,9 +1643,6 @@ pub const HISTORY_NOTHING: MessageKey = MessageKey::new("history.nothing");
 /// The message `history.people-none`.
 pub const HISTORY_PEOPLE_NONE: MessageKey = MessageKey::new("history.people-none");
 
-/// The message `history.system`.
-pub const HISTORY_SYSTEM: MessageKey = MessageKey::new("history.system");
-
 /// The message `history.tab-changes`.
 pub const HISTORY_TAB_CHANGES: MessageKey = MessageKey::new("history.tab-changes");
 
@@ -2438,20 +2435,8 @@ pub const MAIL_SERVER_TEST_TITLE: MessageKey = MessageKey::new("mail-server.test
 /// The message `mail-server.title`.
 pub const MAIL_SERVER_TITLE: MessageKey = MessageKey::new("mail-server.title");
 
-/// The message `mail.footer`.
-pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
-
 /// The message `mail.line-more`.
 pub const MAIL_LINE_MORE: MessageKey = MessageKey::new("mail.line-more");
-
-/// The message `mail.line-news`.
-pub const MAIL_LINE_NEWS: MessageKey = MessageKey::new("mail.line-news");
-
-/// The message `mail.line-run-done`.
-pub const MAIL_LINE_RUN_DONE: MessageKey = MessageKey::new("mail.line-run-done");
-
-/// The message `mail.line-run-failed`.
-pub const MAIL_LINE_RUN_FAILED: MessageKey = MessageKey::new("mail.line-run-failed");
 
 /// The message `mail.sign-up-exists-subject`.
 pub const MAIL_SIGN_UP_EXISTS_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-exists-subject");
@@ -6631,6 +6616,15 @@ pub fn invitations_take_back_title(email: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issue-type.only-for`.
+#[must_use]
+pub fn issue_type_only_for(type_: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issue-type.only-for"),
+        vec![("type", Value::Text(type_.to_string()))],
+    )
+}
+
 /// The message `issue-types.created`.
 #[must_use]
 pub fn issue_types_created(name: impl std::fmt::Display) -> Message {
@@ -7217,15 +7211,6 @@ pub fn layouts_inherited_project(project: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `layouts.inherited-type`.
-#[must_use]
-pub fn layouts_inherited_type(type_: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("layouts.inherited-type"),
-        vec![("type", Value::Text(type_.to_string()))],
-    )
-}
-
 /// The message `layouts.limited-form`.
 #[must_use]
 pub fn layouts_limited_form(
@@ -7334,6 +7319,30 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `list.many`.
+#[must_use]
+pub fn list_many(last: impl std::fmt::Display, start: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("list.many"),
+        vec![
+            ("last", Value::Text(last.to_string())),
+            ("start", Value::Text(start.to_string())),
+        ],
+    )
+}
+
+/// The message `list.two`.
+#[must_use]
+pub fn list_two(first: impl std::fmt::Display, second: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("list.two"),
+        vec![
+            ("first", Value::Text(first.to_string())),
+            ("second", Value::Text(second.to_string())),
+        ],
+    )
+}
+
 /// The message `mail-server.test-done`.
 #[must_use]
 pub fn mail_server_test_done(email: impl std::fmt::Display) -> Message {
@@ -7361,59 +7370,27 @@ pub fn mail_server_test_wait(seconds: i64) -> Message {
     )
 }
 
-/// The message `mail.line-assigned`.
+/// The message `mail.date-time`.
 #[must_use]
-pub fn mail_line_assigned(who: impl std::fmt::Display) -> Message {
+pub fn mail_date_time(date: impl std::fmt::Display, time: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("mail.line-assigned"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
-/// The message `mail.line-changed`.
-#[must_use]
-pub fn mail_line_changed(
-    field: impl std::fmt::Display,
-    value: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-changed"),
+        MessageKey::new("mail.date-time"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("value", Value::Text(value.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("date", Value::Text(date.to_string())),
+            ("time", Value::Text(time.to_string())),
         ],
     )
 }
 
-/// The message `mail.line-cleared`.
+/// The message `mail.footer`.
 #[must_use]
-pub fn mail_line_cleared(field: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn mail_footer(page: impl std::fmt::Display, settings: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("mail.line-cleared"),
+        MessageKey::new("mail.footer"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("page", Value::Text(page.to_string())),
+            ("settings", Value::Text(settings.to_string())),
         ],
-    )
-}
-
-/// The message `mail.line-commented`.
-#[must_use]
-pub fn mail_line_commented(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-commented"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
-/// The message `mail.line-finish-asked`.
-#[must_use]
-pub fn mail_line_finish_asked(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-finish-asked"),
-        vec![("who", Value::Text(who.to_string()))],
     )
 }
 
@@ -7426,20 +7403,20 @@ pub fn mail_line_mentioned(who: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `mail.line-taken-over`.
-#[must_use]
-pub fn mail_line_taken_over(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.line-taken-over"),
-        vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
 /// The message `mail.open`.
 #[must_use]
 pub fn mail_open(address: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.open"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.open-notifications`.
+#[must_use]
+pub fn mail_open_notifications(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.open-notifications"),
         vec![("address", Value::Text(address.to_string()))],
     )
 }
@@ -9489,15 +9466,6 @@ pub fn workflows_uses_starting(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `workflows.uses-type`.
-#[must_use]
-pub fn workflows_uses_type(type_: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("workflows.uses-type"),
-        vec![("type", Value::Text(type_.to_string()))],
-    )
-}
-
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access-keys.choice.everything", "Everything I can do"),
@@ -10929,7 +10897,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.set", "{who} set {field} to {after}"),
     ("history.set-people", "{who} set {field}: {after}"),
-    ("history.system", "Bugaboo"),
     ("history.tab-changes", "Changes"),
     ("history.tab-comments", "Comments"),
     ("history.tab-everything", "Everything"),
@@ -11024,6 +10991,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-type.bug", "Bug"),
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
+    ("issue-type.only-for", "It is only for {type}."),
     ("issue-type.task", "Task"),
     ("issue-types.all-types", "All issue types"),
     ("issue-types.create", "Create the issue type"),
@@ -11425,7 +11393,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "layouts.inherited-project",
         "This form uses the layout of {project}.",
     ),
-    ("layouts.inherited-type", "It is only for {type}."),
     (
         "layouts.intro",
         "A layout says which fields a form shows, in which sections, and for which roles. A Guest can get a short form and a Team member the full one. A layout never shows a field to a role whose field permissions hide it.",
@@ -11487,8 +11454,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
     ),
     ("layouts.use-inherited-title", "Reset to default?"),
+    ("list.many", "{start}, and {last}"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    ("list.two", "{first} and {second}"),
     ("mail-server.connection", "Connection"),
     (
         "mail-server.intro",
@@ -11528,34 +11497,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You can send another test e-mail in {seconds, plural, one {# second} other {# seconds}}.",
     ),
     ("mail-server.title", "E-mail & notifications"),
+    ("mail.date-time", "{date}, {time} UTC"),
     (
         "mail.footer",
-        "You get this e-mail because of your notification settings in Bugaboo. You can change them under Customize.",
-    ),
-    ("mail.line-assigned", "{who} assigned this issue to you."),
-    ("mail.line-changed", "{who} changed {field} to {value}."),
-    ("mail.line-cleared", "{who} cleared {field}."),
-    ("mail.line-commented", "{who} wrote a comment:"),
-    (
-        "mail.line-finish-asked",
-        "{who} asks you to finish editing.",
+        "You get this e-mail because of your notification settings. You can change them in Bugaboo under {settings} › {page}.",
     ),
     ("mail.line-mentioned", "{who} mentioned you in a comment:"),
     (
         "mail.line-more",
         "There is more than this e-mail holds. Open it in Bugaboo to read it all.",
     ),
-    ("mail.line-news", "There is news on this issue."),
-    ("mail.line-run-done", "Your change to many issues is done."),
-    (
-        "mail.line-run-failed",
-        "Your change to many issues stopped before it was done.",
-    ),
-    (
-        "mail.line-taken-over",
-        "{who} took over the editing. What you wrote is kept as your draft.",
-    ),
     ("mail.open", "Link to the issue: {address}"),
+    (
+        "mail.open-notifications",
+        "Link to your notifications: {address}",
+    ),
     (
         "mail.sign-up-exists-subject",
         "Bugaboo: you already have an account",
@@ -11826,7 +11782,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.nothing-unread", "You have read everything."),
     ("notifications.open", "Open"),
     ("notifications.open-name", "Open: {what}"),
-    ("notifications.released", "{who} let go of the editing"),
+    (
+        "notifications.released",
+        "{who} ended your editing because it was stuck, so others can edit again",
+    ),
     (
         "notifications.run-done",
         "Your change to many issues is done",
@@ -13735,7 +13694,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "workflows.uses-starting",
         "These issues use the starter workflow {name}.",
     ),
-    ("workflows.uses-type", "It is only for {type}."),
     ("workflows.view", "View"),
     ("workflows.view-drawing", "Drawing"),
     ("workflows.view-list", "List"),
