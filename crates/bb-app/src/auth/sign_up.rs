@@ -21,8 +21,8 @@ use bb_core::message::{self, Message};
 use bb_core::security_log::Digest;
 use bb_core::sign_in::SecurityAction;
 use bb_core::sign_up_invitation::{
-    KEEP_HOURS, MAIL_MEMORY_MINUTES, MAILS_PER_HOUR_MAX, RESEND_AFTER_MINUTES, SignUpInvitation,
-    lasts,
+    ADDRESSES_PER_HOUR_MAX, KEEP_HOURS, MAIL_MEMORY, MAILS_CAP_WINDOW, RESEND_AFTER_MINUTES,
+    SignUpInvitation, lasts,
 };
 use jiff::{SignedDuration, Timestamp};
 
@@ -61,7 +61,7 @@ pub trait SignUpStore: ChangeStore + 'static {
         /// returns how many.
         fn delete_old_sign_up_invitations(before: Timestamp, now: Timestamp) -> u64;
         /// Forgets the e-mails that went before `before`; returns how many. The memory of an
-        /// e-mail is needed only for `MAIL_MEMORY_MINUTES` (GDPR: nothing kept without a use).
+        /// e-mail is needed only for `MAIL_MEMORY` (GDPR: nothing kept without a use).
         fn forget_old_sign_up_mail(before: Timestamp) -> u64;
     }
 }
@@ -126,18 +126,22 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(settings.sign_up_enabled && listed)
     }
 
-    /// Whether the server has sent `MAILS_PER_HOUR_MAX` sign-up e-mails in the last hour.
-    async fn sign_up_mail_cap_reached(&self) -> Result<bool, AppError> {
+    /// How many addresses a sign-up e-mail went to in the window of the cap, while the cap counts:
+    /// only while anybody may sign up. With a list of approved domains the people who may get an
+    /// e-mail are the organization's own, and a cap would turn them away.
+    async fn addresses_in_the_cap_window(&self) -> Result<Option<u64>, AppError> {
+        if !self.settings().await?.sign_up_domains.trim().is_empty() {
+            return Ok(None);
+        }
         let since = self
             .now()
-            .checked_sub(SignedDuration::from_hours(1))
+            .checked_sub(MAILS_CAP_WINDOW)
             .map_err(|error| AppError::Internal(error.to_string()))?;
-        let sent = self
-            .store()
+        self.store()
             .sign_up_mail_since(since)
             .await
-            .map_err(|error| internal::<S>(&error))?;
-        Ok(sent >= MAILS_PER_HOUR_MAX)
+            .map(Some)
+            .map_err(|error| internal::<S>(&error))
     }
 
     /// Takes the one e-mail an address gets in `RESEND_AFTER_MINUTES` minutes, for the sign-up
@@ -152,6 +156,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .checked_sub(SignedDuration::from_mins(RESEND_AFTER_MINUTES))
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let digest = address_digest(address);
+        let forget_before = now
+            .checked_sub(MAIL_MEMORY)
+            .map_err(|error| AppError::Internal(error.to_string()))?;
         let event = self.event(
             EventActor::System,
             entity(RecordKind::Invitation, invitation),
@@ -160,6 +167,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
+                    // What is no use any more goes with the next e-mail, not only with the daily job.
+                    S::forget_old_sign_up_mail(transaction, forget_before).await?;
                     S::claim_sign_up_mail(transaction, &digest, invitation, since, now).await
                 })
             })
@@ -188,14 +197,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !self.sign_up_allows(&email).await? {
             return Ok(());
         }
-        if self.sign_up_mail_cap_reached().await? {
-            // The server has sent as many sign-up e-mails this hour as it will: this one is dropped.
-            tracing::warn!("the cap of sign-up e-mails for an hour is reached");
+        let sent = self.addresses_in_the_cap_window().await?;
+        if sent.is_some_and(|sent| sent >= ADDRESSES_PER_HOUR_MAX) {
+            // The server has sent to as many addresses this hour as it will: this one is dropped.
             return Ok(());
         }
         if !self.claim_sign_up_mail(address, invitation).await? {
             // An e-mail went to this address a moment ago: signing up cannot fill the inbox.
             return Ok(());
+        }
+        if sent.is_some_and(|sent| sent + 1 >= ADDRESSES_PER_HOUR_MAX) {
+            // Written once, when the cap is reached, and not for every e-mail turned away.
+            self.note(SecurityAction::SignUpMailCapped, None, None)
+                .await;
         }
         let has_account = self
             .store()
@@ -260,7 +274,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .checked_sub(SignedDuration::from_hours(KEEP_HOURS))
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let resent = now
-            .checked_sub(SignedDuration::from_mins(MAIL_MEMORY_MINUTES))
+            .checked_sub(MAIL_MEMORY)
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let event = self.event(
             EventActor::System,

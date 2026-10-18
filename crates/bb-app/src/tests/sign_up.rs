@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::settings::SettingValue;
 use bb_core::sign_up_invitation::{
-    HOURS, MAIL_MEMORY_MINUTES, MAILS_PER_HOUR_MAX, RESEND_AFTER_MINUTES,
+    ADDRESSES_PER_HOUR_MAX, HOURS, MAIL_MEMORY, MAILS_CAP_WINDOW, RESEND_AFTER_MINUTES,
 };
 use bb_core::time::SECONDS_PER_DAY;
 
@@ -275,19 +275,45 @@ async fn auth_the_job_that_clears_sessions_removes_the_links_that_are_done() -> 
 }
 
 #[tokio::test]
-async fn sec_the_server_sends_only_so_many_sign_up_e_mails_in_an_hour() -> Outcome {
+async fn sec_the_server_sends_to_only_so_many_addresses_in_an_hour_while_anybody_may_sign_up()
+-> Outcome {
     let world = world(true).await?;
-    let cap = usize::try_from(MAILS_PER_HOUR_MAX).map_err(text)?;
+    set_the_rule(&world, 1, true, &[]).await?;
+    let cap = usize::try_from(ADDRESSES_PER_HOUR_MAX).map_err(text)?;
+    let logged = world.store.log_count();
     for number in 0..cap + 3 {
         sign_up_for(&world, &format!("n{number}@example.test")).await?;
     }
     run_jobs(&world).await?;
     assert_eq!(world.mailer.messages().len(), cap);
+    // Reaching the cap is written down once, not for every e-mail turned away.
+    let capped = world
+        .store
+        .lock()
+        .log
+        .iter()
+        .skip(logged)
+        .filter(|entry| entry.action == bb_core::sign_in::SecurityAction::SignUpMailCapped)
+        .count();
+    assert_eq!(capped, 1);
     // An hour later the cap counts again from nothing.
-    world.clock.advance(MAIL_MEMORY_MINUTES * 60 + 1);
+    world.clock.advance(MAILS_CAP_WINDOW.as_secs() + 1);
     sign_up_for(&world, "late@example.test").await?;
     run_jobs(&world).await?;
     assert_eq!(world.mailer.messages().len(), cap + 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_a_list_of_domains_keeps_the_cap_from_turning_people_of_the_organization_away()
+-> Outcome {
+    let world = world(true).await?;
+    let cap = usize::try_from(ADDRESSES_PER_HOUR_MAX).map_err(text)?;
+    for number in 0..cap + 3 {
+        sign_up_for(&world, &format!("n{number}@example.test")).await?;
+    }
+    run_jobs(&world).await?;
+    assert_eq!(world.mailer.messages().len(), cap + 3);
     Ok(())
 }
 
@@ -302,10 +328,24 @@ async fn gdpr_the_memory_of_an_e_mail_goes_when_it_is_no_use_any_more() -> Outco
     world.ctx().purge_dead_sessions().await.map_err(text)?;
     assert_eq!(world.store.lock().state.sign_up_mail.len(), 1);
     // After it only keeps what is not needed: the job removes it, long before the link goes.
-    world.clock.advance(MAIL_MEMORY_MINUTES * 60);
+    world.clock.advance(MAIL_MEMORY.as_secs());
     world.ctx().purge_dead_sessions().await.map_err(text)?;
     assert!(world.store.lock().state.sign_up_mail.is_empty());
     assert_eq!(world.store.lock().state.sign_up_invitations.len(), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn gdpr_the_next_sign_up_e_mail_forgets_what_is_no_use_any_more_without_the_daily_job()
+-> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    world.clock.advance(MAIL_MEMORY.as_secs() + 1);
+    sign_up_for(&world, "zed@example.test").await?;
+    run_jobs(&world).await?;
+    let kept = world.store.lock().state.sign_up_mail.len();
+    assert_eq!(kept, 1, "only the memory of the e-mail that went last");
     Ok(())
 }
 

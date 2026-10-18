@@ -964,15 +964,15 @@ Defined in `crates/bb-core/src/sign_up_invitation.rs`.
 
 ### SignUpMail
 
-The last e-mail that went to an address for a sign-up, the one fact kept so that signing up again and again cannot fill the inbox of the address, whether it has an account or not. The address itself is not kept, only its digest.
+The last e-mail that went to an address for a sign-up, kept for two uses: that signing up again and again cannot fill the inbox of the address, whether it has an account or not, and the cap of the addresses the server sends to in an hour (security, legitimate interests). It is kept for [`MAIL_MEMORY`] (an hour) and goes with the next sign-up e-mail or the daily job after that. The address itself is not kept, only its digest.
 
 Defined in `crates/bb-core/src/sign_up_invitation.rs`.
 
-| Field        | Personal data | Category   | Legal basis | What it holds                                                                           |
-| ------------ | ------------- | ---------- | ----------- | --------------------------------------------------------------------------------------- |
-| `address`    | Yes           | `identity` | `contract`  | The digest of the address.                                                              |
-| `invitation` | No            | –          | –           | The sign-up the e-mail was for, so a second try of the same job is not a second e-mail. |
-| `sent_at`    | Yes           | `activity` | `contract`  | When it went.                                                                           |
+| Field        | Personal data | Category   | Legal basis            | What it holds                                                                           |
+| ------------ | ------------- | ---------- | ---------------------- | --------------------------------------------------------------------------------------- |
+| `address`    | Yes           | `identity` | `legitimate_interests` | The digest of the address.                                                              |
+| `invitation` | No            | –          | –                      | The sign-up the e-mail was for, so a second try of the same job is not a second e-mail. |
+| `sent_at`    | Yes           | `activity` | `legitimate_interests` | When it went.                                                                           |
 
 ### StartingRolesMade
 

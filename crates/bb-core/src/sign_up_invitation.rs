@@ -24,32 +24,51 @@ pub const fn lasts() -> SignedDuration {
 /// somebody else.
 pub const RESEND_AFTER_MINUTES: i64 = 10;
 
-/// How many sign-up e-mails the whole server sends in an hour, to any address. Signing up asks for
-/// no proof of the address, so without a cap for the server it could be used to send mail to
-/// strangers (the route has a limit for each network, which many networks together get around).
-pub const MAILS_PER_HOUR_MAX: u64 = 100;
+/// How many different addresses the whole server sends a sign-up e-mail to in [`MAILS_CAP_WINDOW`],
+/// while anybody may sign up (the list of approved domains is empty). Signing up asks for no proof
+/// of the address, so without a cap for the server it could be used to send mail to strangers (the
+/// route has a limit for each network, which many networks together get around). An address gets
+/// at most one e-mail in [`RESEND_AFTER_MINUTES`] on top of that.
+pub const ADDRESSES_PER_HOUR_MAX: u64 = 100;
 
-/// How long the memory of an e-mail that went is kept, in minutes: as long as it is needed, which
-/// is the longer of the wait for the same address and the hour that the cap counts over.
-pub const MAIL_MEMORY_MINUTES: i64 = 60;
+/// The time the cap above counts over.
+pub const MAILS_CAP_WINDOW: SignedDuration = SignedDuration::from_hours(1);
+
+/// How long the memory of an e-mail that went is kept: as long as it is needed, which is the longer
+/// of the wait for the same address and the window of the cap. It is the one time both read.
+pub const MAIL_MEMORY: SignedDuration = longer(
+    SignedDuration::from_mins(RESEND_AFTER_MINUTES),
+    MAILS_CAP_WINDOW,
+);
+
+/// The longer of two times.
+const fn longer(first: SignedDuration, second: SignedDuration) -> SignedDuration {
+    if first.as_secs() > second.as_secs() {
+        first
+    } else {
+        second
+    }
+}
 
 /// How long after the link ran out its row stays before the job that clears sessions deletes it, in
 /// hours.
 pub const KEEP_HOURS: i64 = 24;
 
-/// The last e-mail that went to an address for a sign-up, the one fact kept so that signing up
-/// again and again cannot fill the inbox of the address, whether it has an account or not. The
+/// The last e-mail that went to an address for a sign-up, kept for two uses: that signing up again
+/// and again cannot fill the inbox of the address, whether it has an account or not, and the cap of
+/// the addresses the server sends to in an hour (security, legitimate interests). It is kept for
+/// [`MAIL_MEMORY`] (an hour) and goes with the next sign-up e-mail or the daily job after that. The
 /// address itself is not kept, only its digest.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct SignUpMail {
     /// The digest of the address.
-    #[personal(category = "identity", basis = "contract")]
+    #[personal(category = "identity", basis = "legitimate_interests")]
     pub address: Digest,
     /// The sign-up the e-mail was for, so a second try of the same job is not a second e-mail.
     #[not_personal]
     pub invitation: InvitationId,
     /// When it went.
-    #[personal(category = "activity", basis = "contract")]
+    #[personal(category = "activity", basis = "legitimate_interests")]
     pub sent_at: Timestamp,
 }
 

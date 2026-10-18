@@ -73,6 +73,8 @@ words! {
         SignUpAccepted => "sign_up.accepted",
         /// A sign-up was turned away.
         SignUpRefused => "sign_up.refused",
+        /// The server reached the cap of addresses it sends sign-up e-mails to in an hour.
+        SignUpMailCapped => "sign_up.mail_capped",
         /// Somebody with the permission changed who may sign up.
         SignUpPolicyChanged => "sign_up.policy_changed",
         /// The first administrator was made with the setup code.
