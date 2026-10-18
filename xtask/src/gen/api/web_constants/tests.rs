@@ -28,6 +28,7 @@ fn the_app_paths_come_from_the_constants_of_the_core() {
         APP_PATHS_SOURCE.to_owned(),
         "pub const ISSUE: &str = \"/issues/$issue\";
 pub const INVITATION: &str = \"/invitation\";
+pub const NOTIFICATIONS: &str = \"/n\";
 pub const SIGN_IN: &str = \"/in\";
 "
         .to_owned(),
