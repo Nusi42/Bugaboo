@@ -117,18 +117,13 @@ export function changesFrom(draft: Draft, status: string): readonly DraftChange[
   return draft.changes.filter((change) => change.from === status);
 }
 
-/** Whether a name is taken by a status already, in any case. */
-function taken(draft: Draft, name: string): boolean {
-  return draft.statuses.some((status) => status.name.toLowerCase() === name.toLowerCase());
-}
-
-/** The draft with a new status at the end; the same draft for no name or a name that is taken. */
+/**
+ * The draft with a new status at the end. The draft holds what the person typed: whether the name is
+ * a good one (taken, empty) is the server's to say, when the draft is published; the rule is not
+ * written a second time here.
+ */
 export function addStatus(draft: Draft, name: string, group: Schema<"StatusGroup">): Draft {
-  const trimmed = name.trim();
-  if (trimmed === "" || taken(draft, trimmed)) {
-    return draft;
-  }
-  const added: DraftStatus = { id: newId("status"), key: null, name: trimmed, group };
+  const added: DraftStatus = { id: newId("status"), key: null, name: name.trim(), group };
   return { ...draft, statuses: [...draft.statuses, added] };
 }
 
@@ -178,17 +173,15 @@ export function moveStatus(draft: Draft, id: string, by: -1 | 1): Draft {
   return { ...draft, statuses };
 }
 
-/**
- * The draft with a new status change; the same draft for one between a status and itself, one that
- * is there already, or one with no words.
- */
+/** The draft with a new status change, as typed; *Publish* judges it, the draft does not. */
 export function addChange(draft: Draft, from: string, to: string, button: string): Draft {
-  const words = button.trim();
-  const there = draft.changes.some((change) => change.from === from && change.to === to);
-  if (words === "" || from === to || there) {
-    return draft;
-  }
-  const added: DraftChange = { id: newId("change"), from, to, button: words, rules: noRules };
+  const added: DraftChange = {
+    id: newId("change"),
+    from,
+    to,
+    button: button.trim(),
+    rules: noRules,
+  };
   return { ...draft, changes: [...draft.changes, added] };
 }
 

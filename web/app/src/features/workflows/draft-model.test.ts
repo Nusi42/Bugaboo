@@ -136,18 +136,14 @@ describe("wf_02 a status is added, moved and removed in plain steps", () => {
 });
 
 describe("wf_02 a status change that makes no sense is not added", () => {
-  it("adds none to the same status, none twice and none without words", () => {
+  it("adds what was typed and leaves the judging to Publish, which the server does", () => {
     const draft = draftOf(editor);
-    expect(addChange(draft, "open", "open", "Stay")).toBe(draft);
-    expect(addChange(draft, "open", "in-progress", "Again")).toBe(draft);
-    expect(addChange(draft, "open", "done", "   ")).toBe(draft);
-    expect(changesFrom(addChange(draft, "open", "done", "Mark as done"), "open")).toHaveLength(2);
-  });
-
-  it("adds no status with no name or one that exists already", () => {
-    const draft = draftOf(editor);
-    expect(addStatus(draft, "  ", "done")).toBe(draft);
-    expect(addStatus(draft, "open", "done")).toBe(draft);
+    expect(addStatus(draft, "open", "done").statuses).toHaveLength(4);
+    expect(addStatus(draft, "  Testing ", "done").statuses.at(-1)?.name).toBe("Testing");
+    expect(changesFrom(addChange(draft, "open", "done", " Mark as done "), "open")).toHaveLength(2);
+    expect(addChange(draft, "open", "done", " Mark as done ").changes.at(-1)?.button).toBe(
+      "Mark as done",
+    );
   });
 
   it("gives a new status change rules that name nobody and ask for nothing", () => {

@@ -102,3 +102,14 @@ test("wf_02 a draft a refused publish left is still offered after a reload (ADR-
   await page.reload();
   await expect(page.getByText(t("workflows.draft-changed"))).toHaveCount(0);
 });
+
+test("wf_02 a status with a name that is taken is added, and Publish says why it is refused", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openSimpleToChange(page);
+  await page.getByLabel(t("workflows.new-status"), { exact: true }).fill("Done");
+  await page.getByRole("button", { name: t("workflows.create-status"), exact: true }).click();
+  await page.getByRole("button", { name: t("workflows.publish"), exact: true }).click();
+  await expect(page.getByText(t("error.workflow.invalid"))).toBeVisible();
+});

@@ -31,7 +31,10 @@ export async function shootEditor(page: Page): Promise<void> {
     .getByRole("button", { name: t("workflows.rules-open", { button: "Send to testing" }) })
     .click();
   await inFourThemes(page, "11-rules");
-  await page.getByRole("button", { name: t("workflows.rules-done"), exact: true }).click();
+  await page
+    .getByRole("button", { name: t("workflows.rules-done"), exact: true })
+    .last()
+    .click();
   await drawing(page);
   await page.getByRole("button", { name: t("workflows.publish"), exact: true }).click();
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
