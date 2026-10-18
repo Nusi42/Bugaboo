@@ -354,7 +354,6 @@ impl<S: AuthStore> Ctx<'_, S> {
                     comment,
                     recipient: person,
                     via,
-                    read_at: None,
                 });
             }
         }

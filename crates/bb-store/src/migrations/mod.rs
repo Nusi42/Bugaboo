@@ -48,6 +48,7 @@ mod m0016_files;
 mod m0017_notifications;
 mod m0018_offers;
 mod m0019_layout_off_fields;
+mod m0020_mention_read_at;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -231,11 +232,15 @@ const ALL: &[Definition] = &[
         name: "offers",
         steps: || Ok(m0018_offers::steps()),
     },
-    // 18 belongs to the types and labels per project (WP-11).
     Definition {
         version: 19,
         name: "layout_off_fields",
         steps: || Ok(m0019_layout_off_fields::steps()),
+    },
+    Definition {
+        version: 20,
+        name: "mention_read_at",
+        steps: || Ok(m0020_mention_read_at::steps()),
     },
 ];
 
@@ -574,6 +579,33 @@ mod tests {
                 assert!(!table.marks.fields().is_empty());
             }
             database.close().await;
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn m4_f83_migration_20_takes_the_read_at_of_a_mention_away() -> TestResult {
+        each_database("migration_20_mention", async |db| {
+            use crate::schema::{MentionRow, Retired};
+            let database = Database::connect(db.url()).await?;
+            database.migrate_until(19, at(0)).await?;
+            // SQLite reads a missing column in a SELECT as a string, so the question is an UPDATE
+            // that matches no row: it names the column and fails when there is none.
+            let mut with_read = Query::update();
+            with_read
+                .table(MentionRow::Table)
+                .value(Retired::ReadAt, 1_i64)
+                .and_where(Expr::val(1_i64).eq(0_i64));
+            database.execute(&with_read).await?;
+            database.migrate(at(1)).await?;
+            assert!(
+                database.execute(&with_read).await.is_err(),
+                "the column is gone"
+            );
+            let mut rows = Query::select();
+            rows.column(MentionRow::Via).from(MentionRow::Table);
+            assert!(database.fetch_all(&rows).await?.is_empty());
             Ok(())
         })
         .await
