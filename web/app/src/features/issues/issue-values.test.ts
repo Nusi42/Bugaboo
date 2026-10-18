@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { after, changeSentence, isDetail, valuesBefore } from "./issue-values.ts";
+import { after, undoSentence, isDetail, valuesBefore } from "./issue-values.ts";
 import type { IssueDetail } from "./slots.ts";
 
 const ana = { shown: "name", id: "u1", name: "Ana" } as const;
@@ -54,15 +54,15 @@ describe("ux_06 a change shows at once and counts the version up by one", () => 
 
 describe("ux_06 the sentence that goes with Undo", () => {
   it("says the field and the words of the new value", () => {
-    expect(changeSentence({ priority: "high" })).toBe("Priority changed to High.");
-    expect(changeSentence({ status: inProgress })).toBe("Status changed to In progress.");
-    expect(changeSentence({ title: "New title" })).toBe("Title changed to New title.");
+    expect(undoSentence({ priority: "high" })).toBe("Priority changed to High.");
+    expect(undoSentence({ status: inProgress })).toBe("Status changed to In progress.");
+    expect(undoSentence({ title: "New title" })).toBe("Title changed to New title.");
   });
 
   it("names the people, or says the field is cleared", () => {
-    expect(changeSentence({ assignedTo: [{ id: "u1", name: "Ana" }] })).toBe(
+    expect(undoSentence({ assignedTo: [{ id: "u1", name: "Ana" }] })).toBe(
       "Assigned to changed to Ana.",
     );
-    expect(changeSentence({ assignedTo: [] })).toBe("Assigned to cleared.");
+    expect(undoSentence({ assignedTo: [] })).toBe("Assigned to cleared.");
   });
 });

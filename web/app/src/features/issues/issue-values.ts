@@ -133,7 +133,7 @@ function said(field: MessageKey, value: string): string {
 }
 
 /** What a change says in a sentence, for *Undo*: "Priority changed to High." */
-export function changeSentence(values: IssueValues): string {
+export function undoSentence(values: IssueValues): string {
   const parts: (string | undefined)[] = [
     values.title === undefined ? undefined : said("issue-field.title", values.title),
     values.status === undefined ? undefined : said("issue-field.status", values.status.name),

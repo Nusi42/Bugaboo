@@ -3,16 +3,13 @@ import type { components, Schema } from "@bugaboo/api-client";
 import { newId } from "../../shared/new-ids.ts";
 import { noRules, rulesBodyOf, rulesOf, sameRules, type ChangeRules } from "./rules-model.ts";
 
-/** The status group of a status. */
-export type StatusGroupWord = Schema<"StatusRef">["group"];
-
 /** A status in the draft. A new status has no key yet: the server creates it from the name. */
 export interface DraftStatus {
   /** Names the status in the draft: the key it has, or an invented one while it is new. */
   readonly id: string;
   readonly key: string | null;
   readonly name: string;
-  readonly group: StatusGroupWord;
+  readonly group: Schema<"StatusGroup">;
 }
 
 /** A status change in the draft, between two statuses of the draft (by their `id`). */
@@ -53,10 +50,15 @@ export function draftOf(editor: Schema<"WorkflowEditorBody">): Draft {
   };
 }
 
-/** How the body of *Publish* names a status in a status change: by its key, a new one by its name. */
+/** How *Publish* names a status in a status change: by its key, a new one (it has no key yet) by its name. */
+export function statusRefOf(status: DraftStatus): string {
+  return status.key ?? status.name;
+}
+
+/** How the body of *Publish* names the status of the draft with this ID. */
 function nameInBody(draft: Draft, id: string): string {
   const status = draft.statuses.find((each) => each.id === id);
-  return status === undefined ? id : (status.key ?? status.name);
+  return status === undefined ? id : statusRefOf(status);
 }
 
 /** The name of a status of the draft by its ID in the draft. */
@@ -121,7 +123,7 @@ function taken(draft: Draft, name: string): boolean {
 }
 
 /** The draft with a new status at the end; the same draft for no name or a name that is taken. */
-export function addStatus(draft: Draft, name: string, group: StatusGroupWord): Draft {
+export function addStatus(draft: Draft, name: string, group: Schema<"StatusGroup">): Draft {
   const trimmed = name.trim();
   if (trimmed === "" || taken(draft, trimmed)) {
     return draft;
@@ -146,7 +148,7 @@ export function renameStatus(draft: Draft, id: string, name: string): Draft {
 }
 
 /** The draft with a status in another status group. */
-export function setGroup(draft: Draft, id: string, group: StatusGroupWord): Draft {
+export function setGroup(draft: Draft, id: string, group: Schema<"StatusGroup">): Draft {
   return withStatus(draft, id, { group });
 }
 

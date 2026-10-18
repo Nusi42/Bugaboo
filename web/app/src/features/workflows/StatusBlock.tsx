@@ -1,3 +1,4 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { IconButton, iconName, SelectField, TextField, partOf, part } from "@bugaboo/ui";
 
@@ -9,7 +10,6 @@ import {
   setGroup,
   type Draft,
   type DraftStatus,
-  type StatusGroupWord,
 } from "./draft-model.ts";
 import { groupChoices } from "./status-groups.ts";
 import { AddChange } from "./AddChange.tsx";
@@ -37,7 +37,7 @@ function StatusHead({ status, first, last, draft, edit }: StatusBlockProps) {
           edit((before) => renameStatus(before, status.id, name));
         }}
       />
-      <SelectField<StatusGroupWord>
+      <SelectField<Schema<"StatusGroup">>
         label={t("workflows.status-group")}
         choices={groupChoices}
         value={status.group}

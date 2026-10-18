@@ -13,7 +13,7 @@ import {
 import { readAgain, sendChange, versionNow } from "./issue-requests.ts";
 import {
   after,
-  changeSentence,
+  undoSentence,
   isDetail,
   rowFieldOf,
   valuesBefore,
@@ -136,7 +136,7 @@ async function askAndOffer({ detail, address, id, values, run }: Asked): Promise
   const made = await sendChange(id, { values, version: versionNow(address, detail.issue) });
   readAgain(address);
   undoStore.offer({
-    message: changeSentence(values),
+    message: undoSentence(values),
     inline: false,
     undo: () => {
       run(before, made ?? versionNow(address, detail.issue));
@@ -215,7 +215,7 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
       });
       const field = rowFieldOf(values);
       const offer = undoStore.offer({
-        message: changeSentence(values),
+        message: undoSentence(values),
         inline: field !== undefined,
         undo: () => {
           run(before, made.version ?? versionNow(address, detail.issue));
