@@ -11464,7 +11464,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited", "Reset to default"),
     (
         "layouts.use-inherited-text",
-        "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
+        "The layout of this place is taken away. The place then uses the layout of the project above. This cannot be undone.",
     ),
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.many", "{start}, and {last}"),
@@ -12535,7 +12535,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.step.dates", "working out the dates"),
     (
         "sample.step.editing",
-        "editing a text under a lock, or keeping a draft",
+        "editing a text while others see that you are editing it, or keeping a draft",
     ),
     ("sample.step.fields", "creating an own field"),
     (
@@ -13701,7 +13701,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.use-inherited", "Reset to default"),
     (
         "workflows.use-inherited-text",
-        "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+        "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status that the workflow of the project above does not have.",
     ),
     ("workflows.use-inherited-title", "Reset to default?"),
     (

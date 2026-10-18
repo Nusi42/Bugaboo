@@ -59,7 +59,7 @@ export const messages = {
   "layouts.use-inherited": "Reset to default",
   "layouts.use-inherited-title": "Reset to default?",
   "layouts.use-inherited-text":
-    "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
+    "The layout of this place is taken away. The place then uses the layout of the project above. This cannot be undone.",
   "layouts.delete-held":
     "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
 } as const;
