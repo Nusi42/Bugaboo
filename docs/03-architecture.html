@@ -810,7 +810,7 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 <ol>
 <li>The viewer themselves: their name.</li>
 <li>A removed person (PRIV-04, M9): with <em>Names</em>, the label <em>Former user</em> plus a random code (<code>Former user K7Q2</code>): four characters of Crockford Base32 from the secure random source, drawn again on a clash and longer when four run short, unique among removed people, made when the person is removed and stored with the tombstone, never made from the person's ID or a counter (PRIV-13); with <em>Role only</em> or <em>Hidden</em>, <em>Someone</em>.</li>
-<li>Anybody else by the viewer's level: <em>Names</em> → the name (and the ID, for links); <em>Role only</em> → the label of their first role at that place in the order of roles (<em>"a Team member"</em>), or <em>Someone</em> when they have none there; <em>Hidden</em> → <em>Someone</em>.</li>
+<li>Anybody else by the viewer's level: <em>Names</em> → the name (and the ID, for links); <em>Role only</em> → the label of their first role at that place in the order of roles (<em>"Someone (Team member)"</em>), or <em>Someone</em> when they have none there; <em>Hidden</em> → <em>Someone</em>.</li>
 </ol>
 <pre><code>PersonRef = { shown: "name",    id: UserId, name: String }
           | { shown: "role",    role: String }          // the screen says "a {role}"
@@ -1375,7 +1375,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><em>Start working</em> opens a small window that asks for who does the work; the Team member names a colleague and saves: <em>In progress</em>.</li>
 <li>The Team member pastes a screenshot onto the bug (the row and its preview), and writes the customer.</li>
 <li><em>Mark as done</em>: <em>Done</em>.</li>
-<li>The Guest opens <em>Notifications</em>: the bug and its changes are there, without the customer, the colleague (the Guest reads <em>someone</em>) and the name of the Team member (the Guest reads <em>a person with the role Team member</em>).</li>
+<li>The Guest opens <em>Notifications</em>: the bug and its changes are there, without the customer, the colleague (the Guest reads <em>someone</em>) and the name of the Team member (the Guest reads <em>Someone (Team member)</em>).</li>
 <li>The e-mail has come to the Guest too, without the customer and without the names; its link opens the bug.</li>
 </ol>
 <h4>Speed on the sample</h4>
@@ -2415,7 +2415,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>Names of people appear in many places: reported by, assigned to, last changed by, comment and history authors, followers, "… is editing", time entries, mentions, avatars, e-mails, exports, the assistant. Under GDPR, organizations may need to hide who did what from some roles (for example external guests, or works-council agreements).</p>
 <h4>Decision</h4>
 <ul>
-<li><strong>Who sees people</strong> is configured per role on the project tree, like field permissions, for each kind of people information: <strong>Names</strong>, <strong>Role only</strong> (<em>"a Team member"</em>) or <strong>Hidden</strong> (<em>"Someone"</em>).</li>
+<li><strong>Who sees people</strong> is configured per role on the project tree, like field permissions, for each kind of people information: <strong>Names</strong>, <strong>Role only</strong> (<em>"Someone (Team member)"</em>) or <strong>Hidden</strong> (<em>"Someone"</em>).</li>
 <li>Every place that shows a person uses one type, <strong><code>PersonRef</code></strong>, which is resolved for the <strong>viewer</strong> by <code>bb-policy</code> into a name, a role label or <em>Someone</em>. Raw person data never reaches serialization directly.</li>
 <li>If a viewer can't see names for a kind of information, they also can't search, sort, group or filter by it; the field behaves like a hidden field (SEC-06).</li>
 <li>Edit-lock notices follow the same rule: <em>"Someone is editing the description"</em>.</li>
@@ -2824,7 +2824,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>Every agent has one responsible person</strong>, normally the person who made it; handing an agent to another person needs that person's acceptance. Creating agents takes the new permission <em>Create agents that work for you</em> (organization, kind <em>Change</em>; at the start Administrator, Project lead and Team member have it). Administrators see every agent of the organization in <em>Organization settings › Agents</em> and can stop any of them; an administrator can switch agents off for the organization or a project, like AI itself (AI-02). Enforced by: the tests <code>ai_30_an_agent_needs_a_responsible_person</code> and <code>ai_30_an_administrator_stops_any_agent</code> (M8).</li>
 <li><strong>What an agent can do at a place is at most what its responsible person can do there</strong>, narrowed by its work (decision 3) and its limits (decision 9). When the person loses that access, is switched off or leaves, the agent loses it at the next request, and its open work becomes <em>Stopped</em>. Enforced by: the tests <code>ai_30_an_agent_never_does_more_than_its_person</code> and <code>ai_30_an_agent_stops_when_its_person_loses_access</code> (M8).</li>
 <li><strong>An agent is not a member:</strong> it has no role, is in no group, never appears in <em>Who has which role</em>, and is never <em>Assigned to</em> an issue. The issue keeps its person; while an agent works on it the issue shows <em>"worked on by Fixer"</em>. This keeps a person answerable for every issue and keeps COMP-10 simple. Enforced by: the tests <code>ai_30_an_agent_cannot_be_assigned</code> and <code>ai_30_an_agent_has_no_role</code> (M8).</li>
-<li><strong>Shown as</strong> its name with an agent mark and its person: <em>"Fixer, agent of Ada Brandt"</em>. Its own name is always shown (it is not a person); its person follows <em>Who sees people</em> for the viewer (<em>"agent of a Team member"</em>).</li>
+<li><strong>Shown as</strong> its name with an agent mark and its person: <em>"Fixer, agent of Ada Brandt"</em>. Its own name is always shown (it is not a person); its person follows <em>Who sees people</em> for the viewer (<em>"agent of Someone (Team member)"</em>).</li>
 <li>An agent signs in with its own <strong>agent key</strong> (an access key that belongs to the agent and always runs out) or with OAuth for its app. Agent keys are listed with the agent and can be renewed or taken back there.</li>
 <li><strong>One person, several agents:</strong> a person may have several agents, and each agent may work on several issues at once, within its limits. <em>My agents</em> (decision 8) shows all of them together, with what waits for the person first.</li>
 </ul>
@@ -2924,7 +2924,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h4>Decision</h4>
 <h5>1. The person on the bar</h5>
 <ul>
-<li>Each bar shows the picture and first name of the person it is <em>Assigned to</em>, at its end (PLAN-10); <em>Group by person</em> gives one row per person, so overlapping work is visible. Both follow <em>Who sees people</em> for the viewer: <em>Role only</em> shows <em>"a Team member"</em> and offers no grouping by person, <em>Hidden</em> shows nobody. Enforced by: the test <code>plan_10_the_timeline_shows_people_only_as_who_sees_people_allows</code> (M7).</li>
+<li>Each bar shows the picture and first name of the person it is <em>Assigned to</em>, at its end (PLAN-10); <em>Group by person</em> gives one row per person, so overlapping work is visible. Both follow <em>Who sees people</em> for the viewer: <em>Role only</em> shows <em>"Someone (Team member)"</em> and offers no grouping by person, <em>Hidden</em> shows nobody. Enforced by: the test <code>plan_10_the_timeline_shows_people_only_as_who_sees_people_allows</code> (M7).</li>
 </ul>
 <h5>2. Work times: when and how much a person works</h5>
 <ul>

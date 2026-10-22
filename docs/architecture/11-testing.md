@@ -102,7 +102,7 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 2. *Start working* opens a small window that asks for who does the work; the Team member names a colleague and saves: *In progress*.
 3. The Team member pastes a screenshot onto the bug (the row and its preview), and writes the customer.
 4. *Mark as done*: *Done*.
-5. The Guest opens *Notifications*: the bug and its changes are there, without the customer, the colleague (the Guest reads *someone*) and the name of the Team member (the Guest reads *a person with the role Team member*).
+5. The Guest opens *Notifications*: the bug and its changes are there, without the customer, the colleague (the Guest reads *someone*) and the name of the Team member (the Guest reads *Someone (Team member)*).
 6. The e-mail has come to the Guest too, without the customer and without the names; its link opens the bug.
 
 ### Speed on the sample

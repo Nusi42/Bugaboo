@@ -266,7 +266,7 @@ Every person in an answer is a `PersonRef`, resolved by `bb-policy` for the view
 
 1. The viewer themselves: their name.
 2. A removed person (PRIV-04, M9): with *Names*, the label *Former user* plus a random code (`Former user K7Q2`): four characters of Crockford Base32 from the secure random source, drawn again on a clash and longer when four run short, unique among removed people, made when the person is removed and stored with the tombstone, never made from the person's ID or a counter (PRIV-13); with *Role only* or *Hidden*, *Someone*.
-3. Anybody else by the viewer's level: *Names* → the name (and the ID, for links); *Role only* → the label of their first role at that place in the order of roles (*"a Team member"*), or *Someone* when they have none there; *Hidden* → *Someone*.
+3. Anybody else by the viewer's level: *Names* → the name (and the ID, for links); *Role only* → the label of their first role at that place in the order of roles (*"Someone (Team member)"*), or *Someone* when they have none there; *Hidden* → *Someone*.
 
 ```text
 PersonRef = { shown: "name",    id: UserId, name: String }
