@@ -3,6 +3,7 @@
 /** The addresses of the app pages that the server links to (invitations, e-mails). */
 export const appPaths = {
   issue: "/issues/$issue",
+  projectSettings: "/p/$project/settings",
   invitation: "/invitation",
   signIn: "/sign-in",
   notifications: "/notifications",

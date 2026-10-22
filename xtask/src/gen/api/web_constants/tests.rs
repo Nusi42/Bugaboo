@@ -27,6 +27,7 @@ fn the_app_paths_come_from_the_constants_of_the_core() {
     let source = (
         APP_PATHS_SOURCE.to_owned(),
         "pub const ISSUE: &str = \"/issues/$issue\";
+pub const PROJECT_SETTINGS: &str = \"/p/$project/settings\";
 pub const INVITATION: &str = \"/invitation\";
 pub const NOTIFICATIONS: &str = \"/n\";
 pub const SIGN_IN: &str = \"/in\";
