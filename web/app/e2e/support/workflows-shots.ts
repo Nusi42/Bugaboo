@@ -36,6 +36,6 @@ export async function shootEditor(page: Page): Promise<void> {
   await page.getByRole("button", { name: t("workflows.publish"), exact: true }).click();
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   const markAsDone = await tryMarkAsDone(page, "WEB-1", cleo);
-  await expect(markAsDone).toContainText(t("error.workflow.not-named"));
+  await expect(markAsDone).toContainText(t("workflows.try-not-for-you"));
   await inFourThemes(page, "13-try-it");
 }

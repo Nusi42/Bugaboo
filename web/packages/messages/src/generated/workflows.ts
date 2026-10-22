@@ -98,6 +98,8 @@ export const messages = {
   "workflows.try-go": "Show the status changes",
   "workflows.try-in-status": "{key} is in this status:",
   "workflows.try-none": "No status change starts here.",
+  "workflows.try-not-for-you": "This person may not change the status of this issue at all.",
+  "workflows.try-not-named": "Who can do it does not name this person.",
   "workflows.try-allowed": "Allowed.",
   "workflows.try-needs": "Possible once these fields have a value: {fields}.",
   "workflows.try-on-field": "{reason} Field: {field}.",

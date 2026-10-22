@@ -4997,6 +4997,12 @@ pub const WORKFLOWS_TRY_GO: MessageKey = MessageKey::new("workflows.try-go");
 /// The message `workflows.try-none`.
 pub const WORKFLOWS_TRY_NONE: MessageKey = MessageKey::new("workflows.try-none");
 
+/// The message `workflows.try-not-for-you`.
+pub const WORKFLOWS_TRY_NOT_FOR_YOU: MessageKey = MessageKey::new("workflows.try-not-for-you");
+
+/// The message `workflows.try-not-named`.
+pub const WORKFLOWS_TRY_NOT_NAMED: MessageKey = MessageKey::new("workflows.try-not-named");
+
 /// The message `workflows.try-text`.
 pub const WORKFLOWS_TRY_TEXT: MessageKey = MessageKey::new("workflows.try-text");
 
@@ -10473,7 +10479,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.workflow.not-named",
-        "The rules of this status change do not name you. Under Who can do it, tick who may use it.",
+        "You may not use this status change.",
     ),
     (
         "error.workflow.only-if",
@@ -13753,6 +13759,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Possible once these fields have a value: {fields}.",
     ),
     ("workflows.try-none", "No status change starts here."),
+    (
+        "workflows.try-not-for-you",
+        "This person may not change the status of this issue at all.",
+    ),
+    (
+        "workflows.try-not-named",
+        "Who can do it does not name this person.",
+    ),
     ("workflows.try-on-field", "{reason} Field: {field}."),
     (
         "workflows.try-text",

@@ -2527,6 +2527,20 @@ part "confirm.dialog" {
     outline none
 }
 
+// What the question says and asks for scrolls by itself where the screen is not tall enough (a phone), so
+// the answers below it never leave the screen (the review of M4, A1).
+part "confirm.body" {
+    display flex
+    flex-direction column
+    flex 1
+    gap "$space-4"
+    min-height 0
+}
+
+part "overlay.modal[variant=full] confirm.body" {
+    overflow-y auto
+}
+
 part "confirm.title" {
     margin 0
     font-size "$fs-lg"
@@ -2546,6 +2560,7 @@ part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions 
 // other and as wide as the screen, the main one first (the thumb reaches it).
 part "overlay.modal[variant=full] confirm.dialog" {
     flex 1
+    min-height 0
 }
 
 part "overlay.modal[variant=full] confirm.actions" {

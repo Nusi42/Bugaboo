@@ -428,8 +428,7 @@ export const messages = {
   "error.workflow.no-such-change":
     "This status change is not in the workflow of this issue any more. Choose one from the status button.",
   "error.workflow.not-for-you": "You may not change the status this way.",
-  "error.workflow.not-named":
-    "The rules of this status change do not name you. Under Who can do it, tick who may use it.",
+  "error.workflow.not-named": "You may not use this status change.",
   "error.workflow.only-if":
     "This status change is possible only when something else is true first.",
   "error.workflow.cannot-fill":

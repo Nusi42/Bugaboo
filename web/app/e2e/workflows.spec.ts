@@ -55,7 +55,7 @@ test("wf_02 Try it names why a Contributor gets no Mark as done", async ({ page 
   await signIn(page, ada);
   await openSimple(page);
   const markAsDone = await tryMarkAsDone(page, "WEB-1", cleo);
-  await expect(markAsDone).toContainText(t("error.workflow.not-named"));
+  await expect(markAsDone).toContainText(t("workflows.try-not-for-you"));
 });
 
 test("wf_02 the whole organization has nothing to inherit, so there is no way back to it", async ({
@@ -66,6 +66,22 @@ test("wf_02 the whole organization has nothing to inherit, so there is no way ba
   await expect(
     page.getByRole("button", { name: t("workflows.use-inherited"), exact: true }),
   ).toHaveCount(0);
+});
+
+test("wf_02 a status with a name another has is refused at the field, by the rule of the server", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openSimpleToChange(page);
+  const name = page.getByLabel(t("workflows.new-status"), { exact: true });
+  const create = page.getByRole("button", { name: t("workflows.create-status"), exact: true });
+  // Capitals and the spaces inside a name make no difference.
+  await name.fill("in   PROGRESS");
+  await expect(page.getByText(t("workflows.status-name-taken"))).toBeVisible();
+  await expect(create).toBeDisabled();
+  await name.fill("Waiting");
+  await expect(page.getByText(t("workflows.status-name-taken"))).toHaveCount(0);
+  await expect(create).toBeEnabled();
 });
 
 test("wf_02 the phone shows the plain list and a computer may also draw", async ({ page }) => {

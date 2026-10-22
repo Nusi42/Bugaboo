@@ -16,7 +16,8 @@ async function load(): Promise<NameKey> {
  * it opens (coding-standards section 6). Nothing until it is there.
  */
 export function useNameKey(): NameKey | undefined {
-  const [key, setKey] = useState<NameKey | undefined>(loaded);
+  // A function in a state is its way of starting, so the rule is handed over inside one.
+  const [key, setKey] = useState<NameKey | undefined>(() => loaded);
   useEffect(() => {
     let live = true;
     if (loaded === undefined) {

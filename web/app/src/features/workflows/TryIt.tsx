@@ -1,3 +1,4 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -31,6 +32,14 @@ function namesOf(fields: WorkflowEditor["fields"], keys: readonly string[]): str
   );
 }
 
+/** Why the judge turned a status change down, said to the person who tries the workflow (who is not the person it is tried for). */
+function reasonOf(why: Schema<"Why">): string {
+  if (why === "not-for-you") {
+    return t("workflows.try-not-for-you");
+  }
+  return why === "not-named" ? t("workflows.try-not-named") : t(`error.workflow.${why}`);
+}
+
 /** What the judge says about one status change, in a sentence. */
 function sentenceOf(change: Verdict, fields: WorkflowEditor["fields"]): string {
   if (change.verdict === "allowed") {
@@ -39,7 +48,7 @@ function sentenceOf(change: Verdict, fields: WorkflowEditor["fields"]): string {
   if (change.verdict === "needs") {
     return t("workflows.try-needs", { fields: namesOf(fields, change.fields) });
   }
-  const reason = t(`error.workflow.${change.why}`);
+  const reason = reasonOf(change.why);
   return change.field === undefined || change.field === null
     ? reason
     : t("workflows.try-on-field", { reason, field: namesOf(fields, [change.field]) });

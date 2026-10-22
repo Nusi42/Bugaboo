@@ -103,13 +103,16 @@ test("wf_02 a draft a refused publish left is still offered after a reload (ADR-
   await expect(page.getByText(t("workflows.draft-changed"))).toHaveCount(0);
 });
 
-test("wf_02 a status with a name that is taken is added, and Publish says why it is refused", async ({
+test("wf_02 a status renamed to a name another has is named, and Publish waits", async ({
   page,
 }) => {
   await signIn(page, ada);
   await openSimpleToChange(page);
-  await page.getByLabel(t("workflows.new-status"), { exact: true }).fill("Done");
-  await page.getByRole("button", { name: t("workflows.create-status"), exact: true }).click();
-  await page.getByRole("button", { name: t("workflows.publish"), exact: true }).click();
-  await expect(page.getByText(t("error.workflow.invalid"))).toBeVisible();
+  // Open becomes Done: the field says so, and Publish says which name stands twice.
+  await page.getByLabel(t("workflows.status-name"), { exact: true }).first().fill("done");
+  await expect(page.getByText(t("workflows.status-name-taken")).first()).toBeVisible();
+  await expect(page.getByText(t("workflows.publish-name-twice", { name: "done" }))).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: t("workflows.publish"), exact: true }),
+  ).toBeDisabled();
 });

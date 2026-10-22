@@ -1962,6 +1962,18 @@ body {
   outline: none;
 }
 
+[data-part="confirm.body"] {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-4);
+  min-height: 0;
+}
+
+[data-part="overlay.modal"][data-variant~="full"] [data-part="confirm.body"] {
+  overflow-y: auto;
+}
+
 [data-part="confirm.title"] {
   margin: 0;
   font-size: var(--fs-lg);
@@ -1983,6 +1995,7 @@ body {
 
 [data-part="overlay.modal"][data-variant~="full"] [data-part="confirm.dialog"] {
   flex: 1;
+  min-height: 0;
 }
 
 [data-part="overlay.modal"][data-variant~="full"] [data-part="confirm.actions"] {
