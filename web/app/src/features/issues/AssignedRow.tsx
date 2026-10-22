@@ -43,6 +43,15 @@ export function ChangeAssigned({
   );
 }
 
+/** One line for each person assigned, as high as a control. */
+function PeopleLines({ people }: { readonly people: NonNullable<IssueView["assigned_to"]> }) {
+  return people.map((person) => (
+    <span key={namedPerson(person)?.id ?? personName(person)} {...partOf(part.startColumnLine)}>
+      {personName(person)}
+    </span>
+  ));
+}
+
 /** *Assigned to*: the people, and the way to change them or to add the first one. */
 export function AssignedRow({ issue, mask, status, onChange }: AssignedRowProps) {
   const [picking, setPicking] = useState(false);
@@ -64,9 +73,7 @@ export function AssignedRow({ issue, mask, status, onChange }: AssignedRowProps)
         status={canChange ? status : undefined}
       >
         <div {...partOf(part.startColumn)}>
-          {people.map((person) => (
-            <span key={namedPerson(person)?.id ?? personName(person)}>{personName(person)}</span>
-          ))}
+          <PeopleLines people={people} />
           {canChange ? (
             <ChangeAssigned
               name={name}

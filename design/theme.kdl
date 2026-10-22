@@ -2206,14 +2206,10 @@ part "start-column" {
 
 // A value of a row of the Details that is a column (the people of *Assigned to*): each line is as
 // high as a control, so the first one is level with its name.
-part "name-value.value start-column > span" {
+part "start-column.line" {
     display flex
     align-items center
     min-height "$size-control"
-}
-
-part "start-column > button[variant=quiet]" {
-    use "hang-start"
 }
 
 part "text" {
@@ -2605,19 +2601,6 @@ part "setup.progress" {
 
 // ───────────── Sign-in ─────────────
 
-part "sign-in.reasons" {
-    display flex
-    flex-direction column
-    gap "$space-3"
-}
-
-part "sign-in.links" {
-    display flex
-    flex-wrap wrap
-    justify-content space-between
-    gap "$space-2 $space-4"
-}
-
 // ───────────── Admin (the status page) ─────────────
 
 part "admin.detail" {
@@ -2664,13 +2647,6 @@ part "settings.locked" {
 
 part "settings.locked-value" {
     color "$fg"
-}
-
-part "settings.edit" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    max-width "$size-form"
 }
 
 // ───────────── Access ─────────────
@@ -2745,14 +2721,6 @@ part "access.cell" {
 
 part "access.cell > field" {
     width "100%"
-}
-
-part "access.preview" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    padding "$space-3"
-    use "sunken-box"
 }
 
 part "access.preview-line" {
@@ -3217,13 +3185,6 @@ part "access-keys.legend" {
     font-weight "$weight-bold"
 }
 
-part "access-keys.topic" {
-    margin "$space-2 0 0"
-    color "$fg-muted"
-    font-size "$fs-base"
-    font-weight "$weight-bold"
-}
-
 // ───────────── Shell ─────────────
 
 // What the sheets, the menus and the panels of the shell have in common.
@@ -3291,23 +3252,6 @@ part "shell.brand" {
     font-size "$fs-lg"
     font-weight "$weight-bold"
     color "$accent-fg"
-}
-
-part "shell.nav" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    gap "$space-1 $space-3"
-    use "list-reset"
-}
-
-part "shell.who" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    gap "$space-2 $space-3"
-    color "$fg-muted"
-    font-size "$fs-base"
 }
 
 part "shell.content:focus" {
@@ -4099,14 +4043,6 @@ part "issue-compare.changed" {
     use "marked"
 }
 
-// The list of the issues of a project.
-part "issue-list" {
-    display flex
-    flex-direction column
-    gap "$space-3"
-    min-width 0
-}
-
 part "issue-row" {
     use "surface-box"
     display flex
@@ -4120,40 +4056,9 @@ part "issue-row[variant=current]" {
     use "current-item"
 }
 
-part "issue-row.key" {
-    color "$fg-muted"
-    font-size "$fs-base"
-    white-space nowrap
-}
-
-part "issue-row.title" {
-    flex 1
-    min-width 0
-    use "menu-text"
-    overflow-wrap anywhere
-}
-
-part "issue-row.title:focus-visible" {
-    use "ring"
-}
-
 // The way to the field permissions next to the note is a target a finger can hit.
 part "layout-field.limited link" {
     use "touch-link"
-}
-
-// On a phone the title is a target a finger can hit.
-part "app-layout[variant=phone] issue-row.title link" {
-    use "touch-link"
-}
-
-part "issue-row.meta" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    gap "$space-2" "$space-3"
-    color "$fg-muted"
-    font-size "$fs-base"
 }
 
 // On a phone: the bar with the most used actions of an issue, in the slot above the bar of the app.
@@ -11315,14 +11220,6 @@ part "layout-editor" {
     display flex
     flex-direction column
     gap "$space-4"
-}
-
-part "layout-section" {
-    use "surface-box"
-    display flex
-    flex-direction column
-    gap "$space-3"
-    padding "$space-3"
 }
 
 part "layout-section.head" {
