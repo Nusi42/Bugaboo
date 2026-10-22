@@ -48,7 +48,7 @@ async function shootWhoCanDoIt(page: Page): Promise<void> {
     .getByRole("button", { name: t("workflows.rules-open", { button: "Mark as done" }) })
     .first()
     .click();
-  await page.getByRole("checkbox", { name: "Administrator", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Administrator", exact: true }).check({ force: true });
   await page.getByRole("button", { name: t("workflows.rules-done"), exact: true }).click();
   await page.getByRole("button", { name: t("workflows.publish"), exact: true }).click();
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
