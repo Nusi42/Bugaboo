@@ -351,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    fn m4_f141_the_words_are_the_ones_the_browser_test_expects() {
+    fn ntf_02_the_words_are_the_ones_the_browser_test_expects() {
         let vectors: Vectors = serde_json::from_str(VECTORS).expect("the vectors are JSON");
         assert!(vectors.cases.len() > 20, "the vectors are not empty");
         for case in vectors.cases {

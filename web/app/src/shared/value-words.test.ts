@@ -47,7 +47,7 @@ function wordsFor(kindWord: string, value: unknown, regionName: string): string 
 }
 
 // The same file is read by `value_words.rs`: when one side changes alone, both tests fail.
-describe("m4_f141 the screen words a value the way the e-mail does", () => {
+describe("ntf_02 the screen words a value the way the e-mail does", () => {
   for (const vector of vectors.cases) {
     it(`gives ${vector.name} its words`, () => {
       expect(wordsFor(vector.kind, vector.value, vector.region)).toBe(vector.expected);
@@ -55,7 +55,7 @@ describe("m4_f141 the screen words a value the way the e-mail does", () => {
   }
 });
 
-describe("m4_f141 a status, a priority and a list of names read the same in both", () => {
+describe("ntf_02 a status, a priority and a list of names read the same in both", () => {
   for (const word of vectors.words) {
     it(`gives ${word.name} its word`, () => {
       expect(changeValueText(word.field, { shown: "text", text: word.text })).toBe(word.expected);

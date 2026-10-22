@@ -116,7 +116,7 @@ async fn ntf_01_a_renewal_of_issue_ids_that_died_tells_the_person_who_changed_th
 }
 
 #[tokio::test]
-async fn m4_f144_a_renewal_that_died_does_not_name_a_project_the_person_cannot_see_any_more()
+async fn ntf_01_a_renewal_that_died_does_not_name_a_project_the_person_cannot_see_any_more()
 -> Outcome {
     let crew = Crew::new().await?;
     let payload =
