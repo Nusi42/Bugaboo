@@ -360,6 +360,26 @@ async fn sec_lm1_an_old_event_that_holds_a_name_only_is_hidden_when_no_label_has
     Ok(())
 }
 
+/// What the e-mails to `address` said, subject and text, as one text.
+fn mails_to(world: &World, address: &str) -> String {
+    world
+        .mailer
+        .messages()
+        .into_iter()
+        .filter(|mail| mail.to == address)
+        .flat_map(|mail| {
+            [
+                mail.subject,
+                " ".to_owned(),
+                mail.text,
+                "
+"
+                .to_owned(),
+            ]
+        })
+        .collect()
+}
+
 /// Two people follow an issue that went to OTHER: `ann` also leads THIRD, where an issue
 /// carries a label of the group *Area* of ACME, so for her the group is in use; `sam` leads OTHER only. Then a label of that group is renamed. Both e-mails go
 /// in one round of the jobs, so one context could serve them both. Returns the e-mails of each,
@@ -454,16 +474,10 @@ async fn two_recipients_in_one_round(
         .advance(bb_core::notification::MAIL_BATCH_SECONDS + 1);
     // One round of the jobs: it holds both e-mails.
     g.world.ctx().run_due_jobs().await?;
-    let mails_to = |address: &str| -> String {
-        g.world
-            .mailer
-            .messages()
-            .into_iter()
-            .filter(|mail| mail.to == address)
-            .map(|mail| format!("{} {}", mail.subject, mail.text))
-            .collect()
-    };
-    Ok((mails_to("ann@example.test"), mails_to("sam@example.test")))
+    Ok((
+        mails_to(&g.world, "ann@example.test"),
+        mails_to(&g.world, "sam@example.test"),
+    ))
 }
 
 #[tokio::test]

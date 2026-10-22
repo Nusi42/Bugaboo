@@ -68,12 +68,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             .as_array()
             .map(|items| items.iter().filter_map(Value::as_str).collect())
             .unwrap_or_default();
-        let names: Vec<String> = named
+        let shown_names: Vec<String> = named
             .iter()
-            .filter(|name| known.contains(&name.to_lowercase()))
-            .map(|name| (*name).to_owned())
+            .filter(|each| known.contains(&each.to_lowercase()))
+            .map(|each| (*each).to_owned())
             .collect();
-        Ok((names.is_empty() == named.is_empty()).then_some(ChangeValue::Names { names }))
+        Ok((shown_names.is_empty() == named.is_empty())
+            .then_some(ChangeValue::Names { names: shown_names }))
     }
 
     /// What the reader sees of the tree of projects, read the first time it is asked for.
