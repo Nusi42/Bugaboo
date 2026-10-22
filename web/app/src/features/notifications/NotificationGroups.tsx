@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Link, partOf, part } from "@bugaboo/ui";
 
 import { issueAddress } from "../../shared/paths.ts";
+import { WordingNotice } from "../../shared/with-wording.tsx";
 import { NotificationView } from "./NotificationView.tsx";
 import { groupsOf, type NotificationRow } from "./notifications.ts";
 
@@ -18,7 +19,7 @@ export interface NotificationGroupsProps {
  * group, a link to the issue, and the notifications about it are the list below.
  */
 export function NotificationGroups({ rows, onRead, readingId }: NotificationGroupsProps) {
-  return groupsOf(rows).map((group) => (
+  const groups = groupsOf(rows).map((group) => (
     <section
       key={group.key}
       {...partOf(part.notificationGroup)}
@@ -46,4 +47,10 @@ export function NotificationGroups({ rows, onRead, readingId }: NotificationGrou
       </ul>
     </section>
   ));
+  return (
+    <>
+      {rows.length === 0 ? null : <WordingNotice />}
+      {groups}
+    </>
+  );
 }

@@ -1,11 +1,13 @@
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
+import { useWording } from "../../shared/use-wording.ts";
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
 import { useProjectStatusChanges, type ProjectChange } from "../issues/index.ts";
 import { relationChoices } from "../relations/index.ts";
 import {
   manyChangeKind,
+  mayApply,
   targetsOf,
   useApplyManyChanges,
   usePreviewManyChanges,
@@ -41,6 +43,7 @@ export function useManyChangeDialog(
   const statusChanges = useProjectStatusChanges(project).data ?? [];
   const { draft, setDraft, relations, action, plain } = useManyChangeDraft(kind, statusChanges);
   const preview = usePreviewManyChanges();
+  const words = useWording();
   const apply = useApplyManyChanges(onApplied);
   const changes = preview.data === undefined ? [] : targetsOf(preview.data);
   return {
@@ -50,7 +53,8 @@ export function useManyChangeDialog(
     preview,
     action,
     plain,
-    canApply: preview.data !== undefined && changes.length > 0,
+    // *Apply* waits for the words of the preview: nobody starts a change they could not read.
+    canApply: mayApply(preview.data !== undefined && changes.length > 0, words),
     fill: (next: Draft): void => {
       setDraft(next);
       preview.reset();

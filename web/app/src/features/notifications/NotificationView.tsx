@@ -145,7 +145,6 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
       </div>
       {loaded.state === "ready" ? <Sentences sentences={sentences} /> : null}
       {loaded.state === "loading" ? <Skeleton /> : null}
-      {loaded.state === "failed" ? <p>{t("common.words-failed")}</p> : null}
       <CommentText row={row} />
       <NotificationActions row={row} what={what} onRead={onRead} isReading={isReading} />
       <RunResult row={row} />

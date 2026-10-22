@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
-import { WithWording } from "../../shared/with-wording.tsx";
+import { WithWording, WordingNotice } from "../../shared/with-wording.tsx";
 import { changeSentence, plainSentenceOf, useScrollTo } from "./history.ts";
 
 /** What tells the items of one event apart: the field that changed, the relation or the file. */
@@ -48,4 +48,9 @@ export function ChangeEntry({
 /** What the history says when there is nothing in it yet. */
 export function NothingYet() {
   return <p {...partOf(part.muted)}>{t("history.nothing")}</p>;
+}
+
+/** Says once for the block of changes that their words could not be loaded, with *Try again*. */
+export function WordsFailedNotice() {
+  return <WordingNotice />;
 }
