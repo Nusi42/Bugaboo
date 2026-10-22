@@ -19,9 +19,10 @@ function valueText(
     return undefined;
   }
   if (field === "status" || field === "priority") {
-    // The word of a status or a priority is chosen by `bb-core`; where it is not loaded, the code stands.
+    // The word of a status or a priority is chosen by `bb-core`. Where it is not loaded the value
+    // is left out: the stored code is not a word for a person.
     const said = wording?.sideWords(field, { shown: "text", text: value });
-    return said === null || said === undefined ? value : renderSaid(said);
+    return said === null || said === undefined ? undefined : renderSaid(said);
   }
   // A long text is not quoted in a sentence: *Show changes* shows it.
   return field === "description" ? undefined : value;
@@ -71,7 +72,7 @@ export function conflictSentence(conflict: Conflict, nowMs: number, wording?: Wo
 
 /**
  * Like [`conflictSentence`], with the shared wording loaded first; where it cannot be loaded, the
- * sentence names a status or a priority by its code.
+ * sentence names the field and leaves its value out.
  */
 export async function conflictSentenceWhenLoaded(
   conflict: Conflict,

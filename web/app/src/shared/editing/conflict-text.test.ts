@@ -94,4 +94,13 @@ describe("adr_0019 the sentence names the person as the reader may see them", ()
     );
     expect(text).toContain("Priority to Low");
   });
+
+  it("names the field and leaves the value out where the shared wording could not be loaded", () => {
+    const text = conflictSentence(
+      conflict({ fields: ["priority"], current: { priority: "critical" } }),
+      now,
+    );
+    expect(text).toBe("Not saved: Ben changed Priority 2 minutes ago.");
+    expect(text).not.toContain("critical");
+  });
 });
