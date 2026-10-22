@@ -15,8 +15,7 @@ export type FileWords = {
 export function wordedFile(entry: FileWords): WordedFile {
   return {
     who: whoOf(entry),
-    event: entry.file_event ?? null,
-    name: entry.file_name ?? null,
+    what: { event: entry.file_event ?? null, name: entry.file_name ?? null },
   };
 }
 

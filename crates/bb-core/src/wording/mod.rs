@@ -118,10 +118,11 @@ const SENTENCE_END: &str = ".";
 
 /// What already ends a sentence: a value of a person may end in one of these, then the sentence
 /// gets no second mark.
-const ENDS: [char; 3] = ['.', '?', '!'];
+const ENDS: [char; 4] = ['.', '?', '!', '\u{2026}'];
 
-/// A sentence with a full stop, unless it ends in a full stop, a question mark or an exclamation
-/// mark already (a value of a person may end in one: *Login fails.*).
+/// A sentence with a full stop, unless it ends in a full stop, a question mark, an exclamation
+/// mark or an ellipsis already (a value of a person may end in one: *Login fails.*; a line cut
+/// short ends in an ellipsis).
 #[must_use]
 pub fn end_sentence(text: &str) -> String {
     if text.ends_with(ENDS) {
@@ -313,11 +314,9 @@ pub fn change_sentence(change: &Change) -> Said {
     }
 }
 
-/// Something that happened to a file of an issue.
+/// What happened to a file of an issue.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct File {
-    /// Who did it, at the start of a sentence.
-    pub who: String,
+pub struct FileChange {
     /// What happened; none for an event this version does not know (the sentence then says only
     /// that a file changed).
     #[serde(default)]
@@ -327,13 +326,27 @@ pub struct File {
     pub name: Option<String>,
 }
 
+/// What happened to a file, and who did it: the history names who for each item.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct File {
+    /// Who did it, at the start of a sentence.
+    pub who: String,
+    /// What happened.
+    pub what: FileChange,
+}
+
 /// The sentence of a file that was added, deleted or brought back: *Ben added the file jam.txt*.
 /// Once the file is gone for good it has no name and the sentence says *a file*.
 #[must_use]
 pub fn file_sentence(file: &File) -> Said {
-    let who = Said::text(file.who.as_str());
-    let name = file.name.as_deref().map(Said::text);
-    match (file.event, name) {
+    file_words(&file.who, &file.what)
+}
+
+/// The sentence of a file for the person `who` named.
+fn file_words(who: &str, what: &FileChange) -> Said {
+    let who = Said::text(who);
+    let name = what.name.as_deref().map(Said::text);
+    match (what.event, name) {
         (None, _) => said!(message::history_file_changed_unnamed, who),
         (Some(FileEvent::Added), Some(name)) => said!(message::history_file_added, name, who),
         (Some(FileEvent::Added), None) => said!(message::history_file_added_unnamed, who),
@@ -376,9 +389,9 @@ pub struct Notice {
     /// A renewal of issue IDs that gave up.
     #[serde(default)]
     pub renewal: Option<Renewal>,
-    /// A file that was added to the issue.
+    /// A file that was added, deleted or brought back; the notice names who did it.
     #[serde(default)]
-    pub file: Option<File>,
+    pub file: Option<FileChange>,
 }
 
 /// What happened, in words: one sentence, or one for each field a change touched.
@@ -416,7 +429,7 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
             if !notice.changes.is_empty() {
                 notice.changes.iter().map(change_sentence).collect()
             } else if let Some(file) = &notice.file {
-                one(file_sentence(file))
+                one(file_words(&notice.who, file))
             } else if notice.comment {
                 one(said!(message::notifications_commented, who()))
             } else {

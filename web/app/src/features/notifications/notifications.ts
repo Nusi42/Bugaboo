@@ -119,7 +119,7 @@ export function noticeOf(row: NotificationRow): WordedNotice {
     changes: isChange(row) ? row.entries.map((entry) => wordedChange(entry)) : [],
     notice: edit ?? null,
     run_done: !row.entries.some((entry) => entry.run_done === false),
-    file: file === undefined ? null : wordedFile(file),
+    file: file === undefined ? null : wordedFile(file).what,
     renewal:
       renewal === undefined || renewal === null
         ? null

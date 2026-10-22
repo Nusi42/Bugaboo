@@ -12,7 +12,7 @@ use bb_core::message::{self, Message};
 use bb_core::notification::{MAIL_ENTRIES_MAX, MAIL_TEXT_MAX, NotificationKind};
 use bb_core::text::{MAIL_SUBJECT_MAX, plain_line, plain_text};
 use bb_core::wording::{
-    Change, File, Notice, Region, Renewal, Side, end_sentence, notification_sentences,
+    Change, FileChange, Notice, Region, Renewal, Side, end_sentence, notification_sentences,
 };
 use bb_policy::PersonRef;
 
@@ -34,18 +34,30 @@ const QUOTE: &str = "> ";
 /// What ends the line before a comment that is quoted below it.
 const LEAD_IN: &str = ":";
 
+/// How a line of an e-mail ends.
+#[derive(Clone, Copy)]
+enum End {
+    /// With a full stop, unless the sentence ends in a mark already (the screen says it without).
+    Sentence,
+    /// With a colon: a comment is quoted below it.
+    LeadIn,
+}
+
 /// A sentence of the screen as one clean line of an e-mail. The one place that cleans the text of
 /// people that stands in a sentence: a line break, a format character or a direction mark in a
-/// name or a value is taken out here, however the sentence was put together. The screen says a
-/// sentence without a full stop, a line of an e-mail has one (unless the sentence ends in a mark
-/// already).
-fn line_of(sentence: &str) -> String {
-    end_sentence(&plain_line(sentence, MAIL_TEXT_MAX))
+/// name or a value is taken out here, however the sentence was put together, and the line is
+/// ended the way `end` says.
+fn line_of(sentence: &str, end: End) -> String {
+    let clean = plain_line(sentence, MAIL_TEXT_MAX);
+    match end {
+        End::Sentence => end_sentence(&clean),
+        End::LeadIn => format!("{clean}{LEAD_IN}"),
+    }
 }
 
 /// A sentence of the screen as a line of an e-mail.
 fn sentence_of(message: &Message) -> String {
-    line_of(&message.render())
+    line_of(&message.render(), End::Sentence)
 }
 
 /// The subject of an e-mail: one clean line.
@@ -83,7 +95,7 @@ fn who_inside(person: &PersonRef) -> String {
 }
 
 /// One side of a change, as the wording of the app takes it; `None` when the side holds no value.
-/// The words of a person are cleaned for the middle of a line.
+/// What a person wrote is passed on as it is: `line_of` cleans the whole line, once.
 fn side_of(value: Option<&ChangeValue>, region: &Region) -> Option<Side> {
     Some(match value? {
         ChangeValue::Text { text } => Side::Text { text: text.clone() },
@@ -184,8 +196,7 @@ fn lines_about(
             });
         }
         NotificationWhat::File { event, name } => {
-            notice.file = Some(File {
-                who: who(by),
+            notice.file = Some(FileChange {
                 event: Some(*event),
                 name: name.clone(),
             });
@@ -198,11 +209,12 @@ fn lines_about(
     match what {
         // A comment is quoted below the sentence that says who wrote it.
         NotificationWhat::Comment { comment } => {
-            let lead = sentences
-                .map(|sentence| format!("{}{LEAD_IN}", plain_line(&sentence, MAIL_TEXT_MAX)));
+            let lead = sentences.map(|sentence| line_of(&sentence, End::LeadIn));
             lead.chain(std::iter::once(quoted(&comment.text))).collect()
         }
-        _ => sentences.map(|sentence| line_of(&sentence)).collect(),
+        _ => sentences
+            .map(|sentence| line_of(&sentence, End::Sentence))
+            .collect(),
     }
 }
 

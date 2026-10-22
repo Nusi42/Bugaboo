@@ -403,3 +403,11 @@ fn ntf_02_a_file_added_is_worded_as_the_history_words_it() {
     assert_eq!(said(Some("jam.txt")), ["Ana added the file jam.txt."]);
     assert_eq!(said(None), ["Ana added a file."]);
 }
+
+#[test]
+fn ntf_02_a_line_that_was_cut_short_ends_in_the_ellipsis_alone() {
+    let long = "x".repeat(MAIL_TEXT_MAX * 2);
+    let text = line(&change("title", None, Some(word(&long))));
+    assert!(text.ends_with('\u{2026}'), "{text}");
+    assert!(!text.ends_with("\u{2026}."), "{text}");
+}
