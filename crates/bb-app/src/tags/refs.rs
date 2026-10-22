@@ -4,6 +4,7 @@
 //! this held names only ([`EventLabel::Named`]); a reader treats them with care.
 
 use bb_core::id::LabelGroupId;
+use bb_core::tags::Label;
 use serde_json::{Value, json};
 
 /// A tag or a label with the group it is in (a tag has none).
@@ -13,6 +14,16 @@ pub(crate) struct NameRef {
     pub(crate) name: String,
     /// The label group a label is in; none for a tag and for a label in no group.
     pub(crate) group: Option<LabelGroupId>,
+}
+
+impl From<&Label> for NameRef {
+    /// A label with the group it is in: the one way to write down which label an event is about.
+    fn from(label: &Label) -> Self {
+        Self {
+            name: label.name.clone(),
+            group: label.group,
+        }
+    }
 }
 
 impl NameRef {

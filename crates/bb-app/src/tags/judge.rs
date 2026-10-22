@@ -27,10 +27,7 @@ pub(super) fn label_refs(labels: &[Label], links: &[IssueLabel]) -> Vec<NameRef>
     links
         .iter()
         .filter_map(|link| labels.iter().find(|label| label.id == link.label))
-        .map(|label| NameRef {
-            name: label.name.clone(),
-            group: label.group,
-        })
+        .map(NameRef::from)
         .collect()
 }
 

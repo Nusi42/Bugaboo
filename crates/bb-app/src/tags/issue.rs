@@ -184,10 +184,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !addition.already
             && let Some(added) = state.labels.iter().find(|found| found.id == label)
         {
-            after.push(NameRef {
-                name: added.name.clone(),
-                group: added.group,
-            });
+            after.push(NameRef::from(added));
         }
         Ok(LabelPlan {
             issue,

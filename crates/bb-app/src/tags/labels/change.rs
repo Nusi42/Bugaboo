@@ -144,10 +144,7 @@ pub async fn label_change_preview<S: AuthStore>(
                 rename: None,
                 into: Some(Replacement {
                     id: into.id.into(),
-                    named: NameRef {
-                        name: into.name.clone(),
-                        group: into.group,
-                    },
+                    named: NameRef::from(into),
                 }),
             }
         }

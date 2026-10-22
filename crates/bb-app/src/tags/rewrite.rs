@@ -171,15 +171,7 @@ impl Rewrite {
                 let names = S::labels_in(transaction)
                     .await?
                     .into_iter()
-                    .map(|label| {
-                        (
-                            EntityId::from(label.id),
-                            NameRef {
-                                name: label.name,
-                                group: label.group,
-                            },
-                        )
-                    })
+                    .map(|label| (EntityId::from(label.id), NameRef::from(&label)))
                     .collect();
                 let links = S::labels_of_issues_in(transaction, issues.to_vec())
                     .await?

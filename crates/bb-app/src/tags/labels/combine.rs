@@ -69,10 +69,7 @@ pub async fn combine_labels<S: AuthStore>(
         rename: None,
         into: Some(Replacement {
             id: into.id.into(),
-            named: NameRef {
-                name: into.name.clone(),
-                group: into.group,
-            },
+            named: NameRef::from(&into),
         }),
     };
     let Combining { event, events, why } =
