@@ -154,6 +154,8 @@ async function takeUndo(page: Page, theme: Theme, project: string): Promise<void
 
 for (const theme of themes) {
   test.describe(`files in ${theme.id}`, () => {
+    // Each theme starts on fresh data: no history of the files an earlier look took out.
+    test.use({ freshData: theme.id });
     test("the block with previews, a file under a comment, and a refusal in words", ({
       page,
     }, info) => takeTheBlock(page, theme, info.project.name));

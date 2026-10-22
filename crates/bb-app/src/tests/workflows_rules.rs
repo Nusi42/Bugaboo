@@ -218,7 +218,7 @@ async fn wf_03_who_can_do_it_allows_only_the_named_roles_and_people() -> Outcome
     let by_lead = go(&world, &lead.session_token, id, 1, IN_PROGRESS).await;
     assert_eq!(
         by_lead.err(),
-        Some(AppError::Refused(ErrorCode::WorkflowNotForYou))
+        Some(AppError::Refused(ErrorCode::WorkflowNotNamed))
     );
     // The team member is named by role.
     go(&world, &team.session_token, id, 1, IN_PROGRESS).await?;
@@ -226,7 +226,7 @@ async fn wf_03_who_can_do_it_allows_only_the_named_roles_and_people() -> Outcome
     let not_yet = go(&world, &team.session_token, id, 2, DONE).await;
     assert_eq!(
         not_yet.err(),
-        Some(AppError::Refused(ErrorCode::WorkflowNotForYou))
+        Some(AppError::Refused(ErrorCode::WorkflowNotNamed))
     );
     let assign = ChangeIssue {
         assigned_to: Some(vec![team.person.id]),

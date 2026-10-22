@@ -126,6 +126,12 @@ interface Options {
    * A function inside an object, because Playwright takes a plain function for a fixture.
    */
   preparation: { readonly run: Prepare };
+  /**
+   * A name for the data of a group of tests (`test.use({ freshData: "dusk" })`): the server of a
+   * file starts again, on fresh data, whenever it changes, so each look of a screenshot spec starts
+   * from the same issue and no look shows what another one did.
+   */
+  freshData: string;
 }
 
 /**
@@ -165,8 +171,10 @@ export const test = base.extend<
   serverSettings: [{}, { option: true }],
   sample: [false, { option: true }],
   preparation: [{ run: () => Promise.resolve() }, { option: true }],
-  server: async ({ pool, serverSettings, sample, preparation }, provide, testInfo) => {
-    await provide(await pool.forFile(testInfo.file, serverSettings, sample, preparation.run));
+  freshData: ["", { option: true }],
+  server: async ({ pool, serverSettings, sample, preparation, freshData }, provide, testInfo) => {
+    const data = freshData === "" ? testInfo.file : `${testInfo.file}#${freshData}`;
+    await provide(await pool.forFile(data, serverSettings, sample, preparation.run));
   },
   tolerate: async ({ browser: _browser }, provide) => {
     await provide((context, lines, mode) => {

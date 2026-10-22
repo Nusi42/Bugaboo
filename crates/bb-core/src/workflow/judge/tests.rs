@@ -167,7 +167,7 @@ fn wf_03_who_can_do_it_allows_only_the_named_roles_and_people_in_the_judge() {
             reporter: true,
             ..anyone()
         }),
-        refused(Why::NotForYou, None)
+        refused(Why::NotNamed, None)
     );
     // The person who reported it, when the change names them.
     let for_reporters = simple_with(StatusRules {
@@ -184,7 +184,7 @@ fn wf_03_who_can_do_it_allows_only_the_named_roles_and_people_in_the_judge() {
     assert_eq!(judged(&for_reporters, &reporter, &facts), Verdict::Allowed);
     assert_eq!(
         judged(&for_reporters, &anyone(), &facts),
-        refused(Why::NotForYou, None)
+        refused(Why::NotNamed, None)
     );
 }
 

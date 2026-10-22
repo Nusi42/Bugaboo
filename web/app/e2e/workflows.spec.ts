@@ -55,7 +55,7 @@ test("wf_02 Try it names why a Contributor gets no Mark as done", async ({ page 
   await signIn(page, ada);
   await openSimple(page);
   const markAsDone = await tryMarkAsDone(page, "WEB-1", cleo);
-  await expect(markAsDone).toContainText(t("error.workflow.not-for-you"));
+  await expect(markAsDone).toContainText(t("error.workflow.not-named"));
 });
 
 test("wf_02 the whole organization has nothing to inherit, so there is no way back to it", async ({

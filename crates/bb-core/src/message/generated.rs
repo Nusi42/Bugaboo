@@ -967,6 +967,9 @@ pub const ERROR_WORKFLOW_NO_SUCH_CHANGE: MessageKey =
 /// The message `error.workflow.not-for-you`.
 pub const ERROR_WORKFLOW_NOT_FOR_YOU: MessageKey = MessageKey::new("error.workflow.not-for-you");
 
+/// The message `error.workflow.not-named`.
+pub const ERROR_WORKFLOW_NOT_NAMED: MessageKey = MessageKey::new("error.workflow.not-named");
+
 /// The message `error.workflow.only-if`.
 pub const ERROR_WORKFLOW_ONLY_IF: MessageKey = MessageKey::new("error.workflow.only-if");
 
@@ -10443,6 +10446,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.workflow.not-for-you",
         "You may not change the status this way.",
+    ),
+    (
+        "error.workflow.not-named",
+        "The rules of this status change do not name you. Under Who can do it, tick who may use it.",
     ),
     (
         "error.workflow.only-if",
