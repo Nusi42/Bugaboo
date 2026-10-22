@@ -193,7 +193,7 @@ async fn wf_03_a_move_that_starts_the_status_again_needs_the_status_level_of_the
         sent.changes = Vec::new();
     })
     .await?;
-    // A lead who may move issues and only sees the status.
+    // A lead who may move issues.
     let reader = world.person("sees@example.test").await?;
     let lead = starting_role(&world, StartingRole::ProjectLead)
         .await
@@ -220,6 +220,19 @@ async fn wf_03_a_move_that_starts_the_status_again_needs_the_status_level_of_the
         },
     )
     .await?;
+    // In ACME, where the issue is, the role may change the status; in BASE it only sees it.
+    set_level(
+        &world.ctx(),
+        SetFieldLevel {
+            session_token: admin.clone(),
+            role: copy.id,
+            project: Some(acme),
+            issue_type: None,
+            field: FieldKey::BuiltIn(Field::Status),
+            level: Some(FieldLevel::CanChange),
+        },
+    )
+    .await?;
     assign(&world, &reader, copy.id, acme).await?;
     assign(&world, &reader, copy.id, base).await?;
     let id = an_issue(&world, acme).await?;
@@ -234,8 +247,29 @@ async fn wf_03_a_move_that_starts_the_status_again_needs_the_status_level_of_the
     )
     .await;
     assert_eq!(refused.err(), Some(AppError::Refused(ErrorCode::Forbidden)));
-    // The administrator holds the level, and the issue starts again.
-    move_issue(&world.ctx(), moving(&world, &id.to_string(), 1, "BASE")).await?;
+    // With the level in BASE as well the same person may move it, and the issue starts again.
+    set_level(
+        &world.ctx(),
+        SetFieldLevel {
+            session_token: admin.clone(),
+            role: copy.id,
+            project: Some(base),
+            issue_type: None,
+            field: FieldKey::BuiltIn(Field::Status),
+            level: Some(FieldLevel::CanChange),
+        },
+    )
+    .await?;
+    move_issue(
+        &world.ctx(),
+        MoveIssue {
+            session_token: reader.session_token.clone(),
+            issue: id.to_string(),
+            version: 1,
+            project: "BASE".to_owned(),
+        },
+    )
+    .await?;
     assert_eq!(status_of(&world, &admin, id).await?, "intake");
     Ok(())
 }
