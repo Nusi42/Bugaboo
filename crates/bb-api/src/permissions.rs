@@ -74,10 +74,27 @@ pub struct Route {
     pub needs: Declared,
     /// What kind of answer it gives.
     pub kind: Answer,
+    /// Whether the route reads although it uses `POST` (it carries a list in the body): the check
+    /// of the versions of the records on a screen. Such a route may carry the mark of a
+    /// background read (`cookies::BACKGROUND_HEADER`) like a `GET`.
+    pub reads_by_post: bool,
 }
 
 const fn route(id: &'static str, needs: Declared, kind: Answer) -> Route {
-    Route { id, needs, kind }
+    Route {
+        id,
+        needs,
+        kind,
+        reads_by_post: false,
+    }
+}
+
+/// A route that reads although it uses `POST`.
+const fn route_reading(id: &'static str, needs: Declared, kind: Answer) -> Route {
+    Route {
+        reads_by_post: true,
+        ..route(id, needs, kind)
+    }
 }
 
 /// Every route by its operation ID. A new route is added here in the same change that adds it: the
@@ -141,7 +158,7 @@ pub const ROUTES: &[Route] = &[
     route("saveDraft", Declared::ByRecord, Answer::Ordinary),
     route("readDraft", Declared::ByRecord, Answer::NeverStored),
     route("throwAwayDraft", Declared::SignedIn, Answer::Ordinary),
-    route("checkVersions", Declared::ByRecord, Answer::Ordinary),
+    route_reading("checkVersions", Declared::ByRecord, Answer::Ordinary),
     route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
     route("createAccessKey", Declared::OwnAccount, Answer::Secret),
     route("deleteAccessKey", Declared::OwnAccount, Answer::Ordinary),
@@ -841,22 +858,22 @@ pub const ROUTES: &[Route] = &[
 pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
-/// The reads that use `POST` because they carry a list in the body, by operation ID: the check of
-/// the versions of the records on a screen. With the rest of the reads (`GET`), they are the
-/// requests that may carry the mark of a background read (`cookies::BACKGROUND_HEADER`).
-pub const READS_BY_POST: &[&str] = &["checkVersions"];
-
 /// Whether the request with this method to this route (as the API description writes it) only
-/// reads, so that it may be marked as a background read nobody asked for. The one rule: a method
-/// that changes nothing, or a read that is declared in [`READS_BY_POST`].
+/// reads, so that it may carry the mark of a background read nobody asked for. The one rule: a
+/// method that changes nothing, or a route the table marks as reading by `POST`.
 #[must_use]
-pub fn is_read(method: &Method, route: &str) -> bool {
-    !crate::api::changes(method)
-        || crate::openapi::operations().iter().any(|operation| {
-            operation.method == *method
-                && operation.path == route
-                && READS_BY_POST.contains(&operation.id.as_str())
+pub fn may_be_background_read(method: &Method, route: &str) -> bool {
+    static READS: OnceLock<Vec<(Method, String)>> = OnceLock::new();
+    READS
+        .get_or_init(|| {
+            crate::openapi::operations()
+                .iter()
+                .filter(|operation| operation.reads())
+                .map(|operation| (operation.method.clone(), operation.path.clone()))
+                .collect()
         })
+        .iter()
+        .any(|(read_method, read_path)| read_method == method && read_path == route)
 }
 
 /// The row of the route with this operation ID, if it is declared.

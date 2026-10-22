@@ -359,9 +359,18 @@ pub struct Operation {
     pub needs: Declared,
     /// What kind of answer it gives.
     pub kind: Answer,
+    /// Whether it reads although it uses `POST`.
+    pub reads_by_post: bool,
 }
 
 impl Operation {
+    /// Whether the operation only reads: a method that changes nothing, or a route the table marks
+    /// as reading by `POST`.
+    #[must_use]
+    pub fn reads(&self) -> bool {
+        !self.changes() || self.reads_by_post
+    }
+
     /// Whether the operation changes something (any method but `GET`, `HEAD` and `OPTIONS`).
     #[must_use]
     pub fn changes(&self) -> bool {
@@ -392,6 +401,7 @@ pub fn operations() -> &'static [Operation] {
                         id: row.id.to_owned(),
                         needs: row.needs,
                         kind: row.kind,
+                        reads_by_post: row.reads_by_post,
                     });
                 }
             }
