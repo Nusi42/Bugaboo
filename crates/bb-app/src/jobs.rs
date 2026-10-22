@@ -467,7 +467,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         let taken = jobs.len();
         for job in jobs {
             // `true` when the worker still held the lease and the report counted.
-            let reported = match self.do_job(&job).await {
+            // A job is one request (ADR-0025, decision 3): it gets a context of its own, so what
+            // one job looked up for one person is never there for the next job, for another.
+            let reported = match self.services.ctx(self.request.clone()).do_job(&job).await {
                 Ok(()) => self.store().complete_job(job.id, &worker).await,
                 Err(failure) => {
                     let outcome = self

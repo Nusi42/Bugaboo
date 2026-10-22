@@ -6,6 +6,7 @@
 use std::collections::BTreeMap;
 use std::future::Future;
 
+use crate::access::StartingRole;
 use bb_core::history::HistoryTab;
 use bb_core::id::{IssueId, IssueTypeId};
 use bb_core::message::{self, Message};
@@ -356,5 +357,121 @@ async fn sec_lm1_an_old_event_that_holds_a_name_only_is_hidden_when_no_label_has
     assert!(!told.contains("ghost"), "{told}");
     // The administrator may know every group, and reads it.
     assert!(read(&g.world, &g.admin, issue_id).await?.contains("ghost"));
+    Ok(())
+}
+
+/// Two people follow an issue that went to OTHER: `ann` also leads THIRD, where an issue
+/// carries a label of the group *Area* of ACME, so for her the group is in use; `sam` leads OTHER only. Then a label of that group is renamed. Both e-mails go
+/// in one round of the jobs, so one context could serve them both. Returns the e-mails of each,
+/// as texts, in the order (ann, sam).
+async fn two_recipients_in_one_round(
+    ann_follows_first: bool,
+) -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
+    let g = groups().await?;
+    let (mango, version) = area_label(&g, "mango").await?;
+    news_of_fields_everywhere(&g).await?;
+    let sam = lead_of(&g.world, "sam@example.test", g.other).await?;
+    let ann = lead_of(&g.world, "ann@example.test", g.other).await?;
+    let lead = super::workflows_rules::starting_role(&g.world, StartingRole::ProjectLead)
+        .await
+        .map_err(AppError::Internal)?;
+    let third = super::scenarios::a_project(&g.world, "THIRD")
+        .await
+        .map_err(AppError::Internal)?;
+    super::workflows_rules::assign(&g.world, &ann, lead, third).await?;
+    let issue_id = an_issue(&g.world, g.acme)
+        .await
+        .map_err(AppError::Internal)?;
+    label_on(&g.world, &g.admin, issue_id, mango).await?;
+    move_issue(
+        &g.world.ctx(),
+        MoveIssue {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            version: version_of(&g.world, &g.admin, issue_id).await?,
+            project: "OTHER".to_owned(),
+        },
+    )
+    .await?;
+    let followers = if ann_follows_first {
+        [&ann, &sam]
+    } else {
+        [&sam, &ann]
+    };
+    for who in followers {
+        crate::follow::follow_issue(
+            &g.world.ctx(),
+            crate::follow::FollowIssue {
+                session_token: who.session_token.clone(),
+                issue: issue_id.to_string(),
+            },
+        )
+        .await?;
+        g.world.clock.advance(1);
+    }
+    crate::tags::change_label(
+        &g.world.ctx(),
+        crate::tags::ChangeLabel {
+            session_token: g.admin.clone(),
+            label: mango,
+            version,
+            name: Some("papaya".to_owned()),
+            color: None,
+            group: bb_core::own_fields::Edit::Keep,
+            retired: None,
+        },
+    )
+    .await?;
+    // Another issue keeps a label of the group in THIRD, where only ann reads it: for her the group
+    // is in use (the read the rule caches); for sam it is not.
+    let kept = an_issue(&g.world, g.acme)
+        .await
+        .map_err(AppError::Internal)?;
+    let (guava, _) = area_label(&g, "guava").await?;
+    label_on(&g.world, &g.admin, kept, guava).await?;
+    move_issue(
+        &g.world.ctx(),
+        MoveIssue {
+            session_token: g.admin.clone(),
+            issue: kept.to_string(),
+            version: version_of(&g.world, &g.admin, kept).await?,
+            project: "THIRD".to_owned(),
+        },
+    )
+    .await?;
+    // The label comes off again, so the group is in use on no issue the outsider reads.
+    remove_label(
+        &g.world.ctx(),
+        RemoveLabel {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            label: mango,
+        },
+    )
+    .await?;
+    g.world
+        .clock
+        .advance(bb_core::notification::MAIL_BATCH_SECONDS + 1);
+    // One round of the jobs: it holds both e-mails.
+    g.world.ctx().run_due_jobs().await?;
+    let mails_to = |address: &str| -> String {
+        g.world
+            .mailer
+            .messages()
+            .into_iter()
+            .filter(|mail| mail.to == address)
+            .map(|mail| format!("{} {}", mail.subject, mail.text))
+            .collect()
+    };
+    Ok((mails_to("ann@example.test"), mails_to("sam@example.test")))
+}
+
+#[tokio::test]
+async fn sec_lm1_what_one_e_mail_of_a_round_may_name_never_reaches_the_next_one() -> Outcome {
+    for ann_first in [true, false] {
+        let (ann, sam) = two_recipients_in_one_round(ann_first).await?;
+        assert!(ann.contains("papaya"), "ann knows the group: {ann}");
+        assert!(!sam.contains("papaya") && !sam.contains("mango"), "{sam}");
+    }
     Ok(())
 }

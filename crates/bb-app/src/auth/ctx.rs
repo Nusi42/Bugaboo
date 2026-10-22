@@ -243,8 +243,9 @@ pub(crate) struct Known {
         Mutex<HashMap<(bb_core::id::IssueTypeId, bb_core::id::ProjectId), Option<String>>>,
     /// The issue types and the groups of labels in use on the issues the person reads, for the rule
     /// of what they may know (`offers/known.rs`), read once for the request.
-    pub(crate) used_types: Mutex<Option<Arc<Vec<bb_core::id::IssueTypeId>>>>,
-    pub(crate) used_groups: Mutex<Option<Arc<Vec<bb_core::id::LabelGroupId>>>>,
+    /// Each is kept for the person it was read for and never served to another.
+    pub(crate) used_types: Mutex<HashMap<UserId, Arc<Vec<bb_core::id::IssueTypeId>>>>,
+    pub(crate) used_groups: Mutex<HashMap<UserId, Arc<Vec<bb_core::id::LabelGroupId>>>>,
     /// Every issue type, read once for the request: the lines of issues, the rule of what a person
     /// may know and the history all take their types from it.
     pub(crate) issue_types: Mutex<Option<Arc<Vec<bb_core::issue::IssueType>>>>,
