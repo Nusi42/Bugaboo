@@ -14,7 +14,9 @@
 //! caller words those values (the server with [`Region`]) and hands the words in. The two ways of
 //! writing are held together by test vectors that this crate makes ([`vectors`]).
 
-use serde::{Deserialize, Serialize, Serializer};
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::edit::NoticeKind;
@@ -32,8 +34,11 @@ pub mod vectors;
 pub use region::Region;
 
 /// Some words: a text, words that follow each other, or a message of the catalog with the words
-/// for its placeholders.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// for its placeholders. In JSON a text is a string, words that follow each other are a list, and
+/// a message is an object with its `key` and its `args` (`word_types.rs` writes the browser's type
+/// from this declaration).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(untagged)]
 pub enum Said {
     /// Text that is not in the catalog: a name, a number, a text of a person.
     Text(String),
@@ -44,40 +49,8 @@ pub enum Said {
         /// The key of the message.
         key: MessageKey,
         /// The words for its placeholders, by the name of the placeholder.
-        args: Vec<(&'static str, Said)>,
+        args: BTreeMap<&'static str, Said>,
     },
-}
-
-/// The arguments of a message as an object.
-struct Args<'a>(&'a [(&'static str, Said)]);
-
-impl Serialize for Args<'_> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeMap as _;
-        let mut map = serializer.serialize_map(Some(self.0.len()))?;
-        for (name, said) in self.0 {
-            map.serialize_entry(name, said)?;
-        }
-        map.end()
-    }
-}
-
-impl Serialize for Said {
-    /// A text as a string, words that follow each other as a list, and a message as
-    /// `{"key": …, "args": {…}}`.
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeStruct as _;
-        match self {
-            Self::Text(text) => serializer.serialize_str(text),
-            Self::Parts(parts) => parts.serialize(serializer),
-            Self::Message { key, args } => {
-                let mut message = serializer.serialize_struct("Said", 2)?;
-                message.serialize_field("key", key)?;
-                message.serialize_field("args", &Args(args))?;
-                message.end()
-            }
-        }
-    }
 }
 
 /// The empty text for each value of a call of [`said!`]: the typed function of the catalog is
@@ -108,7 +81,7 @@ impl Said {
     pub const fn key(key: MessageKey) -> Self {
         Self::Message {
             key,
-            args: Vec::new(),
+            args: BTreeMap::new(),
         }
     }
 

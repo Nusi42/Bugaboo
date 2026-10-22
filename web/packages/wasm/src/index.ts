@@ -13,9 +13,19 @@ import init, {
   render,
   side_words,
 } from "../generated/bb_wasm.js";
-import type { Said, WordedChange, WordedNotice, WordedSide } from "./wording.ts";
+import type {
+  Change as WordedChange,
+  Notice as WordedNotice,
+  Said,
+  Side as WordedSide,
+} from "./wording.generated.ts";
 
-export type { Said, WordedChange, WordedNotice, WordedSide } from "./wording.ts";
+export type {
+  Change as WordedChange,
+  Notice as WordedNotice,
+  Said,
+  Side as WordedSide,
+} from "./wording.generated.ts";
 
 /** Where the module is. Vite turns this into the address of the built file. */
 export const moduleLocation = new URL("../generated/bb_wasm_bg.wasm", import.meta.url);
@@ -58,19 +68,48 @@ function isSaid(value: unknown): value is Said {
   );
 }
 
+/**
+ * What happens when the module refuses its input or gives words that are no words: the browser
+ * and the Rust types differ, a defect. While the app is built for development, and under test,
+ * it throws, so the defect is found at once. In production it reports the defect with
+ * `console.error` (the end-to-end tests fail on that) and gives no words, so the rest of the page
+ * keeps working.
+ */
+function broken(problem: unknown): never[] {
+  if (import.meta.env.DEV) {
+    throw problem instanceof Error ? problem : new Error(String(problem));
+  }
+  console.error("The wording of bb-core refused its input.", problem);
+  return [];
+}
+
 /** The words in the answer of the module, which is JSON text; `null` for no words. */
 function saidIn(json: string): Said | null {
   const parsed: unknown = JSON.parse(json);
-  return isSaid(parsed) ? parsed : null;
+  if (parsed === null || isSaid(parsed)) {
+    return parsed;
+  }
+  broken(new Error("The wording of bb-core gave something that is no words."));
+  return null;
+}
+
+/** Asks the module; a refusal is a defect (see `broken`). */
+function ask(question: () => string): string {
+  try {
+    return question();
+  } catch (problem) {
+    broken(problem);
+    return "null";
+  }
 }
 
 const wording: Wording = {
-  changeSentence: (change) => saidIn(change_sentence(JSON.stringify(change))) ?? "",
+  changeSentence: (change) => saidIn(ask(() => change_sentence(JSON.stringify(change)))) ?? "",
   notificationSentences: (notice) => {
-    const parsed: unknown = JSON.parse(notification_sentences(JSON.stringify(notice)));
+    const parsed: unknown = JSON.parse(ask(() => notification_sentences(JSON.stringify(notice))));
     return Array.isArray(parsed) ? parsed.filter((part) => isSaid(part)) : [];
   },
-  sideWords: (field, side) => saidIn(side_words(JSON.stringify({ field, side }))),
+  sideWords: (field, side) => saidIn(ask(() => side_words(JSON.stringify({ field, side })))),
 };
 
 let loading: Promise<void> | undefined;
