@@ -23,8 +23,9 @@ pub const JOB_ATTEMPTS_MAX: u32 = 5;
 
 bb_core::words! {
     /// The kinds of job, each with the name the queue stores. [`JobKind::is_daily`] says which
-    /// come back every day; `Ctx::do_job` routes by it, and `Ctx::job_gave_up` ends a dead job of a kind
-    /// that is not daily, so a new kind has to be given its work there.
+    /// come back every day; `Ctx::do_job` routes by it, and `Ctx::job_gave_up` ends a dead job
+    /// of a kind that is not daily; these matches have no catch-all, so a new kind has to be given
+    /// its work and its end there.
     pub enum JobKind {
         /// One step of a change to many issues; the payload names the run.
         ManyChangesStep => "many-changes.step",
@@ -260,8 +261,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                     );
                     JobFailure::of(&error, FAILED, job)
                 }),
-            // The daily kinds go to `do_daily_job`.
-            _ => Err(misrouted(job, kind)),
+            // The daily kinds go to `do_daily_job`; listed so that a new kind has to be placed.
+            JobKind::PurgeDrafts
+            | JobKind::CatchUpHistory
+            | JobKind::PurgeNotifications
+            | JobKind::PruneSecurityLog
+            | JobKind::PurgeSessions
+            | JobKind::RotateServerLog
+            | JobKind::CleanUpFiles => Err(misrouted(job, kind)),
         }
     }
 
@@ -353,8 +360,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old files could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
-            // The other kinds go to `do_one_off_job`.
-            _ => Err(misrouted(job, kind)),
+            // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
+            JobKind::ManyChangesStep
+            | JobKind::RenewIds
+            | JobKind::MailSend
+            | JobKind::PreviewFile => Err(misrouted(job, kind)),
         }
     }
 
@@ -372,12 +382,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(JobKind::MailSend) => self.mail_job_gave_up(&job.payload).await,
             Some(JobKind::PreviewFile) => self.preview_gave_up(&job.payload).await,
             // The daily kinds come back by themselves and leave no work that people can see; a
-            // new kind that is not daily has to be given its end above.
-            Some(kind) => {
-                debug_assert!(
-                    kind.is_daily(),
-                    "the job kind {kind:?} has no end for a dead job"
-                );
+            // new kind has to be placed in one of these arms.
+            Some(
+                kind @ (JobKind::PurgeDrafts
+                | JobKind::CatchUpHistory
+                | JobKind::PurgeNotifications
+                | JobKind::PruneSecurityLog
+                | JobKind::PurgeSessions
+                | JobKind::RotateServerLog
+                | JobKind::CleanUpFiles),
+            ) => {
+                debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");
                 Ok(())
             }
             None => Ok(()),
