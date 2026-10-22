@@ -222,6 +222,15 @@ files = ["web/**/*.{ts,tsx,css}", "design/theme.kdl"]
 status = "active"
 
 [[check]]
+id = "STY-PARTS"
+title = "Every part that design/theme.kdl styles is a part that some component has"
+rule = "ADR-0026"
+tool = "xtask (the part names of the rules of design/theme.kdl against the part names written in web/**/*.{ts,tsx}: a rule for a part no component has styles nothing)"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.{ts,tsx}", "design/theme.kdl"]
+status = "active"
+
+[[check]]
 id = "THEME-ONLY"
 title = "The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one (also in the pages of docs/)"
 rule = "ADR-0026, coding-standards §4"
