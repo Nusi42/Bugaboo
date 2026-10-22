@@ -20,7 +20,7 @@ use serde_json::json;
 
 use super::refs::NameRef;
 use super::rewrite::{Combining, Replacement, Rewrite, Sorted};
-use super::store::TagUse;
+use super::store::{TagLimit, TagUse};
 use super::types::{
     ChangeTag, CombineTags, TagChangePreview, TagChangePreviewQuery, TagPage, TagView, TagsQuery,
 };
@@ -72,7 +72,7 @@ fn tag_name_taken(tags: &[Tag], name: &str, except: TagId) -> bool {
 /// projects they do not see know is not there for them. The one definition, for the lists and for
 /// the history.
 fn tag_is_known(each: &TagUse) -> bool {
-    each.limited_to_visible || each.seen || (!each.limited && !each.anywhere)
+    each.limit == TagLimit::Visible || each.seen || (each.limit == TagLimit::None && !each.anywhere)
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

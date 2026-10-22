@@ -1,7 +1,7 @@
 //! The one statement that says what decides whether a person may know a tag (SEC-06): whether the
 //! tag is used on an issue they read, whether any issue has it, and its limits to projects.
 
-use bb_app::tags::TagUse;
+use bb_app::tags::{TagLimit, TagUse};
 use bb_core::id::ProjectId;
 use bb_core::tags::IssueSight;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
@@ -107,7 +107,7 @@ pub(super) async fn tags_with_use(
                     .is_in(projects.iter().map(|project| project.stored())),
             );
         }
-        Expr::exists(limit.to_owned())
+        Expr::exists(limit.clone())
     };
     let mut select = Query::select();
     select
@@ -129,8 +129,13 @@ pub(super) async fn tags_with_use(
                 tag: read_tag(row)?,
                 seen: row.get::<bool>(UseColumn::Seen)?,
                 anywhere: row.get::<bool>(UseColumn::Anywhere)?,
-                limited: row.get::<bool>(UseColumn::Limited)?,
-                limited_to_visible: row.get::<bool>(UseColumn::LimitedToVisible)?,
+                limit: if row.get::<bool>(UseColumn::LimitedToVisible)? {
+                    TagLimit::Visible
+                } else if row.get::<bool>(UseColumn::Limited)? {
+                    TagLimit::Hidden
+                } else {
+                    TagLimit::None
+                },
             })
         })
         .collect()

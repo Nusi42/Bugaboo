@@ -20,10 +20,19 @@ pub struct TagUse {
     pub seen: bool,
     /// Whether any issue has it, the trash and the issues of others too.
     pub anywhere: bool,
-    /// Whether it is limited to some projects.
-    pub limited: bool,
-    /// Whether it is limited to a project the person sees.
-    pub limited_to_visible: bool,
+    /// What its limits to projects are, for the person.
+    pub limit: TagLimit,
+}
+
+/// How a tag is limited to projects, as far as a person is concerned.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TagLimit {
+    /// For every project.
+    None,
+    /// To projects, none of which the person sees.
+    Hidden,
+    /// To projects, one of which the person sees.
+    Visible,
 }
 use crate::store_macros::{queries, reads, writes};
 

@@ -7,7 +7,7 @@ use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, Ta
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::tags::{TagStore, TagUse};
+use crate::tags::{TagLimit, TagStore, TagUse};
 
 fn page_after(mut issues: Vec<IssueId>, after: Option<IssueId>, limit: u64) -> Vec<IssueId> {
     issues.sort();
@@ -177,12 +177,18 @@ impl TagStore for FakeStore {
                 .iter()
                 .map(|tag| {
                     let mut limits = state.tag_projects.iter().filter(|each| each.tag == tag.id);
+                    let limit = if limits.clone().next().is_none() {
+                        TagLimit::None
+                    } else if limits.any(|each| visible.contains(&each.project)) {
+                        TagLimit::Visible
+                    } else {
+                        TagLimit::Hidden
+                    };
                     TagUse {
                         tag: tag.clone(),
                         seen: used_in(state, tag, seen),
                         anywhere: used_in(state, tag, anywhere),
-                        limited: limits.clone().next().is_some(),
-                        limited_to_visible: limits.any(|each| visible.contains(&each.project)),
+                        limit,
                     }
                 })
                 .collect();
