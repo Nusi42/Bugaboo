@@ -26,7 +26,7 @@ use super::ids::{code_plan_in, new_code_in};
 use super::store::MovedStatus;
 use super::types::{IssueView, MoveIssue};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, locked};
 use crate::issues::member;
 use crate::many_changes::ManyChangeNote;
 use crate::projects::Why;
@@ -87,13 +87,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         project: ProjectId,
     ) -> Result<Option<String>, AppError> {
         let key = (issue.issue_type, project);
-        if let Some(known) = self
-            .known
-            .types_not_used
-            .lock()
-            .ok()
-            .and_then(|each| each.get(&key).cloned())
-        {
+        if let Some(known) = locked(&self.known.types_not_used).get(&key).cloned() {
             return Ok(known);
         }
         let name = match self
@@ -111,9 +105,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             None => None,
         };
-        if let Ok(mut each) = self.known.types_not_used.lock() {
-            each.insert(key, name.clone());
-        }
+        locked(&self.known.types_not_used).insert(key, name.clone());
         Ok(name)
     }
 

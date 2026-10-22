@@ -119,7 +119,7 @@ impl<S: Send + Sync> FromRequestParts<S> for Info {
             .unwrap_or_default();
         let background = parts.headers.contains_key(BACKGROUND_HEADER)
             && parts.extensions.get::<MatchedPath>().is_some_and(|route| {
-                crate::permissions::may_be_background_read(&parts.method, route.as_str())
+                crate::openapi::may_be_background_read(&parts.method, route.as_str())
             });
         Ok(Self(RequestInfo {
             network,

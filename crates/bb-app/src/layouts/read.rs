@@ -9,7 +9,6 @@ use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, ProjectId, RoleId};
 use bb_core::layout::{Layout, LayoutContent, LayoutKind, LayoutPlace, built_in_fields, find};
-use bb_core::project::Project;
 use bb_policy::{Authorized, Evaluation, LevelSubject as _, Permission, Place};
 
 use super::effective::{Viewer, effective};
@@ -19,21 +18,13 @@ use super::types::{
 };
 use crate::access::{Actor, ROLES_MAX};
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
+use crate::editing::EditorPlace;
 use crate::fields::{Definition, Item, must_be_asked_for};
 use crate::issues::IssueTypeRef;
 use crate::projects::ProjectRef;
 
-/// The place a layout is asked for: the whole organization, or a project with its chain.
-pub(super) struct Where {
-    /// The project; none for the whole organization.
-    pub(super) project: Option<ProjectRef>,
-    /// The projects from the top down to the place; empty for the organization.
-    pub(super) chain: Vec<ProjectId>,
-    /// The issue type; none for all types.
-    pub(super) issue_type: Option<IssueTypeId>,
-    /// The issue page or the new-issue form.
-    pub(super) kind: LayoutKind,
-}
+/// The place a layout is asked for, and whether it is the issue page or the new-issue form.
+pub(super) type Where = EditorPlace<LayoutKind>;
 
 impl Where {
     /// Where a layout for exactly this place is set.
@@ -43,13 +34,6 @@ impl Where {
             issue_type: self.issue_type,
             kind: self.kind,
         }
-    }
-
-    /// The place for the permissions.
-    pub(super) fn place(&self) -> Place {
-        self.project
-            .as_ref()
-            .map_or(Place::Organization, |project| Place::Project(project.id))
     }
 }
 
@@ -61,35 +45,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue_type: Option<IssueTypeId>,
         kind: LayoutKind,
     ) -> Result<Where, AppError> {
-        let (found, chain) = self.place_of_request(project).await?;
-        Ok(Where {
-            project: found.as_ref().map(ProjectRef::from),
-            chain,
-            issue_type,
-            kind,
-        })
-    }
-
-    /// The project a request for an editor names (it must exist for the person) and the projects
-    /// from the top down to it: both empty for the organization.
-    pub(crate) async fn place_of_request(
-        &self,
-        project: Option<&str>,
-    ) -> Result<(Option<Project>, Vec<ProjectId>), AppError> {
-        let found = match project {
-            Some(address) => Some(
-                self.find_project(address)
-                    .await?
-                    .map(|found| found.project)
-                    .ok_or(AppError::Refused(ErrorCode::NotFound))?,
-            ),
-            None => None,
-        };
-        let chain = match &found {
-            Some(project) => self.chain_of(project.id).await?,
-            None => Vec::new(),
-        };
-        Ok((found, chain))
+        self.editor_place(project, issue_type, kind).await
     }
 
     /// The own fields of issues that reach the place and the issue type, retired ones left out, in

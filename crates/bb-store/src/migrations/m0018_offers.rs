@@ -17,7 +17,20 @@
 
 use sea_query::{ColumnDef, ForeignKey, Iden as _, Index, Table};
 
+use super::{Step, id_column};
+use crate::schema::{IssueRow, IssueTypeRow, LabelGroupRow, OfferRow, ProjectRow};
+
 /// The reference of a column that holds the project a subject was created in.
+///
+/// Why this is text and not the query builder (coding-standards §3, "never build SQL by string
+/// formatting"): a column that is added to a table that exists (`ALTER TABLE … ADD COLUMN`) can only
+/// carry a reference as part of its own definition on SQLite, which cannot add a foreign key to a
+/// table afterwards, and sea-query 1.0 has no reference on `ColumnDef` (only `extra`, free text, or
+/// a foreign key on `Table::create`, which is not an alteration). The text holds two identifiers
+/// that come from `ProjectRow` and nothing a person or a request ever writes, so there is no value
+/// to inject. Migration 18 is pinned (its checksum is of this text): changing how it is built could
+/// change the checksum, so it stays as it is; a later table that needs a reference is created with
+/// `Table::create` and a `foreign_key`.
 fn project_reference() -> String {
     format!(
         "REFERENCES \"{}\" (\"{}\")",
@@ -25,9 +38,6 @@ fn project_reference() -> String {
         ProjectRow::Id.to_string()
     )
 }
-
-use super::{Step, id_column};
-use crate::schema::{IssueRow, IssueTypeRow, LabelGroupRow, OfferRow, ProjectRow};
 
 pub(super) fn steps() -> Vec<Step> {
     vec![

@@ -24,8 +24,9 @@ use sea_query::{
 };
 use sha2::{Digest as _, Sha256};
 
-use crate::db::{Database, LockClass, Row, Transaction, from_micros, to_micros};
+use crate::db::{Database, Row, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
+use crate::locks::LockClass;
 use crate::schema::Migration;
 
 mod m0001_initial;
@@ -47,6 +48,7 @@ mod m0016_files;
 mod m0017_notifications;
 mod m0018_offers;
 mod m0019_layout_off_fields;
+mod m0020_mention_read_at;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -230,11 +232,15 @@ const ALL: &[Definition] = &[
         name: "offers",
         steps: || Ok(m0018_offers::steps()),
     },
-    // 18 belongs to the types and labels per project (WP-11).
     Definition {
         version: 19,
         name: "layout_off_fields",
         steps: || Ok(m0019_layout_off_fields::steps()),
+    },
+    Definition {
+        version: 20,
+        name: "mention_read_at",
+        steps: || Ok(m0020_mention_read_at::steps()),
     },
 ];
 

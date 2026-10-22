@@ -160,7 +160,7 @@ async fn iss_09_a_job_that_waits_for_later_is_told_by_its_kind() -> TestResult {
         let fixture = fixture(db).await?;
         let storage = &fixture.storage;
         let mut source = ids();
-        let kind = TechnicalName::new(bb_app::jobs::kind::PURGE_DRAFTS)?;
+        let kind = TechnicalName::new(bb_app::jobs::JobKind::PurgeDrafts.code())?;
         let other = TechnicalName::new("history.catch-up")?;
         assert!(!storage.later_job_waits(&kind, at(10)).await?);
         storage

@@ -91,3 +91,4 @@ mod timing;
 mod tls;
 mod upgrade;
 mod workflows_http;
+mod workflows_publish_http;

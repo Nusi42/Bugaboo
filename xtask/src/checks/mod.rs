@@ -13,6 +13,7 @@ mod arch_errors;
 mod arch_events;
 mod arch_http_edge;
 mod arch_lean;
+mod arch_lock_order;
 mod arch_map_sync;
 mod arch_no_counters;
 mod arch_no_unsafe;
@@ -25,6 +26,7 @@ mod arch_versioned;
 mod arch_wasm;
 mod arch_web_api;
 mod arch_web_features;
+mod arch_web_keys;
 mod build_location;
 mod data_logs;
 mod data_marks;
@@ -34,6 +36,7 @@ mod dep_register;
 mod dev_ports;
 mod doc_adr_enforced;
 mod doc_generated;
+mod doc_proven_by;
 mod exemptions;
 mod fmt_css;
 mod fmt_md;
@@ -46,6 +49,7 @@ mod lint_api_types;
 mod lint_ci;
 mod lint_css;
 mod lint_dry;
+mod lint_file_size;
 mod lint_html;
 mod lint_links;
 mod lint_rust;
@@ -62,6 +66,7 @@ pub(crate) mod meta_suppress;
 pub(crate) mod meta_wiring;
 mod node_tool;
 mod perf_bundle;
+mod perf_n1;
 mod plan_trace;
 mod required_tests;
 mod sec_cookies;
@@ -202,9 +207,11 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_wasm::ArchWasm),
         Box::new(arch_http_edge::ArchHttpEdge),
         Box::new(arch_lean::ArchLean),
+        Box::new(arch_lock_order::ArchLockOrder),
         Box::new(arch_versioned::ArchVersioned),
         Box::new(arch_web_api::ArchWebApi),
         Box::new(arch_web_features::ArchWebFeatures),
+        Box::new(arch_web_keys::ArchWebKeys),
         Box::new(data_marks::DataMarks),
         Box::new(arch_db_parity::ArchDbParity),
         Box::new(data_migrations::DataMigrations),
@@ -223,6 +230,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(fmt_ts::FmtTs),
         Box::new(fmt_css::FmtCss),
         Box::new(lint_ts::LintTs),
+        Box::new(lint_file_size::LintFileSize),
         Box::new(lint_types::LintTypes),
         Box::new(lint_api_types::LintApiTypes),
         Box::new(lint_css::LintCss),
@@ -238,12 +246,14 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(test_issue_ids::TestIssueIds),
         Box::new(test_sample_data::TestSampleData),
         Box::new(test_uploads::TestUploads),
+        Box::new(perf_n1::PerfN1),
         Box::new(test_workflows::TestWorkflows),
         Box::new(txt_catalog::TxtCatalog),
         Box::new(txt_literal::TxtLiteral),
         Box::new(txt_terms::TxtTerms),
         Box::new(doc_generated::DocGenerated),
         Box::new(doc_adr_enforced::DocAdrEnforced),
+        Box::new(doc_proven_by::DocProvenBy),
         Box::new(plan_trace::PlanTrace),
         Box::new(arch_map_sync::ArchMapSync),
         Box::new(perf_bundle::PerfBundle),

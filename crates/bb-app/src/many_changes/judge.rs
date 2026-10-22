@@ -14,12 +14,12 @@ use bb_core::many_changes::SkipReason;
 use bb_policy::Evaluation;
 use serde_json::json;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex};
 
 use super::types::{ManyChange, ManyChangeAction, ManyChangeNote};
 use crate::access::Actor;
 use crate::auth::AppError;
-use crate::auth::{AuthStore, Ctx};
+use crate::auth::{AuthStore, Ctx, locked};
 use crate::issues::{ChangeIssue, member};
 use crate::relations::{AddRelation, IssueLine, LineMaker};
 
@@ -96,21 +96,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         selection: &Selection<'_>,
         project: ProjectId,
     ) -> Result<Arc<[ProjectId]>, AppError> {
-        let known = selection
-            .chains
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .get(&project)
-            .cloned();
+        let known = locked(&selection.chains).get(&project).cloned();
         if let Some(chain) = known {
             return Ok(chain);
         }
         let chain: Arc<[ProjectId]> = self.chain_of(project).await?.into();
-        selection
-            .chains
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .insert(project, Arc::clone(&chain));
+        locked(&selection.chains).insert(project, Arc::clone(&chain));
         Ok(chain)
     }
 }

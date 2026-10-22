@@ -169,9 +169,6 @@ pub struct Mention {
     /// What the comment named to reach the person.
     #[not_personal]
     pub via: MentionTarget,
-    /// When the person looked at it under *Mentions*; unread while empty.
-    #[not_personal]
-    pub read_at: Option<Timestamp>,
 }
 
 #[cfg(test)]

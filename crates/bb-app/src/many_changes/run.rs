@@ -27,7 +27,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
-use crate::jobs::{kind, kind_name};
+use crate::jobs::JobKind;
 use crate::member;
 
 /// The member of the payload of a step that names the run.
@@ -286,7 +286,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.store()
             .queue_job(
                 job,
-                &kind_name(kind::MANY_CHANGES_STEP)?,
+                &JobKind::ManyChangesStep.name()?,
                 &step_payload(run),
                 now,
                 now,

@@ -31,7 +31,7 @@ use super::error::{AppError, Stops, change_failed, internal};
 use super::events::{changed, entity};
 use super::store::AuthStore;
 use super::types::{Done, SignUp};
-use crate::jobs::{kind, kind_name};
+use crate::jobs::JobKind;
 use crate::mailer::MailMessage;
 use crate::notifications::{MailJob, send_failure_for_job};
 use crate::ports::ChangeStore;
@@ -82,7 +82,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<Do
     let invitation = InvitationId::generate(&mut ctx.ids());
     let job = (
         JobId::generate(&mut ctx.ids()).map_err(|error| AppError::Internal(error.to_string()))?,
-        kind_name(kind::MAIL_SEND)?,
+        JobKind::MailSend.name()?,
         MailJob::SignUp {
             email: email.as_str().to_owned(),
             invitation,

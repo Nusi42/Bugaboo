@@ -16,6 +16,7 @@ mod conflict;
 mod drafts;
 mod lock;
 mod parts;
+mod place;
 mod records;
 mod save;
 mod store;
@@ -30,6 +31,7 @@ pub(crate) use lock::let_go_for_delete;
 pub use lock::{
     ask_to_finish, edit_anyway, heartbeat, read_lock, release_lock, release_stuck_lock, take_lock,
 };
+pub(crate) use place::EditorPlace;
 pub use records::{ChainedRecords, EditableRecords, NoRecords, RecordFacts, Shown};
 pub use save::{TextSave, Written};
 pub use store::EditStore;

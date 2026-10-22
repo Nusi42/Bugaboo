@@ -4,6 +4,7 @@
 
 use bb_core::event::EntityRef;
 use bb_core::id::{ProjectId, WorkflowId};
+use bb_core::offer::reaches;
 use bb_core::workflow::WorkflowUse;
 use bb_policy::{Permission, Place, Tree};
 
@@ -44,18 +45,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Ok(false);
         }
-        Ok(match place_from_uses(&tree, &uses, id) {
-            Place::Project(project) => chain.contains(&project),
-            // Used at the organization, or used nowhere (then the permission for the whole
-            // organization was asked for above): whoever manages workflows here may adopt it. Used
-            // by projects that share no project, it is for those who manage workflows for the
-            // whole organization.
-            Place::Organization if unused || is_used_at_organization(&uses, id) => true,
-            Place::Organization => self
+        let place = place_from_uses(&tree, &uses, id);
+        // Used at the organization, or used nowhere (then the permission for the whole
+        // organization was asked for above): whoever manages workflows here may adopt it. Used by
+        // projects that share no project, it is for those who manage workflows for the whole
+        // organization.
+        if place == Place::Organization && !unused && !is_used_at_organization(&uses, id) {
+            return Ok(self
                 .evaluation_of(actor, Place::Organization)
                 .await?
-                .allows(Permission::ManageWorkflows),
-        })
+                .allows(Permission::ManageWorkflows));
+        }
+        Ok(reaches(place.project(), chain))
     }
 
     /// The facts of a workflow for the editing use cases; `None` when there is no such workflow or

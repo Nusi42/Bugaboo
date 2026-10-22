@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use bb_auth::{CsrfKey, Device, LinkKey, Passkeys, PasswordHasher, SecretToken};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange};
@@ -204,6 +204,15 @@ impl<S> AuthServices<S> {
 /// The evaluations a request has made, by person and place.
 pub(crate) type Evaluations = Mutex<HashMap<(UserId, Place), Arc<Evaluation>>>;
 
+/// Takes the lock of a read-once cache (the people, the handles, the names, the workflows, the
+/// offers a request has read) or of a small state of a request. The one way to treat a poisoned
+/// lock: these hold values that were only ever whole insertions of what the store said, so after a
+/// panic elsewhere the value is as good as before, and a read goes on from it. Never read a cache
+/// with `.lock().ok()`, which would answer from the store again silently, nor with `.unwrap()`.
+pub(crate) fn locked<T>(lock: &Mutex<T>) -> MutexGuard<'_, T> {
+    lock.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
 /// The names of the things of one kind (groups, roles), read once for a request.
 pub(crate) type NamesRead<Id> = Mutex<Option<Arc<Vec<(Id, String)>>>>;
 
@@ -333,11 +342,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) fn reserve_test_email(&self, person: UserId) -> Result<(), AppError> {
         let now = self.now();
         let every = SignedDuration::from_secs(bb_core::mail::TEST_EMAIL_EVERY_SECONDS);
-        let mut sent = self
-            .services
-            .test_mail_at
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut sent = locked(&self.services.test_mail_at);
         // Only the last few seconds matter: the others are forgotten, so the map stays small.
         sent.retain(|_, at| at.checked_add(every).is_ok_and(|until| until > now));
         if let Some(at) = sent.get(&person)
@@ -405,20 +410,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             } else {
                 Channel::Ui
             },
-            reason: self
-                .reason
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone(),
+            reason: locked(&self.reason).clone(),
         }
     }
 
     /// Makes the events of the changes that follow carry `reason`, until it is set again.
     pub(crate) fn set_reason(&self, reason: Option<String>) {
-        *self
-            .reason
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = reason;
+        *locked(&self.reason) = reason;
     }
 
     /// Writes an entry into the security log. A log that cannot be written is reported in the
@@ -467,5 +465,27 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The client network as text, for the pools of waiting passkey challenges.
     pub(crate) fn network_name(&self) -> Option<String> {
         self.request.network.as_ref().map(ToString::to_string)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use super::locked;
+
+    #[test]
+    fn a_cache_whose_lock_a_panic_poisoned_is_read_like_any_other() {
+        let cache = Arc::new(Mutex::new(vec![1_u8]));
+        let held = Arc::clone(&cache);
+        let panicked = std::thread::spawn(move || {
+            let _guard = held.lock();
+            std::panic::resume_unwind(Box::new("a panic while the lock is held"));
+        })
+        .join();
+        assert!(panicked.is_err());
+        assert!(cache.is_poisoned());
+        locked(&cache).push(2);
+        assert_eq!(*locked(&cache), [1, 2]);
     }
 }

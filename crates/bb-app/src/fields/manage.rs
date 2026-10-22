@@ -15,6 +15,7 @@ use bb_core::access::FieldLevel;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{FieldId, RoleId};
+use bb_core::names::name_among;
 use bb_core::own_fields::{
     CHOICES_MAX, ChoiceColor, Edit, FIELDS_MAX, FieldChoice, FieldFor, FieldType, HELP_MAX, Look,
     OwnField, Rules, RulesRefused, Scope,
@@ -41,12 +42,15 @@ fn clean_help(help: Option<&str>) -> Result<String, AppError> {
     }
 }
 
-/// Whether another field than `except` already has the name, without regard to capitals.
+/// Whether another field than `except` already has the name (`bb_core::names`).
 fn name_taken(definitions: &[Definition], name: &str, except: Option<FieldId>) -> bool {
-    let lower = name.to_lowercase();
-    definitions
-        .iter()
-        .any(|found| Some(found.field.id) != except && found.field.name.to_lowercase() == lower)
+    name_among(
+        definitions
+            .iter()
+            .filter(|found| Some(found.field.id) != except)
+            .map(|found| found.field.name.as_str()),
+        name,
+    )
 }
 
 /// Checks that the rules make sense for the type and that the pattern can be checked.
@@ -191,10 +195,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut made: Vec<FieldChoice> = Vec::with_capacity(choices.len());
         for (position, choice) in (0_i64..).zip(choices) {
             let name = clean_name(&choice.name)?;
-            if made
-                .iter()
-                .any(|known| known.name.to_lowercase() == name.to_lowercase())
-            {
+            if name_among(made.iter().map(|known| known.name.as_str()), &name) {
                 return Err(ErrorCode::NameTaken.into());
             }
             made.push(FieldChoice {
@@ -431,7 +432,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut after = current.clone();
         if let Some(name) = &input.name {
             after.field.name = clean_name(name)?;
-            if name_taken(definitions, &after.field.name, Some(after.field.id)) {
+            if after.field.name != current.field.name
+                && name_taken(definitions, &after.field.name, Some(after.field.id))
+            {
                 return Err(ErrorCode::NameTaken.into());
             }
         }
@@ -537,7 +540,11 @@ pub async fn change_field<S: AuthStore>(
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 let known = S::field_definitions_in(transaction).await?;
-                if name_taken(&known, &written.field.name, Some(written.field.id)) {
+                let renamed = known
+                    .iter()
+                    .find(|stored| stored.field.id == written.field.id)
+                    .is_none_or(|stored| stored.field.name != written.field.name);
+                if renamed && name_taken(&known, &written.field.name, Some(written.field.id)) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 if S::update_field(transaction, &written.field, &written.scope, version).await? {

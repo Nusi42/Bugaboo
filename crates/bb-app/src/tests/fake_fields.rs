@@ -5,7 +5,6 @@ use bb_core::event::EntityKind;
 use bb_core::id::{ChoiceId, EntityId, FieldId, ProjectId};
 use bb_core::own_fields::{FieldChoice, OwnField, Scope};
 use bb_core::own_fields_value::Cell;
-use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
 use crate::fields::{Definition, FieldStore, StoredValues};
@@ -259,21 +258,5 @@ impl FieldStore for FakeStore {
             }
         }
         Ok(holders)
-    }
-
-    async fn set_field_retired(
-        tx: &mut Tx,
-        field: FieldId,
-        at: Option<Timestamp>,
-    ) -> Result<(), FakeError> {
-        if let Some(found) = tx
-            .state
-            .field_definitions
-            .iter_mut()
-            .find(|found| found.field.id == field)
-        {
-            found.field.retired_at = at;
-        }
-        Ok(())
     }
 }

@@ -7,9 +7,10 @@ use super::refs::NameRef;
 use crate::offers::GroupOffers;
 use bb_core::ErrorCode;
 use bb_core::id::{LabelId, ProjectId, TagId};
+use bb_core::names::same_name;
 use bb_core::tags::{
     IssueLabel, IssueTag, LABELS_PER_ISSUE_MAX, Label, LabelGroup, TAGS_PER_ISSUE_MAX, Tag,
-    TagProject, name_key, tag_allowed_in,
+    TagProject, tag_allowed_in,
 };
 
 /// The names of the tags an issue has, in the order it got them.
@@ -54,8 +55,7 @@ pub(super) fn judge_tag(
     held: &[IssueTag],
     chain: &[ProjectId],
 ) -> Result<TagAddition, ErrorCode> {
-    let key = name_key(name);
-    let found = tags.iter().find(|tag| name_key(&tag.name) == key);
+    let found = tags.iter().find(|tag| same_name(&tag.name, name));
     let Some(tag) = found else {
         return if held.len() >= TAGS_PER_ISSUE_MAX {
             Err(ErrorCode::LimitReached)

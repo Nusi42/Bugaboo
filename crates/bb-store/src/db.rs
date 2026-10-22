@@ -32,6 +32,7 @@ use sqlx::sqlite::{
 use sqlx::{AssertSqlSafe, PgPool, Postgres, Row as _, Sqlite, SqlitePool};
 
 use crate::error::StoreError;
+use crate::locks::{Held, LockClass, Mode};
 
 /// How many values one statement binds at most. SQLite allows 32,766 and PostgreSQL 65,535, so the
 /// smaller counts, less a little room for the values a statement binds besides its list. This is
@@ -246,6 +247,7 @@ impl Database {
     pub(crate) async fn begin(&self) -> Result<Transaction, StoreError> {
         Ok(Transaction {
             follow_ups: Vec::new(),
+            locks: Held::default(),
             statements: Arc::clone(&self.statements),
             inner: match &self.pool {
                 Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin_with("BEGIN IMMEDIATE").await?),
@@ -260,6 +262,7 @@ impl Database {
     pub(crate) async fn begin_read(&self) -> Result<Transaction, StoreError> {
         Ok(Transaction {
             follow_ups: Vec::new(),
+            locks: Held::default(),
             statements: Arc::clone(&self.statements),
             inner: match &self.pool {
                 Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin().await?),
@@ -397,50 +400,6 @@ enum TxInner {
     Postgres(sqlx::Transaction<'static, Postgres>),
 }
 
-/// The kinds of advisory lock of the program, the one home of their numbers: PostgreSQL takes
-/// the two-key form `pg_advisory_xact_lock(class, key)`, so locks of different kinds never meet.
-///
-/// **The order.** A change that takes more than one lock takes them in this order, and no other:
-/// `Policy`, `TagsAndLabels`, `Workflows`, `IssueCodes`, then the others by their numbers. Two
-/// changes that take two of them in different orders can each hold one and wait for the other
-/// (more so behind an exclusive taker such as a change of the workflows or of the offers, which
-/// waits for every shared one and is waited for by every new one). Writing an issue takes the
-/// workflows (shared) before the codes of its project, and so does moving one; a change of an issue
-/// type that retires it takes the policy and then the workflows (exclusive), so an issue of the
-/// type is never created after the retire has looked.
-#[derive(Clone, Copy, Debug)]
-#[repr(i32)]
-pub(crate) enum LockClass {
-    /// Processes that migrate one after the other (key 0).
-    Migration = 1,
-    /// Changes of roles and rows that could leave no administrator (key 0).
-    Policy = 2,
-    /// The codes of the issues of one project (key: four bytes of the project's ID).
-    IssueCodes = 3,
-    /// Changes of which issue sits under which (key 0): two changes at the same moment cannot
-    /// make a circle between them.
-    IssueParents = 4,
-    /// Adding relations (key 0): two relations added at the same moment cannot both pass the
-    /// limit of relations of an issue.
-    IssueRelations = 5,
-    /// Changes of the names of tags, labels and groups of labels (key 0): two changes at the same
-    /// moment cannot both take a name, and a *Pick one* group is judged on what is stored.
-    TagsAndLabels = 6,
-    /// Changes of the handles of one person (key: four bytes of the person's ID): two changes at
-    /// the same moment cannot both pass the rule of how often a handle changes.
-    Handles = 7,
-    /// The workflows that count (key 0): a change to workflows takes it alone, and an issue that is
-    /// written with a status takes it together with the others who do, so an issue is never
-    /// written into a status that a workflow being published drops.
-    Workflows = 8,
-    /// Starting uploads (key: four bytes of the person's ID): two uploads of one person started at
-    /// the same moment cannot both pass the limits of what a person may have open.
-    Uploads = 9,
-    /// Finishing an upload of an issue (key: four bytes of the issue's ID): two finishes at the same
-    /// moment cannot both take the last place for a file of the issue.
-    IssueFiles = 10,
-}
-
 /// A database transaction. Domain data is written only inside one, and only through
 /// [`Database::record_change`](crate::events), so every change comes with its event and its
 /// outbox entry. A transaction that is dropped without `commit` is rolled back.
@@ -451,6 +410,8 @@ pub struct Transaction {
     /// Events the change adds besides its own; `record_change` appends them after the event of
     /// the change, so the lock on the outbox stays the last lock of the transaction.
     pub(crate) follow_ups: Vec<DomainEvent>,
+    /// The advisory locks it took (also on SQLite, which needs none), to refuse a wrong order.
+    locks: Held,
 }
 
 impl std::fmt::Debug for Transaction {
@@ -509,6 +470,7 @@ impl Transaction {
         class: LockClass,
         key: i32,
     ) -> Result<(), StoreError> {
+        self.locks.take(class, Mode::Alone)?;
         if matches!(self.inner, TxInner::Postgres(_)) {
             let mut select = SelectStatement::new();
             select.expr(
@@ -528,6 +490,7 @@ impl Transaction {
         class: LockClass,
         key: i32,
     ) -> Result<(), StoreError> {
+        self.locks.take(class, Mode::Shared)?;
         if matches!(self.inner, TxInner::Postgres(_)) {
             let mut select = SelectStatement::new();
             select.expr(

@@ -36,7 +36,6 @@ pub(crate) enum MentionRow {
     Comment,
     Recipient,
     Via,
-    ReadAt,
 }
 
 /// The people who follow an issue (ISS-07).

@@ -106,9 +106,10 @@ pub use fake::FakeMailer;
 
 #[cfg(any(test, feature = "testing"))]
 mod fake {
-    use std::sync::{Arc, Mutex, PoisonError};
+    use std::sync::{Arc, Mutex};
 
     use super::{BoxFuture, MailFailure, MailMessage, MailServer, Mailer};
+    use crate::auth::locked;
 
     /// A mailer that keeps what it would have sent, for tests. Clones share what was sent, so a
     /// test keeps one and hands the other to the services.
@@ -122,10 +123,7 @@ mod fake {
         /// Every e-mail sent so far, oldest first, with the server it went through.
         #[must_use]
         pub fn sent(&self) -> Vec<(MailServer, MailMessage)> {
-            self.sent
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .clone()
+            locked(&self.sent).clone()
         }
 
         /// The e-mails sent so far, without the servers.
@@ -139,10 +137,7 @@ mod fake {
 
         /// The next send fails with `failure` (and the one after it with the next failure given).
         pub fn fail_next(&self, failure: MailFailure) {
-            self.failures
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .push(failure);
+            locked(&self.failures).push(failure);
         }
     }
 
@@ -153,15 +148,12 @@ mod fake {
             message: &'a MailMessage,
         ) -> BoxFuture<'a, Result<(), MailFailure>> {
             Box::pin(async move {
-                let mut failures = self.failures.lock().unwrap_or_else(PoisonError::into_inner);
+                let mut failures = locked(&self.failures);
                 if !failures.is_empty() {
                     return Err(failures.remove(0));
                 }
                 drop(failures);
-                self.sent
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .push((server.clone(), message.clone()));
+                locked(&self.sent).push((server.clone(), message.clone()));
                 Ok(())
             })
         }

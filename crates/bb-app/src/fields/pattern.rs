@@ -3,8 +3,9 @@
 //! pattern has a length cap (`bb_core::own_fields::PATTERN_MAX`) and the compiled program a size
 //! cap, so a pattern cannot cost more than a small, fixed amount (SEC-PATTERNS).
 
+use crate::auth::locked;
 use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex, PoisonError};
+use std::sync::{LazyLock, Mutex};
 
 use bb_core::own_fields_value::PatternEngine;
 use regex::RegexBuilder;
@@ -32,7 +33,7 @@ fn compile(pattern: &str) -> Option<regex::Regex> {
 
 /// The pattern compiled, from the cache when it was compiled before.
 fn compiled(pattern: &str) -> Option<regex::Regex> {
-    let mut cache = COMPILED.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut cache = locked(&COMPILED);
     if let Some(found) = cache.get(pattern) {
         return found.clone();
     }
@@ -82,10 +83,7 @@ mod tests {
             assert!(Linear.matches(&format!("a{number}"), &format!("a{number}")));
             assert!(Linear.matches(&format!("a{number}"), &format!("a{number}")));
         }
-        let kept = COMPILED
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .len();
+        let kept = locked(&COMPILED).len();
         assert!(kept <= CACHE_MAX, "{kept} patterns kept");
     }
 

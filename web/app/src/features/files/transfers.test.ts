@@ -11,7 +11,7 @@ const LIMIT = 25 * 1024 * 1024;
 /** Transfers on a fake server that never waits; `refreshed` counts the reads of the list after a file. */
 function setUp(failures: readonly (Readonly<ApiError> | undefined)[] = []) {
   const server = fakeUploads(failures);
-  const refreshed = vi.fn<() => Promise<void>>(() => Promise.resolve());
+  const refreshed = vi.fn<() => void>();
   const transfers = createTransfers({
     transport: server.transport,
     wait: () => Promise.resolve(),

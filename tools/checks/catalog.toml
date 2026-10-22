@@ -77,6 +77,15 @@ files = ["**/*.rs", "**/Cargo.toml"]
 status = "active"
 
 [[check]]
+id = "LINT-FILE-SIZE"
+title = "A Rust file has at most 800 lines unless it is named with a reason and the follow-up that splits it"
+rule = "coding-standards §2"
+tool = "xtask (counts the lines of every Rust file; tools/checks/size-exemptions.toml names the files over the ceiling, each with the most lines it may have)"
+when = ["commit", "ci"]
+files = ["**/*.rs", "tools/checks/size-exemptions.toml"]
+status = "active"
+
+[[check]]
 id = "LINT-TS"
 title = "oxlint finds no problems, including type-aware rules (TypeScript 7)"
 rule = "coding-standards §4"
@@ -408,6 +417,15 @@ files = ["web/**/*.{ts,tsx}"]
 status = "active"
 
 [[check]]
+id = "ARCH-WEB-KEYS"
+title = "Query keys are written in shared/query-keys.ts only, and the browser tests take the sizes of files from the generated client"
+rule = "architecture §4 (browser app, one home for what several screens share)"
+tool = "xtask (reads web/app/src and web/app/e2e: no literal queryKey array outside query-keys.ts, no 1024 * 1024 in the end-to-end tests)"
+when = ["edit", "commit", "ci"]
+files = ["web/app/src/**/*.{ts,tsx}", "web/app/e2e/**/*.ts"]
+status = "active"
+
+[[check]]
 id = "ARCH-MAP-SYNC"
 title = "The module map in the architecture docs lists exactly the crates and packages that exist"
 rule = "architecture §4, COMP-06"
@@ -432,6 +450,15 @@ rule = "coding-standards §3"
 tool = "xtask (checks #![forbid(unsafe_code)] in crate roots)"
 when = ["commit", "ci"]
 files = ["**/Cargo.toml", "crates/*/src/lib.rs", "crates/*/src/main.rs", "xtask/src/main.rs"]
+status = "active"
+
+[[check]]
+id = "ARCH-LOCK-ORDER"
+title = "Advisory locks are taken in one order; a transaction refuses a lower class than one it holds, on both databases"
+rule = "architecture §07, ADR-0031 amendment 5"
+tool = "xtask (the tests of the guard in bb-store exist by name and run on both databases; the SQL of an advisory lock is written in db.rs only, so every lock passes the guard)"
+when = ["commit", "ci"]
+files = ["crates/bb-store/**"]
 status = "active"
 
 [[check]]
@@ -652,6 +679,15 @@ files = ["*"]
 status = "active"
 
 [[check]]
+id = "DOC-PROVEN-BY"
+title = "A test that the security chapter cites as proof next to a check is a test that check requires"
+rule = "docs/architecture/12-security.md, ADR-0020"
+tool = "xtask (reads the Proven by cells; for a cell that names TEST-WORKFLOWS, TEST-UPLOADS, TEST-EDIT-LOCKS, TEST-ISSUE-IDS, PERF-N1 or ARCH-LOCK-ORDER, each test it names, by its form `wf_02_…`, must be in that check's list; a pipe inside a cell is escaped with a backslash)"
+when = ["commit", "ci"]
+files = ["docs/architecture/*.md", "docs/adr/*.md", "xtask/src/checks/*.rs"]
+status = "active"
+
+[[check]]
 id = "DOC-ADR-ENFORCED"
 title = "Every decision record says how it is enforced (check IDs, or 'review' with a reason)"
 rule = "META, ADR template"
@@ -674,10 +710,10 @@ status = "active"
 id = "PERF-N1"
 title = "List endpoints run a bounded number of queries"
 rule = "PERF-05"
-tool = "tests with a query counter"
+tool = "xtask (the tests with a statement counter exist by name, run on both databases and are not switched off: the issue page, the list of issues, tag suggestions, the types and groups of a project, the notifications and the unread count)"
 when = ["ci"]
-files = ["crates/bb-store/**", "crates/bb-app/**"]
-status = "planned"
+files = ["crates/bb-server/**", "crates/bb-store/**", "crates/bb-app/**"]
+status = "active"
 
 [[check]]
 id = "PERF-BENCH"

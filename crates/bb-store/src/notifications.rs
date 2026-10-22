@@ -213,26 +213,6 @@ impl NotificationStore for AuthStorage {
             .collect()
     }
 
-    async fn notifications_by_ids(
-        &self,
-        recipient: UserId,
-        ids: &[NotificationId],
-    ) -> Result<Vec<Notification>, StoreError> {
-        if ids.is_empty() {
-            return Ok(Vec::new());
-        }
-        let mut select = select();
-        select
-            .and_where(Expr::col(NotificationRow::Recipient).eq(recipient.stored()))
-            .and_where(Expr::col(NotificationRow::Id).is_in(ids_of(ids)));
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_notification)
-            .collect()
-    }
-
     async fn waiting_mail(
         &self,
         recipient: UserId,

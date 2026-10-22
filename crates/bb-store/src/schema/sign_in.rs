@@ -19,6 +19,8 @@ pub(crate) enum PersonRow {
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum Retired {
     Administrator,
+    /// `mention.read_at`, taken away by migration 20.
+    ReadAt,
 }
 
 #[derive(Clone, Copy, Iden)]

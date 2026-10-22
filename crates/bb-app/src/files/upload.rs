@@ -15,19 +15,20 @@ use bb_core::files::{
 };
 use bb_core::id::{AttachmentId, CommentId, JobId, ProjectId, UploadId};
 use bb_core::version::FIRST_VERSION;
-use bb_policy::{Authorized, Evaluation, Permission};
+use bb_policy::{Authorized, Evaluation};
 use jiff::Timestamp;
 use serde_json::json;
 
 use super::file_store::{Inspected, PartError};
 use super::member;
+use super::rights::may_add;
 use super::types::{
     AttachmentView, CancelUploadQuery, FinishUpload, SendPartQuery, StartUploadQuery,
     UploadStateQuery, UploadView,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
-use crate::jobs::{kind, kind_name};
+use crate::jobs::JobKind;
 use crate::projects::Why;
 
 /// The bytes of a part, or a count, as the number the API says.
@@ -53,12 +54,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 if comment.issue != issue.id {
                     return Err(self.not_found_like_a_hidden_issue(actor).await);
                 }
-                if comment.author != actor.person.id || !held.allows(Permission::Comment) {
+                if !may_add(&held, &issue, Some(comment.author), actor.person.id) {
                     return Err(ErrorCode::Forbidden.into());
                 }
             }
             None => {
-                if !held.may_change_issue(issue.reported_by) {
+                if !may_add(&held, &issue, None, actor.person.id) {
                     return Err(ErrorCode::Forbidden.into());
                 }
             }
@@ -422,7 +423,7 @@ pub async fn finish_upload<S: AuthStore>(
     let (stored_attachment, stored_file, upload_id) = (attachment.clone(), file.clone(), upload.id);
     let issue_id = issue.id;
     let (queue, payload) = (
-        kind_name(kind::PREVIEW_FILE)?,
+        JobKind::PreviewFile.name()?,
         super::jobs::preview_payload(attachment.id),
     );
     let why = Why::default();

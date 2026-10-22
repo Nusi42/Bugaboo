@@ -1,5 +1,6 @@
 import { crc32, deflateSync } from "node:zlib";
 
+import { megabyte, partBytes } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page, type Request } from "@playwright/test";
 
@@ -31,11 +32,6 @@ export interface Pictured {
   readonly mimeType: string;
   readonly buffer: Buffer;
 }
-
-/** The size of one part of an upload, in bytes (`PART_BYTES` of the server, said by every start). */
-export const PART_BYTES = 4 * 1024 * 1024;
-
-const MEGABYTE = 1024 * 1024;
 
 /** The first bytes of every PNG. */
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -110,7 +106,7 @@ export function bytesOf(name: string, size: number): Pictured {
 
 /** A file of this many megabytes. */
 export function megabytes(name: string, count: number): Pictured {
-  return bytesOf(name, count * MEGABYTE);
+  return bytesOf(name, count * megabyte);
 }
 
 /** What the page needs to make the file again: the bytes travel as text. */
@@ -189,9 +185,13 @@ export async function limitOf(page: Page, issue: string): Promise<number> {
   return rules.limit_bytes;
 }
 
+/** A file one megabyte over the limit (in bytes) of the project. */
+export const overTheLimit = (name: string, limit: number): Pictured =>
+  megabytes(name, limit / megabyte + 1);
+
 /** A limit in bytes as the page says it: whole megabytes (`25 MB`). */
 export function limitInWords(limit: number): string {
-  return `${String(limit / MEGABYTE)} MB`;
+  return `${String(limit / megabyte)} MB`;
 }
 
 /** What a browser has sent to the server for the uploads of a page, and how many it started. */
@@ -224,7 +224,7 @@ export async function breakSecondPartOnce(page: Page, arrives: boolean): Promise
   let broken = false;
   await page.route(/\/api\/v1\/uploads\/[^/?]+\?offset=/u, async (route) => {
     const offset = new URL(route.request().url()).searchParams.get("offset");
-    if (route.request().method() === "PUT" && offset === String(PART_BYTES) && !broken) {
+    if (route.request().method() === "PUT" && offset === String(partBytes) && !broken) {
       broken = true;
       if (arrives) {
         await route.fetch();
@@ -263,7 +263,7 @@ export async function holdSecondPart(page: Page): Promise<Hold> {
   const { promise: released, resolve: release } = Promise.withResolvers<void>();
   await page.route(/\/api\/v1\/uploads\/[^/?]+\?offset=/u, async (route) => {
     const offset = new URL(route.request().url()).searchParams.get("offset");
-    if (route.request().method() === "PUT" && offset === String(PART_BYTES)) {
+    if (route.request().method() === "PUT" && offset === String(partBytes)) {
       await released;
     }
     await route.continue();

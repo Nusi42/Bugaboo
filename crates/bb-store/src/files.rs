@@ -14,8 +14,9 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Database, LockClass, Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::{LockClass, lock_key};
 use crate::schema::{AttachmentRow, StoredFileRow, UploadRow};
 
 fn digest(row: &Row, column: StoredFileRow) -> Result<Digest, StoreError> {
@@ -265,11 +266,9 @@ impl AttachmentStore for AuthStorage {
         bytes_max: u64,
     ) -> Result<bool, StoreError> {
         let mut transaction = self.database().begin().await?;
-        // The lock is named by the person: four random bytes of their ID.
-        let mut tail = [0_u8; 4];
-        tail.copy_from_slice(&upload.person.to_bytes()[12..]);
+        // The lock is named by the person.
         transaction
-            .advisory_lock(LockClass::Uploads, i32::from_be_bytes(tail))
+            .advisory_lock(LockClass::Uploads, lock_key(upload.person.to_bytes()))
             .await?;
         let mut select = Query::select();
         select
@@ -422,11 +421,9 @@ impl AttachmentStore for AuthStorage {
         transaction: &mut Transaction,
         issue: IssueId,
     ) -> Result<(), StoreError> {
-        // The lock is named by the issue: four random bytes of its ID.
-        let mut tail = [0_u8; 4];
-        tail.copy_from_slice(&issue.to_bytes()[12..]);
+        // The lock is named by the issue.
         transaction
-            .advisory_lock(LockClass::IssueFiles, i32::from_be_bytes(tail))
+            .advisory_lock(LockClass::IssueFiles, lock_key(issue.to_bytes()))
             .await
     }
 

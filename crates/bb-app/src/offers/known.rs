@@ -16,7 +16,7 @@ use bb_core::issue::IssueType;
 use bb_core::tags::{Label, LabelGroup};
 
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 use crate::offers::Here;
 use crate::projects::Shown;
 
@@ -66,13 +66,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The issue types in use on the issues the person reads, read once for a request.
     async fn used_types(&self, shown: &Shown) -> Result<Arc<Vec<IssueTypeId>>, AppError> {
-        if let Some(known) = self
-            .known
-            .used_types
-            .lock()
-            .ok()
-            .and_then(|each| each.clone())
-        {
+        if let Some(known) = locked(&self.known.used_types).clone() {
             return Ok(known);
         }
         let found = Arc::new(
@@ -81,22 +75,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?,
         );
-        if let Ok(mut each) = self.known.used_types.lock() {
-            *each = Some(Arc::clone(&found));
-        }
+        *locked(&self.known.used_types) = Some(Arc::clone(&found));
         Ok(found)
     }
 
     /// The groups of labels in use on the issues whose labels the person may see, read once for a
     /// request.
     async fn used_groups(&self, shown: &Shown) -> Result<Arc<Vec<LabelGroupId>>, AppError> {
-        if let Some(known) = self
-            .known
-            .used_groups
-            .lock()
-            .ok()
-            .and_then(|each| each.clone())
-        {
+        if let Some(known) = locked(&self.known.used_groups).clone() {
             return Ok(known);
         }
         let failed = |error| internal::<S>(&error);
@@ -117,9 +103,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(failed)?,
         );
-        if let Ok(mut each) = self.known.used_groups.lock() {
-            *each = Some(Arc::clone(&found));
-        }
+        *locked(&self.known.used_groups) = Some(Arc::clone(&found));
         Ok(found)
     }
 

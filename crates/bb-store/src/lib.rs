@@ -26,6 +26,7 @@ mod jobs;
 mod keys;
 mod layout;
 mod layouts;
+mod locks;
 mod many_changes;
 mod migrations;
 mod notifications;
