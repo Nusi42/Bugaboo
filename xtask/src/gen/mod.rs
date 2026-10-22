@@ -110,7 +110,7 @@ pub(crate) const GENERATORS: [Generator; 10] = [
         name: "word-vectors",
         help: "The test vectors of the wording of values (tools/testdata/value-words.json), from the code of bb-core that the server runs.",
         paths: || vec![word_vectors::OUTPUT],
-        generate: |_, _| Ok(word_vectors::generate()),
+        generate: |_, _| word_vectors::generate(),
     },
     Generator {
         name: "load-book",

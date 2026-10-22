@@ -251,3 +251,9 @@ fn the_input_of_the_browser_reads_as_a_change() {
         Some("Ben set Status: Done")
     );
 }
+
+#[test]
+fn the_vectors_are_made_for_every_case_or_not_at_all() {
+    let file = vectors::value_words_file();
+    assert!(file.is_ok_and(|text| text.contains("moment in Berlin in winter")));
+}

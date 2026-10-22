@@ -229,8 +229,11 @@ fn words(kind: FieldType, value: &Value, region: &Region) -> Option<String> {
 }
 
 /// The file `tools/testdata/value-words.json`, as it should be.
-#[must_use]
-pub fn value_words_file() -> String {
+///
+/// # Errors
+/// A case names a kind or a region that does not exist, or the file cannot be written as JSON: the
+/// table is wrong, and a file without the case would hide it.
+pub fn value_words_file() -> Result<String, String> {
     let regions: serde_json::Map<String, Value> = REGIONS
         .iter()
         .map(|(name, date, number, zone)| {
@@ -240,14 +243,16 @@ pub fn value_words_file() -> String {
             )
         })
         .collect();
-    let cases: Vec<Value> = cases()
+    let cases = cases()
         .into_iter()
-        .filter_map(|(name, kind, value, region)| {
+        .map(|(name, kind, value, region)| {
             let value = value();
-            let kind_value = json!(kind);
-            let kind = serde_json::from_value::<FieldType>(kind_value).ok()?;
-            let expected = words(kind, &value, &region_named(region)?);
-            Some(json!({
+            let kind = serde_json::from_value::<FieldType>(json!(kind))
+                .map_err(|_| format!("the case {name:?} names the kind {kind:?}, which is none"))?;
+            let known = region_named(region)
+                .ok_or_else(|| format!("the case {name:?} names the region {region:?}"))?;
+            let expected = words(kind, &value, &known);
+            Ok(json!({
                 "name": name,
                 "kind": kind,
                 "value": value,
@@ -255,7 +260,7 @@ pub fn value_words_file() -> String {
                 "expected": expected,
             }))
         })
-        .collect();
+        .collect::<Result<Vec<Value>, String>>()?;
     let lists: Vec<Value> = LISTS
         .iter()
         .map(|names| {
@@ -270,9 +275,10 @@ pub fn value_words_file() -> String {
         "cases": cases,
         "lists": lists,
     });
-    let mut text = collapse_names(&serde_json::to_string_pretty(&file).unwrap_or_default());
+    let pretty = serde_json::to_string_pretty(&file).map_err(|error| error.to_string())?;
+    let mut text = collapse_names(&pretty);
     text.push('\n');
-    text
+    Ok(text)
 }
 
 /// Writes each list of names on one line, the way the formatter of JSON files does (FMT-TS), so

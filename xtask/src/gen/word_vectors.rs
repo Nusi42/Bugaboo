@@ -11,11 +11,10 @@ use super::Generated;
 pub(crate) const OUTPUT: &str = "tools/testdata/value-words.json";
 
 /// The file, as it should be.
-pub(crate) fn generate() -> Vec<Generated> {
-    vec![Generated::new(
-        OUTPUT,
-        bb_core::wording::vectors::value_words_file(),
-    )]
+pub(crate) fn generate() -> anyhow::Result<Vec<Generated>> {
+    let text = bb_core::wording::vectors::value_words_file()
+        .map_err(|problem| anyhow::anyhow!("the vectors cannot be made: {problem}"))?;
+    Ok(vec![Generated::new(OUTPUT, text)])
 }
 
 #[cfg(test)]
@@ -24,7 +23,7 @@ mod tests {
 
     #[test]
     fn the_vectors_are_json_with_the_cases_of_the_server() {
-        let files = generate();
+        let files = generate().unwrap_or_default();
         let parsed: serde_json::Value = serde_json::from_str(&files[0].content).unwrap_or_default();
         assert!(
             parsed["cases"]
