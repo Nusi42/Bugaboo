@@ -137,11 +137,10 @@ async fn {}() {{}}",
         let mut sources = vec![
             (
                 "crates/bb-server/src/lib.rs".to_owned(),
-                format!(
-                    "#[path = \"tests/sign_in/editing/mod.rs\"]
+                "#[path = \"tests/sign_in/editing/mod.rs\"]
 mod editing;
 "
-                ),
+                .to_owned(),
             ),
             (format!("{folder}all.rs"), tests),
         ];
