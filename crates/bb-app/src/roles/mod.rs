@@ -20,6 +20,7 @@ use bb_core::access::{FieldLevel, PeopleLevel, Role};
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::RoleId;
+use bb_core::names::is_new_or_changed;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
@@ -206,7 +207,7 @@ pub async fn change_role<S: AuthStore>(
         Some(name) => clean_name(name)?,
         None => before.role.name.clone(),
     };
-    if name != before.role.name {
+    if is_new_or_changed(Some(&before.role.name), &name) {
         ctx.refuse_a_persons_handle(&name).await?;
     }
     let permissions = input

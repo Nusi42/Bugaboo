@@ -99,6 +99,7 @@ mod tests {
         assert!(is_new_or_changed(None, "Bug"));
         assert!(is_new_or_changed(Some("Bug"), "Bugs"));
         assert!(is_new_or_changed(Some("Bug  report"), "Bug report"));
+        assert!(is_new_or_changed(Some("Bug"), "bug"));
         assert!(!is_new_or_changed(Some("Bug"), "Bug"));
     }
 
