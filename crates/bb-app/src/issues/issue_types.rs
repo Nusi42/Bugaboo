@@ -13,7 +13,7 @@ use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::{IssueTypeId, ProjectId};
 use bb_core::issue::{ISSUE_TYPES_MAX, IssueIcon, IssueType, STARTING_ISSUE_TYPES};
 use bb_core::message::Message;
-use bb_core::names::{Placed, taken_where_they_meet};
+use bb_core::names::{Placed, is_new_or_changed, taken_where_they_meet};
 use bb_core::offer::has_room;
 use bb_core::paging::window;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
@@ -257,10 +257,13 @@ async fn write_in<S: AuthStore>(
     let tree = tree_in::<S>(transaction).await?;
     // Only a name that is new or changed is judged: a type stored before names were told apart by
     // one rule can still be given another icon or be retired.
-    let renamed = types
-        .iter()
-        .find(|stored| stored.id == written.id)
-        .is_none_or(|stored| stored.name != written.name);
+    let renamed = is_new_or_changed(
+        types
+            .iter()
+            .find(|stored| stored.id == written.id)
+            .map(|stored| stored.name.as_str()),
+        &written.name,
+    );
     if renamed
         && name_taken(
             &types,
@@ -327,7 +330,9 @@ pub async fn change_issue_type<S: AuthStore>(
     }
     let name = name.unwrap_or_else(|| current.name.clone());
     let tree = ctx.project_tree_now().await?;
-    if name != current.name && name_taken(&types, &tree, &name, current.project, Some(current.id)) {
+    if is_new_or_changed(Some(&current.name), &name)
+        && name_taken(&types, &tree, &name, current.project, Some(current.id))
+    {
         return Err(ErrorCode::NameTaken.into());
     }
     let icon = input.icon.unwrap_or(current.icon);

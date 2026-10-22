@@ -11,16 +11,16 @@ use bb_core::edit::{EditWhat, LAYOUT_PART};
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, LayoutId, RoleId};
-use bb_core::layout::{Layout, LayoutContent, PlacedField, SectionContent};
+use bb_core::layout::{Layout, LayoutContent, LayoutKind, PlacedField, SectionContent};
 use bb_core::technical::TechnicalName;
 use bb_core::version::{FIRST_VERSION, counted_up};
 use bb_policy::{Authorized, Permission};
 use serde_json::{Value, json};
 
-use super::read::{Where, offered_roles};
+use super::read::offered_roles;
 use super::types::{CreateLayout, DeleteLayout, LayoutEditor, SaveLayout, SectionInput};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
-use crate::editing::{TextSave, Written, let_go_for_delete};
+use crate::editing::{EditorPlace, TextSave, Written, let_go_for_delete};
 use crate::member::layout as member;
 use crate::projects::Why;
 
@@ -59,7 +59,7 @@ fn off_summary(content: &LayoutContent) -> Value {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The place a stored layout is set for, with what is needed to judge and to show it.
-    async fn layout_at(&self, layout: &Layout) -> Result<Where, AppError> {
+    async fn layout_at(&self, layout: &Layout) -> Result<EditorPlace<LayoutKind>, AppError> {
         let project = match layout.project {
             Some(id) => Some(
                 self.store()
@@ -91,7 +91,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// keeps the roles it has, and a field that is new is shown to every role.
     async fn content_from(
         &self,
-        at: &Where,
+        at: &EditorPlace<LayoutKind>,
         sections: &[SectionInput],
         before: &LayoutContent,
         known: &BTreeSet<FieldKey>,
@@ -191,7 +191,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &crate::access::Actor,
         held: &bb_policy::Evaluation,
-        at: &Where,
+        at: &EditorPlace<LayoutKind>,
     ) -> Result<BTreeSet<FieldKey>, AppError> {
         Ok(self
             .known_field_names(actor, held, at.project.as_ref().map(|project| project.id))

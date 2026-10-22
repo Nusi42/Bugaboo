@@ -15,7 +15,7 @@ use bb_core::access::FieldLevel;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{FieldId, RoleId};
-use bb_core::names::name_among;
+use bb_core::names::{is_new_or_changed, name_among};
 use bb_core::own_fields::{
     CHOICES_MAX, ChoiceColor, Edit, FIELDS_MAX, FieldChoice, FieldFor, FieldType, HELP_MAX, Look,
     OwnField, Rules, RulesRefused, Scope,
@@ -432,7 +432,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut after = current.clone();
         if let Some(name) = &input.name {
             after.field.name = clean_name(name)?;
-            if after.field.name != current.field.name
+            if is_new_or_changed(Some(&current.field.name), &after.field.name)
                 && name_taken(definitions, &after.field.name, Some(after.field.id))
             {
                 return Err(ErrorCode::NameTaken.into());
@@ -540,10 +540,13 @@ pub async fn change_field<S: AuthStore>(
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 let known = S::field_definitions_in(transaction).await?;
-                let renamed = known
-                    .iter()
-                    .find(|stored| stored.field.id == written.field.id)
-                    .is_none_or(|stored| stored.field.name != written.field.name);
+                let renamed = is_new_or_changed(
+                    known
+                        .iter()
+                        .find(|stored| stored.field.id == written.field.id)
+                        .map(|stored| stored.field.name.as_str()),
+                    &written.field.name,
+                );
                 if renamed && name_taken(&known, &written.field.name, Some(written.field.id)) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }

@@ -12,7 +12,7 @@ use bb_core::event::{EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{ChoiceId, EntityId, FieldId, UserId};
 use bb_core::issue::IssueIcon;
-use bb_core::names::name_among;
+use bb_core::names::{is_new_or_changed, name_among};
 use bb_core::own_fields::{CHOICES_MAX, ChoiceColor, Edit, FieldChoice, FieldType};
 use bb_core::own_fields_value::FieldValue;
 use bb_core::version::{counted_up, next};
@@ -49,10 +49,13 @@ fn name_taken(choices: &[FieldChoice], name: &str, except: Option<ChoiceId>) -> 
 /// choices and that another choice has already: names stored before one rule told them apart stay
 /// as they are.
 fn renamed_into_a_taken_name(choices: &[FieldChoice], written: &FieldChoice) -> bool {
-    let renamed = choices
-        .iter()
-        .find(|choice| choice.id == written.id)
-        .is_none_or(|choice| choice.name != written.name);
+    let renamed = is_new_or_changed(
+        choices
+            .iter()
+            .find(|choice| choice.id == written.id)
+            .map(|choice| choice.name.as_str()),
+        &written.name,
+    );
     renamed && name_taken(choices, &written.name, Some(written.id))
 }
 
@@ -248,7 +251,8 @@ pub async fn change_choice<S: AuthStore>(
     let mut after = before.clone();
     if let Some(name) = &input.name {
         after.name = clean_name(name)?;
-        if after.name != before.name && name_taken(&definition.choices, &after.name, Some(after.id))
+        if is_new_or_changed(Some(&before.name), &after.name)
+            && name_taken(&definition.choices, &after.name, Some(after.id))
         {
             return Err(ErrorCode::NameTaken.into());
         }
