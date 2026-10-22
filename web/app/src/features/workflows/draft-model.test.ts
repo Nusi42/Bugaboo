@@ -139,6 +139,8 @@ describe("wf_02 a status change that makes no sense is not added", () => {
   it("adds what was typed and leaves the judging to Publish, which the server does", () => {
     const draft = draftOf(editor);
     expect(addStatus(draft, "open", "done").statuses).toHaveLength(4);
+    // The server's rule folds capitals and inner spaces (bb_core::names); the browser copies none of it.
+    expect(addStatus(draft, "In  progress", "done").statuses).toHaveLength(4);
     expect(addStatus(draft, "  Testing ", "done").statuses.at(-1)?.name).toBe("Testing");
     expect(changesFrom(addChange(draft, "open", "done", " Mark as done "), "open")).toHaveLength(2);
     expect(addChange(draft, "open", "done", " Mark as done ").changes.at(-1)?.button).toBe(

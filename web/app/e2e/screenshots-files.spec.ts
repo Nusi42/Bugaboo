@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 
 import { issueAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
@@ -127,7 +127,12 @@ async function takeTheBar(page: Page, theme: Theme, project: string): Promise<vo
   await expect(remove).toBeVisible({ timeout: 30_000 });
   // The file is taken out again, so the next look starts from the same issue.
   await remove.click();
-  await expect(rowOf(page, name).getByRole("button", { name: t("common.undo") })).toBeVisible();
+  await expect(undoNote(page)).toBeVisible();
+}
+
+/** The *Undo* of the note that tells a file is deleted (the note stands apart from the row). */
+function undoNote(page: Page): Locator {
+  return page.getByRole("status").getByRole("button", { name: t("common.undo") });
 }
 
 /** A file that was deleted, with *Undo*; it is brought back after. */
@@ -138,12 +143,10 @@ async function takeUndo(page: Page, theme: Theme, project: string): Promise<void
   await rowOf(page, name)
     .getByRole("button", { name: t("files.delete-named", { name }) })
     .click();
-  await expect(rowOf(page, name).getByRole("button", { name: t("common.undo") })).toBeVisible();
+  await expect(undoNote(page)).toBeVisible();
   await chooseTheme(page, theme);
   await shotWholeAs(page, `files-undo-${project}`, MILESTONE, theme.id);
-  await rowOf(page, name)
-    .getByRole("button", { name: t("common.undo") })
-    .click();
+  await undoNote(page).click();
   await expect(
     rowOf(page, name).getByRole("button", { name: t("files.download-named", { name }) }),
   ).toBeVisible();
