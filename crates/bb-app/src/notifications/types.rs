@@ -14,7 +14,7 @@ use serde::Serialize;
 
 use crate::access::ProjectLabel;
 use crate::comments::CommentView;
-use crate::history::{FieldChangeView, HistoryWhat};
+use crate::history::FieldChangeView;
 use crate::relations::IssueLine;
 
 /// The notifications of the person who asks.
@@ -140,14 +140,4 @@ pub struct ReadNotifications {
     pub session_token: String,
     /// Which.
     pub which: Which,
-}
-
-impl From<HistoryWhat> for NotificationWhat {
-    fn from(what: HistoryWhat) -> Self {
-        match what {
-            HistoryWhat::Comment { comment } => Self::Comment { comment },
-            HistoryWhat::Changes { fields } => Self::Changes { fields },
-            HistoryWhat::File { .. } | HistoryWhat::Relation { .. } => Self::Plain,
-        }
-    }
 }
