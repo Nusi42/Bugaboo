@@ -16,7 +16,7 @@ use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
 
 /// The tests of the rules of a status change (docs/milestones/M4/WP-04-workflows-on-the-server.md).
-pub(super) const REQUIRED: [Required; 59] = [
+pub(super) const REQUIRED: [Required; 62] = [
     Required::both("wf_01_an_m3_database_keeps_every_status_after_the_upgrade"),
     Required::both("wf_01_a_project_finds_its_workflow_like_a_layout"),
     Required::both(
@@ -87,6 +87,12 @@ pub(super) const REQUIRED: [Required; 59] = [
     Required::anywhere("sec_03_a_project_lead_manages_the_label_groups_of_their_project_only"),
     Required::anywhere("sec_l6_who_may_change_does_not_name_a_type_the_reader_may_not_know"),
     Required::anywhere("sec_l7_try_it_needs_check_access_as_well_as_manage_workflows"),
+    // The Status level of the type or the place an issue ends in (ADR-0031, decision 3).
+    Required::both("wf_03_the_status_level_of_the_new_type_counts_when_the_type_changes"),
+    Required::both("wf_03_change_many_issues_skips_an_issue_whose_type_hides_the_status_level"),
+    Required::anywhere(
+        "wf_03_a_move_that_starts_the_status_again_needs_the_status_level_of_the_new_place",
+    ),
     // The same moves and the same preview on both databases (the tests above run on the fakes).
     Required::both(
         "wf_02_a_publish_with_an_issue_the_publisher_does_not_see_publishes_nothing_over_http",

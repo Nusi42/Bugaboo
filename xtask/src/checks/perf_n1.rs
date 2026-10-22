@@ -13,10 +13,13 @@ const QUERIES: &str = "crates/bb-server/src/tests/sign_in/perf_queries.rs";
 const NOTIFICATIONS: &str = "crates/bb-server/src/tests/sign_in/perf_notifications.rs";
 
 /// The reads that must not grow with the number of rows.
-pub(super) const REQUIRED: [Required; 9] = [
+pub(super) const REQUIRED: [Required; 10] = [
     // The history names a type and a label group from one read, not one read for each row.
     Required::anywhere("sec_03_the_history_names_a_type_and_a_label_only_where_the_reader_may_know_them"),
     Required::anywhere("sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it"),
+    Required::anywhere(
+        "sec_lm1_what_one_e_mail_of_a_round_may_name_never_reaches_the_next_one",
+    ),
     Required::both(
         "perf_05_the_reads_of_an_issue_page_run_as_many_statements_for_a_busy_issue_as_for_a_quiet_one",
     )
