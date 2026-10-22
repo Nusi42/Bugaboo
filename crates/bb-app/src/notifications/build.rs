@@ -190,22 +190,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         if missing.is_empty() {
             return Ok(());
         }
-        if round.organization.is_none() {
-            round.organization = Some(self.setting_layers_of(None).await?);
-        }
-        let mut own: HashMap<UserId, _> = self
-            .store()
-            .person_settings(missing.clone())
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .collect();
-        let base = round.organization.clone().unwrap_or_default();
-        for person in missing {
-            let mut layers = base.clone();
-            layers.person = own.remove(&person).unwrap_or_default();
-            round.layers.insert(person, layers);
-        }
+        let (organization, layers) = self
+            .setting_layers_of_people(&missing, round.organization.take())
+            .await?;
+        round.organization = Some(organization);
+        round.layers.extend(layers);
         Ok(())
     }
 
