@@ -79,6 +79,12 @@ pub const SIGN_UP_REQUESTS_PER_MINUTE: u32 = 5;
 /// for everybody.
 pub const SIGN_UP_REQUESTS_PER_HOUR: u32 = 20;
 
+// Held in code: one network must not be able to fill a fifth of the cap on its own, so that it takes
+// five networks to use it up and no fewer.
+const _: () = assert!(
+    (SIGN_UP_REQUESTS_PER_HOUR as u64) * 5 <= bb_core::sign_up_invitation::ADDRESSES_PER_HOUR_MAX
+);
+
 /// Requests that come with one access key, per minute, when nothing else is set. A script that
 /// needs more asks for fewer, bigger answers (`limit`, `fields`) or sets the limit higher.
 pub const DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE: u32 = 300;
