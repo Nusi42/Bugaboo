@@ -1,4 +1,4 @@
-import { partBytes } from "@bugaboo/api-client";
+import { megabyte, partBytes } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
@@ -118,14 +118,23 @@ test("att_03 a file that is too big is refused in words that name the limit of t
   ).toBeVisible();
 });
 
-/** Chooses a file of nine megabytes, which goes in three parts, and waits until it is a row. */
+/** The size of the file the interrupted uploads send. */
+const BIG_FILE_MEGABYTES = 9;
+
+/** The offset at which each part of that file starts: how many parts there are follows from the size of a part. */
+const partOffsets = Array.from(
+  { length: Math.ceil((BIG_FILE_MEGABYTES * megabyte) / partBytes) },
+  (_, at) => at * partBytes,
+);
+
+/** Chooses a file of nine megabytes, which goes in parts, and waits until it is a row. */
 async function sendBigFile(page: Page, name: string): Promise<void> {
   await page.goto(issueAddress("WEB-1"));
   const chooser = page.waitForEvent("filechooser");
   await filesBlock(page)
     .getByRole("button", { name: t("files.upload"), exact: true })
     .click();
-  await (await chooser).setFiles(megabytes(name, 9));
+  await (await chooser).setFiles(megabytes(name, BIG_FILE_MEGABYTES));
   // The file is added when its row has *Download*: before that the row is the one that sends it.
   await expect(
     rowOf(page, name).getByRole("button", { name: t("files.download-named", { name }) }),
@@ -141,7 +150,8 @@ test.describe("att_01 an upload that is interrupted", () => {
     await breakSecondPartOnce(page, false);
     await sendBigFile(page, "lost-part.bin");
     expect(seen.started).toBe(1);
-    expect(seen.offsets).toEqual([0, partBytes, partBytes, 2 * partBytes]);
+    // The second part is sent twice, and every other part once.
+    expect(seen.offsets).toEqual([...partOffsets.slice(0, 2), ...partOffsets.slice(1)]);
   });
 
   test("a part whose answer was lost is not sent again: the upload goes on from where the server stands", async ({
@@ -152,7 +162,7 @@ test.describe("att_01 an upload that is interrupted", () => {
     await breakSecondPartOnce(page, true);
     await sendBigFile(page, "lost-answer.bin");
     expect(seen.started).toBe(1);
-    expect(seen.offsets).toEqual([0, partBytes, 2 * partBytes]);
+    expect(seen.offsets).toEqual(partOffsets);
   });
 });
 

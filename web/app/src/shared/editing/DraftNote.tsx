@@ -24,7 +24,7 @@ export interface DraftNoteProps {
 export function DraftNote({ text, take, drop }: DraftNoteProps) {
   return (
     <Alert>
-      <div {...partOf(part.issueNote)}>
+      <div {...partOf(part.draftNote)}>
         <span>{text}</span>
         {take === undefined ? null : (
           <Button look={buttonLook.primary} onPress={take.onPress}>

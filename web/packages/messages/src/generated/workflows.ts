@@ -52,7 +52,7 @@ export const messages = {
   "workflows.rules-intro": "From {from} to {to}. A rule that is left empty does not apply.",
   "workflows.who": "Who can do it",
   "workflows.who-help":
-    "If you choose nobody, everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
+    "Tick nobody, and everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
   "workflows.who-roles": "Roles",
   "workflows.who-groups": "Groups",
   "workflows.who-assigned": "The person it is assigned to",

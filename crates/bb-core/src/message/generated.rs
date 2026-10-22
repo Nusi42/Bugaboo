@@ -2596,6 +2596,9 @@ pub const MANY_CHANGES_SHOW_CHANGES: MessageKey = MessageKey::new("many-changes.
 /// The message `many-changes.skipped-list`.
 pub const MANY_CHANGES_SKIPPED_LIST: MessageKey = MessageKey::new("many-changes.skipped-list");
 
+/// The message `many-changes.skipped-word`.
+pub const MANY_CHANGES_SKIPPED_WORD: MessageKey = MessageKey::new("many-changes.skipped-word");
+
 /// The message `many-changes.stopped`.
 pub const MANY_CHANGES_STOPPED: MessageKey = MessageKey::new("many-changes.stopped");
 
@@ -11722,6 +11725,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("many-changes.show-changes", "Show what changes"),
     ("many-changes.skipped-line", "{issue}: {reason}"),
     ("many-changes.skipped-list", "Issues that were skipped"),
+    ("many-changes.skipped-word", "Skipped"),
     (
         "many-changes.stopped",
         "The change stopped. Some issues are changed and the rest are not.",
@@ -13786,7 +13790,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.who-groups", "Groups"),
     (
         "workflows.who-help",
-        "If you choose nobody, everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
+        "Tick nobody, and everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
     ),
     ("workflows.who-reporter", "The person who reported it"),
     ("workflows.who-roles", "Roles"),

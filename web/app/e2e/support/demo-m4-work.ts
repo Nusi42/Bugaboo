@@ -31,7 +31,7 @@ export async function startingTheWorkAsksForWho(page: Page): Promise<void> {
   await assign(page, word, colleague);
   await expect(window.getByText(colleague.name)).toBeVisible();
   await good(page, "02-the-change-asks-for-who");
-  await window.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await window.getByRole("button", { name: word, exact: true }).click();
   await expectStatus(page, t("status.in-progress"));
   await expect(page.getByText(colleague.name).first()).toBeVisible();
   await good(page, "03-in-progress");

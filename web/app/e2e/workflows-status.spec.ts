@@ -90,6 +90,8 @@ test("wf_04 a change that needs the description says to write it first and has n
   const window = page.getByRole("dialog", { name: serverWord("workflow-change.mark-as-done") });
   await expect(window.getByText(t("issues.ask-for-description"))).toBeVisible();
   await expect(window.getByRole("textbox")).toHaveCount(0);
-  await expect(window.getByRole("button", { name: t("common.save"), exact: true })).toHaveCount(0);
+  await expect(
+    window.getByRole("button", { name: serverWord("workflow-change.mark-as-done"), exact: true }),
+  ).toHaveCount(0);
   await expectStatus(page, t("status.open"));
 });

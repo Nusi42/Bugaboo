@@ -41,10 +41,10 @@ test("wf_02 a lead adds Testing to Simple with Must be filled in, publishes it, 
   await page.getByRole("button", { name: "Send to testing", exact: true }).click();
   const asking = page.getByRole("dialog", { name: "Send to testing" });
   await expect(asking.getByRole("textbox")).toHaveCount(1);
-  await asking.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await asking.getByRole("button", { name: "Send to testing", exact: true }).click();
   await expect(asking.getByText(t("error.field.required"), { exact: true })).toBeVisible();
   await asking.getByLabel(foundInVersion, { exact: true }).fill("2.4.1");
-  await asking.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await asking.getByRole("button", { name: "Send to testing", exact: true }).click();
   await expect(statusButton(page)).toHaveText("Testing");
   await expect(
     page.getByRole("button", { name: t("common.undo"), exact: true }).last(),

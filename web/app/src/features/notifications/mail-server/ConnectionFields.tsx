@@ -87,7 +87,7 @@ export function PasswordField({
         onChange={onChange}
       />
       <div {...partOf(part.row)}>
-        <span {...partOf(part.strong)}>
+        <span {...partOf(set ? part.strong : part.muted)}>
           {set ? t("mail-server.password-set") : t("mail-server.password-none")}
         </span>
         {set ? (

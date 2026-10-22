@@ -3921,6 +3921,17 @@ part "issue-details-toggle" {
     gap "$space-2" "$space-3"
 }
 
+// What the closed button says (who it is assigned to, the priority): one size for the words and the
+// priority beside them, which are the size of every row (the review of M4, B issue page).
+part "issue-details-summary" {
+    display inline-flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    color "$fg-muted"
+    font-size "$fs-ui"
+}
+
 part "issue-body" {
     display flex
     align-items flex-start
@@ -3999,7 +4010,8 @@ part "issue-section.actions" {
     gap "$space-2"
 }
 
-part "issue-note" {
+// The draft a refused save left (`draft-note`) stands like the other notes of the issue.
+part "issue-note" "draft-note" {
     display flex
     flex-wrap wrap
     align-items center
@@ -11404,6 +11416,7 @@ part "tab-panel" "form-panel" {
     display flex
     flex-direction column
     gap "$space-3"
+    padding-top "$space-3"
     min-width 0
 }
 
@@ -11725,6 +11738,14 @@ part "workflow-rules" {
     display flex
     flex-direction column
     gap "$space-2"
+}
+
+// The name of a group of rules is bold like the heading of a section, and starts where its hint
+// starts: a legend has a padding of its own that would push it 2 px in (the review of M4, B rules).
+part "workflow-rules legend" {
+    padding 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
 }
 
 part "workflow-condition" {

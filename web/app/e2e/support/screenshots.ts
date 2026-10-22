@@ -25,6 +25,14 @@ async function coversThePage(page: Page): Promise<boolean> {
   return (await page.locator("[role='dialog'], [role='alertdialog']").count()) > 0;
 }
 
+/**
+ * Takes the pointer off the page, to the corner of the window where nothing is: the last control a
+ * test pressed would otherwise show its hover fill in the picture.
+ */
+async function pointerAway(page: Page): Promise<void> {
+  await page.mouse.move(0, 0);
+}
+
 /** The two looks the maintainer sees: the device asks for a light or a dark look, as a phone does. */
 const looks = ["light", "dark"] as const;
 
@@ -43,6 +51,7 @@ const otherThan = { light: "dark", dark: "light" } as const;
  */
 export async function shoot(page: Page, name: string, milestone = "M1"): Promise<void> {
   const target = folderOf(milestone);
+  await pointerAway(page);
   await inOrder(
     looks.map((look) => async () => {
       // Like a phone in dark mode: "Match my device" then shows the dark theme as chosen. The
@@ -160,6 +169,7 @@ export function shootWholeAs(
   mask: readonly Locator[] = [],
 ): Promise<void> {
   return withWholePage(page, async () => {
+    await pointerAway(page);
     await expectLook(page, theme);
     await page.screenshot({
       path: join(folderOf(milestone), `${name}-${theme}.png`),

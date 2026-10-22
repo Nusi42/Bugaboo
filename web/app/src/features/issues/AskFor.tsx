@@ -56,7 +56,7 @@ export function AskFor({ issue, change, changes, onClose }: AskForProps) {
           </Button>
           {blocked ? null : (
             <SubmitButton form={formId} isPending={form.pending}>
-              {t("common.save")}
+              {change.button}
             </SubmitButton>
           )}
         </div>
