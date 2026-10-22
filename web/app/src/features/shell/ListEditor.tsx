@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { SearchField, useLayout, partOf, part } from "@bugaboo/ui";
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
 import { SidePanel } from "./SidePanel.tsx";
@@ -36,6 +36,9 @@ interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen">
 
 /** The rows: the whole row opens its item (R8), the name first and the rest of the row after it. */
 function Rows({ rows, label, openKey, onOpen }: RowsProps) {
+  const ids = useId();
+  const nameId = (key: string): string => [ids, "name", key].join("-");
+  const detailsId = (key: string): string => [ids, "details", key].join("-");
   return (
     <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={label}>
       {rows.map((row) => (
@@ -43,12 +46,19 @@ function Rows({ rows, label, openKey, onOpen }: RowsProps) {
           <Button
             {...partOf(part.listEditorOpen, { states: [row.key === openKey && "open"] })}
             aria-expanded={row.key === openKey}
+            // The name of the button is the name of the item; the rest of the row describes it.
+            aria-labelledby={nameId(row.key)}
+            aria-describedby={detailsId(row.key)}
             onPress={() => {
               onOpen(row.key);
             }}
           >
-            <span {...partOf(part.listEditorName)}>{row.name}</span>
-            {row.details}
+            <span id={nameId(row.key)} {...partOf(part.listEditorName)}>
+              {row.name}
+            </span>
+            <span id={detailsId(row.key)} {...partOf(part.listEditorDetails)}>
+              {row.details}
+            </span>
           </Button>
         </li>
       ))}

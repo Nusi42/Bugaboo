@@ -4182,6 +4182,12 @@ part "list-editor.name" {
     overflow-wrap anywhere
 }
 
+part "list-editor.details" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+}
+
 part "list-editor.open[hovered]" {
     background "$bg-hover"
 }
