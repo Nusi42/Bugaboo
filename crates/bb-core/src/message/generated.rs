@@ -12213,7 +12213,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.offered-in-take-away", "Remove this line"),
     (
         "projects.offered-in-take-away-for",
-        "Take away the line for {place}",
+        "Remove this line for {place}",
     ),
     ("projects.offered-in-title", "Offered in"),
     ("projects.open", "Open the project"),
@@ -13692,11 +13692,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.rules-open", "Rules for {button}"),
     ("workflows.rules-title", "Rules for “{button}”"),
     ("workflows.starts-here", "New issues start here"),
-    ("workflows.status-down", "Move {name} down"),
+    ("workflows.status-down", "Move down {name}"),
     ("workflows.status-group", "Status group"),
     ("workflows.status-name", "Name of the status"),
     ("workflows.status-remove", "Remove {name}"),
-    ("workflows.status-up", "Move {name} up"),
+    ("workflows.status-up", "Move up {name}"),
     ("workflows.statuses", "Statuses"),
     (
         "workflows.statuses-help",
