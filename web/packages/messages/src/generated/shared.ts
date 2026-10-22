@@ -239,6 +239,7 @@ export const messages = {
   "markdown.quote": "Quote",
   "markdown.link-text": "link text",
   "markdown.preview-empty": "There is nothing to preview yet.",
+  "common.words-failed": "These words could not be loaded. Check your connection and try again.",
   "markdown.preview-failed":
     "The preview could not be loaded. Check your connection and try again.",
   "save.saving": "Saving…",
@@ -719,9 +720,22 @@ export const messages = {
   "nav.group.hearing": "Notifications and mentions",
   "nav.group.connections": "Connections",
   "shortcut.go-notifications": "Go to Notifications",
+  "notifications.mentioned": "{who} mentioned you",
+  "notifications.assigned": "{who} assigned this issue to you",
+  "notifications.commented": "{who} wrote a comment",
+  "notifications.news": "There is news on this issue",
+  "notifications.finish-asked": "{who} asks you to finish editing",
+  "notifications.taken-over": "{who} took over the editing. What you wrote is kept as your draft",
+  "notifications.released":
+    "{who} ended your editing because it was stuck, so others can edit again",
+  "notifications.run-done": "Your change to many issues is done",
+  "notifications.run-failed": "Your change to many issues stopped before it was done",
+  "notifications.issue-ids-failed":
+    "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again.",
   "notifications.issue-ids-failed-short":
     "Bugaboo could not give every issue of a project its new ID.",
-  "notifications.open-project-settings": "Open the project settings",
+  "notifications.issue-ids-failed-hidden":
+    "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more.",
   "notifications.count-capped": "{max}+",
 } as const;
 

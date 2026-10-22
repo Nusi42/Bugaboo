@@ -13,5 +13,8 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+bb-core = { path = "../bb-core" }
 bb-markdown = { path = "../bb-markdown" }
+serde = { workspace = true }
+serde_json = { workspace = true }
 wasm-bindgen = { workspace = true }

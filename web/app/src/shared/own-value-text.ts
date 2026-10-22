@@ -1,7 +1,8 @@
 /**
  * A value of an own field as people read it, where the screen words it itself (CF-01): a length of
- * time is seconds in the API and "1h 30m" on the screen. The one wording, for the field on the
- * issue page and for a change in the history.
+ * time is seconds in the API and "1h 30m" on the screen. The wording of a field on the issue page.
+ * A change in the history and in a notification is worded by `bb-core` (`wording`), which the
+ * vectors in `tools/testdata/value-words.json` hold to this code (ADR-0033).
  */
 
 import type { Schema } from "@bugaboo/api-client";
@@ -74,6 +75,27 @@ const worded: Readonly<
   group: textOf,
   issue: textOf,
 };
+
+/** The kinds whose words depend on what the reader chose under *Region*. */
+const regional: ReadonlySet<Schema<"FieldType">> = new Set([
+  "whole-number",
+  "decimal",
+  "date",
+  "date-time",
+]);
+
+/**
+ * The words of a number, a day or a moment in the region of the reader, which the shared wording
+ * takes as they are (the browser writes them with `Intl`, whatever the reader chose, `device`
+ * included); `undefined` for any other kind and for a value that does not fit its kind.
+ */
+export function regionWords(
+  kind: Schema<"FieldType">,
+  value: unknown,
+  region: Region = currentRegion(),
+): string | undefined {
+  return regional.has(kind) ? worded[kind](value, region) : undefined;
+}
 
 /**
  * A value of an own field that the screen words itself, as people read it (yes or no, a length of

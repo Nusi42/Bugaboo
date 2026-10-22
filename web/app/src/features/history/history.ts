@@ -4,12 +4,12 @@ import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
-import { changeSentence, whoOf } from "../../shared/change-sentence.ts";
+import { whoOf } from "../../shared/change-sentence.ts";
 import { useIssueTarget } from "../../shared/issue-target.ts";
 import type { IssueTarget } from "../../shared/paths.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
-export { changeSentence, sideOf, whoOf } from "../../shared/change-sentence.ts";
+export { changeSentence, whoOf } from "../../shared/change-sentence.ts";
 
 /** One item of the history of an issue: a comment, one field that changed, or a relation. */
 export type HistoryEntry = Schema<"HistoryEntryItem">;
@@ -170,12 +170,15 @@ export function fileSentence(entry: HistoryEntry): string {
     : t(named, { who, name: entry.file_name });
 }
 
-/** The sentence of one item that is not a comment: a change of a field, a file or a relation. */
-export function sentenceOf(entry: HistoryEntry): string {
+/**
+ * The sentence of an item that is a relation or a file; nothing for a change of a field, whose
+ * words come from the shared wording (`changeSentence`), which has to be loaded first.
+ */
+export function plainSentenceOf(entry: HistoryEntry): string | undefined {
   if (entry.kind === "relation") {
     return relationSentence(entry);
   }
-  return entry.kind === "file" ? fileSentence(entry) : changeSentence(entry);
+  return entry.kind === "file" ? fileSentence(entry) : undefined;
 }
 
 /** The sentence of a relation that was added or taken away. */

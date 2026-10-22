@@ -2,6 +2,7 @@ import { markSafeHtml } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { describe, expect, it } from "vitest";
 
+import { testWording } from "../../shared/wording-testing.ts";
 import {
   failedRenewalProjectOf,
   groupsOf,
@@ -45,7 +46,7 @@ function rowOfItems(...items: readonly NotificationItem[]): NotificationRow {
 
 /** The sentences of the one notification the items make. */
 function say(...items: readonly NotificationItem[]): readonly string[] {
-  return sentencesOf(rowOfItems(...items));
+  return sentencesOf(testWording, rowOfItems(...items));
 }
 
 describe("ntf_01 the items of one notification are one row", () => {

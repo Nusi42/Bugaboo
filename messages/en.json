@@ -538,6 +538,7 @@
   "markdown.quote": "Quote",
   "markdown.link-text": "link text",
   "markdown.preview-empty": "There is nothing to preview yet.",
+  "common.words-failed": "These words could not be loaded. Check your connection and try again.",
   "markdown.preview-failed": "The preview could not be loaded. Check your connection and try again.",
   "save.saving": "Saving…",
   "save.saved": "Saved",

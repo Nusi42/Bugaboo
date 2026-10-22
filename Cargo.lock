@@ -726,7 +726,10 @@ dependencies = [
 name = "bb-wasm"
 version = "0.0.0"
 dependencies = [
+ "bb-core",
  "bb-markdown",
+ "serde",
+ "serde_json",
  "wasm-bindgen",
 ]
 

@@ -1,7 +1,9 @@
 import type { Schema } from "@bugaboo/api-client";
-import { t } from "@bugaboo/messages";
 
-import { changeSentence, whoOf } from "../../shared/change-sentence.ts";
+import type { Wording, WordedNotice } from "@bugaboo/wasm";
+
+import { whoOf, wordedChange } from "../../shared/change-sentence.ts";
+import { renderSaid } from "../../shared/said.ts";
 import type { IssueTarget } from "../../shared/paths.ts";
 
 /** One item of the list of notifications; a change has one for each field it changed. */
@@ -102,49 +104,27 @@ export function failedRenewalProjectOf(row: NotificationRow): string | undefined
   return renewal?.shown === "visible" ? (renewal.short_name ?? undefined) : undefined;
 }
 
-/** What happened, in words: one sentence, or one for each field a change touched. */
-export function sentencesOf(row: NotificationRow): readonly string[] {
-  const who = whoOf(row);
-  if (row.kind === "mentioned") {
-    return [t("notifications.mentioned", { who })];
-  }
-  if (row.kind === "assigned") {
-    return [t("notifications.assigned", { who })];
-  }
-  if (row.kind === "edit_notice") {
-    return [editNoticeSentence(row, who)];
-  }
-  if (row.kind === "run_ended") {
-    const renewal = row.entries.find(
-      (entry) => entry.issue_ids_failed !== undefined,
-    )?.issue_ids_failed;
-    if (renewal !== undefined && renewal !== null) {
-      return [
-        renewal.shown === "visible" && renewal.name !== undefined && renewal.name !== null
-          ? t("notifications.issue-ids-failed", { project: renewal.name })
-          : t("notifications.issue-ids-failed-hidden"),
-      ];
-    }
-    return [
-      row.entries.some((entry) => entry.run_done === false)
-        ? t("notifications.run-failed")
-        : t("notifications.run-done"),
-    ];
-  }
-  if (isChange(row)) {
-    return row.entries.map((entry) => changeSentence(entry));
-  }
-  return [
-    commentOf(row) === undefined ? t("notifications.news") : t("notifications.commented", { who }),
-  ];
+/** What a notification says, as the shared wording takes it (`bb-core`, `wording::Notice`). */
+export function noticeOf(row: NotificationRow): WordedNotice {
+  const edit = row.entries.find((entry) => entry.notice !== undefined)?.notice;
+  const renewal = row.entries.find(
+    (entry) => entry.issue_ids_failed !== undefined && entry.issue_ids_failed !== null,
+  )?.issue_ids_failed;
+  return {
+    kind: row.kind,
+    who: whoOf(row),
+    comment: commentOf(row) !== undefined,
+    changes: isChange(row) ? row.entries.map((entry) => wordedChange(entry)) : [],
+    notice: edit ?? null,
+    run_done: !row.entries.some((entry) => entry.run_done === false),
+    renewal:
+      renewal === undefined || renewal === null
+        ? null
+        : { project: renewal.shown === "visible" ? (renewal.name ?? null) : null },
+  };
 }
 
-function editNoticeSentence(row: NotificationRow, who: string): string {
-  const notice = row.entries.find((entry) => entry.notice !== undefined)?.notice;
-  if (notice === "taken_over") {
-    return t("notifications.taken-over", { who });
-  }
-  return notice === "released"
-    ? t("notifications.released", { who })
-    : t("notifications.finish-asked", { who });
+/** What happened, in words: one sentence, or one for each field a change touched. */
+export function sentencesOf(wording: Wording, row: NotificationRow): readonly string[] {
+  return wording.notificationSentences(noticeOf(row)).map((said) => renderSaid(said));
 }

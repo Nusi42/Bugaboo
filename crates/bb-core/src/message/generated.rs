@@ -659,6 +659,9 @@ pub const COMMON_TRY_AGAIN: MessageKey = MessageKey::new("common.try-again");
 /// The message `common.undo`.
 pub const COMMON_UNDO: MessageKey = MessageKey::new("common.undo");
 
+/// The message `common.words-failed`.
+pub const COMMON_WORDS_FAILED: MessageKey = MessageKey::new("common.words-failed");
+
 /// The message `config.data-dir-empty`.
 pub const CONFIG_DATA_DIR_EMPTY: MessageKey = MessageKey::new("config.data-dir-empty");
 
@@ -10012,6 +10015,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.show-fewer", "Show fewer"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
+    (
+        "common.words-failed",
+        "These words could not be loaded. Check your connection and try again.",
+    ),
     (
         "config.address-invalid",
         "The address {value} is not an IP address such as 127.0.0.1 or ::1.",
