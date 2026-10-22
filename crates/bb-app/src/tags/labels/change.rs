@@ -3,7 +3,6 @@
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{LabelGroupId, LabelId};
-use bb_core::names::name_among;
 use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_core::tags::Label;
 use bb_core::version::FIRST_VERSION;
@@ -16,7 +15,7 @@ use super::super::rewrite::{Replacement, Rewrite, Sorted};
 use super::super::types::{
     ChangeLabel, CreateLabel, LabelChangePreviewQuery, LabelView, TagChangePreview,
 };
-use super::{Reach, crowd, retired_state, two_of_in};
+use super::{Reach, crowd, label_name_taken, retired_state, two_of_in};
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, set_to};
 use crate::input::clean_tag_name;
 use crate::member::label as member;
@@ -48,7 +47,7 @@ pub async fn create_label<S: AuthStore>(
     {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    if catalogue.label_name_taken(&name, input.group, None) {
+    if label_name_taken(&catalogue.labels, &name, input.group, None) {
         return Err(ErrorCode::NameTaken.into());
     }
     let label = Label {
@@ -83,13 +82,7 @@ pub async fn create_label<S: AuthStore>(
             Box::pin(async move {
                 S::lock_tags_and_labels(transaction).await?;
                 let labels = S::labels_in(transaction).await?;
-                if name_among(
-                    labels
-                        .iter()
-                        .filter(|other| other.group == stored.group)
-                        .map(|other| other.name.as_str()),
-                    &stored.name,
-                ) {
+                if label_name_taken(&labels, &stored.name, stored.group, None) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 S::insert_label(transaction, &stored).await
@@ -120,7 +113,7 @@ pub async fn label_change_preview<S: AuthStore>(
     let rewrite = match (&input.name, input.into) {
         (Some(name), None) => {
             let name = clean_tag_name(name)?;
-            if catalogue.label_name_taken(&name, label.group, Some(label.id)) {
+            if label_name_taken(&catalogue.labels, &name, label.group, Some(label.id)) {
                 return Err(ErrorCode::NameTaken.into());
             }
             Rewrite {
@@ -208,7 +201,7 @@ pub async fn change_label<S: AuthStore>(
             return Err(ErrorCode::InvalidRequest.into());
         }
     }
-    if catalogue.label_name_taken(&name, group, Some(label.id)) {
+    if label_name_taken(&catalogue.labels, &name, group, Some(label.id)) {
         return Err(ErrorCode::NameTaken.into());
     }
     let now = ctx.now();
@@ -335,13 +328,7 @@ impl LabelWrite {
     ) -> Result<(), S::Error> {
         S::lock_tags_and_labels(transaction).await?;
         let labels = S::labels_in(transaction).await?;
-        if name_among(
-            labels
-                .iter()
-                .filter(|other| other.id != self.id && other.group == self.group)
-                .map(|other| other.name.as_str()),
-            &self.name,
-        ) {
+        if label_name_taken(&labels, &self.name, self.group, Some(self.id)) {
             return Err(stopped.stop::<S>(ErrorCode::NameTaken));
         }
         if self.joins_pick_one && two_of_in::<S>(transaction, &self.crowd_ids).await? {

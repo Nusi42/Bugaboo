@@ -12,7 +12,7 @@ use std::collections::BTreeSet;
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{ProjectId, TagId};
-use bb_core::names::{name_among, same_name};
+use bb_core::names::name_among;
 use bb_core::paging::window;
 use bb_core::tags::{TAG_PROJECTS_MAX, Tag, TagProject};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -51,17 +51,18 @@ impl Catalogue {
             .map(|limit| limit.project)
             .collect()
     }
+}
 
-    /// Whether another tag has this name.
-    fn name_taken(&self, name: &str, except: TagId) -> bool {
-        name_among(
-            self.tags
-                .iter()
-                .filter(|tag| tag.id != except)
-                .map(|tag| tag.name.as_str()),
-            name,
-        )
-    }
+/// Whether a tag other than `except` has this name, without regard to capitals and to the spaces
+/// between the words. The use cases ask it on what they read before the lock, and again inside the
+/// change on what is stored now.
+fn tag_name_taken(tags: &[Tag], name: &str, except: TagId) -> bool {
+    name_among(
+        tags.iter()
+            .filter(|tag| tag.id != except)
+            .map(|tag| tag.name.as_str()),
+        name,
+    )
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -217,7 +218,7 @@ pub async fn tag_change_preview<S: AuthStore>(
     let rewrite = match (&input.name, input.into) {
         (Some(name), None) => {
             let name = clean_tag_name(name)?;
-            if catalogue.name_taken(&name, tag.id) {
+            if tag_name_taken(&catalogue.tags, &name, tag.id) {
                 return Err(ErrorCode::NameTaken.into());
             }
             Rewrite {
@@ -315,7 +316,7 @@ pub async fn change_tag<S: AuthStore>(
         Some(name) => clean_tag_name(name)?,
         None => tag.name.clone(),
     };
-    if catalogue.name_taken(&name, tag.id) {
+    if tag_name_taken(&catalogue.tags, &name, tag.id) {
         return Err(ErrorCode::NameTaken.into());
     }
     let color = input.color.unwrap_or(tag.color);
@@ -365,10 +366,7 @@ pub async fn change_tag<S: AuthStore>(
                 // Judged again on what is stored now: another tag may have taken the name, and the
                 // issues that have the tag are the ones that have it now.
                 let now = S::tags_in(transaction).await?;
-                if now
-                    .iter()
-                    .any(|other| other.id != id && same_name(&other.name, &written))
-                {
+                if tag_name_taken(&now, &written, id) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 if let Some(rewrite) = &rewrite {

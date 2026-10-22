@@ -10,7 +10,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::RelationKindId;
 use bb_core::message::Message;
-use bb_core::names::name_among;
+use bb_core::names::{is_new_or_changed, name_among};
 use bb_core::paging::window;
 use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
 use bb_core::version::{FIRST_VERSION, counted_up, next};
@@ -33,10 +33,10 @@ use crate::projects::Why;
 /// a kind that is not there yet): only these are judged.
 fn changed<'a>(before: Option<&RelationKind>, forward: &'a str, backward: &'a str) -> Vec<&'a str> {
     let mut names = Vec::new();
-    if before.is_none_or(|stored| stored.forward != forward) {
+    if is_new_or_changed(before.map(|stored| stored.forward.as_str()), forward) {
         names.push(forward);
     }
-    if before.is_none_or(|stored| stored.backward != backward) {
+    if is_new_or_changed(before.map(|stored| stored.backward.as_str()), backward) {
         names.push(backward);
     }
     names
