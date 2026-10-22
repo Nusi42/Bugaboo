@@ -390,7 +390,6 @@ export const messages = {
   "own.ask-yes": "Do it anyway",
   "own.ask-keep": "Keep what I have",
   "projects.tab-general": "Name and place",
-  "projects.tabs": "Settings of the project",
   "nav.field-permissions": "Field permissions",
   "nav.people-visibility": "Who sees people",
   "nav.check-access": "Check access",

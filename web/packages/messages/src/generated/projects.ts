@@ -75,6 +75,7 @@ export const messages = {
   "projects.line-people": "In {project}, for {person}, {kind} goes from {before} to {after}.",
   "projects.line-lift":
     "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
+  "projects.tabs": "Settings of the project",
   "projects.issue-ids-title": "Settings of this project",
   "issues.of-project": "Issues of this project",
   "projects.preview-summary":

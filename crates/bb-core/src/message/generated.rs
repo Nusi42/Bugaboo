@@ -1517,6 +1517,10 @@ pub const FOLLOWERS_FOLLOW: MessageKey = MessageKey::new("followers.follow");
 /// The message `followers.following`.
 pub const FOLLOWERS_FOLLOWING: MessageKey = MessageKey::new("followers.following");
 
+/// The message `followers.following-after-count`.
+pub const FOLLOWERS_FOLLOWING_AFTER_COUNT: MessageKey =
+    MessageKey::new("followers.following-after-count");
+
 /// The message `followers.more`.
 pub const FOLLOWERS_MORE: MessageKey = MessageKey::new("followers.more");
 
@@ -10829,7 +10833,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, other {# or more followers}}",
     ),
     ("followers.follow", "Follow"),
-    ("followers.following", "Following"),
+    ("followers.following", "You follow it"),
+    ("followers.following-after-count", "· You follow it"),
     ("followers.more", "Show more followers"),
     ("followers.name", "Followers"),
     ("followers.reason-assigned", "It is assigned to you"),
