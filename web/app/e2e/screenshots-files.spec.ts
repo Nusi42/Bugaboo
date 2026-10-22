@@ -116,7 +116,7 @@ async function takeTheBar(page: Page, theme: Theme, project: string): Promise<vo
   await signIn(page, ada);
   await page.goto(issueAddress(ISSUE));
   const hold = await holdSecondPart(page);
-  const name = `holiday-video-${theme.id}.bin`;
+  const name = "holiday-video.bin";
   await chooseInBlock(page, megabytes(name, 9));
   // The first part is there and the second waits: the bar is a part of the way.
   await expect(page.getByRole("progressbar")).toBeVisible();
