@@ -59,6 +59,12 @@ touches** against this list, and a finding blocks the merge until it is fixed:
   written a second time), even when the text differs (DRY). Extract or reuse the one helper.
 - **Knowledge kept in two places by hand** and held together only by a test that compares
   them (SSOT). Generate one from the other, or read both from one file.
+  **Approved exceptions** are the ones an ADR names, each held together by test vectors that
+  are generated from one side (not written by hand) and checked by a named check. Today there is
+  one: the region-dependent writing of dates, numbers and time zones, in
+  [ADR-0033](adr/0033-notifications-and-e-mail.md) (amendment of M4 WP-13, approved by the owner
+  on 2026-10-22), held by DOC-GENERATED and the browser test `value-words.test.ts`. A reviewer
+  does not record these as findings; any other pair is a finding.
 - **A magic number or string** that names a rule (a limit, a size, a timeout, a key) instead
   of a named constant from its single home.
 - **Common bad patterns:** a function that does several unrelated things; a long parameter
