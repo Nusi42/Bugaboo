@@ -124,6 +124,36 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
             hidden: Vec::new(),
         };
         assert!(storage.used_tags(&elsewhere, "log", 10).await?.is_empty());
+        // The same question for every tag in one statement: used by the sight, and used anywhere (the
+        // trash too). `logout` is on the trashed issue only.
+        let whole = IssueSight {
+            with_trashed: true,
+            ..everything.clone()
+        };
+        let uses: Vec<(String, bool, bool)> = storage
+            .tags_with_use(&everything, &whole, &[])
+            .await?
+            .into_iter()
+            .map(|each| (each.tag.name, each.seen, each.anywhere))
+            .collect();
+        assert_eq!(
+            uses,
+            [
+                ("100%_sure".to_owned(), true, true),
+                ("login".to_owned(), true, true),
+                ("logout".to_owned(), false, true),
+            ]
+        );
+        let unseen = storage.tags_with_use(&elsewhere, &whole, &[]).await?;
+        assert!(unseen.iter().all(|each| !each.seen && each.anywhere));
+        // A tag with a limit says so, and whether the limit is to a project the person sees.
+        let uses = storage
+            .tags_with_use(&everything, &whole, &[world.project])
+            .await?;
+        assert!(
+            uses.iter()
+                .all(|each| !each.limited && !each.limited_to_visible)
+        );
         // Where a person sees only their own issues, only the tags on those are offered.
         let own = |person| IssueSight {
             all: Vec::new(),

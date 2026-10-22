@@ -29,7 +29,7 @@ pub use labels::{
     label_change_preview, label_groups, labels,
 };
 pub use manage::{change_tag, combine_tags, tag_change_preview, tags};
-pub use store::TagStore;
+pub use store::{TagStore, TagUse};
 pub use suggest::tag_suggestions;
 pub use types::*;
 

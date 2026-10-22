@@ -7,7 +7,7 @@ use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, Ta
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::tags::TagStore;
+use crate::tags::{TagStore, TagUse};
 
 fn page_after(mut issues: Vec<IssueId>, after: Option<IssueId>, limit: u64) -> Vec<IssueId> {
     issues.sort();
@@ -148,6 +148,45 @@ impl TagStore for FakeStore {
                 .collect();
             found.sort_by_key(|tag| (name_key(&tag.name), tag.id));
             found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+            found
+        }))
+    }
+
+    async fn tags_with_use(
+        &self,
+        seen: &IssueSight,
+        anywhere: &IssueSight,
+        visible: &[ProjectId],
+    ) -> Result<Vec<TagUse>, FakeError> {
+        let used_in = |state: &State, tag: &Tag, sight: &IssueSight| {
+            state.issue_tags.iter().any(|link| {
+                link.tag == tag.id
+                    && state.issues.iter().any(|issue| {
+                        issue.id == link.issue
+                            && (sight.with_trashed || issue.deleted_at.is_none())
+                            && !sight.hidden.contains(&(issue.project, issue.issue_type))
+                            && (sight.all.contains(&issue.project)
+                                || (sight.own.contains(&issue.project)
+                                    && issue.reported_by == sight.person))
+                    })
+            })
+        };
+        Ok(self.read(|state| {
+            let mut found: Vec<TagUse> = state
+                .tags
+                .iter()
+                .map(|tag| {
+                    let mut limits = state.tag_projects.iter().filter(|each| each.tag == tag.id);
+                    TagUse {
+                        tag: tag.clone(),
+                        seen: used_in(state, tag, seen),
+                        anywhere: used_in(state, tag, anywhere),
+                        limited: limits.clone().next().is_some(),
+                        limited_to_visible: limits.any(|each| visible.contains(&each.project)),
+                    }
+                })
+                .collect();
+            found.sort_by_key(|each| (name_key(&each.tag.name), each.tag.id));
             found
         }))
     }

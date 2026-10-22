@@ -10,6 +10,21 @@ use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, Ta
 use jiff::Timestamp;
 
 use crate::issues::IssueStore;
+
+/// A tag with what decides whether a person may know it (`Ctx::known_tag_names`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TagUse {
+    /// The tag.
+    pub tag: Tag,
+    /// Whether an issue the person reads has it.
+    pub seen: bool,
+    /// Whether any issue has it, the trash and the issues of others too.
+    pub anywhere: bool,
+    /// Whether it is limited to some projects.
+    pub limited: bool,
+    /// Whether it is limited to a project the person sees.
+    pub limited_to_visible: bool,
+}
 use crate::store_macros::{queries, reads, writes};
 
 /// What the tag and label use cases need from storage.
@@ -45,6 +60,14 @@ pub trait TagStore: IssueStore + 'static {
         /// The tags used on the issues that are not in the trash and that the viewer reads, whose key holds
         /// `part`, by key, at most `limit`.
         fn used_tags(sight: &IssueSight, part: &str, limit: u64) -> Vec<Tag>;
+        /// Every tag with what the rule of what a person may know of a tag needs, by key, in one
+        /// statement: whether it is used on an issue of `seen` and on an issue of `anywhere`, and
+        /// whether it is limited to projects and to one of `visible`.
+        fn tags_with_use(
+            seen: &IssueSight,
+            anywhere: &IssueSight,
+            visible: &[ProjectId]
+        ) -> Vec<TagUse>;
     }
 
     writes! {
