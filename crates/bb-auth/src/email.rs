@@ -2,7 +2,7 @@
 //!
 //! Addresses are compared in lower case, with spaces around them removed. The check is
 //! deliberately small: one `@`, a dot-atom before it (the characters of RFC 5322 and single dots,
-//! so nothing of the syntax of a mailbox) and labels of letters, digits and hyphens with a dot
+//! so nothing of the syntax of a mailbox) and labels of ASCII letters, digits and hyphens with a dot
 //! after it. Whether the mailbox exists is something only a message can show (M4).
 
 use bb_core::settings::list_items;
@@ -25,13 +25,14 @@ fn is_dot_atom(part: &str) -> bool {
         })
 }
 
-/// Whether `part` is one label of a domain: letters, digits and hyphens, not starting or ending
-/// with a hyphen. Letters of other scripts are allowed; the mail server decides about them.
+/// Whether `part` is one label of a domain: ASCII letters, digits and hyphens, not starting or
+/// ending with a hyphen. A domain with other letters is written in its ASCII form (`xn--...`),
+/// which is the form the mail library takes, and the one form two spellings of a domain end in.
 fn is_label(part: &str) -> bool {
     !part.is_empty()
         && !part.starts_with('-')
         && !part.ends_with('-')
-        && part.chars().all(|c| c.is_alphanumeric() || c == '-')
+        && part.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
 }
 
 /// An e-mail address in its one spelling: lower case, trimmed.
@@ -121,6 +122,9 @@ mod tests {
             "ada@-example.com",
             "ada@example-.com",
             "ada@example.c<om",
+            // Letters that only look like ASCII, and a domain that is not in its ASCII form.
+            "ada@\u{ff45}xample.com",
+            "ada@b\u{fc}cher.de",
             &format!("{}@example.com", "a".repeat(65)),
         ] {
             assert!(EmailAddress::parse(bad).is_none(), "{bad:?}");
