@@ -169,7 +169,7 @@
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-dev-words/       the words the developer tools, the tests and xtask share: databases, test variables, the sample layout
-│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
+│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation, and the rule of the same name (`bb_core::names`)
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
 │   ├── bb-load-check/      the invariants after a run of many people at once, written once; developer tool and test support (never shipped)
@@ -183,7 +183,7 @@
 │   └── packages/
 │       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
 │       ├── ui/             shared components on React Aria + the generated style sheet; depends on api-client for the generated choices and defaults of the settings (the look of a person), and loads `wasm` when a Markdown preview opens
-│       ├── wasm/           loads the module of bb-wasm (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
+│       ├── wasm/           loads the module of bb-wasm (Markdown preview; the rule of the same name for the draft of a workflow) (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
 │       └── messages/       generated, typed message keys
 ├── docs/                   development docs (this)
 └── userDocs/               user and admin docs</code></pre>
@@ -227,7 +227,7 @@
   store --&gt; search &amp; policy &amp; core
   files --&gt; core
   notify --&gt; core
-  wasm --&gt; search &amp; md
+  wasm --&gt; search &amp; md &amp; core
   store -. tests only .-&gt; testing
   server -. tests only .-&gt; words
   testing --&gt; devwords
@@ -2266,6 +2266,10 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong><em>Show changes</em> marks the words and names who</strong> (M3-F54): the comparison underlines and fills the words the other text does not have, and the note that the text changed after the person started says who changed it, from the history and the way the reader may see people.</li>
 <li><strong>The scenarios of ten people</strong> are in <code>web/app/e2e/concurrent/</code> (ten Playwright contexts) and in <code>cargo xtask load --people 10</code> (the API at speed, both databases, two minutes in <code>cargo xtask ci</code>, <code>--nightly</code> for thirty); the invariants after a run are listed in architecture §11. A lock must also end by itself within the lease for an editor who vanished: no lock row ends later than the lease from now, nobody holds a lock once the leases are over, and the draft of the vanished editor is still there. These rules are written once, in <code>bb-load-check</code>. Enforced by TEST-CONCURRENT and, for the browser part of the locks, TEST-EDIT-LOCKS.</li>
 <li><strong>A lock covers only the long text.</strong> A change of another field of the record (a status, a change of many issues) since the person started is no conflict for the save of the text: <code>Ctx::version_for_text</code> writes the text on the version the record has now when no event after the sent version changed this text. The write still compares that version, so a change that lands in between is refused (ARCH-VERSIONED). A change of the text itself still gives <code>edit.version_changed</code> and <em>Compare and save</em>. Found by the scenario of ten people: the save compared the version of the whole issue.</li>
+</ul>
+<h4>Amendment (M4 exit, WP-14)</h4>
+<ul>
+<li><strong>Where a draft is kept depends on what is edited.</strong> The draft of a text and of a layout is kept by the server: the editor holds an edit lock, its heartbeat writes the draft, and a refused save leaves it for the person to take back (<code>useKeptDraft</code>). The draft of a workflow is kept by the browser (<code>web/app/src/features/workflows/left-draft.ts</code>, with the other browser drafts of <code>browser-drafts.ts</code>, by person and by workflow, 30 days): a workflow is a structure that <em>Publish</em> may refuse or turn into a question about the issues it moves, and the server has no route that stores a draft of it. Both are there so that nothing typed is dropped; what differs is only the place. Making the workflow draft a server draft needs a draft route for structures and is M4-F152.</li>
 </ul>
 
 <!-- 0020-architecture-checks.md -->
