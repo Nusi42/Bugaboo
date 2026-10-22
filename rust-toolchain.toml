@@ -1,5 +1,7 @@
 [toolchain]
 channel = "1.97.1"
-components = ["rustfmt", "clippy"]
+# rust-src: rustc quotes the standard library source in the messages the trybuild snapshots
+# hold (crates/bb-core/tests/ui), so every machine needs it to get the same text.
+components = ["rustfmt", "clippy", "rust-src"]
 targets = ["wasm32-unknown-unknown", "x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]
 profile = "minimal"

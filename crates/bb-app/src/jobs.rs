@@ -23,8 +23,9 @@ pub const JOB_ATTEMPTS_MAX: u32 = 5;
 
 bb_core::words! {
     /// The kinds of job, each with the name the queue stores. [`JobKind::is_daily`] says which
-    /// come back every day; `Ctx::do_job` and `Ctx::job_gave_up` match on every kind, so a new kind
-    /// has to be given its work there.
+    /// come back every day; `Ctx::do_job` routes by it, and `Ctx::job_gave_up` ends a dead job
+    /// of a kind that is not daily; these matches have no catch-all, so a new kind has to be given
+    /// its work and its end there.
     pub enum JobKind {
         /// One step of a change to many issues; the payload names the run.
         ManyChangesStep => "many-changes.step",
@@ -104,6 +105,17 @@ const UNKNOWN_KIND: &str = "job.unknown_kind";
 
 /// The code a job reports when its work failed.
 const FAILED: &str = "job.failed";
+
+/// The failure of a job that went to the wrong function of the routing in `do_job`: a mistake of
+/// the code, not of the job. It stops a test or a debug build at once instead of letting the job
+/// die as `unknown_kind`.
+fn misrouted(job: &Job, kind: JobKind) -> JobFailure {
+    debug_assert!(
+        false,
+        "the job kind {kind:?} was routed to the wrong function"
+    );
+    JobFailure::unknown_kind(job)
+}
 
 /// A job to put in the queue together with the change that needs the work done (the notifications
 /// reader queues the e-mails with the rows they are about).
@@ -206,43 +218,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// puts it on the dead-letter list.
     async fn do_job(&self, job: &Job) -> Result<(), JobFailure> {
         match JobKind::from_code(job.kind.as_str()) {
-            Some(JobKind::ManyChangesStep) => Box::pin(self.run_many_changes_step(&job.payload))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "a step of a change to many issues failed");
-                    JobFailure::of(&error, FAILED, job)
-                }),
-            Some(JobKind::RenewIds) => {
-                Box::pin(self.renew_ids_step(&job.payload))
-                    .await
-                    .map_err(|error| {
-                        tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
-                        JobFailure::of(&error, FAILED, job)
-                    })
-            }
-            Some(kind @ (JobKind::PreviewFile | JobKind::CleanUpFiles)) => {
-                self.do_files_job(job, kind).await
-            }
-            Some(
-                kind @ (JobKind::PurgeDrafts
-                | JobKind::CatchUpHistory
-                | JobKind::PurgeNotifications
-                | JobKind::PruneSecurityLog
-                | JobKind::PurgeSessions
-                | JobKind::RotateServerLog),
-            ) => self.do_daily_job(job, kind).await,
-            Some(JobKind::MailSend) => {
-                Box::pin(self.run_mail_job(&job.payload))
-                    .await
-                    .map_err(|error| {
-                        // The class only: the answer of the mail server can hold an address.
-                        tracing::warn!(
-                            refused = matches!(error, AppError::Refused(_)),
-                            "an e-mail did not go"
-                        );
-                        JobFailure::of(&error, FAILED, job)
-                    })
-            }
+            Some(kind) if kind.is_daily() => self.do_daily_job(job, kind).await,
+            Some(kind) => self.do_one_off_job(job, kind).await,
             None => {
                 tracing::error!(kind = job.kind.as_str(), "a job of a kind nobody knows");
                 Err(JobFailure::unknown_kind(job))
@@ -250,9 +227,54 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// The daily jobs that keep the data tidy: old drafts, the history catching up, old
-    /// notifications, the security log, sessions and the server log. Each queues its next round
-    /// first (`run_daily`).
+    /// The jobs that are queued by the work that needs them and do not come back by themselves
+    /// (the kinds for which [`JobKind::is_daily`] is false).
+    async fn do_one_off_job(&self, job: &Job, kind: JobKind) -> Result<(), JobFailure> {
+        match kind {
+            JobKind::ManyChangesStep => Box::pin(self.run_many_changes_step(&job.payload))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "a step of a change to many issues failed");
+                    JobFailure::of(&error, FAILED, job)
+                }),
+            JobKind::RenewIds => {
+                Box::pin(self.renew_ids_step(&job.payload))
+                    .await
+                    .map_err(|error| {
+                        tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
+                        JobFailure::of(&error, FAILED, job)
+                    })
+            }
+            JobKind::PreviewFile => Box::pin(self.run_preview_step(&job.payload)).await.map_err(
+                |error| {
+                    tracing::warn!(cause = %error, "the preview of a file could not be created");
+                    JobFailure::of(&error, FAILED, job)
+                },
+            ),
+            JobKind::MailSend => Box::pin(self.run_mail_job(&job.payload))
+                .await
+                .map_err(|error| {
+                    // The class only: the answer of the mail server can hold an address.
+                    tracing::warn!(
+                        refused = matches!(error, AppError::Refused(_)),
+                        "an e-mail did not go"
+                    );
+                    JobFailure::of(&error, FAILED, job)
+                }),
+            // The daily kinds go to `do_daily_job`; listed so that a new kind has to be placed.
+            JobKind::PurgeDrafts
+            | JobKind::CatchUpHistory
+            | JobKind::PurgeNotifications
+            | JobKind::PruneSecurityLog
+            | JobKind::PurgeSessions
+            | JobKind::RotateServerLog
+            | JobKind::CleanUpFiles => Err(misrouted(job, kind)),
+        }
+    }
+
+    /// The daily jobs (the kinds for which [`JobKind::is_daily`] is true): old drafts, the history
+    /// catching up, old notifications, the security log, sessions, the server log and old files.
+    /// Each queues its next round first (`run_daily`).
     async fn do_daily_job(&self, job: &Job, kind: JobKind) -> Result<(), JobFailure> {
         match kind {
             JobKind::PurgeDrafts => Box::pin(self.run_daily(JobKind::PurgeDrafts, async {
@@ -323,25 +345,6 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "the server log could not be rotated");
                 JobFailure::of(&error, FAILED, job)
             }),
-            // Not a job of this function: `do_job` sends each kind to its own.
-            JobKind::ManyChangesStep
-            | JobKind::RenewIds
-            | JobKind::MailSend
-            | JobKind::PreviewFile
-            | JobKind::CleanUpFiles => Err(JobFailure::unknown_kind(job)),
-        }
-    }
-
-    /// The jobs of files (`files::jobs`, ADR-0032): the preview of an attachment, and the daily
-    /// clean-up of what nothing needs any more.
-    async fn do_files_job(&self, job: &Job, kind: JobKind) -> Result<(), JobFailure> {
-        match kind {
-            JobKind::PreviewFile => Box::pin(self.run_preview_step(&job.payload)).await.map_err(
-                |error| {
-                    tracing::warn!(cause = %error, "the preview of a file could not be created");
-                    JobFailure::of(&error, FAILED, job)
-                },
-            ),
             JobKind::CleanUpFiles => Box::pin(self.run_daily(JobKind::CleanUpFiles, async {
                 self.clean_up_files().await.map(|cleaned| {
                     tracing::info!(
@@ -357,16 +360,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "old files could not be cleared");
                 JobFailure::of(&error, FAILED, job)
             }),
-
+            // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
             | JobKind::RenewIds
             | JobKind::MailSend
-            | JobKind::PurgeDrafts
-            | JobKind::CatchUpHistory
-            | JobKind::PurgeNotifications
-            | JobKind::PruneSecurityLog
-            | JobKind::PurgeSessions
-            | JobKind::RotateServerLog => Err(JobFailure::unknown_kind(job)),
+            | JobKind::PreviewFile => Err(misrouted(job, kind)),
         }
     }
 
@@ -383,17 +381,21 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             Some(JobKind::MailSend) => self.mail_job_gave_up(&job.payload).await,
             Some(JobKind::PreviewFile) => self.preview_gave_up(&job.payload).await,
-            // The daily kinds come back by themselves and leave no work that people can see.
+            // The daily kinds come back by themselves and leave no work that people can see; a
+            // new kind has to be placed in one of these arms.
             Some(
-                JobKind::PurgeDrafts
+                kind @ (JobKind::PurgeDrafts
                 | JobKind::CatchUpHistory
                 | JobKind::PurgeNotifications
                 | JobKind::PruneSecurityLog
                 | JobKind::PurgeSessions
                 | JobKind::RotateServerLog
-                | JobKind::CleanUpFiles,
-            )
-            | None => Ok(()),
+                | JobKind::CleanUpFiles),
+            ) => {
+                debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");
+                Ok(())
+            }
+            None => Ok(()),
         };
         if let Err(error) = ended {
             tracing::error!(cause = %error, "the work of a dead job could not be ended");

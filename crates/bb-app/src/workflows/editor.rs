@@ -21,10 +21,7 @@ use crate::access::{Actor, ROLES_MAX};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::editing::EditorPlace;
 
-/// The place a workflow is asked for.
-pub(super) type Where = EditorPlace;
-
-impl Where {
+impl EditorPlace {
     /// Where a workflow for exactly this place is used.
     pub(super) fn workflow_place(&self) -> WorkflowPlace {
         WorkflowPlace {
@@ -40,7 +37,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         project: Option<&str>,
         issue_type: Option<IssueTypeId>,
-    ) -> Result<Where, AppError> {
+    ) -> Result<EditorPlace, AppError> {
         self.editor_place(project, issue_type, ()).await
     }
 
@@ -108,7 +105,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &Evaluation,
-        at: &Where,
+        at: &EditorPlace,
         in_force: &InForce,
     ) -> Result<WorkflowEditor, AppError> {
         let content = &in_force.content;
@@ -176,7 +173,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &Evaluation,
-        at: &Where,
+        at: &EditorPlace,
     ) -> Result<WorkflowEditor, AppError> {
         let directory = self.workflow_directory().await?;
         let in_force = directory.detail(&at.chain, at.issue_type);

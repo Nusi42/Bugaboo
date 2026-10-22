@@ -26,6 +26,15 @@ pub fn same_name(one: &str, other: &str) -> bool {
     name_key(one) == name_key(other)
 }
 
+/// Whether a name must be judged: it is new (`before` is none) or it is not spelled as it was
+/// stored. A name stored before names were told apart by one rule stays as it is, so a type, a
+/// field or a workflow can still be given another icon or be retired. Every place that keeps names
+/// unique asks this before it asks whether the name is taken.
+#[must_use]
+pub fn is_new_or_changed(before: Option<&str>, name: &str) -> bool {
+    before.is_none_or(|stored| stored != name)
+}
+
 /// Whether one of `names` is the same name as `name`.
 #[must_use]
 pub fn name_among<'a>(names: impl IntoIterator<Item = &'a str>, name: &str) -> bool {
@@ -83,6 +92,15 @@ mod tests {
         assert!(!same_name("Bug report", "Bug reports"));
         assert!(name_among(["Task", "Bug  report"], "bug report"));
         assert!(!name_among(["Task"], "bug report"));
+    }
+
+    #[test]
+    fn iss_02_a_name_is_judged_only_when_it_is_new_or_changed() {
+        assert!(is_new_or_changed(None, "Bug"));
+        assert!(is_new_or_changed(Some("Bug"), "Bugs"));
+        assert!(is_new_or_changed(Some("Bug  report"), "Bug report"));
+        assert!(is_new_or_changed(Some("Bug"), "bug"));
+        assert!(!is_new_or_changed(Some("Bug"), "Bug"));
     }
 
     struct Subject(&'static str, Option<ProjectId>, bool);

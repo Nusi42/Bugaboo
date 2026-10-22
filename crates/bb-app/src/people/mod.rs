@@ -23,6 +23,7 @@ use bb_core::ErrorCode;
 use bb_core::access::{Group, GroupMember};
 use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, UserId};
+use bb_core::names::is_new_or_changed;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
@@ -243,7 +244,7 @@ pub async fn rename_group<S: AuthStore>(
         .await?;
     let name = clean_name(&input.name)?;
     let before = ctx.group_or_missing(input.group).await?;
-    if name != before.name {
+    if is_new_or_changed(Some(&before.name), &name) {
         ctx.refuse_a_persons_handle(&name).await?;
     }
     let id = before.id;
