@@ -4,7 +4,7 @@
 
 You can write a comment on an issue you may see if your role has "Comment". A comment uses the same writing as the description: simple formatting, web addresses and issue IDs such as `WEB-12`. An issue ID shows as a chip only when you may see that issue; for everyone else it stays plain text.
 
-- You can change and delete **your own** comments. While you edit, the comment is locked for you, like a description.
+- You can change and delete **your own** comments. While you edit, others see "… is editing" on the comment, like on a description.
 - Every save keeps the earlier text. Open **Earlier versions** on a comment to read them.
 - A deleted comment goes to the trash and **Undo** brings it back.
 

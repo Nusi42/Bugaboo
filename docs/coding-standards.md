@@ -61,10 +61,16 @@ touches** against this list, and a finding blocks the merge until it is fixed:
   them (SSOT). Generate one from the other, or read both from one file.
   **Approved exceptions** are the ones an ADR names, each held together by test vectors that
   are generated from one side (not written by hand) and checked by a named check. Today there is
-  one: the region-dependent writing of dates, numbers and time zones, in
-  [ADR-0033](adr/0033-notifications-and-e-mail.md) (amendment of M4 WP-13, approved by the owner
-  on 2026-10-22), held by DOC-GENERATED and the browser test `value-words.test.ts`. A reviewer
-  does not record these as findings; any other pair is a finding.
+  one approval, recorded in the amendment of
+  [ADR-0033](adr/0033-notifications-and-e-mail.md): (1) the region-dependent writing of dates,
+  numbers and time zones, kept in two implementations (Rust for e-mail, `Intl` in the browser,
+  because the choice *device* cannot run on the server), and (2) the synchronous TypeScript
+  `listText`, `durationText` and `ownValueText` of the screens that cannot wait for the module,
+  which stay beside the shared Rust wording. Both are checked against the vectors that
+  `cargo xtask gen word-vectors` writes from Rust: DOC-GENERATED fails when the file differs from
+  the code, and the browser test `web/app/src/shared/value-words.test.ts` fails when the screen
+  writes a case differently. A reviewer does not record these as findings; any other pair is a
+  finding.
 - **A magic number or string** that names a rule (a limit, a size, a timeout, a key) instead
   of a named constant from its single home.
 - **Common bad patterns:** a function that does several unrelated things; a long parameter
