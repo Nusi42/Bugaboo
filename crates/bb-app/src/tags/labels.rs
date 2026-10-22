@@ -7,9 +7,8 @@
 //! organization, or one project (M3-F122); labels that sit in no group belong to the whole
 //! organization. The name of a group is used once among the groups that can meet in one project
 //! (`bb_core::offer::can_meet`); the name of a label once in a group (and once among the labels
-//! that sit in no group), without regard to capitals. A place has its own limits of groups and
-//! labels. A label
-//! is retired, never deleted, except by combining it with another one: old issues keep it and new
+//! that sit in no group), without regard to capitals and to the spaces between the words. A place
+//! has its own limits of groups and labels. A label is retired, never deleted, except by combining it with another one: old issues keep it and new
 //! ones are not offered it. A group can only be a *Pick one* group, and a label can only join one,
 //! when no issue would then hold two labels of it.
 //!
@@ -66,22 +65,6 @@ impl Catalogue {
             .ok_or(ErrorCode::NotFound)
     }
 
-    /// Whether another label has this name in the group (or among those in no group).
-    fn label_name_taken(
-        &self,
-        name: &str,
-        group: Option<LabelGroupId>,
-        except: Option<LabelId>,
-    ) -> bool {
-        name_among(
-            self.labels
-                .iter()
-                .filter(|other| Some(other.id) != except && other.group == group)
-                .map(|other| other.name.as_str()),
-            name,
-        )
-    }
-
     /// The project a label's group was made in; none for a label in no group.
     fn owner_of(&self, group: Option<LabelGroupId>) -> Result<Option<ProjectId>, ErrorCode> {
         group.map_or(Ok(None), |group| {
@@ -103,8 +86,26 @@ impl Catalogue {
     }
 }
 
+/// Whether another label than `except` has this name in the group (or among those in no group),
+/// without regard to capitals and to the spaces between the words. The use cases ask it on what
+/// they read before the lock, and again inside the change on what is stored now.
+fn label_name_taken(
+    labels: &[Label],
+    name: &str,
+    group: Option<LabelGroupId>,
+    except: Option<LabelId>,
+) -> bool {
+    name_among(
+        labels
+            .iter()
+            .filter(|other| Some(other.id) != except && other.group == group)
+            .map(|other| other.name.as_str()),
+        name,
+    )
+}
+
 /// Whether another group than `except` that can meet this one in a project already has the name,
-/// without regard to capitals.
+/// without regard to capitals and to the spaces between the words.
 fn group_name_taken(
     groups: &[LabelGroup],
     tree: &Tree,
