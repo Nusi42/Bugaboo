@@ -220,6 +220,7 @@ body {
   font-family: var(--font);
   font-size: var(--fs-ui);
   line-height: var(--lh-body);
+  text-overflow: ellipsis;
 }
 
 [data-part="field.input"][data-variant~="multiline"] {

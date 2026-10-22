@@ -810,9 +810,12 @@ part "field.description" {
     line-height "$lh-body"
 }
 
+// A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
+// review of M4: "Alder Street Baker|y" in the Details).
 part "field.input" {
     use "input-box"
     line-height "$lh-body"
+    text-overflow ellipsis
 }
 
 part "field.input[variant=multiline]" {
