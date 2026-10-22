@@ -15,16 +15,16 @@ use bb_core::issue::Priority;
 use bb_core::message::{self, Message};
 use bb_core::own_fields::FieldType;
 use bb_core::settings::{
-    DEVICE, Layers, REGION_DATE_FORMAT, REGION_NUMBER_FORMAT, REGION_TIME_ZONE, Setting, Text,
+    DATE_FORMAT_DAY_MONTH_YEAR, DATE_FORMAT_MONTH_DAY_YEAR, DEVICE, Layers, NUMBER_FORMAT_COMMA,
+    NUMBER_FORMAT_SPACE, REGION_DATE_FORMAT, REGION_NUMBER_FORMAT, REGION_TIME_ZONE, Setting, Text,
 };
+use bb_core::time::{MINUTES_PER_HOUR, SECONDS_PER_MINUTE};
 use bb_core::workflow::starter::STARTERS;
 use jiff::Timestamp;
 use jiff::civil::Date;
 use jiff::tz::TimeZone;
 use serde_json::Value;
 
-const SECONDS_PER_MINUTE: f64 = 60.0;
-const MINUTES_PER_HOUR: f64 = 60.0;
 const HOURS_ON_A_CLOCK: i8 = 12;
 /// The digits in a group of a big number.
 const GROUP: usize = 3;
@@ -87,16 +87,16 @@ impl Region {
         time_zone: Option<&str>,
     ) -> Self {
         let dates = match date_format {
-            Some("day-month-year") => DateOrder::DayMonthYear,
-            Some("month-day-year") => DateOrder::MonthDayYear,
+            Some(DATE_FORMAT_DAY_MONTH_YEAR) => DateOrder::DayMonthYear,
+            Some(DATE_FORMAT_MONTH_DAY_YEAR) => DateOrder::MonthDayYear,
             _ => DateOrder::YearMonthDay,
         };
         let numbers = match number_format {
-            Some("comma") => NumberMarks {
+            Some(NUMBER_FORMAT_COMMA) => NumberMarks {
                 group: ".",
                 decimal: ",",
             },
-            Some("space") => NumberMarks {
+            Some(NUMBER_FORMAT_SPACE) => NumberMarks {
                 group: "\u{202F}",
                 decimal: ",",
             },
@@ -283,9 +283,10 @@ fn typed_words(kind: FieldType, value: &Value, region: &Region) -> Option<String
 /// Seconds as "2h 5m", "45m" or "0m": whole minutes; a part of a second is dropped like the rest of
 /// a minute.
 fn duration_text(seconds: f64) -> String {
-    let minutes_all = (seconds / SECONDS_PER_MINUTE).floor();
-    let hours = (minutes_all / MINUTES_PER_HOUR).floor();
-    let minutes = minutes_all - hours * MINUTES_PER_HOUR;
+    let (per_minute, per_hour) = (f64::from(SECONDS_PER_MINUTE), f64::from(MINUTES_PER_HOUR));
+    let minutes_all = (seconds / per_minute).floor();
+    let hours = (minutes_all / per_hour).floor();
+    let minutes = minutes_all - hours * per_hour;
     let hour = Message::from(message::FIELDS_UNIT_HOUR).render();
     let minute = Message::from(message::FIELDS_UNIT_MINUTE).render();
     if hours == 0.0 {

@@ -27,14 +27,24 @@ const ISSUE_VIEW_CHOICES: &[Choice] = &[
     Choice::new("panel", message::APPEARANCE_ISSUE_VIEW_PANEL),
 ];
 
+/// The value of *Date format* for day, month, year.
+pub const DATE_FORMAT_DAY_MONTH_YEAR: &str = "day-month-year";
+/// The value of *Date format* for month, day, year.
+pub const DATE_FORMAT_MONTH_DAY_YEAR: &str = "month-day-year";
+
+/// The value of *Number format* for a comma before the decimals.
+pub const NUMBER_FORMAT_COMMA: &str = "comma";
+/// The value of *Number format* for a space between groups and a comma before the decimals.
+pub const NUMBER_FORMAT_SPACE: &str = "space";
+
 const DATE_FORMAT_CHOICES: &[Choice] = &[
     Choice::new("device", message::THEME_DEVICE),
     Choice::new(
-        "day-month-year",
+        DATE_FORMAT_DAY_MONTH_YEAR,
         message::SETTING_REGION_DATE_FORMAT_DAY_MONTH_YEAR,
     ),
     Choice::new(
-        "month-day-year",
+        DATE_FORMAT_MONTH_DAY_YEAR,
         message::SETTING_REGION_DATE_FORMAT_MONTH_DAY_YEAR,
     ),
     Choice::new(
@@ -46,8 +56,14 @@ const DATE_FORMAT_CHOICES: &[Choice] = &[
 const NUMBER_FORMAT_CHOICES: &[Choice] = &[
     Choice::new("device", message::THEME_DEVICE),
     Choice::new("point", message::SETTING_REGION_NUMBER_FORMAT_POINT),
-    Choice::new("comma", message::SETTING_REGION_NUMBER_FORMAT_COMMA),
-    Choice::new("space", message::SETTING_REGION_NUMBER_FORMAT_SPACE),
+    Choice::new(
+        NUMBER_FORMAT_COMMA,
+        message::SETTING_REGION_NUMBER_FORMAT_COMMA,
+    ),
+    Choice::new(
+        NUMBER_FORMAT_SPACE,
+        message::SETTING_REGION_NUMBER_FORMAT_SPACE,
+    ),
 ];
 
 const FIRST_DAY_CHOICES: &[Choice] = &[
