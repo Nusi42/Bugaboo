@@ -7,7 +7,7 @@ export { ProjectSettingsPage } from "./ProjectSettingsPage.tsx";
 export { ProjectsPage, type ProjectsPageProps } from "./ProjectsPage.tsx";
 export { registerProjects } from "./register.tsx";
 export { ProjectGate, type ProjectGateProps } from "./ProjectGate.tsx";
-export { ProjectTabs } from "./ProjectTabs.tsx";
+export { ProjectSettingsFrame } from "./ProjectSettingsFrame.tsx";
 export type { OneProject } from "./use-projects.ts";
 export { linesOf, useProject, useProjectList, type ProjectLine } from "./use-projects.ts";
 export { OfferedHere, type OfferedHereProps } from "./OfferedHere.tsx";

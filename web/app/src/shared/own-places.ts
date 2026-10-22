@@ -10,7 +10,8 @@ export const ownPlaces: readonly Place[] = [
     path: paths.notifications,
     name: "nav.notifications",
     icon: iconName.bell,
-    parent: paths.home,
+    // A destination of the bottom bar of a phone, like the start page: it has no Back.
+    parent: null,
     listed: true,
   },
   {

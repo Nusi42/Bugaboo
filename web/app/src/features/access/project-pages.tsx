@@ -3,7 +3,7 @@ import { Card, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { mayOpenProjectPage, projectPages, type ProjectPage } from "../../shared/project-pages.ts";
-import { ProjectTabs, type OneProject } from "../projects/index.ts";
+import { ProjectSettingsFrame, type OneProject } from "../projects/index.ts";
 import { NotFoundPage } from "../shell/index.ts";
 import { CheckAccessView } from "./CheckAccessView.tsx";
 import { FieldPermissionsTable, PeopleVisibilityTable } from "./tables.tsx";
@@ -23,15 +23,14 @@ function ProjectFrame({ project, page, heading, intro, children }: ProjectFrameP
     return <NotFoundPage />;
   }
   return (
-    <div {...partOf(part.stack)}>
-      <ProjectTabs project={project} />
+    <ProjectSettingsFrame project={project}>
       <Card heading={heading} level={1}>
         <div {...partOf(part.stack)}>
           <p {...partOf(part.muted)}>{intro}</p>
           {children}
         </div>
       </Card>
-    </div>
+    </ProjectSettingsFrame>
   );
 }
 
@@ -41,8 +40,12 @@ export function ProjectFieldPermissionsPage({ project }: { readonly project: One
     <ProjectFrame
       project={project}
       page={projectPages.fields}
-      heading={t("field-permissions.project-title", { project: project.project.name })}
-      intro={t("field-permissions.intro-project", { project: project.project.name })}
+      heading={t("field-permissions.project-title", {
+        project: project.project.name,
+      })}
+      intro={t("field-permissions.intro-project", {
+        project: project.project.name,
+      })}
     >
       <FieldPermissionsTable project={project.project.id} />
     </ProjectFrame>
@@ -55,8 +58,12 @@ export function ProjectPeopleVisibilityPage({ project }: { readonly project: One
     <ProjectFrame
       project={project}
       page={projectPages.people}
-      heading={t("people-visibility.project-title", { project: project.project.name })}
-      intro={t("people-visibility.intro-project", { project: project.project.name })}
+      heading={t("people-visibility.project-title", {
+        project: project.project.name,
+      })}
+      intro={t("people-visibility.intro-project", {
+        project: project.project.name,
+      })}
     >
       <PeopleVisibilityTable project={project.project.id} />
     </ProjectFrame>
@@ -69,7 +76,9 @@ export function ProjectCheckAccessPage({ project }: { readonly project: OneProje
     <ProjectFrame
       project={project}
       page={projectPages.check}
-      heading={t("check-access.project-title", { project: project.project.name })}
+      heading={t("check-access.project-title", {
+        project: project.project.name,
+      })}
       intro={t("check-access.intro")}
     >
       <CheckAccessView project={project.project.id} />

@@ -41,8 +41,14 @@ function FollowButton({ issue }: { readonly issue: string }) {
   const params = { params: { path: { issue } } } as const;
   const following = state.data?.following === true;
   const reason = state.data?.reason;
+  // One line: the state with the reason, and the button that turns it round.
+  const said =
+    reason === undefined || reason === null
+      ? t("followers.following")
+      : t("followers.following-because", { reason: t(reasonMessage[reason]) });
   return (
     <>
+      {following ? <span {...partOf(part.muted)}>{said}</span> : null}
       <Button
         look={buttonLook.quiet}
         isPending={follow.isPending || leave.isPending}
@@ -56,10 +62,6 @@ function FollowButton({ issue }: { readonly issue: string }) {
       >
         {following ? t("followers.stop") : t("followers.follow")}
       </Button>
-      {following ? <span {...partOf(part.muted)}>{t("followers.following")}</span> : null}
-      {reason === undefined || reason === null ? null : (
-        <span {...partOf(part.muted)}>{t(reasonMessage[reason])}</span>
-      )}
       {follow.isError ? <Alert tone={alertTone.danger}>{messageOf(follow.error)}</Alert> : null}
     </>
   );

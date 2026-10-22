@@ -708,18 +708,21 @@ part "button[variant=quiet]" {
     border-color transparent
     background transparent
     color "$accent-fg"
-}
-
-// One start edge (R1): a text button that begins a line stands where the text around it starts,
-// so it hangs back by its own padding (the arrow of the bar, the first button of a row of the
-// Details, "Change" under a name, the toolbar of a comment, the buttons of a window's footer).
-part "button[variant=quiet]:first-child" {
     use "hang-start"
 }
 
+// One start edge (R1) and one end edge: a text button hangs back by its own padding, so its words
+// stand on the edge of the text around it wherever the button is: first in a row, alone on a line
+// that wrapped, or under another button. Where it ends a row it hangs over the end edge by the
+// same amount (the review of M4, A3). Beside text on a computer the row it stands in steps forward
+// by the same amount. This is the one rule; no screen hangs a button back by itself.
+part "button[variant=quiet]:last-child" {
+    margin-inline-end "calc(-1 * $pad-control)"
+}
+
 // An icon has no padding to hang back by.
-part "button[variant=quiet][variant=square]:first-child" {
-    margin-inline-start 0
+part "button[variant=quiet][variant=square]" {
+    margin-inline 0
 }
 
 // An entry of a list of actions (the status list, *More*): its words start at the start edge, and it
@@ -2853,23 +2856,47 @@ part "projects.alert-line" {
     margin 0
 }
 
-// The pages of a project's settings in one row that scrolls sideways instead of wrapping into rows of
-// links (the review of M4, B project settings); the page that is open is marked, not underlined (R8).
+// The pages of a project's settings as a list of links at the side of the page, the way the
+// settings of the organization are, so no page is cut off and the open one is always seen (the
+// review of M4, B project settings). On a phone the list stands above the page, as wide as it.
+part "projects.settings" {
+    display flex
+    align-items flex-start
+    gap "$space-5"
+}
+
+part "projects.settings[variant=phone]" {
+    flex-direction column
+    align-items stretch
+    gap "$space-3"
+}
+
+part "projects.page" {
+    flex 1
+    min-width 0
+}
+
 part "projects.tabs" {
     use "list-reset"
     display flex
+    flex-direction column
+    flex none
     gap "$space-1"
-    overflow-x auto
-    border-bottom "$border-width solid $border"
+    width "$size-menu"
+}
+
+part "projects.tabs[variant=phone]" {
+    width "100%"
 }
 
 part "projects.tab" {
-    use "tab-label"
-    display inline-flex
-    align-items center
-    flex none
+    use "touch-row"
+    box-sizing border-box
+    padding "0 $space-3"
+    border-radius "$r-ctl"
+    color "$fg"
+    font-size "$fs-md"
     text-decoration none
-    white-space nowrap
 }
 
 part "projects.tab[hovered]" {
@@ -2877,8 +2904,7 @@ part "projects.tab[hovered]" {
 }
 
 part "projects.tab[current]" {
-    color "$fg"
-    border-bottom-color "$accent"
+    use "current-item"
 }
 
 part "projects.tab[focus-visible]" {
@@ -4399,46 +4425,12 @@ part "markdown.editor" {
     min-width 0
 }
 
-part "markdown.tabs" {
-    display flex
-    gap "$space-1"
-    border-bottom "$border-width solid $border"
-}
-
-part "markdown.tab" {
-    use "tab-label"
-}
-
-part "markdown.tab[hovered]" {
-    background "$bg-hover"
-}
-
-part "markdown.tab[selected]" {
-    color "$fg"
-    border-bottom-color "$accent"
-}
-
-part "markdown.tab[focus-visible]" {
-    use "ring-inside"
-}
-
-// One row that scrolls sideways where it is too narrow, not a row that leaves one button alone on the
-// next line (the review of M4, B issue page).
+// The row of formatting buttons wraps where it is too narrow: nothing is cut off or hidden at the
+// edge (the review of M4, B issue page).
 part "markdown.toolbar" {
     display flex
+    flex-wrap wrap
     gap 0
-    overflow-x auto
-}
-
-part "markdown.toolbar button" {
-    flex none
-}
-
-part "markdown.panel" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    min-width 0
 }
 
 part "markdown.preview" {

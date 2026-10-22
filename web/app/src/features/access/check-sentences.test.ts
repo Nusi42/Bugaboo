@@ -81,7 +81,7 @@ describe("sec_03 what a No access does in plain sentences", () => {
   it("names a person who is shown by role in the middle of a sentence in lower case", () => {
     const reason: Reason = { kind: "no_role_gives_it" };
     expect(reasonSentences({ shown: "role", role: "Guest" }, website, reason)).toEqual([
-      "No role a person with the role Guest has here gives this.",
+      "No role someone (Guest) has here gives this.",
     ]);
     expect(reasonSentences({ shown: "someone" }, website, reason)).toEqual([
       "No role someone has here gives this.",

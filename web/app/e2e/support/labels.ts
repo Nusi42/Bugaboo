@@ -1,6 +1,6 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { type ApiSession } from "./api.ts";
 import { tickBox } from "./issues.ts";
@@ -48,4 +48,12 @@ export async function tickTwo(page: Page): Promise<void> {
   await expect(
     page.getByRole("status").filter({ hasText: t("issues.selected", { count: 2 }) }),
   ).toBeVisible();
+}
+
+/** Adds a tag to an issue in the row of *Tags*: *Add tag* opens the box, the name is typed, *Add tag* adds it. */
+export async function addTag(within: Page | Locator, name: string): Promise<void> {
+  const add = within.getByRole("button", { name: t("labels.add-tag-button"), exact: true });
+  await add.click();
+  await within.getByLabel(t("labels.add-tag"), { exact: true }).fill(name);
+  await add.click();
 }

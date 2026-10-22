@@ -7,7 +7,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { detailRow, expectStatus, issueNote, prepareWeb, startWorking } from "./support/issues.ts";
-import { labelIdOf, showDetails } from "./support/labels.ts";
+import { addTag, labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 
 // Labels and tags (TAG-01, TAG-02, TAG-03, M3 WP-08): the page of the people who look after them,
@@ -62,8 +62,7 @@ test("tag_01 a tag is made by adding it to an issue and found on the page of tag
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-2"));
   await showDetails(page);
-  await page.getByLabel(t("labels.add-tag"), { exact: true }).fill("urgent");
-  await page.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
+  await addTag(page, "urgent");
   await expect(
     listNamed(page, t("labels.tags-heading")).getByText("urgent", { exact: true }),
   ).toBeVisible();
@@ -77,8 +76,7 @@ test("tag_01 a status change right after a tag is added does not conflict", asyn
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-3"));
   await showDetails(page);
-  await page.getByLabel(t("labels.add-tag"), { exact: true }).fill("quick");
-  await page.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
+  await addTag(page, "quick");
   await expect(
     listNamed(page, t("labels.tags-heading")).getByText("quick", { exact: true }),
   ).toBeVisible();
@@ -101,8 +99,7 @@ test("ux_4_4 Tags and Labels are rows of the one list of the Details and change 
   await expect(details.locator("dl")).toHaveCount(1);
   const tags = detailRow(page, t("labels.tags-heading"));
   await expect(tags).toBeVisible();
-  await tags.getByLabel(t("labels.add-tag"), { exact: true }).fill("fresh");
-  await tags.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
+  await addTag(tags, "fresh");
   await expect(tags.getByText("fresh", { exact: true })).toBeVisible();
   // Saved, and Undo, in the row where it happened; Undo takes the tag off again.
   await expect(tags.getByText(new RegExp(`^${t("save.saved")}`, "u"))).toBeVisible();

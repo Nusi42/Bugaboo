@@ -1,6 +1,6 @@
 import { notificationFilterWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Button, buttonLook, Card, Tabs } from "@bugaboo/ui";
+import { Button, buttonLook, Card, Tabs, useLayout } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -25,6 +25,8 @@ const filterName = {
 export function NotificationsPage() {
   usePageTitle(t("notifications.title"));
   const navigate = useNavigate();
+  // The top bar of a phone says it already.
+  const phone = useLayout() === "phone";
   const [filter, setFilter] = useState<Schema<"NotificationFilter">>("all");
   const unread = useUnreadNotifications() ?? 0;
   const readAll = useReadNotifications();
@@ -34,6 +36,7 @@ export function NotificationsPage() {
     <Card
       heading={t("notifications.title")}
       level={1}
+      headingHidden={phone}
       actions={
         <>
           {unread === 0 || newest === undefined ? null : (

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonType, Form, TextField, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, buttonType, Form, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { useTagSuggestions } from "./labels.ts";
@@ -52,13 +52,30 @@ function Suggestions({ project, issueType, text, pick }: SuggestionsProps) {
  */
 export function AddTag({ project, issueType, onAdd, pending }: AddTagProps) {
   const [text, setText] = useState("");
+  const [open, setOpen] = useState(false);
   const empty = text.trim() === "";
+  // A row with no tag in it is one quiet *Add tag* until the person wants to add one (UX §4.4).
+  if (!open) {
+    return (
+      <div {...partOf(part.row)}>
+        <Button
+          look={buttonLook.quiet}
+          onPress={() => {
+            setOpen(true);
+          }}
+        >
+          {t("labels.add-tag-button")}
+        </Button>
+      </div>
+    );
+  }
   return (
     <Form
       onSubmit={() => {
         void onAdd(text.trim()).then((added) => {
           if (added) {
             setText("");
+            setOpen(false);
           }
         });
       }}
@@ -68,6 +85,15 @@ export function AddTag({ project, issueType, onAdd, pending }: AddTagProps) {
       <div {...partOf(part.row)}>
         <Button type={buttonType.submit} isPending={pending} isDisabled={empty}>
           {t("labels.add-tag-button")}
+        </Button>
+        <Button
+          look={buttonLook.quiet}
+          onPress={() => {
+            setText("");
+            setOpen(false);
+          }}
+        >
+          {t("common.cancel")}
         </Button>
       </div>
     </Form>

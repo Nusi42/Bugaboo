@@ -1,4 +1,5 @@
-import { SelectField, type ChangeStatus, type SelectChoice } from "@bugaboo/ui";
+import type { ReactNode } from "react";
+import { SelectField, partOf, part, type ChangeStatus, type SelectChoice } from "@bugaboo/ui";
 
 import { DetailRow } from "./DetailRow.tsx";
 import { readOnlyReason } from "./read-only.ts";
@@ -11,6 +12,8 @@ export interface ChoiceRowProps<Value extends string> {
   readonly canChange: boolean;
   readonly status: ChangeStatus | undefined;
   readonly onPick: (value: Value) => void;
+  /** What stands before the word or the list for a value: the icon of a priority (R5). */
+  readonly lead?: (value: Value, label: string, showWord: boolean) => ReactNode;
 }
 
 /** A field of the Details with a fixed list of words (*Priority*): a list to pick from, or the word and why it is fixed. */
@@ -21,18 +24,24 @@ export function ChoiceRow<Value extends string>({
   canChange,
   status,
   onPick,
+  lead,
 }: ChoiceRowProps<Value>) {
   if (!canChange) {
-    const current = choices.find((choice) => choice.value === value);
+    const label = choices.find((choice) => choice.value === value)?.label ?? value;
     return (
       <DetailRow name={name} reason={readOnlyReason(name)}>
-        {current?.label ?? value}
+        {lead === undefined ? label : lead(value, label, true)}
       </DetailRow>
     );
   }
   return (
     <DetailRow name={name} status={status}>
-      <SelectField hideLabel label={name} choices={choices} value={value} onChange={onPick} />
+      <div {...partOf(part.row)}>
+        {lead === undefined
+          ? null
+          : lead(value, choices.find((choice) => choice.value === value)?.label ?? value, false)}
+        <SelectField hideLabel label={name} choices={choices} value={value} onChange={onPick} />
+      </div>
     </DetailRow>
   );
 }
