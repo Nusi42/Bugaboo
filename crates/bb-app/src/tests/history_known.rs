@@ -469,6 +469,23 @@ async fn two_recipients_in_one_round(
         },
     )
     .await?;
+    // A change both of them may read, so that sam has an e-mail to read at all: the change of the
+    // label shows nothing to him.
+    change_issue(
+        &g.world.ctx(),
+        ChangeIssue {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            version: version_of(&g.world, &g.admin, issue_id).await?,
+            issue_type: None,
+            title: Some("A new title".to_owned()),
+            status: None,
+            priority: None,
+            assigned_to: None,
+            fields: BTreeMap::new(),
+        },
+    )
+    .await?;
     g.world
         .clock
         .advance(bb_core::notification::MAIL_BATCH_SECONDS + 1);
@@ -485,6 +502,8 @@ async fn sec_lm1_what_one_e_mail_of_a_round_may_name_never_reaches_the_next_one(
     for ann_first in [true, false] {
         let (ann, sam) = two_recipients_in_one_round(ann_first).await?;
         assert!(ann.contains("papaya"), "ann knows the group: {ann}");
+        // Sam got his e-mail (it names the issue), and it names neither label.
+        assert!(sam.contains("OTHER-"), "sam got an e-mail: {sam}");
         assert!(!sam.contains("papaya") && !sam.contains("mango"), "{sam}");
     }
     Ok(())
@@ -493,14 +512,35 @@ async fn sec_lm1_what_one_e_mail_of_a_round_may_name_never_reaches_the_next_one(
 #[tokio::test]
 async fn sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it() -> Outcome {
     let g = groups().await?;
+    news_of_fields_everywhere(&g).await?;
     let sam = lead_of(&g.world, "sam@example.test", g.other).await?;
     let issue_id = an_issue(&g.world, g.acme)
         .await
         .map_err(AppError::Internal)?;
-    // A tag limited to ACME is put on the issue and taken off again, and the issue moves to OTHER.
+    // A tag is put on the issue in ACME, and the issue moves to OTHER, where sam follows it.
     let tag = super::scenarios_tags::tagged(&g.world, issue_id, "acme-only")
         .await
         .map_err(AppError::Internal)?;
+    move_issue(
+        &g.world.ctx(),
+        MoveIssue {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            version: version_of(&g.world, &g.admin, issue_id).await?,
+            project: "OTHER".to_owned(),
+        },
+    )
+    .await?;
+    crate::follow::follow_issue(
+        &g.world.ctx(),
+        crate::follow::FollowIssue {
+            session_token: sam.session_token.clone(),
+            issue: issue_id.to_string(),
+        },
+    )
+    .await?;
+    g.world.clock.advance(1);
+    // Then the tag is limited to ACME and taken off: sam hears of the change.
     crate::tags::change_tag(
         &g.world.ctx(),
         crate::tags::ChangeTag {
@@ -522,18 +562,11 @@ async fn sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it() -> O
         },
     )
     .await?;
-    move_issue(
-        &g.world.ctx(),
-        MoveIssue {
-            session_token: g.admin.clone(),
-            issue: issue_id.to_string(),
-            version: version_of(&g.world, &g.admin, issue_id).await?,
-            project: "OTHER".to_owned(),
-        },
-    )
-    .await?;
-    let outside = read(&g.world, &sam.session_token, issue_id).await?;
-    assert!(!outside.contains("acme-only"), "{outside}");
+    // The history, the notifications and the e-mail: sam got them (they name the issue) and none
+    // names the tag.
+    let told = all_that_was_told(&g, &sam, issue_id).await?;
+    assert!(told.contains("OTHER-"), "{told}");
+    assert!(!told.contains("acme-only"), "{told}");
     // The administrator may know every tag, and reads it.
     let inside = read(&g.world, &g.admin, issue_id).await?;
     assert!(inside.contains("acme-only"), "{inside}");
