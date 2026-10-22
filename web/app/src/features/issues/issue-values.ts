@@ -5,6 +5,7 @@ import { listText } from "../../shared/list-text.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 import { known, wordOf } from "../../shared/present.ts";
 import type { IssueDetail } from "./slots.ts";
+import { isRecord } from "../../shared/is-record.ts";
 
 /** The short values of an issue a person changes in place. The description is long text: it has a lock. */
 export interface IssueValues {
@@ -181,9 +182,7 @@ export function valuesOf(change: Readonly<Record<string, unknown>>): IssueValues
   const priority = wordOf(priorityWords, change["priority"]);
   const own = change["fields"];
   return {
-    ...(typeof own === "object" && own !== null && !Array.isArray(own)
-      ? { own: Object.fromEntries(Object.entries(own)) }
-      : {}),
+    ...(isRecord(own) ? { own: Object.fromEntries(Object.entries(own)) } : {}),
     ...(typeof title === "string" ? { title } : {}),
     ...(status === undefined ? {} : { status }),
     ...(priority === undefined ? {} : { priority }),
