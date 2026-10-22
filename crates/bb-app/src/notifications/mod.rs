@@ -18,7 +18,6 @@ mod plan;
 mod read;
 mod store;
 mod types;
-mod value_words;
 
 pub(crate) use handles::give_handle;
 pub use handles::{

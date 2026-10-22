@@ -7,15 +7,17 @@
 //! there is news and where: no title, no comment, no value of a field.
 
 use bb_core::app_paths;
-use bb_core::edit::NoticeKind;
 use bb_core::fields::Field;
 use bb_core::message::{self, Message};
 use bb_core::notification::{MAIL_ENTRIES_MAX, MAIL_TEXT_MAX, NotificationKind};
 use bb_core::text::{plain_line, plain_text};
+use bb_core::wording::{
+    Change, Notice, Region, Renewal, Side, end_sentence, notification_sentences,
+};
 use bb_policy::PersonRef;
+use serde_json::Value;
 
 use super::types::{NotificationItem, NotificationWhat};
-use super::value_words::{Region, list_text, typed_text, word_of};
 use crate::access::ProjectLabel;
 use crate::history::{ChangeValue, FieldChangeView};
 
@@ -30,25 +32,13 @@ pub(crate) struct Composed {
 /// text of Bugaboo: a link or a footer of their making is a quoted line.
 const QUOTE: &str = "> ";
 
-/// What ends a sentence of Bugaboo in an e-mail: the screen says it without, a line of an e-mail
-/// has it.
-const SENTENCE_END: &str = ".";
-
 /// What ends the line before a comment that is quoted below it.
 const LEAD_IN: &str = ":";
 
-/// What already ends a sentence: a value of a person may end in one of these, then the sentence
-/// gets no second mark.
-const ENDS: [char; 3] = ['.', '?', '!'];
-
-/// A sentence of the screen as a line of an e-mail.
+/// A sentence of the screen as a line of an e-mail: the screen says it without a full stop, a line
+/// of an e-mail has one (unless the sentence ends in a mark already).
 fn sentence_of(message: &Message) -> String {
-    let text = message.render();
-    if text.ends_with(ENDS) {
-        text
-    } else {
-        format!("{text}{SENTENCE_END}")
-    }
+    end_sentence(&message.render())
 }
 
 /// Text of a person for the middle of a line.
@@ -85,26 +75,32 @@ fn who_inside(person: &PersonRef) -> String {
     }
 }
 
-/// One side of a change in words, as the history of the issue words it; `None` when the side holds
-/// no value.
-fn side_text(field: Option<Field>, value: Option<&ChangeValue>, region: &Region) -> Option<String> {
-    let text = match value? {
-        ChangeValue::Text { text } => word_of(field, text),
-        ChangeValue::Names { names } => {
-            list_text(&names.iter().map(|name| clean(name)).collect::<Vec<_>>())
-        }
-        ChangeValue::People { people } if people.is_empty() => {
-            Message::from(message::HISTORY_PEOPLE_NONE).render()
-        }
-        ChangeValue::People { people } => {
-            list_text(&people.iter().map(who_inside).collect::<Vec<_>>())
-        }
-        ChangeValue::Typed { kind, value } => typed_text(*kind, value, region)?,
-        ChangeValue::Issue { issue } => issue.key.clone(),
-        ChangeValue::Project { project } => project.name.clone(),
-    };
-    let text = clean(&text);
-    (!text.is_empty()).then_some(text)
+/// One side of a change, as the wording of the app takes it; `None` when the side holds no value.
+/// The words of a person are cleaned for the middle of a line.
+fn side_of(value: Option<&ChangeValue>, region: &Region) -> Option<Side> {
+    Some(match value? {
+        ChangeValue::Text { text } => Side::Text { text: clean(text) },
+        ChangeValue::Names { names } => Side::Names {
+            names: names.iter().map(|name| clean(name)).collect(),
+        },
+        ChangeValue::People { people } => Side::People {
+            people: people.iter().map(who_inside).collect(),
+        },
+        ChangeValue::Typed { kind, value } => Side::Typed {
+            kind: *kind,
+            value: match value {
+                Value::String(text) => Value::String(clean(text)),
+                other => other.clone(),
+            },
+            worded: region.worded_for_mail(*kind, value),
+        },
+        ChangeValue::Issue { issue } => Side::Plain {
+            text: issue.key.clone(),
+        },
+        ChangeValue::Project { project } => Side::Plain {
+            text: clean(&project.name),
+        },
+    })
 }
 
 /// What a field is called: the name of an own field, or the name from the catalogue.
@@ -116,20 +112,15 @@ fn field_name(change: &FieldChangeView) -> String {
     }
 }
 
-/// The line about one change of a field: the sentence of the history of the issue, which the
-/// screen says too, with a full stop.
-fn change_line(by: Option<&PersonRef>, change: &FieldChangeView, region: &Region) -> String {
-    let (by, field_name) = (who(by), field_name(change));
-    let field = Field::from_code(&change.field);
-    let before = side_text(field, change.before.as_ref(), region);
-    let after = side_text(field, change.after.as_ref(), region);
-    let sentence = match (before, after) {
-        (Some(before), Some(after)) => message::history_changed(after, before, field_name, by),
-        (None, Some(after)) => message::history_set(after, field_name, by),
-        (Some(_), None) => message::history_cleared(field_name, by),
-        (None, None) => message::history_changed_long_text(field_name, by),
-    };
-    sentence_of(&sentence)
+/// One change of a field as the wording of the app takes it.
+fn change_of(by: Option<&PersonRef>, change: &FieldChangeView, region: &Region) -> Change {
+    Change {
+        who: who(by),
+        field: change.field.clone(),
+        field_name: field_name(change),
+        before: side_of(change.before.as_ref(), region),
+        after: side_of(change.after.as_ref(), region),
+    }
 }
 
 /// The lines about one notification: the sentences the screen says (`notifications.*`, the
@@ -160,49 +151,45 @@ fn lines_about(
     kind: NotificationKind,
     region: &Region,
 ) -> Vec<String> {
-    match (what, kind) {
-        (NotificationWhat::Comment { comment }, kind) => vec![
-            format!(
-                "{}{LEAD_IN}",
-                if kind == NotificationKind::Mentioned {
-                    message::notifications_mentioned(who(by))
-                } else {
-                    message::notifications_commented(who(by))
-                }
-                .render()
-            ),
-            quoted(&comment.text),
-        ],
-        (NotificationWhat::Changes { fields }, _) => fields
-            .iter()
-            .map(|change| change_line(by, change, region))
-            .collect(),
-        (NotificationWhat::EditNotice { notice, .. }, _) => vec![sentence_of(&match notice {
-            NoticeKind::FinishAsked => message::notifications_finish_asked(who(by)),
-            NoticeKind::TakenOver => message::notifications_taken_over(who(by)),
-            NoticeKind::Released => message::notifications_released(who(by)),
-        })],
-        (NotificationWhat::RunEnded { done, .. }, _) => {
-            vec![sentence_of(&Message::from(if *done {
-                message::NOTIFICATIONS_RUN_DONE
-            } else {
-                message::NOTIFICATIONS_RUN_FAILED
-            }))]
+    let mut notice = Notice {
+        kind,
+        who: who(by),
+        comment: false,
+        changes: Vec::new(),
+        notice: None,
+        run_done: None,
+        renewal: None,
+    };
+    match what {
+        NotificationWhat::Comment { .. } => notice.comment = true,
+        NotificationWhat::Changes { fields } => {
+            notice.changes = fields
+                .iter()
+                .map(|change| change_of(by, change, region))
+                .collect();
         }
-        (NotificationWhat::IssueIdsFailed { project }, _) => {
-            vec![sentence_of(&match project {
-                ProjectLabel::Visible { name, .. } => {
-                    message::notifications_issue_ids_failed(clean(name))
-                }
-                ProjectLabel::Hidden => {
-                    Message::from(message::NOTIFICATIONS_ISSUE_IDS_FAILED_HIDDEN)
-                }
-            })]
+        NotificationWhat::EditNotice { notice: edit, .. } => notice.notice = Some(*edit),
+        NotificationWhat::RunEnded { done, .. } => notice.run_done = Some(*done),
+        NotificationWhat::IssueIdsFailed { project } => {
+            notice.renewal = Some(Renewal {
+                project: match project {
+                    ProjectLabel::Visible { name, .. } => Some(clean(name)),
+                    ProjectLabel::Hidden => None,
+                },
+            });
         }
-        (NotificationWhat::Plain, NotificationKind::Assigned) => {
-            vec![sentence_of(&message::notifications_assigned(who(by)))]
+        NotificationWhat::Plain => {}
+    }
+    let sentences = notification_sentences(&notice)
+        .into_iter()
+        .map(|said| said.render());
+    match what {
+        // A comment is quoted below the sentence that says who wrote it.
+        NotificationWhat::Comment { comment } => {
+            let lead = sentences.map(|sentence| format!("{sentence}{LEAD_IN}"));
+            lead.chain(std::iter::once(quoted(&comment.text))).collect()
         }
-        (NotificationWhat::Plain, _) => vec![news()],
+        _ => sentences.map(|sentence| end_sentence(&sentence)).collect(),
     }
 }
 

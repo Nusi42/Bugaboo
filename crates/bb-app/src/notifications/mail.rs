@@ -25,10 +25,10 @@ use super::compose::compose;
 use super::plan::wants;
 use super::read::Reading;
 use super::types::NotificationItem;
-use super::value_words::Region;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::mailer::{MailFailure, MailMessage, MailServer};
+use bb_core::wording::Region;
 
 /// What a job of the kind `mail.send` is for. The payload names who and about what, never a text:
 /// the e-mail is made when the job runs, from what the person may see then.

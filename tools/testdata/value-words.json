@@ -1,5 +1,5 @@
 {
-  "about": "How the value of an own field is worded for a person. The e-mail (crates/bb-app/src/notifications/value_words.rs) and the screen (web/app/src/shared/own-value-text.ts) must give the expected words for every case; both tests read this file (M4-F141). A null expected means the value has no words for its kind. Only choices the server can know are here: not device. Also: words of a status or a priority in a change (`words`) and the list of names (`lists`).",
+  "about": "How the value of an own field is worded for a person. This file is written by `cargo xtask gen word-vectors` from crates/bb-core/src/wording/vectors.rs: the expected words are what the server writes. The browser test (web/app/src/shared/value-words.test.ts) reads it and checks that the screen gives the same words for the same value and the same choices under Region (ADR-0033, the amendment about value wording). A null expected means the value has no words for its kind. Only choices the server can know are here: not device.",
   "regions": {
     "usual": {
       "dateFormat": "year-month-day",
@@ -80,6 +80,27 @@
       "expected": null
     },
     {
+      "name": "negative length of time",
+      "kind": "duration",
+      "value": -90,
+      "region": "usual",
+      "expected": null
+    },
+    {
+      "name": "fractional seconds",
+      "kind": "duration",
+      "value": 90.5,
+      "region": "usual",
+      "expected": "1m"
+    },
+    {
+      "name": "seconds just under a minute",
+      "kind": "duration",
+      "value": 59.9,
+      "region": "usual",
+      "expected": "0m"
+    },
+    {
       "name": "whole number with a point",
       "kind": "whole-number",
       "value": 1234567,
@@ -150,6 +171,34 @@
       "expected": "0,25"
     },
     {
+      "name": "decimal tie rounds half up",
+      "kind": "decimal",
+      "value": 0.0625,
+      "region": "usual",
+      "expected": "0.063"
+    },
+    {
+      "name": "decimal tie of shortest digits",
+      "kind": "decimal",
+      "value": 1.0005,
+      "region": "usual",
+      "expected": "1.001"
+    },
+    {
+      "name": "decimal rounds up through nines",
+      "kind": "decimal",
+      "value": 0.9996,
+      "region": "usual",
+      "expected": "1"
+    },
+    {
+      "name": "negative decimal tie",
+      "kind": "decimal",
+      "value": -0.0625,
+      "region": "usual",
+      "expected": "-0.063"
+    },
+    {
       "name": "day, year first",
       "kind": "date",
       "value": "2026-10-05",
@@ -176,6 +225,20 @@
       "value": "someday",
       "region": "usual",
       "expected": null
+    },
+    {
+      "name": "a day that does not exist",
+      "kind": "date",
+      "value": "2026-02-30",
+      "region": "usual",
+      "expected": null
+    },
+    {
+      "name": "a day in a leap year",
+      "kind": "date",
+      "value": "2028-02-29",
+      "region": "german",
+      "expected": "29.02.2028"
     },
     {
       "name": "moment in UTC",
@@ -220,6 +283,13 @@
       "expected": "2026-10-05, 12:00 AM"
     },
     {
+      "name": "moment in the morning on a 12-hour clock",
+      "kind": "date-time",
+      "value": "2026-10-05T09:07:00Z",
+      "region": "usual",
+      "expected": "2026-10-05, 9:07 AM"
+    },
+    {
       "name": "moment that is the day before in Los Angeles",
       "kind": "date-time",
       "value": "2026-10-05T03:15:00Z",
@@ -246,149 +316,6 @@
       "value": "https://example.com",
       "region": "usual",
       "expected": "https://example.com"
-    },
-    {
-      "name": "decimal tie rounds half up",
-      "kind": "decimal",
-      "value": 0.0625,
-      "region": "usual",
-      "expected": "0.063"
-    },
-    {
-      "name": "decimal tie of shortest digits",
-      "kind": "decimal",
-      "value": 1.0005,
-      "region": "usual",
-      "expected": "1.001"
-    },
-    {
-      "name": "decimal rounds up through nines",
-      "kind": "decimal",
-      "value": 0.9996,
-      "region": "usual",
-      "expected": "1"
-    },
-    {
-      "name": "negative decimal tie",
-      "kind": "decimal",
-      "value": -0.0625,
-      "region": "usual",
-      "expected": "-0.063"
-    },
-    {
-      "name": "negative length of time",
-      "kind": "duration",
-      "value": -90,
-      "region": "usual",
-      "expected": null
-    },
-    {
-      "name": "fractional seconds",
-      "kind": "duration",
-      "value": 90.5,
-      "region": "usual",
-      "expected": "1m"
-    },
-    {
-      "name": "seconds just under a minute",
-      "kind": "duration",
-      "value": 59.9,
-      "region": "usual",
-      "expected": "0m"
-    },
-    {
-      "name": "a day that does not exist",
-      "kind": "date",
-      "value": "2026-02-30",
-      "region": "usual",
-      "expected": null
-    },
-    {
-      "name": "a day in a leap year",
-      "kind": "date",
-      "value": "2028-02-29",
-      "region": "german",
-      "expected": "29.02.2028"
-    }
-  ],
-  "words": [
-    {
-      "name": "status open",
-      "field": "status",
-      "text": "open",
-      "expected": "Open"
-    },
-    {
-      "name": "status in-progress",
-      "field": "status",
-      "text": "in-progress",
-      "expected": "In progress"
-    },
-    {
-      "name": "status done",
-      "field": "status",
-      "text": "done",
-      "expected": "Done"
-    },
-    {
-      "name": "status testing",
-      "field": "status",
-      "text": "testing",
-      "expected": "Testing"
-    },
-    {
-      "name": "status in-review",
-      "field": "status",
-      "text": "in-review",
-      "expected": "In review"
-    },
-    {
-      "name": "status wont-fix",
-      "field": "status",
-      "text": "wont-fix",
-      "expected": "Won't fix"
-    },
-    {
-      "name": "status my-own-status",
-      "field": "status",
-      "text": "my-own-status",
-      "expected": "my-own-status"
-    },
-    {
-      "name": "priority low",
-      "field": "priority",
-      "text": "low",
-      "expected": "Low"
-    },
-    {
-      "name": "priority normal",
-      "field": "priority",
-      "text": "normal",
-      "expected": "Normal"
-    },
-    {
-      "name": "priority high",
-      "field": "priority",
-      "text": "high",
-      "expected": "High"
-    },
-    {
-      "name": "priority critical",
-      "field": "priority",
-      "text": "critical",
-      "expected": "Critical"
-    },
-    {
-      "name": "priority urgent!",
-      "field": "priority",
-      "text": "urgent!",
-      "expected": "urgent!"
-    },
-    {
-      "name": "title open",
-      "field": "title",
-      "text": "open",
-      "expected": "open"
     }
   ],
   "lists": [

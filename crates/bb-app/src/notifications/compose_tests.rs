@@ -40,8 +40,18 @@ fn change(field: &str, before: Option<ChangeValue>, after: Option<ChangeValue>) 
     }
 }
 
+/// The line of an e-mail about one change of a field.
 fn line(change: &FieldChangeView) -> String {
-    change_line(Some(&ana()), change, &region())
+    let what = NotificationWhat::Changes {
+        fields: vec![change.clone()],
+    };
+    lines_about(
+        Some(&ana()),
+        &what,
+        NotificationKind::FollowedFields,
+        &region(),
+    )
+    .remove(0)
 }
 
 #[test]
