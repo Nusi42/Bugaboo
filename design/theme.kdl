@@ -2866,61 +2866,6 @@ part "projects.alert-line" {
     margin 0
 }
 
-// The pages of a project's settings as a list of links at the side of the page, the way the
-// settings of the organization are, so no page is cut off and the open one is always seen (the
-// review of M4, B project settings). On a phone the list stands above the page, as wide as it.
-part "projects.settings" {
-    display flex
-    align-items flex-start
-    gap "$space-5"
-}
-
-part "projects.settings[variant=phone]" {
-    flex-direction column
-    align-items stretch
-    gap "$space-3"
-}
-
-part "projects.page" {
-    flex 1
-    min-width 0
-}
-
-part "projects.tabs" {
-    use "list-reset"
-    display flex
-    flex-direction column
-    flex none
-    gap "$space-1"
-    width "$size-menu"
-}
-
-part "projects.tabs[variant=phone]" {
-    width "100%"
-}
-
-part "projects.tab" {
-    use "touch-row"
-    box-sizing border-box
-    padding "0 $space-3"
-    border-radius "$r-ctl"
-    color "$fg"
-    font-size "$fs-md"
-    text-decoration none
-}
-
-part "projects.tab[hovered]" {
-    background "$bg-hover"
-}
-
-part "projects.tab[current]" {
-    use "current-item"
-}
-
-part "projects.tab[focus-visible]" {
-    use "ring-inside"
-}
-
 // ───────────── Long previews (M2C-F80) ─────────────
 
 // The preview of a change that touches many things: the sentence on top, then the things grouped

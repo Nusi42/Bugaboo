@@ -13,7 +13,7 @@ export {
 } from "./quick-search-sources.ts";
 export { mayOpen } from "../../shared/places.ts";
 export { useQuickResults } from "./use-quick-results.ts";
-export { SettingsFrame } from "./SettingsFrame.tsx";
+export { SettingsFrame, TopicList, type TopicListProps } from "./SettingsFrame.tsx";
 export { NavLink, type NavLinkProps } from "./NavItem.tsx";
 export { usePageTrail, type TrailStep } from "./page-trail.ts";
 export {

@@ -1,5 +1,5 @@
-import { t } from "@bugaboo/messages";
-import { Card, useLayout, partOf, part } from "@bugaboo/ui";
+import { t, type MessageKey } from "@bugaboo/messages";
+import { Card, useLayout, partOf, part, type IconName } from "@bugaboo/ui";
 import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
 import { useId } from "react";
 
@@ -24,6 +24,40 @@ function headingId(prefix: string, group: TopicGroup): string {
   return `${prefix}-${group.heading}`;
 }
 
+export interface TopicListProps {
+  /** Where each goes (an address), what it is called and its icon. */
+  readonly topics: readonly {
+    readonly path: string;
+    readonly name: MessageKey;
+    readonly icon: IconName;
+  }[];
+  /** The page that is open, whose topic is marked; none on the page that lists them. */
+  readonly pathname?: string | undefined;
+  /** The ID of what names the list, for screen readers. */
+  readonly labelledBy?: string;
+}
+
+/** A list of topics as links with their icons: the one menu of every settings screen. */
+export function TopicList({ topics, pathname, labelledBy }: TopicListProps) {
+  return (
+    <ul
+      {...partOf(part.settingsFrameTopics)}
+      {...(labelledBy === undefined ? {} : { "aria-labelledby": labelledBy })}
+    >
+      {topics.map((topic) => (
+        <li key={topic.path}>
+          <NavLink
+            href={topic.path}
+            icon={topic.icon}
+            label={t(topic.name)}
+            current={pathname === topic.path}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** The topics grouped under their headings, as links. */
 function Topics({ groups, pathname }: TopicsProps) {
   const names = useId();
@@ -34,18 +68,11 @@ function Topics({ groups, pathname }: TopicsProps) {
           <span id={headingId(names, group)} {...partOf(part.settingsFrameHeading)}>
             {t(group.heading)}
           </span>
-          <ul {...partOf(part.settingsFrameTopics)} aria-labelledby={headingId(names, group)}>
-            {group.topics.map((topic) => (
-              <li key={topic.path}>
-                <NavLink
-                  href={topic.path}
-                  icon={topic.icon}
-                  label={t(topic.name)}
-                  current={pathname === topic.path}
-                />
-              </li>
-            ))}
-          </ul>
+          <TopicList
+            topics={group.topics}
+            pathname={pathname}
+            labelledBy={headingId(names, group)}
+          />
         </li>
       ))}
     </ul>
