@@ -11464,7 +11464,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited", "Reset to default"),
     (
         "layouts.use-inherited-text",
-        "The layout of this place is taken away. The place then uses the layout of the project above. This cannot be undone.",
+        "The layout of this place is taken away. The place then goes back to the layout that counts here without a layout of its own. This cannot be undone.",
     ),
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.many", "{start}, and {last}"),
@@ -11779,11 +11779,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.in-app", "In the app"),
     (
         "notifications.issue-ids-failed",
-        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
+        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again.",
     ),
     (
         "notifications.issue-ids-failed-hidden",
-        "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
+        "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more.",
     ),
     ("notifications.kind", "What happens"),
     (
@@ -13447,7 +13447,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sign-up.check-nothing",
-        "Nothing there? Look in your spam folder and check the address. You can ask for a new link.",
+        "Nothing there? Look in your spam folder and check the address. Press Send me a new link.",
     ),
     (
         "sign-up.check-text",
@@ -13463,7 +13463,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sign-up.resend", "Send me a new link"),
     (
         "sign-up.resend-in",
-        "You can ask for a new link in {minutes, plural, one {# minute} other {# minutes}}.",
+        "You can press Send me a new link in {minutes, plural, one {# minute} other {# minutes}}.",
     ),
     (
         "sign-up.resent",
@@ -13701,7 +13701,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.use-inherited", "Reset to default"),
     (
         "workflows.use-inherited-text",
-        "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status that the workflow of the project above does not have.",
+        "The workflow of this place is taken away, and the place goes back to the workflow that counts here without a workflow of its own. This cannot be undone, and it is refused while it would leave an issue in a status that the workflow then counting does not have.",
     ),
     ("workflows.use-inherited-title", "Reset to default?"),
     (

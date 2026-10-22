@@ -2,7 +2,7 @@
 
 A workflow is used for the whole organization or for a project, and for all issue types or one. The nearest place wins: the project, then the projects above it, then the organization. At one place a workflow for an issue type wins over a workflow for all types. This is the same rule as for [layouts](../layouts/which-layout-counts.md).
 
-So a sub-project uses the workflow of its parent until it gets its own. A project may change the workflow it inherited: *Customize* creates a copy of the workflow that counts there for that place, and the copy counts for the project and its sub-projects. Taking the copy away makes the place follow its parent again.
+So a sub-project uses the workflow of its parent until it gets its own. A project may change the workflow it inherited: *Customize* creates a copy of the workflow that counts there for that place, and the copy counts for the project and its sub-projects. *Reset to default* takes the copy away, and the place goes back to the workflow that counts there without a workflow of its own: for a workflow of one issue type, the workflow for all types of the same place; for a top-level project, the workflow of the whole organization.
 
 A place can also use a workflow that exists already, for example the workflow *Bug* for the issue type *Bug* in one project. Several places may use one workflow, and a change of that workflow counts in all of them. A place can use only a workflow that belongs to that place or to a place above it, so a project never uses the workflow of a project beside it.
 
