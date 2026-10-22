@@ -7,7 +7,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { fieldOf, pickableGroup, preparePickers } from "./support/fields.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
-import { createIssue } from "./support/issues.ts";
+import { createIssue, detailRow } from "./support/issues.ts";
 
 // The pickers of own fields on the issue page (CF-01, M3 WP-05 with WP-06): a person, a group and
 // an issue are chosen in a dialog and shown afterwards, and the page with its fields and a long
@@ -41,7 +41,8 @@ test("cf_01 a person is chosen for Tester, found by name, and shown on the page"
     .click();
   // A person is one choice: the dialog closes and the page shows the name.
   await expect(dialog).toBeHidden();
-  await expect(page.getByText(bob.name)).toBeVisible();
+  // In its row of the Details: the history under the issue names the person too, as it is read at once.
+  await expect(detailRow(page, "Tester").getByText(bob.name)).toBeVisible();
   await admin.dispose();
 });
 
@@ -58,7 +59,7 @@ test("cf_01 a group is chosen for Team and shown on the page", async ({ page, se
     })
     .click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByText(pickableGroup)).toBeVisible();
+  await expect(detailRow(page, "Team").getByText(pickableGroup)).toBeVisible();
   await admin.dispose();
 });
 
