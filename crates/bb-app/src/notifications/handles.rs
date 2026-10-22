@@ -188,9 +188,9 @@ pub async fn change_handle<S: AuthStore>(
     if changed_lately(changed, ctx.now()) {
         return Err(ErrorCode::HandleChangedLately.into());
     }
-    // Judged before anything is looked up: a person who used up the day learns nothing, a free
-    // handle included.
-    ctx.ensure_daily_allowance(TRIES_PURPOSE, person, TAKEN_ANSWERS_PER_DAY)?;
+    // Reserved before anything is looked up, in one step: a person who used up the day learns
+    // nothing, a free handle included, and parallel tries cannot all pass the last answer.
+    ctx.reserve_daily_answer(TRIES_PURPOSE, person, TAKEN_ANSWERS_PER_DAY)?;
     let slot = ctx.reserve_for_person(TRIES_PURPOSE, person)?;
     let owner = ctx
         .store()
@@ -199,12 +199,12 @@ pub async fn change_handle<S: AuthStore>(
         .map_err(failed)?;
     if owner.is_some_and(|owner| owner != person) || ctx.reserved_handles().await?.contains(&handle)
     {
-        // The refused try stays counted: nothing gives it back, and the day counts it too.
-        ctx.spend_daily_answer(TRIES_PURPOSE, person);
+        // The refused try stays counted: nothing gives it back, and the day keeps it too.
         return Err(ErrorCode::NameTaken.into());
     }
     // A handle that is free is no probe.
     ctx.slot_succeeded(slot);
+    ctx.give_back_daily_answer(TRIES_PURPOSE, person);
     let event = ctx.event(
         by(person),
         entity(RecordKind::Person, person),

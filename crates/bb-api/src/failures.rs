@@ -152,34 +152,27 @@ impl FailureLimits {
         Ok(tracker.count == self.limit)
     }
 
-    fn daily_wait_at(&self, key: &str, limit: u32, now: Instant) -> Option<u64> {
-        let key = self.key(key);
-        let mut tables = self.lock();
-        let (began, count) = *tables.dailies.get(&key)?;
-        if now >= began + DAY {
-            tables.dailies.remove(&key);
-            return None;
-        }
-        (count >= limit).then(|| seconds_left(began + DAY, now))
-    }
-
-    fn daily_spend_at(&self, key: &str, now: Instant) {
+    /// Reserves one answer of the day of `key` in one step, under the lock of the table. The day
+    /// is a fixed window from the first answer counted, not a sliding one.
+    fn daily_reserve_at(&self, key: &str, limit: u32, now: Instant) -> Result<(), u64> {
         let key = self.key(key);
         let mut tables = self.lock();
         if tables.dailies.len() >= MAX_KEYS && !tables.dailies.contains_key(&key) {
             tables.dailies.retain(|_, (began, _)| now < *began + DAY);
             if tables.dailies.len() >= MAX_KEYS {
-                // Fail closed: the table is full of running days, so this person is counted as
-                // having used theirs up.
-                tables.dailies.insert(key, (now, u32::MAX));
-                return;
+                // Fail closed: the table is full of running days.
+                return Err(BASE_WINDOW.as_secs());
             }
         }
         let entry = tables.dailies.entry(key).or_insert((now, 0));
         if now >= entry.0 + DAY {
             *entry = (now, 0);
         }
-        entry.1 = entry.1.saturating_add(1);
+        if entry.1 >= limit {
+            return Err(seconds_left(entry.0 + DAY, now));
+        }
+        entry.1 += 1;
+        Ok(())
     }
 
     fn tally_at(&self, key: &str, now: Instant) -> u32 {
@@ -224,12 +217,15 @@ impl FailureLimit for FailureLimits {
         self.tally_at(key, Instant::now())
     }
 
-    fn daily_wait(&self, key: &str, limit: u32) -> Option<u64> {
-        self.daily_wait_at(key, limit, Instant::now())
+    fn daily_reserve(&self, key: &str, limit: u32) -> Result<(), u64> {
+        self.daily_reserve_at(key, limit, Instant::now())
     }
 
-    fn daily_spend(&self, key: &str) {
-        self.daily_spend_at(key, Instant::now());
+    fn daily_release(&self, key: &str) {
+        let key = self.key(key);
+        if let Some(entry) = self.lock().dailies.get_mut(&key) {
+            entry.1 = entry.1.saturating_sub(1);
+        }
     }
 
     fn forget(&self, key: &str) {
@@ -267,18 +263,21 @@ mod tests {
         let failures = FailureLimits::new(10);
         let now = Instant::now();
         for _ in 0..3 {
-            assert_eq!(failures.daily_wait_at("handle:ada", 3, now), None);
-            failures.daily_spend_at("handle:ada", now);
+            assert_eq!(failures.daily_reserve_at("handle:ada", 3, now), Ok(()));
         }
+        // The last one was taken by the step that checked it: the next one waits for the day.
         assert_eq!(
-            failures.daily_wait_at("handle:ada", 3, now + secs(3_600)),
-            Some(23 * 3_600)
+            failures.daily_reserve_at("handle:ada", 3, now + secs(3_600)),
+            Err(23 * 3_600)
         );
-        // Another person has their own day, and a new day starts with the next answer.
-        assert_eq!(failures.daily_wait_at("handle:bob", 3, now), None);
+        // An answer that told nothing is given back; another person has their own day, and a new
+        // day starts with the next answer.
+        failures.daily_release("handle:ada");
+        assert_eq!(failures.daily_reserve_at("handle:ada", 3, now), Ok(()));
+        assert_eq!(failures.daily_reserve_at("handle:bob", 3, now), Ok(()));
         assert_eq!(
-            failures.daily_wait_at("handle:ada", 3, now + DAY + secs(1)),
-            None
+            failures.daily_reserve_at("handle:ada", 3, now + DAY + secs(1)),
+            Ok(())
         );
     }
 
