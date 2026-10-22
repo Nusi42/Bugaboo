@@ -24,7 +24,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 
 use crate::auth::AuthStorage;
-use crate::db::{Database, Row, STATEMENT_ITEMS, Transaction, to_micros};
+use crate::db::{Database, Reader, Row, STATEMENT_ITEMS, Transaction, to_micros};
 use crate::error::{SettingProblem, StoreError};
 use crate::projects::chain_of;
 use crate::schema::{PersonSettingRow, PolicyVersionRow, SettingRow as Columns};
@@ -326,21 +326,48 @@ async fn layers_in(transaction: &mut Transaction, scopes: &Scopes) -> Result<Lay
     }
 
     if let Some(person) = scopes.person {
+        layers.person = person_values(transaction, &[person])
+            .await?
+            .remove(&person)
+            .unwrap_or_default();
+    }
+    Ok(layers)
+}
+
+/// The own settings of these people, the ones that can be read: the one reader of the person layer,
+/// for the settings of one person in a change (`layers_in`) and for those of many at once (the
+/// notifications). A person with none is not in the answer.
+async fn person_values(
+    reader: &mut impl Reader,
+    people: &[UserId],
+) -> Result<BTreeMap<UserId, BTreeMap<String, SettingValue>>, StoreError> {
+    let mut found: BTreeMap<UserId, BTreeMap<String, SettingValue>> = BTreeMap::new();
+    for chunk in people.chunks(STATEMENT_ITEMS) {
         let mut select = Query::select();
         select
-            .columns([PersonSettingRow::Key, PersonSettingRow::Value])
+            .columns([
+                PersonSettingRow::Person,
+                PersonSettingRow::Key,
+                PersonSettingRow::Value,
+            ])
             .from(PersonSettingRow::Table)
-            .and_where(Expr::col(PersonSettingRow::Person).eq(id_bytes(person)));
-        for row in transaction.fetch_all(&select).await? {
+            .and_where(
+                Expr::col(PersonSettingRow::Person)
+                    .is_in(chunk.iter().map(|person| id_bytes(*person))),
+            );
+        for row in reader.fetch_all(&select).await? {
             if let Some((key, value)) = usable(
                 &row.get::<String>(PersonSettingRow::Key)?,
                 &row.get::<String>(PersonSettingRow::Value)?,
             )? {
-                layers.person.insert(key, value);
+                found
+                    .entry(row.id::<UserId>(PersonSettingRow::Person)?)
+                    .or_default()
+                    .insert(key, value);
             }
         }
     }
-    Ok(layers)
+    Ok(found)
 }
 
 /// Stores the value of a setting of the whole organization inside the transaction of a change
@@ -548,33 +575,10 @@ impl SettingsStore for AuthStorage {
         &self,
         people: Vec<UserId>,
     ) -> Result<Vec<(UserId, BTreeMap<String, SettingValue>)>, StoreError> {
-        let mut found: BTreeMap<UserId, BTreeMap<String, SettingValue>> = BTreeMap::new();
-        for chunk in people.chunks(STATEMENT_ITEMS) {
-            let mut select = Query::select();
-            select
-                .columns([
-                    PersonSettingRow::Person,
-                    PersonSettingRow::Key,
-                    PersonSettingRow::Value,
-                ])
-                .from(PersonSettingRow::Table)
-                .and_where(
-                    Expr::col(PersonSettingRow::Person)
-                        .is_in(chunk.iter().map(|person| id_bytes(*person))),
-                );
-            for row in self.database().fetch_all(&select).await? {
-                if let Some((key, value)) = usable(
-                    &row.get::<String>(PersonSettingRow::Key)?,
-                    &row.get::<String>(PersonSettingRow::Value)?,
-                )? {
-                    found
-                        .entry(row.id::<UserId>(PersonSettingRow::Person)?)
-                        .or_default()
-                        .insert(key, value);
-                }
-            }
-        }
-        Ok(found.into_iter().collect())
+        Ok(person_values(&mut self.database(), &people)
+            .await?
+            .into_iter()
+            .collect())
     }
 
     async fn setting_layers_in(
