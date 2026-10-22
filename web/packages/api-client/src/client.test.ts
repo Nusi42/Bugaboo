@@ -138,6 +138,17 @@ describe("ux_07 errors from the server", () => {
     });
   });
 
+  it("carry the seconds the server asks to wait", async () => {
+    const answer = problem("rate_limit.exceeded", "error.rate-limit.exceeded", 429);
+    answer.headers.set("Retry-After", "7");
+    const failure = await failureOf(() => Promise.resolve(answer));
+    expect(failure).toMatchObject({ retryAfterSeconds: 7 });
+    const none = await failureOf(() =>
+      Promise.resolve(problem("rate_limit.exceeded", "error.rate-limit.exceeded", 429)),
+    );
+    expect(none).toMatchObject({ retryAfterSeconds: undefined });
+  });
+
   it("never show a message key the app does not have", async () => {
     const failure = await failureOf(() =>
       Promise.resolve(problem("server.internal", "error.from.the.future", 500)),

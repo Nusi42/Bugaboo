@@ -3,7 +3,7 @@ import { Alert, alertTone, AskDialog, SelectField, partOf, part } from "@bugaboo
 import { useState } from "react";
 
 import { IssueRefLine } from "../relations/index.ts";
-import type { Draft } from "./draft-model.ts";
+import { statusRefOf, type Draft } from "./draft-model.ts";
 import type { Move } from "./use-publish.ts";
 import type { PublishPreview } from "./workflows.ts";
 
@@ -25,7 +25,7 @@ interface Target {
 
 /** The statuses an issue can go to: the ones of the draft, a new one by its name (as a status change names it). */
 function targetsOf(draft: Draft): readonly Target[] {
-  return draft.statuses.map((status) => ({ value: status.key ?? status.name, label: status.name }));
+  return draft.statuses.map((status) => ({ value: statusRefOf(status), label: status.name }));
 }
 
 /** One removed status: how many issues are in it, which of them the person sees, and where they go. */

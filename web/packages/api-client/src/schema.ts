@@ -4161,6 +4161,7 @@ export interface components {
       | "label.not_offered"
       | "workflow.no_such_change"
       | "workflow.not_for_you"
+      | "workflow.not_named"
       | "workflow.only_if"
       | "workflow.cannot_fill"
       | "workflow.status_in_use"
@@ -8118,7 +8119,7 @@ export interface components {
      * @description Why a status change is not allowed.
      * @enum {string}
      */
-    Why: "no-such-change" | "not-for-you" | "only-if" | "cannot-fill";
+    Why: "no-such-change" | "not-for-you" | "not-named" | "only-if" | "cannot-fill";
     /**
      * @description A word of the vocabulary with the message that names it: a kind of people information
      *     or a level.

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
 import { formatAgo } from "../format.ts";
+import { DraftNote } from "./DraftNote.tsx";
 
 export interface DraftOfferedProps {
   /** The sentence that says what the draft is of, with `{when}` already put in. */
@@ -20,14 +20,10 @@ export interface DraftOfferedProps {
 export function DraftOffered({ found, savedAt, now, onContinue, onDrop }: DraftOfferedProps) {
   const when = formatAgo(savedAt, now);
   return (
-    <Alert>
-      <div {...partOf(part.issueNote)}>
-        <span>{found(when)}</span>
-        <Button look={buttonLook.primary} onPress={onContinue}>
-          {t("editing.draft-continue", { when })}
-        </Button>
-        <Button onPress={onDrop}>{t("editing.draft-drop")}</Button>
-      </div>
-    </Alert>
+    <DraftNote
+      text={found(when)}
+      take={{ label: t("editing.draft-continue", { when }), onPress: onContinue }}
+      drop={{ label: t("editing.draft-drop"), onPress: onDrop }}
+    />
   );
 }

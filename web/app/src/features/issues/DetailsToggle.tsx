@@ -22,7 +22,7 @@ export function DetailsToggle({ issue, open, onToggle }: DetailsToggleProps) {
         {open ? t("issues.hide-details") : t("issues.all-details")}
       </Button>
       {open ? null : (
-        <span {...partOf(part.muted)}>
+        <span {...partOf(part.issueDetailsSummary)}>
           <DetailsSummary issue={issue} />
         </span>
       )}

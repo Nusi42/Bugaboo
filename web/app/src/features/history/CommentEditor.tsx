@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { useFilesToComment } from "../files/index.ts";
+import { useAddFiles } from "../files/index.ts";
 import { DraftOffered } from "../../shared/editing/DraftOffered.tsx";
 import { editedThing } from "../../shared/editing/edited-thing.ts";
 import { HeldEditNotice } from "../../shared/editing/HeldEditNotice.tsx";
@@ -27,7 +27,7 @@ export interface CommentEditorProps extends CommentSource {
  */
 export function CommentEditor({ issue, reading, onClose, ...source }: CommentEditorProps) {
   const now = useNow();
-  const addFiles = useFilesToComment(issue, source.comment);
+  const addFiles = useAddFiles(issue, source.comment);
   const long = useCommentText(source, onClose);
   const { phase, offered } = long;
   return (

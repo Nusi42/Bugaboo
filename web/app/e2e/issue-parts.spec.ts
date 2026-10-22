@@ -76,6 +76,18 @@ test("iss_06 a change shows in the history under Changes", async ({ page }) => {
   await expect(page.getByText(/changed Priority from/u)).toBeVisible();
 });
 
+test("iss_06 a change shows in a history that was already open", async ({ page }) => {
+  await signIn(page, ada);
+  await openIssueWithDetails(page, "WEB-2");
+  // The tab is open first: the change made now has to come into the list without a reload.
+  await page.getByRole("tab", { name: t("history.tab-changes"), exact: true }).click();
+  await expect(page.getByText(/changed Priority from/u)).toHaveCount(0);
+  await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
+    label: t("priority.high"),
+  });
+  await expect(page.getByText(/changed Priority from/u)).toBeVisible();
+});
+
 test("iss_07 following can be stopped and started again, and the server keeps it", async ({
   page,
 }) => {

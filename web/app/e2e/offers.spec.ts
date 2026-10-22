@@ -56,7 +56,7 @@ test("iss_02 an administrator limits Bug to Website, and New issue in Lab does n
   await expect(offered.getByText(t("projects.offered-in-everywhere"))).toBeVisible();
   // The whole organization does not offer Bug; Website does.
   await offered
-    .getByRole("button", { name: t("projects.offer-whole-organization"), exact: true })
+    .getByRole("radio", { name: t("projects.offer-whole-organization"), exact: true })
     .click();
   await offered.getByLabel(t("projects.offered-in-state"), { exact: true }).selectOption({
     label: t("projects.offer-state-not"),

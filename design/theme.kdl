@@ -227,6 +227,9 @@ tokens {
     color "bg-hover" daylight="#eceef2" paper="#ede6db" dusk="#333945" midnight="#1e2127"
     color "bg-selected" daylight="#ebe7fb" paper="#dce3eb" dusk="#3c375d" midnight="#242046"
     color "border" daylight="#dfe3e9" paper="#e1d8ca" dusk="#3b414d" midnight="#272a31" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
+    // The edge of a control that is drawn by its edge (a box to tick, the track of a switch): a line a
+    // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked by the `lines` rule of the contrast rules), unlike the dividers.
+    color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" forced="ButtonText"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
     color "fg-muted" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
@@ -242,7 +245,7 @@ tokens {
     color "success" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
     color "success-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
     color "st-ns" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
-    color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#1a1c21"
+    color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#262a31" midnight-more="#1a1c21"
     color "st-ip" daylight="#1d5fd1" paper="#1d6b80" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#14495a" dusk-more="#b3d0ff" midnight-more="#82b1ff"
     color "st-ip-soft" daylight="#e7effc" paper="#dfeef1" dusk="#24365a" midnight="#10244a"
     color "st-done" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
@@ -342,6 +345,11 @@ contrast min=4.5 {
     }
 
     non-text "border" "border-subtle" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
+    non-text "border-control" reason="The edge of a control is a line, not text; it is kept at 3:1 by the `lines` rule below."
+    lines min=3 reason="The edge of a box to tick and of the track of a switch is a line a person has to see: WCAG 1.4.11 asks 3:1 against every surface in every theme." {
+        colors "border-control"
+        on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
+    }
 
     // With the device setting for more contrast.
     more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
@@ -573,6 +581,16 @@ mixin "hang-start" {
     margin-inline-start "calc(-1 * $pad-control)"
 }
 
+// The buttons that answer a question or end a form (R6): quiet buttons stand on the start edge
+// (R1), the one filled button at the end. On a phone they are stacked, the main one first.
+mixin "answer-row" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content flex-end
+    gap "$space-3"
+}
+
 // Text for screen readers only: out of sight, still read.
 mixin "hidden-text" {
     position absolute
@@ -698,6 +716,38 @@ part "button[variant=quiet]" {
     border-color transparent
     background transparent
     color "$accent-fg"
+    use "hang-start"
+}
+
+// One start edge (R1) and one end edge: a text button hangs back by its own padding, so its words
+// stand on the edge of the text around it wherever the button is: first in a row, alone on a line
+// that wrapped, or under another button. Where it ends a row it hangs over the end edge by the
+// same amount (the review of M4, A3). A row that stands beside text on a computer takes the hang
+// away from its quiet buttons (the rule below). This is the one rule; no screen hangs a button back
+// by itself.
+part "button[variant=quiet]:last-child" {
+    margin-inline-end "calc(-1 * $pad-control)"
+}
+
+// An icon has no padding to hang back by.
+part "button[variant=quiet][variant=square]" {
+    margin-inline 0
+}
+
+// Where the buttons stand under text on a phone and beside it on a computer (a file, an item of a list):
+// a quiet one hangs back by its padding on a phone only.
+part "files.actions button[variant=quiet]" "item.actions button[variant=quiet]" {
+    margin-inline-start "$size-phone-hang"
+}
+
+// An entry of a list of actions (the status list, *More*): its words start at the start edge, and it
+// has no box until it is pointed at.
+part "button[variant=item]" {
+    justify-content flex-start
+    border-color transparent
+    background transparent
+    color "$fg"
+    text-align start
 }
 
 part "button[variant=danger]" {
@@ -719,6 +769,15 @@ part "button[disabled]" {
     forced {
         border-color GrayText
     }
+}
+
+// A main button that cannot be pressed yet is not a pale copy of the filled one, whose white words
+// are hard to read: it is a plain box with muted words (the review of M4, A14).
+part "button[variant=primary][disabled]" {
+    opacity 1
+    border-color "$border"
+    background "$bg-sunken"
+    color "$fg-muted"
 }
 
 part "button[state=busy]" {
@@ -756,9 +815,12 @@ part "field.description" {
     line-height "$lh-body"
 }
 
+// A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
+// review of M4: "Alder Street Baker|y" in the Details).
 part "field.input" {
     use "input-box"
     line-height "$lh-body"
+    text-overflow ellipsis
 }
 
 part "field.input[variant=multiline]" {
@@ -865,7 +927,7 @@ part "switch.track" {
     width "calc($space-4 * 2 + $space-1 * 2)"
     height "$space-5"
     padding "$space-1"
-    border "$border-width solid $border"
+    border "$border-width solid $border-control"
     border-radius "$r-card"
     background "$bg-sunken"
 }
@@ -909,7 +971,7 @@ part "checkbox.box" {
     box-sizing border-box
     width "$space-5"
     height "$space-5"
-    border "$border-width solid $border"
+    border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
 }
@@ -1022,6 +1084,17 @@ part "choice-group.input:hover + choice-group.label" "choice-group.input:hover +
 
 part "choice-group.input:focus-visible + choice-group.label" "choice-group.input:focus-visible + theme-picker.tile" {
     use "ring"
+}
+
+// Long words (how a connection is protected) stand under each other on a phone, as wide as the screen,
+// and not as ragged buttons side by side.
+part "app-layout[variant=phone] choice-group.choices[variant=stacked]" {
+    flex-direction column
+    align-items stretch
+}
+
+part "app-layout[variant=phone] choice-group.choices[variant=stacked] choice-group.label" {
+    flex 1
 }
 
 // ───────────── Overlay (sheets, menus, quick search) ─────────────
@@ -1706,9 +1779,13 @@ part "name-value" {
     padding "$space-1 0"
 }
 
+// The name stands at the height of the first line of its value: both are as high as a control and
+// centered in it (R1, the review of M4: the names sat above the middle of their values).
 part "name-value.name" {
+    display flex
+    align-items center
+    min-height "$size-control"
     margin 0
-    padding-top "$space-2"
     color "$fg-muted"
     font-size "$fs-sm"
 }
@@ -1722,6 +1799,22 @@ part "name-value.value" {
     min-height "$size-control"
     margin 0
     font-size "$fs-ui"
+}
+
+// A text of the value that runs over more than one line ("This project has no labels yet.") stands
+// so that its first line is centered in the height of a control, like the name and like a value of
+// one line, and the lines after it follow (the review of M4, B Details).
+part "name-value.value > muted" {
+    padding "calc(($size-control - $fs-base * $lh-body) / 2) 0"
+}
+
+// *Website · Offered* with its sign: the sign stays beside the first line of the words, whatever
+// the words do.
+part "offer-state" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+    min-width 0
 }
 
 // Why a value cannot be changed, with its lock.
@@ -1902,7 +1995,9 @@ part "window.control[variant=close]" {
     border-start-end-radius "$r-card"
 }
 
+// *Back* stands at the start of the title bar, as on a page (R1, UX review of M4, A10).
 part "window.control[variant=back]" {
+    order -1
     width auto
     padding 0 "$pad-control"
     gap "$space-1"
@@ -1947,11 +2042,7 @@ part "window.footer-note button[variant=quiet]" {
 }
 
 part "window.footer-actions" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    justify-content flex-end
-    gap "$space-3"
+    use "answer-row"
 }
 
 // The places to drag: the four edges and the four corners.
@@ -2118,6 +2209,24 @@ part "stack" {
     min-width 0
 }
 
+// Things under each other on the start edge, with text buttons among them: a button that stands
+// in the column hangs back by its padding, so its text starts where the text above starts (R1).
+part "start-column" {
+    display flex
+    flex-direction column
+    align-items flex-start
+    gap "$space-1"
+    min-width 0
+}
+
+// A value of a row of the Details that is a column (the people of *Assigned to*): each line is as
+// high as a control, so the first one is level with its name.
+part "start-column.line" {
+    display flex
+    align-items center
+    min-height "$size-control"
+}
+
 part "text" {
     margin 0
     font-size "$fs-md"
@@ -2185,13 +2294,14 @@ part "item.main" {
 }
 
 // The buttons of an item whose words are `item.main`: on a phone they stand under the words, so a
-// quiet one hangs back by its own padding and its text starts where the words start (R1).
+// quiet one hangs back by its own padding and its text starts where the words start (R1); beside
+// the words, on a computer, it does not. The row itself does not move: a button that is not quiet
+// stands where its box begins.
 part "item.actions" {
     display flex
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    margin-inline-start "$size-phone-hang"
 }
 
 part "item.title" {
@@ -2302,6 +2412,22 @@ part "app-layout[variant=phone] card[variant=open-on-phone]" {
     box-shadow none
 }
 
+// The heading and, at the end of its row, what can be done with the card (R6: at the end of the header).
+part "card.header" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-4"
+}
+
+part "card.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
 part "card.heading" {
     margin 0
     font-size "$fs-lg"
@@ -2344,9 +2470,22 @@ part "save-status" {
     use "quiet-text"
 }
 
+// Red means something did not happen (R4); a change that is not saved yet only says so.
 part "save-status[state=not-saved]" {
-    color "$danger"
+    color "$fg"
     font-weight "$weight-bold"
+}
+
+// The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).
+part "save-bar" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-3"
+}
+
+part "save-bar button[variant=primary]" {
+    margin-inline-start auto
 }
 
 part "skeleton.line" {
@@ -2419,6 +2558,20 @@ part "confirm.dialog" {
     outline none
 }
 
+// What the question says and asks for scrolls by itself where the screen is not tall enough (a phone), so
+// the answers below it never leave the screen (the review of M4, A1).
+part "confirm.body" {
+    display flex
+    flex-direction column
+    flex 1
+    gap "$space-4"
+    min-height 0
+}
+
+part "overlay.modal[variant=full] confirm.body" {
+    overflow-y auto
+}
+
 part "confirm.title" {
     margin 0
     font-size "$fs-lg"
@@ -2426,15 +2579,32 @@ part "confirm.title" {
 }
 
 part "confirm.actions" {
-    display flex
-    flex-wrap wrap
-    justify-content flex-end
-    gap "$space-3"
+    use "answer-row"
 }
 
+// The text buttons of an answer row stand on the start edge, the others at the end.
+part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" {
+    margin-inline-end auto
+}
+
+// On a phone the question starts at the top and its answers are at the bottom, one under the
+// other and as wide as the screen, the main one first (the thumb reaches it).
 part "overlay.modal[variant=full] confirm.dialog" {
     flex 1
-    justify-content center
+    min-height 0
+}
+
+part "overlay.modal[variant=full] confirm.actions" {
+    margin-top auto
+}
+
+part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" {
+    flex-direction column-reverse
+    align-items stretch
+}
+
+part "overlay[variant=full] confirm.actions button[variant=quiet]:first-child" "overlay[variant=full] window.footer-actions button[variant=quiet]:first-child" {
+    margin-inline 0
 }
 
 // ───────────── Setup ─────────────
@@ -2446,19 +2616,6 @@ part "setup.progress" {
 }
 
 // ───────────── Sign-in ─────────────
-
-part "sign-in.reasons" {
-    display flex
-    flex-direction column
-    gap "$space-3"
-}
-
-part "sign-in.links" {
-    display flex
-    flex-wrap wrap
-    justify-content space-between
-    gap "$space-2 $space-4"
-}
 
 // ───────────── Admin (the status page) ─────────────
 
@@ -2506,13 +2663,6 @@ part "settings.locked" {
 
 part "settings.locked-value" {
     color "$fg"
-}
-
-part "settings.edit" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    max-width "$size-form"
 }
 
 // ───────────── Access ─────────────
@@ -2587,14 +2737,6 @@ part "access.cell" {
 
 part "access.cell > field" {
     width "100%"
-}
-
-part "access.preview" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    padding "$space-3"
-    use "sunken-box"
 }
 
 part "access.preview-line" {
@@ -2730,13 +2872,6 @@ part "projects.preview" {
 
 part "projects.alert-line" {
     margin 0
-}
-
-part "projects.tabs" {
-    display flex
-    flex-wrap wrap
-    gap "$space-4"
-    use "list-reset"
 }
 
 // ───────────── Long previews (M2C-F80) ─────────────
@@ -3011,13 +3146,6 @@ part "access-keys.legend" {
     font-weight "$weight-bold"
 }
 
-part "access-keys.topic" {
-    margin "$space-2 0 0"
-    color "$fg-muted"
-    font-size "$fs-base"
-    font-weight "$weight-bold"
-}
-
 // ───────────── Shell ─────────────
 
 // What the sheets, the menus and the panels of the shell have in common.
@@ -3087,31 +3215,15 @@ part "shell.brand" {
     color "$accent-fg"
 }
 
-part "shell.nav" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    gap "$space-1 $space-3"
-    use "list-reset"
-}
-
-part "shell.who" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    gap "$space-2 $space-3"
-    color "$fg-muted"
-    font-size "$fs-base"
-}
-
 part "shell.content:focus" {
     outline none
 }
 
+// The narrow content of the pages before sign-in starts on the same edge as the name of the product
+// above it and the choice of theme below it (R1), not centered between them.
 part "shell.narrow" {
     width "100%"
     max-width "$size-form"
-    margin 0 auto
 }
 
 part "shell.footer" {
@@ -3277,6 +3389,7 @@ part "sidebar.who" {
 }
 
 part "nav-item" {
+    position relative
     use "touch-row"
     box-sizing border-box
     width "100%"
@@ -3627,16 +3740,6 @@ part "focus-view.bar" {
     gap "$space-2"
 }
 
-// One start edge (R1): the arrow of the first button stands where the text below it starts.
-part "focus-view.bar button[variant=quiet]:first-child" {
-    use "hang-start"
-}
-
-// The same for a quiet button that begins the value of a row of the Details.
-part "name-value.value button[variant=quiet]:first-child" {
-    use "hang-start"
-}
-
 // ───────────── Issues (features/issues, packages/ui: InPlaceText, ActionMenu) ─────────────
 //
 // The issue page (UX §4.4) and the list of a project's issues (UX §4.2). The layout of the page
@@ -3680,6 +3783,24 @@ part "in-place.input:focus" {
 }
 
 // The list of actions that opens from a button, inside the one overlay.
+// The list of an action menu on a computer opens under its button.
+part "popover" {
+    use "floating-box"
+    min-width "$size-name"
+    padding "$space-2"
+    border-radius "$r-card"
+    color "$fg"
+}
+
+// Starts where the icon of an entry starts: the entry has a border of its own besides its padding.
+part "action-menu.title" {
+    margin 0
+    padding "$space-2 calc($pad-control + $border-width)"
+    color "$fg-muted"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+}
+
 part "action-menu" {
     use "list-reset"
     display flex
@@ -3738,6 +3859,17 @@ part "issue-details-toggle" {
     flex-wrap wrap
     align-items center
     gap "$space-2" "$space-3"
+}
+
+// What the closed button says (who it is assigned to, the priority): one size for the words and the
+// priority beside them, which are the size of every row (the review of M4, B issue page).
+part "issue-details-summary" {
+    display inline-flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    color "$fg-muted"
+    font-size "$fs-ui"
 }
 
 part "issue-body" {
@@ -3818,7 +3950,8 @@ part "issue-section.actions" {
     gap "$space-2"
 }
 
-part "issue-note" {
+// The draft a refused save left (`draft-note`) stands like the other notes of the issue.
+part "issue-note" "draft-note" {
     display flex
     flex-wrap wrap
     align-items center
@@ -3871,14 +4004,6 @@ part "issue-compare.changed" {
     use "marked"
 }
 
-// The list of the issues of a project.
-part "issue-list" {
-    display flex
-    flex-direction column
-    gap "$space-3"
-    min-width 0
-}
-
 part "issue-row" {
     use "surface-box"
     display flex
@@ -3892,40 +4017,9 @@ part "issue-row[variant=current]" {
     use "current-item"
 }
 
-part "issue-row.key" {
-    color "$fg-muted"
-    font-size "$fs-base"
-    white-space nowrap
-}
-
-part "issue-row.title" {
-    flex 1
-    min-width 0
-    use "menu-text"
-    overflow-wrap anywhere
-}
-
-part "issue-row.title:focus-visible" {
-    use "ring"
-}
-
 // The way to the field permissions next to the note is a target a finger can hit.
 part "layout-field.limited link" {
     use "touch-link"
-}
-
-// On a phone the title is a target a finger can hit.
-part "app-layout[variant=phone] issue-row.title link" {
-    use "touch-link"
-}
-
-part "issue-row.meta" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    gap "$space-2" "$space-3"
-    color "$fg-muted"
-    font-size "$fs-base"
 }
 
 // On a phone: the bar with the most used actions of an issue, in the slot above the bar of the app.
@@ -4002,16 +4096,39 @@ part "list-editor.list" {
     min-width 0
 }
 
+// A row of the list is one button: pointing at it, or having it open, shows it (R8: a whole row is
+// clickable and is not underlined; R4: the open one is marked).
 part "list-editor.open" {
-    min-height "$size-control"
-    padding 0
-    use "bare-button"
-    color "$accent-fg"
+    use "surface-box"
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    box-sizing border-box
+    width "100%"
+    min-height "$size-row"
+    padding 0 "$pad-box"
+    color "$fg"
+    font-family "$font"
     font-size "$fs-md"
-    font-weight "$weight-bold"
     text-align start
-    text-decoration underline
-    text-underline-offset "$space-1"
+    cursor pointer
+}
+
+part "list-editor.name" {
+    min-width 0
+    font-weight "$weight-bold"
+    overflow-wrap anywhere
+}
+
+part "list-editor.details" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+}
+
+part "list-editor.open[hovered]" {
+    background "$bg-hover"
 }
 
 part "list-editor.open[focus-visible]" {
@@ -4019,8 +4136,10 @@ part "list-editor.open[focus-visible]" {
 }
 
 part "list-editor.open[state=open]" {
-    color "$fg"
-    text-decoration none
+    border-color "$accent"
+    background "$bg-selected"
+    color "$accent-fg"
+    use "marked"
 }
 
 part "list-editor.nothing" {
@@ -4219,40 +4338,12 @@ part "markdown.editor" {
     min-width 0
 }
 
-part "markdown.tabs" {
-    display flex
-    gap "$space-1"
-    border-bottom "$border-width solid $border"
-}
-
-part "markdown.tab" {
-    use "tab-label"
-}
-
-part "markdown.tab[hovered]" {
-    background "$bg-hover"
-}
-
-part "markdown.tab[selected]" {
-    color "$fg"
-    border-bottom-color "$accent"
-}
-
-part "markdown.tab[focus-visible]" {
-    use "ring-inside"
-}
-
+// The row of formatting buttons wraps where it is too narrow: nothing is cut off or hidden at the
+// edge (the review of M4, B issue page).
 part "markdown.toolbar" {
     display flex
     flex-wrap wrap
-    gap "$space-1"
-}
-
-part "markdown.panel" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    min-width 0
+    gap 0
 }
 
 part "markdown.preview" {
@@ -4279,36 +4370,6 @@ part "progress" {
     inline-size "$size-line-medium"
     max-inline-size "100%"
     accent-color "$accent"
-}
-
-part "history.tabs" {
-    display flex
-    gap "$space-1"
-    border-bottom "$border-width solid $border"
-}
-
-part "history.tab" {
-    padding "$space-2 $space-3"
-    min-height "$size-control"
-    box-sizing border-box
-    color "$fg-muted"
-    font-size "$fs-md"
-    font-weight "$weight-bold"
-    cursor pointer
-    border-bottom "$space-1 solid transparent"
-}
-
-part "history.tab[hovered]" {
-    background "$bg-hover"
-}
-
-part "history.tab[selected]" {
-    color "$fg"
-    border-bottom-color "$accent"
-}
-
-part "history.tab[focus-visible]" {
-    use "ring-inside"
 }
 
 // One entry of the history: who, when, and what happened.
@@ -4442,7 +4503,6 @@ part "files.actions" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    margin-inline-start "$size-phone-hang"
 }
 
 // The larger preview: as big as it is, never wider than the window.
@@ -11119,14 +11179,6 @@ part "layout-editor" {
     gap "$space-4"
 }
 
-part "layout-section" {
-    use "surface-box"
-    display flex
-    flex-direction column
-    gap "$space-3"
-    padding "$space-3"
-}
-
 part "layout-section.head" {
     display flex
     flex-wrap wrap
@@ -11220,34 +11272,40 @@ part "drop-slot[state=over]" {
     background "$accent-soft"
 }
 
-part "form-tabs" {
+// ───────────── Tabs (packages/ui) ─────────────
+//
+// The row of tabs and the panel of the open tab: the history, the notifications and the sections
+// of a form all use these.
+
+part "tabs" {
     display flex
     flex-wrap wrap
     gap "$space-1"
     border-bottom "$border-width solid $border"
 }
 
-part "form-tab" {
+part "tab" {
     use "tab-label"
 }
 
-part "form-tab[hovered]" {
+part "tab[hovered]" {
     background "$bg-hover"
 }
 
-part "form-tab[selected]" {
+part "tab[selected]" {
     color "$fg"
     border-bottom-color "$accent"
 }
 
-part "form-tab[focus-visible]" {
+part "tab[focus-visible]" {
     use "ring-inside"
 }
 
-part "form-panel" {
+part "tab-panel" "form-panel" {
     display flex
     flex-direction column
     gap "$space-3"
+    padding-top "$space-3"
     min-width 0
 }
 
@@ -11271,14 +11329,6 @@ part "form-section.title" {
 // notifications in it. An unread notification has the soft accent color and an accent edge: color
 // says state (R4), and the word *New* says it too (R5). The count on the menu is the one filled
 // pill of the menu.
-
-part "notifications-bar" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    justify-content flex-end
-    gap "$space-2 $space-4"
-}
 
 part "notification-group" {
     display flex
@@ -11366,6 +11416,17 @@ part "nav-item.count" "bottom-bar.count" {
     }
 }
 
+// In the narrow menu there is no room after the icon: the number sits on the corner of the icon,
+// inside the menu (UX review of M4, A5).
+part "sidebar[variant=narrow] nav-item.count" {
+    position absolute
+    top 0
+    inset-inline-end 0
+    min-width 0
+    padding 0 "$space-1"
+    font-size "$fs-xs"
+}
+
 // The icon of a tab of the bar, with the number after it.
 part "bottom-bar.icon" {
     order -1
@@ -11415,15 +11476,10 @@ part "history.entry[state=highlighted]" {
     background "$accent-soft"
 }
 
-// The row with *Use the standard choices*: the button holds text, so it pulls itself back by its own
-// padding and its words stand on the start edge of the rows above (R1).
+// The row with *Use the standard choices*: its first button hangs back like every text button (R1).
 part "customize-actions" {
     display flex
     flex-wrap wrap
-}
-
-part "customize-actions button[variant=quiet]:first-child" {
-    use "hang-start"
 }
 
 // ───────────── Workflows (M4 WP-07) ─────────────
@@ -11445,22 +11501,41 @@ part "workflow-statuses" {
     gap "$space-4"
 }
 
+// A status of the plain list: its group's color on the start edge (R4) with its icon in front of the
+// name (R5), then what is changed about it, then the status changes that start in it. One box
+// (R3, the review of M4 A9): the status changes inside it are rows with a line between, not boxes.
 part "workflow-status" {
     use "surface-box"
     display flex
     flex-direction column
     gap "$space-3"
-    padding "$space-4"
+    padding "$pad-box"
+    border-inline-start "$size-edge solid $border"
 }
 
-part "workflow-status.head" {
+part "workflow-status[state=group-not-started]" {
+    border-inline-start-color "$st-ns"
+}
+
+part "workflow-status[state=group-in-progress]" {
+    border-inline-start-color "$st-ip"
+}
+
+part "workflow-status[state=group-done]" {
+    border-inline-start-color "$st-done"
+}
+
+part "workflow-status.title" {
     display flex
     flex-wrap wrap
-    align-items flex-end
-    gap "$space-3"
+    align-items center
+    gap "$space-2"
 }
 
 part "workflow-status.name" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
     margin 0
     color "$fg"
     font-size "$fs-md"
@@ -11468,27 +11543,89 @@ part "workflow-status.name" {
     overflow-wrap anywhere
 }
 
+// The name and the group side by side where there is room, under each other on a phone.
+part "workflow-status.head" {
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax(min($size-name, 100%), 1fr))"
+    align-items end
+    gap "$space-3"
+}
+
+// What moves or takes away a status: buttons with words, as wide as a finger on a phone.
+part "workflow-status.tools" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
 part "workflow-changes" {
     use "list-reset"
     display flex
     flex-direction column
-    gap "$space-2"
 }
 
+// One status change: where it leads, the words of its button, its rules and a way to take it away.
+// The columns are the same in every row, so *Rules* and *Remove* stand in a line down the list.
 part "workflow-change" {
-    use "sunken-box"
-    display flex
-    flex-wrap wrap
-    align-items flex-end
-    gap "$space-3"
-    padding "$space-3"
+    display grid
+    grid-template-columns "minmax(0, 1fr) minmax(0, 2fr) auto auto"
+    align-items end
+    gap "$space-2" "$space-3"
+    padding "$space-3 0"
+    border-top "$border-width solid $border-subtle"
+}
+
+part "app-layout[variant=phone] workflow-change" {
+    grid-template-columns "minmax(0, 1fr) auto"
+    align-items center
 }
 
 part "workflow-change.to" {
-    min-width "$size-name"
-    font-weight "$weight-bold"
-    line-height "$size-control"
-    overflow-wrap anywhere
+    min-width 0
+    padding-bottom "$space-2"
+}
+
+part "workflow-change.field" {
+    min-width 0
+}
+
+part "app-layout[variant=phone] workflow-change.field" {
+    grid-column "1 / -1"
+    grid-row 2
+}
+
+part "app-layout[variant=phone] workflow-change.remove" {
+    grid-column 2
+    grid-row 1
+}
+
+part "workflow-change.rules" {
+    position relative
+    display flex
+    flex-direction column
+    align-items flex-start
+}
+
+// *Has rules* stands under *Rules* without making the cell taller, so *Rules* is on the same line
+// in every row of the list whether the change has rules or not.
+part "workflow-change.has-rules" {
+    position absolute
+    top "100%"
+    inset-inline-start 0
+    white-space nowrap
+}
+
+part "app-layout[variant=phone] workflow-change.has-rules" {
+    position static
+}
+
+part "app-layout[variant=phone] workflow-change.rules" {
+    grid-column "1 / -1"
+    grid-row 3
+    flex-direction row
+    align-items center
+    gap "$space-3"
 }
 
 part "workflow-add" {
@@ -11504,6 +11641,14 @@ part "workflow-rules" {
     display flex
     flex-direction column
     gap "$space-2"
+}
+
+// The name of a group of rules is bold like the heading of a section, and starts where its hint
+// starts: a legend has a padding of its own that would push it 2 px in (the review of M4, B rules).
+part "workflow-rules.legend" {
+    padding 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
 }
 
 part "workflow-condition" {

@@ -9,6 +9,8 @@ export interface SubmitButtonProps {
   readonly wide?: boolean;
   /** Waiting for an answer: the form is not sent a second time. */
   readonly isPending?: boolean;
+  /** The form cannot be sent yet; what is missing is said next to it. */
+  readonly isDisabled?: boolean;
   /** The ID of the form it sends, when it stands outside it (the footer of a window). */
   readonly form?: string;
 }
@@ -18,6 +20,7 @@ export function SubmitButton({
   children,
   wide = false,
   isPending = false,
+  isDisabled = false,
   form,
 }: SubmitButtonProps) {
   return (
@@ -26,6 +29,7 @@ export function SubmitButton({
       type={buttonType.submit}
       wide={wide}
       isPending={isPending}
+      isDisabled={isDisabled}
       {...(form === undefined ? {} : { form })}
     >
       {children}

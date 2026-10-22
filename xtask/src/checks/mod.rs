@@ -77,6 +77,7 @@ pub(crate) mod sec_private;
 mod sec_richtext;
 mod sec_secrets;
 mod sty_contrast;
+mod sty_parts;
 mod sty_tokens;
 mod test_a11y;
 mod test_concurrent;
@@ -212,6 +213,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_web_api::ArchWebApi),
         Box::new(arch_web_features::ArchWebFeatures),
         Box::new(arch_web_keys::ArchWebKeys),
+        Box::new(sty_parts::StyParts),
         Box::new(data_marks::DataMarks),
         Box::new(arch_db_parity::ArchDbParity),
         Box::new(data_migrations::DataMigrations),

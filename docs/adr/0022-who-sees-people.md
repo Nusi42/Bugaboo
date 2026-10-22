@@ -8,7 +8,7 @@ Names of people appear in many places: reported by, assigned to, last changed by
 
 ## Decision
 
-- **Who sees people** is configured per role on the project tree, like field permissions, for each kind of people information: **Names**, **Role only** (*"a Team member"*) or **Hidden** (*"Someone"*).
+- **Who sees people** is configured per role on the project tree, like field permissions, for each kind of people information: **Names**, **Role only** (*"Someone (Team member)"*) or **Hidden** (*"Someone"*).
 - Every place that shows a person uses one type, **`PersonRef`**, which is resolved for the **viewer** by `bb-policy` into a name, a role label or *Someone*. Raw person data never reaches serialization directly.
 - If a viewer can't see names for a kind of information, they also can't search, sort, group or filter by it; the field behaves like a hidden field (SEC-06).
 - Edit-lock notices follow the same rule: *"Someone is editing the description"*.

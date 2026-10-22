@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
 
 import type { LayoutsOpen } from "../../shared/paths.ts";
 import { projectPages } from "../../shared/project-pages.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { ProjectGate, ProjectTabs } from "../projects/index.ts";
+import { ProjectSettingsScreen } from "../projects/index.ts";
 import { LayoutsCard } from "./LayoutsCard.tsx";
 
 export interface LayoutsScreenProps {
@@ -21,21 +20,18 @@ export interface ProjectLayoutsScreenProps extends LayoutsScreenProps {
 /** `/p/WEB/settings/layouts`: the layouts of a project, below the tabs of its settings. */
 export function ProjectLayoutsScreen({ address, open, onOpen }: ProjectLayoutsScreenProps) {
   return (
-    <ProjectGate address={address} page={projectPages.layouts}>
+    <ProjectSettingsScreen address={address} page={projectPages.layouts}>
       {(project) => (
-        <div {...partOf(part.stack)}>
-          <ProjectTabs project={project} />
-          <LayoutsCard
-            project={project.project.short_name}
-            heading={t("layouts.project-title", { project: project.project.name })}
-            open={open}
-            onOpen={(next) => {
-              onOpen(project.project.short_name, next);
-            }}
-          />
-        </div>
+        <LayoutsCard
+          project={project.project.short_name}
+          heading={t("layouts.project-title", { project: project.project.name })}
+          open={open}
+          onOpen={(next) => {
+            onOpen(project.project.short_name, next);
+          }}
+        />
       )}
-    </ProjectGate>
+    </ProjectSettingsScreen>
   );
 }
 

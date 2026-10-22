@@ -11,6 +11,7 @@ export const messages = {
   "many-changes.action-delete": "Delete",
   "many-changes.title": "{action}: {count, plural, one {# issue} other {# issues}}",
   "many-changes.keep": "Leave as it is",
+  "many-changes.skipped-word": "Skipped",
   "many-changes.project-legend": "Move to",
   "many-changes.project-search": "Search projects",
   "many-changes.project-list": "Projects to move the issues to",

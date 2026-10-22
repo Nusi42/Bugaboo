@@ -97,8 +97,17 @@ impl MoreSpec {
     }
 }
 
+/// Lines that people have to see (the edge of a box to tick), kept at a ratio on the plain surfaces
+/// in every theme, also without the device setting for more contrast.
+pub(crate) struct PlainLines {
+    pub(crate) min: f64,
+    pub(crate) colors: Vec<String>,
+    pub(crate) on: Vec<String>,
+}
+
 pub(crate) struct ContrastSpec {
     pub(crate) min: f64,
+    pub(crate) plain_lines: Vec<PlainLines>,
     pub(crate) more: MoreSpec,
     pub(crate) text: Vec<String>,
     pub(crate) backgrounds: Vec<String>,
@@ -140,6 +149,11 @@ impl ContrastSpec {
             .chain(&self.more.lines)
             .chain(&self.more.line_on)
             .chain(
+                self.plain_lines
+                    .iter()
+                    .flat_map(|lines| lines.colors.iter().chain(&lines.on)),
+            )
+            .chain(
                 self.restricted
                     .iter()
                     .flat_map(|r| std::iter::once(&r.text).chain(&r.on)),
@@ -180,6 +194,7 @@ impl ContrastSpec {
         let mut exclusions = Vec::new();
         let mut non_text = Vec::new();
         let mut more = None;
+        let mut plain_lines = Vec::new();
         for child in node.children() {
             match child.name() {
                 "text" | "backgrounds" => {}
@@ -210,12 +225,21 @@ impl ContrastSpec {
                     reason(child)?;
                     non_text.extend(child.args()?);
                 }
+                "lines" => {
+                    reason(child)?;
+                    plain_lines.push(PlainLines {
+                        min: child.number_prop("min")?,
+                        colors: child.words("colors")?,
+                        on: child.words("on")?,
+                    });
+                }
                 "more" => more = Some(MoreSpec::parse(child)?),
                 other => bail!("line {}: unknown contrast rule `{other}`", child.line()),
             }
         }
         Ok(Self {
             min: node.number_prop("min")?,
+            plain_lines,
             more: more.ok_or_else(|| node.problem("needs a `more` rule"))?,
             text: node.words("text")?,
             backgrounds: node.words("backgrounds")?,

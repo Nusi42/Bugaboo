@@ -18,6 +18,8 @@ import { messageOf } from "../../shared/errors.ts";
 import { refreshIssueRelations } from "../../shared/query-keys.ts";
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
 import { relationChoices, type BlockProps, type RelationChoice } from "./relations.ts";
+import { exactName } from "../../shared/same-name.ts";
+import { useNameKey } from "../../shared/use-name-key.ts";
 
 /** What *Add relation* shows after the third step: the relation that was made, with *Undo*. */
 function Added({
@@ -99,7 +101,8 @@ function Steps({
 /** What the three steps keep: the words picked, the other issue, and the relation just made. */
 function useAddRelation(readableId: string) {
   const kinds = useRelationKinds();
-  const choices = relationChoices(relationKindLinesOf(kinds.data?.pages));
+  const keyOf = useNameKey() ?? exactName;
+  const choices = relationChoices(relationKindLinesOf(kinds.data?.pages), keyOf);
   const [chosen, setChosen] = useState<string | null>(null);
   const [other, setOther] = useState("");
   const [made, setMade] = useState<{ relation: string; other: string; name: string } | null>(null);

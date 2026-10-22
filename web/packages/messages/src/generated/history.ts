@@ -3,6 +3,7 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "history.tabs": "What to show",
   "history.tab-everything": "Everything",
   "history.tab-comments": "Comments",
   "history.tab-changes": "Changes",

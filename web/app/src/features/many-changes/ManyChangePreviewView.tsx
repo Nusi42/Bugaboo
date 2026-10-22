@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, partOf, part, type LongPreviewGroup } from "@bugaboo/ui";
+import { Alert, alertTone, Icon, iconName, partOf, part, type LongPreviewGroup } from "@bugaboo/ui";
 import type { Wording } from "@bugaboo/wasm";
 
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
@@ -66,7 +66,17 @@ function groupOf(row: ManyChangeRow, plain: string, wording: Wording): LongPrevi
   const skipped = row.skipped !== undefined && row.skipped !== null;
   return {
     key: row.address,
-    heading: <strong>{row.issue?.key ?? t("many-changes.issue-unknown")}</strong>,
+    heading: (
+      <>
+        <strong>{row.issue?.key ?? t("many-changes.issue-unknown")}</strong>
+        {skipped ? (
+          <span {...partOf(part.row)}>
+            <Icon name={iconName.close} />
+            {t("many-changes.skipped-word")}
+          </span>
+        ) : null}
+      </>
+    ),
     lines: skipped
       ? [{ key: "skipped", content: skipText(row.skipped) }]
       : changeLines(row, plain, wording),

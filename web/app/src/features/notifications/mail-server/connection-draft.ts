@@ -1,7 +1,7 @@
 import { settingKeys, type SettingKey } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import type { MySettings, SettingValue } from "../../../shared/my-settings.ts";
+import { settingOf, type MySettings, type SettingValue } from "../../../shared/my-settings.ts";
 import type { OptimisticMutation } from "../../../shared/use-optimistic.ts";
 import { numberIn } from "../../../shared/number.ts";
 
@@ -21,11 +21,6 @@ export interface Draft {
   readonly from: string;
   /** A new password; empty when the one that is stored stays. */
   readonly password: string;
-}
-
-/** One setting by its key. */
-function settingOf(settings: MySettings, key: SettingKey) {
-  return settings.settings.find((each) => each.key === key);
 }
 
 /** What a setting holds now, as the text of a box. */

@@ -6,6 +6,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod names;
+
 use bb_core::fields::Field;
 use bb_core::wording::{self, Change, File, Notice, Side};
 use bb_markdown::Options;

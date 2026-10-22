@@ -1,7 +1,7 @@
 import { type SettingKey } from "@bugaboo/api-client";
 import { Switch, partOf, part } from "@bugaboo/ui";
 
-import { type MySettings } from "../../../shared/my-settings.ts";
+import { settingOf, type MySettings } from "../../../shared/my-settings.ts";
 import { wordsOf } from "../../settings/index.ts";
 import { type SettingEdits } from "./connection-draft.ts";
 
@@ -15,7 +15,7 @@ export function SettingSwitch({
   readonly edits: SettingEdits;
   readonly settingKey: SettingKey;
 }) {
-  const found = settings.settings.find((each) => each.key === settingKey);
+  const found = settingOf(settings, settingKey);
   if (found === undefined) {
     return null;
   }

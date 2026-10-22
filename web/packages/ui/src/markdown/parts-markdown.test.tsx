@@ -47,9 +47,9 @@ describe("thm_12 the Markdown components carry no styles", () => {
     );
     for (const name of [
       "markdown.editor",
-      "markdown.tabs",
-      "markdown.tab",
-      "markdown.panel",
+      "tabs",
+      "tab",
+      "tab-panel",
       "markdown.toolbar",
       "field.input",
     ]) {

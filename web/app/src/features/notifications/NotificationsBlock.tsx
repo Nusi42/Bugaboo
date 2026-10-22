@@ -1,12 +1,13 @@
-import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, Link, partOf, part } from "@bugaboo/ui";
+import type { Schema } from "@bugaboo/api-client";
+import { t, type MessageKey } from "@bugaboo/messages";
+import { Card, Link } from "@bugaboo/ui";
 
-import { messageOf } from "../../shared/errors.ts";
-import { itemsOf } from "../../shared/paged.ts";
 import { paths } from "../../shared/paths.ts";
-import { NotificationGroups } from "./NotificationGroups.tsx";
-import { rowsOf } from "./notifications.ts";
-import { useNotificationList, useReadNotifications } from "./use-notifications.ts";
+import { NotificationEntries } from "./NotificationEntries.tsx";
+
+/** What the block lists, and what it says when there is none. */
+const unread: Schema<"NotificationFilter"> = "unread";
+const none: MessageKey = "notifications.start-nothing";
 
 /** How many unread notifications the start page asks for: the newest few. */
 const SHOWN = 5;
@@ -16,22 +17,9 @@ const SHOWN = 5;
  * *Mentions* block. Everything else is on the page of notifications.
  */
 export function NotificationsBlock() {
-  const list = useNotificationList("unread", SHOWN);
-  const read = useReadNotifications();
-  const rows = rowsOf(itemsOf(list.data?.pages));
   return (
     <Card heading={t("notifications.title")}>
-      {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
-      {rows.length === 0 && list.isSuccess ? (
-        <p {...partOf(part.muted)}>{t("notifications.start-nothing")}</p>
-      ) : null}
-      <NotificationGroups
-        rows={rows}
-        readingId={read.readingId}
-        onRead={(id) => {
-          read.mutate({ body: { ids: [id] } });
-        }}
-      />
+      <NotificationEntries filter={unread} newest={SHOWN} nothing={none} />
       <Link href={paths.notifications}>{t("notifications.show-all")}</Link>
     </Card>
   );

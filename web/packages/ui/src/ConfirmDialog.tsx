@@ -114,7 +114,7 @@ function Question({
   text,
   confirmLabel,
   cancelLabel,
-  confirmLook = buttonLook.plain,
+  confirmLook = buttonLook.primary,
   onConfirm,
   children,
   confirmDisabled = false,
@@ -122,13 +122,17 @@ function Question({
 }: Omit<ConfirmDialogProps, "triggerLabel" | "triggerName"> & { readonly close: () => void }) {
   return (
     <Dialog {...partOf(part.confirmDialog)} role={dialogRole}>
-      <Heading slot={titleSlot} {...partOf(part.confirmTitle)}>
-        {title}
-      </Heading>
-      <p {...partOf(part.text)}>{text}</p>
-      {children}
+      <div {...partOf(part.confirmBody)}>
+        <Heading slot={titleSlot} {...partOf(part.confirmTitle)}>
+          {title}
+        </Heading>
+        <p {...partOf(part.text)}>{text}</p>
+        {children}
+      </div>
       <div {...partOf(part.confirmActions)}>
-        <Button onPress={close}>{cancelLabel}</Button>
+        <Button look={buttonLook.quiet} onPress={close}>
+          {cancelLabel}
+        </Button>
         <Button
           look={confirmLook}
           isDisabled={confirmDisabled}

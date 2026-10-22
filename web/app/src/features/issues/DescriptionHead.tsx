@@ -35,10 +35,12 @@ export function DescriptionHead({ description, titleId, canChange, words }: Desc
       <h2 id={titleId} {...partOf(part.issueSectionTitle)}>
         {words.title}
       </h2>
-      {canChange && description.phase.kind === "reading" ? (
-        <Button onPress={description.open}>{t("issues.description.edit")}</Button>
-      ) : null}
-      <SaveStatus state={saveStateOf(description)} labels={saveLabels(savedAt)} />
+      <div {...partOf(part.cardActions)}>
+        <SaveStatus state={saveStateOf(description)} labels={saveLabels(savedAt)} />
+        {canChange && description.phase.kind === "reading" ? (
+          <Button onPress={description.open}>{t("issues.description.edit")}</Button>
+        ) : null}
+      </div>
     </div>
   );
 }

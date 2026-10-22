@@ -46,7 +46,11 @@ export function SaveBar(props: SaveBarProps) {
       {error === null || error === undefined ? null : (
         <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>
       )}
-      <div {...partOf(part.row)}>
+      <div {...partOf(part.saveBar)}>
+        <Button look={buttonLook.quiet} isDisabled={!dirty} onPress={onDiscard}>
+          {t("editing.changes-drop")}
+        </Button>
+        <SaveStatus state={stateOf(props)} labels={saveLabels()} />
         <Button
           look={buttonLook.primary}
           isPending={pending}
@@ -55,10 +59,6 @@ export function SaveBar(props: SaveBarProps) {
         >
           {saveLabel}
         </Button>
-        <Button isDisabled={!dirty} onPress={onDiscard}>
-          {t("editing.changes-drop")}
-        </Button>
-        <SaveStatus state={stateOf(props)} labels={saveLabels()} />
       </div>
     </>
   );

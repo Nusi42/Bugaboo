@@ -970,6 +970,9 @@ pub const ERROR_WORKFLOW_NO_SUCH_CHANGE: MessageKey =
 /// The message `error.workflow.not-for-you`.
 pub const ERROR_WORKFLOW_NOT_FOR_YOU: MessageKey = MessageKey::new("error.workflow.not-for-you");
 
+/// The message `error.workflow.not-named`.
+pub const ERROR_WORKFLOW_NOT_NAMED: MessageKey = MessageKey::new("error.workflow.not-named");
+
 /// The message `error.workflow.only-if`.
 pub const ERROR_WORKFLOW_ONLY_IF: MessageKey = MessageKey::new("error.workflow.only-if");
 
@@ -1516,6 +1519,10 @@ pub const FOLLOWERS_FOLLOW: MessageKey = MessageKey::new("followers.follow");
 
 /// The message `followers.following`.
 pub const FOLLOWERS_FOLLOWING: MessageKey = MessageKey::new("followers.following");
+
+/// The message `followers.following-after-count`.
+pub const FOLLOWERS_FOLLOWING_AFTER_COUNT: MessageKey =
+    MessageKey::new("followers.following-after-count");
 
 /// The message `followers.more`.
 pub const FOLLOWERS_MORE: MessageKey = MessageKey::new("followers.more");
@@ -2207,6 +2214,9 @@ pub const LABELS_NONE_LABELS: MessageKey = MessageKey::new("labels.none-labels")
 /// The message `labels.none-tags`.
 pub const LABELS_NONE_TAGS: MessageKey = MessageKey::new("labels.none-tags");
 
+/// The message `labels.none-to-pick`.
+pub const LABELS_NONE_TO_PICK: MessageKey = MessageKey::new("labels.none-to-pick");
+
 /// The message `labels.nothing-to-add`.
 pub const LABELS_NOTHING_TO_ADD: MessageKey = MessageKey::new("labels.nothing-to-add");
 
@@ -2595,6 +2605,9 @@ pub const MANY_CHANGES_SHOW_CHANGES: MessageKey = MessageKey::new("many-changes.
 
 /// The message `many-changes.skipped-list`.
 pub const MANY_CHANGES_SKIPPED_LIST: MessageKey = MessageKey::new("many-changes.skipped-list");
+
+/// The message `many-changes.skipped-word`.
+pub const MANY_CHANGES_SKIPPED_WORD: MessageKey = MessageKey::new("many-changes.skipped-word");
 
 /// The message `many-changes.stopped`.
 pub const MANY_CHANGES_STOPPED: MessageKey = MessageKey::new("many-changes.stopped");
@@ -4886,6 +4899,9 @@ pub const WORKFLOWS_CREATE_STATUS: MessageKey = MessageKey::new("workflows.creat
 pub const WORKFLOWS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("workflows.customize-organization");
 
+/// The message `workflows.down`.
+pub const WORKFLOWS_DOWN: MessageKey = MessageKey::new("workflows.down");
+
 /// The message `workflows.draft-changed`.
 pub const WORKFLOWS_DRAFT_CHANGED: MessageKey = MessageKey::new("workflows.draft-changed");
 
@@ -4953,6 +4969,9 @@ pub const WORKFLOWS_PUBLISH_TEXT: MessageKey = MessageKey::new("workflows.publis
 /// The message `workflows.publish-title`.
 pub const WORKFLOWS_PUBLISH_TITLE: MessageKey = MessageKey::new("workflows.publish-title");
 
+/// The message `workflows.remove`.
+pub const WORKFLOWS_REMOVE: MessageKey = MessageKey::new("workflows.remove");
+
 /// The message `workflows.rules-done`.
 pub const WORKFLOWS_RULES_DONE: MessageKey = MessageKey::new("workflows.rules-done");
 
@@ -4967,6 +4986,9 @@ pub const WORKFLOWS_STATUS_GROUP: MessageKey = MessageKey::new("workflows.status
 
 /// The message `workflows.status-name`.
 pub const WORKFLOWS_STATUS_NAME: MessageKey = MessageKey::new("workflows.status-name");
+
+/// The message `workflows.status-name-taken`.
+pub const WORKFLOWS_STATUS_NAME_TAKEN: MessageKey = MessageKey::new("workflows.status-name-taken");
 
 /// The message `workflows.statuses`.
 pub const WORKFLOWS_STATUSES: MessageKey = MessageKey::new("workflows.statuses");
@@ -4989,11 +5011,20 @@ pub const WORKFLOWS_TRY_GO: MessageKey = MessageKey::new("workflows.try-go");
 /// The message `workflows.try-none`.
 pub const WORKFLOWS_TRY_NONE: MessageKey = MessageKey::new("workflows.try-none");
 
+/// The message `workflows.try-not-for-you`.
+pub const WORKFLOWS_TRY_NOT_FOR_YOU: MessageKey = MessageKey::new("workflows.try-not-for-you");
+
+/// The message `workflows.try-not-named`.
+pub const WORKFLOWS_TRY_NOT_NAMED: MessageKey = MessageKey::new("workflows.try-not-named");
+
 /// The message `workflows.try-text`.
 pub const WORKFLOWS_TRY_TEXT: MessageKey = MessageKey::new("workflows.try-text");
 
 /// The message `workflows.try-title`.
 pub const WORKFLOWS_TRY_TITLE: MessageKey = MessageKey::new("workflows.try-title");
+
+/// The message `workflows.up`.
+pub const WORKFLOWS_UP: MessageKey = MessageKey::new("workflows.up");
 
 /// The message `workflows.use-inherited`.
 pub const WORKFLOWS_USE_INHERITED: MessageKey = MessageKey::new("workflows.use-inherited");
@@ -9320,6 +9351,15 @@ pub fn workflows_publish_go(count: i64) -> Message {
     )
 }
 
+/// The message `workflows.publish-name-twice`.
+#[must_use]
+pub fn workflows_publish_name_twice(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-name-twice"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `workflows.publish-too-many`.
 #[must_use]
 pub fn workflows_publish_too_many(limit: impl std::fmt::Display) -> Message {
@@ -9425,15 +9465,12 @@ pub fn workflows_status_up(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `workflows.try-in`.
+/// The message `workflows.try-in-status`.
 #[must_use]
-pub fn workflows_try_in(key: impl std::fmt::Display, status: impl std::fmt::Display) -> Message {
+pub fn workflows_try_in_status(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("workflows.try-in"),
-        vec![
-            ("key", Value::Text(key.to_string())),
-            ("status", Value::Text(status.to_string())),
-        ],
+        MessageKey::new("workflows.try-in-status"),
+        vec![("key", Value::Text(key.to_string()))],
     )
 }
 
@@ -10008,7 +10045,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.done", "Done"),
-    ("common.issue-id", "Issue ID, for example WEB-142"),
+    ("common.issue-id", "Issue ID, for example WEB‑142"),
     ("common.loading", "Loading…"),
     ("common.nothing", "nothing"),
     ("common.off", "Off"),
@@ -10459,6 +10496,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You may not change the status this way.",
     ),
     (
+        "error.workflow.not-named",
+        "You may not use this status change.",
+    ),
+    (
         "error.workflow.only-if",
         "This status change is possible only when something else is true first.",
     ),
@@ -10812,7 +10853,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, other {# or more followers}}",
     ),
     ("followers.follow", "Follow"),
-    ("followers.following", "Following"),
+    ("followers.following", "You follow it"),
+    ("followers.following-after-count", "· You follow it"),
     ("followers.more", "Show more followers"),
     ("followers.name", "Followers"),
     ("followers.reason-assigned", "It is assigned to you"),
@@ -11321,6 +11363,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.no-label-group", "No label group"),
     ("labels.none-labels", "No labels."),
     ("labels.none-tags", "No tags."),
+    ("labels.none-to-pick", "This project has no labels yet."),
     (
         "labels.nothing-to-add",
         "Every label is on this issue already.",
@@ -11711,6 +11754,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("many-changes.show-changes", "Show what changes"),
     ("many-changes.skipped-line", "{issue}: {reason}"),
     ("many-changes.skipped-list", "Issues that were skipped"),
+    ("many-changes.skipped-word", "Skipped"),
     (
         "many-changes.stopped",
         "The change stopped. Some issues are changed and the rest are not.",
@@ -12083,8 +12127,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.former-inside", "former user {label}"),
     ("person.groups", "Groups"),
     ("person.groups-none", "{name} is in no group."),
-    ("person.role", "A person with the role {role}"),
-    ("person.role-inside", "a person with the role {role}"),
+    ("person.role", "Someone ({role})"),
+    ("person.role-inside", "someone ({role})"),
     ("person.roles", "Roles"),
     (
         "person.roles-none",
@@ -12232,10 +12276,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("projects.offered-in-save", "Save the line"),
     ("projects.offered-in-state", "Offered there?"),
-    ("projects.offered-in-take-away", "Take away"),
+    ("projects.offered-in-take-away", "Remove this line"),
     (
         "projects.offered-in-take-away-for",
-        "Take away the line for {place}",
+        "Remove this line for {place}",
     ),
     ("projects.offered-in-title", "Offered in"),
     ("projects.open", "Open the project"),
@@ -13633,6 +13677,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "workflows.delete-held",
         "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
     ),
+    ("workflows.down", "Move down"),
     (
         "workflows.draft-changed",
         "This workflow changed while you were editing, and you see it as it is now. Your changes are kept.",
@@ -13685,6 +13730,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("workflows.publish-go-over", "Publish and move the issues"),
     (
+        "workflows.publish-name-twice",
+        "Two statuses are called {name}. Give one of them another name, then publish.",
+    ),
+    (
         "workflows.publish-text",
         "Issues are still in statuses that you removed. Choose a status for each group of issues. They move when you publish, and each move is written in the history.",
     ),
@@ -13702,6 +13751,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {# issue is in {status}. It goes to} other {# issues are in {status}. They go to}}",
     ),
     ("workflows.publish-where-over", "Issues in {status} go to"),
+    ("workflows.remove", "Remove"),
     ("workflows.remove-condition", "Stop checking {field}"),
     ("workflows.rules-done", "Keep these rules"),
     (
@@ -13712,11 +13762,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.rules-open", "Rules for {button}"),
     ("workflows.rules-title", "Rules for “{button}”"),
     ("workflows.starts-here", "New issues start here"),
-    ("workflows.status-down", "Move {name} down"),
+    ("workflows.status-down", "Move down {name}"),
     ("workflows.status-group", "Status group"),
     ("workflows.status-name", "Name of the status"),
+    (
+        "workflows.status-name-taken",
+        "A status with this name exists already.",
+    ),
     ("workflows.status-remove", "Remove {name}"),
-    ("workflows.status-up", "Move {name} up"),
+    ("workflows.status-up", "Move up {name}"),
     ("workflows.statuses", "Statuses"),
     (
         "workflows.statuses-help",
@@ -13726,18 +13780,27 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.test-filled", "has a value"),
     ("workflows.try-allowed", "Allowed."),
     ("workflows.try-go", "Show the status changes"),
-    ("workflows.try-in", "{key} is in {status}."),
+    ("workflows.try-in-status", "{key} is in this status:"),
     (
         "workflows.try-needs",
         "Possible once these fields have a value: {fields}.",
     ),
     ("workflows.try-none", "No status change starts here."),
+    (
+        "workflows.try-not-for-you",
+        "This person may not change the status of this issue at all.",
+    ),
+    (
+        "workflows.try-not-named",
+        "Who can do it does not name this person.",
+    ),
     ("workflows.try-on-field", "{reason} Field: {field}."),
     (
         "workflows.try-text",
         "Pick an issue and a person to see which status changes they would get, and why.",
     ),
     ("workflows.try-title", "Try it"),
+    ("workflows.up", "Move up"),
     ("workflows.use-inherited", "Reset to default"),
     (
         "workflows.use-inherited-text",
@@ -13768,7 +13831,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.who-groups", "Groups"),
     (
         "workflows.who-help",
-        "If you choose nobody, everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
+        "Tick nobody, and everybody who may change the issue can do it. A rule never gives a right that the person does not have.",
     ),
     ("workflows.who-reporter", "The person who reported it"),
     ("workflows.who-roles", "Roles"),

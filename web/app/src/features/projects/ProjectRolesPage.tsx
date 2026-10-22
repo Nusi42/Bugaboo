@@ -1,10 +1,8 @@
-import { partOf, part } from "@bugaboo/ui";
-
 import { mayOpenProjectPage, projectPages } from "../../shared/project-pages.ts";
 import { AssignmentsSection } from "../roles/index.ts";
 import { NotFoundPage } from "../shell/index.ts";
 import { ProjectGate } from "./ProjectGate.tsx";
-import { ProjectTabs } from "./ProjectTabs.tsx";
+import { ProjectSettingsFrame } from "./ProjectSettingsFrame.tsx";
 import type { OneProject } from "./use-projects.ts";
 
 /** The page once the project is known: the tabs, then *Who has which role* in the project. */
@@ -14,10 +12,9 @@ function Roles({ project }: { readonly project: OneProject }) {
   }
   const { id, name } = project.project;
   return (
-    <div {...partOf(part.stack)}>
-      <ProjectTabs project={project} />
+    <ProjectSettingsFrame project={project}>
       <AssignmentsSection project={{ id, name }} level={1} />
-    </div>
+    </ProjectSettingsFrame>
   );
 }
 

@@ -2,7 +2,7 @@ import { testEmailEverySeconds } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
-import { codeOf, messageOf } from "../../../shared/errors.ts";
+import { codeOf, messageOf, retryAfterSecondsOf } from "../../../shared/errors.ts";
 import { useCooldown } from "../../../shared/use-cooldown.ts";
 import { useMe } from "../../../shared/use-me.ts";
 import { useSendTestEmail } from "./use-mail-server.ts";
@@ -26,12 +26,10 @@ function Answer({
   if (error === null || error === undefined) {
     return null;
   }
-  if (codeOf(error) === "rate_limit.exceeded") {
-    return (
-      <Alert tone={alertTone.warning}>
-        {t("mail-server.test-wait", { seconds: testEmailEverySeconds })}
-      </Alert>
-    );
+  const wait = retryAfterSecondsOf(error);
+  if (codeOf(error) === "rate_limit.exceeded" && wait !== undefined) {
+    // The time that is left, as the server counts it: not the whole of the time between two tests.
+    return <Alert tone={alertTone.warning}>{t("mail-server.test-wait", { seconds: wait })}</Alert>;
   }
   return <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>;
 }
@@ -49,7 +47,7 @@ export function TestEmail() {
       <p {...partOf(part.text)}>{t("mail-server.test-intro", { email })}</p>
       <div {...partOf(part.row)}>
         <Button
-          look={buttonLook.primary}
+          look={buttonLook.plain}
           isPending={send.isPending}
           isDisabled={cooldown.secondsLeft > 0}
           onPress={() => {

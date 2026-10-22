@@ -13,6 +13,7 @@ import {
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
+import { placeEditorRoutes } from "./place-editor-routes.tsx";
 import { loadsScreen } from "./preload.ts";
 
 export { projectIssueTypesRoute, projectLabelsRoute } from "./project-offer-pages.tsx";
@@ -87,15 +88,6 @@ export const labelsRoute = createRoute({
   },
 });
 
-const OrganizationLayoutsScreen = lazyRouteComponent(
-  () => import("../features/layouts/index.ts"),
-  "OrganizationLayoutsScreen",
-);
-const ProjectLayoutsScreen = lazyRouteComponent(
-  () => import("../features/layouts/index.ts"),
-  "ProjectLayoutsScreen",
-);
-
 /** What the address of the editor of layouts says is open: the form and the issue type. */
 function layoutsSearch(search: Readonly<Record<string, unknown>>): LayoutsOpen {
   return {
@@ -104,49 +96,26 @@ function layoutsSearch(search: Readonly<Record<string, unknown>>): LayoutsOpen {
   };
 }
 
-/** *Organization settings › Layouts*: the forms of the whole organization. */
-export const layoutsRoute = createRoute({
-  getParentRoute: () => organizationSettingsRoute,
-  path: paths.layouts,
-  validateSearch: layoutsSearch,
-  loader: loadsScreen(OrganizationLayoutsScreen),
-  component: function Layouts() {
-    const open = useSearch({ strict: false });
-    const navigate = useNavigate();
-    return (
-      <OnlyWith path={paths.layouts}>
-        <OrganizationLayoutsScreen
-          open={layoutsSearch(open)}
-          onOpen={(_, next: LayoutsOpen) => {
-            void navigate({ href: layoutsAddress(undefined, next) });
-          }}
-        />
-      </OnlyWith>
-    );
-  },
+const layoutRoutes = placeEditorRoutes({
+  organizationPath: paths.layouts,
+  projectPath: paths.projectLayouts,
+  search: layoutsSearch,
+  address: layoutsAddress,
+  OrganizationScreen: lazyRouteComponent(
+    () => import("../features/layouts/index.ts"),
+    "OrganizationLayoutsScreen",
+  ),
+  ProjectScreen: lazyRouteComponent(
+    () => import("../features/layouts/index.ts"),
+    "ProjectLayoutsScreen",
+  ),
 });
 
+/** *Organization settings › Layouts*: the forms of the whole organization. */
+export const layoutsRoute = layoutRoutes.organization;
+
 /** `/p/WEB/settings/layouts`: the layouts of a project. */
-export const projectLayoutsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: paths.projectLayouts,
-  validateSearch: layoutsSearch,
-  loader: loadsScreen(ProjectLayoutsScreen),
-  component: function ProjectLayouts() {
-    const project = useAddressPart(routeParam.project);
-    const open = useSearch({ strict: false });
-    const navigate = useNavigate();
-    return project === undefined ? null : (
-      <ProjectLayoutsScreen
-        address={project}
-        open={layoutsSearch(open)}
-        onOpen={(shortName: string | undefined, next: LayoutsOpen) => {
-          void navigate({ href: layoutsAddress(shortName ?? project, next) });
-        }}
-      />
-    );
-  },
-});
+export const projectLayoutsRoute = layoutRoutes.project;
 
 const FieldsScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldsPage");
 const FieldScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldPage");

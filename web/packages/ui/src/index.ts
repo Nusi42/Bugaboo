@@ -38,7 +38,7 @@ export {
 } from "./FieldValue.tsx";
 export { FileDrop, type FileDropProps } from "./FileDrop.tsx";
 export { FilePicker, type FilePickerProps } from "./FilePicker.tsx";
-export { takePastedFiles, type Paste } from "./pasted-files.ts";
+export { passPastedFiles, takePastedFiles, usePastedFiles, type Paste } from "./pasted-files.ts";
 export { Form, type FormProps } from "./Form.tsx";
 export { Icon, type IconProps } from "./Icon.tsx";
 export { iconName, type IconName } from "./icons.ts";
@@ -173,3 +173,4 @@ export {
 export { useAppearance, type AppearanceState } from "./useAppearance.ts";
 export { ActionMenu, type ActionMenuProps, type MenuAction } from "./ActionMenu.tsx";
 export { InPlaceText, type InPlaceTextProps } from "./InPlaceText.tsx";
+export { Tabs, type TabItem, type TabsProps } from "./Tabs.tsx";

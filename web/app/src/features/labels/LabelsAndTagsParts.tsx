@@ -5,6 +5,7 @@ import { Alert, alertTone, NameValueRow } from "@bugaboo/ui";
 import { messageOf } from "../../shared/errors.ts";
 import { AddLabel } from "./AddLabel.tsx";
 import { AddTag } from "./AddTag.tsx";
+import { useLabelsToAdd } from "./labels.ts";
 import { Chips } from "./Chips.tsx";
 import type { LabelChanges, LabelRow } from "./use-label-changes.ts";
 
@@ -67,12 +68,16 @@ export function LabelsRow({
   project,
 }: LabelsAndTagsRowProps & { readonly project: string | undefined }) {
   const labels = body.labels ?? [];
+  // A project that has no label to pick says so, instead of "No labels." and the same again.
+  const nothingToPick = useLabelsToAdd(project, labels).length === 0;
   return (
     <NameValueRow name={t("labels.labels-heading")} {...statusOf(changes, "labels")}>
       <Chips
         label={t("labels.labels-heading")}
         chips={labels}
-        none={t("labels.none-labels")}
+        none={t(
+          nothingToPick && body.may_change_labels ? "labels.none-to-pick" : "labels.none-labels",
+        )}
         onTakeOff={body.may_change_labels ? changes.takeLabelOff : undefined}
       />
       {body.may_change_labels ? (

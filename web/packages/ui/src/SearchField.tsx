@@ -16,13 +16,22 @@ export interface SearchFieldProps {
   readonly clearLabel: string;
   /** What the box is for, shown while it is empty: "Search issues and settings". */
   readonly placeholder?: string;
+  /** Another label stands over the box already (the legend of a picker): this one is for screen readers only. */
+  readonly hideLabel?: boolean;
 }
 
 /** A box to type a search in, with a button that empties it. */
-export function SearchField({ label, value, onChange, clearLabel, placeholder }: SearchFieldProps) {
+export function SearchField({
+  label,
+  value,
+  onChange,
+  clearLabel,
+  placeholder,
+  hideLabel = false,
+}: SearchFieldProps) {
   return (
     <AriaSearchField {...partOf(part.field)} value={value} onChange={onChange}>
-      <Label {...partOf(part.fieldLabel)}>{label}</Label>
+      <Label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)}>{label}</Label>
       <div {...partOf(part.searchFieldBox)}>
         <Icon name={iconName.search} size={iconSize.small} />
         <Input

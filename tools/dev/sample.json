@@ -87,7 +87,7 @@
         "shortName": "OPS",
         "area": "ops",
         "issues": 1800,
-        "idMode": "random",
+        "idMode": "counting",
         "places": [{ "shortName": "OPS", "percent": 100 }]
       },
       {

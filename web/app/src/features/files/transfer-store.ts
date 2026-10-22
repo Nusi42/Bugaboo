@@ -20,8 +20,11 @@ export interface Transfer {
   readonly message: string | null;
   /** Whether sending it again can help (the connection was lost). */
   readonly canRetry: boolean;
-  /** The limit of the project, in bytes, for the sentence that refuses a file that is too big. */
-  readonly limit: number;
+  /**
+   * The file is bigger than the project allows. The sentence that says so names the limit, which is
+   * read when the sentence is shown, so it is never the limit of an earlier moment.
+   */
+  readonly tooBig: boolean;
   /** The upload the server has for it, while there is one: what *Try again* goes on with. */
   readonly upload: string | null;
 }

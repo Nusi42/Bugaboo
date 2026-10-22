@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { Tabs, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
-import { Tab, TabList, TabPanel, Tabs } from "react-aria-components";
 
 import type { FormSection } from "./layouts.ts";
 import { tabsOf, type TabGroup } from "./form-tabs.ts";
@@ -76,23 +75,18 @@ export function FormSections(props: FormSectionsProps) {
   const open = groups.find((group) => group.tab === chosen) ?? first;
   return (
     <Tabs
-      selectedKey={open.tab}
-      onSelectionChange={(key) => {
-        setChosen(String(key));
-      }}
+      label={t("layouts.tabs")}
+      tabs={groups.map((group) => ({
+        id: group.tab,
+        label: group.tab === "" ? t("layouts.tab-other") : group.tab,
+      }))}
+      selected={open.tab}
+      onSelect={setChosen}
     >
-      <TabList aria-label={t("layouts.tabs")} {...partOf(part.formTabs)}>
-        {groups.map((group) => (
-          <Tab key={group.tab} id={group.tab} {...partOf(part.formTab)}>
-            {group.tab === "" ? t("layouts.tab-other") : group.tab}
-          </Tab>
-        ))}
-      </TabList>
-      {groups.map((group) => (
-        <TabPanel key={group.tab} id={group.tab}>
-          <Sections {...props} group={group} />
-        </TabPanel>
-      ))}
+      {(id) => {
+        const group = groups.find((each) => each.tab === id);
+        return group === undefined ? null : <Sections {...props} group={group} />;
+      }}
     </Tabs>
   );
 }

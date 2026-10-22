@@ -99,8 +99,11 @@ error_codes! {
     /// The workflow of the issue has no status change from the status the issue is in to that one
     /// (WF-01).
     WorkflowNoSuchChange => ("workflow.no_such_change", 409),
-    /// The person may not make this status change: *Who can do it* does not name them (WF-03).
+    /// The person may not change the status of the issue at all (WF-03).
     WorkflowNotForYou => ("workflow.not_for_you", 403),
+    /// The person may change the status, but *Who can do it* of this status change does not name
+    /// them (WF-03).
+    WorkflowNotNamed => ("workflow.not_named", 403),
     /// *Only if …* of the status change is not true (WF-03).
     WorkflowOnlyIf => ("workflow.only_if", 409),
     /// The status change needs a field that the person cannot fill in. It names no field: the

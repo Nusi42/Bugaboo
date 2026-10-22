@@ -12,7 +12,8 @@ export interface StatusButtonProps {
   readonly group: StatusGroup;
   /** The word of the current status. */
   readonly label: string;
-  readonly onPress: () => void;
+  /** What a press does; a computer's list opens under the button by itself, so it is given none there. */
+  readonly onPress?: (() => void) | undefined;
   readonly isDisabled?: boolean;
   /** The ID of the button, so a key or the bar of a phone can take the person to it. */
   readonly id?: string;
@@ -27,7 +28,7 @@ export function StatusButton({ group, label, onPress, isDisabled = false, id }: 
     <Button
       {...partOf(part.statusButton, { variants: [group] })}
       {...(id === undefined ? {} : { id })}
-      onPress={onPress}
+      {...(onPress === undefined ? {} : { onPress })}
       isDisabled={isDisabled}
     >
       <StatusIcon group={group} />

@@ -200,7 +200,7 @@ Rules:
 | **Security log**         | The record of who changed what, which cannot be altered            | audit trail                        |
 | **Download my data**     | Get a copy of everything Bugaboo stores about you                  | data subject access request, DSAR  |
 | **Remove a person**      | Delete someone's account and replace their name with *Former user* plus a random code (*Former user K7Q2*) | anonymize, pseudonymize (in UI) |
-| **Who sees people**      | Per role and per kind of people information: show people's *Names*, only their *Role* ("a Team member"), or nothing (*Hidden*: "Someone") | identity masking, pseudonymization (in UI) |
+| **Who sees people**      | Per role and per kind of people information: show people's *Names*, only their *Role* ("Someone (Team member)"), or nothing (*Hidden*: "Someone") | identity masking, pseudonymization (in UI) |
 | **Kind of people information** | One of the places a person can be shown: *Assigned to, Reported by, Last changed by*, comment and history authors, *"… is editing"*, followers, time entries, mentions, pictures of people, *Project members*, *Work times* | identity field, people field (in UI) |
 | **Away**                 | A stretch of whole or half days on which a person does not work. Bugaboo stores no reason; others see only *Away* | absent, absence, out of office, sick, on leave (in UI) |
 | **Away times**           | A person's away stretches                                | absences, leave calendar (in UI) |

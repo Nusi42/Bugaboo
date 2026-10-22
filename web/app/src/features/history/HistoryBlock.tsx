@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, Tabs, partOf, part } from "@bugaboo/ui";
 import { useId, useState } from "react";
-import { Tab, TabList, TabPanel, Tabs } from "react-aria-components";
 
 import { messageOf } from "../../shared/errors.ts";
 import { itemsOf } from "../../shared/paged.ts";
@@ -78,23 +77,12 @@ export function HistoryBlock({ readableId }: { readonly readableId: string }) {
       </h2>
       <CommentComposer issue={readableId} />
       <Tabs
-        selectedKey={tab}
-        onSelectionChange={(key) => {
-          setTab(historyTabs.find((each) => each === key) ?? "everything");
-        }}
+        label={t("history.tabs")}
+        tabs={historyTabs.map((each) => ({ id: each, label: t(tabLabel[each]) }))}
+        selected={tab}
+        onSelect={setTab}
       >
-        <TabList aria-label={t("history.tabs")} {...partOf(part.historyTabs)}>
-          {historyTabs.map((each) => (
-            <Tab key={each} id={each} {...partOf(part.historyTab)}>
-              {t(tabLabel[each])}
-            </Tab>
-          ))}
-        </TabList>
-        {historyTabs.map((each) => (
-          <TabPanel key={each} id={each}>
-            <Entries issue={readableId} tab={each} />
-          </TabPanel>
-        ))}
+        {(each) => <Entries issue={readableId} tab={each} />}
       </Tabs>
     </section>
   );

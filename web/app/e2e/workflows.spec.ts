@@ -41,10 +41,10 @@ test("wf_02 a lead adds Testing to Simple with Must be filled in, publishes it, 
   await page.getByRole("button", { name: "Send to testing", exact: true }).click();
   const asking = page.getByRole("dialog", { name: "Send to testing" });
   await expect(asking.getByRole("textbox")).toHaveCount(1);
-  await asking.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await asking.getByRole("button", { name: "Send to testing", exact: true }).click();
   await expect(asking.getByText(t("error.field.required"), { exact: true })).toBeVisible();
   await asking.getByLabel(foundInVersion, { exact: true }).fill("2.4.1");
-  await asking.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await asking.getByRole("button", { name: "Send to testing", exact: true }).click();
   await expect(statusButton(page)).toHaveText("Testing");
   await expect(
     page.getByRole("button", { name: t("common.undo"), exact: true }).last(),
@@ -55,7 +55,33 @@ test("wf_02 Try it names why a Contributor gets no Mark as done", async ({ page 
   await signIn(page, ada);
   await openSimple(page);
   const markAsDone = await tryMarkAsDone(page, "WEB-1", cleo);
-  await expect(markAsDone).toContainText(t("error.workflow.not-for-you"));
+  await expect(markAsDone).toContainText(t("workflows.try-not-for-you"));
+});
+
+test("wf_02 the whole organization has nothing to inherit, so there is no way back to it", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openSimple(page);
+  await expect(
+    page.getByRole("button", { name: t("workflows.use-inherited"), exact: true }),
+  ).toHaveCount(0);
+});
+
+test("wf_02 a status with a name another has is refused at the field, by the rule of the server", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openSimpleToChange(page);
+  const name = page.getByLabel(t("workflows.new-status"), { exact: true });
+  const create = page.getByRole("button", { name: t("workflows.create-status"), exact: true });
+  // Capitals and the spaces inside a name make no difference.
+  await name.fill("in   PROGRESS");
+  await expect(page.getByText(t("workflows.status-name-taken"))).toBeVisible();
+  await expect(create).toBeDisabled();
+  await name.fill("Waiting");
+  await expect(page.getByText(t("workflows.status-name-taken"))).toHaveCount(0);
+  await expect(create).toBeEnabled();
 });
 
 test("wf_02 the phone shows the plain list and a computer may also draw", async ({ page }) => {

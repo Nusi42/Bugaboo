@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
-import type { EditLock } from "../../shared/editing/index.ts";
+import { DraftNote, type EditLock } from "../../shared/editing/index.ts";
 import type { Draft } from "./draft-model.ts";
-import { KeptDraftNote } from "./KeptDraftNote.tsx";
 import { PublishBar } from "./PublishBar.tsx";
 import { TryIt } from "./TryIt.tsx";
 import { useDraftWorkflow } from "./use-draft-workflow.ts";
@@ -33,14 +32,24 @@ export function DraftWorkflow(props: DraftWorkflowProps) {
   const state = useDraftWorkflow(props);
   return (
     <>
-      <KeptDraftNote
-        left={left}
-        onRestore={(kept) => {
-          state.restore(kept);
-          onLeft();
-        }}
-        onDrop={onLeft}
-      />
+      {left === undefined ? null : (
+        <DraftNote
+          text={t("workflows.draft-changed")}
+          take={{
+            label: t("workflows.draft-restore"),
+            onPress: () => {
+              state.restore(left);
+              onLeft();
+            },
+          }}
+          drop={{
+            label: t("editing.changes-drop"),
+            onPress: () => {
+              onLeft();
+            },
+          }}
+        />
+      )}
       <WorkflowBody editor={editor} draft={state.draft} edit={state.edit} disabled={!state.mine} />
       <p {...partOf(part.muted)}>{t("workflows.draft-note")}</p>
       <PublishBar state={state} lock={lock} published={published} />

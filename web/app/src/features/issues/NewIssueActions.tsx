@@ -82,7 +82,7 @@ export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActio
         >
           {t("issues.create-another")}
         </Button>
-        <SubmitButton form={formId} isPending={form.pending}>
+        <SubmitButton form={formId} isPending={form.pending} isDisabled={missing !== undefined}>
           {t("issues.create")}
         </SubmitButton>
       </div>

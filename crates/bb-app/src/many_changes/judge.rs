@@ -122,6 +122,7 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::FieldNotHere => SkipReason::FieldMissing,
             ErrorCode::WorkflowNoSuchChange
             | ErrorCode::WorkflowNotForYou
+            | ErrorCode::WorkflowNotNamed
             | ErrorCode::WorkflowOnlyIf
             | ErrorCode::WorkflowCannotFill => SkipReason::Workflow,
             ErrorCode::TagNotHere => SkipReason::TagNotHere,

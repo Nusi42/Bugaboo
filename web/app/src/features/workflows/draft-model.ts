@@ -1,10 +1,9 @@
 import type { components, Schema } from "@bugaboo/api-client";
+import type { NameKey } from "@bugaboo/wasm";
 
 import { newId } from "../../shared/new-ids.ts";
+import { nameAmong, nameStandingTwice } from "../../shared/same-name.ts";
 import { noRules, rulesBodyOf, rulesOf, sameRules, type ChangeRules } from "./rules-model.ts";
-
-/** The status group of a status. */
-export type StatusGroupWord = Schema<"StatusRef">["group"];
 
 /** A status in the draft. A new status has no key yet: the server creates it from the name. */
 export interface DraftStatus {
@@ -12,7 +11,7 @@ export interface DraftStatus {
   readonly id: string;
   readonly key: string | null;
   readonly name: string;
-  readonly group: StatusGroupWord;
+  readonly group: Schema<"StatusGroup">;
 }
 
 /** A status change in the draft, between two statuses of the draft (by their `id`). */
@@ -53,10 +52,15 @@ export function draftOf(editor: Schema<"WorkflowEditorBody">): Draft {
   };
 }
 
-/** How the body of *Publish* names a status in a status change: by its key, a new one by its name. */
+/** How *Publish* names a status in a status change: by its key, a new one (it has no key yet) by its name. */
+export function statusRefOf(status: DraftStatus): string {
+  return status.key ?? status.name;
+}
+
+/** How the body of *Publish* names the status of the draft with this ID. */
 function nameInBody(draft: Draft, id: string): string {
   const status = draft.statuses.find((each) => each.id === id);
-  return status === undefined ? id : (status.key ?? status.name);
+  return status === undefined ? id : statusRefOf(status);
 }
 
 /** The name of a status of the draft by its ID in the draft. */
@@ -115,18 +119,13 @@ export function changesFrom(draft: Draft, status: string): readonly DraftChange[
   return draft.changes.filter((change) => change.from === status);
 }
 
-/** Whether a name is taken by a status already, in any case. */
-function taken(draft: Draft, name: string): boolean {
-  return draft.statuses.some((status) => status.name.toLowerCase() === name.toLowerCase());
-}
-
-/** The draft with a new status at the end; the same draft for no name or a name that is taken. */
-export function addStatus(draft: Draft, name: string, group: StatusGroupWord): Draft {
-  const trimmed = name.trim();
-  if (trimmed === "" || taken(draft, trimmed)) {
-    return draft;
-  }
-  const added: DraftStatus = { id: newId("status"), key: null, name: trimmed, group };
+/**
+ * The draft with a new status at the end. The draft holds what the person typed: whether the name is
+ * a good one (taken, empty) is the server's to say, when the draft is published; the rule is not
+ * written a second time here.
+ */
+export function addStatus(draft: Draft, name: string, group: Schema<"StatusGroup">): Draft {
+  const added: DraftStatus = { id: newId("status"), key: null, name: name.trim(), group };
   return { ...draft, statuses: [...draft.statuses, added] };
 }
 
@@ -146,7 +145,7 @@ export function renameStatus(draft: Draft, id: string, name: string): Draft {
 }
 
 /** The draft with a status in another status group. */
-export function setGroup(draft: Draft, id: string, group: StatusGroupWord): Draft {
+export function setGroup(draft: Draft, id: string, group: Schema<"StatusGroup">): Draft {
   return withStatus(draft, id, { group });
 }
 
@@ -176,17 +175,15 @@ export function moveStatus(draft: Draft, id: string, by: -1 | 1): Draft {
   return { ...draft, statuses };
 }
 
-/**
- * The draft with a new status change; the same draft for one between a status and itself, one that
- * is there already, or one with no words.
- */
+/** The draft with a new status change, as typed; *Publish* judges it, the draft does not. */
 export function addChange(draft: Draft, from: string, to: string, button: string): Draft {
-  const words = button.trim();
-  const there = draft.changes.some((change) => change.from === from && change.to === to);
-  if (words === "" || from === to || there) {
-    return draft;
-  }
-  const added: DraftChange = { id: newId("change"), from, to, button: words, rules: noRules };
+  const added: DraftChange = {
+    id: newId("change"),
+    from,
+    to,
+    button: button.trim(),
+    rules: noRules,
+  };
   return { ...draft, changes: [...draft.changes, added] };
 }
 
@@ -216,4 +213,26 @@ export function setRules(draft: Draft, id: string, rules: ChangeRules): Draft {
 /** The draft with another name for the workflow. */
 export function renameWorkflow(draft: Draft, name: string): Draft {
   return { ...draft, name };
+}
+
+/** Whether another status of the draft has this name (the rule of the server, `nameAmong`); `id` is the status being renamed, none for a new one. */
+export function statusNameTaken(
+  draft: Draft,
+  id: string | null,
+  name: string,
+  keyOf: NameKey,
+): boolean {
+  return nameAmong(
+    draft.statuses.filter((status) => status.id !== id).map((status) => status.name),
+    name,
+    keyOf,
+  );
+}
+
+/** The name of the first status that another one in the draft has too, if any: *Publish* is refused for it. */
+export function statusNamedTwice(draft: Draft, keyOf: NameKey): string | undefined {
+  return nameStandingTwice(
+    draft.statuses.map((status) => status.name),
+    keyOf,
+  );
 }

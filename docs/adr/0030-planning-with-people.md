@@ -14,7 +14,7 @@ All three are about employees, so they meet the rules we already have: working t
 
 ### 1. The person on the bar
 
-- Each bar shows the picture and first name of the person it is *Assigned to*, at its end (PLAN-10); *Group by person* gives one row per person, so overlapping work is visible. Both follow *Who sees people* for the viewer: *Role only* shows *"a Team member"* and offers no grouping by person, *Hidden* shows nobody. Enforced by: the test `plan_10_the_timeline_shows_people_only_as_who_sees_people_allows` (M7).
+- Each bar shows the picture and first name of the person it is *Assigned to*, at its end (PLAN-10); *Group by person* gives one row per person, so overlapping work is visible. Both follow *Who sees people* for the viewer: *Role only* shows *"Someone (Team member)"* and offers no grouping by person, *Hidden* shows nobody. Enforced by: the test `plan_10_the_timeline_shows_people_only_as_who_sees_people_allows` (M7).
 
 ### 2. Work times: when and how much a person works
 

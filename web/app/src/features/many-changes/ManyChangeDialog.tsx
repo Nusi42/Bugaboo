@@ -20,6 +20,25 @@ export interface ManyChangeDialogProps {
   readonly onApplied: (applied: ManyChangeApplied) => void;
 }
 
+/** *Show what changes*: the preview is asked for once the thing to change is filled in. */
+function ShowChanges({
+  disabled,
+  pending,
+  onAsk,
+}: {
+  readonly disabled: boolean;
+  readonly pending: boolean;
+  readonly onAsk: () => void;
+}) {
+  return (
+    <div>
+      <Button isDisabled={disabled} isPending={pending} onPress={onAsk}>
+        {t("many-changes.show-changes")}
+      </Button>
+    </div>
+  );
+}
+
 /**
  * The dialog of changing many issues at once (ISS-09): fill in the thing, *Show what changes*, and
  * only then *Apply*. The preview is made from the versions of the issues, and applying sends those
@@ -35,6 +54,7 @@ export function ManyChangeDialog({
 }: ManyChangeDialogProps) {
   const dialog = useManyChangeDialog(kind, project, issues, onApplied);
   const { preview } = dialog;
+  // The button names what it does: the issues the preview says will change, not every ticked one.
   return (
     <AskDialog
       isOpen={isOpen}
@@ -46,7 +66,7 @@ export function ManyChangeDialog({
       }}
       title={t("many-changes.title", { action: actionName(kind), count: issues.length })}
       text={t("many-changes.dialog-text")}
-      confirmLabel={applyName(kind, issues.length)}
+      confirmLabel={applyName(kind, preview.data?.summary.will_change ?? issues.length)}
       cancelLabel={t("common.cancel")}
       confirmDisabled={!dialog.canApply}
       onConfirm={dialog.send}
@@ -58,19 +78,18 @@ export function ManyChangeDialog({
         statusChanges={dialog.statusChanges}
         onDraft={dialog.fill}
       />
-      <div>
-        <Button
-          isDisabled={dialog.action === null}
-          isPending={preview.isPending}
-          onPress={dialog.ask}
-        >
-          {t("many-changes.show-changes")}
-        </Button>
-      </div>
+      <ShowChanges
+        disabled={dialog.action === null}
+        pending={preview.isPending}
+        onAsk={dialog.ask}
+      />
       {preview.isError ? <Alert tone={alertTone.danger}>{messageOf(preview.error)}</Alert> : null}
       {preview.data === undefined ? null : <WordingNotice />}
       {preview.data === undefined ? null : (
-        <ManyChangePreviewView preview={preview.data} plain={dialog.plain} />
+        <>
+          <WordingNotice />
+          <ManyChangePreviewView preview={preview.data} plain={dialog.plain} />
+        </>
       )}
     </AskDialog>
   );

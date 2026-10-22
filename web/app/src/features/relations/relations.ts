@@ -4,6 +4,7 @@ import { api } from "../../shared/api.ts";
 import { fieldList, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryKeys, refreshIssueRelations } from "../../shared/query-keys.ts";
 import type { RelationKindLine } from "../relation-kinds/index.ts";
+import type { NameKey } from "@bugaboo/wasm";
 
 /** What a block of the issue page needs of the page: the readable ID of the issue. */
 export interface BlockProps {
@@ -98,9 +99,13 @@ export interface RelationChoice {
 /**
  * The words to pick from when adding a relation: for each kind that is not retired, what the
  * issue reads (*blocks*) and, when it is another word, what the other one reads (*is blocked by*).
- * A kind that reads alike from both ends is offered once.
+ * A kind that reads alike from both ends is offered once; which words read alike is the rule of the
+ * server for the same name (`keyOf`).
  */
-export function relationChoices(kinds: readonly RelationKindLine[]): RelationChoice[] {
+export function relationChoices(
+  kinds: readonly RelationKindLine[],
+  keyOf: NameKey,
+): RelationChoice[] {
   return kinds
     .filter((kind) => !kind.retired)
     .flatMap((kind) => {
@@ -110,7 +115,7 @@ export function relationChoices(kinds: readonly RelationKindLine[]): RelationCho
         direction: "forward",
         name: kind.forward,
       };
-      return kind.backward.toLowerCase() === kind.forward.toLowerCase()
+      return keyOf(kind.backward) === keyOf(kind.forward)
         ? [forward]
         : [
             forward,

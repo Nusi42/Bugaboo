@@ -59,7 +59,15 @@ export function SearchPicker({
   return (
     <fieldset {...partOf(part.picker)}>
       <legend {...partOf(part.pickerLegend, { variants: [look] })}>{legend}</legend>
-      <SearchField label={searchLabel} clearLabel={clearLabel} value={query} onChange={onQuery} />
+      {/* The legend is the one visible label; the box says what to type in it, and screen readers read both. */}
+      <SearchField
+        label={searchLabel}
+        hideLabel
+        placeholder={searchLabel}
+        clearLabel={clearLabel}
+        value={query}
+        onChange={onQuery}
+      />
       <ul
         {...(look === pickerLook.boxed
           ? partOf(part.list, { variants: ["tight"] })

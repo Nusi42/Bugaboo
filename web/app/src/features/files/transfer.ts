@@ -40,8 +40,11 @@ const TIMED_OUT = 408;
 const NOT_FOUND = 404;
 /** The first status of the answers that say the server failed. */
 const SERVER_FAILED = 500;
+
 /** The answer that says the disk of the server is full: the person is told, it is not retried. */
-const NO_ROOM = 507;
+function hasNoRoom(error: Readonly<ApiError>): boolean {
+  return error.problem?.code === "file.no_room";
+}
 
 /**
  * Whether trying again can help: no answer came at all (the connection was lost), the server was
@@ -52,7 +55,7 @@ export function isTemporary(error: unknown): boolean {
     error instanceof ApiError &&
     (error.status === 0 ||
       error.status === TIMED_OUT ||
-      (error.status >= SERVER_FAILED && error.status !== NO_ROOM))
+      (error.status >= SERVER_FAILED && !hasNoRoom(error)))
   );
 }
 

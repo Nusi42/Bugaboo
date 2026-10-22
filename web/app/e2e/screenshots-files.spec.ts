@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 
 import { issueAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
@@ -78,8 +78,8 @@ async function commentWithPicture(page: Page): Promise<void> {
     .click();
 }
 
-/** The state the pictures start from: a picture, a PDF and a log, and a comment with a picture. */
-test("the issue gets its files and a comment with a file", async ({ page }) => {
+/** The state the pictures of a theme start from: a picture, a PDF and a log, and a comment with a picture. */
+async function prepareTheIssue(page: Page): Promise<void> {
   await signIn(page, ada);
   await page.goto(issueAddress(ISSUE));
   await chooseInBlock(page, screenshot("screenshot.png", 480, 300), report(), crashLog);
@@ -92,7 +92,7 @@ test("the issue gets its files and a comment with a file", async ({ page }) => {
       }),
     ),
   );
-});
+}
 
 /** The block with the finished previews, a file under a comment, and a refusal in words. */
 async function takeTheBlock(page: Page, theme: Theme, project: string): Promise<void> {
@@ -116,7 +116,7 @@ async function takeTheBar(page: Page, theme: Theme, project: string): Promise<vo
   await signIn(page, ada);
   await page.goto(issueAddress(ISSUE));
   const hold = await holdSecondPart(page);
-  const name = `holiday-video-${theme.id}.bin`;
+  const name = "holiday-video.bin";
   await chooseInBlock(page, megabytes(name, 9));
   // The first part is there and the second waits: the bar is a part of the way.
   await expect(page.getByRole("progressbar")).toBeVisible();
@@ -127,7 +127,12 @@ async function takeTheBar(page: Page, theme: Theme, project: string): Promise<vo
   await expect(remove).toBeVisible({ timeout: 30_000 });
   // The file is taken out again, so the next look starts from the same issue.
   await remove.click();
-  await expect(rowOf(page, name).getByRole("button", { name: t("common.undo") })).toBeVisible();
+  await expect(undoNote(page)).toBeVisible();
+}
+
+/** The *Undo* of the note that tells a file is deleted (the note stands apart from the row). */
+function undoNote(page: Page): Locator {
+  return page.getByRole("status").getByRole("button", { name: t("common.undo") });
 }
 
 /** A file that was deleted, with *Undo*; it is brought back after. */
@@ -138,12 +143,10 @@ async function takeUndo(page: Page, theme: Theme, project: string): Promise<void
   await rowOf(page, name)
     .getByRole("button", { name: t("files.delete-named", { name }) })
     .click();
-  await expect(rowOf(page, name).getByRole("button", { name: t("common.undo") })).toBeVisible();
+  await expect(undoNote(page)).toBeVisible();
   await chooseTheme(page, theme);
   await shotWholeAs(page, `files-undo-${project}`, MILESTONE, theme.id);
-  await rowOf(page, name)
-    .getByRole("button", { name: t("common.undo") })
-    .click();
+  await undoNote(page).click();
   await expect(
     rowOf(page, name).getByRole("button", { name: t("files.download-named", { name }) }),
   ).toBeVisible();
@@ -151,6 +154,9 @@ async function takeUndo(page: Page, theme: Theme, project: string): Promise<void
 
 for (const theme of themes) {
   test.describe(`files in ${theme.id}`, () => {
+    // Each theme starts on fresh data: no history of the files an earlier look took out.
+    test.use({ freshData: theme.id });
+    test("the issue gets its files and a comment with a file", ({ page }) => prepareTheIssue(page));
     test("the block with previews, a file under a comment, and a refusal in words", ({
       page,
     }, info) => takeTheBlock(page, theme, info.project.name));

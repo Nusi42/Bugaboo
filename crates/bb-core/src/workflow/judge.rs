@@ -24,9 +24,11 @@ words! {
     pub enum Why {
         /// The workflow has no status change from the status the issue is in to that one.
         NoSuchChange => "no-such-change",
-        /// The person may not make this status change: they may not change the status of the
-        /// issue, or *Who can do it* does not name them.
+        /// The person may not change the status of the issue at all.
         NotForYou => "not-for-you",
+        /// The person may change the status of the issue, but *Who can do it* does not name them
+        /// for this status change.
+        NotNamed => "not-named",
         /// *Only if …* is not true.
         OnlyIf => "only-if",
         /// The change needs a field that the person cannot fill in.
@@ -43,6 +45,7 @@ impl Why {
         match self {
             Self::NoSuchChange => ErrorCode::WorkflowNoSuchChange,
             Self::NotForYou => ErrorCode::WorkflowNotForYou,
+            Self::NotNamed => ErrorCode::WorkflowNotNamed,
             Self::OnlyIf => ErrorCode::WorkflowOnlyIf,
             Self::CannotFill => ErrorCode::WorkflowCannotFill,
         }
@@ -178,7 +181,7 @@ pub fn judge(
     };
     let rules = &change.rules;
     if !named_by_who(rules, changer) {
-        return refused(Why::NotForYou, None);
+        return refused(Why::NotNamed, None);
     }
     // A rule that names a hidden field turns the change down before any value is looked at, and
     // names no field, so neither the answer nor the order of the checks tells anything about it.

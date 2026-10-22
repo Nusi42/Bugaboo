@@ -1,30 +1,21 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
-import { messageOf } from "../../shared/errors.ts";
+import { CustomizeEditable, usedNowText } from "../../shared/editing/index.ts";
 import { useCreateLayout, type EditorQuery } from "./layouts.ts";
 
 /** What the form uses now, in words: the layout of another place, or the starting layout. */
 function usedNow(editor: Schema<"LayoutEditorBody">): string {
-  const from = editor.inherited_from;
-  if (from === null || from === undefined) {
-    return t("layouts.not-customized");
-  }
-  const where = from.whole_organization
-    ? t("layouts.inherited-organization")
-    : from.project === null || from.project === undefined
-      ? t("layouts.inherited-hidden")
-      : t("layouts.inherited-project", { project: from.project.name });
-  return from.issue_type === null || from.issue_type === undefined
-    ? where
-    : `${where} ${t("issue-type.only-for", { type: from.issue_type.name })}`;
+  return usedNowText(editor.inherited_from, {
+    starting: t("layouts.not-customized"),
+    organization: t("layouts.inherited-organization"),
+    hidden: t("layouts.inherited-hidden"),
+    project: (project) => t("layouts.inherited-project", { project }),
+    type: (type) => t("issue-type.only-for", { type }),
+  });
 }
 
-/**
- * A place that has no layout of its own: what it uses now, and *Customize* that makes one as a copy
- * of it, so the person can change it without touching the place it comes from.
- */
+/** A place that has no layout of its own: what it uses now, and *Customize*. */
 export function CustomizeForm({
   editor,
   query,
@@ -35,22 +26,21 @@ export function CustomizeForm({
   const create = useCreateLayout(query);
   const project = editor.project;
   return (
-    <div {...partOf(part.stack)}>
-      <p>{usedNow(editor)}</p>
-      <div {...partOf(part.row)}>
-        <Button
-          look={buttonLook.primary}
-          isPending={create.isPending}
-          onPress={() => {
-            create.mutate();
-          }}
-        >
-          {project === null || project === undefined
-            ? t("layouts.customize-organization")
-            : t("layouts.customize-project", { project: project.name })}
-        </Button>
-      </div>
-      {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
-    </div>
+    <CustomizeEditable
+      used={usedNow(editor)}
+      label={
+        project === null || project === undefined
+          ? t("layouts.customize-organization")
+          : t("layouts.customize-project", { project: project.name })
+      }
+      create={{
+        isPending: create.isPending,
+        isError: create.isError,
+        error: create.error,
+        mutate: () => {
+          create.mutate();
+        },
+      }}
+    />
   );
 }

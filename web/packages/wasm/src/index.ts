@@ -10,6 +10,7 @@ import init, {
   change_sentence,
   file_sentence,
   initSync,
+  name_key,
   notification_sentences,
   render,
   side_words,
@@ -135,6 +136,17 @@ export function loadMarkdownRenderer(): Promise<MarkdownRenderer> {
   return ready().then(() => renderer);
 }
 
+/**
+ * The key by which names are told apart, as the server tells them (`bb_core::names`): capitals and
+ * the spaces inside a name do not make a different name. Two names with one key are one name.
+ */
+export type NameKey = (name: string) => string;
+
+/** Loads the module and gives the rule of the server for the same name. */
+export function loadNameKey(): Promise<NameKey> {
+  return ready().then(() => name_key);
+}
+
 /** Loads the module and gives the wording of changes and notifications. */
 export function loadWording(): Promise<Wording> {
   return ready().then(() => wording);
@@ -150,4 +162,10 @@ export function startMarkdownRenderer(read: () => BufferSource): MarkdownRendere
 export function startWording(read: () => BufferSource): Wording {
   initSync({ module: read() });
   return wording;
+}
+
+/** Starts the module from its bytes, without the network, and gives the rule of the same name: for tests that run under Node. */
+export function startNameKey(read: () => BufferSource): NameKey {
+  initSync({ module: read() });
+  return name_key;
 }

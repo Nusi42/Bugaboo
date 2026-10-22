@@ -1,12 +1,24 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card, TextField, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  Card,
+  Icon,
+  iconName,
+  StatusPill,
+  TextField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { fieldNameOf } from "../../shared/field-names.ts";
 import { listText } from "../../shared/list-text.ts";
 import { PersonPicker } from "../access/index.ts";
-import { useTryIt, type Tried, type WorkflowEditor } from "./workflows.ts";
+import { useTried, type TryAsked, type Tried, type WorkflowEditor } from "./workflows.ts";
 
 type Verdict = Tried["changes"][number];
 
@@ -20,6 +32,14 @@ function namesOf(fields: WorkflowEditor["fields"], keys: readonly string[]): str
   );
 }
 
+/** Why the judge turned a status change down, said to the person who tries the workflow (who is not the person it is tried for). */
+function reasonOf(why: Schema<"Why">): string {
+  if (why === "not-for-you") {
+    return t("workflows.try-not-for-you");
+  }
+  return why === "not-named" ? t("workflows.try-not-named") : t(`error.workflow.${why}`);
+}
+
 /** What the judge says about one status change, in a sentence. */
 function sentenceOf(change: Verdict, fields: WorkflowEditor["fields"]): string {
   if (change.verdict === "allowed") {
@@ -28,7 +48,7 @@ function sentenceOf(change: Verdict, fields: WorkflowEditor["fields"]): string {
   if (change.verdict === "needs") {
     return t("workflows.try-needs", { fields: namesOf(fields, change.fields) });
   }
-  const reason = t(`error.workflow.${change.why}`);
+  const reason = reasonOf(change.why);
   return change.field === undefined || change.field === null
     ? reason
     : t("workflows.try-on-field", { reason, field: namesOf(fields, [change.field]) });
@@ -46,8 +66,9 @@ function Result({
 }) {
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.text)}>
-        {t("workflows.try-in", { key: issue, status: tried.status.name })}
+      <p {...partOf(part.row)}>
+        <span>{t("workflows.try-in-status", { key: issue })}</span>
+        <StatusPill group={tried.status.group} label={tried.status.name} />
       </p>
       {tried.changes.length === 0 ? (
         <p {...partOf(part.muted)}>{t("workflows.try-none")}</p>
@@ -55,8 +76,9 @@ function Result({
         <ul {...partOf(part.workflowTried)}>
           {tried.changes.map((change) => (
             <li key={change.to.key} {...partOf(part.workflowTry)}>
+              <Icon name={change.verdict === "allowed" ? iconName.check : iconName.close} />
               <strong>{change.button}</strong>
-              <span {...partOf(part.muted)}>{change.to.name}</span>
+              <StatusPill group={change.to.group} label={change.to.name} />
               <span>{sentenceOf(change, fields)}</span>
             </li>
           ))}
@@ -73,7 +95,8 @@ function Result({
 export function TryIt({ fields }: { readonly fields: WorkflowEditor["fields"] }) {
   const [issue, setIssue] = useState("");
   const [person, setPerson] = useState<string | undefined>();
-  const tried = useTryIt();
+  const [asked, setAsked] = useState<TryAsked | undefined>();
+  const tried = useTried(asked);
   return (
     <Card heading={t("workflows.try-title")}>
       <p {...partOf(part.muted)}>{t("workflows.try-text")}</p>
@@ -82,10 +105,17 @@ export function TryIt({ fields }: { readonly fields: WorkflowEditor["fields"] })
       <div {...partOf(part.row)}>
         <Button
           isDisabled={issue.trim() === "" || person === undefined}
-          isPending={tried.isPending}
+          isPending={tried.isFetching}
           onPress={() => {
-            if (person !== undefined) {
-              tried.mutate({ issue: issue.trim(), person });
+            if (person === undefined) {
+              return;
+            }
+            const next = { issue: issue.trim(), person };
+            // Asked again as it was: the answer is read again, as the rules may have changed.
+            if (asked?.issue === next.issue && asked.person === next.person) {
+              void tried.refetch();
+            } else {
+              setAsked(next);
             }
           }}
         >
@@ -93,8 +123,8 @@ export function TryIt({ fields }: { readonly fields: WorkflowEditor["fields"] })
         </Button>
       </div>
       {tried.isError ? <Alert tone={alertTone.danger}>{messageOf(tried.error)}</Alert> : null}
-      {tried.data === undefined ? null : (
-        <Result tried={tried.data} issue={issue.trim()} fields={fields} />
+      {tried.data === undefined || asked === undefined ? null : (
+        <Result tried={tried.data} issue={asked.issue} fields={fields} />
       )}
     </Card>
   );

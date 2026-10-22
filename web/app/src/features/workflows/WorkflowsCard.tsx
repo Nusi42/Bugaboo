@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
 
 import type { WorkflowsOpen } from "../../shared/paths.ts";
 import { IssueTypeChooser } from "../issue-types/index.ts";
-import { QueryGate } from "../shell/index.ts";
+import { PlaceEditorCard, placeInherits } from "../projects/index.ts";
 import { CustomizeWorkflow } from "./CustomizeWorkflow.tsx";
 import { LockedWorkflow } from "./LockedWorkflow.tsx";
 import { UseInherited } from "./UseInherited.tsx";
@@ -28,7 +27,7 @@ function Open({ editor, query }: { readonly editor: WorkflowEditor; readonly que
   return (
     <>
       <LockedWorkflow key={slot.id} editor={editor} workflow={slot.id} />
-      <UseInherited slot={slot} />
+      {placeInherits(query) ? <UseInherited slot={slot} /> : null}
     </>
   );
 }
@@ -41,9 +40,10 @@ export function WorkflowsCard({ project, heading, open, onOpen }: WorkflowsCardP
   const query: EditorQuery = { project, issueType: open.type };
   const editor = useWorkflowEditor(query);
   return (
-    <Card heading={heading} level={1}>
-      <div {...partOf(part.stack)}>
-        <p {...partOf(part.muted)}>{t("workflows.intro")}</p>
+    <PlaceEditorCard
+      heading={heading}
+      intro={t("workflows.intro")}
+      chooser={
         <IssueTypeChooser
           label={t("issue-field.issue-type")}
           type={open.type}
@@ -51,10 +51,11 @@ export function WorkflowsCard({ project, heading, open, onOpen }: WorkflowsCardP
             onOpen({ type });
           }}
         />
-        <QueryGate error={editor.error} data={editor.data}>
-          {(found) => <Open key={open.type ?? ""} editor={found} query={query} />}
-        </QueryGate>
-      </div>
-    </Card>
+      }
+      error={editor.error}
+      data={editor.data}
+    >
+      {(found) => <Open key={open.type ?? ""} editor={found} query={query} />}
+    </PlaceEditorCard>
   );
 }

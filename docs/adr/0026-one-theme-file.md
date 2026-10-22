@@ -59,4 +59,4 @@ The sister project compiles its theme to CSS **in the browser** and injects it a
 
 ## Enforced by
 
-THEME-ONLY (no `style=`, no `className`, no CSS file but the generated one), STY-TOKENS (no color written out), LINT-CSS (the compiled rules use token variables only), STY-CONTRAST (every theme and mode), DOC-GENERATED (the sheet, the names and the theme choices are the output of the file).
+THEME-ONLY (no `style=`, no `className`, no CSS file but the generated one), STY-TOKENS (no color written out), STY-PARTS (every part a rule names is a part some component has), LINT-CSS (the compiled rules use token variables only), STY-CONTRAST (every theme and mode), DOC-GENERATED (the sheet, the names and the theme choices are the output of the file).

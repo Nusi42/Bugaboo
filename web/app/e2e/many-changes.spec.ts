@@ -88,7 +88,7 @@ test("iss_09 an issue the person may not change is skipped with the reason and n
   await expect(dialog.getByText(t("preview.summary", { changed: 0, skipped: 2 }))).toBeVisible();
   await expect(dialog.getByText(t("many-changes-skip.not-allowed"))).toHaveCount(2);
   await expect(
-    dialog.getByRole("button", { name: t("many-changes.apply", { count: 2 }), exact: true }),
+    dialog.getByRole("button", { name: t("many-changes.apply", { count: 0 }), exact: true }),
   ).toBeDisabled();
 });
 

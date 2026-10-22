@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, IconButton, iconName, TextField, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, StatusPill, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import {
@@ -22,6 +22,32 @@ export interface ChangeRowProps {
   readonly edit: Edit;
 }
 
+/** *Rules* and, when the change has some, the words that say so. */
+function RulesCell({
+  change,
+  onOpen,
+}: {
+  readonly change: DraftChange;
+  readonly onOpen: () => void;
+}) {
+  return (
+    <div {...partOf(part.workflowChangeRules)}>
+      <Button
+        look={buttonLook.quiet}
+        aria-label={t("workflows.rules-open", { button: change.button })}
+        onPress={onOpen}
+      >
+        {t("workflows.rules-link")}
+      </Button>
+      {hasRules(change.rules) ? (
+        <span {...partOf(part.workflowChangeHasRules)}>
+          <span {...partOf(part.muted)}>{t("workflows.has-rules")}</span>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * One status change in the list: where it leads, the words of its button, a way to open its rules,
  * and a way to take it away. Clicking *Rules* opens them in plain words (UX §5.4).
@@ -29,35 +55,38 @@ export interface ChangeRowProps {
 export function ChangeRow({ editor, draft, change, edit }: ChangeRowProps) {
   const [open, setOpen] = useState(false);
   const [from, to] = [nameOf(draft, change.from), nameOf(draft, change.to)];
+  const target = draft.statuses.find((each) => each.id === change.to);
   return (
     <li {...partOf(part.workflowChange)}>
-      <span {...partOf(part.workflowChangeTo)}>{to}</span>
-      <TextField
-        label={t("workflows.button-text", { from, to })}
-        value={change.button}
-        onChange={(button) => {
-          edit((before) => setButton(before, change.id, button));
-        }}
-      />
-      <Button
-        look={buttonLook.quiet}
-        aria-label={t("workflows.rules-open", { button: change.button })}
-        onPress={() => {
+      <span {...partOf(part.workflowChangeTo)}>
+        {target === undefined ? to : <StatusPill group={target.group} label={target.name} />}
+      </span>
+      <div {...partOf(part.workflowChangeField)}>
+        <TextField
+          label={t("workflows.button-text", { from, to })}
+          value={change.button}
+          onChange={(button) => {
+            edit((before) => setButton(before, change.id, button));
+          }}
+        />
+      </div>
+      <RulesCell
+        change={change}
+        onOpen={() => {
           setOpen(true);
         }}
-      >
-        {t("workflows.rules-link")}
-      </Button>
-      {hasRules(change.rules) ? (
-        <span {...partOf(part.muted)}>{t("workflows.has-rules")}</span>
-      ) : null}
-      <IconButton
-        icon={iconName.close}
-        label={t("workflows.change-remove", { from, to })}
-        onPress={() => {
-          edit((before) => removeChange(before, change.id));
-        }}
       />
+      <div {...partOf(part.workflowChangeRemove)}>
+        <Button
+          look={buttonLook.quiet}
+          aria-label={t("workflows.change-remove", { from, to })}
+          onPress={() => {
+            edit((before) => removeChange(before, change.id));
+          }}
+        >
+          {t("workflows.remove")}
+        </Button>
+      </div>
       <RulesWindow
         isOpen={open}
         onOpenChange={setOpen}

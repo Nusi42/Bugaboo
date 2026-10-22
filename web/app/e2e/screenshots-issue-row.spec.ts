@@ -6,6 +6,7 @@ import { chooseTheme, themes, type Theme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { detailRow, rowSaved } from "./support/issues.ts";
+import { addTag } from "./support/labels.ts";
 import { prepareLook } from "./support/list-look.ts";
 import { screenshotFolder, shotWholeAs } from "./support/screenshots.ts";
 
@@ -24,8 +25,7 @@ async function takeTheSavedRow(page: Page, theme: Theme, project: string) {
   await signIn(page, ada);
   await openIssueWithDetails(page, ISSUE);
   const tags = detailRow(page, t("labels.tags-heading"));
-  await tags.getByLabel(t("labels.add-tag"), { exact: true }).fill("urgent");
-  await tags.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
+  await addTag(tags, "urgent");
   await expect(rowSaved(page, t("labels.tags-heading"))).toBeVisible();
   await chooseTheme(page, theme);
   await shotWholeAs(page, `issue-tag-saved-${project}`, MILESTONE, theme.id);
@@ -34,6 +34,10 @@ async function takeTheSavedRow(page: Page, theme: Theme, project: string) {
 }
 
 for (const theme of themes) {
-  test(`a tag was added in ${theme.id}`, ({ page }, info) =>
-    takeTheSavedRow(page, theme, info.project.name));
+  test.describe(`the saved row in ${theme.id}`, () => {
+    // Each theme starts on fresh data: the history of WEB-1 shows this tag and no other.
+    test.use({ freshData: theme.id });
+    test(`a tag was added in ${theme.id}`, ({ page }, info) =>
+      takeTheSavedRow(page, theme, info.project.name));
+  });
 }

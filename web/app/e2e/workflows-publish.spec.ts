@@ -75,3 +75,44 @@ test("wf_02 a draft is kept when somebody else published first, and put back on 
   await page.getByRole("button", { name: t("workflows.draft-restore"), exact: true }).click();
   await expect(page.getByLabel(t("workflows.name"), { exact: true })).toHaveValue("Simple, mine");
 });
+
+test("wf_02 a draft a refused publish left is still offered after a reload (ADR-0019)", async ({
+  page,
+  browser,
+  server,
+}) => {
+  await signIn(page, ada);
+  await openSimpleToChange(page);
+  const other = await anotherBrowser(browser, server);
+  await signIn(other, ada);
+  await openSimpleToChange(other);
+  await renameWorkflowTo(other, "Simple, theirs again");
+  await other.getByRole("button", { name: t("workflows.publish"), exact: true }).click();
+  await expect(other.getByText(t("save.saved"), { exact: true })).toBeVisible();
+  await renameWorkflowTo(page, "Simple, mine again");
+  await page.getByRole("button", { name: t("workflows.publish"), exact: true }).click();
+  await expect(page.getByText(t("workflows.draft-changed"))).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(t("workflows.draft-changed"))).toBeVisible();
+  await page.getByRole("button", { name: t("workflows.draft-restore"), exact: true }).click();
+  await expect(page.getByLabel(t("workflows.name"), { exact: true })).toHaveValue(
+    "Simple, mine again",
+  );
+  // Put back, it is not offered again.
+  await page.reload();
+  await expect(page.getByText(t("workflows.draft-changed"))).toHaveCount(0);
+});
+
+test("wf_02 a status renamed to a name another has is named, and Publish waits", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openSimpleToChange(page);
+  // Open becomes Done: the field says so, and Publish says which name stands twice.
+  await page.getByLabel(t("workflows.status-name"), { exact: true }).first().fill("done");
+  await expect(page.getByText(t("workflows.status-name-taken")).first()).toBeVisible();
+  await expect(page.getByText(t("workflows.publish-name-twice", { name: "done" }))).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: t("workflows.publish"), exact: true }),
+  ).toBeDisabled();
+});

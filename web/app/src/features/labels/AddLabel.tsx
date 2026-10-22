@@ -24,7 +24,8 @@ export function AddLabel({ has, project, onAdd, pending }: AddLabelProps) {
   const [picked, setPicked] = useState(NONE);
   const offered = useLabelsToAdd(project, has);
   if (offered.length === 0) {
-    return <p {...partOf(part.muted)}>{t("labels.nothing-to-add")}</p>;
+    // With no label on the issue the row says so once, in its own line (`LabelsRow`).
+    return has.length === 0 ? null : <p {...partOf(part.muted)}>{t("labels.nothing-to-add")}</p>;
   }
   return (
     <Form

@@ -452,6 +452,7 @@ export interface MessageArguments {
   "workflows.project-title": { project: string | number };
   "workflows.publish-blocked": { count: number; status: string | number };
   "workflows.publish-go": { count: number };
+  "workflows.publish-name-twice": { name: string | number };
   "workflows.publish-too-many": { limit: string | number };
   "workflows.publish-unseen": { count: number };
   "workflows.publish-where": { count: number; status: string | number };
@@ -463,7 +464,7 @@ export interface MessageArguments {
   "workflows.status-down": { name: string | number };
   "workflows.status-remove": { name: string | number };
   "workflows.status-up": { name: string | number };
-  "workflows.try-in": { key: string | number; status: string | number };
+  "workflows.try-in-status": { key: string | number };
   "workflows.try-needs": { fields: string | number };
   "workflows.try-on-field": { field: string | number; reason: string | number };
   "workflows.uses-hidden": { name: string | number };

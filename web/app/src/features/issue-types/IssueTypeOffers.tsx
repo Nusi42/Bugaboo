@@ -4,7 +4,7 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { pageSize } from "../../shared/paged.ts";
 import { refreshIssueTypes } from "../../shared/query-keys.ts";
-import { OfferedIn } from "../projects/index.ts";
+import { OfferedIn, offerChangeBody } from "../projects/index.ts";
 import type { IssueTypeLine } from "./issue-types.ts";
 
 /**
@@ -31,18 +31,7 @@ export function IssueTypeOffers({ issueType }: { readonly issueType: IssueTypeLi
         isPending={change.isPending}
         error={change.isError ? messageOf(change.error) : null}
         onChange={({ project, offered }) => {
-          change.mutate({
-            ...path,
-            body: {
-              version: issueType.version,
-              changes: [
-                {
-                  ...(project === null ? {} : { project }),
-                  ...(offered === null ? {} : { offered }),
-                },
-              ],
-            },
-          });
+          change.mutate({ ...path, body: offerChangeBody(issueType.version, project, offered) });
         }}
       />
     </div>

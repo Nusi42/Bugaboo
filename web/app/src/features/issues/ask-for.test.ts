@@ -1,6 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { askValuesOf, needsAsking, needsTheDescription, type NeededField } from "./ask-for.ts";
+import {
+  askValuesOf,
+  needsAsking,
+  needsTheDescription,
+  statusActions,
+  type NeededField,
+} from "./ask-for.ts";
 import { emptyForm } from "./new-issue-form.ts";
 
 const found = "0192b0f2-6f6e-7c11-8a41-2a8f0c3d7e51";
@@ -8,6 +14,26 @@ const testing = { key: "testing", name: "Testing", group: "in-progress" } as con
 const own: NeededField = { field: found, kind: "own" };
 const people: NeededField = { field: "assigned-to", kind: "assigned-to" };
 const description: NeededField = { field: "description", kind: "description" };
+
+describe("wf_04 the status list names the status when two changes have the same words", () => {
+  const react = {
+    ask: vi.fn<(change: unknown) => void>(),
+    make: vi.fn<(change: unknown) => void>(),
+  };
+  const done = { key: "done", name: "Done", group: "done" } as const;
+
+  it("tells two changes with the same words apart by the status they lead to", () => {
+    const labels = statusActions(
+      [
+        { to: testing, button: "Move on", needs: [] },
+        { to: done, button: "Move on", needs: [] },
+        { to: done, button: "Mark as done", needs: [] },
+      ],
+      react,
+    ).map((action) => action.label);
+    expect(labels).toEqual(["Move on (to Testing)", "Move on (to Done)", "Mark as done"]);
+  });
+});
 
 describe("wf_04 the window of Ask for holds only the fields the change needs", () => {
   it("asks nothing for a change that needs nothing", () => {

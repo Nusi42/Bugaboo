@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import { Priority, type PriorityWord } from "@bugaboo/ui";
 
 import { known } from "../../shared/present.ts";
 import { AssignedRow } from "./AssignedRow.tsx";
@@ -30,6 +31,11 @@ export function AssignedToRow({ blocks, changes }: ChangeableRowsProps) {
   );
 }
 
+/** The icon of a priority before its word or its list (R5). */
+function priorityLead(word: PriorityWord, label: string, showWord: boolean) {
+  return <Priority priority={word} label={label} showWord={showWord} />;
+}
+
 /** *Priority*, the other field of the Details that changes in place. */
 export function PriorityRow({ blocks, changes }: ChangeableRowsProps) {
   const { issue, mask, form } = blocks;
@@ -41,6 +47,7 @@ export function PriorityRow({ blocks, changes }: ChangeableRowsProps) {
       value={priority}
       canChange={mask.changes("priority")}
       status={rowStatus(changes, "priority")}
+      lead={priorityLead}
       onPick={(picked) => {
         changes.change({ priority: picked });
       }}

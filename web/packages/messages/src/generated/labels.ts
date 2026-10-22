@@ -72,6 +72,7 @@ export const messages = {
   "labels.tag-suggestions": "Tags to choose from",
   "labels.add-label": "Add a label",
   "labels.add-label-button": "Add label",
+  "labels.none-to-pick": "This project has no labels yet.",
   "labels.nothing-to-add": "Every label is on this issue already.",
   "labels.project-intro":
     "Switch off the label groups this project does not offer. Labels already on an issue stay on it.",

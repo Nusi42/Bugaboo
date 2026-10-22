@@ -32,18 +32,18 @@ function AssignedField({
   return (
     <div>
       <p {...partOf(part.fieldLabel)}>{name}</p>
-      <span {...partOf(part.row)}>
+      <div {...partOf(part.startColumn)}>
         {values.assignedTo.map((person) => (
           <span key={person.id}>{person.name}</span>
         ))}
-      </span>
-      <ChangeAssigned
-        name={name}
-        empty={values.assignedTo.length === 0}
-        onPress={() => {
-          setPicking(true);
-        }}
-      />
+        <ChangeAssigned
+          name={name}
+          empty={values.assignedTo.length === 0}
+          onPress={() => {
+            setPicking(true);
+          }}
+        />
+      </div>
       <AssignedPicker
         isOpen={picking}
         onClose={() => {

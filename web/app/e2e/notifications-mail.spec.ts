@@ -58,7 +58,7 @@ test("ntf_02 Customize has a row for each kind of event, with the standard choic
 }) => {
   await signIn(page, ana);
   await openNotifications(page);
-  await page.getByRole("link", { name: t("notifications.customize"), exact: true }).click();
+  await page.getByRole("button", { name: t("notifications.customize"), exact: true }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: t("nav.notification-settings") }),
   ).toBeVisible();

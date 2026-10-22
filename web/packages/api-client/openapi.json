@@ -25197,6 +25197,7 @@
           "label.not_offered",
           "workflow.no_such_change",
           "workflow.not_for_you",
+          "workflow.not_named",
           "workflow.only_if",
           "workflow.cannot_fill",
           "workflow.status_in_use",
@@ -33634,7 +33635,7 @@
       "Why": {
         "type": "string",
         "description": "Why a status change is not allowed.",
-        "enum": ["no-such-change", "not-for-you", "only-if", "cannot-fill"]
+        "enum": ["no-such-change", "not-for-you", "not-named", "only-if", "cannot-fill"]
       },
       "WordBody": {
         "type": "object",

@@ -15,12 +15,15 @@ import {
   type ManyChangeKind,
 } from "./many-changes.ts";
 import { actionOf, emptyDraft, type Draft } from "./draft.ts";
+import { exactName } from "../../shared/same-name.ts";
+import { useNameKey } from "../../shared/use-name-key.ts";
 
 /** What is filled in for one of the five things, and the request it makes (nothing while it is not complete). */
 function useManyChangeDraft(kind: ManyChangeKind, statusChanges: readonly ProjectChange[]) {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const kinds = useRelationKinds();
-  const relations = relationChoices(relationKindLinesOf(kinds.data?.pages));
+  const keyOf = useNameKey() ?? exactName;
+  const relations = relationChoices(relationKindLinesOf(kinds.data?.pages), keyOf);
   return {
     draft,
     setDraft,

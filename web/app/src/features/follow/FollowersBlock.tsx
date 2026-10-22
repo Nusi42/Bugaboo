@@ -27,8 +27,8 @@ function useFollowers(issue: string) {
   });
 }
 
-/** *Follow* or *Following*: the person's own choice, with the reason when they follow. */
-function FollowButton({ issue }: { readonly issue: string }) {
+/** The person's own choice to follow the issue: whether they do, why, and the way to turn it round. */
+function useFollowing(issue: string) {
   const state = api.query.useQuery("get", "/api/v1/issues/{issue}/follow", {
     params: { path: { issue } },
   });
@@ -41,28 +41,20 @@ function FollowButton({ issue }: { readonly issue: string }) {
   const params = { params: { path: { issue } } } as const;
   const following = state.data?.following === true;
   const reason = state.data?.reason;
-  return (
-    <>
-      <Button
-        look={buttonLook.quiet}
-        isPending={follow.isPending || leave.isPending}
-        onPress={() => {
-          if (following) {
-            leave.mutate(params);
-          } else {
-            follow.mutate(params);
-          }
-        }}
-      >
-        {following ? t("followers.stop") : t("followers.follow")}
-      </Button>
-      {following ? <span {...partOf(part.muted)}>{t("followers.following")}</span> : null}
-      {reason === undefined || reason === null ? null : (
-        <span {...partOf(part.muted)}>{t(reasonMessage[reason])}</span>
-      )}
-      {follow.isError ? <Alert tone={alertTone.danger}>{messageOf(follow.error)}</Alert> : null}
-    </>
-  );
+  return {
+    following,
+    // The reason a person follows is the hint of the words that say so.
+    why: reason === undefined || reason === null ? undefined : t(reasonMessage[reason]),
+    pending: follow.isPending || leave.isPending,
+    error: follow.error,
+    turn: () => {
+      if (following) {
+        leave.mutate(params);
+      } else {
+        follow.mutate(params);
+      }
+    },
+  };
 }
 
 /**
@@ -73,25 +65,35 @@ function FollowButton({ issue }: { readonly issue: string }) {
  */
 export function FollowersBlock({ readableId }: { readonly readableId: string }) {
   const list = useFollowers(readableId);
+  const mine = useFollowing(readableId);
   const [shown, setShown] = useState(false);
   const people = itemsOf(list.data?.pages);
+  const counted = people.length > 0;
   return (
     <NameValueRow name={t("followers.name")}>
-      {people.length === 0 ? null : (
-        <div {...partOf(part.row)}>
-          <Button
-            look={buttonLook.quiet}
-            onPress={() => {
-              setShown(!shown);
-            }}
-          >
-            {followerCount(people.length, list.hasNextPage)}
-          </Button>
-        </div>
-      )}
       <div {...partOf(part.row)}>
-        <FollowButton issue={readableId} />
+        <span {...partOf(part.row)}>
+          {counted ? (
+            <Button
+              look={buttonLook.quiet}
+              onPress={() => {
+                setShown(!shown);
+              }}
+            >
+              {followerCount(people.length, list.hasNextPage)}
+            </Button>
+          ) : null}
+          {mine.following ? (
+            <span {...partOf(part.muted)} title={mine.why}>
+              {t(counted ? "followers.following-after-count" : "followers.following")}
+            </span>
+          ) : null}
+        </span>
+        <Button look={buttonLook.quiet} isPending={mine.pending} onPress={mine.turn}>
+          {mine.following ? t("followers.stop") : t("followers.follow")}
+        </Button>
       </div>
+      {mine.error === null ? null : <Alert tone={alertTone.danger}>{messageOf(mine.error)}</Alert>}
       {shown ? <FollowerNames people={people} /> : null}
       {shown && list.hasNextPage ? (
         <Button

@@ -95,14 +95,15 @@ function Control({
 }: {
   readonly name: string;
   readonly icon: (typeof iconName)[keyof typeof iconName];
-  readonly onPress: () => void;
+  /** What a press does; the list of the size menu opens by itself on a computer, so it has none there. */
+  readonly onPress: (() => void) | undefined;
   readonly variant?: typeof closeVariant;
 }) {
   return (
     <Button
       {...partOf(part.windowControl, { variants: [variant] })}
       aria-label={name}
-      onPress={onPress}
+      {...(onPress === undefined ? {} : { onPress })}
     >
       <Icon name={icon} size={iconSize.small} />
     </Button>

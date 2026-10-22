@@ -169,7 +169,7 @@
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-dev-words/       the words the developer tools, the tests and xtask share: databases, test variables, the sample layout
-│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation, and the wording of changes and notifications (bb-core)
+│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation, the wording of changes and notifications and the rule of the same name (bb-core)
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
 │   ├── bb-load-check/      the invariants after a run of many people at once, written once; developer tool and test support (never shipped)
@@ -183,7 +183,7 @@
 │   └── packages/
 │       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
 │       ├── ui/             shared components on React Aria + the generated style sheet; depends on api-client for the generated choices and defaults of the settings (the look of a person), and loads `wasm` when a Markdown preview opens
-│       ├── wasm/           loads the module of bb-wasm (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
+│       ├── wasm/           loads the module of bb-wasm (Markdown preview; the rule of the same name for the draft of a workflow) (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
 │       └── messages/       generated, typed message keys
 ├── docs/                   development docs (this)
 └── userDocs/               user and admin docs</code></pre>
@@ -810,7 +810,7 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 <ol>
 <li>The viewer themselves: their name.</li>
 <li>A removed person (PRIV-04, M9): with <em>Names</em>, the label <em>Former user</em> plus a random code (<code>Former user K7Q2</code>): four characters of Crockford Base32 from the secure random source, drawn again on a clash and longer when four run short, unique among removed people, made when the person is removed and stored with the tombstone, never made from the person's ID or a counter (PRIV-13); with <em>Role only</em> or <em>Hidden</em>, <em>Someone</em>.</li>
-<li>Anybody else by the viewer's level: <em>Names</em> → the name (and the ID, for links); <em>Role only</em> → the label of their first role at that place in the order of roles (<em>"a Team member"</em>), or <em>Someone</em> when they have none there; <em>Hidden</em> → <em>Someone</em>.</li>
+<li>Anybody else by the viewer's level: <em>Names</em> → the name (and the ID, for links); <em>Role only</em> → the label of their first role at that place in the order of roles (<em>"Someone (Team member)"</em>), or <em>Someone</em> when they have none there; <em>Hidden</em> → <em>Someone</em>.</li>
 </ol>
 <pre><code>PersonRef = { shown: "name",    id: UserId, name: String }
           | { shown: "role",    role: String }          // the screen says "a {role}"
@@ -1208,6 +1208,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>TXT-CATALOG</code></td><td>Message catalog: no missing, unused or duplicate keys; placeholders match; every area imports its part</td><td>UX-07, ADR-0028</td><td>xtask (parses messages/en.json and code references; the entry of every feature with a message part imports it)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-TERMS</code></td><td>No words from the glossary's 'Don't say' column in UI text, user docs, API names or the names the code declares</td><td>glossary.md</td><td>xtask (reads glossary tables)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>STY-TOKENS</code></td><td>Only design tokens in code: no hex/rgb colors in the app or in a rule of the theme file</td><td>ADR-0010, ADR-0026</td><td>xtask (no color values in the TypeScript and CSS of the app, nor in the rules of design/theme.kdl; sizes are LINT-CSS, styles from code are THEME-ONLY)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>STY-PARTS</code></td><td>Every part that design/theme.kdl styles is a part that some component has</td><td>ADR-0026</td><td>xtask (the part names of the rules of design/theme.kdl against the part names written in web/**/*.{ts,tsx}: a rule for a part no component has styles nothing)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>THEME-ONLY</code></td><td>The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one (also in the pages of docs/)</td><td>ADR-0026, coding-standards §4</td><td>xtask (the TypeScript and CSS files of the app, and no style element or attribute in the pages of docs/; nothing is exempt)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>STY-CONTRAST</code></td><td>Every text/background pair in the built-in themes passes WCAG AA</td><td>THM-03, UX-04</td><td>xtask (reads design/theme.kdl: every theme, in the usual mode and with more contrast)</td><td>commit · ci</td></tr>
 <tr><td><code>ARCH-DEPS</code></td><td>Crates depend only on what the module map allows</td><td>architecture §4 (dependency rules), ADR-0001</td><td>xtask (cargo metadata vs allowed edges)</td><td>push · ci</td></tr>
@@ -1279,7 +1280,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>91 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>92 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>
@@ -1334,7 +1335,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Project</th><th>Short name</th><th>IDs</th><th>Sub-projects</th><th>Issues</th></tr></thead><tbody>
 <tr><td>Mobile app</td><td>APP</td><td>random</td><td>iOS (<code>IOS</code>), Android (<code>AND</code>)</td><td>≈ 4,800</td></tr>
 <tr><td>Website</td><td>WEB</td><td>counting</td><td>Shop (<code>SHOP</code>), Blog (<code>BLOG</code>)</td><td>≈ 3,000</td></tr>
-<tr><td>Operations</td><td>OPS</td><td>random</td><td>—</td><td>≈ 1,800, including restricted security issues</td></tr>
+<tr><td>Operations</td><td>OPS</td><td>counting</td><td>—</td><td>≈ 1,800, including restricted security issues</td></tr>
 <tr><td>Handbook</td><td>DOC</td><td>counting</td><td>—</td><td>≈ 400, mostly documents and tasks</td></tr>
 </tbody></table>
 </div>
@@ -1374,7 +1375,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><em>Start working</em> opens a small window that asks for who does the work; the Team member names a colleague and saves: <em>In progress</em>.</li>
 <li>The Team member pastes a screenshot onto the bug (the row and its preview), and writes the customer.</li>
 <li><em>Mark as done</em>: <em>Done</em>.</li>
-<li>The Guest opens <em>Notifications</em>: the bug and its changes are there, without the customer, the colleague (the Guest reads <em>someone</em>) and the name of the Team member (the Guest reads <em>a person with the role Team member</em>).</li>
+<li>The Guest opens <em>Notifications</em>: the bug and its changes are there, without the customer, the colleague (the Guest reads <em>someone</em>) and the name of the Team member (the Guest reads <em>Someone (Team member)</em>).</li>
 <li>The e-mail has come to the Guest too, without the customer and without the names; its link opens the bug.</li>
 </ol>
 <h4>Speed on the sample</h4>
@@ -2312,6 +2313,10 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>The scenarios of ten people</strong> are in <code>web/app/e2e/concurrent/</code> (ten Playwright contexts) and in <code>cargo xtask load --people 10</code> (the API at speed, both databases, two minutes in <code>cargo xtask ci</code>, <code>--nightly</code> for thirty); the invariants after a run are listed in architecture §11. A lock must also end by itself within the lease for an editor who vanished: no lock row ends later than the lease from now, nobody holds a lock once the leases are over, and the draft of the vanished editor is still there. These rules are written once, in <code>bb-load-check</code>. Enforced by TEST-CONCURRENT and, for the browser part of the locks, TEST-EDIT-LOCKS.</li>
 <li><strong>A lock covers only the long text.</strong> A change of another field of the record (a status, a change of many issues) since the person started is no conflict for the save of the text: <code>Ctx::version_for_text</code> writes the text on the version the record has now when no event after the sent version changed this text. The write still compares that version, so a change that lands in between is refused (ARCH-VERSIONED). A change of the text itself still gives <code>edit.version_changed</code> and <em>Compare and save</em>. Found by the scenario of ten people: the save compared the version of the whole issue.</li>
 </ul>
+<h4>Amendment (M4 exit, WP-14)</h4>
+<ul>
+<li><strong>Where a draft is kept depends on what is edited.</strong> The draft of a text and of a layout is kept by the server: the editor holds an edit lock, its heartbeat writes the draft, and a refused save leaves it for the person to take back (<code>useKeptDraft</code>). The draft of a workflow is kept by the browser (<code>web/app/src/features/workflows/left-draft.ts</code>, with the other browser drafts of <code>browser-drafts.ts</code>, by person and by workflow, 30 days): a workflow is a structure that <em>Publish</em> may refuse or turn into a question about the issues it moves, and the server has no route that stores a draft of it. Both are there so that nothing typed is dropped; what differs is only the place. Making the workflow draft a server draft needs a draft route for structures and is M4-F152.</li>
+</ul>
 
 <!-- 0020-architecture-checks.md -->
 <h3 id="adr-0020"><button class="sec" data-sec>§13.20</button>ADR-0020: Architecture is checked by many small checks, and the checks are checked</h3>
@@ -2410,7 +2415,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>Names of people appear in many places: reported by, assigned to, last changed by, comment and history authors, followers, "… is editing", time entries, mentions, avatars, e-mails, exports, the assistant. Under GDPR, organizations may need to hide who did what from some roles (for example external guests, or works-council agreements).</p>
 <h4>Decision</h4>
 <ul>
-<li><strong>Who sees people</strong> is configured per role on the project tree, like field permissions, for each kind of people information: <strong>Names</strong>, <strong>Role only</strong> (<em>"a Team member"</em>) or <strong>Hidden</strong> (<em>"Someone"</em>).</li>
+<li><strong>Who sees people</strong> is configured per role on the project tree, like field permissions, for each kind of people information: <strong>Names</strong>, <strong>Role only</strong> (<em>"Someone (Team member)"</em>) or <strong>Hidden</strong> (<em>"Someone"</em>).</li>
 <li>Every place that shows a person uses one type, <strong><code>PersonRef</code></strong>, which is resolved for the <strong>viewer</strong> by <code>bb-policy</code> into a name, a role label or <em>Someone</em>. Raw person data never reaches serialization directly.</li>
 <li>If a viewer can't see names for a kind of information, they also can't search, sort, group or filter by it; the field behaves like a hidden field (SEC-06).</li>
 <li>Edit-lock notices follow the same rule: <em>"Someone is editing the description"</em>.</li>
@@ -2692,7 +2697,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>Tailwind CSS and CSS-in-JS at run time:</strong> rejected in ADR-0010 and still.</li>
 </ul>
 <h4>Enforced by</h4>
-<p>THEME-ONLY (no <code>style=</code>, no <code>className</code>, no CSS file but the generated one), STY-TOKENS (no color written out), LINT-CSS (the compiled rules use token variables only), STY-CONTRAST (every theme and mode), DOC-GENERATED (the sheet, the names and the theme choices are the output of the file).</p>
+<p>THEME-ONLY (no <code>style=</code>, no <code>className</code>, no CSS file but the generated one), STY-TOKENS (no color written out), STY-PARTS (every part a rule names is a part some component has), LINT-CSS (the compiled rules use token variables only), STY-CONTRAST (every theme and mode), DOC-GENERATED (the sheet, the names and the theme choices are the output of the file).</p>
 
 <!-- 0027-layouts-and-rules-per-issue-type.md -->
 <h3 id="adr-0027"><button class="sec" data-sec>§13.27</button>ADR-0027: Layouts, rules per issue type and the starting workflow</h3>
@@ -2819,7 +2824,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>Every agent has one responsible person</strong>, normally the person who made it; handing an agent to another person needs that person's acceptance. Creating agents takes the new permission <em>Create agents that work for you</em> (organization, kind <em>Change</em>; at the start Administrator, Project lead and Team member have it). Administrators see every agent of the organization in <em>Organization settings › Agents</em> and can stop any of them; an administrator can switch agents off for the organization or a project, like AI itself (AI-02). Enforced by: the tests <code>ai_30_an_agent_needs_a_responsible_person</code> and <code>ai_30_an_administrator_stops_any_agent</code> (M8).</li>
 <li><strong>What an agent can do at a place is at most what its responsible person can do there</strong>, narrowed by its work (decision 3) and its limits (decision 9). When the person loses that access, is switched off or leaves, the agent loses it at the next request, and its open work becomes <em>Stopped</em>. Enforced by: the tests <code>ai_30_an_agent_never_does_more_than_its_person</code> and <code>ai_30_an_agent_stops_when_its_person_loses_access</code> (M8).</li>
 <li><strong>An agent is not a member:</strong> it has no role, is in no group, never appears in <em>Who has which role</em>, and is never <em>Assigned to</em> an issue. The issue keeps its person; while an agent works on it the issue shows <em>"worked on by Fixer"</em>. This keeps a person answerable for every issue and keeps COMP-10 simple. Enforced by: the tests <code>ai_30_an_agent_cannot_be_assigned</code> and <code>ai_30_an_agent_has_no_role</code> (M8).</li>
-<li><strong>Shown as</strong> its name with an agent mark and its person: <em>"Fixer, agent of Ada Brandt"</em>. Its own name is always shown (it is not a person); its person follows <em>Who sees people</em> for the viewer (<em>"agent of a Team member"</em>).</li>
+<li><strong>Shown as</strong> its name with an agent mark and its person: <em>"Fixer, agent of Ada Brandt"</em>. Its own name is always shown (it is not a person); its person follows <em>Who sees people</em> for the viewer (<em>"agent of Someone (Team member)"</em>).</li>
 <li>An agent signs in with its own <strong>agent key</strong> (an access key that belongs to the agent and always runs out) or with OAuth for its app. Agent keys are listed with the agent and can be renewed or taken back there.</li>
 <li><strong>One person, several agents:</strong> a person may have several agents, and each agent may work on several issues at once, within its limits. <em>My agents</em> (decision 8) shows all of them together, with what waits for the person first.</li>
 </ul>
@@ -2919,7 +2924,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h4>Decision</h4>
 <h5>1. The person on the bar</h5>
 <ul>
-<li>Each bar shows the picture and first name of the person it is <em>Assigned to</em>, at its end (PLAN-10); <em>Group by person</em> gives one row per person, so overlapping work is visible. Both follow <em>Who sees people</em> for the viewer: <em>Role only</em> shows <em>"a Team member"</em> and offers no grouping by person, <em>Hidden</em> shows nobody. Enforced by: the test <code>plan_10_the_timeline_shows_people_only_as_who_sees_people_allows</code> (M7).</li>
+<li>Each bar shows the picture and first name of the person it is <em>Assigned to</em>, at its end (PLAN-10); <em>Group by person</em> gives one row per person, so overlapping work is visible. Both follow <em>Who sees people</em> for the viewer: <em>Role only</em> shows <em>"Someone (Team member)"</em> and offers no grouping by person, <em>Hidden</em> shows nobody. Enforced by: the test <code>plan_10_the_timeline_shows_people_only_as_who_sees_people_allows</code> (M7).</li>
 </ul>
 <h5>2. Work times: when and how much a person works</h5>
 <ul>
@@ -3245,7 +3250,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>The <em>Mentions</em> block</strong> of the start page is gone. The routes <code>/api/v1/me/mentions</code> and <code>/api/v1/me/mentions/read</code> are removed: there is one way to read mentions, the notifications.</li>
 </ul>
 <h4>Amendment (M4 WP-13): one wording for the screen and the e-mail</h4>
-<p>The words of a change and of a notification are chosen once, in <code>bb-core</code> (<code>wording</code>). The server's e-mails call the code directly and the browser calls the same code through <code>bb-wasm</code> (ADR-0005), from the lazy parts only: the history of an issue, the notifications, the preview of a change to many issues and the sentence about a conflict on the issue page. They load the module with <code>import()</code> and show a skeleton until it is there (the first page does not grow; the module has its own budget, PERF-04).</p>
+<p>The words of a change and of a notification are chosen once, in <code>bb-core</code> (<code>wording</code>). The server's e-mails call the code directly and the browser calls the same code through <code>bb-wasm</code> (ADR-0005), from the lazy parts only: the history of an issue, the notifications, the preview of a change to many issues and the sentence about a conflict on the issue page. They load the module with <code>import()</code> and show a skeleton until it is there (the first page does not grow; the module has its own budget, PERF-04). The workflow editor loads one more thing the same way: the rule of the same name (<code>bb_core::names</code>, <code>name_key</code>), so that <em>Add</em> and <em>Rename</em> of a status say a name is taken by the rule of the server and not by one written again in the browser (M4 WP-14); the editor keeps that check off until the module is there, and the refusal of the server stays the judge.</p>
 <ul>
 <li><strong>What is shared.</strong> The choice of sentence (<em>changed</em>, <em>set</em>, <em>cleared</em>, the long text), the message keys and the sentences of every kind of notification, the words of a status and a priority, yes and no, a length of time, a list of names, and the rule that a line of an e-mail gets no full stop after a value that ends in <code>.</code>, <code>?</code> or <code>!</code>. The result is a tree of message keys and values (<code>Said</code>); it holds no English. The server renders it with its catalog, the browser looks the keys up in its own.</li>
 <li><strong>What is not shared, with the owner's approval.</strong> <em>Approved by the owner on 2026-10-22:</em> region-dependent formatting of dates, numbers and time zones is kept in two implementations, because the browser's <code>device</code> choice uses <code>Intl</code>, which the server cannot run. They are held together by vectors generated from Rust: <code>cargo xtask gen word-vectors</code> writes <code>tools/testdata/value-words.json</code> from <code>bb_core::wording::vectors</code> (the expected words are what the server writes), DOC-GENERATED fails when the file differs from that code, and the browser test <code>web/app/src/shared/value-words.test.ts</code> fails when the screen writes a case differently. The cases hold half-up rounding, the 12-hour clock, and the fixed date orders (day first, month first, year first).</li>

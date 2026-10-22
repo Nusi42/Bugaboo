@@ -17,6 +17,23 @@ function folderOf(milestone: string): string {
   return target;
 }
 
+/**
+ * Whether a window or a question covers the page. It is pinned to the screen, so its picture is the
+ * size of the screen: on a page grown to its content it would float in the middle of blank space.
+ */
+async function coversThePage(page: Page): Promise<boolean> {
+  return (await page.locator("[role='dialog'], [role='alertdialog']").count()) > 0;
+}
+
+/**
+ * Takes the pointer off the page, to a point outside the window, where there is no control to be
+ * pointed at: the last control a test pressed (or a corner, where a *Back* may stand) would
+ * otherwise show its hover fill in the picture.
+ */
+async function pointerAway(page: Page): Promise<void> {
+  await page.mouse.move(-10, -10);
+}
+
 /** The two looks the maintainer sees: the device asks for a light or a dark look, as a phone does. */
 const looks = ["light", "dark"] as const;
 
@@ -35,6 +52,7 @@ const otherThan = { light: "dark", dark: "light" } as const;
  */
 export async function shoot(page: Page, name: string, milestone = "M1"): Promise<void> {
   const target = folderOf(milestone);
+  await pointerAway(page);
   await inOrder(
     looks.map((look) => async () => {
       // Like a phone in dark mode: "Match my device" then shows the dark theme as chosen. The
@@ -43,7 +61,10 @@ export async function shoot(page: Page, name: string, milestone = "M1"): Promise
       await page.emulateMedia({ colorScheme: otherThan[look] });
       await page.emulateMedia({ colorScheme: look });
       await expectLook(page, themeOf[look]);
-      await page.screenshot({ path: join(target, `${name}-${look}.png`), fullPage: true });
+      await page.screenshot({
+        path: join(target, `${name}-${look}.png`),
+        fullPage: !(await coversThePage(page)),
+      });
     }),
   );
   await page.emulateMedia({ colorScheme: null });
@@ -118,7 +139,9 @@ async function withWholePage(page: Page, take: () => Promise<void>): Promise<voi
     return;
   }
   const original = page.viewportSize();
-  await growToContent(page);
+  if (!(await coversThePage(page))) {
+    await growToContent(page);
+  }
   await take();
   if (original !== null) {
     await page.setViewportSize(original);
@@ -147,10 +170,11 @@ export function shootWholeAs(
   mask: readonly Locator[] = [],
 ): Promise<void> {
   return withWholePage(page, async () => {
+    await pointerAway(page);
     await expectLook(page, theme);
     await page.screenshot({
       path: join(folderOf(milestone), `${name}-${theme}.png`),
-      fullPage: true,
+      fullPage: !(await coversThePage(page)),
       mask: [...mask],
     });
   });

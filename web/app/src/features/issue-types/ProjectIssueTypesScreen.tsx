@@ -5,7 +5,7 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { projectPages } from "../../shared/project-pages.ts";
 import { refreshIssueTypes } from "../../shared/query-keys.ts";
-import { ProjectGate, ProjectTabs, OfferedHere } from "../projects/index.ts";
+import { offerChangeBody, ProjectOffers, ProjectSettingsScreen } from "../projects/index.ts";
 import { CreateIssueTypeForm } from "./CreateIssueTypeForm.tsx";
 import { issueTypeLinesOf, useIssueTypes, type IssueTypeLine } from "./issue-types.ts";
 
@@ -29,29 +29,28 @@ function Types({ project }: { readonly project: string }) {
   return (
     <div {...partOf(part.stack)}>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
-      <ul {...partOf(part.list)} aria-label={t("issue-types.project-list")}>
-        {types.map((issueType) => (
-          <OfferedHere
-            key={issueType.id}
-            name={issueType.name}
-            beside={<Beside issueType={issueType} />}
-            offered={issueType.here?.offered ?? true}
-            own={issueType.here?.own}
-            mayChange={issueType.here?.mayChange === true}
-            isPending={change.isPending}
-            onChange={(offered) => {
-              change.mutate({
-                params: { path: { issue_type: issueType.id } },
-                body: {
-                  version: issueType.version,
-                  changes: [{ project, ...(offered === null ? {} : { offered }) }],
-                },
-              });
-            }}
-          />
-        ))}
-      </ul>
-      {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
+      <ProjectOffers
+        label={t("issue-types.project-list")}
+        offers={types.map((issueType) => ({
+          id: issueType.id,
+          name: issueType.name,
+          beside: <Beside issueType={issueType} />,
+          offered: issueType.here?.offered,
+          own: issueType.here?.own,
+          mayChange: issueType.here?.mayChange,
+        }))}
+        isPending={change.isPending}
+        error={change.error}
+        onChange={(id, offered) => {
+          const issueType = types.find((each) => each.id === id);
+          if (issueType !== undefined) {
+            change.mutate({
+              params: { path: { issue_type: id } },
+              body: offerChangeBody(issueType.version, project, offered),
+            });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -63,10 +62,9 @@ function Types({ project }: { readonly project: string }) {
  */
 export function ProjectIssueTypesScreen({ address }: { readonly address: string }) {
   return (
-    <ProjectGate address={address} page={projectPages.issueTypes}>
+    <ProjectSettingsScreen address={address} page={projectPages.issueTypes}>
       {(project) => (
-        <div {...partOf(part.stack)}>
-          <ProjectTabs project={project} />
+        <>
           <Card
             heading={t("issue-types.project-title", { project: project.project.name })}
             level={1}
@@ -78,8 +76,8 @@ export function ProjectIssueTypesScreen({ address }: { readonly address: string 
             <p {...partOf(part.text)}>{t("issue-types.project-create-intro")}</p>
             <CreateIssueTypeForm project={project.project.short_name} />
           </Card>
-        </div>
+        </>
       )}
-    </ProjectGate>
+    </ProjectSettingsScreen>
   );
 }

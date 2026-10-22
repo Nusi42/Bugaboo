@@ -16,6 +16,7 @@ import { useState } from "react";
 import { pageSize } from "../../shared/paged.ts";
 import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { offerStateName } from "./offer-state.ts";
+import { OfferStateLine } from "./OfferStateLine.tsx";
 import { linesOf, useProjectList } from "./use-projects.ts";
 
 /** One line that says where something is offered, as the server sends it (the fields can be missing). */
@@ -39,6 +40,9 @@ export interface OfferedInProps {
   readonly onChange: (change: OfferChangeLine) => void;
 }
 
+/** The key of the place that is the whole organization. */
+const WHOLE_ORGANIZATION = "organization";
+
 /** The project a place names (an ID), the whole organization (`null`), or nothing known. */
 function projectOf(place: OfferLine["place"]): string | null | undefined {
   if (place === undefined || place === null || place.kind === "hidden") {
@@ -61,7 +65,7 @@ function keyOf(place: OfferLine["place"], position: number): string {
   if (project === undefined) {
     return `hidden-${String(position)}`;
   }
-  return project ?? "organization";
+  return project ?? WHOLE_ORGANIZATION;
 }
 
 /** Where it was created, as a sentence. */
@@ -81,7 +85,16 @@ interface Picked {
 }
 
 /** The projects the person finds by words; picking one is the place of the new line. */
-function PlacePicker({ onPick }: { readonly onPick: (picked: Picked) => void }) {
+function PlacePicker({
+  onPick,
+  picked,
+  forWholeOrganization,
+}: {
+  readonly onPick: (picked: Picked) => void;
+  readonly picked: Picked | undefined;
+  /** The whole organization is a place too, the first of the list. */
+  readonly forWholeOrganization: boolean;
+}) {
   const { words, group, frame } = usePickerFrame();
   const found = useProjectList({ search: words }, pageSize.short);
   const projects = linesOf(found.data?.pages);
@@ -96,11 +109,22 @@ function PlacePicker({ onPick }: { readonly onPick: (picked: Picked) => void }) 
         more: t("projects.offered-in-pick-more"),
       })}
     >
+      {forWholeOrganization ? (
+        <PickerOption
+          key={WHOLE_ORGANIZATION}
+          group={group}
+          checked={picked?.project === null}
+          label={t("projects.offer-whole-organization")}
+          onPick={() => {
+            onPick({ project: null, name: t("projects.offer-whole-organization") });
+          }}
+        />
+      ) : null}
       {projects.map((project) => (
         <PickerOption
           key={project.id}
           group={group}
-          checked={false}
+          checked={picked?.project === project.id}
           label={project.name}
           hint={project.shortName}
           onPick={() => {
@@ -167,24 +191,12 @@ function AddLine({
   return (
     <div {...partOf(part.stack)}>
       <h4 {...partOf(part.fieldLabel)}>{t("projects.offered-in-add")}</h4>
-      <PlacePicker onPick={setPicked} />
-      {forWholeOrganization ? (
-        <div {...partOf(part.row)}>
-          <Button
-            look={buttonLook.quiet}
-            onPress={() => {
-              setPicked({ project: null, name: t("projects.offer-whole-organization") });
-            }}
-          >
-            {t("projects.offer-whole-organization")}
-          </Button>
-        </div>
-      ) : null}
+      <PlacePicker onPick={setPicked} picked={picked} forWholeOrganization={forWholeOrganization} />
       {picked === undefined ? (
         <p {...partOf(part.muted)}>{t("projects.offered-in-pick-first")}</p>
       ) : (
         <NewLine
-          key={picked.project ?? "organization"}
+          key={picked.project ?? WHOLE_ORGANIZATION}
           picked={picked}
           isPending={isPending}
           onSave={(offered) => {
@@ -215,7 +227,7 @@ function Lines({
         return (
           <li key={keyOf(row.place, position)} {...partOf(part.item)}>
             <span {...partOf(part.itemMain)}>
-              {t("projects.offer-line", { name, state: offerStateName(row.offered) })}
+              <OfferStateLine name={name} offered={row.offered === true} />
             </span>
             {row.may_change === true && project !== undefined ? (
               <span {...partOf(part.itemActions)}>

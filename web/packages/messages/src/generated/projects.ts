@@ -75,6 +75,7 @@ export const messages = {
   "projects.line-people": "In {project}, for {person}, {kind} goes from {before} to {after}.",
   "projects.line-lift":
     "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
+  "projects.tabs": "Settings of the project",
   "projects.issue-ids-title": "Settings of this project",
   "issues.of-project": "Issues of this project",
   "projects.preview-summary":
@@ -92,8 +93,8 @@ export const messages = {
   "projects.offered-in-rows":
     "Offered where the lines say so. A project follows the project above it until it has a line of its own.",
   "projects.offered-in-list": "Where it is offered",
-  "projects.offered-in-take-away": "Take away",
-  "projects.offered-in-take-away-for": "Take away the line for {place}",
+  "projects.offered-in-take-away": "Remove this line",
+  "projects.offered-in-take-away-for": "Remove this line for {place}",
   "projects.offered-in-add": "Add a line",
   "projects.offered-in-pick-legend": "Pick a project",
   "projects.offered-in-pick-search": "Search projects",

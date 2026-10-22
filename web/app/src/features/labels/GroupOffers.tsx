@@ -3,7 +3,7 @@ import { partOf, part } from "@bugaboo/ui";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { pageSize } from "../../shared/paged.ts";
-import { OfferedIn } from "../projects/index.ts";
+import { OfferedIn, offerChangeBody } from "../projects/index.ts";
 import { refreshLabels, type LabelGroup } from "./labels.ts";
 
 /**
@@ -29,18 +29,7 @@ export function GroupOffers({ group }: { readonly group: LabelGroup }) {
         isPending={change.isPending}
         error={change.isError ? messageOf(change.error) : null}
         onChange={({ project, offered }) => {
-          change.mutate({
-            ...path,
-            body: {
-              version: group.version,
-              changes: [
-                {
-                  ...(project === null ? {} : { project }),
-                  ...(offered === null ? {} : { offered }),
-                },
-              ],
-            },
-          });
+          change.mutate({ ...path, body: offerChangeBody(group.version, project, offered) });
         }}
       />
     </div>

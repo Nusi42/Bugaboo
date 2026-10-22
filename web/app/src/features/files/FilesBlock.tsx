@@ -1,13 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, FileDrop, partOf, part } from "@bugaboo/ui";
-import { useCallback, useId } from "react";
+import { Alert, alertTone, FileDrop, usePastedFiles, partOf, part } from "@bugaboo/ui";
+import { useId } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { FileRows } from "./FileRows.tsx";
-import { useFileLimit, useFileRules, useIssueFiles } from "./files.ts";
+import { useFileRules, useIssueFiles } from "./files.ts";
 import { TransferRows } from "./TransferRows.tsx";
-import { transfers, useTransfers } from "./transfers.ts";
-import { usePastedFiles } from "./use-pasted-files.ts";
+import { useAddFiles, useTransfers } from "./transfers.ts";
 
 /**
  * *Files* (ATT-01, UX §4.4): a row for each file of the issue, with its preview or the sign of its
@@ -21,13 +20,7 @@ export function FilesBlock({ readableId }: { readonly readableId: string }) {
   const list = useIssueFiles(readableId);
   const sending = useTransfers({ issue: readableId, comment: null });
   const mayAdd = rules.data?.may_add === true;
-  const limit = useFileLimit(readableId);
-  const add = useCallback(
-    (files: readonly File[]) => {
-      transfers.add({ issue: readableId, comment: null }, files, limit);
-    },
-    [readableId, limit],
-  );
+  const add = useAddFiles(readableId, null);
   usePastedFiles(mayAdd ? add : undefined);
   const items = (list.data?.items ?? []).filter(
     (each) => each.comment === undefined || each.comment === null,
