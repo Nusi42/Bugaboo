@@ -164,3 +164,78 @@ async fn iss_09_an_issue_with_a_value_the_other_project_has_no_field_for_stays()
     assert_eq!(stays, Some(AppError::Refused(ErrorCode::FieldNotHere)));
     Ok(())
 }
+
+#[tokio::test]
+async fn wf_03_a_move_that_starts_the_status_again_needs_the_status_level_of_the_new_place()
+-> Outcome {
+    use bb_core::access::FieldLevel;
+    use bb_core::fields::{Field, FieldKey};
+    use bb_core::issue::StatusGroup;
+    use bb_core::workflow::StatusDraft;
+    use bb_policy::StartingRole;
+
+    use super::scenarios_workflows::{a_workflow, published_with};
+    use super::workflows_rules::{assign, starting_role, status_of};
+    use crate::roles::{CopyRole, SetFieldLevel, copy_role, set_level};
+
+    let world = World::new().await?;
+    let acme = a_project(&world, "ACME").await?;
+    let base = a_project(&world, "BASE").await?;
+    let admin = token(&world);
+    // BASE has a workflow of its own: an issue that moves there starts again in *Intake*.
+    let editor = a_workflow(&world, "BASE").await?;
+    published_with(&world, &editor, |sent| {
+        sent.statuses = vec![StatusDraft {
+            key: None,
+            name: "Intake".to_owned(),
+            group: StatusGroup::NotStarted,
+        }];
+        sent.changes = Vec::new();
+    })
+    .await?;
+    // A lead who may move issues and only sees the status.
+    let reader = world.person("sees@example.test").await?;
+    let lead = starting_role(&world, StartingRole::ProjectLead)
+        .await
+        .map_err(AppError::Internal)?;
+    let copy = copy_role(
+        &world.ctx(),
+        CopyRole {
+            session_token: admin.clone(),
+            role: lead,
+            name: "Status viewer".to_owned(),
+        },
+    )
+    .await?
+    .into_value();
+    set_level(
+        &world.ctx(),
+        SetFieldLevel {
+            session_token: admin.clone(),
+            role: copy.id,
+            project: None,
+            issue_type: None,
+            field: FieldKey::BuiltIn(Field::Status),
+            level: Some(FieldLevel::CanSee),
+        },
+    )
+    .await?;
+    assign(&world, &reader, copy.id, acme).await?;
+    assign(&world, &reader, copy.id, base).await?;
+    let id = an_issue(&world, acme).await?;
+    let refused = move_issue(
+        &world.ctx(),
+        MoveIssue {
+            session_token: reader.session_token.clone(),
+            issue: id.to_string(),
+            version: 1,
+            project: "BASE".to_owned(),
+        },
+    )
+    .await;
+    assert_eq!(refused.err(), Some(AppError::Refused(ErrorCode::Forbidden)));
+    // The administrator holds the level, and the issue starts again.
+    move_issue(&world.ctx(), moving(&world, &id.to_string(), 1, "BASE")).await?;
+    assert_eq!(status_of(&world, &admin, id).await?, "intake");
+    Ok(())
+}
