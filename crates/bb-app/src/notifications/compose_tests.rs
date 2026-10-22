@@ -55,7 +55,7 @@ fn line(change: &FieldChangeView) -> String {
 }
 
 #[test]
-fn wp13_a_change_reads_as_the_history_reads_with_a_full_stop() {
+fn ntf_02_a_change_reads_as_the_history_reads_with_a_full_stop() {
     assert_eq!(
         line(&change(
             "priority",
@@ -74,7 +74,7 @@ fn wp13_a_change_reads_as_the_history_reads_with_a_full_stop() {
 }
 
 #[test]
-fn wp13_people_are_set_after_a_colon_and_nobody_is_a_word() {
+fn ntf_02_people_are_set_after_a_colon_and_nobody_is_a_word() {
     let people = |people| Some(ChangeValue::People { people });
     assert_eq!(
         line(&change("assigned-to", None, people(vec![ana()]))),
@@ -90,7 +90,7 @@ fn wp13_people_are_set_after_a_colon_and_nobody_is_a_word() {
 }
 
 #[test]
-fn wp13_a_change_of_a_description_is_not_called_cleared() {
+fn ntf_02_a_change_of_a_description_is_not_called_cleared() {
     assert_eq!(
         line(&change("description", None, None)),
         format!(
@@ -105,7 +105,7 @@ fn wp13_a_change_of_a_description_is_not_called_cleared() {
 }
 
 #[test]
-fn wp13_yes_no_and_lengths_of_time_are_words_not_code_values() {
+fn ntf_02_yes_no_and_lengths_of_time_are_words_not_code_values() {
     let typed = |kind, value| Some(ChangeValue::Typed { kind, value });
     assert_eq!(
         line(&change(
@@ -126,7 +126,7 @@ fn wp13_yes_no_and_lengths_of_time_are_words_not_code_values() {
 }
 
 #[test]
-fn wp13_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
+fn ntf_02_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
     let notice = |notice| {
         lines_about(
             Some(&ana()),
@@ -156,7 +156,7 @@ fn wp13_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
 }
 
 #[test]
-fn wp13_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
+fn ntf_02_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
     assert_eq!(
         lines_about(
             None,
@@ -171,7 +171,7 @@ fn wp13_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
 }
 
 #[test]
-fn wp13_no_line_of_an_e_mail_ends_in_two_full_stops() {
+fn ntf_02_no_line_of_an_e_mail_ends_in_two_full_stops() {
     let sentences = [
         NotificationWhat::IssueIdsFailed {
             project: ProjectLabel::Hidden,
@@ -190,7 +190,7 @@ fn wp13_no_line_of_an_e_mail_ends_in_two_full_stops() {
 }
 
 #[test]
-fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
+fn ntf_02_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
     let ended = |done| {
         lines_about(
             None,
@@ -233,7 +233,7 @@ fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
 }
 
 #[test]
-fn wp13_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue()
+fn ntf_02_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue()
 -> Result<(), bb_core::id::IdError> {
     let mut ids = SequentialIds::default();
     let item = NotificationItem {
@@ -260,7 +260,7 @@ fn wp13_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue()
 }
 
 #[test]
-fn wp13_a_value_that_ends_a_sentence_gets_no_second_mark() {
+fn ntf_02_a_value_that_ends_a_sentence_gets_no_second_mark() {
     for end in [".", "?", "!"] {
         let value = format!("Login fails{end}");
         let said = line(&change("title", None, Some(word(&value))));
@@ -290,7 +290,7 @@ fn mail_of(items: &[NotificationItem], short: bool) -> Result<Composed, String> 
 }
 
 #[test]
-fn wp13_the_e_mail_of_the_end_of_a_run_links_to_the_notifications() -> Result<(), String> {
+fn ntf_02_the_e_mail_of_the_end_of_a_run_links_to_the_notifications() -> Result<(), String> {
     let mut ids = SequentialIds::default();
     let item = run_item(NotificationWhat::RunEnded {
         run: bb_core::id::EntityId::from(bb_core::id::UserId::generate(&mut ids)),
@@ -320,7 +320,7 @@ fn visible() -> Result<ProjectLabel, bb_core::id::IdError> {
 }
 
 #[test]
-fn wp13_the_e_mail_of_a_failed_renewal_names_a_project_the_person_sees_and_links_to_it()
+fn ntf_02_the_e_mail_of_a_failed_renewal_names_a_project_the_person_sees_and_links_to_it()
 -> Result<(), String> {
     let item = renewal(visible().map_err(|error| error.to_string())?)
         .map_err(|error| error.to_string())?;
@@ -344,7 +344,7 @@ fn wp13_the_e_mail_of_a_failed_renewal_names_a_project_the_person_sees_and_links
 }
 
 #[test]
-fn wp13_the_short_e_mail_of_a_failed_renewal_names_no_project_and_has_no_link_to_one()
+fn ntf_02_the_short_e_mail_of_a_failed_renewal_names_no_project_and_has_no_link_to_one()
 -> Result<(), String> {
     let item = renewal(visible().map_err(|error| error.to_string())?)
         .map_err(|error| error.to_string())?;
@@ -361,7 +361,7 @@ fn wp13_the_short_e_mail_of_a_failed_renewal_names_no_project_and_has_no_link_to
 }
 
 #[test]
-fn wp13_the_footer_names_the_page_where_the_person_changes_what_they_get() -> Result<(), String> {
+fn ntf_02_the_footer_names_the_page_where_the_person_changes_what_they_get() -> Result<(), String> {
     let item = renewal(ProjectLabel::Hidden).map_err(|error| error.to_string())?;
     let mail = mail_of(&[item], false)?;
     assert!(

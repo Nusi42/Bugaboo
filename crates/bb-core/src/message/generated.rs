@@ -11807,15 +11807,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.in-app", "In the app"),
     (
         "notifications.issue-ids-failed",
-        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again.",
+        "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
     ),
     (
         "notifications.issue-ids-failed-hidden",
-        "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more.",
+        "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
     ),
     (
         "notifications.issue-ids-failed-short",
-        "Bugaboo could not give every issue of a project its new ID.",
+        "Bugaboo could not give every issue of a project its new ID",
     ),
     ("notifications.kind", "What happens"),
     (

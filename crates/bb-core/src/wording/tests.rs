@@ -180,14 +180,14 @@ fn the_end_of_a_run_and_a_failed_renewal_have_their_own_sentences() {
     assert_eq!(
         sentences(&run),
         [
-            "Bugaboo could not give every issue of Website its new ID. Open the project settings to try again."
+            "Bugaboo could not give every issue of Website its new ID. Open the project settings to try again"
         ]
     );
     run.renewal = Some(Renewal { project: None });
     assert_eq!(
         sentences(&run),
         [
-            "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more."
+            "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more"
         ]
     );
 }
