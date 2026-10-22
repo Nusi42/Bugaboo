@@ -6,6 +6,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod names;
+
 use bb_markdown::Options;
 use wasm_bindgen::prelude::wasm_bindgen;
 

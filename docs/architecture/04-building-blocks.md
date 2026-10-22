@@ -22,7 +22,7 @@ bugaboo/
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-dev-words/       the words the developer tools, the tests and xtask share: databases, test variables, the sample layout
-│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
+│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation, and the rule of the same name (`bb_core::names`)
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
 │   ├── bb-load-check/      the invariants after a run of many people at once, written once; developer tool and test support (never shipped)
@@ -36,7 +36,7 @@ bugaboo/
 │   └── packages/
 │       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
 │       ├── ui/             shared components on React Aria + the generated style sheet; depends on api-client for the generated choices and defaults of the settings (the look of a person), and loads `wasm` when a Markdown preview opens
-│       ├── wasm/           loads the module of bb-wasm (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
+│       ├── wasm/           loads the module of bb-wasm (Markdown preview; the rule of the same name for the draft of a workflow) (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
 │       └── messages/       generated, typed message keys
 ├── docs/                   development docs (this)
 └── userDocs/               user and admin docs
@@ -84,7 +84,7 @@ flowchart TB
   store --> search & policy & core
   files --> core
   notify --> core
-  wasm --> search & md
+  wasm --> search & md & core
   store -. tests only .-> testing
   server -. tests only .-> words
   testing --> devwords

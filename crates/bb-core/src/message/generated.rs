@@ -4970,6 +4970,9 @@ pub const WORKFLOWS_STATUS_GROUP: MessageKey = MessageKey::new("workflows.status
 /// The message `workflows.status-name`.
 pub const WORKFLOWS_STATUS_NAME: MessageKey = MessageKey::new("workflows.status-name");
 
+/// The message `workflows.status-name-taken`.
+pub const WORKFLOWS_STATUS_NAME_TAKEN: MessageKey = MessageKey::new("workflows.status-name-taken");
+
 /// The message `workflows.statuses`.
 pub const WORKFLOWS_STATUSES: MessageKey = MessageKey::new("workflows.statuses");
 
@@ -9322,6 +9325,15 @@ pub fn workflows_publish_go(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.publish-go"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `workflows.publish-name-twice`.
+#[must_use]
+pub fn workflows_publish_name_twice(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-name-twice"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -13681,6 +13693,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("workflows.publish-go-over", "Publish and move the issues"),
     (
+        "workflows.publish-name-twice",
+        "Two statuses are called {name}. Give one of them another name, then publish.",
+    ),
+    (
         "workflows.publish-text",
         "Issues are still in statuses that you removed. Choose a status for each group of issues. They move when you publish, and each move is written in the history.",
     ),
@@ -13712,6 +13728,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.status-down", "Move down {name}"),
     ("workflows.status-group", "Status group"),
     ("workflows.status-name", "Name of the status"),
+    (
+        "workflows.status-name-taken",
+        "A status with this name exists already.",
+    ),
     ("workflows.status-remove", "Remove {name}"),
     ("workflows.status-up", "Move up {name}"),
     ("workflows.statuses", "Statuses"),

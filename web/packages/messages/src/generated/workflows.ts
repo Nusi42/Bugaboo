@@ -33,6 +33,9 @@ export const messages = {
   "workflows.status-remove": "Remove {name}",
   "workflows.create-status": "Create status",
   "workflows.new-status": "Name of the new status",
+  "workflows.status-name-taken": "A status with this name exists already.",
+  "workflows.publish-name-twice":
+    "Two statuses are called {name}. Give one of them another name, then publish.",
   "workflows.new-status-group": "Group of the new status",
   "workflows.from": "From {name} you can go to:",
   "workflows.no-changes": "No status change starts here yet.",

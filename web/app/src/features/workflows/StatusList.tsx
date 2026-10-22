@@ -35,7 +35,7 @@ export function StatusList({ editor, draft, edit }: StatusListProps) {
           />
         ))}
       </ol>
-      <AddStatus edit={edit} />
+      <AddStatus draft={draft} edit={edit} />
     </section>
   );
 }

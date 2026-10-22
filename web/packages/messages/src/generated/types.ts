@@ -453,6 +453,7 @@ export interface MessageArguments {
   "workflows.project-title": { project: string | number };
   "workflows.publish-blocked": { count: number; status: string | number };
   "workflows.publish-go": { count: number };
+  "workflows.publish-name-twice": { name: string | number };
   "workflows.publish-too-many": { limit: string | number };
   "workflows.publish-unseen": { count: number };
   "workflows.publish-where": { count: number; status: string | number };

@@ -1,6 +1,8 @@
 import type { components, Schema } from "@bugaboo/api-client";
+import type { NameKey } from "@bugaboo/wasm";
 
 import { newId } from "../../shared/new-ids.ts";
+import { nameAmong, nameStandingTwice } from "../../shared/same-name.ts";
 import { noRules, rulesBodyOf, rulesOf, sameRules, type ChangeRules } from "./rules-model.ts";
 
 /** A status in the draft. A new status has no key yet: the server creates it from the name. */
@@ -211,4 +213,26 @@ export function setRules(draft: Draft, id: string, rules: ChangeRules): Draft {
 /** The draft with another name for the workflow. */
 export function renameWorkflow(draft: Draft, name: string): Draft {
   return { ...draft, name };
+}
+
+/** Whether another status of the draft has this name (the rule of the server, `nameAmong`); `id` is the status being renamed, none for a new one. */
+export function statusNameTaken(
+  draft: Draft,
+  id: string | null,
+  name: string,
+  keyOf: NameKey,
+): boolean {
+  return nameAmong(
+    draft.statuses.filter((status) => status.id !== id).map((status) => status.name),
+    name,
+    keyOf,
+  );
+}
+
+/** The name of the first status that another one in the draft has too, if any: *Publish* is refused for it. */
+export function statusNamedTwice(draft: Draft, keyOf: NameKey): string | undefined {
+  return nameStandingTwice(
+    draft.statuses.map((status) => status.name),
+    keyOf,
+  );
 }

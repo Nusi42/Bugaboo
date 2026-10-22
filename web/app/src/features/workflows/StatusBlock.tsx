@@ -8,6 +8,7 @@ import {
   removeStatus,
   renameStatus,
   setGroup,
+  statusNameTaken,
   type Draft,
   type DraftStatus,
 } from "./draft-model.ts";
@@ -15,6 +16,7 @@ import { groupChoices } from "./status-groups.ts";
 import { AddChange } from "./AddChange.tsx";
 import { ChangeRow } from "./ChangeRow.tsx";
 import type { Edit } from "./use-draft-workflow.ts";
+import { useNameKey } from "./use-name-key.ts";
 import type { WorkflowEditor } from "./workflows.ts";
 
 export interface StatusBlockProps {
@@ -34,12 +36,19 @@ const stateOfGroup = {
 } as const satisfies Readonly<Record<Schema<"StatusGroup">, string>>;
 
 /** The name and the group of a status. */
-function StatusFields({ status, edit }: Pick<StatusBlockProps, "status" | "edit">) {
+function StatusFields({
+  draft,
+  status,
+  edit,
+}: Pick<StatusBlockProps, "draft" | "status" | "edit">) {
+  const keyOf = useNameKey();
+  const taken = keyOf !== undefined && statusNameTaken(draft, status.id, status.name, keyOf);
   return (
     <div {...partOf(part.workflowStatusHead)}>
       <TextField
         label={t("workflows.status-name")}
         value={status.name}
+        errorMessage={taken ? t("workflows.status-name-taken") : undefined}
         onChange={(name) => {
           edit((before) => renameStatus(before, status.id, name));
         }}
@@ -111,7 +120,7 @@ export function StatusBlock(props: StatusBlockProps) {
         </h3>
         {first ? <span {...partOf(part.muted)}>{t("workflows.starts-here")}</span> : null}
       </div>
-      <StatusFields status={status} edit={edit} />
+      <StatusFields draft={draft} status={status} edit={edit} />
       <StatusTools {...props} />
       <p {...partOf(part.text)}>{t("workflows.from", { name: status.name })}</p>
       {changes.length === 0 ? (
