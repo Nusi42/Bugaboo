@@ -281,6 +281,56 @@ fn bad_example_a_test_file_in_a_listed_folder_that_no_mod_reaches() {
 }
 
 #[test]
+fn bad_example_a_parent_module_that_starts_with_an_inner_cfg_declares_nothing() {
+    let text = format!(
+        "#[test]
+fn {NAME}() {{}}
+"
+    );
+    let sources = |parent: &str| {
+        vec![
+            (
+                "crates/x/src/lib.rs".to_owned(),
+                "mod suite;
+"
+                .to_owned(),
+            ),
+            ("crates/x/src/suite/mod.rs".to_owned(), parent.to_owned()),
+            ("crates/x/src/suite/cases.rs".to_owned(), text.clone()),
+        ]
+    };
+    assert_eq!(
+        found(&sources(
+            "mod cases;
+"
+        )),
+        0
+    );
+    for parent in [
+        "#![cfg(any())]
+mod cases;
+",
+        "#![warn(dead_code)]
+#![cfg(any())]
+mod cases;
+",
+    ] {
+        assert_eq!(found(&sources(parent)), 1, "{parent}");
+    }
+    // The same inside an inline module of the parent.
+    let inline = "mod group {
+    #![cfg(any())]
+    mod cases;
+}
+";
+    let nested = vec![
+        ("crates/x/src/lib.rs".to_owned(), inline.to_owned()),
+        ("crates/x/src/group/cases.rs".to_owned(), text),
+    ];
+    assert_eq!(found(&nested), 1);
+}
+
+#[test]
 fn bad_and_good_example_an_inner_cfg_attribute_switches_off_the_tests_of_its_scope() {
     for text in [
         format!("#![cfg(any())]\n#[test]\nfn {NAME}() {{}}\n"),

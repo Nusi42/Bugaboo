@@ -115,7 +115,7 @@ struct Declared {
     inline: Vec<String>,
 }
 
-/// The modules a file declares with `mod name;` and no `cfg` in their attributes. `blank` is the
+/// The modules a file declares with `mod name;` and no `cfg` that switches them off. `blank` is the
 /// code with comments and strings blanked (a `mod x;` in a string is no module), `kept` the same
 /// code with the strings kept, from which the `#[path]` is read; both have the same positions.
 fn declarations(blank: &str, kept: &str) -> Vec<Declared> {
@@ -129,7 +129,9 @@ fn declarations(blank: &str, kept: &str) -> Vec<Declared> {
             continue;
         }
         let attributes = attributes_before(&blank[..at]);
-        if has_cfg(attributes) {
+        // A `cfg` on the declaration, on a block around it, or an inner `#![cfg(…)]` at the top of
+        // the file or of that block switches the module off.
+        if has_cfg(attributes) || inside_switched_off_block(blank, at) {
             continue;
         }
         let kept_attributes = &kept[at - attributes.len()..at];
