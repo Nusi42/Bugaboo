@@ -5,7 +5,7 @@ import { SaveBar, shownSaveError, type EditLock } from "../../shared/editing/ind
 import { statusNamedTwice } from "./draft-model.ts";
 import { PublishDialog } from "./PublishDialog.tsx";
 import type { DraftWorkflowState } from "./use-draft-workflow.ts";
-import { useNameKey } from "./use-name-key.ts";
+import { useNameKey } from "../../shared/use-name-key.ts";
 
 export interface PublishBarProps {
   readonly state: DraftWorkflowState;

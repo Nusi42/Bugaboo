@@ -20,3 +20,6 @@ export function nameStandingTwice(names: readonly string[], keyOf: NameKey): str
     ),
   );
 }
+
+/** The key for names while the rule of the server is not there yet: names are the same only when they are alike letter for letter. */
+export const exactName: NameKey = (name) => name;

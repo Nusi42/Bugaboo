@@ -21,11 +21,17 @@ export function useNameKey(): NameKey | undefined {
   useEffect(() => {
     let live = true;
     if (loaded === undefined) {
-      void load().then((found) => {
-        if (live) {
-          setKey(() => found);
+      void (async () => {
+        try {
+          const found = await load();
+          if (live) {
+            setKey(() => found);
+          }
+        } catch {
+          // The module could not be loaded: the check stays off, and the refusal of the server is
+          // the judge, as it always is.
         }
-      });
+      })();
     }
     return () => {
       live = false;

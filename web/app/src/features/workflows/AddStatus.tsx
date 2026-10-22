@@ -6,7 +6,7 @@ import { useState } from "react";
 import { addStatus, statusNameTaken, type Draft } from "./draft-model.ts";
 import { groupChoices } from "./status-groups.ts";
 import type { Edit } from "./use-draft-workflow.ts";
-import { useNameKey } from "./use-name-key.ts";
+import { useNameKey } from "../../shared/use-name-key.ts";
 
 /** The group a new status starts in: the one in between. */
 const startingGroup: Schema<"StatusGroup"> = "in-progress";

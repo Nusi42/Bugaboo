@@ -16,7 +16,7 @@ import { groupChoices } from "./status-groups.ts";
 import { AddChange } from "./AddChange.tsx";
 import { ChangeRow } from "./ChangeRow.tsx";
 import type { Edit } from "./use-draft-workflow.ts";
-import { useNameKey } from "./use-name-key.ts";
+import { useNameKey } from "../../shared/use-name-key.ts";
 import type { WorkflowEditor } from "./workflows.ts";
 
 export interface StatusBlockProps {
