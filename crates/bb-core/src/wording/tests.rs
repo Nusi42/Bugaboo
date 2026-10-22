@@ -6,10 +6,10 @@ use serde_json::json;
 use super::*;
 use crate::notification::NotificationKind;
 
-fn text(text: &str) -> Option<Side> {
-    Some(Side::Text {
+fn word(text: &str) -> Side {
+    Side::Text {
         text: text.to_owned(),
-    })
+    }
 }
 
 fn change(field: &str, before: Option<Side>, after: Option<Side>) -> Change {
@@ -26,11 +26,11 @@ fn change(field: &str, before: Option<Side>, after: Option<Side>) -> Change {
 fn a_change_is_changed_set_cleared_or_a_long_text() {
     let said = |before, after| change_sentence(&change("priority", before, after)).render();
     assert_eq!(
-        said(text("normal"), text("high")),
+        said(Some(word("normal")), Some(word("high"))),
         "Ben changed Priority from Normal to High"
     );
-    assert_eq!(said(None, text("high")), "Ben set Priority: High");
-    assert_eq!(said(text("normal"), None), "Ben cleared Priority");
+    assert_eq!(said(None, Some(word("high"))), "Ben set Priority: High");
+    assert_eq!(said(Some(word("normal")), None), "Ben cleared Priority");
     assert_eq!(said(None, None), "Ben changed Priority");
 }
 
@@ -158,8 +158,8 @@ fn the_sentences_of_a_notification_follow_its_kind() {
     );
     let mut changes = notice(NotificationKind::FollowedFields);
     changes.changes = vec![
-        change("priority", text("normal"), text("high")),
-        change("priority", None, text("low")),
+        change("priority", Some(word("normal")), Some(word("high"))),
+        change("priority", None, Some(word("low"))),
     ];
     assert_eq!(sentences(&changes).len(), 2);
 }
@@ -203,7 +203,11 @@ fn a_note_about_editing_says_which_note() {
 
 #[test]
 fn the_browser_gets_keys_and_words_not_english() {
-    let said = change_sentence(&change("priority", text("normal"), text("high")));
+    let said = change_sentence(&change(
+        "priority",
+        Some(word("normal")),
+        Some(word("high")),
+    ));
     let wire = serde_json::to_value(&said).unwrap_or_default();
     assert_eq!(
         wire,

@@ -92,7 +92,7 @@ macro_rules! blank {
 /// parameters of the message function.
 macro_rules! said {
     ($function:path, $($value:expr),+ $(,)?) => {
-        Said::with($function($(blank!($value)),+), vec![$($value),+])
+        Said::with(&$function($(blank!($value)),+), vec![$($value),+])
     };
 }
 
@@ -114,7 +114,7 @@ impl Said {
 
     /// A message with the words for its placeholders, in the order of the message function's
     /// parameters (the typed function of the catalog gave `message` its names).
-    fn with(message: Message, values: Vec<Self>) -> Self {
+    fn with(message: &Message, values: Vec<Self>) -> Self {
         let names = message.arguments().iter().map(|(name, _)| *name);
         Self::Message {
             key: message.key(),

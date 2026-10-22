@@ -24,8 +24,9 @@ type Case = (&'static str, &'static str, fn() -> Value, &'static str);
 
 const MOMENT: &str = "2026-10-05T07:30:00Z";
 
-/// Every case. The values are functions so the table can hold any JSON value.
-fn cases() -> Vec<Case> {
+/// The cases of yes and no, lengths of time and numbers. The values are functions so the table
+/// can hold any JSON value.
+fn numbers_and_words() -> Vec<Case> {
     vec![
         ("yes", "yes-no", || json!(true), "usual"),
         ("no", "yes-no", || json!(false), "german"),
@@ -117,6 +118,12 @@ fn cases() -> Vec<Case> {
             || json!(-0.0625),
             "usual",
         ),
+    ]
+}
+
+/// The cases of days and moments.
+fn days_and_moments() -> Vec<Case> {
+    vec![
         ("day, year first", "date", || json!("2026-10-05"), "usual"),
         ("day, day first", "date", || json!("2026-10-05"), "german"),
         (
@@ -190,6 +197,13 @@ fn cases() -> Vec<Case> {
             "usual",
         ),
     ]
+}
+
+/// Every case.
+fn cases() -> Vec<Case> {
+    let mut all = numbers_and_words();
+    all.extend(days_and_moments());
+    all
 }
 
 /// The lists of names the vectors check.
