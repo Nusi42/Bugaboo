@@ -3,6 +3,7 @@
  * WebAuthn standard, and the browser can read and write that form itself, so nothing here
  * converts bytes by hand.
  */
+import { isRecord } from "./is-record.ts";
 
 /** The person did not use the passkey: they closed the question, or no passkey fits. */
 export class PasskeyCancelled extends Error {
@@ -14,10 +15,6 @@ export class PasskeyCancelled extends Error {
 
 /** The answer of a device, in the JSON form that the server reads. */
 export type PasskeyAnswer = Record<string, unknown>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /** Whether this browser can make and use passkeys at all. */
 export function passkeysSupported(): boolean {

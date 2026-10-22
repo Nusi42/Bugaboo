@@ -9,6 +9,7 @@ import {
 import { signedInPersonId } from "../../shared/session.ts";
 import type { Draft, DraftChange, DraftStatus } from "./draft-model.ts";
 import { rulesBodyOf, rulesOf } from "./rules-model.ts";
+import { isRecord } from "../../shared/is-record.ts";
 
 /**
  * The draft a refused *Publish* left, kept by the browser (ADR-0019: nothing typed is dropped). The
@@ -19,10 +20,6 @@ import { rulesBodyOf, rulesOf } from "./rules-model.ts";
 /** What a workflow's draft is kept for. */
 function targetOf(workflow: string): DraftTarget {
   return { kind: "workflow", id: workflow, part: workflowEditPart };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isStatus(value: unknown): value is DraftStatus {

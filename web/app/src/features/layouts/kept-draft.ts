@@ -8,6 +8,7 @@ import {
   type Draft,
   type Section,
 } from "./editor-model.ts";
+import { isRecord } from "../../shared/is-record.ts";
 
 /** A section as a kept draft holds it: what a refused save wrote down. */
 interface KeptSection {
@@ -17,10 +18,6 @@ interface KeptSection {
     readonly field: string;
     readonly roles: readonly string[];
   }[];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 function strings(value: unknown): readonly string[] | undefined {
