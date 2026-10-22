@@ -26,11 +26,12 @@ async function coversThePage(page: Page): Promise<boolean> {
 }
 
 /**
- * Takes the pointer off the page, to the corner of the window where nothing is: the last control a
- * test pressed would otherwise show its hover fill in the picture.
+ * Takes the pointer off the page, to a point outside the window, where there is no control to be
+ * pointed at: the last control a test pressed (or a corner, where a *Back* may stand) would
+ * otherwise show its hover fill in the picture.
  */
 async function pointerAway(page: Page): Promise<void> {
-  await page.mouse.move(0, 0);
+  await page.mouse.move(-10, -10);
 }
 
 /** The two looks the maintainer sees: the device asks for a light or a dark look, as a phone does. */
