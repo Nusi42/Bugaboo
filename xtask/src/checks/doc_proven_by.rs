@@ -7,7 +7,7 @@
 //! the mistake M4 made. A cell with no such check is not looked at here (a test is only a name
 //! then). The lists are read from the checks that own them (`required_tests::lists`).
 
-use super::required_tests::{Required, lists};
+use super::required_tests::{Required, crate_sources, lists};
 use super::{Check, Context, Finding};
 use crate::docs::source::sorted_files;
 use crate::docs::text::has_extension;
@@ -28,11 +28,14 @@ impl Check for DocProvenBy {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let mut findings = Vec::new();
+        let mut sources = crate_sources(context.repo)?;
+        sources.extend(browser_tests(context.repo)?);
         for folder in FOLDERS {
             for name in sorted_files(context.repo, folder, |name| has_extension(name, "md"))? {
                 let path = format!("{folder}/{name}");
                 let text = read_text(context.repo, &path)?;
                 findings.extend(evaluate(&path, &text, &lists()));
+                findings.extend(unknown_tests(&path, &text, &sources));
             }
         }
         Ok(findings)
@@ -41,7 +44,9 @@ impl Check for DocProvenBy {
 
 /// Whether a backticked word is the name of a test, by its form: snake case with a feature ID in
 /// front, `wf_02_…`, `sec_06_…`, `iss_01a_…`, `m3_f53_…` (a digit in one of the first two parts).
-/// However short the rest, it is a name; `known_field_names` or `credential_set` are not.
+/// However short the rest, it is a name; `known_field_names` or `credential_set` are not. A name
+/// with no number, `sec_the_server_sends_to_only_so_many_addresses_…`, is one too when it starts
+/// with a short feature word and is long (five parts or more).
 fn is_test_name(word: &str) -> bool {
     let parts: Vec<&str> = word.split('_').collect();
     word.starts_with(|c: char| c.is_ascii_lowercase())
@@ -50,10 +55,11 @@ fn is_test_name(word: &str) -> bool {
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
         && parts.len() >= 2
         && parts.iter().all(|part| !part.is_empty())
-        && parts
+        && (parts
             .iter()
             .take(2)
             .any(|part| part.chars().any(|c| c.is_ascii_digit()))
+            || (parts.len() >= 5 && (2..=4).contains(&parts[0].len())))
 }
 
 /// Adds a character to the cell that is being read.
@@ -90,6 +96,64 @@ fn cells_of(line: &str) -> Vec<String> {
 /// The words between backticks.
 fn backticked(cell: &str) -> impl Iterator<Item = &str> {
     cell.split('`').skip(1).step_by(2)
+}
+
+/// The titles of the tests of the browser side, written the way the docs cite a test: lower case,
+/// every run of other characters one underscore, behind a `fn ` and a `(` so that one search finds
+/// both kinds of tests.
+fn browser_tests(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
+    let mut found = Vec::new();
+    for file in repo.all_files()? {
+        if file.starts_with("web/") && (has_extension(&file, "ts") || has_extension(&file, "tsx")) {
+            let mut named = String::new();
+            for c in read_text(repo, &file)?.chars() {
+                match c.to_ascii_lowercase() {
+                    c if c.is_ascii_alphanumeric() => named.push(c),
+                    _ if !named.ends_with('_') => named.push('_'),
+                    _ => {}
+                }
+            }
+            found.push((file, named.replace("__", "_")));
+        }
+    }
+    Ok(found)
+}
+
+/// The tests a "Proven by" cell cites by name that no function of the crates has: a name that was
+/// renamed or never written proves nothing, whatever check the cell names.
+fn unknown_tests(path: &str, text: &str, sources: &[(String, String)]) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let mut column = None;
+    for (index, line) in text.lines().enumerate() {
+        if !line.trim_start().starts_with('|') {
+            column = None;
+            continue;
+        }
+        let cells = cells_of(line);
+        let Some(at) = column else {
+            column = cells.iter().position(|cell| cell.trim() == COLUMN);
+            continue;
+        };
+        let Some(cell) = cells.get(at) else {
+            continue;
+        };
+        for name in backticked(cell).filter(|word| is_test_name(word)) {
+            let declared = format!("fn {name}(");
+            if !sources.iter().any(|(file, code)| {
+                if file.starts_with("web/") {
+                    code.contains(name)
+                } else {
+                    code.contains(&declared)
+                }
+            }) {
+                findings.push(Finding::at(
+                    format!("{path}:{}", index + 1),
+                    format!("`{name}` is cited as proof, but no function of the crates has that name. It was renamed or never written."),
+                ));
+            }
+        }
+    }
+    findings
 }
 
 fn evaluate(path: &str, text: &str, lists: &[(&str, &[Required])]) -> Vec<Finding> {
@@ -181,6 +245,24 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_a_cited_test_that_no_function_has() {
+        let sources = vec![(
+            "crates/x/src/lib.rs".to_owned(),
+            "#[test]
+fn sec_the_server_sends_to_only_so_many_addresses() {}
+"
+            .to_owned(),
+        )];
+        let good = table("`sec_the_server_sends_to_only_so_many_addresses`");
+        assert!(unknown_tests("a.md", &good, &sources).is_empty());
+        // A name with no number is a name too, and a renamed test is found out.
+        let bad = table("`sec_the_server_sends_only_so_many_sign_up_e_mails_in_an_hour` (WP-12)");
+        let found = unknown_tests("a.md", &bad, &sources);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].location.as_deref(), Some("a.md:3"));
+    }
+
+    #[test]
     fn an_escaped_pipe_does_not_split_a_cell() {
         assert_eq!(cells_of("| a \\| b | c |"), [" a | b ", " c "]);
         let text = table("`a \\| b`, TEST-X, `wf_01_another_thing_nobody_requires_here`");
@@ -192,8 +274,11 @@ mod tests {
         let repo = crate::repo::Repo::discover().unwrap();
         let path = "docs/architecture/12-security.md";
         let text = read_text(&repo, path).unwrap();
+        let mut sources = crate_sources(&repo).unwrap();
+        sources.extend(browser_tests(&repo).unwrap());
         let found: Vec<_> = evaluate(path, &text, &lists())
             .into_iter()
+            .chain(unknown_tests(path, &text, &sources))
             .map(|finding| finding.message)
             .collect();
         assert!(found.is_empty(), "{found:#?}");
