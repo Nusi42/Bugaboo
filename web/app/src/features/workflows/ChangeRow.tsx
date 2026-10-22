@@ -40,7 +40,9 @@ function RulesCell({
         {t("workflows.rules-link")}
       </Button>
       {hasRules(change.rules) ? (
-        <span {...partOf(part.muted)}>{t("workflows.has-rules")}</span>
+        <span {...partOf(part.workflowChangeHasRules)}>
+          <span {...partOf(part.muted)}>{t("workflows.has-rules")}</span>
+        </span>
       ) : null}
     </div>
   );

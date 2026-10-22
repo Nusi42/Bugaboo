@@ -227,6 +227,9 @@ tokens {
     color "bg-hover" daylight="#eceef2" paper="#ede6db" dusk="#333945" midnight="#1e2127"
     color "bg-selected" daylight="#ebe7fb" paper="#dce3eb" dusk="#3c375d" midnight="#242046"
     color "border" daylight="#dfe3e9" paper="#e1d8ca" dusk="#3b414d" midnight="#272a31" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
+    // The edge of a control that is drawn by its edge (a box to tick, the track of a switch): a line a
+    // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked with the lines of the rule for more contrast), unlike the dividers.
+    color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" forced="ButtonText"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
     color "fg-muted" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
@@ -242,7 +245,7 @@ tokens {
     color "success" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
     color "success-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
     color "st-ns" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
-    color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#1a1c21"
+    color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#262a31" midnight-more="#1a1c21"
     color "st-ip" daylight="#1d5fd1" paper="#1d6b80" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#14495a" dusk-more="#b3d0ff" midnight-more="#82b1ff"
     color "st-ip-soft" daylight="#e7effc" paper="#dfeef1" dusk="#24365a" midnight="#10244a"
     color "st-done" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
@@ -341,12 +344,12 @@ contrast min=4.5 {
         on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "cat*-bg"
     }
 
-    non-text "border" "border-subtle" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
+    non-text "border" "border-subtle" "border-control" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
 
     // With the device setting for more contrast.
     more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
         text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent"
-        lines "border" "border-subtle"
+        lines "border" "border-subtle" "border-control"
         line-on "bg-canvas" "bg-surface" "bg-raised"
     }
 }
@@ -909,7 +912,7 @@ part "switch.track" {
     width "calc($space-4 * 2 + $space-1 * 2)"
     height "$space-5"
     padding "$space-1"
-    border "$border-width solid $border"
+    border "$border-width solid $border-control"
     border-radius "$r-card"
     background "$bg-sunken"
 }
@@ -953,7 +956,7 @@ part "checkbox.box" {
     box-sizing border-box
     width "$space-5"
     height "$space-5"
-    border "$border-width solid $border"
+    border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
 }
@@ -1781,6 +1784,22 @@ part "name-value.value" {
     min-height "$size-control"
     margin 0
     font-size "$fs-ui"
+}
+
+// A text of the value that runs over more than one line ("This project has no labels yet.") stands
+// so that its first line is centered in the height of a control, like the name and like a value of
+// one line, and the lines after it follow (the review of M4, B Details).
+part "name-value.value > muted" {
+    padding "calc(($size-control - $fs-base * $lh-body) / 2) 0"
+}
+
+// *Website · Offered* with its sign: the sign stays beside the first line of the words, whatever
+// the words do.
+part "offer-state" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+    min-width 0
 }
 
 // Why a value cannot be changed, with its lock.
@@ -3868,9 +3887,10 @@ part "popover" {
     color "$fg"
 }
 
+// Starts where the icon of an entry starts: the entry has a border of its own besides its padding.
 part "action-menu.title" {
     margin 0
-    padding "$space-2 $pad-control"
+    padding "$space-2 calc($pad-control + $border-width)"
     color "$fg-muted"
     font-size "$fs-base"
     font-weight "$weight-bold"
@@ -11727,9 +11747,23 @@ part "app-layout[variant=phone] workflow-change.remove" {
 }
 
 part "workflow-change.rules" {
+    position relative
     display flex
     flex-direction column
     align-items flex-start
+}
+
+// *Has rules* stands under *Rules* without making the cell taller, so *Rules* is on the same line
+// in every row of the list whether the change has rules or not.
+part "workflow-change.has-rules" {
+    position absolute
+    top "100%"
+    inset-inline-start 0
+    white-space nowrap
+}
+
+part "app-layout[variant=phone] workflow-change.has-rules" {
+    position static
 }
 
 part "app-layout[variant=phone] workflow-change.rules" {
@@ -11757,7 +11791,7 @@ part "workflow-rules" {
 
 // The name of a group of rules is bold like the heading of a section, and starts where its hint
 // starts: a legend has a padding of its own that would push it 2 px in (the review of M4, B rules).
-part "workflow-rules legend" {
+part "workflow-rules.legend" {
     padding 0
     font-size "$fs-md"
     font-weight "$weight-bold"

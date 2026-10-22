@@ -6270,15 +6270,6 @@ pub fn followers_count_more(count: i64) -> Message {
     )
 }
 
-/// The message `followers.following-because`.
-#[must_use]
-pub fn followers_following_because(reason: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("followers.following-because"),
-        vec![("reason", Value::Text(reason.to_string()))],
-    )
-}
-
 /// The message `groups.add-name`.
 #[must_use]
 pub fn groups_add_name(name: impl std::fmt::Display) -> Message {
@@ -10836,7 +10827,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("followers.follow", "Follow"),
     ("followers.following", "Following"),
-    ("followers.following-because", "Following · {reason}"),
     ("followers.more", "Show more followers"),
     ("followers.name", "Followers"),
     ("followers.reason-assigned", "It is assigned to you"),

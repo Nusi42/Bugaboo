@@ -70,7 +70,7 @@ export function OnlyIfRows({ fields, rules, onChange }: OnlyIfRowsProps) {
   const first = fields[0];
   return (
     <fieldset {...partOf(part.workflowRules)}>
-      <legend>{t("workflows.only-if")}</legend>
+      <legend {...partOf(part.workflowRulesLegend)}>{t("workflows.only-if")}</legend>
       <p {...partOf(part.muted)}>{t("workflows.only-if-help")}</p>
       {rules.onlyIf.map((condition) => (
         <ConditionRow

@@ -28,7 +28,7 @@ function Boxes({
 }) {
   return (
     <fieldset {...partOf(part.workflowRules)}>
-      <legend>{legend}</legend>
+      <legend {...partOf(part.workflowRulesLegend)}>{legend}</legend>
       {help === undefined ? null : <p {...partOf(part.muted)}>{help}</p>}
       {items.map((item) => (
         <Checkbox
@@ -48,7 +48,7 @@ function Boxes({
 function WhoCan({ editor, rules, onChange }: RulesFieldsProps) {
   return (
     <fieldset {...partOf(part.workflowRules)}>
-      <legend>{t("workflows.who")}</legend>
+      <legend {...partOf(part.workflowRulesLegend)}>{t("workflows.who")}</legend>
       <p {...partOf(part.muted)}>{t("workflows.who-help")}</p>
       <Boxes
         legend={t("workflows.who-roles")}

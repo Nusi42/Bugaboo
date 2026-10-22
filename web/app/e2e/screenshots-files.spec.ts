@@ -78,8 +78,8 @@ async function commentWithPicture(page: Page): Promise<void> {
     .click();
 }
 
-/** The state the pictures start from: a picture, a PDF and a log, and a comment with a picture. */
-test("the issue gets its files and a comment with a file", async ({ page }) => {
+/** The state the pictures of a theme start from: a picture, a PDF and a log, and a comment with a picture. */
+async function prepareTheIssue(page: Page): Promise<void> {
   await signIn(page, ada);
   await page.goto(issueAddress(ISSUE));
   await chooseInBlock(page, screenshot("screenshot.png", 480, 300), report(), crashLog);
@@ -92,7 +92,7 @@ test("the issue gets its files and a comment with a file", async ({ page }) => {
       }),
     ),
   );
-});
+}
 
 /** The block with the finished previews, a file under a comment, and a refusal in words. */
 async function takeTheBlock(page: Page, theme: Theme, project: string): Promise<void> {
@@ -156,6 +156,7 @@ for (const theme of themes) {
   test.describe(`files in ${theme.id}`, () => {
     // Each theme starts on fresh data: no history of the files an earlier look took out.
     test.use({ freshData: theme.id });
+    test("the issue gets its files and a comment with a file", ({ page }) => prepareTheIssue(page));
     test("the block with previews, a file under a comment, and a refusal in words", ({
       page,
     }, info) => takeTheBlock(page, theme, info.project.name));

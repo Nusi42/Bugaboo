@@ -12,7 +12,7 @@ export function OfferStateLine({
   readonly offered: boolean;
 }) {
   return (
-    <span {...partOf(part.row)}>
+    <span {...partOf(part.offerState)}>
       <Icon name={offered ? iconName.check : iconName.close} size={iconSize.small} />
       <span>{t("projects.offer-line", { name, state: offerStateName(offered) })}</span>
     </span>

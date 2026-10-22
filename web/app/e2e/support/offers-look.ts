@@ -48,7 +48,19 @@ export async function takeNewIssue(page: Page, theme: Theme, project: string): P
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   await openNewIssueDialog(page);
-  await expect(newIssueDialog(page).getByLabel(t("issues.type"), { exact: true })).toBeVisible();
+  const types = newIssueDialog(page).getByLabel(t("issues.type"), { exact: true });
+  await expect(types).toBeVisible();
+  // A list of the browser cannot be open in a picture: the types it offers are written under it, for the picture only.
+  await types.evaluate((list: unknown) => {
+    if (list instanceof HTMLSelectElement) {
+      const offered = document.createElement("p");
+      offered.textContent = [...list.options]
+        .map((option: Readonly<{ text: string }>) => option.text)
+        .join(" · ");
+      list.after(offered);
+    }
+  });
+  await types.scrollIntoViewIfNeeded();
   await take(page, theme, "new-issue-types", project);
 }
 

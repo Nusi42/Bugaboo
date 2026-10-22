@@ -41,14 +41,16 @@ function FollowButton({ issue }: { readonly issue: string }) {
   const params = { params: { path: { issue } } } as const;
   const following = state.data?.following === true;
   const reason = state.data?.reason;
-  // One line: the state with the reason, and the button that turns it round.
-  const said =
-    reason === undefined || reason === null
-      ? t("followers.following")
-      : t("followers.following-because", { reason: t(reasonMessage[reason]) });
+  // One line: the state, and the button that turns it round. The reason a person follows is the
+  // hint of the state.
+  const why = reason === undefined || reason === null ? undefined : t(reasonMessage[reason]);
   return (
     <>
-      {following ? <span {...partOf(part.muted)}>{said}</span> : null}
+      {following ? (
+        <span {...partOf(part.muted)} title={why}>
+          {t("followers.following")}
+        </span>
+      ) : null}
       <Button
         look={buttonLook.quiet}
         isPending={follow.isPending || leave.isPending}
@@ -79,8 +81,8 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
   const people = itemsOf(list.data?.pages);
   return (
     <NameValueRow name={t("followers.name")}>
-      {people.length === 0 ? null : (
-        <div {...partOf(part.row)}>
+      <div {...partOf(part.row)}>
+        {people.length === 0 ? null : (
           <Button
             look={buttonLook.quiet}
             onPress={() => {
@@ -89,9 +91,7 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
           >
             {followerCount(people.length, list.hasNextPage)}
           </Button>
-        </div>
-      )}
-      <div {...partOf(part.row)}>
+        )}
         <FollowButton issue={readableId} />
       </div>
       {shown ? <FollowerNames people={people} /> : null}
