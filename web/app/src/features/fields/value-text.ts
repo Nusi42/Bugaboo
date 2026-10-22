@@ -3,10 +3,10 @@
  * is seconds in the API and "1h 30m" on the screen; a decimal is text in both.
  */
 
-import { decimalDigits, decimalParts } from "@bugaboo/api-client";
+import { decimalDigits, decimalParts, secondsPerHour, secondsPerMinute } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { durationText, SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "../../shared/own-value-text.ts";
+import { durationText } from "../../shared/own-value-text.ts";
 import type { OwnField } from "./fields.ts";
 
 /** A unit as it is written in a pattern. */
@@ -27,14 +27,14 @@ function durationPattern(): RegExp {
 export function durationSeconds(text: string): number | undefined {
   const trimmed = text.trim();
   if (/^\d+$/u.test(trimmed)) {
-    return Number(trimmed) * SECONDS_PER_MINUTE;
+    return Number(trimmed) * secondsPerMinute;
   }
   const found = durationPattern().exec(trimmed);
   if (trimmed === "" || found === null) {
     return undefined;
   }
   const [, hours, minutes] = found;
-  return Number(hours ?? 0) * SECONDS_PER_HOUR + Number(minutes ?? 0) * SECONDS_PER_MINUTE;
+  return Number(hours ?? 0) * secondsPerHour + Number(minutes ?? 0) * secondsPerMinute;
 }
 
 /** Whether the text is a decimal number as the API takes it: digits, an optional sign and point. */

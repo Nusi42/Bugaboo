@@ -232,7 +232,10 @@ pub const DESCRIPTION_PART: &str = \"description\";
     );
     let time = (
         TIME_SOURCE.to_owned(),
-        "pub const SECONDS_PER_DAY: i64 = 86_400;".to_owned(),
+        "pub const SECONDS_PER_MINUTE: u32 = 60;
+pub const MINUTES_PER_HOUR: u32 = 60;
+pub const SECONDS_PER_DAY: i64 = 86_400;"
+            .to_owned(),
     );
     let text = editing(&[source, comment, version, time, error_codes_source()]).unwrap();
     assert!(text.contains("leaseSeconds = 60;"), "{text}");

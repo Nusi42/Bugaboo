@@ -5,20 +5,16 @@
  * vectors in `tools/testdata/value-words.json` hold to this code (ADR-0033).
  */
 
-import type { Schema } from "@bugaboo/api-client";
+import { secondsPerHour, secondsPerMinute, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { formatCalendarDay, formatDateTime, formatNumber } from "./format.ts";
 import { currentRegion, type Region } from "./region.ts";
 
-export const SECONDS_PER_MINUTE = 60;
-const MINUTES_PER_HOUR = 60;
-export const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
-
 /** Seconds as "2h 5m", "45m" or "0m"; whole minutes (a duration is typed in minutes at the least). */
 export function durationText(seconds: number): string {
-  const hours = Math.floor(seconds / SECONDS_PER_HOUR);
-  const minutes = Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+  const hours = Math.floor(seconds / secondsPerHour);
+  const minutes = Math.floor((seconds % secondsPerHour) / secondsPerMinute);
   const [hour, minute] = [t("fields.unit-hour"), t("fields.unit-minute")];
   if (hours === 0) {
     return `${minutes}${minute}`;
