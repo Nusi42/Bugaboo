@@ -84,6 +84,7 @@ export function ManyChangeDialog({
         onAsk={dialog.ask}
       />
       {preview.isError ? <Alert tone={alertTone.danger}>{messageOf(preview.error)}</Alert> : null}
+      {preview.data === undefined ? null : <WordingNotice />}
       {preview.data === undefined ? null : (
         <>
           <WordingNotice />
