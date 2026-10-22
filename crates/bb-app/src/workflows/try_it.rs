@@ -41,7 +41,8 @@ fn told(verdict: Verdict, rules_hide_a_field: bool) -> TriedVerdict {
 ///
 /// # Errors
 /// `resource.not_found` for an issue the person may not see or a person they may not know about,
-/// `access.forbidden` without *Manage workflows* in the project of the issue.
+/// `access.forbidden` without *Manage workflows* or *Check access* in the project of the issue,
+/// `resource.not_found` for a reader who is not shown the people of the project.
 pub async fn try_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: TryWorkflowQuery,
@@ -52,16 +53,13 @@ pub async fn try_workflow<S: AuthStore>(
     let held = ctx
         .require(&actor, Permission::ManageWorkflows, place)
         .await?;
-    ctx.store()
-        .person(input.person)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let theirs = ctx.evaluate(input.person, place).await?;
-    // Like *Check access*: whoever does not manage people reads the people who have a role there.
-    if !held.manages_people() && theirs.roles().is_empty() {
+    // It tells as much about a person as *Check access*, so it asks for it too, and keeps to the
+    // same gate on people as *Who may change* (*Who sees people*).
+    ctx.require(&actor, Permission::CheckAccess, place).await?;
+    if !held.may_know_roles_of_people() {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
+    let theirs = ctx.person_to_check(&held, input.person, place).await?;
     let chain = held.chain().to_vec();
     let directory = ctx.workflow_directory().await?;
     let workflow = directory.in_force(&chain, Some(issue.issue_type));

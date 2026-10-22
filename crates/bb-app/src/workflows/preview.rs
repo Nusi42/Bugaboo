@@ -36,13 +36,15 @@ pub(crate) async fn preview_within<S: AuthStore>(
     cap: usize,
 ) -> Result<Authorized<PublishPreview>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (stored, held, _) = ctx.workflow_to_manage(&actor, input.workflow).await?;
+    let (stored, held, place) = ctx.workflow_to_manage(&actor, input.workflow).await?;
     let drafts = Drafts {
         name: &stored.workflow.name,
         statuses: &input.statuses,
         changes: &input.changes,
     };
-    let content = ctx.publishable(&actor, &held, &stored, drafts).await?;
+    let content = ctx
+        .publishable(&actor, &held, place, &stored, drafts)
+        .await?;
     let dropping = ctx.dropping(&stored, &content, cap).await?;
     // More issues than one publish moves: they are not judged or named, which would cost as much
     // as the issues are many; the answer says so and the editor refuses the publish.

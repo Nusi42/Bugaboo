@@ -4,6 +4,7 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_policy::{Authorized, Place};
 
+use super::super::refs::NameRef;
 use super::super::rewrite::{Combining, Replacement, Rewrite, Sorted};
 use super::super::types::{CombineLabels, LabelView};
 use super::{Reach, crowd, two_of_in};
@@ -68,7 +69,7 @@ pub async fn combine_labels<S: AuthStore>(
         rename: None,
         into: Some(Replacement {
             id: into.id.into(),
-            name: into.name.clone(),
+            named: NameRef::from(&into),
         }),
     };
     let Combining { event, events, why } =

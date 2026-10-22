@@ -356,11 +356,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(Judged::Skip(SkipReason::NothingToChange));
         }
         Ok(Judged::Change(Planned::Fields(Box::new(FieldsPlan {
-            changes: vec![FieldChange {
-                field: member::LABELS.to_owned(),
-                before: Some(json!(plan.before)),
-                after: Some(json!(plan.after)),
-            }],
+            changes: vec![crate::tags::labels_changed(&plan.before, &plan.after)],
             issue: plan.issue,
             held,
             notes: Vec::new(),

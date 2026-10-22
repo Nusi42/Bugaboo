@@ -90,6 +90,9 @@ async fn m3_f70_a_handle_names_one_person_for_good_and_a_former_one_stays_with_t
         // The handle the account was given is no change; the second one is.
         assert_eq!(changed_at(&storage, &mut source, ben).await?, None);
         assert_eq!(changed_at(&storage, &mut source, ana).await?, Some(at(2)));
+        // The read without a lock says the same.
+        assert_eq!(storage.handle_changed_at(ben).await?, None);
+        assert_eq!(storage.handle_changed_at(ana).await?, Some(at(2)));
 
         // She takes the old one back.
         give(&storage, &mut source, ana, "ana.brandt").await?;

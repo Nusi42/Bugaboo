@@ -1,8 +1,9 @@
 //! E-mail addresses as sign-in names, and the list of approved domains for signing up (AUTH-06).
 //!
 //! Addresses are compared in lower case, with spaces around them removed. The check is
-//! deliberately small: one `@`, something on each side, a dot in the domain, no spaces or control
-//! characters. Whether the mailbox exists is something only a message can show (M4).
+//! deliberately small: one `@`, a dot-atom before it (the characters of RFC 5322 and single dots,
+//! so nothing of the syntax of a mailbox) and labels of ASCII letters, digits and hyphens with a dot
+//! after it. Whether the mailbox exists is something only a message can show (M4).
 
 use bb_core::settings::list_items;
 
@@ -10,6 +11,29 @@ use bb_core::settings::list_items;
 const MAX_LENGTH: usize = 254;
 /// The longest part before the `@` (RFC 5321).
 const MAX_LOCAL_LENGTH: usize = 64;
+
+/// Whether `part` is a dot-atom (RFC 5322): words of the characters below, joined by single dots.
+/// Nothing of the syntax of a mailbox (`< > " , ; ( ) [ ] : \` and spaces) is one.
+fn is_dot_atom(part: &str) -> bool {
+    const SPECIAL: &str = "!#$%&'*+-/=?^_`{|}~";
+    !part.is_empty()
+        && part.split('.').all(|word| {
+            !word.is_empty()
+                && word
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || SPECIAL.contains(c))
+        })
+}
+
+/// Whether `part` is one label of a domain: ASCII letters, digits and hyphens, not starting or
+/// ending with a hyphen. A domain with other letters is written in its ASCII form (`xn--...`),
+/// which is the form the mail library takes, and the one form two spellings of a domain end in.
+fn is_label(part: &str) -> bool {
+    !part.is_empty()
+        && !part.starts_with('-')
+        && !part.ends_with('-')
+        && part.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+}
 
 /// An e-mail address in its one spelling: lower case, trimmed.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -21,18 +45,11 @@ impl EmailAddress {
     pub fn parse(text: &str) -> Option<Self> {
         let address = text.trim().to_lowercase();
         let (local, domain) = address.split_once('@')?;
-        let plain = |part: &str| {
-            !part.is_empty() && !part.chars().any(|c| c.is_whitespace() || c.is_control())
-        };
         let valid = address.len() <= MAX_LENGTH
             && local.len() <= MAX_LOCAL_LENGTH
-            && plain(local)
-            && plain(domain)
-            && !domain.contains('@')
+            && is_dot_atom(local)
             && domain.contains('.')
-            && !domain.starts_with('.')
-            && !domain.ends_with('.')
-            && !domain.contains("..");
+            && domain.split('.').all(is_label);
         valid.then_some(Self(address))
     }
 
@@ -90,10 +107,45 @@ mod tests {
             "ada@.example.com",
             "ada@example.com.",
             "a\u{0}b@example.com",
+            // Mailbox syntax and list syntax are no address (M4 exit review, M3).
+            "x<a@example.com>",
+            "x <a@example.com>",
+            "\"x\"@example.com",
+            "a,b@example.com",
+            "a;b@example.com",
+            "(c)a@example.com",
+            "a..b@example.com",
+            ".a@example.com",
+            "a.@example.com",
+            "ada@example.com>",
+            "ada@exa_mple.com",
+            "ada@-example.com",
+            "ada@example-.com",
+            "ada@example.c<om",
+            // Letters that only look like ASCII, and a domain that is not in its ASCII form.
+            "ada@\u{ff45}xample.com",
+            "ada@b\u{fc}cher.de",
             &format!("{}@example.com", "a".repeat(65)),
         ] {
             assert!(EmailAddress::parse(bad).is_none(), "{bad:?}");
         }
+    }
+
+    #[test]
+    fn auth_01_the_characters_of_a_dot_atom_are_an_address() {
+        for good in [
+            "a+1@b.co",
+            "o'brien@b.co",
+            "a_b-c.d{e}@b.co",
+            "a=b/c?@b.co",
+            "ada@xn--bcher-kva.de",
+        ] {
+            assert!(EmailAddress::parse(good).is_some(), "{good:?}");
+        }
+        // A plus tag is a spelling of the same mailbox for many servers, and to this server
+        // another address (12-security, accepted).
+        let tagged = EmailAddress::parse("a+1@b.co").unwrap();
+        assert_ne!(tagged, EmailAddress::parse("a@b.co").unwrap());
     }
 
     #[test]

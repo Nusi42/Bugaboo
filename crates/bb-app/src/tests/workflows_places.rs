@@ -21,7 +21,8 @@ use crate::issues::change_issue;
 use crate::many_changes::{ManyChange, ManyChangeAction};
 use crate::workflows::{
     DeleteWorkflow, PublishWorkflow, StatusMoveInput, TriedVerdict, TryWorkflowQuery, UseWorkflow,
-    WorkflowEditorQuery, delete_workflow, try_workflow, use_workflow, workflow_editor,
+    WorkflowEditorQuery, WorkflowsQuery, delete_workflow, try_workflow, use_workflow,
+    workflow_editor, workflows,
 };
 
 #[tokio::test]
@@ -285,6 +286,125 @@ async fn wf_02_a_workflow_is_used_by_another_place_and_taken_away_again() -> Out
     assert!(
         back.inherited_from
             .is_some_and(|from| from.whole_organization)
+    );
+    Ok(())
+}
+
+/// The IDs of the workflows the person is offered at a project.
+async fn offered_at(
+    world: &World,
+    session: &str,
+    project: &str,
+) -> Result<Vec<bb_core::id::WorkflowId>, AppError> {
+    Ok(workflows(
+        &world.ctx(),
+        WorkflowsQuery {
+            session_token: session.to_owned(),
+            project: Some(project.to_owned()),
+        },
+    )
+    .await?
+    .into_value()
+    .workflows
+    .into_iter()
+    .map(|each| each.id)
+    .collect())
+}
+
+#[tokio::test]
+async fn sec_lm2_a_workflow_shared_by_sibling_projects_is_not_the_organizations() -> Outcome {
+    let world = World::new().await?;
+    let admin = world.admin.session_token.clone();
+    let hr = a_project(&world, "HR").await?;
+    for short in ["LEGAL", "FIN"] {
+        a_project(&world, short).await?;
+    }
+    // A workflow used in LEGAL and FIN, which share no project, once the organization has gone
+    // back to another one: neither it nor its statuses are for the lead of HR to see or to use.
+    let slot = crate::workflows::create_workflow(
+        &world.ctx(),
+        super::scenarios_workflows::new_workflow(&world, None),
+    )
+    .await?
+    .into_value()
+    .workflow
+    .ok_or("no workflow")?;
+    let wanted = |project: &str| UseWorkflow {
+        session_token: admin.clone(),
+        project: Some(project.to_owned()),
+        issue_type: None,
+        workflow: Some(slot.id),
+    };
+    let starter = offered_at(&world, &admin, "HR")
+        .await?
+        .into_iter()
+        .find(|each| *each != slot.id)
+        .ok_or("no other workflow")?;
+    let org = |workflow| UseWorkflow {
+        session_token: admin.clone(),
+        project: None,
+        issue_type: None,
+        workflow,
+    };
+    use_workflow(&world.ctx(), wanted("LEGAL")).await?;
+    use_workflow(&world.ctx(), wanted("FIN")).await?;
+    use_workflow(&world.ctx(), org(Some(starter))).await?;
+    let lead = member(&world, "hana@example.test", StartingRole::ProjectLead, hr).await?;
+    assert!(
+        !offered_at(&world, &lead.session_token, "HR")
+            .await?
+            .contains(&slot.id)
+    );
+    let adopted = use_workflow(
+        &world.ctx(),
+        UseWorkflow {
+            session_token: lead.session_token.clone(),
+            project: Some("HR".to_owned()),
+            issue_type: None,
+            workflow: Some(slot.id),
+        },
+    )
+    .await;
+    assert_eq!(adopted.err(), Some(AppError::Refused(ErrorCode::NotFound)));
+    // Whoever manages workflows for the whole organization is offered it.
+    assert!(offered_at(&world, &admin, "HR").await?.contains(&slot.id));
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_l7_try_it_needs_check_access_as_well_as_manage_workflows() -> Outcome {
+    let world = World::new().await?;
+    let admin = world.admin.session_token.clone();
+    let project = a_project(&world, "ACME").await?;
+    let id = an_issue(&world, project).await?;
+    // A role that manages workflows and looks at issues, and nothing else.
+    let role = crate::roles::create_role(
+        &world.ctx(),
+        crate::roles::CreateRole {
+            session_token: admin.clone(),
+            name: "Workflow keeper".to_owned(),
+            permissions: vec![
+                bb_policy::Permission::SeeProjects,
+                bb_policy::Permission::SeeIssues,
+                bb_policy::Permission::ManageWorkflows,
+            ],
+            two_step: false,
+        },
+    )
+    .await?
+    .into_value();
+    let keeper = world.person("keeper@example.test").await?;
+    super::workflows_rules::assign(&world, &keeper, role.id, project).await?;
+    let tried = |who: &str| TryWorkflowQuery {
+        session_token: who.to_owned(),
+        issue: id.to_string(),
+        person: world.admin.person.id,
+    };
+    assert_eq!(
+        try_workflow(&world.ctx(), tried(&keeper.session_token))
+            .await
+            .err(),
+        Some(AppError::Refused(ErrorCode::Forbidden))
     );
     Ok(())
 }

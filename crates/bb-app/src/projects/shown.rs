@@ -65,6 +65,11 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 impl Shown {
+    /// The person it is the view of.
+    pub(crate) const fn person(&self) -> UserId {
+        self.person
+    }
+
     /// The roles the person holds anywhere, whose levels decide what they read.
     pub(crate) fn role_ids(&self) -> Vec<RoleId> {
         self.policy.roles.iter().map(|role| role.id).collect()

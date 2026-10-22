@@ -1,6 +1,7 @@
 import { dataOf } from "./answer.ts";
 import type { Api } from "./client.ts";
 import { draftKeptCodes, heartbeatSeconds, versionsMax } from "./editing.generated.ts";
+import { BACKGROUND_HEADER } from "./protocol.ts";
 import { msPerSecond } from "./time.ts";
 import type { Schema } from "./readonly.ts";
 
@@ -141,7 +142,13 @@ export function inGroupsOfOneCheck(
 export async function versionsOf(client: Client, records: readonly RecordRef[]) {
   const checks: readonly Schema<"VersionsBody">[] = await Promise.all(
     inGroupsOfOneCheck(records).map(async (group) =>
-      dataOf(await client.POST("/api/v1/versions/check", { body: { records: [...group] } })),
+      dataOf(
+        await client.POST("/api/v1/versions/check", {
+          body: { records: [...group] },
+          // A tab left open asks every half minute: that is no use of the session.
+          headers: { [BACKGROUND_HEADER]: "1" },
+        }),
+      ),
     ),
   );
   return checks.flatMap((checked) => checked.items);

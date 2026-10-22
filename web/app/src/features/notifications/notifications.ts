@@ -2,6 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { changeSentence, whoOf } from "../../shared/change-sentence.ts";
+import { fileSentence } from "../../shared/file-sentence.ts";
 import { addressInProject, paths, type IssueTarget } from "../../shared/paths.ts";
 
 /** One item of the list of notifications; a change has one for each field it changed. */
@@ -135,6 +136,10 @@ export function sentencesOf(row: NotificationRow): readonly string[] {
         ? t("notifications.run-failed")
         : t("notifications.run-done"),
     ];
+  }
+  const file = row.entries.find((entry) => entry.file_event !== undefined);
+  if (file !== undefined) {
+    return [fileSentence(file)];
   }
   if (isChange(row)) {
     return row.entries.map((entry) => changeSentence(entry));

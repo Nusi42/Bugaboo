@@ -22,6 +22,14 @@ use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
 /// names are read in one statement, which made it 47.
 const AT_MOST: usize = 47;
 
+/// The most statements the history of an issue may run: the history names an issue type and a label
+/// only where the reader may know it (LM1 of the M4 exit review, `offers/known.rs`), so it also
+/// reads the types, the label groups and what the reader sees of the projects, once for a page
+/// and only when a row names a type or a label, and the tags the reader may know the same way
+/// (55 measured: four statements for the tags, once for a page; the types come from the one read of
+/// the request).
+const HISTORY_AT_MOST: usize = 55;
+
 /// Counts the statements a database runs between one look and the next.
 pub(super) struct Counter<'a> {
     database: &'a Database,
@@ -247,7 +255,12 @@ async fn perf_05_the_reads_of_an_issue_page_run_as_many_statements_for_a_busy_is
                 *statements > 0,
                 "{part}: no statement was counted, the counter sees nothing"
             );
-            assert!(*statements <= AT_MOST, "{part}: {statements} statements");
+            let ceiling = if part.ends_with("/history") {
+                HISTORY_AT_MOST
+            } else {
+                AT_MOST
+            };
+            assert!(*statements <= ceiling, "{part}: {statements} statements");
         }
         Ok(())
     })

@@ -26,6 +26,12 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::projects::Why;
 
+/// Whether an attachment is among those that are shown (`trashed` false) or among those in the
+/// trash (`trashed` true). The one rule of it, for opening a file and for the news of one.
+pub(crate) fn is_listed(attachment: &Attachment, trashed: bool) -> bool {
+    attachment.deleted_at.is_some() == trashed
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The signed link that opens `target` of `attachment` for `person` for five minutes.
     pub(crate) fn link_for(
@@ -92,7 +98,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .attachment(id)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .filter(|attachment| attachment.deleted_at.is_some() == trashed);
+            .filter(|attachment| is_listed(attachment, trashed));
         let Some(attachment) = found else {
             return Err(self.not_found_like_a_hidden_issue(actor).await);
         };

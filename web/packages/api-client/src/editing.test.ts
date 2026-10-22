@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createApi } from "./client.ts";
+import { BACKGROUND_HEADER } from "./protocol.ts";
 import { heartbeatSeconds, leaseSeconds, versionsMax } from "./editing.generated.ts";
 import {
   inGroupsOfOneCheck,
@@ -21,6 +22,7 @@ interface Sent {
   readonly url: string;
   readonly body: unknown;
   readonly keepalive: boolean;
+  readonly background: string | null;
 }
 
 /** A client whose server answers every request with `answer(body)`, and the requests it got. */
@@ -32,7 +34,13 @@ function serving(answer: (body: unknown) => unknown) {
     fetch: async (request) => {
       const text = await request.clone().text();
       const body: unknown = text === "" ? null : JSON.parse(text);
-      sent.push({ method: request.method, url: request.url, body, keepalive: request.keepalive });
+      sent.push({
+        method: request.method,
+        url: request.url,
+        body,
+        keepalive: request.keepalive,
+        background: request.headers.get(BACKGROUND_HEADER),
+      });
       return new Response(JSON.stringify(answer(body)), {
         headers: { "content-type": "application/json" },
       });
@@ -129,6 +137,12 @@ describe("iss_17 the check of versions", () => {
     expect(sent[0]?.body).toEqual({ records: records.slice(0, versionsMax) });
     expect(sent[2]?.body).toEqual({ records: records.slice(2 * versionsMax) });
     expect(items.map((item) => item.record)).toEqual(records);
+  });
+
+  it("is marked as a read nobody asked for, so a tab left open keeps no session alive", async () => {
+    const { client, sent } = serving(() => ({ items: [] }));
+    await versionsOf(client, [{ kind: "issue", id: "i-1" }]);
+    expect(sent[0]?.background).toBe("1");
   });
 
   it("splits a list into groups of the size of one check", () => {

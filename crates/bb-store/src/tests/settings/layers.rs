@@ -110,3 +110,33 @@ async fn cfg_04_a_persons_values_are_their_own_and_belong_to_a_person_who_exists
     })
     .await
 }
+
+#[tokio::test]
+async fn ntf_01_the_own_values_of_many_people_are_read_in_one_go() -> TestResult {
+    each_database("ntf_01_person_settings", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let ada = create_person(storage, &mut source, "ada@example.test").await?;
+        let ben = create_person(storage, &mut source, "ben@example.test").await?;
+        let eve = create_person(storage, &mut source, "eve@example.test").await?;
+        put(storage, &mut source, Scope::Person(ada), NOTE, text("mine")).await?;
+        put(storage, &mut source, Scope::Person(ben), NOTE, text("his")).await?;
+        let mut read = storage.person_settings(vec![ada, ben, eve]).await?;
+        read.sort_by_key(|(person, _)| *person);
+        let mut expected = vec![(ada, text("mine")), (ben, text("his"))];
+        expected.sort_by_key(|(person, _)| *person);
+        assert_eq!(
+            read.len(),
+            2,
+            "a person with no value of their own has no row"
+        );
+        for ((person, values), (wanted, value)) in read.iter().zip(&expected) {
+            assert_eq!(person, wanted);
+            assert_eq!(values.get(NOTE), Some(value));
+        }
+        assert!(storage.person_settings(Vec::new()).await?.is_empty());
+        Ok(())
+    })
+    .await
+}

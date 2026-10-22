@@ -50,6 +50,9 @@ use crate::logging::ClientIp;
 /// How long a window lasts.
 const PERIOD: Duration = Duration::from_mins(1);
 
+/// How long the hourly window of signing up lasts.
+const HOUR: Duration = Duration::from_hours(1);
+
 /// Each window remembers at most this many clients. A flood of invented addresses must not be
 /// able to use up the memory. When the table is full, expired entries go first; counters of
 /// clients that are still within their minute are never thrown away. If it is still full, see
@@ -70,6 +73,17 @@ pub const DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE: u32 = 60;
 /// Tries to sign up per client network and minute. Signing up sends an e-mail to any address that
 /// is typed, so it has a small limit of its own besides the cap of the sign-in family.
 pub const SIGN_UP_REQUESTS_PER_MINUTE: u32 = 5;
+
+/// Tries to sign up per client network and hour: well under the cap of the whole server
+/// (`bb_core::sign_up_invitation::ADDRESSES_PER_HOUR_MAX`), so that one network cannot use it up
+/// for everybody.
+pub const SIGN_UP_REQUESTS_PER_HOUR: u32 = 20;
+
+// Held in code: one network must not be able to fill a fifth of the cap on its own, so that it takes
+// five networks to use it up and no fewer.
+const _: () = assert!(
+    (SIGN_UP_REQUESTS_PER_HOUR as u64) * 5 <= bb_core::sign_up_invitation::ADDRESSES_PER_HOUR_MAX
+);
 
 /// Requests that come with one access key, per minute, when nothing else is set. A script that
 /// needs more asks for fewer, bigger answers (`limit`, `fields`) or sets the limit higher.
@@ -116,6 +130,8 @@ enum Overflow<K> {
 /// Counts events per key in fixed windows.
 struct Window<K> {
     limit: u32,
+    /// How long a window lasts.
+    period: Duration,
     overflow: Overflow<K>,
     table: Mutex<Table<K>>,
 }
@@ -133,8 +149,13 @@ struct Table<K> {
 
 impl<K: Hash + Eq + Clone> Window<K> {
     fn new(limit: u32, overflow: Overflow<K>) -> Self {
+        Self::lasting(PERIOD, limit, overflow)
+    }
+
+    fn lasting(period: Duration, limit: u32, overflow: Overflow<K>) -> Self {
         Self {
             limit,
+            period,
             overflow,
             table: Mutex::new(Table {
                 entries: HashMap::new(),
@@ -155,11 +176,11 @@ impl<K: Hash + Eq + Clone> Window<K> {
         let mut table = self.lock();
         let mut key = key;
         if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
-            create_room(&mut table, now);
+            create_room(&mut table, now, self.period);
             if table.entries.len() >= MAX_CLIENTS {
                 match &self.overflow {
                     Overflow::Share(shared) => key = shared.clone(),
-                    Overflow::Refuse => return Err(PERIOD.as_secs()),
+                    Overflow::Refuse => return Err(self.period.as_secs()),
                 }
             }
         }
@@ -167,14 +188,14 @@ impl<K: Hash + Eq + Clone> Window<K> {
             started: now,
             count: 0,
         });
-        if now.duration_since(entry.started) >= PERIOD {
+        if now.duration_since(entry.started) >= self.period {
             *entry = Entry {
                 started: now,
                 count: 0,
             };
         }
         if entry.count >= self.limit {
-            return Err(seconds_left(entry.started, now));
+            return Err(seconds_left(entry.started, now, self.period));
         }
         entry.count += 1;
         Ok(())
@@ -182,21 +203,21 @@ impl<K: Hash + Eq + Clone> Window<K> {
 }
 
 /// The seconds a key that started its window at `started` still has to wait: at least one.
-fn seconds_left(started: Instant, now: Instant) -> u64 {
-    let wait = PERIOD.saturating_sub(now.duration_since(started));
+fn seconds_left(started: Instant, now: Instant, period: Duration) -> u64 {
+    let wait = period.saturating_sub(now.duration_since(started));
     (wait.as_secs() + u64::from(wait.subsec_nanos() > 0)).max(1)
 }
 
 /// Throws out the counters whose window is over, when the table is full. A full table is swept
 /// at most once per [`SWEEP_EVERY`]; counters that are still running are never thrown away.
-fn create_room<K>(table: &mut Table<K>, now: Instant) {
+fn create_room<K>(table: &mut Table<K>, now: Instant, period: Duration) {
     let due = table
         .last_sweep
         .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);
     if due {
         table
             .entries
-            .retain(|_, entry| now.duration_since(entry.started) < PERIOD);
+            .retain(|_, entry| now.duration_since(entry.started) < period);
         table.last_sweep = Some(now);
         #[cfg(test)]
         {
@@ -210,6 +231,7 @@ pub struct Limits {
     requests: Window<IpAddr>,
     sign_in_networks: Window<NetworkPrefix>,
     sign_up_networks: Window<NetworkPrefix>,
+    sign_up_hours: Window<NetworkPrefix>,
     access_keys: Window<Digest>,
 }
 
@@ -221,6 +243,7 @@ impl Limits {
             requests: Window::new(config.requests_per_minute, Overflow::Share(OVERFLOW_CLIENT)),
             sign_in_networks: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
             sign_up_networks: Window::new(SIGN_UP_REQUESTS_PER_MINUTE, Overflow::Refuse),
+            sign_up_hours: Window::lasting(HOUR, SIGN_UP_REQUESTS_PER_HOUR, Overflow::Refuse),
             // Keys that do not fit in a full table share one counter: a flood of invented keys
             // limits itself and not the keys that are counted already.
             access_keys: Window::new(
@@ -280,9 +303,11 @@ impl Limits {
     }
 
     fn check_sign_up_at(&self, client: IpAddr, now: Instant) -> Result<(), ApiError> {
+        let network = NetworkPrefix::from_address(client);
         self.sign_up_networks
-            .hit(NetworkPrefix::from_address(client), now)
-            .map_err(too_many)
+            .hit(network.clone(), now)
+            .map_err(too_many)?;
+        self.sign_up_hours.hit(network, now).map_err(too_many)
     }
 }
 
@@ -466,6 +491,24 @@ mod tests {
         // Another network, and the sign-in cap, are not touched by it.
         limits.check_sign_up_at(ip("198.51.100.1"), now).unwrap();
         limits.check_sign_in_at(client, now).unwrap();
+    }
+
+    #[test]
+    fn sec_14_signing_up_has_an_hourly_limit_per_network_that_the_minutes_do_not_reach() {
+        let limits = limits(1000, 1000);
+        let (start, client) = (Instant::now(), ip("203.0.113.7"));
+        // Spread over the hour, a network stays under the limit of each minute and is still
+        // stopped by the limit of the hour.
+        for number in 0..SIGN_UP_REQUESTS_PER_HOUR {
+            let now = start + PERIOD * (number + 1);
+            limits.check_sign_up_at(client, now).unwrap();
+        }
+        let now = start + PERIOD * (SIGN_UP_REQUESTS_PER_HOUR + 1);
+        let error = limits.check_sign_up_at(client, now).unwrap_err();
+        assert_eq!(error.code(), ErrorCode::TooManyRequests);
+        // Another network is not touched, and an hour later the first one is let in again.
+        limits.check_sign_up_at(ip("198.51.100.1"), now).unwrap();
+        limits.check_sign_up_at(client, now + HOUR).unwrap();
     }
 
     #[test]

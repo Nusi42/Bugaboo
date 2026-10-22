@@ -3,6 +3,7 @@
 //! so the answer of the preview and the result of the change cannot differ (ISS-09, TAG-01,
 //! TAG-02).
 
+use super::refs::NameRef;
 use crate::offers::GroupOffers;
 use bb_core::ErrorCode;
 use bb_core::id::{LabelId, ProjectId, TagId};
@@ -21,12 +22,12 @@ pub(super) fn tag_names(tags: &[Tag], links: &[IssueTag]) -> Vec<String> {
         .collect()
 }
 
-/// The names of the labels an issue has, in the order it got them.
-pub(super) fn label_names(labels: &[Label], links: &[IssueLabel]) -> Vec<String> {
+/// The labels an issue has, in the order it got them, with their names and groups.
+pub(super) fn label_refs(labels: &[Label], links: &[IssueLabel]) -> Vec<NameRef> {
     links
         .iter()
         .filter_map(|link| labels.iter().find(|label| label.id == link.label))
-        .map(|label| label.name.clone())
+        .map(NameRef::from)
         .collect()
 }
 

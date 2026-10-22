@@ -1244,7 +1244,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/attachments/{attachment}/restore": {
@@ -1343,7 +1343,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/auth/invitation/accept": {
@@ -12159,7 +12159,7 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "manage-workflows"
+        "x-permission": "check-access"
       }
     },
     "/api/v1/issues/{issue}/sub-issues": {
@@ -12683,7 +12683,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/label-groups": {
@@ -22057,7 +22057,7 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       },
       "put": {
         "tags": ["files"],
@@ -22225,7 +22225,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       },
       "delete": {
         "tags": ["files"],
@@ -22305,7 +22305,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/uploads/{upload}/finish": {
@@ -22434,7 +22434,7 @@
             }
           }
         },
-        "x-permission": "change-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/versions/check": {
@@ -28803,6 +28803,21 @@
             "type": ["string", "null"],
             "description": "A change of an own field: its name."
           },
+          "file_event": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FileEvent",
+                "description": "A file of the issue: what happened to it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_name": {
+            "type": ["string", "null"],
+            "description": "A file of the issue: its name, when the file is still there."
+          },
           "html": {
             "type": ["string", "null"],
             "description": "A comment: the text as safe HTML, made on the server for this person.",
@@ -30327,6 +30342,21 @@
                 "field_name": {
                   "type": ["string", "null"],
                   "description": "A change of an own field: its name."
+                },
+                "file_event": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FileEvent",
+                      "description": "A file of the issue: what happened to it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "file_name": {
+                  "type": ["string", "null"],
+                  "description": "A file of the issue: its name, when the file is still there."
                 },
                 "html": {
                   "type": ["string", "null"],

@@ -10,6 +10,7 @@ use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
+use super::super::refs::NameRef;
 use super::super::rewrite::{Replacement, Rewrite, Sorted};
 use super::super::types::{
     ChangeLabel, CreateLabel, LabelChangePreviewQuery, LabelView, TagChangePreview,
@@ -136,7 +137,7 @@ pub async fn label_change_preview<S: AuthStore>(
                 rename: None,
                 into: Some(Replacement {
                     id: into.id.into(),
-                    name: into.name.clone(),
+                    named: NameRef::from(into),
                 }),
             }
         }

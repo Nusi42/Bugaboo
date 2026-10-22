@@ -45,7 +45,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Ok(false);
         }
-        Ok(reaches(place_from_uses(&tree, &uses, id).project(), chain))
+        let place = place_from_uses(&tree, &uses, id);
+        // Used at the organization, or used nowhere (then the permission for the whole
+        // organization was asked for above): whoever manages workflows here may adopt it. Used by
+        // projects that share no project, it is for those who manage workflows for the whole
+        // organization.
+        if place == Place::Organization && !unused && !is_used_at_organization(&uses, id) {
+            return Ok(self
+                .evaluation_of(actor, Place::Organization)
+                .await?
+                .allows(Permission::ManageWorkflows));
+        }
+        Ok(reaches(place.project(), chain))
     }
 
     /// The facts of a workflow for the editing use cases; `None` when there is no such workflow or
@@ -77,6 +88,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             edit: Permission::ManageWorkflows,
         }))
     }
+}
+
+/// Whether the workflow is used by the whole organization.
+fn is_used_at_organization(uses: &[WorkflowUse], id: WorkflowId) -> bool {
+    uses.iter()
+        .any(|used| used.workflow == id && used.project.is_none())
 }
 
 /// The place that holds a workflow, from the tree of the projects and the places workflows are

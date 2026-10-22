@@ -188,11 +188,15 @@ fn attributes_before(before: &str) -> &str {
 }
 
 /// Whether attributes can switch an item off: a `cfg(…)` among them. `#[cfg(test)]` alone does not,
-/// because a test only runs under it (a module of tests that clippy lets unwrap is written so).
+/// because a test only runs under it (a module of tests that clippy lets unwrap is written so); nor
+/// do `#[cfg(unix)]` and `#[cfg(windows)]`: the checks run on both systems, so a test of one of them
+/// does run (the code for the other system has its own test).
 fn has_cfg(attributes: &str) -> bool {
     attributes
         .replace("#[cfg(test)]", "")
         .replace("#![cfg(test)]", "")
+        .replace("#[cfg(unix)]", "")
+        .replace("#[cfg(windows)]", "")
         .contains("cfg(")
 }
 
@@ -367,7 +371,7 @@ fn join(folder: &str, relative: &str) -> String {
 }
 
 /// Whether Cargo builds the file by itself: `crates/<crate>/src/{lib,main}.rs`, `build.rs`, a file in
-/// `src/bin/`, or one directly in `tests/`, `benches/` or `examples/`.
+/// `src/bin/`, one directly in `tests/`, `benches/` or `examples/`, or the `main.rs` of a folder there.
 fn is_root(path: &str) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
     matches!(
@@ -376,6 +380,7 @@ fn is_root(path: &str) -> bool {
             | ["crates", _, "build.rs"]
             | ["crates", _, "src", "bin", _]
             | ["crates", _, "tests" | "benches" | "examples", _]
+            | ["crates", _, "tests" | "benches" | "examples", _, "main.rs"]
     )
 }
 
@@ -404,8 +409,42 @@ const NO_ATTRIBUTE: &str = "it has no test attribute, or an `#[ignore]` or a `cf
 const NO_MODULE: &str = "no `mod` leads to its file from the root of the crate (or only behind a \
                          `cfg`), so it never runs";
 
+/// A test that is looked for: its name, where it has to be, and whether it has to run on both
+/// databases. A [`Required`] is one, with a name that lives for ever; the docs cite others.
+struct Wanted<'n> {
+    name: &'n str,
+    within: &'n str,
+    both_databases: bool,
+}
+
+/// The names of `names` that are no test that can run: no function of that name with a test
+/// attribute, none that is switched off, none in a file no `mod` reaches (the one definition of
+/// "this test exists", the same as for the lists of required tests).
+pub(super) fn missing_tests<'n>(sources: &[Source], names: &[&'n str]) -> Vec<&'n str> {
+    let code: Vec<(&str, String, String)> = sources
+        .iter()
+        .map(|(path, text)| (path.as_str(), strip_comments(text), strip(text)))
+        .collect();
+    let tree = Tree::of(&code);
+    names
+        .iter()
+        .copied()
+        .filter(|name| {
+            let wanted = Wanted {
+                name,
+                within: "",
+                both_databases: false,
+            };
+            !matches!(
+                judge(&code, &tree, &wanted),
+                Verdict::Fine | Verdict::OneDatabase(_)
+            )
+        })
+        .collect()
+}
+
 /// What is wrong with the test `each`, looking at every function of that name.
-fn judge<'a>(code: &'a [(&'a str, String, String)], tree: &Tree, each: &Required) -> Verdict<'a> {
+fn judge<'a>(code: &'a [(&'a str, String, String)], tree: &Tree, each: &Wanted<'_>) -> Verdict<'a> {
     let needle = format!("fn {}(", each.name);
     let mut off = None;
     let mut one_database = None;
@@ -473,7 +512,15 @@ pub(super) fn evaluate(
     let unreached = unreached(&code, &tree, required);
     required
         .iter()
-        .filter_map(|each| match judge(&code, &tree, each) {
+        .filter_map(|each| match judge(
+            &code,
+            &tree,
+            &Wanted {
+                name: each.name,
+                within: each.within,
+                both_databases: each.both_databases,
+            },
+        ) {
             Verdict::Fine => None,
             Verdict::Missing => Some(Finding::general(format!(
                 "The test `{}` is missing. {why_needed} write it again or, if the rule changed, \

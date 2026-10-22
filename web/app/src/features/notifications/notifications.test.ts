@@ -161,6 +161,15 @@ describe("m4_f144 a renewal of issue IDs that gave up names the project", () => 
       ),
     ).toEqual([t("notifications.issue-ids-failed-hidden")]);
   });
+
+  it("says who added a file, with its name when the file is still there", () => {
+    expect(
+      say(entry({ kind: "followed_activity", file_event: "added", file_name: "jam.txt" })),
+    ).toEqual([t("history.file-added", { who: "Ben", name: "jam.txt" })]);
+    expect(say(entry({ kind: "followed_activity", file_event: "added" }))).toEqual([
+      t("history.file-added-unnamed", { who: "Ben" }),
+    ]);
+  });
 });
 
 const failed = (project: Schema<"ProjectLabelBody">) =>

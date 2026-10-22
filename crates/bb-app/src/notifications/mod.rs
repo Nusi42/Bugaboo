@@ -22,8 +22,8 @@ mod value_words;
 
 pub(crate) use handles::give_handle;
 pub use handles::{
-    ChangeHandle, CreateMissingHandles, HandleStore, MyHandle, MyHandleQuery, change_handle,
-    create_missing_handles, my_handle,
+    ChangeHandle, CreateMissingHandles, HandleStore, MyHandle, MyHandleQuery,
+    TAKEN_ANSWERS_PER_DAY, change_handle, create_missing_handles, my_handle,
 };
 pub(crate) use mail::{MailJob, send_failure_for_job};
 pub use mail_settings::{
