@@ -41,6 +41,7 @@ mod names_stored;
 mod notifications;
 mod notifications_files;
 mod offers;
+mod offers_known_uses;
 mod offers_secrecy;
 mod recurring_jobs;
 mod runs_end;
