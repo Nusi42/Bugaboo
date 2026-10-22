@@ -5,6 +5,7 @@
 //! and an issue they may not see any more is not named: the notification is left out whole.
 
 use bb_core::edit::NoticeKind;
+use bb_core::history::FileEvent;
 use bb_core::id::{CommentId, EntityId, NotificationId};
 use bb_core::notification::{NotificationFilter, NotificationKind};
 use bb_policy::{Masked, PersonRef};
@@ -13,7 +14,7 @@ use serde::Serialize;
 
 use crate::access::ProjectLabel;
 use crate::comments::CommentView;
-use crate::history::{FieldChangeView, HistoryWhat};
+use crate::history::FieldChangeView;
 use crate::relations::IssueLine;
 
 /// The notifications of the person who asks.
@@ -61,6 +62,13 @@ pub enum NotificationWhat {
     IssueIdsFailed {
         /// The project, as the person may name it.
         project: ProjectLabel,
+    },
+    /// A file was added to the issue (not to a comment: that is part of the comment).
+    File {
+        /// What happened to the file.
+        event: FileEvent,
+        /// The name of the file, read from the file itself; none once the file is gone for good.
+        name: Option<String>,
     },
     /// Something about the issue that the person has no words for here (a mention of a comment
     /// that is gone, an assignment): the kind says what it is.
@@ -132,14 +140,4 @@ pub struct ReadNotifications {
     pub session_token: String,
     /// Which.
     pub which: Which,
-}
-
-impl From<HistoryWhat> for NotificationWhat {
-    fn from(what: HistoryWhat) -> Self {
-        match what {
-            HistoryWhat::Comment { comment } => Self::Comment { comment },
-            HistoryWhat::Changes { fields } => Self::Changes { fields },
-            HistoryWhat::File { .. } | HistoryWhat::Relation { .. } => Self::Plain,
-        }
-    }
 }

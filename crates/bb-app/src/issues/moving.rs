@@ -31,7 +31,7 @@ use crate::issues::member;
 use crate::many_changes::ManyChangeNote;
 use crate::projects::Why;
 use crate::projects::lock_chain_in;
-use crate::workflows::ensure_status_in_force_in;
+use crate::workflows::{StatusCheck, ensure_status_in_force_in};
 
 /// A move that the person may make, judged but not written yet.
 pub(crate) struct MovePlan {
@@ -167,6 +167,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .status_after_change(&chain, issue.issue_type, &issue.status)
                 .await?;
             if status != issue.status {
+                // The workflow of the new place starts the issue again: that is a change of the
+                // status as much as a chosen one, judged where the issue ends up (ADR-0031,
+                // decision 3: no rule is skipped by changing the type or the project).
+                if !StatusCheck::may_change_status(&held, issue.issue_type, issue.reported_by) {
+                    return Err(ErrorCode::Forbidden.into());
+                }
                 let workflow = self
                     .workflow_in_force(&chain, Some(issue.issue_type))
                     .await?;

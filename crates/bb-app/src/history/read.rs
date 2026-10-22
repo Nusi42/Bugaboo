@@ -25,6 +25,7 @@ use bb_core::relation::{Direction, RelationKind};
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
+use super::names::{KnownNames, leaves_nothing};
 use super::types::{
     ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
 };
@@ -126,11 +127,13 @@ impl Batch<'_> {
 
 /// Who reads, and what is built up while the rows of a page are shaped for them: the people shown so
 /// far (one cache for the page) and the issue lines.
-struct Reading<'a> {
-    actor: &'a Actor,
+pub(super) struct Reading<'a> {
+    pub(super) actor: &'a Actor,
     held: &'a Evaluation,
     people: HashMap<(PeopleKind, UserId), PersonRef>,
     maker: LineMaker,
+    /// The names of types and labels the reader may know, read when first needed.
+    pub(super) names: KnownNames,
 }
 
 /// What shows changes to a reader (see `Ctx::change_reader`).
@@ -138,6 +141,7 @@ pub(crate) struct ChangeReader {
     batch: Batch<'static>,
     people: HashMap<(PeopleKind, UserId), PersonRef>,
     maker: LineMaker,
+    names: KnownNames,
 }
 
 /// Whether the row is about a relation (the rest are about an issue).
@@ -305,31 +309,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
                 None => None,
             },
-            Member::Catalogue(Field::Tags | Field::Labels) => Some(ChangeValue::Names {
-                names: value
-                    .as_array()
-                    .map(|items| {
-                        items
-                            .iter()
-                            .filter_map(Value::as_str)
-                            .map(str::to_owned)
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-            }),
+            Member::Catalogue(Field::Tags) => self.tags_value(reading, value).await?,
+            Member::Catalogue(Field::Labels) => self.labels_value(reading, value).await?,
             Member::Catalogue(field) => match field.person_kind() {
                 Some(kind) => Some(self.people_in(reading.held, kind, value).await?),
                 None => Some(ChangeValue::Text {
                     text: plain_text(value),
                 }),
             },
-            Member::IssueType => value
-                .as_str()
-                .and_then(|text| text.parse::<IssueTypeId>().ok())
-                .and_then(|id| reading.maker.type_name(id))
-                .map(|name| ChangeValue::Text {
-                    text: name.to_owned(),
-                }),
+            Member::IssueType => self.type_value(reading, value).await?,
             Member::Project => match value
                 .as_str()
                 .and_then(|text| text.parse::<bb_core::id::ProjectId>().ok())
@@ -387,6 +375,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             if points_at_a_record && before.is_none() && after.is_none() {
                 continue;
             }
+            if leaves_nothing(member, before.as_ref(), after.as_ref()) {
+                continue;
+            }
             let name = match member {
                 Member::Own(id) => batch.field(id).map(|found| found.field.name.clone()),
                 _ => None,
@@ -408,6 +399,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             batch: self.batch_of(&[], &[]).await?,
             people: HashMap::new(),
             maker: self.line_maker().await?,
+            names: KnownNames::default(),
         })
     }
 
@@ -426,12 +418,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             held,
             people: std::mem::take(&mut reader.people),
             maker: std::mem::take(&mut reader.maker),
+            names: std::mem::take(&mut reader.names),
         };
         let read = self
             .field_changes(&mut reading, issue.issue_type, &reader.batch, changes)
             .await;
         reader.people = reading.people;
         reader.maker = reading.maker;
+        reader.names = reading.names;
         Ok(match read? {
             Some(HistoryWhat::Changes { fields }) => fields,
             _ => Vec::new(),
@@ -676,6 +670,7 @@ pub async fn history<S: AuthStore>(
         held: &held,
         people: HashMap::new(),
         maker: ctx.line_maker().await?,
+        names: KnownNames::default(),
     };
     let kinds = ctx
         .store()

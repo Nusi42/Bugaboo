@@ -24,7 +24,8 @@ use bb_policy::{Authorized, Evaluation};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::judge::{LabelAddition, TagAddition, judge_label, judge_tag, label_names, tag_names};
+use super::judge::{LabelAddition, TagAddition, judge_label, judge_tag, label_refs, tag_names};
+use super::refs::{NameRef, labels_json};
 use super::types::{
     AddLabel, AddTag, IssueLabelsAndTags, IssueLabelsAndTagsQuery, LabelRef, RemoveLabel,
     RemoveTag, TagRef,
@@ -42,6 +43,16 @@ fn names_changed(field: &str, before: &[String], after: &[String]) -> FieldChang
         field: field.to_owned(),
         before: Some(json!(before)),
         after: Some(json!(after)),
+    }
+}
+
+/// What a change of the labels says in the event of the issue: each label with the group it is in,
+/// so a reader is judged by the group however the label is renamed or combined later.
+pub(crate) fn labels_changed(before: &[NameRef], after: &[NameRef]) -> FieldChange {
+    FieldChange {
+        field: member::LABELS.to_owned(),
+        before: Some(labels_json(before)),
+        after: Some(labels_json(after)),
     }
 }
 
@@ -154,10 +165,14 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<LabelPlan, AppError> {
         let Kept { issue, .. } = self.issue_to_sort(actor, issue, Field::Labels).await?;
         let state = self.label_state(issue.id).await?;
+        // A label of a group the person may not know is not there for them.
+        if let Some(wanted) = state.labels.iter().find(|found| found.id == label) {
+            self.ensure_label_known(actor, wanted).await?;
+        }
         let offers = self.group_offers(issue.project).await?;
         let addition = judge_label(label, &state.labels, &state.groups, &state.held, &offers)?;
-        let before = label_names(&state.labels, &state.held);
-        let mut after = label_names(
+        let before = label_refs(&state.labels, &state.held);
+        let mut after = label_refs(
             &state.labels,
             &state
                 .held
@@ -169,7 +184,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !addition.already
             && let Some(added) = state.labels.iter().find(|found| found.id == label)
         {
-            after.push(added.name.clone());
+            after.push(NameRef::from(added));
         }
         Ok(LabelPlan {
             issue,
@@ -199,10 +214,10 @@ pub(crate) struct LabelPlan {
     /// The issue.
     pub(crate) issue: Issue,
     addition: LabelAddition,
-    /// The names of its labels now.
-    pub(crate) before: Vec<String>,
-    /// The names of its labels after.
-    pub(crate) after: Vec<String>,
+    /// Its labels now.
+    pub(crate) before: Vec<NameRef>,
+    /// Its labels after.
+    pub(crate) after: Vec<NameRef>,
 }
 
 impl LabelPlan {
@@ -429,7 +444,7 @@ pub async fn add_label<S: AuthStore>(
     let mut plan = ctx.plan_label(&actor, &input.issue, input.label).await?;
     let (_, held) = ctx.visible_issue(&actor, &input.issue).await?;
     if !plan.is_done_already() {
-        let names = names_changed(member::LABELS, &plan.before, &plan.after);
+        let names = labels_changed(&plan.before, &plan.after);
         let maker = ctx.event_maker(by(actor.person.id));
         let (id, label, person, now) = (plan.issue.id, input.label, actor.person.id, ctx.now());
         let why = Why::default();
@@ -501,15 +516,15 @@ pub async fn remove_label<S: AuthStore>(
     if !state.held.iter().any(|link| link.label == input.label) {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
-    let before = label_names(&state.labels, &state.held);
+    let before = label_refs(&state.labels, &state.held);
     let rest: Vec<IssueLabel> = state
         .held
         .iter()
         .filter(|link| link.label != input.label)
         .cloned()
         .collect();
-    let after = label_names(&state.labels, &rest);
-    let names = names_changed(member::LABELS, &before, &after);
+    let after = label_refs(&state.labels, &rest);
+    let names = labels_changed(&before, &after);
     let maker = ctx.event_maker(by(actor.person.id));
     let (id, label, why, now) = (issue.id, input.label, Why::default(), ctx.now());
     let stopped = why.clone();

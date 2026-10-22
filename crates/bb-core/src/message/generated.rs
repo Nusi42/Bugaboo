@@ -1658,6 +1658,9 @@ pub const HISTORY_TABS: MessageKey = MessageKey::new("history.tabs");
 /// The message `history.title`.
 pub const HISTORY_TITLE: MessageKey = MessageKey::new("history.title");
 
+/// The message `history.type-unknown`.
+pub const HISTORY_TYPE_UNKNOWN: MessageKey = MessageKey::new("history.type-unknown");
+
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
 
@@ -10915,6 +10918,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("history.tab-everything", "Everything"),
     ("history.tabs", "What to show"),
     ("history.title", "History"),
+    ("history.type-unknown", "another issue type"),
     (
         "home.admin",
         "You can look after this server. Organization settings shows what you may do there.",

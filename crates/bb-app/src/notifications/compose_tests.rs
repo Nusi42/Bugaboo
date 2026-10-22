@@ -3,6 +3,7 @@
 //! sentence of the screen from its key and compare.
 
 use bb_core::edit::NoticeKind;
+use bb_core::history::FileEvent;
 use bb_core::id::SequentialIds;
 use bb_core::message::{self, Message};
 use bb_core::notification::NotificationKind;
@@ -220,6 +221,36 @@ fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
             Message::from(message::NOTIFICATIONS_NEWS).render()
         )]
     );
+}
+
+#[test]
+fn sec_l4_a_change_of_a_title_cannot_bring_format_characters_into_the_e_mail() {
+    let title = change(
+        "title",
+        Some(word("Old\u{202E}gnp.exe")),
+        Some(word("New\u{200B}\u{2028}Bcc: spy@example.test")),
+    );
+    let text = line(&title);
+    for forbidden in ['\u{202E}', '\u{200B}', '\u{2028}', '\n', '\r'] {
+        assert!(!text.contains(forbidden), "{forbidden:?} in {text:?}");
+    }
+}
+
+#[test]
+fn ntf_02_a_file_added_is_worded_as_the_history_words_it() {
+    let said = |name: Option<&str>| {
+        lines_about(
+            Some(&ana()),
+            &NotificationWhat::File {
+                event: FileEvent::Added,
+                name: name.map(str::to_owned),
+            },
+            NotificationKind::FollowedActivity,
+            &region(),
+        )
+    };
+    assert_eq!(said(Some("jam.txt")), ["Ana added the file jam.txt."]);
+    assert_eq!(said(None), ["Ana added a file."]);
 }
 
 #[test]

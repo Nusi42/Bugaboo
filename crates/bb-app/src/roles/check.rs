@@ -8,7 +8,7 @@
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::FieldKey;
-use bb_core::id::{AssignmentId, ProjectId};
+use bb_core::id::{AssignmentId, ProjectId, UserId};
 use bb_core::issue::IssueType;
 use bb_core::offer::type_takes_issues;
 use bb_core::people_kinds::PeopleKind;
@@ -17,6 +17,7 @@ use bb_policy::{
     PeopleContext, Permission, PersonRef, Place, Reason, ReasonRow, Who,
 };
 use serde::Serialize;
+use std::sync::Arc;
 
 use super::types::{CheckAccessQuery, RoleRef};
 use crate::access::{Actor, ProjectLabel};
@@ -352,6 +353,33 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// What the person to check holds at the place. The one rule of who may be checked, for *Check
+    /// access* and *Try it*: the person has to exist, and whoever does not manage people or roles
+    /// reads the access of the people they could choose, those who have a role there. Anybody else
+    /// is as good as not there.
+    ///
+    /// # Errors
+    /// `resource.not_found` for a person who is not there or whom the checker may not check.
+    pub(crate) async fn person_to_check(
+        &self,
+        checker: &Evaluation,
+        person: UserId,
+        place: Place,
+    ) -> Result<Arc<Evaluation>, AppError> {
+        self.store()
+            .person(person)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let theirs = self.evaluate(person, place).await?;
+        if !checker.manages_people() && theirs.roles().is_empty() {
+            return Err(AppError::Refused(ErrorCode::NotFound));
+        }
+        Ok(theirs)
+    }
+}
+
 /// What a person can do in a project (or in the whole organization), which field levels and
 /// people levels they have, and why.
 ///
@@ -366,17 +394,7 @@ pub async fn check_access<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let place = Place::from(input.place);
     let checker = ctx.require(&actor, Permission::CheckAccess, place).await?;
-    ctx.store()
-        .person(input.person)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let theirs = ctx.evaluate(input.person, place).await?;
-    // Whoever does not manage people or roles reads the access of the people they could choose:
-    // those who have a role there. Anybody else is as good as not there.
-    if !checker.manages_people() && theirs.roles().is_empty() {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    }
+    let theirs = ctx.person_to_check(&checker, input.person, place).await?;
     let person = ctx
         .person_ref(
             &checker,

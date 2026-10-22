@@ -6,6 +6,7 @@ use bb_app::mailer::{MailFailure, MailMessage, MailServer, Mailer};
 use bb_app::ports::BoxFuture;
 use bb_core::mail::MailSecurity;
 use bb_core::text::{MAIL_SUBJECT_MAX, plain_line};
+use lettre::Address;
 use lettre::message::Mailbox;
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
@@ -52,9 +53,17 @@ fn rejected<E>(_: E) -> MailFailure {
     MailFailure::Rejected
 }
 
+/// The address an e-mail goes to, built from its parts: the text of an address is never read as a
+/// mailbox, which could name another address than the one that was checked (a display name, a
+/// list).
+fn recipient_of(address: &str) -> Result<Address, MailFailure> {
+    let (user, domain) = address.split_once('@').ok_or(MailFailure::Rejected)?;
+    Address::new(user, domain).map_err(rejected)
+}
+
 fn email_of(server: &MailServer, message: &MailMessage) -> Result<Message, MailFailure> {
     let from: Mailbox = server.from.parse().map_err(rejected)?;
-    let to: Mailbox = message.to.parse().map_err(rejected)?;
+    let to = Mailbox::new(None, recipient_of(&message.to)?);
     Message::builder()
         .from(from)
         .to(to)

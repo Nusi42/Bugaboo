@@ -25,7 +25,7 @@ const APP: &str = "crates/bb-app/src/tests/files.rs";
 
 /// What the work packages and the security chapter name as proof, and where each test lives. The
 /// server part runs on both databases.
-pub(super) const REQUIRED: [Required; 25] = [
+pub(super) const REQUIRED: [Required; 26] = [
     Required::both(
         "att_02_a_file_is_stored_once_by_its_content_and_deleted_when_nothing_points_to_it",
     )
@@ -74,6 +74,9 @@ pub(super) const REQUIRED: [Required; 25] = [
         .within(APP),
     Required::anywhere("att_04_finishing_a_file_that_is_stored_already_answers_like_a_new_one")
         .within(APP),
+    // Adding a file tells the followers of the issue.
+    Required::anywhere("ntf_01_adding_a_file_tells_the_followers_and_not_the_one_who_added_it")
+        .within("crates/bb-app/src/tests/notifications_files.rs"),
 ];
 
 pub(crate) struct TestUploads;

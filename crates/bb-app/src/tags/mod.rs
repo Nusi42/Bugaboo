@@ -16,11 +16,13 @@ mod issue;
 mod judge;
 mod labels;
 mod manage;
+mod refs;
 mod rewrite;
 mod store;
 mod suggest;
 mod types;
 
+pub(crate) use issue::labels_changed;
 pub use issue::{add_label, add_tag, issue_labels_and_tags, remove_label, remove_tag};
 pub use labels::{
     change_label, change_label_group, combine_labels, create_label, create_label_group,
@@ -30,3 +32,5 @@ pub use manage::{change_tag, combine_tags, tag_change_preview, tags};
 pub use store::TagStore;
 pub use suggest::tag_suggestions;
 pub use types::*;
+
+pub(crate) use refs::{EventLabel, event_labels};

@@ -166,6 +166,37 @@ async fn an_address_that_is_none_is_a_rejection_before_anything_is_sent() {
     );
 }
 
+#[tokio::test]
+async fn sec_m4_a_recipient_in_mailbox_form_is_a_rejection_never_a_second_address() {
+    for bad in [
+        "x<a@b.test>",
+        "x <a@b.test>",
+        "\"x\" <a@b.test>",
+        "a@b.test, c@d.test",
+    ] {
+        let mut mail = message("Subject", "Text");
+        mail.to = bad.to_owned();
+        assert_eq!(
+            SmtpMailer.send(&server(1), &mail).await,
+            Err(MailFailure::Rejected),
+            "{bad}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn sec_m4_a_plus_tag_goes_to_the_whole_address() {
+    let (port, received) = serve(None).await;
+    let mut mail = message("Subject", "Text");
+    mail.to = "a+1@example.test".to_owned();
+    SmtpMailer
+        .send(&server(port), &mail)
+        .await
+        .expect("the e-mail goes");
+    let received = received.await.expect("the server finished");
+    assert!(received.envelope[1].contains("<a+1@example.test>"));
+}
+
 /// Collects what the adapter logs, so a test can read it.
 #[derive(Clone, Default)]
 struct Captured(std::sync::Arc<std::sync::Mutex<Vec<u8>>>);

@@ -41,6 +41,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::offers::label_is_known;
 use crate::offers::{Here, Standing, Subject};
 use crate::projects::{Shown, Why};
 
@@ -247,10 +248,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         ))
     }
 
-    /// Refuses (`resource.not_found`) a label that is not there.
-    pub(crate) async fn label_exists(&self, label: LabelId) -> Result<(), AppError> {
-        self.label_catalogue().await?.label(label)?;
-        Ok(())
+    /// Refuses (`resource.not_found`) a label that is not there or that is in a label group
+    /// the person may not know (`offers/known.rs`).
+    pub(crate) async fn label_known(&self, actor: &Actor, label: LabelId) -> Result<(), AppError> {
+        let catalogue = self.label_catalogue().await?;
+        self.ensure_label_known(actor, catalogue.label(label)?)
+            .await
     }
 
     async fn label_catalogue(&self) -> Result<Catalogue, AppError> {
@@ -394,11 +397,7 @@ pub async fn labels<S: AuthStore>(
     let listed: Vec<&Label> = catalogue
         .labels
         .iter()
-        .filter(|label| {
-            label
-                .group
-                .is_none_or(|group| groups.iter().any(|each| each.id == group))
-        })
+        .filter(|label| label_is_known(label.group, &groups))
         .collect();
     let page = window(listed.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;

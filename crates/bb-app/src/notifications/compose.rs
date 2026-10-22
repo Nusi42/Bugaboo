@@ -9,9 +9,10 @@
 use bb_core::app_paths;
 use bb_core::edit::NoticeKind;
 use bb_core::fields::Field;
+use bb_core::history::FileEvent;
 use bb_core::message::{self, Message};
 use bb_core::notification::{MAIL_ENTRIES_MAX, MAIL_TEXT_MAX, NotificationKind};
-use bb_core::text::{plain_line, plain_text};
+use bb_core::text::{MAIL_SUBJECT_MAX, plain_line, plain_text};
 use bb_policy::PersonRef;
 
 use super::types::{NotificationItem, NotificationWhat};
@@ -37,14 +38,21 @@ const SENTENCE_END: &str = ".";
 /// What ends the line before a comment that is quoted below it.
 const LEAD_IN: &str = ":";
 
-/// A sentence of the screen as a line of an e-mail.
-fn sentence_of(message: &Message) -> String {
-    format!("{}{SENTENCE_END}", message.render())
+/// A message of the catalog as one clean line of an e-mail with `end` after it. The one place that
+/// cleans the text of people that stands in a sentence: a line break, a format character or a
+/// direction mark in a name or a value is taken out here, however the sentence was put together.
+fn line_of(message: &Message, end: &str) -> String {
+    plain_line(&format!("{}{end}", message.render()), MAIL_TEXT_MAX)
 }
 
-/// Text of a person for the middle of a line.
-fn clean(text: &str) -> String {
-    plain_line(text, MAIL_TEXT_MAX)
+/// A sentence of the screen as a line of an e-mail.
+fn sentence_of(message: &Message) -> String {
+    line_of(message, SENTENCE_END)
+}
+
+/// The subject of an e-mail: one clean line.
+fn subject_of(message: &Message) -> String {
+    plain_line(&message.render(), MAIL_SUBJECT_MAX)
 }
 
 /// A text of a person that stands on lines of its own, every line quoted.
@@ -59,20 +67,20 @@ fn quoted(text: &str) -> String {
 fn who(person: Option<&PersonRef>) -> String {
     match person {
         None => Message::from(message::PERSON_BUGABOO).render(),
-        Some(PersonRef::Name { name, .. }) => clean(name),
-        Some(PersonRef::Role { role }) => message::person_role(clean(role)).render(),
+        Some(PersonRef::Name { name, .. }) => name.clone(),
+        Some(PersonRef::Role { role }) => message::person_role(role.clone()).render(),
         Some(PersonRef::Someone) => Message::from(message::PERSON_SOMEONE).render(),
-        Some(PersonRef::Former { label }) => message::person_former(clean(label)).render(),
+        Some(PersonRef::Former { label }) => message::person_former(label.clone()).render(),
     }
 }
 
 /// A person in the middle of a sentence, where a role reads *a person with the role Lead*.
 fn who_inside(person: &PersonRef) -> String {
     match person {
-        PersonRef::Name { name, .. } => clean(name),
-        PersonRef::Role { role } => message::person_role_inside(clean(role)).render(),
+        PersonRef::Name { name, .. } => name.clone(),
+        PersonRef::Role { role } => message::person_role_inside(role.clone()).render(),
         PersonRef::Someone => Message::from(message::PERSON_SOMEONE_INSIDE).render(),
-        PersonRef::Former { label } => message::person_former_inside(clean(label)).render(),
+        PersonRef::Former { label } => message::person_former_inside(label.clone()).render(),
     }
 }
 
@@ -81,9 +89,7 @@ fn who_inside(person: &PersonRef) -> String {
 fn side_text(field: Option<Field>, value: Option<&ChangeValue>, region: &Region) -> Option<String> {
     let text = match value? {
         ChangeValue::Text { text } => word_of(field, text),
-        ChangeValue::Names { names } => {
-            list_text(&names.iter().map(|name| clean(name)).collect::<Vec<_>>())
-        }
+        ChangeValue::Names { names } => list_text(names),
         ChangeValue::People { people } if people.is_empty() => {
             Message::from(message::HISTORY_PEOPLE_NONE).render()
         }
@@ -94,16 +100,15 @@ fn side_text(field: Option<Field>, value: Option<&ChangeValue>, region: &Region)
         ChangeValue::Issue { issue } => issue.key.clone(),
         ChangeValue::Project { project } => project.name.clone(),
     };
-    let text = clean(&text);
-    (!text.is_empty()).then_some(text)
+    (!text.trim().is_empty()).then_some(text)
 }
 
 /// What a field is called: the name of an own field, or the name from the catalogue.
 fn field_name(change: &FieldChangeView) -> String {
     match (&change.name, Field::from_code(&change.field)) {
-        (Some(name), _) => clean(name),
+        (Some(name), _) => name.clone(),
         (None, Some(field)) => Message::from(field.name()).render(),
-        (None, None) => clean(&change.field),
+        (None, None) => change.field.clone(),
     }
 }
 
@@ -139,6 +144,19 @@ fn news() -> String {
     sentence_of(&Message::from(message::NOTIFICATIONS_NEWS))
 }
 
+/// The sentence of the history for a file that was added, deleted or brought back.
+fn file_message(event: FileEvent, name: Option<&str>, by: Option<&PersonRef>) -> Message {
+    let who = who(by);
+    match (event, name) {
+        (FileEvent::Added, Some(name)) => message::history_file_added(name, who),
+        (FileEvent::Added, None) => message::history_file_added_unnamed(who),
+        (FileEvent::Deleted, Some(name)) => message::history_file_deleted(name, who),
+        (FileEvent::Deleted, None) => message::history_file_deleted_unnamed(who),
+        (FileEvent::Restored, Some(name)) => message::history_file_restored(name, who),
+        (FileEvent::Restored, None) => message::history_file_restored_unnamed(who),
+    }
+}
+
 fn lines_about(
     by: Option<&PersonRef>,
     what: &NotificationWhat,
@@ -147,14 +165,13 @@ fn lines_about(
 ) -> Vec<String> {
     match (what, kind) {
         (NotificationWhat::Comment { comment }, kind) => vec![
-            format!(
-                "{}{LEAD_IN}",
-                if kind == NotificationKind::Mentioned {
+            line_of(
+                &if kind == NotificationKind::Mentioned {
                     message::notifications_mentioned(who(by))
                 } else {
                     message::notifications_commented(who(by))
-                }
-                .render()
+                },
+                LEAD_IN,
             ),
             quoted(&comment.text),
         ],
@@ -176,13 +193,14 @@ fn lines_about(
         }
         (NotificationWhat::IssueIdsFailed { project }, _) => {
             vec![sentence_of(&match project {
-                ProjectLabel::Visible { name, .. } => {
-                    message::notifications_issue_ids_failed(clean(name))
-                }
+                ProjectLabel::Visible { name, .. } => message::notifications_issue_ids_failed(name),
                 ProjectLabel::Hidden => {
                     Message::from(message::NOTIFICATIONS_ISSUE_IDS_FAILED_HIDDEN)
                 }
             })]
+        }
+        (NotificationWhat::File { event, name }, _) => {
+            vec![sentence_of(&file_message(*event, name.as_deref(), by))]
         }
         (NotificationWhat::Plain, NotificationKind::Assigned) => {
             vec![sentence_of(&message::notifications_assigned(who(by)))]
@@ -206,24 +224,21 @@ pub(crate) fn compose(
     let first = items.first()?;
     let (subject, open) = match &first.issue {
         Some(issue) => (
-            match (&issue.title, short) {
-                (Some(title), false) => {
-                    message::mail_subject(issue.key.clone(), clean(title)).render()
-                }
-                _ => message::mail_subject_short(issue.key.clone()).render(),
-            },
+            subject_of(&match (&issue.title, short) {
+                (Some(title), false) => message::mail_subject(issue.key.clone(), title),
+                _ => message::mail_subject_short(issue.key.clone()),
+            }),
             message::mail_open(format!("{public_url}{}", app_paths::issue(&issue.key))),
         ),
         // Work that is not about one issue ends in the notifications, so that is where the link goes.
         None => (
-            Message::from(
+            subject_of(&Message::from(
                 if matches!(first.what, NotificationWhat::IssueIdsFailed { .. }) {
                     message::MAIL_SUBJECT_IDS_FAILED
                 } else {
                     message::MAIL_SUBJECT_RUN
                 },
-            )
-            .render(),
+            )),
             message::mail_open_notifications(format!("{public_url}{}", app_paths::NOTIFICATIONS)),
         ),
     };

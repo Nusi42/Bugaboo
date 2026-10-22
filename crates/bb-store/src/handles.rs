@@ -17,6 +17,30 @@ use crate::error::StoreError;
 use crate::locks::{LockClass, lock_key};
 use crate::schema::{PersonHandleRow, PersonRow};
 
+/// The rows of the handles a person has and had: when each was taken, and which one is current.
+fn handles_of(person: UserId) -> sea_query::SelectStatement {
+    let mut select = Query::select();
+    select
+        .columns([PersonHandleRow::ChangedAt, PersonHandleRow::Current])
+        .from(PersonHandleRow::Table)
+        .and_where(Expr::col(PersonHandleRow::Person).eq(person.stored()));
+    select
+}
+
+/// When the person last changed their handle, from the rows of `handles_of`. One row is the
+/// handle the account was given, which is no change; a second one is.
+fn last_change(rows: &[crate::db::Row]) -> Result<Option<Timestamp>, StoreError> {
+    if rows.len() < 2 {
+        return Ok(None);
+    }
+    for row in rows {
+        if row.get::<bool>(PersonHandleRow::Current)? {
+            return row.time(PersonHandleRow::ChangedAt).map(Some);
+        }
+    }
+    Ok(None)
+}
+
 impl HandleStore for AuthStorage {
     async fn handle_taken_in(
         transaction: &mut Transaction,
@@ -79,22 +103,11 @@ impl HandleStore for AuthStorage {
         transaction
             .advisory_lock(LockClass::Handles, lock_key(person.to_bytes()))
             .await?;
-        let mut select = Query::select();
-        select
-            .columns([PersonHandleRow::ChangedAt, PersonHandleRow::Current])
-            .from(PersonHandleRow::Table)
-            .and_where(Expr::col(PersonHandleRow::Person).eq(person.stored()));
-        let rows = transaction.fetch_all(&select).await?;
-        // One row is the handle the account was given; a second one is a change.
-        if rows.len() < 2 {
-            return Ok(None);
-        }
-        for row in &rows {
-            if row.get::<bool>(PersonHandleRow::Current)? {
-                return row.time(PersonHandleRow::ChangedAt).map(Some);
-            }
-        }
-        Ok(None)
+        last_change(&transaction.fetch_all(&handles_of(person)).await?)
+    }
+
+    async fn handle_changed_at(&self, person: UserId) -> Result<Option<Timestamp>, StoreError> {
+        last_change(&self.database().fetch_all(&handles_of(person)).await?)
     }
 
     async fn people_without_handle(&self, limit: u64) -> Result<Vec<Person>, StoreError> {

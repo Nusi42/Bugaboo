@@ -35,7 +35,7 @@ fn at(project: &str, offered: Option<bool>) -> OfferChange {
     }
 }
 
-async fn new_type(
+pub(super) async fn new_type(
     world: &World,
     who: &str,
     project: Option<&str>,
@@ -177,6 +177,23 @@ async fn sec_03_check_access_does_not_name_a_type_the_checker_may_not_know() -> 
     let bug = another_type(&g.world).await?;
     let asked = check_access(&g.world.ctx(), check(Some(bug))).await?;
     assert_eq!(asked.into_value().issue_type.map(|each| each.id), Some(bug));
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_l6_who_may_change_does_not_name_a_type_the_reader_may_not_know() -> Outcome {
+    let g = groups().await?;
+    let question = new_type(&g.world, &g.lead, Some("ACME"), "Question").await?;
+    let sibling = lead_of(&g.world, "sam@example.test", g.other).await?;
+    let ask = |issue_type| crate::access::WhoMayChangeQuery {
+        session_token: sibling.session_token.clone(),
+        project: "OTHER".to_owned(),
+        field: bb_core::fields::Field::Priority.into(),
+        issue_type,
+    };
+    crate::access::who_may_change(&g.world.ctx(), ask(None)).await?;
+    let asked = crate::access::who_may_change(&g.world.ctx(), ask(Some(question.id))).await;
+    assert!(refused(&asked, ErrorCode::NotFound));
     Ok(())
 }
 

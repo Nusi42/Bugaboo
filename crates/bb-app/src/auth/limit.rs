@@ -35,6 +35,17 @@ pub trait FailureLimit: Send + Sync {
 
     /// Forgets the count of `key`.
     fn forget(&self, key: &str);
+
+    /// Reserves one answer of the day of `key` in one step: it is counted when the key has some
+    /// left, so requests that arrive at the same time cannot all pass the last one (a day starts
+    /// with the first answer that is counted).
+    ///
+    /// # Errors
+    /// The seconds until the day ends, when `limit` answers are used up.
+    fn daily_reserve(&self, key: &str, limit: u32) -> Result<(), u64>;
+
+    /// Gives one reserved answer of the day of `key` back: the answer told nothing.
+    fn daily_release(&self, key: &str);
 }
 
 /// A [`FailureLimit`] that lets every try through, for the places that have no failed tries and no
@@ -53,6 +64,12 @@ impl FailureLimit for NoFailureLimit {
     fn release(&self, _key: &str) {}
 
     fn clear(&self, _key: &str) {}
+
+    fn daily_reserve(&self, _key: &str, _limit: u32) -> Result<(), u64> {
+        Ok(())
+    }
+
+    fn daily_release(&self, _key: &str) {}
 
     fn tally(&self, _key: &str) -> u32 {
         0
@@ -79,7 +96,15 @@ pub(crate) const SECOND_STEP_TRIES: u32 = 10;
 /// The key under which the wrong codes of a half-finished sign-in are counted. Only a finished
 /// second step clears it.
 pub(crate) fn person_key(person: UserId) -> String {
-    format!("person:{person}")
+    purpose_key(PERSON_PURPOSE, &person)
+}
+
+/// The purpose of the tries that count against a person at sign-in.
+const PERSON_PURPOSE: &str = "person";
+
+/// The one way a key of the limit is written: what the tries are for, and whom they count against.
+fn purpose_key(purpose: &str, counted_against: &impl std::fmt::Display) -> String {
+    format!("{purpose}:{counted_against}")
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -122,7 +147,51 @@ impl<S: AuthStore> Ctx<'_, S> {
             .network
             .as_ref()
             .map_or_else(|| "unknown".to_owned(), ToString::to_string);
-        let key = format!("{NETWORK_KEY_PREFIX}{purpose}:{network}");
+        self.reserve_alone(format!(
+            "{NETWORK_KEY_PREFIX}{}",
+            purpose_key(purpose, &network)
+        ))
+    }
+
+    /// Reserves one answer of the day of a person for a purpose (`handle`): the answers that tell
+    /// something about other people are counted against the person for a day, and after the
+    /// allowance every try gets the same answer, whatever it asked for. Check and count are one
+    /// step, so parallel requests cannot all pass the last answer.
+    ///
+    /// # Errors
+    /// `rate_limit.exceeded` with the wait, when the allowance of the day is used up.
+    pub(crate) fn reserve_daily_answer(
+        &self,
+        purpose: &str,
+        person: UserId,
+        limit: u32,
+    ) -> Result<(), AppError> {
+        self.services
+            .limiter
+            .daily_reserve(&purpose_key(purpose, &person), limit)
+            .map_err(|retry_after| AppError::Limited { retry_after })
+    }
+
+    /// Gives a reserved answer of the day back: what was answered told nothing about anybody.
+    pub(crate) fn give_back_daily_answer(&self, purpose: &str, person: UserId) {
+        self.services
+            .limiter
+            .daily_release(&purpose_key(purpose, &person));
+    }
+
+    /// Reserves a try of one person for a purpose (`handle`): the tries that are refused count
+    /// until the person is let through, and a person who keeps being refused waits. Only the person
+    /// counts, not the network, so a shared network is not held up by one of its people.
+    pub(crate) fn reserve_for_person(
+        &self,
+        purpose: &str,
+        person: UserId,
+    ) -> Result<Slot, AppError> {
+        self.reserve_alone(purpose_key(purpose, &person))
+    }
+
+    /// Reserves a try of `key` alone: no network is counted besides it.
+    fn reserve_alone(&self, key: String) -> Result<Slot, AppError> {
         let tipped = self
             .services
             .limiter

@@ -74,10 +74,27 @@ pub struct Route {
     pub needs: Declared,
     /// What kind of answer it gives.
     pub kind: Answer,
+    /// Whether the route reads although it uses `POST` (it carries a list in the body): the check
+    /// of the versions of the records on a screen. Such a route may carry the mark of a
+    /// background read (`cookies::BACKGROUND_HEADER`) like a `GET`.
+    pub reads_by_post: bool,
 }
 
 const fn route(id: &'static str, needs: Declared, kind: Answer) -> Route {
-    Route { id, needs, kind }
+    Route {
+        id,
+        needs,
+        kind,
+        reads_by_post: false,
+    }
+}
+
+/// A route that reads although it uses `POST`.
+const fn route_reading(id: &'static str, needs: Declared, kind: Answer) -> Route {
+    Route {
+        reads_by_post: true,
+        ..route(id, needs, kind)
+    }
 }
 
 /// Every route by its operation ID. A new route is added here in the same change that adds it: the
@@ -141,7 +158,7 @@ pub const ROUTES: &[Route] = &[
     route("saveDraft", Declared::ByRecord, Answer::Ordinary),
     route("readDraft", Declared::ByRecord, Answer::NeverStored),
     route("throwAwayDraft", Declared::SignedIn, Answer::Ordinary),
-    route("checkVersions", Declared::ByRecord, Answer::Ordinary),
+    route_reading("checkVersions", Declared::ByRecord, Answer::Ordinary),
     route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
     route("createAccessKey", Declared::OwnAccount, Answer::Secret),
     route("deleteAccessKey", Declared::OwnAccount, Answer::Ordinary),
@@ -476,31 +493,11 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::Comment),
         Answer::NeverStored,
     ),
-    route(
-        "startUpload",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "getUpload",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::NeverStored,
-    ),
-    route(
-        "sendUploadPart",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "cancelUpload",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "finishUpload",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
+    route("startUpload", Declared::ByRecord, Answer::Ordinary),
+    route("getUpload", Declared::ByRecord, Answer::NeverStored),
+    route("sendUploadPart", Declared::ByRecord, Answer::Ordinary),
+    route("cancelUpload", Declared::ByRecord, Answer::Ordinary),
+    route("finishUpload", Declared::ByRecord, Answer::Ordinary),
     route(
         "listIssueFiles",
         Declared::Permission(Permission::SeeIssues),
@@ -511,16 +508,8 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
     ),
-    route(
-        "deleteAttachment",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "restoreAttachment",
-        Declared::Permission(Permission::ChangeIssues),
-        Answer::Ordinary,
-    ),
+    route("deleteAttachment", Declared::ByRecord, Answer::Ordinary),
+    route("restoreAttachment", Declared::ByRecord, Answer::Ordinary),
     route(
         "downloadFile",
         Declared::Permission(Permission::SeeIssues),
@@ -611,7 +600,7 @@ pub const ROUTES: &[Route] = &[
     ),
     route(
         "tryWorkflow",
-        Declared::Permission(Permission::ManageWorkflows),
+        Declared::Permission(Permission::CheckAccess),
         Answer::NeverStored,
     ),
     route(
