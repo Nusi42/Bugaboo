@@ -4,13 +4,13 @@ error[E0277]: `Inner` may hold fields that a mask has to cut, so it cannot be an
 15 |     inside: Inner,
    |             ^^^^^ mark this member `#[masked(nested)]`, or make the type a plain value
    |
-help: the trait `Plain` is not implemented for `Inner`
+help: the trait `bb_core::plain::Plain` is not implemented for `Inner`
   --> tests/ui/masked_open_view.rs:5:1
    |
  5 | struct Inner {
    | ^^^^^^^^^^^^
    = note: an `open` member of a view is shown to everybody who sees the view (SEC-04, M2-F21)
-   = help: the following other types implement trait `Plain`:
+   = help: the following other types implement trait `bb_core::plain::Plain`:
              AccessKeyId
              AppliesTo
              AssignmentId

@@ -417,51 +417,98 @@ struct Wanted<'n> {
     both_databases: bool,
 }
 
-/// The names of `names` that are no test that can run: no function of that name with a test
-/// attribute, none that is switched off, none in a file no `mod` reaches (the one definition of
-/// "this test exists", the same as for the lists of required tests).
-pub(super) fn missing_tests<'n>(sources: &[Source], names: &[&'n str]) -> Vec<&'n str> {
-    let code: Vec<(&str, String, String)> = sources
-        .iter()
-        .map(|(path, text)| (path.as_str(), strip_comments(text), strip(text)))
-        .collect();
-    let tree = Tree::of(&code);
-    names
-        .iter()
-        .copied()
-        .filter(|name| {
-            let wanted = Wanted {
-                name,
-                within: "",
-                both_databases: false,
-            };
-            !matches!(
-                judge(&code, &tree, &wanted),
-                Verdict::Fine | Verdict::OneDatabase(_)
-            )
-        })
-        .collect()
+/// The Rust code of the crates, read once for any number of questions: the files with comments
+/// (and strings) blanked, the modules that lead to each file, and where every function is.
+pub(super) struct Crates<'a> {
+    code: Vec<(&'a str, String, String)>,
+    tree: Tree,
+    functions: Functions,
+}
+
+impl<'a> Crates<'a> {
+    pub(super) fn of(sources: &'a [Source]) -> Self {
+        let code: Vec<(&str, String, String)> = sources
+            .iter()
+            .map(|(path, text)| (path.as_str(), strip_comments(text), strip(text)))
+            .collect();
+        let tree = Tree::of(&code);
+        let functions = functions_of(&code);
+        Self {
+            code,
+            tree,
+            functions,
+        }
+    }
+
+    /// The names of `names` that are no test that can run: no function of that name with a test
+    /// attribute, none that is switched off, none in a file no `mod` reaches (the one definition
+    /// of "this test exists", the same as for the lists of required tests).
+    pub(super) fn missing<'n>(&self, names: &[&'n str]) -> Vec<&'n str> {
+        names
+            .iter()
+            .copied()
+            .filter(|name| {
+                let wanted = Wanted {
+                    name,
+                    within: "",
+                    both_databases: false,
+                };
+                !matches!(
+                    judge(&self.code, &self.functions, &self.tree, &wanted),
+                    Verdict::Fine | Verdict::OneDatabase(_)
+                )
+            })
+            .collect()
+    }
+}
+
+/// Where every function is defined: its name, and for each place the file (an index into the
+/// code) and the position of its `fn`. Built by one walk over the code, so asking for hundreds of
+/// names costs a lookup each and not a scan of all the crates each.
+type Functions = HashMap<String, Vec<(usize, usize)>>;
+
+/// The functions of the code, by name (see [`Functions`]).
+fn functions_of(code: &[(&str, String, String)]) -> Functions {
+    let mut found: Functions = HashMap::new();
+    for (file, (_, _, text)) in code.iter().enumerate() {
+        for (at, _) in text.match_indices("fn ") {
+            let rest = &text[at + 3..];
+            let length = rest
+                .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                .unwrap_or(rest.len());
+            if length > 0 && rest[length..].starts_with('(') {
+                found
+                    .entry(rest[..length].to_owned())
+                    .or_default()
+                    .push((file, at));
+            }
+        }
+    }
+    found
 }
 
 /// What is wrong with the test `each`, looking at every function of that name.
-fn judge<'a>(code: &'a [(&'a str, String, String)], tree: &Tree, each: &Wanted<'_>) -> Verdict<'a> {
-    let needle = format!("fn {}(", each.name);
+fn judge<'a>(
+    code: &'a [(&'a str, String, String)],
+    functions: &Functions,
+    tree: &Tree,
+    each: &Wanted<'_>,
+) -> Verdict<'a> {
     let mut off = None;
     let mut one_database = None;
-    for (path, _, text) in code {
+    for &(file, at) in functions.get(each.name).map_or(&[][..], Vec::as_slice) {
+        let (path, _, text) = &code[file];
         if !is_within(path, each.within) {
             continue;
         }
-        for (at, _) in text.match_indices(&needle) {
-            if !is_live_test(text, at) {
-                off = Some((*path, NO_ATTRIBUTE));
-            } else if !tree.reaches(path) {
-                off = off.or(Some((*path, NO_MODULE)));
-            } else if each.both_databases && !body_at(text, at).contains(BOTH_DATABASES) {
-                one_database = Some(*path);
-            } else {
-                return Verdict::Fine;
-            }
+        if !is_live_test(text, at) {
+            off = Some((*path, NO_ATTRIBUTE));
+        } else if !tree.reaches(path) {
+            off = off.or(Some((*path, NO_MODULE)));
+        } else if each.both_databases && !body_at(text, at).contains(BOTH_DATABASES) {
+            one_database = Some(*path);
+        } else {
+            return Verdict::Fine;
         }
     }
     match (one_database, off) {
@@ -509,11 +556,13 @@ pub(super) fn evaluate(
         .map(|(path, text)| (path.as_str(), strip_comments(text), strip(text)))
         .collect();
     let tree = Tree::of(&code);
+    let functions = functions_of(&code);
     let unreached = unreached(&code, &tree, required);
     required
         .iter()
         .filter_map(|each| match judge(
             &code,
+            &functions,
             &tree,
             &Wanted {
                 name: each.name,
