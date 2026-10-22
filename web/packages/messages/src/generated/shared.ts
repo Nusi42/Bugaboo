@@ -365,7 +365,7 @@ export const messages = {
   "projects.picker-nothing": "No project found. Try another word.",
   "projects.picker-more": "Show more projects",
   "projects.picker-list": "Projects it can go into",
-  "person.role": "A person with the role {role}",
+  "person.role": "Someone ({role})",
   "person.someone": "Someone",
   "person.former": "Former user {label}",
   "error.role.in-use":
@@ -397,7 +397,7 @@ export const messages = {
   "field-permissions.project-title": "Field permissions in {project}",
   "people-visibility.project-title": "Who sees people in {project}",
   "check-access.project-title": "Check access in {project}",
-  "person.role-inside": "a person with the role {role}",
+  "person.role-inside": "someone ({role})",
   "person.someone-inside": "someone",
   "person.former-inside": "former user {label}",
   "issue-type.bug": "Bug",

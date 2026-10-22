@@ -12061,8 +12061,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.former-inside", "former user {label}"),
     ("person.groups", "Groups"),
     ("person.groups-none", "{name} is in no group."),
-    ("person.role", "A person with the role {role}"),
-    ("person.role-inside", "a person with the role {role}"),
+    ("person.role", "Someone ({role})"),
+    ("person.role-inside", "someone ({role})"),
     ("person.roles", "Roles"),
     (
         "person.roles-none",

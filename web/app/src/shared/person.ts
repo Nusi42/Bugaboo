@@ -67,7 +67,7 @@ export function personName(person: Person): string {
   return personNameAt("start", person);
 }
 
-/** How a person is named in the middle of a sentence: a name stays, a role is "a Team member". */
+/** How a person is named in the middle of a sentence: a name stays, a role is "someone (Team member)". */
 export function personNameInside(person: Person): string {
   return personNameAt("inside", person);
 }

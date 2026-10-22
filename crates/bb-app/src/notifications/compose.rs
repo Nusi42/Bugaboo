@@ -66,7 +66,7 @@ fn who(person: Option<&PersonRef>) -> String {
     }
 }
 
-/// A person in the middle of a sentence, where a role reads *a person with the role Lead*.
+/// A person in the middle of a sentence, where a role reads *someone (Lead)*.
 fn who_inside(person: &PersonRef) -> String {
     match person {
         PersonRef::Name { name, .. } => clean(name),
