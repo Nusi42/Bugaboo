@@ -43,13 +43,7 @@ pub(crate) fn label_is_known(group: Option<LabelGroupId>, known: &[LabelGroup]) 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Every issue type, read once for a request.
     pub(crate) async fn all_issue_types(&self) -> Result<Arc<Vec<IssueType>>, AppError> {
-        if let Some(known) = self
-            .known
-            .issue_types
-            .lock()
-            .ok()
-            .and_then(|each| each.clone())
-        {
+        if let Some(known) = locked(&self.known.issue_types).clone() {
             return Ok(known);
         }
         let found = Arc::new(
@@ -58,9 +52,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?,
         );
-        if let Ok(mut each) = self.known.issue_types.lock() {
-            *each = Some(Arc::clone(&found));
-        }
+        *locked(&self.known.issue_types) = Some(Arc::clone(&found));
         Ok(found)
     }
 
