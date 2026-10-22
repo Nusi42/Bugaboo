@@ -414,6 +414,11 @@ export const messages = {
   "history.changed-long-text": "{who} changed {field}",
   "history.file-added": "{who} added the file {name}",
   "history.file-added-unnamed": "{who} added a file",
+  "history.file-deleted-unnamed": "{who} deleted a file",
+  "history.file-restored-unnamed": "{who} brought back a file",
+  "history.file-changed-unnamed": "{who} changed a file",
+  "history.file-deleted": "{who} deleted the file {name}",
+  "history.file-restored": "{who} brought back the file {name}",
   "history.people-none": "nobody",
   "history.type-unknown": "another issue type",
   "error.issue.parent-circle":
