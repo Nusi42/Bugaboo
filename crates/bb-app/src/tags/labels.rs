@@ -8,9 +8,9 @@
 //! organization. The name of a group is used once among the groups that can meet in one project
 //! (`bb_core::offer::can_meet`); the name of a label once in a group (and once among the labels
 //! that sit in no group), without regard to capitals and to the spaces between the words. A place
-//! has its own limits of groups and labels. A label is retired, never deleted, except by combining it with another one: old issues keep it and new
-//! ones are not offered it. A group can only be a *Pick one* group, and a label can only join one,
-//! when no issue would then hold two labels of it.
+//! has its own limits of groups and labels. A label is retired, never deleted, except by combining
+//! it with another one: old issues keep it and new ones are not offered it. A group can only be a
+//! *Pick one* group, and a label can only join one, when no issue would then hold two labels of it.
 //!
 //! This file reads the list and holds what the use cases share; making and changing a group is
 //! `labels/groups.rs`, a label `labels/change.rs`, combining two `labels/combine.rs`.
