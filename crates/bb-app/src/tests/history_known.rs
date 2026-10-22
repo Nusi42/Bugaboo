@@ -34,11 +34,13 @@ async fn version_of(world: &World, who: &str, issue_id: IssueId) -> Result<i64, 
     .version)
 }
 
-async fn type_to(
+/// Changes the type, or the title, of the issue, as `who`.
+async fn changed(
     world: &World,
     who: &str,
     issue_id: IssueId,
-    issue_type: IssueTypeId,
+    issue_type: Option<IssueTypeId>,
+    title: Option<String>,
 ) -> Result<(), AppError> {
     change_issue(
         &world.ctx(),
@@ -46,8 +48,8 @@ async fn type_to(
             session_token: who.to_owned(),
             issue: issue_id.to_string(),
             version: version_of(world, who, issue_id).await?,
-            issue_type: Some(issue_type),
-            title: None,
+            issue_type,
+            title,
             status: None,
             priority: None,
             assigned_to: None,
@@ -56,6 +58,15 @@ async fn type_to(
     )
     .await?;
     Ok(())
+}
+
+async fn type_to(
+    world: &World,
+    who: &str,
+    issue_id: IssueId,
+    issue_type: IssueTypeId,
+) -> Result<(), AppError> {
+    changed(world, who, issue_id, Some(issue_type), None).await
 }
 
 /// What the history of the issue says to the reader, as one text (the debug form of its rows).
@@ -146,6 +157,34 @@ async fn area_label(g: &Groups, name: &str) -> Result<(bb_core::id::LabelId, i64
     Ok((made.id, made.version))
 }
 
+/// The administrator moves the issue to OTHER and `who` follows it there.
+async fn moved_to_other_and_followed(
+    g: &Groups,
+    issue_id: IssueId,
+    who: &crate::auth::Started,
+) -> Result<(), AppError> {
+    move_issue(
+        &g.world.ctx(),
+        MoveIssue {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            version: version_of(&g.world, &g.admin, issue_id).await?,
+            project: "OTHER".to_owned(),
+        },
+    )
+    .await?;
+    crate::follow::follow_issue(
+        &g.world.ctx(),
+        crate::follow::FollowIssue {
+            session_token: who.session_token.clone(),
+            issue: issue_id.to_string(),
+        },
+    )
+    .await?;
+    g.world.clock.advance(1);
+    Ok(())
+}
+
 /// What the lead of OTHER, who follows the issue, was told in the three ways the issue is told:
 /// its history, its notifications and its e-mail, as one text.
 async fn all_that_was_told(
@@ -229,25 +268,7 @@ where
         .await
         .map_err(AppError::Internal)?;
     label_on(&g.world, &g.admin, issue_id, label).await?;
-    move_issue(
-        &g.world.ctx(),
-        MoveIssue {
-            session_token: g.admin.clone(),
-            issue: issue_id.to_string(),
-            version: version_of(&g.world, &g.admin, issue_id).await?,
-            project: "OTHER".to_owned(),
-        },
-    )
-    .await?;
-    crate::follow::follow_issue(
-        &g.world.ctx(),
-        crate::follow::FollowIssue {
-            session_token: sam.session_token.clone(),
-            issue: issue_id.to_string(),
-        },
-    )
-    .await?;
-    g.world.clock.advance(1);
+    moved_to_other_and_followed(g, issue_id, &sam).await?;
     let on_it = change().await?;
     remove_label(
         &g.world.ctx(),
@@ -471,19 +492,12 @@ async fn two_recipients_in_one_round(
     .await?;
     // A change both of them may read, so that sam has an e-mail to read at all: the change of the
     // label shows nothing to him.
-    change_issue(
-        &g.world.ctx(),
-        ChangeIssue {
-            session_token: g.admin.clone(),
-            issue: issue_id.to_string(),
-            version: version_of(&g.world, &g.admin, issue_id).await?,
-            issue_type: None,
-            title: Some("A new title".to_owned()),
-            status: None,
-            priority: None,
-            assigned_to: None,
-            fields: BTreeMap::new(),
-        },
+    changed(
+        &g.world,
+        &g.admin,
+        issue_id,
+        None,
+        Some("A new title".to_owned()),
     )
     .await?;
     g.world
@@ -521,25 +535,7 @@ async fn sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it() -> O
     let tag = super::scenarios_tags::tagged(&g.world, issue_id, "acme-only")
         .await
         .map_err(AppError::Internal)?;
-    move_issue(
-        &g.world.ctx(),
-        MoveIssue {
-            session_token: g.admin.clone(),
-            issue: issue_id.to_string(),
-            version: version_of(&g.world, &g.admin, issue_id).await?,
-            project: "OTHER".to_owned(),
-        },
-    )
-    .await?;
-    crate::follow::follow_issue(
-        &g.world.ctx(),
-        crate::follow::FollowIssue {
-            session_token: sam.session_token.clone(),
-            issue: issue_id.to_string(),
-        },
-    )
-    .await?;
-    g.world.clock.advance(1);
+    moved_to_other_and_followed(&g, issue_id, &sam).await?;
     // Then the tag is limited to ACME and taken off: sam hears of the change.
     crate::tags::change_tag(
         &g.world.ctx(),
