@@ -228,7 +228,7 @@ tokens {
     color "bg-selected" daylight="#ebe7fb" paper="#dce3eb" dusk="#3c375d" midnight="#242046"
     color "border" daylight="#dfe3e9" paper="#e1d8ca" dusk="#3b414d" midnight="#272a31" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     // The edge of a control that is drawn by its edge (a box to tick, the track of a switch): a line a
-    // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked with the lines of the rule for more contrast), unlike the dividers.
+    // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked by the `lines` rule of the contrast rules), unlike the dividers.
     color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" forced="ButtonText"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
@@ -344,12 +344,17 @@ contrast min=4.5 {
         on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "cat*-bg"
     }
 
-    non-text "border" "border-subtle" "border-control" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
+    non-text "border" "border-subtle" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
+    non-text "border-control" reason="The edge of a control is a line, not text; it is kept at 3:1 by the `lines` rule below."
+    lines min=3 reason="The edge of a box to tick and of the track of a switch is a line a person has to see: WCAG 1.4.11 asks 3:1 against every surface in every theme." {
+        colors "border-control"
+        on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
+    }
 
     // With the device setting for more contrast.
     more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
         text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent"
-        lines "border" "border-subtle" "border-control"
+        lines "border" "border-subtle"
         line-on "bg-canvas" "bg-surface" "bg-raised"
     }
 }

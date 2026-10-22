@@ -54,8 +54,40 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
             }
         }
     }
+    findings.extend(line_findings(file));
     findings.extend(more_contrast_findings(file));
     findings.extend(distinct_findings(file));
+    findings
+}
+
+/// The lines that people have to see (the edge of a box to tick) reach their ratio on the plain
+/// surfaces in every theme, as they are without the device setting for more contrast.
+fn line_findings(file: &ThemeFile) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for lines in &file.contrast.plain_lines {
+        for theme in &file.themes {
+            for line in &lines.colors {
+                for surface in &lines.on {
+                    let (Some(a), Some(b)) = (
+                        color(file, line, &theme.name),
+                        color(file, surface, &theme.name),
+                    ) else {
+                        continue;
+                    };
+                    let ratio = contrast_ratio(a, b);
+                    if ratio < lines.min {
+                        findings.push(Finding::at(
+                            THEME_PATH,
+                            format!(
+                                "Theme {}: the line `{line}` on `{surface}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change its value.",
+                                theme.name, lines.min
+                            ),
+                        ));
+                    }
+                }
+            }
+        }
+    }
     findings
 }
 
@@ -328,6 +360,19 @@ mod tests {
             findings
                 .iter()
                 .any(|f| f.message.contains("bg-selected") && f.message.contains("bg-hover"))
+        );
+    }
+
+    #[test]
+    fn a_faint_edge_of_a_control_is_rejected_in_the_plain_mode() {
+        // The edge of a box to tick put back to the faint divider of Midnight.
+        let findings = evaluate(&with_value("border-control", "midnight", "#272a31"));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("`border-control`") && f.message.contains("midnight")),
+            "{:?}",
+            messages(&findings)
         );
     }
 
