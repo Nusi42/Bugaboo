@@ -47,9 +47,35 @@ pub(crate) struct KnownNames {
     known_groups: BTreeMap<LabelGroupId, bool>,
     /// The labels of old events, read when an old event names one.
     legacy: Option<LegacyNames>,
+    /// The names of the tags the reader may know, read when a change names a tag.
+    tags: Option<BTreeSet<String>>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The value of a change to the tags: the names of the tags the reader may know (a tag only
+    /// projects they do not see know is not told, SEC-06), or none when nothing is left.
+    pub(super) async fn tags_value(
+        &self,
+        reading: &mut Reading<'_>,
+        value: &Value,
+    ) -> Result<Option<ChangeValue>, AppError> {
+        if reading.names.tags.is_none() {
+            let shown = self.shown_for(reading).await?.clone();
+            reading.names.tags = Some(self.known_tag_names(&shown).await?);
+        }
+        let known = reading.names.tags.clone().unwrap_or_default();
+        let named: Vec<&str> = value
+            .as_array()
+            .map(|items| items.iter().filter_map(Value::as_str).collect())
+            .unwrap_or_default();
+        let names: Vec<String> = named
+            .iter()
+            .filter(|name| known.contains(&name.to_lowercase()))
+            .map(|name| (*name).to_owned())
+            .collect();
+        Ok((names.is_empty() == named.is_empty()).then_some(ChangeValue::Names { names }))
+    }
+
     /// What the reader sees of the tree of projects, read the first time it is asked for.
     async fn shown_for<'k>(&self, reading: &'k mut Reading<'_>) -> Result<&'k Shown, AppError> {
         if reading.names.shown.is_none() {
@@ -221,7 +247,7 @@ pub(super) fn leaves_nothing(
     before: Option<&ChangeValue>,
     after: Option<&ChangeValue>,
 ) -> bool {
-    if member != Member::Catalogue(Field::Labels) {
+    if !matches!(member, Member::Catalogue(Field::Labels | Field::Tags)) {
         return false;
     }
     let names = |value: Option<&ChangeValue>| match value {

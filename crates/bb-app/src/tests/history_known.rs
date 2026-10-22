@@ -475,3 +475,53 @@ async fn sec_lm1_what_one_e_mail_of_a_round_may_name_never_reaches_the_next_one(
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it() -> Outcome {
+    let g = groups().await?;
+    let sam = lead_of(&g.world, "sam@example.test", g.other).await?;
+    let issue_id = an_issue(&g.world, g.acme)
+        .await
+        .map_err(AppError::Internal)?;
+    // A tag limited to ACME is put on the issue and taken off again, and the issue moves to OTHER.
+    let tag = super::scenarios_tags::tagged(&g.world, issue_id, "acme-only")
+        .await
+        .map_err(AppError::Internal)?;
+    crate::tags::change_tag(
+        &g.world.ctx(),
+        crate::tags::ChangeTag {
+            session_token: g.admin.clone(),
+            tag,
+            version: 1,
+            name: None,
+            color: None,
+            projects: Some(vec![g.acme]),
+        },
+    )
+    .await?;
+    crate::tags::remove_tag(
+        &g.world.ctx(),
+        crate::tags::RemoveTag {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            tag,
+        },
+    )
+    .await?;
+    move_issue(
+        &g.world.ctx(),
+        MoveIssue {
+            session_token: g.admin.clone(),
+            issue: issue_id.to_string(),
+            version: version_of(&g.world, &g.admin, issue_id).await?,
+            project: "OTHER".to_owned(),
+        },
+    )
+    .await?;
+    let outside = read(&g.world, &sam.session_token, issue_id).await?;
+    assert!(!outside.contains("acme-only"), "{outside}");
+    // The administrator may know every tag, and reads it.
+    let inside = read(&g.world, &g.admin, issue_id).await?;
+    assert!(inside.contains("acme-only"), "{inside}");
+    Ok(())
+}

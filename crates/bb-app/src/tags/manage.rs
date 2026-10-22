@@ -137,6 +137,23 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
+    /// The names of the tags the person may know of, in one spelling (lower case): what the history
+    /// of an issue may name. A name no known tag has is not told (a tag that is gone, or one that
+    /// only projects the person does not see know).
+    pub(crate) async fn known_tag_names(
+        &self,
+        shown: &crate::projects::Shown,
+    ) -> Result<BTreeSet<String>, AppError> {
+        let catalogue = self.tag_catalogue().await?;
+        let known = self.known_tags(&catalogue, shown).await?;
+        Ok(catalogue
+            .tags
+            .iter()
+            .filter(|tag| known.contains(&tag.id))
+            .map(|tag| tag.name.to_lowercase())
+            .collect())
+    }
+
     /// A tag the person may know of, or `resource.not_found`.
     async fn known_tag<'a>(
         &self,
