@@ -8,7 +8,7 @@ use super::{
 use crate::fields::{Field, FieldKey};
 use crate::id::WorkflowId;
 use crate::issue::StatusGroup;
-use crate::names::same_name;
+use crate::names::{is_new_or_changed, same_name};
 
 /// A status as an editor sends it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -157,9 +157,9 @@ impl WorkflowContent {
     /// Names the first rule that is broken.
     pub fn check_since(&self, stored: &[WorkflowStatus]) -> Result<(), Problem> {
         let settled = |status: &WorkflowStatus| {
-            stored
-                .iter()
-                .any(|each| each.key == status.key && each.name == status.name)
+            stored.iter().any(|each| {
+                each.key == status.key && !is_new_or_changed(Some(&each.name), &status.name)
+            })
         };
         if self.statuses.is_empty() {
             return Err(Problem::NoStatus);

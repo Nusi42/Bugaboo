@@ -3,12 +3,13 @@
 //! pattern has a length cap (`bb_core::own_fields::PATTERN_MAX`) and the compiled program a size
 //! cap, so a pattern cannot cost more than a small, fixed amount (SEC-PATTERNS).
 
-use crate::auth::locked;
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
 
 use bb_core::own_fields_value::PatternEngine;
 use regex::RegexBuilder;
+
+use crate::auth::locked;
 
 /// The most memory one compiled pattern may take, in bytes.
 const PROGRAM_BYTES_MAX: usize = 100_000;

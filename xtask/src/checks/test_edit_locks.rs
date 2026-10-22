@@ -121,6 +121,65 @@ async fn {name}() {{}}
         assert_eq!(evaluate(&[], &REQUIRED[..1], "").len(), 1);
     }
 
+    /// The suite as a crate: the folder declares each file of `declared`, and holds all of
+    /// `files`; every required test is in `editing/all.rs`.
+    fn suite(declared: &[&str], files: &[&str]) -> Vec<(String, String)> {
+        let folder = format!("{SUITE}/");
+        let mut tests = String::new();
+        for each in &REQUIRED {
+            let _ = writeln!(
+                tests,
+                "#[tokio::test]
+async fn {}() {{}}",
+                each.name
+            );
+        }
+        let mut sources = vec![
+            (
+                "crates/bb-server/src/lib.rs".to_owned(),
+                "#[path = \"tests/sign_in/editing/mod.rs\"]
+mod editing;
+"
+                .to_owned(),
+            ),
+            (format!("{folder}all.rs"), tests),
+        ];
+        let mut root = "mod all;
+"
+        .to_owned();
+        for name in declared {
+            let _ = writeln!(root, "mod {name};");
+        }
+        sources.push((format!("{folder}mod.rs"), root));
+        for name in files {
+            sources.push((
+                format!("{folder}{name}.rs"),
+                "#[tokio::test]
+async fn stale_views_are_shown() {}
+"
+                .to_owned(),
+            ));
+        }
+        sources
+    }
+
+    #[test]
+    fn bad_example_a_test_file_of_the_suite_that_mod_rs_does_not_declare() {
+        let found = evaluate(&suite(&[], &["stale_views"]), &REQUIRED, "");
+        assert_eq!(found.len(), 1);
+        assert!(
+            found[0]
+                .location
+                .as_deref()
+                .is_some_and(|at| at.ends_with("editing/stale_views.rs"))
+        );
+    }
+
+    #[test]
+    fn good_example_every_test_file_of_the_suite_is_declared() {
+        assert!(evaluate(&suite(&["stale_views"], &["stale_views"]), &REQUIRED, "").is_empty());
+    }
+
     #[test]
     fn good_example_the_suite_of_this_repository_has_every_named_test() {
         examples::this_repository_has_every_test(&REQUIRED);

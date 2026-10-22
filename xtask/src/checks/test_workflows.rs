@@ -8,7 +8,9 @@
 //! the judge of a status change, the choice of the workflow of a place and the publishing of a
 //! workflow cannot lose their tests without anybody noticing. The tests of where issue types and
 //! groups of labels are offered are held here too: they are found by the same walk (ADR-0027
-//! amendment, ISS-02, TAG-02, SEC-03).
+//! amendment, ISS-02, TAG-02, SEC-03). So are the tests of "the same name" for kinds of relation
+//! and fields (`iss_04_…`, `cf_02_…`, `bb_core::names`), which the statuses of a workflow share
+//! with them: the one rule is held in one list.
 
 use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};

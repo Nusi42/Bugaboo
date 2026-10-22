@@ -23,10 +23,7 @@ use crate::fields::{Definition, Item, must_be_asked_for};
 use crate::issues::IssueTypeRef;
 use crate::projects::ProjectRef;
 
-/// The place a layout is asked for, and whether it is the issue page or the new-issue form.
-pub(super) type Where = EditorPlace<LayoutKind>;
-
-impl Where {
+impl EditorPlace<LayoutKind> {
     /// Where a layout for exactly this place is set.
     pub(super) fn layout_place(&self) -> LayoutPlace {
         LayoutPlace {
@@ -44,14 +41,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         project: Option<&str>,
         issue_type: Option<IssueTypeId>,
         kind: LayoutKind,
-    ) -> Result<Where, AppError> {
+    ) -> Result<EditorPlace<LayoutKind>, AppError> {
         self.editor_place(project, issue_type, kind).await
     }
 
     /// The own fields of issues that reach the place and the issue type, retired ones left out, in
     /// the order they are offered in. The organization has no project, so only the issue type
     /// limits what reaches it.
-    pub(super) async fn own_fields_for(&self, at: &Where) -> Result<Vec<FieldKey>, AppError> {
+    pub(super) async fn own_fields_for(
+        &self,
+        at: &EditorPlace<LayoutKind>,
+    ) -> Result<Vec<FieldKey>, AppError> {
         let issues = Item {
             kind: RecordKind::Issue,
             id: None,
@@ -85,7 +85,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Also the header it was found by, when there is one.
     pub(super) async fn layout_in_force(
         &self,
-        at: &Where,
+        at: &EditorPlace<LayoutKind>,
         roles: &[RoleId],
     ) -> Result<(Option<Layout>, LayoutContent), AppError> {
         let headers = self
@@ -175,7 +175,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// (on the new-issue form: not change it). Field permissions win over the layout.
     async fn roles_limited(
         &self,
-        at: &Where,
+        at: &EditorPlace<LayoutKind>,
         roles: &[EditorRole],
         fields: &[FieldKey],
     ) -> Result<HashMap<FieldKey, Vec<RoleId>>, AppError> {
@@ -218,7 +218,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &Evaluation,
-        at: &Where,
+        at: &EditorPlace<LayoutKind>,
     ) -> Result<LayoutEditor, AppError> {
         let every_role = self.all_roles().await?;
         let ids: Vec<RoleId> = every_role.iter().map(|role| role.id).collect();
