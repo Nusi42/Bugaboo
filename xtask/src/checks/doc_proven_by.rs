@@ -7,7 +7,7 @@
 //! the mistake M4 made. A cell with no such check is not looked at here (a test is only a name
 //! then). The lists are read from the checks that own them (`required_tests::lists`).
 
-use super::required_tests::{Required, crate_sources, lists, missing_tests};
+use super::required_tests::{Crates, Required, crate_sources, lists};
 use super::{Check, Context, Finding};
 use crate::docs::source::sorted_files;
 use crate::docs::text::has_extension;
@@ -29,13 +29,14 @@ impl Check for DocProvenBy {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let mut findings = Vec::new();
         let sources = crate_sources(context.repo)?;
+        let crates = Crates::of(&sources);
         let browser = browser_tests(context.repo)?;
         for folder in FOLDERS {
             for name in sorted_files(context.repo, folder, |name| has_extension(name, "md"))? {
                 let path = format!("{folder}/{name}");
                 let text = read_text(context.repo, &path)?;
                 findings.extend(evaluate(&path, &text, &lists()));
-                findings.extend(unknown_tests(&path, &text, &sources, &browser));
+                findings.extend(unknown_tests(&path, &text, &crates, &browser));
             }
         }
         Ok(findings)
@@ -181,18 +182,16 @@ fn proof_cells(text: &str) -> Vec<(usize, String)> {
 /// written, switched off or not reached by any `mod` proves nothing, whatever check the cell names
 /// (the rule is the one of the lists of required tests). A test of the browser side is found by its
 /// title.
-fn unknown_tests(
-    path: &str,
-    text: &str,
-    sources: &[(String, String)],
-    browser: &[String],
-) -> Vec<Finding> {
+fn unknown_tests(path: &str, text: &str, crates: &Crates<'_>, browser: &[String]) -> Vec<Finding> {
     let cells = proof_cells(text);
     let mut cited: Vec<&str> = Vec::new();
     for (_, cell) in &cells {
         cited.extend(backticked(cell).filter(|word| is_test_name(word)));
     }
-    let gone = missing_tests(sources, &cited);
+    if cited.is_empty() {
+        return Vec::new();
+    }
+    let gone = crates.missing(&cited);
     let mut findings = Vec::new();
     for (line, cell) in &cells {
         for name in backticked(cell).filter(|word| is_test_name(word)) {
@@ -294,10 +293,10 @@ fn sec_the_server_sends_to_only_so_many_addresses() {}
 ",
         );
         let good = table("`sec_the_server_sends_to_only_so_many_addresses`");
-        assert!(unknown_tests("a.md", &good, &sources, &[]).is_empty());
+        assert!(unknown_tests("a.md", &good, &Crates::of(&sources), &[]).is_empty());
         // A name with no number is a name too, and a renamed test is found out.
         let bad = table("`sec_the_server_sends_only_so_many_sign_up_e_mails_in_an_hour` (WP-12)");
-        let found = unknown_tests("a.md", &bad, &sources, &[]);
+        let found = unknown_tests("a.md", &bad, &Crates::of(&sources), &[]);
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].location.as_deref(), Some("a.md:3"));
     }
@@ -319,7 +318,7 @@ fn wf_01_an_ignored_test_proves_nothing_at_all() {}
         ] {
             let bad = table(&format!("`{name}`"));
             assert_eq!(
-                unknown_tests("a.md", &bad, &sources, &[]).len(),
+                unknown_tests("a.md", &bad, &Crates::of(&sources), &[]).len(),
                 1,
                 "{name}"
             );
@@ -336,7 +335,7 @@ fn wf_01_an_ignored_test_proves_nothing_at_all() {}
         );
         assert_eq!(titles, ["ntf_01_a_comment_raises_her_count_open_lands"]);
         let cited = table("`ntf_01_a_comment_raises_her_count_open_lands`, `ntf_01_a_comment`");
-        let found = unknown_tests("a.md", &cited, &[], &titles);
+        let found = unknown_tests("a.md", &cited, &Crates::of(&[]), &titles);
         // A part of a title is no title.
         assert_eq!(found.len(), 1);
         assert!(found[0].message.contains("`ntf_01_a_comment`"));
@@ -358,7 +357,7 @@ fn wf_01_an_ignored_test_proves_nothing_at_all() {}
         let browser = browser_tests(&repo).unwrap();
         let found: Vec<_> = evaluate(path, &text, &lists())
             .into_iter()
-            .chain(unknown_tests(path, &text, &sources, &browser))
+            .chain(unknown_tests(path, &text, &Crates::of(&sources), &browser))
             .map(|finding| finding.message)
             .collect();
         assert!(found.is_empty(), "{found:#?}");
