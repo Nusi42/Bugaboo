@@ -8,6 +8,7 @@
 
 mod build;
 mod map;
+mod names;
 mod read;
 mod store;
 mod types;

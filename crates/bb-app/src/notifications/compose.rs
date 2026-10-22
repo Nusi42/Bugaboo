@@ -10,12 +10,11 @@ use bb_core::app_paths;
 use bb_core::fields::Field;
 use bb_core::message::{self, Message};
 use bb_core::notification::{MAIL_ENTRIES_MAX, MAIL_TEXT_MAX, NotificationKind};
-use bb_core::text::{plain_line, plain_text};
+use bb_core::text::{MAIL_SUBJECT_MAX, plain_line, plain_text};
 use bb_core::wording::{
-    Change, Notice, Region, Renewal, Side, end_sentence, notification_sentences,
+    Change, File, Notice, Region, Renewal, Side, end_sentence, notification_sentences,
 };
 use bb_policy::PersonRef;
-use serde_json::Value;
 
 use super::types::{NotificationItem, NotificationWhat};
 use crate::access::ProjectLabel;
@@ -35,15 +34,23 @@ const QUOTE: &str = "> ";
 /// What ends the line before a comment that is quoted below it.
 const LEAD_IN: &str = ":";
 
-/// A sentence of the screen as a line of an e-mail: the screen says it without a full stop, a line
-/// of an e-mail has one (unless the sentence ends in a mark already).
-fn sentence_of(message: &Message) -> String {
-    end_sentence(&message.render())
+/// A sentence of the screen as one clean line of an e-mail. The one place that cleans the text of
+/// people that stands in a sentence: a line break, a format character or a direction mark in a
+/// name or a value is taken out here, however the sentence was put together. The screen says a
+/// sentence without a full stop, a line of an e-mail has one (unless the sentence ends in a mark
+/// already).
+fn line_of(sentence: &str) -> String {
+    end_sentence(&plain_line(sentence, MAIL_TEXT_MAX))
 }
 
-/// Text of a person for the middle of a line.
-fn clean(text: &str) -> String {
-    plain_line(text, MAIL_TEXT_MAX)
+/// A sentence of the screen as a line of an e-mail.
+fn sentence_of(message: &Message) -> String {
+    line_of(&message.render())
+}
+
+/// The subject of an e-mail: one clean line.
+fn subject_of(message: &Message) -> String {
+    plain_line(&message.render(), MAIL_SUBJECT_MAX)
 }
 
 /// A text of a person that stands on lines of its own, every line quoted.
@@ -58,20 +65,20 @@ fn quoted(text: &str) -> String {
 fn who(person: Option<&PersonRef>) -> String {
     match person {
         None => Message::from(message::PERSON_BUGABOO).render(),
-        Some(PersonRef::Name { name, .. }) => clean(name),
-        Some(PersonRef::Role { role }) => message::person_role(clean(role)).render(),
+        Some(PersonRef::Name { name, .. }) => name.clone(),
+        Some(PersonRef::Role { role }) => message::person_role(role).render(),
         Some(PersonRef::Someone) => Message::from(message::PERSON_SOMEONE).render(),
-        Some(PersonRef::Former { label }) => message::person_former(clean(label)).render(),
+        Some(PersonRef::Former { label }) => message::person_former(label).render(),
     }
 }
 
 /// A person in the middle of a sentence, where a role reads *a person with the role Lead*.
 fn who_inside(person: &PersonRef) -> String {
     match person {
-        PersonRef::Name { name, .. } => clean(name),
-        PersonRef::Role { role } => message::person_role_inside(clean(role)).render(),
+        PersonRef::Name { name, .. } => name.clone(),
+        PersonRef::Role { role } => message::person_role_inside(role).render(),
         PersonRef::Someone => Message::from(message::PERSON_SOMEONE_INSIDE).render(),
-        PersonRef::Former { label } => message::person_former_inside(clean(label)).render(),
+        PersonRef::Former { label } => message::person_former_inside(label).render(),
     }
 }
 
@@ -79,26 +86,23 @@ fn who_inside(person: &PersonRef) -> String {
 /// The words of a person are cleaned for the middle of a line.
 fn side_of(value: Option<&ChangeValue>, region: &Region) -> Option<Side> {
     Some(match value? {
-        ChangeValue::Text { text } => Side::Text { text: clean(text) },
+        ChangeValue::Text { text } => Side::Text { text: text.clone() },
         ChangeValue::Names { names } => Side::Names {
-            names: names.iter().map(|name| clean(name)).collect(),
+            names: names.clone(),
         },
         ChangeValue::People { people } => Side::People {
             people: people.iter().map(who_inside).collect(),
         },
         ChangeValue::Typed { kind, value } => Side::Typed {
             kind: *kind,
-            value: match value {
-                Value::String(text) => Value::String(clean(text)),
-                other => other.clone(),
-            },
+            value: value.clone(),
             worded: region.worded_for_mail(*kind, value),
         },
         ChangeValue::Issue { issue } => Side::Plain {
             text: issue.key.clone(),
         },
         ChangeValue::Project { project } => Side::Plain {
-            text: clean(&project.name),
+            text: project.name.clone(),
         },
     })
 }
@@ -106,9 +110,9 @@ fn side_of(value: Option<&ChangeValue>, region: &Region) -> Option<Side> {
 /// What a field is called: the name of an own field, or the name from the catalogue.
 fn field_name(change: &FieldChangeView) -> String {
     match (&change.name, Field::from_code(&change.field)) {
-        (Some(name), _) => clean(name),
+        (Some(name), _) => name.clone(),
         (None, Some(field)) => Message::from(field.name()).render(),
-        (None, None) => clean(&change.field),
+        (None, None) => change.field.clone(),
     }
 }
 
@@ -159,6 +163,7 @@ fn lines_about(
         notice: None,
         run_done: None,
         renewal: None,
+        file: None,
     };
     match what {
         NotificationWhat::Comment { .. } => notice.comment = true,
@@ -173,9 +178,16 @@ fn lines_about(
         NotificationWhat::IssueIdsFailed { project } => {
             notice.renewal = Some(Renewal {
                 project: match project {
-                    ProjectLabel::Visible { name, .. } => Some(clean(name)),
+                    ProjectLabel::Visible { name, .. } => Some(name.clone()),
                     ProjectLabel::Hidden => None,
                 },
+            });
+        }
+        NotificationWhat::File { event, name } => {
+            notice.file = Some(File {
+                who: who(by),
+                event: Some(*event),
+                name: name.clone(),
             });
         }
         NotificationWhat::Plain => {}
@@ -186,10 +198,11 @@ fn lines_about(
     match what {
         // A comment is quoted below the sentence that says who wrote it.
         NotificationWhat::Comment { comment } => {
-            let lead = sentences.map(|sentence| format!("{sentence}{LEAD_IN}"));
+            let lead = sentences
+                .map(|sentence| format!("{}{LEAD_IN}", plain_line(&sentence, MAIL_TEXT_MAX)));
             lead.chain(std::iter::once(quoted(&comment.text))).collect()
         }
-        _ => sentences.map(|sentence| end_sentence(&sentence)).collect(),
+        _ => sentences.map(|sentence| line_of(&sentence)).collect(),
     }
 }
 
@@ -208,24 +221,21 @@ pub(crate) fn compose(
     let first = items.first()?;
     let (subject, open) = match &first.issue {
         Some(issue) => (
-            match (&issue.title, short) {
-                (Some(title), false) => {
-                    message::mail_subject(issue.key.clone(), clean(title)).render()
-                }
-                _ => message::mail_subject_short(issue.key.clone()).render(),
-            },
+            subject_of(&match (&issue.title, short) {
+                (Some(title), false) => message::mail_subject(issue.key.clone(), title),
+                _ => message::mail_subject_short(issue.key.clone()),
+            }),
             message::mail_open(format!("{public_url}{}", app_paths::issue(&issue.key))),
         ),
         // Work that is not about one issue ends in the notifications, so that is where the link goes.
         None => (
-            Message::from(
+            subject_of(&Message::from(
                 if matches!(first.what, NotificationWhat::IssueIdsFailed { .. }) {
                     message::MAIL_SUBJECT_IDS_FAILED
                 } else {
                     message::MAIL_SUBJECT_RUN
                 },
-            )
-            .render(),
+            )),
             message::mail_open_notifications(format!("{public_url}{}", app_paths::NOTIFICATIONS)),
         ),
     };

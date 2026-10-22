@@ -365,3 +365,44 @@ fn both_databases_look_at_the_test_and_not_at_the_one_after_it() {
     );
     assert!(evaluate(&crate_with(&both), &[Required::both(NAME)], "").is_empty());
 }
+
+#[test]
+fn a_test_for_one_system_is_live_but_any_other_cfg_switches_it_off() {
+    for live in ["#[cfg(unix)]", "#[cfg(windows)]"] {
+        let text = format!(
+            "{live}
+#[test]
+fn {NAME}() {{}}
+"
+        );
+        assert_eq!(found(&crate_with(&text)), 0, "{live}");
+    }
+    let off = format!(
+        "#[cfg(feature = \"slow\")]
+#[test]
+fn {NAME}() {{}}
+"
+    );
+    assert_eq!(found(&crate_with(&off)), 1);
+}
+
+#[test]
+fn a_folder_of_tests_with_a_main_is_a_root() {
+    let sources = vec![
+        (
+            "crates/x/tests/engine/main.rs".to_owned(),
+            "mod people;
+"
+            .to_owned(),
+        ),
+        (
+            "crates/x/tests/engine/people.rs".to_owned(),
+            format!(
+                "#[test]
+fn {NAME}() {{}}
+"
+            ),
+        ),
+    ];
+    assert_eq!(found(&sources), 0);
+}

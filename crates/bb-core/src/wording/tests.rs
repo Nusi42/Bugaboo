@@ -129,6 +129,7 @@ fn notice(kind: NotificationKind) -> Notice {
         notice: None,
         run_done: None,
         renewal: None,
+        file: None,
     }
 }
 
@@ -256,4 +257,41 @@ fn the_input_of_the_browser_reads_as_a_change() {
 fn the_vectors_are_made_for_every_case_or_not_at_all() {
     let file = vectors::value_words_file();
     assert!(file.is_ok_and(|text| text.contains("moment in Berlin in winter")));
+}
+
+#[test]
+fn a_file_is_added_deleted_or_brought_back_with_its_name_or_without() {
+    let said = |event, name: Option<&str>| {
+        file_sentence(&File {
+            who: "Ana".to_owned(),
+            event,
+            name: name.map(str::to_owned),
+        })
+        .render()
+    };
+    assert_eq!(
+        said(Some(FileEvent::Added), Some("jam.txt")),
+        "Ana added the file jam.txt"
+    );
+    assert_eq!(said(Some(FileEvent::Added), None), "Ana added a file");
+    assert_eq!(
+        said(Some(FileEvent::Deleted), Some("jam.txt")),
+        "Ana deleted the file jam.txt"
+    );
+    assert_eq!(
+        said(Some(FileEvent::Restored), None),
+        "Ana brought back a file"
+    );
+    assert_eq!(said(None, None), "Ana changed a file");
+}
+
+#[test]
+fn a_notification_about_a_file_says_what_happened_to_it() {
+    let mut added = notice(NotificationKind::FollowedActivity);
+    added.file = Some(File {
+        who: "Ana".to_owned(),
+        event: Some(FileEvent::Added),
+        name: Some("jam.txt".to_owned()),
+    });
+    assert_eq!(sentences(&added), ["Ana added the file jam.txt"]);
 }

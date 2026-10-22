@@ -12,10 +12,9 @@
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
-use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::access::FieldLevel;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, RoleId};
-use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Masked, Permission, Place, RoleData, roles_that_change, row_reaches};
 use serde::Serialize;
 
@@ -73,10 +72,11 @@ pub async fn who_may_change<S: AuthStore>(
     };
     // Fields are those of issues: a reader who holds no right to see issues there is refused.
     let held = ctx.require(&actor, Permission::SeeIssues, place).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     if held.field_level_for(input.issue_type, input.field) < FieldLevel::CanSee {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
-    if held.kind_level(PeopleKind::ProjectMembers) < PeopleLevel::RoleOnly {
+    if !held.may_know_roles_of_people() {
         return Ok(held.authorize(WhoMayChange {
             roles: Vec::new(),
             roles_hidden: true,

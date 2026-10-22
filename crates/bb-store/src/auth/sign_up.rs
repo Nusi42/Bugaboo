@@ -78,6 +78,22 @@ impl AuthStorage {
 }
 
 impl SignUpStore for AuthStorage {
+    async fn sign_up_mail_since(&self, since: Timestamp) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(
+                Expr::col(Mail::Address).count(),
+                crate::schema::Computed::Total,
+            )
+            .from(Mail::Table)
+            .and_where(Expr::col(Mail::SentAt).gt(to_micros(since)));
+        match self.database.fetch_optional(&select).await? {
+            Some(row) => u64::try_from(row.get::<i64>(crate::schema::Computed::Total)?)
+                .map_err(|_| StoreError::Corrupt("a count")),
+            None => Ok(0),
+        }
+    }
+
     async fn claim_sign_up_mail(
         transaction: &mut Transaction,
         address: &Digest,
@@ -156,14 +172,18 @@ impl SignUpStore for AuthStorage {
             .from_table(Columns::Table)
             .and_where(Expr::col(Columns::CreatedAt).lt(to_micros(before)))
             .cond_where(finished);
-        let removed = transaction.execute(&delete).await?;
-        // The memory of an e-mail that went is as old as the link: after that, a new one may go.
+        transaction.execute(&delete).await
+    }
+
+    async fn forget_old_sign_up_mail(
+        transaction: &mut Transaction,
+        before: Timestamp,
+    ) -> Result<u64, StoreError> {
         let mut forget = Query::delete();
         forget
             .from_table(Mail::Table)
             .and_where(Expr::col(Mail::SentAt).lt(to_micros(before)));
-        transaction.execute(&forget).await?;
-        Ok(removed)
+        transaction.execute(&forget).await
     }
 }
 

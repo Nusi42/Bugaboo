@@ -21,6 +21,7 @@ use serde_json::Value;
 
 use crate::edit::NoticeKind;
 use crate::fields::Field;
+use crate::history::FileEvent;
 use crate::issue::Priority;
 use crate::message::{self, Message, MessageKey};
 use crate::notification::NotificationKind;
@@ -312,6 +313,39 @@ pub fn change_sentence(change: &Change) -> Said {
     }
 }
 
+/// Something that happened to a file of an issue.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct File {
+    /// Who did it, at the start of a sentence.
+    pub who: String,
+    /// What happened; none for an event this version does not know (the sentence then says only
+    /// that a file changed).
+    #[serde(default)]
+    pub event: Option<FileEvent>,
+    /// The name of the file; none once the file is gone for good.
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// The sentence of a file that was added, deleted or brought back: *Ben added the file jam.txt*.
+/// Once the file is gone for good it has no name and the sentence says *a file*.
+#[must_use]
+pub fn file_sentence(file: &File) -> Said {
+    let who = Said::text(file.who.as_str());
+    let name = file.name.as_deref().map(Said::text);
+    match (file.event, name) {
+        (None, _) => said!(message::history_file_changed_unnamed, who),
+        (Some(FileEvent::Added), Some(name)) => said!(message::history_file_added, name, who),
+        (Some(FileEvent::Added), None) => said!(message::history_file_added_unnamed, who),
+        (Some(FileEvent::Deleted), Some(name)) => said!(message::history_file_deleted, name, who),
+        (Some(FileEvent::Deleted), None) => said!(message::history_file_deleted_unnamed, who),
+        (Some(FileEvent::Restored), Some(name)) => {
+            said!(message::history_file_restored, name, who)
+        }
+        (Some(FileEvent::Restored), None) => said!(message::history_file_restored_unnamed, who),
+    }
+}
+
 /// A renewal of issue IDs that gave up.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Renewal {
@@ -342,6 +376,9 @@ pub struct Notice {
     /// A renewal of issue IDs that gave up.
     #[serde(default)]
     pub renewal: Option<Renewal>,
+    /// A file that was added to the issue.
+    #[serde(default)]
+    pub file: Option<File>,
 }
 
 /// What happened, in words: one sentence, or one for each field a change touched.
@@ -378,6 +415,8 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
         NotificationKind::FollowedActivity | NotificationKind::FollowedFields => {
             if !notice.changes.is_empty() {
                 notice.changes.iter().map(change_sentence).collect()
+            } else if let Some(file) = &notice.file {
+                one(file_sentence(file))
             } else if notice.comment {
                 one(said!(message::notifications_commented, who()))
             } else {

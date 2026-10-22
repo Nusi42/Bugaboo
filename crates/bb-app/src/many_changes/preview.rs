@@ -49,7 +49,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 self.move_target(actor, project).await?;
             }
             ManyChangeAction::AddLabel { label } => {
-                self.label_exists(*label).await?;
+                self.label_known(actor, *label).await?;
             }
             ManyChangeAction::AddRelation {
                 relation_kind,

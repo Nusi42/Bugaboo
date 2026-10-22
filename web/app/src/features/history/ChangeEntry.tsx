@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
+import { fileSentence } from "../../shared/file-sentence.ts";
 import { WithWording, WordingNotice } from "../../shared/with-wording.tsx";
 import { changeSentence, plainSentenceOf, useScrollTo } from "./history.ts";
 
@@ -36,7 +37,11 @@ export function ChangeEntry({
         {items.map((item) => (
           <li key={keyOf(item)} {...partOf(part.itemText)}>
             {plainSentenceOf(item) ?? (
-              <WithWording>{(wording) => changeSentence(wording, item)}</WithWording>
+              <WithWording>
+                {(wording) =>
+                  item.kind === "file" ? fileSentence(wording, item) : changeSentence(wording, item)
+                }
+              </WithWording>
             )}
           </li>
         ))}

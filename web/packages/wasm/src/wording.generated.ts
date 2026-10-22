@@ -59,6 +59,16 @@ export interface Change {
   readonly after?: Side | null;
 }
 
+/** Something that happened to a file of an issue. */
+export interface File {
+  /** Who did it, at the start of a sentence. */
+  readonly who: string;
+  /** What happened; none for an event this version does not know (the sentence then says only that a file changed). */
+  readonly event?: Schema<"FileEvent"> | null;
+  /** The name of the file; none once the file is gone for good. */
+  readonly name?: string | null;
+}
+
 /** A renewal of issue IDs that gave up. */
 export interface Renewal {
   /** The name of the project, if the reader may know it. */
@@ -81,4 +91,6 @@ export interface Notice {
   readonly run_done?: boolean | null;
   /** A renewal of issue IDs that gave up. */
   readonly renewal?: Renewal | null;
+  /** A file that was added to the issue. */
+  readonly file?: File | null;
 }

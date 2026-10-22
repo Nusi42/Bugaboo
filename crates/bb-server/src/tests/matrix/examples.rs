@@ -156,11 +156,18 @@ impl Example {
 }
 
 /// What the routes of an upload have in common: the example names the actor's own upload, or one nobody started.
-const UPLOAD: [Quirk; 3] = [
+const UPLOAD: [Quirk; 4] = [
+    CHANGES_THE_FILES,
     Quirk::AtTheTargetProject,
     Quirk::NamesAMissingThing,
     Quirk::TheirOwn,
 ];
+
+/// What the routes that add or take away files declare as `by-record`: the use case judges the
+/// record (the issue, or the comment the file belongs to) and lets in a person on an issue they
+/// reported or a comment they wrote; the example is an issue of somebody else, which needs
+/// *Change issues*.
+const CHANGES_THE_FILES: Quirk = Quirk::OnTheTargetProject(Permission::ChangeIssues);
 
 /// Every route of the API description, in the order of the description.
 pub(super) const EXAMPLES: &[Example] = &[
@@ -352,7 +359,13 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("publishWorkflow", &[Quirk::AtTheTargetProject]),
     Example::with("previewPublishWorkflow", &[Quirk::AtTheTargetProject]),
     Example::with("deleteWorkflow", &[Quirk::AtTheTargetProject]),
-    Example::with("tryWorkflow", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "tryWorkflow",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            Quirk::AlsoNeeds(Permission::ManageWorkflows),
+        ],
+    ),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
     Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),
     Example::with("createIssue", &[Quirk::NeedsToSeeTheProject]),
@@ -382,17 +395,27 @@ pub(super) const EXAMPLES: &[Example] = &[
     ),
     Example::with("listCommentVersions", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listMentionChoices", &[Quirk::AnIssueOfTheTarget]),
-    Example::with("startUpload", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "startUpload",
+        &[CHANGES_THE_FILES, Quirk::AnIssueOfTheTarget],
+    ),
     Example::with("getUpload", &UPLOAD),
     Example::with("sendUploadPart", &UPLOAD),
     Example::with("cancelUpload", &UPLOAD),
     Example::with("finishUpload", &UPLOAD),
     Example::with("listIssueFiles", &[Quirk::AnIssueOfTheTarget]),
     Example::with("getFileRules", &[Quirk::AnIssueOfTheTarget]),
-    Example::with("deleteAttachment", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "deleteAttachment",
+        &[CHANGES_THE_FILES, Quirk::AnIssueOfTheTarget],
+    ),
     Example::with(
         "restoreAttachment",
-        &[Quirk::AnIssueOfTheTarget, Quirk::InTheTrash],
+        &[
+            CHANGES_THE_FILES,
+            Quirk::AnIssueOfTheTarget,
+            Quirk::InTheTrash,
+        ],
     ),
     Example::with("downloadFile", &[Quirk::AnIssueOfTheTarget]),
     Example::route("getMyHandle"),

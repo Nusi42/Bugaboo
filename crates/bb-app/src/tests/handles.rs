@@ -118,6 +118,30 @@ async fn m3_f70_a_handle_is_changed_and_nobody_can_take_one_that_was_somebodys()
 }
 
 #[tokio::test]
+async fn sec_m2_a_person_who_changed_lately_learns_nothing_about_other_handles() -> Outcome {
+    let crew = Crew::new().await?;
+    let (bob, carol) = (
+        crew.bob.session_token.clone(),
+        crew.carol.session_token.clone(),
+    );
+    change(&crew, &bob, "bobby").await?;
+    // The rule of the days comes first: a taken handle and a free one are answered alike.
+    for guess in ["ada.admin", "carol.cook", "bob.baker", "nobody.here"] {
+        assert_eq!(
+            change(&crew, &bob, guess).await.err(),
+            Some(AppError::Refused(ErrorCode::HandleChangedLately)),
+            "{guess}"
+        );
+    }
+    // Somebody who has not changed it yet is still told that a handle is taken.
+    assert_eq!(
+        change(&crew, &carol, "ada.admin").await.err(),
+        Some(AppError::Refused(ErrorCode::NameTaken))
+    );
+    Ok(())
+}
+
+#[tokio::test]
 async fn m3_f70_a_mention_names_the_person_with_that_handle_now_and_an_old_text_keeps_the_person()
 -> Outcome {
     let crew = Crew::new().await?;

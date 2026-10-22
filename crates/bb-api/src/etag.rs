@@ -679,6 +679,7 @@ mod tests {
     #[test]
     fn the_table_decides_the_kind_of_a_route() {
         let operation = |method: Method, path: &str, kind: Answer| Operation {
+            reads_by_post: false,
             method,
             path: path.to_owned(),
             id: path.to_owned(),

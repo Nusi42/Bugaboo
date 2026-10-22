@@ -13,6 +13,8 @@ use bb_core::id::{EntityId, IssueId, LabelId, TagId};
 use jiff::Timestamp;
 use serde_json::json;
 
+use super::issue::labels_changed;
+use super::refs::{NameRef, names_of};
 use super::types::{CHANGE_PREVIEW_ISSUES_MAX, ChangedIssue, TagChangePreview};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, set_to};
@@ -90,8 +92,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 pub(super) struct Replacement {
     /// Its ID.
     pub(super) id: EntityId,
-    /// What it is called.
-    pub(super) name: String,
+    /// What it is called, and the group a label is in.
+    pub(super) named: NameRef,
 }
 
 /// What happens to the things called `from`: they are renamed, or replaced by another one.
@@ -110,8 +112,8 @@ pub(super) struct Rewrite {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Touched {
     pub(super) issue: IssueId,
-    pub(super) before: Vec<String>,
-    pub(super) after: Vec<String>,
+    pub(super) before: Vec<NameRef>,
+    pub(super) after: Vec<NameRef>,
 }
 
 /// One tag or label on an issue, as the change reads it.
@@ -146,13 +148,13 @@ impl Rewrite {
         &self,
         transaction: &mut S::Transaction,
         issues: &[IssueId],
-    ) -> Result<(Vec<Link>, BTreeMap<EntityId, String>), S::Error> {
+    ) -> Result<(Vec<Link>, BTreeMap<EntityId, NameRef>), S::Error> {
         match self.sorted {
             Sorted::Tag => {
                 let names = S::tags_in(transaction)
                     .await?
                     .into_iter()
-                    .map(|tag| (EntityId::from(tag.id), tag.name))
+                    .map(|tag| (EntityId::from(tag.id), NameRef::plain(tag.name)))
                     .collect();
                 let links = S::tags_of_issues_in(transaction, issues.to_vec())
                     .await?
@@ -169,7 +171,7 @@ impl Rewrite {
                 let names = S::labels_in(transaction)
                     .await?
                     .into_iter()
-                    .map(|label| (EntityId::from(label.id), label.name))
+                    .map(|label| (EntityId::from(label.id), NameRef::from(&label)))
                     .collect();
                 let links = S::labels_of_issues_in(transaction, issues.to_vec())
                     .await?
@@ -187,26 +189,32 @@ impl Rewrite {
 
     /// The names an issue has after the change, from the links it has now, in the order the store
     /// reads them (the day they were put there, then the ID).
-    fn after(&self, links: &[&Link], names: &BTreeMap<EntityId, String>) -> Vec<String> {
-        let mut kept: Vec<(Timestamp, EntityId, String)> = Vec::with_capacity(links.len());
+    fn after(&self, links: &[&Link], names: &BTreeMap<EntityId, NameRef>) -> Vec<NameRef> {
+        let mut kept: Vec<(Timestamp, EntityId, NameRef)> = Vec::with_capacity(links.len());
         let has_into = self
             .into
             .as_ref()
             .is_some_and(|into| links.iter().any(|link| link.item == into.id));
         for link in links {
-            let name = names.get(&link.item).cloned().unwrap_or_default();
+            let name = names
+                .get(&link.item)
+                .cloned()
+                .unwrap_or_else(|| NameRef::plain(String::new()));
             if link.item != self.from {
                 kept.push((link.added_at, link.item, name));
             } else if let Some(into) = &self.into {
                 if !has_into {
-                    kept.push((link.added_at, into.id, into.name.clone()));
+                    kept.push((link.added_at, into.id, into.named.clone()));
                 }
             } else {
-                kept.push((
-                    link.added_at,
-                    link.item,
-                    self.rename.clone().unwrap_or(name),
-                ));
+                let renamed = self.rename.clone().map_or_else(
+                    || name.clone(),
+                    |rename| NameRef {
+                        name: rename,
+                        group: name.group,
+                    },
+                );
+                kept.push((link.added_at, link.item, renamed));
             }
         }
         kept.sort_by_key(|entry| (entry.0, entry.1));
@@ -231,9 +239,14 @@ impl Rewrite {
                 let mine: Vec<&Link> = links.iter().filter(|link| link.issue == *issue).collect();
                 let mut ordered: Vec<&Link> = mine.clone();
                 ordered.sort_by_key(|link| (link.added_at, link.item));
-                let before: Vec<String> = ordered
+                let before: Vec<NameRef> = ordered
                     .iter()
-                    .map(|link| names.get(&link.item).cloned().unwrap_or_default())
+                    .map(|link| {
+                        names
+                            .get(&link.item)
+                            .cloned()
+                            .unwrap_or_else(|| NameRef::plain(String::new()))
+                    })
                     .collect();
                 touched.push(Touched {
                     issue: *issue,
@@ -282,10 +295,13 @@ impl Rewrite {
     ) -> Result<DomainEvent, bb_core::id::IdError> {
         events.create(
             entity(RecordKind::Issue, touched.issue),
-            vec![FieldChange {
-                field: self.sorted.member().to_owned(),
-                before: Some(json!(touched.before)),
-                after: Some(json!(touched.after)),
+            vec![match self.sorted {
+                Sorted::Tag => FieldChange {
+                    field: self.sorted.member().to_owned(),
+                    before: Some(json!(names_of(&touched.before))),
+                    after: Some(json!(names_of(&touched.after))),
+                },
+                Sorted::Label => labels_changed(&touched.before, &touched.after),
             }],
         )
     }
@@ -325,8 +341,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 {
                     issues.push(ChangedIssue {
                         issue: line,
-                        before: each.before.clone(),
-                        after: each.after.clone(),
+                        before: names_of(&each.before),
+                        after: names_of(&each.after),
                     });
                 }
             }

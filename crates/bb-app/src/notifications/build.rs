@@ -16,7 +16,7 @@
 //! of ARCH-EVENTS.
 
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
+use std::sync::Arc;
 
 use bb_core::comment::Mention;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, FieldChange, RecordKind};
@@ -28,12 +28,16 @@ use bb_core::notification::{
 };
 use bb_core::person::Person;
 use bb_core::settings::Layers;
+use bb_policy::Evaluation;
 use serde_json::json;
 
 use super::mail::MailJob;
-use super::plan::{edit_note_of, followed_kind, newly_assigned, run_status_of, wants};
+use super::plan::{
+    edit_note_of, followed_kind, newly_assigned, possible_followed_kinds, run_status_of, wants,
+};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
+use crate::files::member as file_member;
 use crate::history::{issue_in, visible_changes};
 use crate::issues::{Where, member as issue_member};
 use crate::jobs::{JobKind, QueuedJob};
@@ -46,6 +50,11 @@ struct Round {
     people: HashMap<UserId, Option<Person>>,
     /// The values of the settings of the people looked up so far.
     layers: HashMap<UserId, Layers>,
+    /// The values of the organization alone, read once: the base of everybody's layers.
+    organization: Option<Layers>,
+    /// What each person was found to see of each issue so far: their rights there, or none when
+    /// the issue is hidden from them. Many events about one issue judge a person's rights once.
+    seen: HashMap<(UserId, IssueId), Option<Arc<Evaluation>>>,
     /// Whether the organization has switched e-mail on.
     mail_on: bool,
     /// The rows made so far.
@@ -88,6 +97,28 @@ enum Keeps {
     All,
     /// None: the row is about a comment, which is read when it is shown.
     Nothing,
+    /// Only the mark that the row is about a file; the file is read when the row is shown.
+    File,
+}
+
+/// Whether a person with these settings could want to hear of an event as `kind` in the app or by
+/// e-mail. A kind that is not known yet (`None`) is decided by the fields the person sees: it is
+/// news of activity or of fields.
+/// News of activity needs a change of the status among the fields the person sees, so an event
+/// without one can only be news of fields.
+fn may_hear(
+    layers: &Layers,
+    kind: Option<NotificationKind>,
+    changes: &[FieldChange],
+    mail_on: bool,
+) -> bool {
+    let kinds = match kind {
+        Some(kind) => vec![kind],
+        None => possible_followed_kinds(changes),
+    };
+    kinds
+        .iter()
+        .any(|kind| wants(layers, *kind, Via::App) || (mail_on && wants(layers, *kind, Via::Mail)))
 }
 
 /// The person who did it, if a person did.
@@ -118,16 +149,53 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(found)
     }
 
+    /// What the person sees of the issue, judged once for the round.
+    async fn round_seen(
+        &self,
+        round: &mut Round,
+        person: Person,
+        issue: &Issue,
+    ) -> Result<Option<Arc<Evaluation>>, AppError> {
+        let key = (person.id, issue.id);
+        if let Some(known) = round.seen.get(&key) {
+            return Ok(known.clone());
+        }
+        let actor = Actor { person, key: None };
+        let seen = self.seen_in(&actor, issue, Where::Live).await?;
+        round.seen.insert(key, seen.clone());
+        Ok(seen)
+    }
+
     /// The values of the settings of a person, read once for the round.
     async fn round_layers<'r>(
         &self,
         round: &'r mut Round,
         id: UserId,
     ) -> Result<&'r Layers, AppError> {
-        match round.layers.entry(id) {
-            Entry::Occupied(known) => Ok(known.into_mut()),
-            Entry::Vacant(slot) => Ok(slot.insert(self.setting_layers_of(Some(id)).await?)),
+        self.preload_layers(round, &[id]).await?;
+        round
+            .layers
+            .get(&id)
+            .ok_or_else(|| AppError::Internal("the settings of a person".into()))
+    }
+
+    /// Reads the settings of all these people that the round does not have yet: the organization's
+    /// values once for the round, and the people's own in one statement for all of them.
+    async fn preload_layers(&self, round: &mut Round, people: &[UserId]) -> Result<(), AppError> {
+        let missing: Vec<UserId> = people
+            .iter()
+            .copied()
+            .filter(|person| !round.layers.contains_key(person))
+            .collect();
+        if missing.is_empty() {
+            return Ok(());
         }
+        let (organization, layers) = self
+            .setting_layers_of_people(&missing, round.organization.take())
+            .await?;
+        round.organization = Some(organization);
+        round.layers.extend(layers);
+        Ok(())
     }
 
     /// Catches the notifications up with every event not yet read: the job runner does it at every
@@ -161,6 +229,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut round = Round {
             people: HashMap::new(),
             layers: HashMap::new(),
+            organization: None,
+            seen: HashMap::new(),
             mail_on: self.mail_is_on().await?,
             rows: Vec::new(),
             drops: Vec::new(),
@@ -213,7 +283,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         round: &mut Round,
         event: &DomainEvent,
     ) -> Result<(), AppError> {
-        let kind_is = |kind: RecordKind| event.entity.kind == EntityKind::from(kind);
         if event
             .changes
             .iter()
@@ -221,19 +290,82 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return self.edit_note_event(round, event).await;
         }
-        if kind_is(RecordKind::Issue) {
-            return self.issue_event(round, event).await;
+        let Some(kind) = RecordKind::from_code(event.entity.kind.as_str()) else {
+            return Ok(());
+        };
+        // Every kind of record is either read here or listed as one that tells nobody anything:
+        // a new kind does not compile until it is one or the other.
+        match kind {
+            RecordKind::Issue => self.issue_event(round, event).await,
+            RecordKind::Comment => self.comment_event(round, event).await,
+            RecordKind::ChangeRun => self.run_event(round, event).await,
+            RecordKind::Project => self.renewal_event(round, event).await,
+            RecordKind::Attachment => self.file_event(round, event).await,
+            // The rest changes the setup of the organization or a person's own data; no follower
+            // of an issue hears of it.
+            RecordKind::AccessKey
+            | RecordKind::Field
+            | RecordKind::Assignment
+            | RecordKind::Follower
+            | RecordKind::Group
+            | RecordKind::Invitation
+            | RecordKind::IssueType
+            | RecordKind::Label
+            | RecordKind::LabelGroup
+            | RecordKind::Passkey
+            | RecordKind::Person
+            | RecordKind::Relation
+            | RecordKind::Layout
+            | RecordKind::RelationKind
+            | RecordKind::Workflow
+            | RecordKind::Role
+            | RecordKind::Session
+            | RecordKind::Setting
+            | RecordKind::SetupCode
+            | RecordKind::StartingRoles
+            | RecordKind::Tag => Ok(()),
         }
-        if kind_is(RecordKind::Comment) {
-            return self.comment_event(round, event).await;
+    }
+
+    /// A file added to an issue: the people who follow the issue hear of it. A file added to a
+    /// comment is part of the comment, and one taken away or brought back tells nobody.
+    async fn file_event(&self, round: &mut Round, event: &DomainEvent) -> Result<(), AppError> {
+        let on_a_comment = event
+            .changes
+            .iter()
+            .any(|change| change.field == file_member::COMMENT);
+        let added = event
+            .changes
+            .iter()
+            .any(|change| change.field == file_member::FILE);
+        if on_a_comment || !added {
+            return Ok(());
         }
-        if kind_is(RecordKind::ChangeRun) {
-            return self.run_event(round, event).await;
-        }
-        if kind_is(RecordKind::Project) {
-            return self.renewal_event(round, event).await;
-        }
-        Ok(())
+        let Some(issue_id) = issue_in(&event.changes, file_member::ISSUE, true) else {
+            return Ok(());
+        };
+        let failed = |error| internal::<S>(&error);
+        let Some(issue) = self.store().issue(issue_id).await.map_err(failed)? else {
+            return Ok(());
+        };
+        let followers = self.store().followers_of(issue_id).await.map_err(failed)?;
+        let hears = followers
+            .into_iter()
+            .filter(|found| found.since <= event.time)
+            .map(|found| Hears {
+                person: found.person,
+                kinds: vec![Some(NotificationKind::FollowedActivity)],
+                follows: true,
+                once: Once::Event(event.id),
+            })
+            .collect();
+        let subject = Subject {
+            event,
+            issue: Some(&issue),
+            record: Some(event.entity.id),
+            keeps: Keeps::File,
+        };
+        self.deliver(round, &subject, hears).await
     }
 
     /// The renewal of the issue IDs of a project gave up: the person who asked for the new mode is
@@ -468,8 +600,22 @@ impl<S: AuthStore> Ctx<'_, S> {
         hears: Vec<Hears>,
     ) -> Result<(), AppError> {
         let by = doer(subject.event);
+        // What every follower chose is read together, before the first one is judged.
+        let everyone: Vec<UserId> = hears.iter().map(|hear| hear.person).collect();
+        self.preload_layers(round, &everyone).await?;
         for hear in hears {
             if Some(hear.person) == by {
+                continue;
+            }
+            // What the person wants is decided before their rights are looked at: most followers
+            // want no news of most changes, and judging their rights costs the most.
+            let mail_on = round.mail_on;
+            let layers = self.round_layers(round, hear.person).await?;
+            if !hear
+                .kinds
+                .iter()
+                .any(|kind| may_hear(layers, *kind, &subject.event.changes, mail_on))
+            {
                 continue;
             }
             let Some(person) = self.round_person(round, hear.person).await? else {
@@ -477,8 +623,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             };
             let mut visible: Vec<FieldChange> = Vec::new();
             if let Some(issue) = subject.issue {
-                let actor = Actor { person, key: None };
-                let Some(held) = self.seen_in(&actor, issue, Where::Live).await? else {
+                let Some(held) = self.round_seen(round, person, issue).await? else {
                     if hear.follows {
                         round.drops.push((issue.id, hear.person));
                     }
@@ -497,6 +642,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Keeps::VisibleFields => visible,
                 Keeps::All => subject.event.changes.clone(),
                 Keeps::Nothing => Vec::new(),
+                // Only the mark that the row is about a file, with no value: the hash of the content
+                // is nothing a notification needs to keep.
+                Keeps::File => vec![FieldChange {
+                    field: file_member::FILE.to_owned(),
+                    before: None,
+                    after: None,
+                }],
             };
             for kind in &hear.kinds {
                 let kind = match kind {

@@ -5,6 +5,7 @@
 //! are committed together (ARCH-EVENTS). The storage checks every key, level and value against the
 //! registry (ADR-0018); the use cases decide who may change what before they ask it to.
 
+use std::collections::BTreeMap;
 use std::future::Future;
 
 use bb_core::id::{ProjectId, UserId};
@@ -12,7 +13,7 @@ use bb_core::settings::{Layers, Scope, SettingValue};
 use jiff::Timestamp;
 
 use crate::access::PolicyStore;
-use crate::store_macros::{queries, writes};
+use crate::store_macros::{queries, reads, writes};
 
 /// What the settings use cases need from storage.
 pub trait SettingsStore: PolicyStore + 'static {
@@ -21,6 +22,13 @@ pub trait SettingsStore: PolicyStore + 'static {
         /// the values of the projects from `project` up to the top (nearest first) and the
         /// person's own. A project that does not exist counts as a project without a parent.
         fn setting_layers(project: Option<ProjectId>, person: Option<UserId>) -> Layers = setting_layers_in;
+    }
+
+    reads! {
+        /// The values of the settings that these people chose themselves, in one read: the person
+        /// level of their layers, for each person who has any. What the reader of notifications
+        /// needs for all the followers of an event at once.
+        fn person_settings(people: Vec<UserId>) -> Vec<(UserId, BTreeMap<String, SettingValue>)>;
     }
 
     writes! {

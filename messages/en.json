@@ -1158,6 +1158,7 @@
   "history.relation-added": "{who} added a relation: this issue · {name} · {issue}",
   "history.relation-removed": "{who} took away a relation: this issue · {name} · {issue}",
   "history.people-none": "nobody",
+  "history.type-unknown": "another issue type",
   "comments.write": "Write a comment",
   "comments.write-help": "Type @ and a name to mention someone.",
   "comments.add": "Comment",

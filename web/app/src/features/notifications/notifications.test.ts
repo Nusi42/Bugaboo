@@ -174,4 +174,13 @@ describe("ntf_02 a renewal of issue IDs that gave up names the project", () => {
     expect(failed({ shown: "visible", id: "p", short_name: "WEB", name: "Website" })).toBe("WEB");
     expect(failed({ shown: "hidden" })).toBeUndefined();
   });
+
+  it("says who added a file, with its name when the file is still there", () => {
+    expect(
+      say(entry({ kind: "followed_activity", file_event: "added", file_name: "jam.txt" })),
+    ).toEqual([t("history.file-added", { who: "Ben", name: "jam.txt" })]);
+    expect(say(entry({ kind: "followed_activity", file_event: "added" }))).toEqual([
+      t("history.file-added-unnamed", { who: "Ben" }),
+    ]);
+  });
 });

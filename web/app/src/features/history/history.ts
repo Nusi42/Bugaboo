@@ -147,38 +147,13 @@ export function useScrollTo<Element extends HTMLElement>(
   return element;
 }
 
-/** The sentences of each thing that can happen to a file: with its name, and without it. */
-const fileMessages = {
-  added: ["history.file-added", "history.file-added-unnamed"],
-  deleted: ["history.file-deleted", "history.file-deleted-unnamed"],
-  restored: ["history.file-restored", "history.file-restored-unnamed"],
-} as const satisfies Record<Schema<"FileEvent">, readonly [string, string]>;
-
 /**
- * The sentence of a file that was added, deleted or brought back: *Ben added the file jam.txt*.
- * Once the file is gone for good it has no name and the sentence says *a file*. An event this
- * version does not know is no "added": it says only that a file changed.
- */
-export function fileSentence(entry: HistoryEntry): string {
-  const who = whoOf(entry);
-  if (entry.file_event === undefined || entry.file_event === null) {
-    return t("history.file-changed-unnamed", { who });
-  }
-  const [named, unnamed] = fileMessages[entry.file_event];
-  return entry.file_name === undefined || entry.file_name === null
-    ? t(unnamed, { who })
-    : t(named, { who, name: entry.file_name });
-}
-
-/**
- * The sentence of an item that is a relation or a file; nothing for a change of a field, whose
- * words come from the shared wording (`changeSentence`), which has to be loaded first.
+ * The sentence of an item that is a relation; nothing for a change of a field or a file, whose
+ * words come from the shared wording (`changeSentence`, `fileSentence`), which has to be loaded
+ * first.
  */
 export function plainSentenceOf(entry: HistoryEntry): string | undefined {
-  if (entry.kind === "relation") {
-    return relationSentence(entry);
-  }
-  return entry.kind === "file" ? fileSentence(entry) : undefined;
+  return entry.kind === "relation" ? relationSentence(entry) : undefined;
 }
 
 /** The sentence of a relation that was added or taken away. */

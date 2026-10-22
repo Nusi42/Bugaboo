@@ -8,9 +8,9 @@ import {
   openedPagesMax,
   readsEarlierForTarget,
   relationSentence,
-  plainSentenceOf,
   type HistoryEntry,
 } from "./history.ts";
+import { fileSentence } from "../../shared/file-sentence.ts";
 import { testWording } from "../../shared/wording-testing.ts";
 import { mentionBeingTyped, withMention } from "./mention-text.ts";
 
@@ -146,14 +146,13 @@ describe("iss_06 relations and the items of one event", () => {
 
 /** The sentence of a file item of the history with this event. */
 function fileWords(file_event: Schema<"FileEvent"> | undefined, file_name?: string): string {
-  return (
-    plainSentenceOf(
-      change({
-        kind: "file",
-        ...(file_event === undefined ? {} : { file_event }),
-        ...(file_name === undefined ? {} : { file_name }),
-      }),
-    ) ?? ""
+  return fileSentence(
+    testWording,
+    change({
+      kind: "file",
+      ...(file_event === undefined ? {} : { file_event }),
+      ...(file_name === undefined ? {} : { file_name }),
+    }),
   );
 }
 

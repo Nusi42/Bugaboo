@@ -8,6 +8,7 @@ import { markSafeHtml, type SafeHtml } from "@bugaboo/api-client";
 
 import init, {
   change_sentence,
+  file_sentence,
   initSync,
   notification_sentences,
   render,
@@ -15,6 +16,7 @@ import init, {
 } from "../generated/bb_wasm.js";
 import type {
   Change as WordedChange,
+  File as WordedFile,
   Notice as WordedNotice,
   Said,
   Side as WordedSide,
@@ -22,6 +24,7 @@ import type {
 
 export type {
   Change as WordedChange,
+  File as WordedFile,
   Notice as WordedNotice,
   Said,
   Side as WordedSide,
@@ -44,6 +47,8 @@ const renderer: MarkdownRenderer = (text, imageHosts) =>
 export interface Wording {
   /** The sentence of a change of one field: *Ben changed Priority from Normal to High*. */
   readonly changeSentence: (change: WordedChange) => Said;
+  /** The sentence of a file that was added, deleted or brought back. */
+  readonly fileSentence: (file: WordedFile) => Said;
   /** The sentences of a notification: one, or one for each field a change touched. */
   readonly notificationSentences: (notice: WordedNotice) => readonly Said[];
   /** One side of a change as people read it; `null` when the side holds no value. */
@@ -105,6 +110,7 @@ function ask(question: () => string): string {
 
 const wording: Wording = {
   changeSentence: (change) => saidIn(ask(() => change_sentence(JSON.stringify(change)))) ?? "",
+  fileSentence: (file) => saidIn(ask(() => file_sentence(JSON.stringify(file)))) ?? "",
   notificationSentences: (notice) => {
     const parsed: unknown = JSON.parse(ask(() => notification_sentences(JSON.stringify(notice))));
     return Array.isArray(parsed) ? parsed.filter((part) => isSaid(part)) : [];

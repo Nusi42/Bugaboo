@@ -122,6 +122,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &Evaluation,
+        place: Place,
         stored: &StoredWorkflow,
         drafts: Drafts<'_>,
     ) -> Result<WorkflowContent, AppError> {
@@ -130,6 +131,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             WorkflowContent::from_drafts(drafts.statuses, drafts.changes, &stored.content.statuses)
                 .map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
         let definitions = self.field_catalogue().await?;
+        // The one rule for the own fields a person may know at a place (`known_field_names`).
+        let project = match place {
+            Place::Project(project) => Some(project),
+            Place::Organization => None,
+        };
+        let known_fields = self.known_field_names(actor, held, project).await?;
         let known_groups: Vec<GroupId> = self
             .groups_offered(actor, &stored.content)
             .await?
@@ -144,7 +151,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             for field in change.rules.fields() {
                 // A field that does not exist for issues and a field the person may not see get
                 // the same answer, so the answer cannot be used to find out which it is.
-                let unknown = matches!(field, FieldKey::Own(id) if !definitions.iter().any(|each| {
+                let unknown = matches!(field, FieldKey::Own(id) if !known_fields.contains_key(&field)
+                || !definitions.iter().any(|each| {
                     each.field.id == id && each.field.applies_to == FieldFor::Issues
                 }));
                 let hidden = held.field_level_for(None, field) < FieldLevel::CanSee;
@@ -231,7 +239,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let actor = self.actor(&input.session_token).await?;
         let (stored, held, place) = self.workflow_to_manage(&actor, input.workflow).await?;
         let content = self
-            .publishable(&actor, &held, &stored, Drafts::from(input))
+            .publishable(&actor, &held, place, &stored, Drafts::from(input))
             .await?;
         let moving = self
             .plan_moves(

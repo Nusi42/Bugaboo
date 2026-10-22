@@ -3,6 +3,7 @@ import type { Schema } from "@bugaboo/api-client";
 import type { Wording, WordedNotice } from "@bugaboo/wasm";
 
 import { whoOf, wordedChange } from "../../shared/change-sentence.ts";
+import { wordedFile } from "../../shared/file-sentence.ts";
 import { renderSaid } from "../../shared/said.ts";
 import type { IssueTarget } from "../../shared/paths.ts";
 
@@ -110,6 +111,7 @@ export function noticeOf(row: NotificationRow): WordedNotice {
   const renewal = row.entries.find(
     (entry) => entry.issue_ids_failed !== undefined && entry.issue_ids_failed !== null,
   )?.issue_ids_failed;
+  const file = row.entries.find((entry) => entry.file_event !== undefined);
   return {
     kind: row.kind,
     who: whoOf(row),
@@ -117,6 +119,7 @@ export function noticeOf(row: NotificationRow): WordedNotice {
     changes: isChange(row) ? row.entries.map((entry) => wordedChange(entry)) : [],
     notice: edit ?? null,
     run_done: !row.entries.some((entry) => entry.run_done === false),
+    file: file === undefined ? null : wordedFile(file),
     renewal:
       renewal === undefined || renewal === null
         ? null

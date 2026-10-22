@@ -148,6 +148,7 @@ mod tests {
 
     fn route(operation: &str) -> Operation {
         Operation {
+            reads_by_post: false,
             id: operation.to_owned(),
             method: Method::GET,
             path: "/api/v1/x".to_owned(),

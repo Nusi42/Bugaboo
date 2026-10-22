@@ -34,23 +34,14 @@ pub(crate) struct LineMaker {
     workflows: HashMap<(ProjectId, IssueTypeId), Arc<WorkflowContent>>,
 }
 
-impl LineMaker {
-    /// What an issue type is called.
-    pub(crate) fn type_name(&self, id: IssueTypeId) -> Option<&str> {
-        self.types.get(&id).map(|found| found.name.as_str())
-    }
-}
-
 impl<S: AuthStore> Ctx<'_, S> {
     /// The maker of lines for a request.
     pub(crate) async fn line_maker(&self) -> Result<LineMaker, AppError> {
         // Only the types of the issues the viewer reads are named, which they know by use
         // (`offers/known.rs`); a line of an issue they may not read is never made.
         let types = self
-            .store()
-            .issue_types()
-            .await
-            .map_err(|error| internal::<S>(&error))?
+            .all_issue_types()
+            .await?
             .iter()
             .map(|found| (found.id, IssueTypeRef::from(found)))
             .collect();

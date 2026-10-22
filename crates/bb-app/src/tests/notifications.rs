@@ -317,7 +317,7 @@ async fn unread_of(crew: &Crew) -> Result<usize, String> {
     .unread)
 }
 
-fn kinds(items: &[NotificationItem]) -> Vec<NotificationKind> {
+pub(super) fn kinds(items: &[NotificationItem]) -> Vec<NotificationKind> {
     items.iter().map(|item| item.kind).collect()
 }
 

@@ -140,7 +140,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             chain: change.chain,
             issue_type: next.issue_type,
             reported_by: current.reported_by,
-            may_change_status: true,
+            // Whether the person chose the status or the workflow of a new type put the issue back
+            // into one, it is a change of the status and needs the *Status* level of the type the
+            // issue ends in.
+            may_change_status: StatusCheck::may_change_status(
+                held,
+                next.issue_type,
+                current.reported_by,
+            ),
             assigned: change.assigned,
             description_filled: !current.description.is_empty(),
             own_filled: &own_filled,
@@ -212,10 +219,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         // Before anything else is looked at: a field the person may not change is refused whether
         // or not the value differs, and whatever else is wrong with the request.
-        ensure_may_change(
-            &held.field_mask_for(Some(current.issue_type)),
-            &named(input),
-        )?;
+        // The levels of both types count when the type changes: one request must not do what the
+        // same two changes, one after the other, would be refused (ADR-0027).
+        let named = named(input);
+        for issue_type in input.issue_type.into_iter().chain([current.issue_type]) {
+            ensure_may_change(&held.field_mask_for(Some(issue_type)), &named)?;
+        }
         let assigned_now: Vec<UserId> = self
             .store()
             .assigned_people(current.id)

@@ -7,7 +7,7 @@
 #![forbid(unsafe_code)]
 
 use bb_core::fields::Field;
-use bb_core::wording::{self, Change, Notice, Side};
+use bb_core::wording::{self, Change, File, Notice, Side};
 use bb_markdown::Options;
 use serde::Deserialize;
 use serde::Serialize;
@@ -49,6 +49,15 @@ fn answer<Input: for<'a> Deserialize<'a>, Output: Serialize>(
 #[wasm_bindgen]
 pub fn change_sentence(change: &str) -> Result<String, JsError> {
     answer(change, |change: &Change| wording::change_sentence(change)).map_err(|e| JsError::new(&e))
+}
+
+/// The sentence of a file that was added, deleted or brought back (see [`change_sentence`]).
+///
+/// # Errors
+/// The text is not a file as `bb_core::wording::File` reads it.
+#[wasm_bindgen]
+pub fn file_sentence(file: &str) -> Result<String, JsError> {
+    answer(file, |file: &File| wording::file_sentence(file)).map_err(|e| JsError::new(&e))
 }
 
 /// The sentences of a notification, as a list in JSON (see [`change_sentence`]).

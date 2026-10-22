@@ -18,6 +18,7 @@ use bb_core::tags::{TAG_PROJECTS_MAX, Tag, TagProject};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
+use super::refs::NameRef;
 use super::rewrite::{Combining, Replacement, Rewrite, Sorted};
 use super::types::{
     ChangeTag, CombineTags, TagChangePreview, TagChangePreviewQuery, TagPage, TagView, TagsQuery,
@@ -137,6 +138,23 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
+    /// The names of the tags the person may know of, in one spelling (lower case): what the history
+    /// of an issue may name. A name no known tag has is not told (a tag that is gone, or one that
+    /// only projects the person does not see know).
+    pub(crate) async fn known_tag_names(
+        &self,
+        shown: &crate::projects::Shown,
+    ) -> Result<BTreeSet<String>, AppError> {
+        let catalogue = self.tag_catalogue().await?;
+        let known = self.known_tags(&catalogue, shown).await?;
+        Ok(catalogue
+            .tags
+            .iter()
+            .filter(|tag| known.contains(&tag.id))
+            .map(|tag| tag.name.to_lowercase())
+            .collect())
+    }
+
     /// A tag the person may know of, or `resource.not_found`.
     async fn known_tag<'a>(
         &self,
@@ -221,7 +239,7 @@ pub async fn tag_change_preview<S: AuthStore>(
                 rename: None,
                 into: Some(Replacement {
                     id: into.id.into(),
-                    name: into.name.clone(),
+                    named: NameRef::plain(into.name.clone()),
                 }),
             }
         }
@@ -418,7 +436,7 @@ pub async fn combine_tags<S: AuthStore>(
         rename: None,
         into: Some(Replacement {
             id: into.id.into(),
-            name: into.name.clone(),
+            named: NameRef::plain(into.name.clone()),
         }),
     };
     let (limited_from, limited_into) = (

@@ -13,7 +13,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::id::{IssueTypeId, LabelGroupId, ProjectId};
 use bb_core::issue::IssueType;
-use bb_core::tags::LabelGroup;
+use bb_core::tags::{Label, LabelGroup};
 
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
@@ -33,10 +33,32 @@ fn is_known(shown: &Shown, owner: Option<ProjectId>, used: bool) -> bool {
     !needs_use(shown, owner) || used
 }
 
+/// Whether a label is known, given the label groups the person may know: it is in no group, or
+/// in one of them. The one definition of it, for the lists, the changes that name a label and the
+/// history.
+pub(crate) fn label_is_known(group: Option<LabelGroupId>, known: &[LabelGroup]) -> bool {
+    group.is_none_or(|group| known.iter().any(|each| each.id == group))
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Every issue type, read once for a request.
+    pub(crate) async fn all_issue_types(&self) -> Result<Arc<Vec<IssueType>>, AppError> {
+        if let Some(known) = locked(&self.known.issue_types).clone() {
+            return Ok(known);
+        }
+        let found = Arc::new(
+            self.store()
+                .issue_types()
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        );
+        *locked(&self.known.issue_types) = Some(Arc::clone(&found));
+        Ok(found)
+    }
+
     /// The issue types in use on the issues the person reads, read once for a request.
     async fn used_types(&self, shown: &Shown) -> Result<Arc<Vec<IssueTypeId>>, AppError> {
-        if let Some(known) = locked(&self.known.used_types).clone() {
+        if let Some(known) = locked(&self.known.used_types).get(&shown.person()).cloned() {
             return Ok(known);
         }
         let found = Arc::new(
@@ -45,22 +67,23 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?,
         );
-        *locked(&self.known.used_types) = Some(Arc::clone(&found));
+        locked(&self.known.used_types).insert(shown.person(), Arc::clone(&found));
         Ok(found)
     }
 
     /// The groups of labels in use on the issues whose labels the person may see, read once for a
     /// request.
     async fn used_groups(&self, shown: &Shown) -> Result<Arc<Vec<LabelGroupId>>, AppError> {
-        if let Some(known) = locked(&self.known.used_groups).clone() {
+        if let Some(known) = locked(&self.known.used_groups)
+            .get(&shown.person())
+            .cloned()
+        {
             return Ok(known);
         }
         let failed = |error| internal::<S>(&error);
         let types: Vec<IssueTypeId> = self
-            .store()
-            .issue_types()
-            .await
-            .map_err(failed)?
+            .all_issue_types()
+            .await?
             .iter()
             .map(|found| found.id)
             .collect();
@@ -75,7 +98,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(failed)?,
         );
-        *locked(&self.known.used_groups) = Some(Arc::clone(&found));
+        locked(&self.known.used_groups).insert(shown.person(), Arc::clone(&found));
         Ok(found)
     }
 
@@ -114,6 +137,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .into_iter()
             .filter(|found| is_known(shown, found.project, used.contains(&found.id)))
             .collect())
+    }
+
+    /// Refuses (`resource.not_found`) a label that is in a label group the person may not
+    /// know: a label of a group nobody told them about is as good as not there.
+    pub(crate) async fn ensure_label_known(
+        &self,
+        actor: &Actor,
+        label: &Label,
+    ) -> Result<(), AppError> {
+        match label.group {
+            Some(group) => self.known_group(actor, group).await.map(|_| ()),
+            None => Ok(()),
+        }
     }
 
     /// The issue types a list holds: those the person may know, and, in a list about a project, only
