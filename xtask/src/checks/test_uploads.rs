@@ -76,7 +76,7 @@ pub(super) const REQUIRED: [Required; 26] = [
         .within(APP),
     // Adding a file tells the followers of the issue.
     Required::anywhere("ntf_01_adding_a_file_tells_the_followers_and_not_the_one_who_added_it")
-        .within(APP),
+        .within("crates/bb-app/src/tests/notifications_files.rs"),
 ];
 
 pub(crate) struct TestUploads;

@@ -119,10 +119,9 @@ fn browser_tests(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String
     Ok(found)
 }
 
-/// The tests a "Proven by" cell cites by name that no function of the crates has: a name that was
-/// renamed or never written proves nothing, whatever check the cell names.
-fn unknown_tests(path: &str, text: &str, sources: &[(String, String)]) -> Vec<Finding> {
-    let mut findings = Vec::new();
+/// The "Proven by" cells of the tables of a text, with the number of their line.
+fn proof_cells(text: &str) -> Vec<(usize, String)> {
+    let mut found = Vec::new();
     let mut column = None;
     for (index, line) in text.lines().enumerate() {
         if !line.trim_start().starts_with('|') {
@@ -134,10 +133,19 @@ fn unknown_tests(path: &str, text: &str, sources: &[(String, String)]) -> Vec<Fi
             column = cells.iter().position(|cell| cell.trim() == COLUMN);
             continue;
         };
-        let Some(cell) = cells.get(at) else {
-            continue;
-        };
-        for name in backticked(cell).filter(|word| is_test_name(word)) {
+        if let Some(cell) = cells.into_iter().nth(at) {
+            found.push((index + 1, cell));
+        }
+    }
+    found
+}
+
+/// The tests a "Proven by" cell cites by name that no function of the crates has: a name that was
+/// renamed or never written proves nothing, whatever check the cell names.
+fn unknown_tests(path: &str, text: &str, sources: &[(String, String)]) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (line, cell) in proof_cells(text) {
+        for name in backticked(&cell).filter(|word| is_test_name(word)) {
             let declared = format!("fn {name}(");
             if !sources.iter().any(|(file, code)| {
                 if file.starts_with("web/") {
@@ -147,7 +155,7 @@ fn unknown_tests(path: &str, text: &str, sources: &[(String, String)]) -> Vec<Fi
                 }
             }) {
                 findings.push(Finding::at(
-                    format!("{path}:{}", index + 1),
+                    format!("{path}:{line}"),
                     format!("`{name}` is cited as proof, but no function of the crates has that name. It was renamed or never written."),
                 ));
             }
@@ -158,20 +166,7 @@ fn unknown_tests(path: &str, text: &str, sources: &[(String, String)]) -> Vec<Fi
 
 fn evaluate(path: &str, text: &str, lists: &[(&str, &[Required])]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let mut column = None;
-    for (index, line) in text.lines().enumerate() {
-        if !line.trim_start().starts_with('|') {
-            column = None;
-            continue;
-        }
-        let cells = cells_of(line);
-        let Some(at) = column else {
-            column = cells.iter().position(|cell| cell.trim() == COLUMN);
-            continue;
-        };
-        let Some(cell) = cells.get(at).map(String::as_str) else {
-            continue;
-        };
+    for (line, cell) in proof_cells(text) {
         let cited: Vec<&(&str, &[Required])> = lists
             .iter()
             .filter(|(id, _)| {
@@ -182,14 +177,14 @@ fn evaluate(path: &str, text: &str, lists: &[(&str, &[Required])]) -> Vec<Findin
         if cited.is_empty() {
             continue;
         }
-        for name in backticked(cell).filter(|word| is_test_name(word)) {
+        for name in backticked(&cell).filter(|word| is_test_name(word)) {
             if !cited
                 .iter()
                 .any(|(_, required)| required.iter().any(|each| each.name == name))
             {
                 let ids: Vec<&str> = cited.iter().map(|(id, _)| *id).collect();
                 findings.push(Finding::at(
-                    format!("{path}:{}", index + 1),
+                    format!("{path}:{line}"),
                     format!(
                         "`{name}` is cited as proof next to {}, but that check does not require it. Add it to the list of the check, or stop citing the check in this cell.",
                         ids.join(" and ")
