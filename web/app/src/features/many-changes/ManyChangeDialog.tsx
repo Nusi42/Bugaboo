@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, AskDialog, Button } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
+import { WordingNotice } from "../../shared/with-wording.tsx";
 import { actionName, applyName } from "./action-names.ts";
 import { ActionFields } from "./ActionFields.tsx";
 import type { ManyChangeApplied, ManyChangeKind } from "./many-changes.ts";
@@ -67,6 +68,7 @@ export function ManyChangeDialog({
         </Button>
       </div>
       {preview.isError ? <Alert tone={alertTone.danger}>{messageOf(preview.error)}</Alert> : null}
+      {preview.data === undefined ? null : <WordingNotice />}
       {preview.data === undefined ? null : (
         <ManyChangePreviewView preview={preview.data} plain={dialog.plain} />
       )}

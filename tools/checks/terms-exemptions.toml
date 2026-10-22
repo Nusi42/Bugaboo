@@ -19,6 +19,7 @@ at = [
   "messages/en.json#sign-up.resent",
   "messages/en.json#mail.open",
   "messages/en.json#mail.open-notifications",
+  "messages/en.json#mail.open-project-settings",
   "messages/en.json#mail.sign-up-text",
   "messages/en.json#setting.auth.sign-up-enabled.help",
   "messages/en.json#service.settings-is-link",
@@ -26,7 +27,7 @@ at = [
   "api:property CreatedInvitationBody.link_path",
   "api:enum LogBreakBody broken_link",
 ]
-reason = "A web link that a person sends or opens (the glossary entry Invitation calls it a link), a link in the file system, or a link in the chain of the security log (an entry that does not point to the one before it). Not the connection between two issues, which is a Relation."
+reason = "A web link that a person sends or opens (the glossary term Link), a link in the file system, or a link in the chain of the security log (an entry that does not point to the one before it). Not the connection between two issues, which is a Relation."
 
 # The user docs: only the phrases named here, not the whole page.
 [[allow]]
@@ -49,7 +50,7 @@ phrases = [
   "with the link to open",
   "sends the link that lets",
 ]
-reason = "The web link of an invitation (the glossary entry Invitation calls it a link)."
+reason = "The web link of an invitation (the glossary term Link)."
 
 [[allow]]
 term = "link"

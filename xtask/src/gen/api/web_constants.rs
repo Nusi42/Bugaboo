@@ -451,6 +451,8 @@ pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
     };
     let time = syn::parse_file(time).with_context(|| format!("{TIME_SOURCE} is not Rust"))?;
     let seconds_per_day = number_const(&time, TIME_SOURCE, "SECONDS_PER_DAY")?;
+    let seconds_per_minute = number_const(&time, TIME_SOURCE, "SECONDS_PER_MINUTE")?;
+    let minutes_per_hour = number_const(&time, TIME_SOURCE, "MINUTES_PER_HOUR")?;
     let Some((_, comments)) = sources.iter().find(|(path, _)| path == COMMENT_SOURCE) else {
         bail!("{COMMENT_SOURCE} is missing");
     };
@@ -498,6 +500,12 @@ export const firstVersion = {first_version};
 
 /** The seconds in a day: the keep periods and lifetimes counted in days are 24 hours long. */
 export const secondsPerDay = {seconds_per_day};
+
+/** The seconds in a minute. */
+export const secondsPerMinute = {seconds_per_minute};
+
+/** The minutes in an hour. */
+export const minutesPerHour = {minutes_per_hour};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,
@@ -663,8 +671,9 @@ pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
         text_const(text, name)
             .with_context(|| format!("{APP_PATHS_SOURCE} has no `const {name}` that is text"))
     };
-    let (issue, invitation, sign_in, notifications) = (
+    let (issue, project_settings, invitation, sign_in, notifications) = (
         path("ISSUE")?,
+        path("PROJECT_SETTINGS")?,
         path("INVITATION")?,
         path("SIGN_IN")?,
         path("NOTIFICATIONS")?,
@@ -673,6 +682,7 @@ pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
         "{TS_HEADER}/** The addresses of the app pages that the server links to (invitations, e-mails). */
 export const appPaths = {{
   issue: {issue:?},
+  projectSettings: {project_settings:?},
   invitation: {invitation:?},
   signIn: {sign_in:?},
   notifications: {notifications:?},

@@ -2,7 +2,7 @@ import { conflictOf, type Conflict } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
-import { changedByName, conflictSentence } from "../../shared/editing/index.ts";
+import { changedByName, conflictSentenceWhenLoaded } from "../../shared/editing/index.ts";
 import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import {
@@ -65,7 +65,11 @@ function sendAndNote(id: string, notes: Notes): (edit: IssueEdit) => Promise<voi
     } catch (error) {
       const conflict = conflictOf(error);
       if (conflict !== undefined) {
-        notes.held({ edit, conflict, sentence: conflictSentence(conflict, Date.now()) });
+        notes.held({
+          edit,
+          conflict,
+          sentence: await conflictSentenceWhenLoaded(conflict, Date.now()),
+        });
       }
       throw error;
     }

@@ -15,7 +15,17 @@
 //! - a struct is an `interface` with `readonly` keys, `#[serde(rename = "…")]` names the key;
 //! - an enum of plain variants is a union of strings, `#[serde(rename_all = "snake_case")]` and
 //!   `#[serde(rename = "…")]` name the words;
+//! - `&str` and `MessageKey` are `string`, `serde_json::Value` is `unknown`, a `BTreeMap` or
+//!   `HashMap` is a `Readonly<Record<string, ...>>`;
+//! - a non-`Option` field with `#[serde(default)]` may be missing (`?:`);
+//! - an enum with `#[serde(tag = "...")]` is a union of objects that each carry the tag, and an enum
+//!   with `#[serde(untagged)]` is a union of its variants' shapes (a newtype variant is the type it
+//!   holds, a variant with named fields is an object);
+//! - a type that the API client already declares (`EXTERNAL_TYPES`) is named from there;
 //! - another type of the file is named as it is.
+//!
+//! The same code writes the types of the wording of `bb-core` (`word_types.rs`), so the input and
+//! the output of `bb-wasm` in the browser cannot differ from the Rust structs.
 
 use std::fmt::Write as _;
 
@@ -49,6 +59,8 @@ struct Serde {
     rename_all: Option<String>,
     default: bool,
     skip_serializing_if: bool,
+    tag: Option<String>,
+    untagged: bool,
 }
 
 fn serde_of(attributes: &[Attribute]) -> anyhow::Result<Serde> {
@@ -62,6 +74,10 @@ fn serde_of(attributes: &[Attribute]) -> anyhow::Result<Serde> {
                 found.rename = Some(text(&meta)?);
             } else if meta.path.is_ident("rename_all") {
                 found.rename_all = Some(text(&meta)?);
+            } else if meta.path.is_ident("tag") {
+                found.tag = Some(text(&meta)?);
+            } else if meta.path.is_ident("untagged") {
+                found.untagged = true;
             } else if meta.path.is_ident("default") {
                 found.default = true;
             } else if meta.path.is_ident("skip_serializing_if") {
@@ -117,9 +133,24 @@ fn is_serde_type(attributes: &[Attribute]) -> bool {
         })
 }
 
+/// Types that the generated API client declares already, by their Rust name, and how the browser
+/// names them. A file that uses one imports `Schema` from the client.
+const EXTERNAL_TYPES: [(&str, &str); 4] = [
+    ("FileEvent", "Schema<\"FileEvent\">"),
+    ("FieldType", "Schema<\"FieldType\">"),
+    ("NotificationKind", "Schema<\"NotificationKind\">"),
+    ("NoticeKind", "Schema<\"NoticeKind\">"),
+];
+
 /// A Rust type as TypeScript, and whether it was an `Option`. `known` collects the names of other
 /// types that it refers to.
 fn ts_type(ty: &Type, known: &mut Vec<String>) -> anyhow::Result<(String, bool)> {
+    if let Type::Reference(reference) = ty {
+        return match &*reference.elem {
+            Type::Path(path) if path.path.is_ident("str") => Ok(("string".to_owned(), false)),
+            _ => bail!("a reference to anything but `str` cannot be mapped"),
+        };
+    }
     let Type::Path(path) = ty else {
         bail!("a type that is not a plain name cannot be mapped");
     };
@@ -135,11 +166,22 @@ fn ts_type(ty: &Type, known: &mut Vec<String>) -> anyhow::Result<(String, bool)>
         }
     };
     Ok(match name.as_str() {
-        "String" => ("string".to_owned(), false),
+        "String" | "MessageKey" => ("string".to_owned(), false),
         "bool" => ("boolean".to_owned(), false),
         "i8" | "i16" | "i32" | "i64" | "isize" | "u8" | "u16" | "u32" | "u64" | "usize" | "f32"
         | "f64" => ("number".to_owned(), false),
         "Option" => (argument(known)?.0, true),
+        "Value" => ("unknown".to_owned(), false),
+        "BTreeMap" | "HashMap" => {
+            let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments else {
+                bail!("`{name}` needs two type arguments");
+            };
+            let Some(syn::GenericArgument::Type(value)) = arguments.args.iter().nth(1) else {
+                bail!("`{name}` needs two type arguments");
+            };
+            let inner = ts_type(value, known)?.0;
+            (format!("Readonly<Record<string, {inner}>>"), false)
+        }
         "Vec" => {
             let inner = argument(known)?.0;
             let inner = if inner.contains(' ') {
@@ -149,7 +191,10 @@ fn ts_type(ty: &Type, known: &mut Vec<String>) -> anyhow::Result<(String, bool)>
             };
             (format!("readonly {inner}[]"), false)
         }
-        _ => {
+        other => {
+            if let Some((_, client)) = EXTERNAL_TYPES.iter().find(|(rust, _)| *rust == other) {
+                return Ok(((*client).to_owned(), false));
+            }
             known.push(name.clone());
             (name, false)
         }
@@ -172,6 +217,32 @@ fn snake_case(name: &str) -> String {
     out
 }
 
+/// The lines of the named fields of a struct or of a variant, at this indentation.
+fn field_lines(
+    fields: &syn::FieldsNamed,
+    owner: &dyn std::fmt::Display,
+    pad: &str,
+    known: &mut Vec<String>,
+) -> anyhow::Result<String> {
+    let mut out = String::new();
+    for field in &fields.named {
+        let ident = field.ident.as_ref().context("a field without a name")?;
+        let serde = serde_of(&field.attrs)?;
+        let key = serde.rename.unwrap_or_else(|| ident.to_string());
+        let (ts, option) = ts_type(&field.ty, known)
+            .with_context(|| format!("the field `{ident}` of `{owner}`"))?;
+        let (mark, ts) = match (option, serde.default, serde.skip_serializing_if) {
+            (false, true, _) | (true, true, true) => ("?", ts),
+            (false, false, _) => ("", ts),
+            (true, true, false) => ("?", format!("{ts} | null")),
+            (true, false, _) => ("", format!("{ts} | null")),
+        };
+        out.push_str(&doc_comment(&docs_of(&field.attrs), pad));
+        let _ = writeln!(out, "{pad}readonly {key}{mark}: {ts};");
+    }
+    Ok(out)
+}
+
 fn interface(item: &syn::ItemStruct, known: &mut Vec<String>) -> anyhow::Result<String> {
     let name = &item.ident;
     if serde_of(&item.attrs)?.rename_all.is_some() {
@@ -184,61 +255,75 @@ fn interface(item: &syn::ItemStruct, known: &mut Vec<String>) -> anyhow::Result<
         "{}export interface {name} {{\n",
         doc_comment(&docs_of(&item.attrs), "")
     );
-    for field in &fields.named {
-        let ident = field.ident.as_ref().context("a field without a name")?;
-        let serde = serde_of(&field.attrs)?;
-        let key = serde.rename.unwrap_or_else(|| ident.to_string());
-        let (ts, option) = ts_type(&field.ty, known)
-            .with_context(|| format!("the field `{ident}` of `{name}`"))?;
-        let (mark, ts) = match (option, serde.default, serde.skip_serializing_if) {
-            (false, _, _) => ("", ts),
-            (true, true, true) => ("?", ts),
-            (true, true, false) => ("?", format!("{ts} | null")),
-            (true, false, _) => ("", format!("{ts} | null")),
-        };
-        out.push_str(&doc_comment(&docs_of(&field.attrs), "  "));
-        let _ = writeln!(out, "  readonly {key}{mark}: {ts};");
-    }
+    out.push_str(&field_lines(fields, name, "  ", known)?);
     out.push_str("}\n\n");
     Ok(out)
 }
 
-fn union(item: &syn::ItemEnum) -> anyhow::Result<String> {
+/// The word a variant has in the JSON: its own name, or the name made by `rename_all`.
+fn variant_word(item: &syn::ItemEnum, variant: &syn::Variant) -> anyhow::Result<String> {
     let name = &item.ident;
     let rule = serde_of(&item.attrs)?.rename_all;
-    if rule.as_deref().is_some_and(|rule| rule != "snake_case") {
-        bail!("`{name}`: only `rename_all = \"snake_case\"` is understood");
+    if rule
+        .as_deref()
+        .is_some_and(|rule| rule != "snake_case" && rule != "kebab-case")
+    {
+        bail!("`{name}`: only `rename_all` = snake_case and kebab-case are understood");
     }
-    let mut words = Vec::new();
+    Ok(match (serde_of(&variant.attrs)?.rename, rule.as_deref()) {
+        (Some(own), _) => own,
+        (None, Some("snake_case")) => snake_case(&variant.ident.to_string()),
+        (None, Some(_)) => snake_case(&variant.ident.to_string()).replace('_', "-"),
+        (None, None) => variant.ident.to_string(),
+    })
+}
+
+fn union(item: &syn::ItemEnum, known: &mut Vec<String>) -> anyhow::Result<String> {
+    let name = &item.ident;
+    let serde = serde_of(&item.attrs)?;
+    let mut shapes = Vec::new();
     for variant in &item.variants {
-        if !matches!(variant.fields, Fields::Unit) {
-            bail!(
-                "`{name}::{}` holds data; only plain variants are understood",
-                variant.ident
-            );
-        }
-        let own = serde_of(&variant.attrs)?.rename;
-        let word = own.unwrap_or_else(|| {
-            if rule.is_some() {
-                snake_case(&variant.ident.to_string())
-            } else {
-                variant.ident.to_string()
+        let word = variant_word(item, variant)?;
+        let owner = format!("{name}::{}", variant.ident);
+        let shape = match (&variant.fields, &serde.tag, serde.untagged) {
+            (Fields::Unit, None, false) => format!("{word:?}"),
+            (Fields::Unit, Some(tag), false) => format!("{{ readonly {tag}: {word:?} }}"),
+            (Fields::Named(fields), Some(tag), false) => format!(
+                "{{\n  readonly {tag}: {word:?};\n{}}}",
+                field_lines(fields, &owner, "  ", known)?
+            ),
+            (Fields::Unnamed(fields), None, true) if fields.unnamed.len() == 1 => {
+                ts_type(&fields.unnamed[0].ty, known)
+                    .with_context(|| format!("the variant `{owner}`"))?
+                    .0
             }
-        });
-        words.push(format!("{word:?}"));
+            (Fields::Named(fields), None, true) => {
+                format!("{{\n{}}}", field_lines(fields, &owner, "  ", known)?)
+            }
+            _ => bail!(
+                "`{owner}` holds data that is not understood: use plain variants, a tag with named fields, or untagged with one value or named fields"
+            ),
+        };
+        shapes.push(shape);
     }
     Ok(format!(
         "{}export type {name} = {};\n\n",
         doc_comment(&docs_of(&item.attrs), ""),
-        words.join(" | ")
+        shapes.join(" | ")
     ))
 }
 
 /// The TypeScript declarations of every type of the source that is written or read as JSON, in the
 /// order of the source.
 pub(crate) fn types(source: &str) -> anyhow::Result<String> {
+    types_under(source, HEADER)
+}
+
+/// Like [`types`], under another header (the generated file says which command wrote it, and what
+/// it imports).
+pub(crate) fn types_under(source: &str, header: &str) -> anyhow::Result<String> {
     let file = syn::parse_file(source).context("it is not Rust")?;
-    let mut out = String::from(HEADER);
+    let mut out = String::from(header);
     let mut declared = Vec::new();
     let mut known = Vec::new();
     for item in &file.items {
@@ -249,7 +334,7 @@ pub(crate) fn types(source: &str) -> anyhow::Result<String> {
             }
             Item::Enum(item) if is_serde_type(&item.attrs) => {
                 declared.push(item.ident.to_string());
-                out.push_str(&union(item)?);
+                out.push_str(&union(item, &mut known)?);
             }
             _ => {}
         }
@@ -392,6 +477,50 @@ mod tests {
         ] {
             assert!(types(source).is_err(), "{source}");
         }
+    }
+
+    #[test]
+    fn an_enum_with_a_tag_is_a_union_of_objects_that_carry_the_tag() {
+        let text = types(
+            "#[derive(Serialize)] #[serde(tag = \"shown\", rename_all = \"kebab-case\")] pub enum Side { Text { text: String }, TwoWords { #[serde(default)] more: Option<String>, list: Vec<String> } }",
+        )
+        .unwrap();
+        for expected in [
+            "readonly shown: \"text\";",
+            "readonly shown: \"two-words\";",
+            "readonly more?: string | null;",
+            "readonly list: readonly string[];",
+        ] {
+            assert!(text.contains(expected), "{expected}: {text}");
+        }
+    }
+
+    #[test]
+    fn an_untagged_enum_is_a_union_of_what_its_variants_hold() {
+        let text = types(
+            "#[derive(Serialize)] #[serde(untagged)] pub enum Said { Text(String), Parts(Vec<Said>), Message { key: MessageKey, args: BTreeMap<&'static str, Said> } }",
+        )
+        .unwrap();
+        assert!(
+            text.contains("export type Said = string | readonly Said[] | {"),
+            "{text}"
+        );
+        assert!(text.contains("readonly key: string;"), "{text}");
+        assert!(
+            text.contains("readonly args: Readonly<Record<string, Said>>;"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn a_field_with_a_default_may_be_missing_and_a_known_client_type_is_named_from_there() {
+        let text = one("#[serde(default)] pub a: Vec<String>, pub kind: FieldType, pub v: Value");
+        assert!(text.contains("readonly a?: readonly string[];"), "{text}");
+        assert!(
+            text.contains("readonly kind: Schema<\"FieldType\">;"),
+            "{text}"
+        );
+        assert!(text.contains("readonly v: unknown;"), "{text}");
     }
 
     #[test]

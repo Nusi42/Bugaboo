@@ -27,6 +27,7 @@ fn the_app_paths_come_from_the_constants_of_the_core() {
     let source = (
         APP_PATHS_SOURCE.to_owned(),
         "pub const ISSUE: &str = \"/issues/$issue\";
+pub const PROJECT_SETTINGS: &str = \"/p/$project/settings\";
 pub const INVITATION: &str = \"/invitation\";
 pub const NOTIFICATIONS: &str = \"/n\";
 pub const SIGN_IN: &str = \"/in\";
@@ -231,7 +232,10 @@ pub const DESCRIPTION_PART: &str = \"description\";
     );
     let time = (
         TIME_SOURCE.to_owned(),
-        "pub const SECONDS_PER_DAY: i64 = 86_400;".to_owned(),
+        "pub const SECONDS_PER_MINUTE: u32 = 60;
+pub const MINUTES_PER_HOUR: u32 = 60;
+pub const SECONDS_PER_DAY: i64 = 86_400;"
+            .to_owned(),
     );
     let text = editing(&[source, comment, version, time, error_codes_source()]).unwrap();
     assert!(text.contains("leaseSeconds = 60;"), "{text}");

@@ -47,7 +47,7 @@ export const paths = {
   peopleVisibility: "/settings/people-visibility",
   checkAccess: "/settings/check-access",
   project: "/p/$project",
-  projectSettings: "/p/$project/settings",
+  projectSettings: appPaths.projectSettings,
   projectRoles: "/p/$project/settings/roles",
   projectFields: "/p/$project/settings/fields",
   projectLayouts: "/p/$project/settings/layouts",

@@ -5,7 +5,7 @@ import { Tab, TabList, TabPanel, Tabs } from "react-aria-components";
 
 import { messageOf } from "../../shared/errors.ts";
 import { itemsOf } from "../../shared/paged.ts";
-import { ChangeEntry, NothingYet } from "./ChangeEntry.tsx";
+import { ChangeEntry, NothingYet, WordsFailedNotice } from "./ChangeEntry.tsx";
 import { CommentComposer } from "./CommentComposer.tsx";
 import { CommentEntry } from "./CommentEntry.tsx";
 import {
@@ -36,6 +36,7 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
   return (
     <div {...partOf(part.stack)}>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
+      {groups.some((group) => group[0]?.kind !== "comment") ? <WordsFailedNotice /> : null}
       {groups.length === 0 && list.isSuccess && !list.hasNextPage ? <NothingYet /> : null}
       {groups.map((group, at) =>
         group[0]?.kind === "comment" ? (

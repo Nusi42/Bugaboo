@@ -8,7 +8,7 @@ You can add files to an issue and to a comment: screenshots, logs, documents. Fi
 - **Paste** a screenshot with Ctrl+V (Cmd+V on a Mac) while the issue page is open. A screenshot that you paste into the box of a comment goes to that comment, not to the issue.
 - Press **Upload** and choose files on your device.
 
-Under a comment you press **Add files**. For a comment you are still writing, the files you chose wait on your device, in a list with **Take out** next to each one, and they are sent as soon as you post the comment.
+Under a comment you press **Upload files**. For a comment you are still writing, the files you chose wait on your device, in a list with **Take out** next to each one, and they are sent as soon as you post the comment.
 
 Each file shows a bar while it is sent, under the files that are there. Big files are sent in parts: if your connection is lost, Bugaboo goes on from where it stopped instead of starting again. If it cannot go on, the row says that the connection was lost and which file was not sent; **Try again** goes on with what the server has, and **Close** throws it away.
 

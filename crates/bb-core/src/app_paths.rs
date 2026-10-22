@@ -6,6 +6,12 @@
 /// The name of the changing part of [`ISSUE`].
 pub const ISSUE_PARAM: &str = "issue";
 
+/// The name of the changing part of [`PROJECT_SETTINGS`].
+pub const PROJECT_PARAM: &str = "project";
+
+/// The settings page of a project; the short name of the project takes the place of `$project`.
+pub const PROJECT_SETTINGS: &str = "/p/$project/settings";
+
 /// The page of an issue; the readable ID of the issue takes the place of `$issue`.
 pub const ISSUE: &str = "/issues/$issue";
 
@@ -24,6 +30,12 @@ pub fn issue(key: &str) -> String {
     ISSUE.replace(&format!("${ISSUE_PARAM}"), key)
 }
 
+/// The address of the settings page of a project from its short name.
+#[must_use]
+pub fn project_settings(short_name: &str) -> String {
+    PROJECT_SETTINGS.replace(&format!("${PROJECT_PARAM}"), short_name)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -31,5 +43,10 @@ mod tests {
     #[test]
     fn the_address_of_an_issue_has_its_readable_id_in_it() {
         assert_eq!(issue("WEB-142"), "/issues/WEB-142");
+    }
+
+    #[test]
+    fn the_address_of_project_settings_has_the_short_name_in_it() {
+        assert_eq!(project_settings("WEB"), "/p/WEB/settings");
     }
 }

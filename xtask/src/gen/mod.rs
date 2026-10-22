@@ -17,6 +17,8 @@ pub(crate) mod roles;
 pub(crate) mod theme;
 pub(crate) mod theme_file;
 pub(crate) mod theme_selector;
+pub(crate) mod word_types;
+pub(crate) mod word_vectors;
 
 use anyhow::Context as _;
 
@@ -55,7 +57,7 @@ pub(crate) const DOCS: &str = "docs";
 /// Every generator, once. A generated file in the repository is written by one of these;
 /// DOC-GENERATED compares all of them with the disk, `cargo xtask gen <name>` writes one, and
 /// META-COVERAGE counts their paths as generated.
-pub(crate) const GENERATORS: [Generator; 8] = [
+pub(crate) const GENERATORS: [Generator; 10] = [
     Generator {
         name: DOCS,
         help: "The commentable HTML pages from the Markdown sources and the check catalogue.",
@@ -97,6 +99,18 @@ pub(crate) const GENERATORS: [Generator; 8] = [
         help: "The API description, the browser client's types and the cookie list, from bb-api.",
         paths: api::output_paths,
         generate: |repo, _| api::generate(repo),
+    },
+    Generator {
+        name: "word-types",
+        help: "The TypeScript types of the input and the output of the wording in bb-wasm, from the Rust types of bb-core.",
+        paths: || vec![word_types::OUTPUT],
+        generate: |repo, _| word_types::generate(repo),
+    },
+    Generator {
+        name: "word-vectors",
+        help: "The test vectors of the wording of values (tools/testdata/value-words.json), from the code of bb-core that the server runs.",
+        paths: || vec![word_vectors::OUTPUT],
+        generate: |_, _| word_vectors::generate(),
     },
     Generator {
         name: "load-book",

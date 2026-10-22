@@ -45,3 +45,9 @@ export const firstVersion = 1;
 
 /** The seconds in a day: the keep periods and lifetimes counted in days are 24 hours long. */
 export const secondsPerDay = 86400;
+
+/** The seconds in a minute. */
+export const secondsPerMinute = 60;
+
+/** The minutes in an hour. */
+export const minutesPerHour = 60;

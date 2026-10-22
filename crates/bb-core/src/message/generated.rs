@@ -659,6 +659,9 @@ pub const COMMON_TRY_AGAIN: MessageKey = MessageKey::new("common.try-again");
 /// The message `common.undo`.
 pub const COMMON_UNDO: MessageKey = MessageKey::new("common.undo");
 
+/// The message `common.words-failed`.
+pub const COMMON_WORDS_FAILED: MessageKey = MessageKey::new("common.words-failed");
+
 /// The message `config.data-dir-empty`.
 pub const CONFIG_DATA_DIR_EMPTY: MessageKey = MessageKey::new("config.data-dir-empty");
 
@@ -2797,6 +2800,10 @@ pub const NOTIFICATIONS_IN_APP: MessageKey = MessageKey::new("notifications.in-a
 pub const NOTIFICATIONS_ISSUE_IDS_FAILED_HIDDEN: MessageKey =
     MessageKey::new("notifications.issue-ids-failed-hidden");
 
+/// The message `notifications.issue-ids-failed-short`.
+pub const NOTIFICATIONS_ISSUE_IDS_FAILED_SHORT: MessageKey =
+    MessageKey::new("notifications.issue-ids-failed-short");
+
 /// The message `notifications.kind`.
 pub const NOTIFICATIONS_KIND: MessageKey = MessageKey::new("notifications.kind");
 
@@ -2828,6 +2835,10 @@ pub const NOTIFICATIONS_NOTHING_UNREAD: MessageKey =
 
 /// The message `notifications.open`.
 pub const NOTIFICATIONS_OPEN: MessageKey = MessageKey::new("notifications.open");
+
+/// The message `notifications.open-project-settings`.
+pub const NOTIFICATIONS_OPEN_PROJECT_SETTINGS: MessageKey =
+    MessageKey::new("notifications.open-project-settings");
 
 /// The message `notifications.run-done`.
 pub const NOTIFICATIONS_RUN_DONE: MessageKey = MessageKey::new("notifications.run-done");
@@ -7405,6 +7416,15 @@ pub fn mail_open_notifications(address: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `mail.open-project-settings`.
+#[must_use]
+pub fn mail_open_project_settings(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.open-project-settings"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
 /// The message `mail.sign-up-exists-text`.
 #[must_use]
 pub fn mail_sign_up_exists_text(address: impl std::fmt::Display) -> Message {
@@ -9999,6 +10019,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
     (
+        "common.words-failed",
+        "These words could not be loaded. Check your connection and try again.",
+    ),
+    (
         "config.address-invalid",
         "The address {value} is not an IP address such as 127.0.0.1 or ::1.",
     ),
@@ -11468,7 +11492,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited", "Reset to default"),
     (
         "layouts.use-inherited-text",
-        "The layout of this place is taken away. The place then uses the layout of the project above. This cannot be undone.",
+        "The layout of this place is taken away. The place then goes back to the layout that counts here without a layout of its own. This cannot be undone.",
     ),
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.many", "{start}, and {last}"),
@@ -11527,6 +11551,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "mail.open-notifications",
         "Link to your notifications: {address}",
+    ),
+    (
+        "mail.open-project-settings",
+        "Link to the project settings: {address}",
     ),
     (
         "mail.sign-up-exists-subject",
@@ -11789,6 +11817,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notifications.issue-ids-failed-hidden",
         "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
     ),
+    (
+        "notifications.issue-ids-failed-short",
+        "Bugaboo could not give every issue of a project its new ID",
+    ),
     ("notifications.kind", "What happens"),
     (
         "notifications.locked-way",
@@ -11812,6 +11844,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("notifications.nothing-unread", "You have read everything."),
     ("notifications.open", "Open"),
     ("notifications.open-name", "Open: {what}"),
+    (
+        "notifications.open-project-settings",
+        "Open the project settings",
+    ),
     (
         "notifications.released",
         "{who} ended your editing because it was stuck, so others can edit again",
@@ -13033,7 +13069,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.mail.security.tls", "Encrypted from the start"),
     (
         "setting.mail.short.help",
-        "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
+        "E-mails leave out all issue text (titles and comments) and the names of projects, and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
     ),
     ("setting.mail.short.name", "Short e-mails"),
     (
@@ -13451,7 +13487,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sign-up.check-nothing",
-        "Nothing there? Look in your spam folder and check the address. You can ask for a new link.",
+        "Nothing there? Look in your spam folder and check the address. Press Send me a new link.",
     ),
     (
         "sign-up.check-text",
@@ -13467,7 +13503,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sign-up.resend", "Send me a new link"),
     (
         "sign-up.resend-in",
-        "You can ask for a new link in {minutes, plural, one {# minute} other {# minutes}}.",
+        "You can press Send me a new link in {minutes, plural, one {# minute} other {# minutes}}.",
     ),
     (
         "sign-up.resent",
@@ -13705,7 +13741,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflows.use-inherited", "Reset to default"),
     (
         "workflows.use-inherited-text",
-        "The workflow of this place is taken away, and the place follows the project above again. This cannot be undone, and it is refused while it would leave an issue in a status that the workflow of the project above does not have.",
+        "The workflow of this place is taken away, and the place goes back to the workflow that counts here without a workflow of its own. This cannot be undone, and it is refused while it would leave an issue in a status that the workflow then counting does not have.",
     ),
     ("workflows.use-inherited-title", "Reset to default?"),
     (

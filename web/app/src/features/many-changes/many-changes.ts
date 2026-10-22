@@ -3,6 +3,7 @@ import { isMessageKey, t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
+import type { WordingState } from "../../shared/use-wording.ts";
 
 /** What is done to many issues at once: one of five things. */
 export type ManyChangeAction = Schema<"ManyChangeActionBody">;
@@ -94,4 +95,13 @@ export function targetsOf(preview: ManyChangePreview): { issue: string; version:
 export function skipText(reason: Schema<"SkipReason">): string {
   const key = `many-changes-skip.${reason}`;
   return isMessageKey(key) ? t(key) : reason;
+}
+
+/**
+ * Whether *Apply* may be pressed: the dialog allows it, and the words of the preview are there. A
+ * preview the person could not read (the words failed to load, or are still loading) must not let
+ * them start the change blind.
+ */
+export function mayApply(canApply: boolean, words: WordingState): boolean {
+  return canApply && words.state === "ready";
 }

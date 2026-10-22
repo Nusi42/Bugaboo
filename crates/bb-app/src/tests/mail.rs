@@ -24,7 +24,7 @@ use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
 /// Switches e-mail on, with a mail server entered, and the e-mail of status changes on for
 /// everybody.
-async fn mail_is_on(crew: &Crew) -> Result<(), String> {
+pub(super) async fn mail_is_on(crew: &Crew) -> Result<(), String> {
     enter_the_mail_server(&crew.world).await?;
     set_mail_password(
         &crew.world.ctx(),
@@ -40,7 +40,7 @@ async fn mail_is_on(crew: &Crew) -> Result<(), String> {
         .await
 }
 
-async fn set_setting(crew: &Crew, key: &str, value: SettingValue) -> Result<(), String> {
+pub(super) async fn set_setting(crew: &Crew, key: &str, value: SettingValue) -> Result<(), String> {
     change_setting(
         &crew.world.ctx(),
         ChangeSetting {
@@ -56,7 +56,7 @@ async fn set_setting(crew: &Crew, key: &str, value: SettingValue) -> Result<(), 
 }
 
 /// Runs the jobs that are due, as the job runner does.
-async fn run_jobs(crew: &Crew) -> Result<(), String> {
+pub(super) async fn run_jobs(crew: &Crew) -> Result<(), String> {
     loop {
         if crew.world.ctx().run_due_jobs().await.map_err(text)? == 0 {
             return Ok(());
@@ -65,7 +65,7 @@ async fn run_jobs(crew: &Crew) -> Result<(), String> {
 }
 
 /// Moves the clock past the five minutes e-mail waits for the other changes, and runs the jobs.
-async fn after_five_minutes(crew: &Crew) -> Result<(), String> {
+pub(super) async fn after_five_minutes(crew: &Crew) -> Result<(), String> {
     crew.world.clock.advance(MAIL_BATCH_SECONDS + 1);
     run_jobs(crew).await
 }

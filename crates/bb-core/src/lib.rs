@@ -56,6 +56,7 @@ pub mod technical;
 pub mod text;
 pub mod time;
 pub mod version;
+pub mod wording;
 pub mod workflow;
 
 pub use error_code::{ErrorCode, Problem};

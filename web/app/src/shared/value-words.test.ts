@@ -2,12 +2,11 @@ import { fieldTypeWords, settingChoices } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import vectors from "../../../../tools/testdata/value-words.json";
-import { changeValueText } from "./change-value.ts";
 import { listText } from "./list-text.ts";
 import { ownValueText } from "./own-value-text.ts";
 import { deviceRegion, type Region } from "./region.ts";
 
-const NARROW_SPACE_BEFORE_AM_PM = / (?<period>AM|PM)/u;
+const NARROW_SPACE_BEFORE_AM_PM = / (?<period>AM|PM)/u;
 
 /** A space the browser may write before AM or PM is a plain one in the vectors. */
 function plainSpaces(text: string | undefined): string | undefined {
@@ -46,8 +45,10 @@ function wordsFor(kindWord: string, value: unknown, regionName: string): string 
   return plainSpaces(ownValueText(kind, value, regionOf(regionName))) ?? null;
 }
 
-// The same file is read by `value_words.rs`: when one side changes alone, both tests fail.
-describe("m4_f141 the screen words a value the way the e-mail does", () => {
+// The vectors are written by `cargo xtask gen word-vectors` from the code the server words its
+// e-mails with (`bb-core`, `wording`). The screen writes dates and numbers with `Intl`; when it
+// differs from the server for a choice the server can know, these tests fail (ADR-0033).
+describe("ntf_02 the screen words a value the way the server does", () => {
   for (const vector of vectors.cases) {
     it(`gives ${vector.name} its words`, () => {
       expect(wordsFor(vector.kind, vector.value, vector.region)).toBe(vector.expected);
@@ -55,13 +56,7 @@ describe("m4_f141 the screen words a value the way the e-mail does", () => {
   }
 });
 
-describe("m4_f141 a status, a priority and a list of names read the same in both", () => {
-  for (const word of vectors.words) {
-    it(`gives ${word.name} its word`, () => {
-      expect(changeValueText(word.field, { shown: "text", text: word.text })).toBe(word.expected);
-    });
-  }
-
+describe("ntf_02 a list of names reads the same on the screen and in the e-mail", () => {
   for (const list of vectors.lists) {
     it(`lists ${list.names.length} names`, () => {
       expect(listText(list.names)).toBe(list.expected);

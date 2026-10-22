@@ -1,13 +1,19 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, MarkdownView, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, MarkdownView, partOf, part, Skeleton } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 
 import { formatDateTime } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
-import { issueAddress, issueTargetAddress } from "../../shared/paths.ts";
+import { useWording } from "../../shared/use-wording.ts";
+import { addressInProject, issueAddress, issueTargetAddress, paths } from "../../shared/paths.ts";
 import { RunProgress } from "../many-changes/index.ts";
-import { sentencesOf, targetOf, type NotificationRow } from "./notifications.ts";
+import {
+  failedRenewalProjectOf,
+  sentencesOf,
+  targetOf,
+  type NotificationRow,
+} from "./notifications.ts";
 
 export interface NotificationViewProps {
   readonly row: NotificationRow;
@@ -50,17 +56,85 @@ function RunResult({ row }: { readonly row: NotificationRow }) {
   );
 }
 
+/** *Open the project settings* for a renewal of issue IDs that gave up, where the person may know the project. */
+function ProjectSettingsButton({ row }: { readonly row: NotificationRow }) {
+  const navigate = useNavigate();
+  const shortName = failedRenewalProjectOf(row);
+  if (shortName === undefined) {
+    return null;
+  }
+  return (
+    <Button
+      onPress={() => {
+        void navigate({ href: addressInProject(paths.projectSettings, shortName) });
+      }}
+    >
+      {t("notifications.open-project-settings")}
+    </Button>
+  );
+}
+
+/** The buttons of a notification: *Open*, the one for a renewal that gave up, and *Mark as read*. */
+function NotificationActions({
+  row,
+  what,
+  onRead,
+  isReading,
+}: NotificationViewProps & { readonly what: string }) {
+  const navigate = useNavigate();
+  const [key, target] = [row.issue?.key, targetOf(row)];
+  return (
+    <div {...partOf(part.notificationActions)}>
+      {key === undefined ? null : (
+        <Button
+          aria-label={t("notifications.open-name", { what })}
+          onPress={() => {
+            void navigate({
+              href: target === undefined ? issueAddress(key) : issueTargetAddress(key, target),
+            });
+          }}
+        >
+          {t("notifications.open")}
+        </Button>
+      )}
+      <ProjectSettingsButton row={row} />
+      {row.read ? null : (
+        <Button
+          look={buttonLook.quiet}
+          isPending={isReading}
+          aria-label={t("notifications.mark-read-name", { what })}
+          onPress={() => {
+            onRead(row.id);
+          }}
+        >
+          {t("notifications.mark-read")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** What one notification says, once the shared wording is there. */
+function Sentences({ sentences }: { readonly sentences: readonly string[] }) {
+  return (
+    <ul {...partOf(part.notificationSentences)}>
+      {sentences.map((sentence) => (
+        <li key={sentence}>{sentence}</li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * One notification (UX §4.11): what happened and when, the text of a comment, and *Open*, which
  * goes to the exact comment or change, and *Mark as read*. An unread one is marked by its color
- * and by the word *New*.
+ * and by the word *New*. The words come from the shared wording (`bb-core`), which a skeleton
+ * waits for the first time.
  */
 export function NotificationView({ row, onRead, isReading }: NotificationViewProps) {
-  const navigate = useNavigate();
-  const sentences = sentencesOf(row);
-  const what = listText(sentences);
-  const key = row.issue?.key;
-  const target = targetOf(row);
+  const loaded = useWording();
+  const sentences = loaded.state === "ready" ? sentencesOf(loaded.wording, row) : [];
+  const what = sentences.length === 0 ? t("notifications.new") : listText(sentences);
   return (
     <li {...partOf(part.notification, { states: [!row.read && "unread"] })}>
       <div {...partOf(part.notificationHead)}>
@@ -69,38 +143,10 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
         )}
         <span {...partOf(part.historyWhen)}>{formatDateTime(row.at)}</span>
       </div>
-      <ul {...partOf(part.notificationSentences)}>
-        {sentences.map((sentence) => (
-          <li key={sentence}>{sentence}</li>
-        ))}
-      </ul>
+      {loaded.state === "ready" ? <Sentences sentences={sentences} /> : null}
+      {loaded.state === "loading" ? <Skeleton /> : null}
       <CommentText row={row} />
-      <div {...partOf(part.notificationActions)}>
-        {key === undefined ? null : (
-          <Button
-            aria-label={t("notifications.open-name", { what })}
-            onPress={() => {
-              void navigate({
-                href: target === undefined ? issueAddress(key) : issueTargetAddress(key, target),
-              });
-            }}
-          >
-            {t("notifications.open")}
-          </Button>
-        )}
-        {row.read ? null : (
-          <Button
-            look={buttonLook.quiet}
-            isPending={isReading}
-            aria-label={t("notifications.mark-read-name", { what })}
-            onPress={() => {
-              onRead(row.id);
-            }}
-          >
-            {t("notifications.mark-read")}
-          </Button>
-        )}
-      </div>
+      <NotificationActions row={row} what={what} onRead={onRead} isReading={isReading} />
       <RunResult row={row} />
     </li>
   );

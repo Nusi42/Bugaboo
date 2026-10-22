@@ -22,7 +22,7 @@ bugaboo/
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-dev-words/       the words the developer tools, the tests and xtask share: databases, test variables, the sample layout
-│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
+│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation, and the wording of changes and notifications (bb-core)
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
 │   ├── bb-load-check/      the invariants after a run of many people at once, written once; developer tool and test support (never shipped)
@@ -84,7 +84,7 @@ flowchart TB
   store --> search & policy & core
   files --> core
   notify --> core
-  wasm --> search & md
+  wasm --> search & md & core
   store -. tests only .-> testing
   server -. tests only .-> words
   testing --> devwords
@@ -111,7 +111,7 @@ flowchart TB
 
 ### bb-core
 
-Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like `WEB-142` outside), field types and values, domain entities, **domain events**, and the **error code catalogue** (one Rust enum; becomes OpenAPI, the TypeScript union and message keys). Entities carry personal-data marks (ADR-0015). It also holds the **settings registry** (ADR-0018: every setting is declared once, in `settings/`), the **message keys** generated from `messages/en.json` as Rust constants and functions (UX-07), and the entity list behind the generated personal-data page `docs/privacy/personal-data.md`. The HTTP layer (`bb-api`) and the binary (`bb-server`) use `bb-core` directly for error codes and message text.
+Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like `WEB-142` outside), field types and values, domain entities, **domain events**, and the **error code catalogue** (one Rust enum; becomes OpenAPI, the TypeScript union and message keys). Entities carry personal-data marks (ADR-0015). It also holds the **settings registry** (ADR-0018: every setting is declared once, in `settings/`), the **message keys** generated from `messages/en.json` as Rust constants and functions (UX-07), and the entity list behind the generated personal-data page `docs/privacy/personal-data.md`. Its `wording` module chooses the words of a change and of a notification once (message keys and the words of values; the region-dependent writing of days, moments and numbers for e-mail), so the server and the browser (through `bb-wasm`) say the same (ADR-0033, amendment of M4 WP-13). The HTTP layer (`bb-api`) and the binary (`bb-server`) use `bb-core` directly for error codes and message text.
 
 ### bb-policy
 

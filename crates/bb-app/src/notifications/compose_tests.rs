@@ -41,12 +41,22 @@ fn change(field: &str, before: Option<ChangeValue>, after: Option<ChangeValue>) 
     }
 }
 
+/// The line of an e-mail about one change of a field.
 fn line(change: &FieldChangeView) -> String {
-    change_line(Some(&ana()), change, &region())
+    let what = NotificationWhat::Changes {
+        fields: vec![change.clone()],
+    };
+    lines_about(
+        Some(&ana()),
+        &what,
+        NotificationKind::FollowedFields,
+        &region(),
+    )
+    .remove(0)
 }
 
 #[test]
-fn wp13_a_change_reads_as_the_history_reads_with_a_full_stop() {
+fn ntf_02_a_change_reads_as_the_history_reads_with_a_full_stop() {
     assert_eq!(
         line(&change(
             "priority",
@@ -65,7 +75,7 @@ fn wp13_a_change_reads_as_the_history_reads_with_a_full_stop() {
 }
 
 #[test]
-fn wp13_people_are_set_after_a_colon_and_nobody_is_a_word() {
+fn ntf_02_people_are_set_after_a_colon_and_nobody_is_a_word() {
     let people = |people| Some(ChangeValue::People { people });
     assert_eq!(
         line(&change("assigned-to", None, people(vec![ana()]))),
@@ -81,7 +91,7 @@ fn wp13_people_are_set_after_a_colon_and_nobody_is_a_word() {
 }
 
 #[test]
-fn wp13_a_change_of_a_description_is_not_called_cleared() {
+fn ntf_02_a_change_of_a_description_is_not_called_cleared() {
     assert_eq!(
         line(&change("description", None, None)),
         format!(
@@ -96,7 +106,7 @@ fn wp13_a_change_of_a_description_is_not_called_cleared() {
 }
 
 #[test]
-fn wp13_yes_no_and_lengths_of_time_are_words_not_code_values() {
+fn ntf_02_yes_no_and_lengths_of_time_are_words_not_code_values() {
     let typed = |kind, value| Some(ChangeValue::Typed { kind, value });
     assert_eq!(
         line(&change(
@@ -117,7 +127,7 @@ fn wp13_yes_no_and_lengths_of_time_are_words_not_code_values() {
 }
 
 #[test]
-fn wp13_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
+fn ntf_02_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
     let notice = |notice| {
         lines_about(
             Some(&ana()),
@@ -147,7 +157,7 @@ fn wp13_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
 }
 
 #[test]
-fn wp13_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
+fn ntf_02_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
     assert_eq!(
         lines_about(
             None,
@@ -162,7 +172,7 @@ fn wp13_a_failed_renewal_of_issue_ids_has_its_own_sentence() {
 }
 
 #[test]
-fn wp13_no_line_of_an_e_mail_ends_in_two_full_stops() {
+fn ntf_02_no_line_of_an_e_mail_ends_in_two_full_stops() {
     let sentences = [
         NotificationWhat::IssueIdsFailed {
             project: ProjectLabel::Hidden,
@@ -181,7 +191,7 @@ fn wp13_no_line_of_an_e_mail_ends_in_two_full_stops() {
 }
 
 #[test]
-fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
+fn ntf_02_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
     let ended = |done| {
         lines_about(
             None,
@@ -224,6 +234,147 @@ fn wp13_the_end_of_a_run_and_the_news_use_the_sentences_of_the_screen() {
 }
 
 #[test]
+fn ntf_02_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue()
+-> Result<(), bb_core::id::IdError> {
+    let mut ids = SequentialIds::default();
+    let item = NotificationItem {
+        id: bb_core::id::NotificationId::generate(&mut ids)?,
+        kind: NotificationKind::RunEnded,
+        at: jiff::Timestamp::UNIX_EPOCH,
+        read: false,
+        issue: None,
+        comment: None,
+        by: None,
+        what: NotificationWhat::RunEnded {
+            run: bb_core::id::EntityId::from(bb_core::id::UserId::generate(&mut ids)),
+            done: true,
+        },
+    };
+    assert_eq!(
+        lines_of(&item, true, &region()),
+        [format!(
+            "{}.",
+            Message::from(message::NOTIFICATIONS_RUN_DONE).render()
+        )]
+    );
+    Ok(())
+}
+
+#[test]
+fn ntf_02_a_value_that_ends_a_sentence_gets_no_second_mark() {
+    for end in [".", "?", "!"] {
+        let value = format!("Login fails{end}");
+        let said = line(&change("title", None, Some(word(&value))));
+        assert!(said.ends_with(&value), "{said}");
+        assert!(!said.ends_with(&format!("{value}.")), "{said}");
+    }
+    assert!(line(&change("title", None, Some(word("Login fails")))).ends_with("Login fails."));
+}
+
+fn run_item(what: NotificationWhat) -> Result<NotificationItem, bb_core::id::IdError> {
+    let mut ids = SequentialIds::default();
+    Ok(NotificationItem {
+        id: bb_core::id::NotificationId::generate(&mut ids)?,
+        kind: NotificationKind::RunEnded,
+        at: jiff::Timestamp::UNIX_EPOCH,
+        read: false,
+        issue: None,
+        comment: None,
+        by: None,
+        what,
+    })
+}
+
+/// The e-mail of the items, for the address of the test server.
+fn mail_of(items: &[NotificationItem], short: bool) -> Result<Composed, String> {
+    compose(items, false, short, &region(), "https://bb.test").ok_or_else(|| "no e-mail".to_owned())
+}
+
+#[test]
+fn ntf_02_the_e_mail_of_the_end_of_a_run_links_to_the_notifications() -> Result<(), String> {
+    let mut ids = SequentialIds::default();
+    let item = run_item(NotificationWhat::RunEnded {
+        run: bb_core::id::EntityId::from(bb_core::id::UserId::generate(&mut ids)),
+        done: true,
+    })
+    .map_err(|error| error.to_string())?;
+    let mail = mail_of(&[item], false)?;
+    assert_eq!(
+        mail.subject,
+        Message::from(message::MAIL_SUBJECT_RUN).render()
+    );
+    let link = message::mail_open_notifications("https://bb.test/notifications").render();
+    assert!(mail.text.starts_with(&link), "{}", mail.text);
+    Ok(())
+}
+
+fn renewal(project: ProjectLabel) -> Result<NotificationItem, bb_core::id::IdError> {
+    run_item(NotificationWhat::IssueIdsFailed { project })
+}
+
+fn visible() -> Result<ProjectLabel, bb_core::id::IdError> {
+    Ok(ProjectLabel::Visible {
+        id: bb_core::id::ProjectId::generate(&mut SequentialIds::default())?,
+        short_name: "WEB".to_owned(),
+        name: "The web site".to_owned(),
+    })
+}
+
+#[test]
+fn ntf_02_the_e_mail_of_a_failed_renewal_names_a_project_the_person_sees_and_links_to_it()
+-> Result<(), String> {
+    let item = renewal(visible().map_err(|error| error.to_string())?)
+        .map_err(|error| error.to_string())?;
+    let mail = mail_of(&[item], false)?;
+    assert_eq!(
+        mail.subject,
+        Message::from(message::MAIL_SUBJECT_IDS_FAILED).render()
+    );
+    assert!(
+        mail.text.contains(
+            "Bugaboo could not give every issue of The web site its new ID. Open the project settings to try again.\n"
+        ),
+        "{}",
+        mail.text
+    );
+    let settings = message::mail_open_project_settings("https://bb.test/p/WEB/settings").render();
+    assert!(mail.text.contains(&settings), "{}", mail.text);
+    let notifications = message::mail_open_notifications("https://bb.test/notifications").render();
+    assert!(mail.text.starts_with(&notifications), "{}", mail.text);
+    Ok(())
+}
+
+#[test]
+fn ntf_02_the_short_e_mail_of_a_failed_renewal_names_no_project_and_has_no_link_to_one()
+-> Result<(), String> {
+    let item = renewal(visible().map_err(|error| error.to_string())?)
+        .map_err(|error| error.to_string())?;
+    let mail = mail_of(&[item], true)?;
+    assert!(!mail.text.contains("The web site"), "{}", mail.text);
+    assert!(!mail.text.contains("WEB"), "{}", mail.text);
+    assert!(
+        mail.text
+            .contains("Bugaboo could not give every issue of a project its new ID.\n"),
+        "{}",
+        mail.text
+    );
+    Ok(())
+}
+
+#[test]
+fn ntf_02_the_footer_names_the_page_where_the_person_changes_what_they_get() -> Result<(), String> {
+    let item = renewal(ProjectLabel::Hidden).map_err(|error| error.to_string())?;
+    let mail = mail_of(&[item], false)?;
+    assert!(
+        mail.text
+            .ends_with("Bugaboo under My settings › Notification settings.\n"),
+        "{}",
+        mail.text
+    );
+    Ok(())
+}
+
+#[test]
 fn sec_l4_a_change_of_a_title_cannot_bring_format_characters_into_the_e_mail() {
     let title = change(
         "title",
@@ -254,28 +405,9 @@ fn ntf_02_a_file_added_is_worded_as_the_history_words_it() {
 }
 
 #[test]
-fn wp13_a_short_e_mail_says_what_a_run_did_because_it_is_about_no_issue()
--> Result<(), bb_core::id::IdError> {
-    let mut ids = SequentialIds::default();
-    let item = NotificationItem {
-        id: bb_core::id::NotificationId::generate(&mut ids)?,
-        kind: NotificationKind::RunEnded,
-        at: jiff::Timestamp::UNIX_EPOCH,
-        read: false,
-        issue: None,
-        comment: None,
-        by: None,
-        what: NotificationWhat::RunEnded {
-            run: bb_core::id::EntityId::from(bb_core::id::UserId::generate(&mut ids)),
-            done: true,
-        },
-    };
-    assert_eq!(
-        lines_of(&item, true, &region()),
-        [format!(
-            "{}.",
-            Message::from(message::NOTIFICATIONS_RUN_DONE).render()
-        )]
-    );
-    Ok(())
+fn ntf_02_a_line_that_was_cut_short_ends_in_the_ellipsis_alone() {
+    let long = "x".repeat(MAIL_TEXT_MAX * 2);
+    let text = line(&change("title", None, Some(word(&long))));
+    assert!(text.ends_with('\u{2026}'), "{text}");
+    assert!(!text.ends_with("\u{2026}."), "{text}");
 }
