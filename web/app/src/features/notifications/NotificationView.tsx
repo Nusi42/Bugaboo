@@ -5,9 +5,14 @@ import { Suspense, useState } from "react";
 
 import { formatDateTime } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
-import { issueAddress, issueTargetAddress } from "../../shared/paths.ts";
+import { addressInProject, issueAddress, issueTargetAddress, paths } from "../../shared/paths.ts";
 import { RunProgress } from "../many-changes/index.ts";
-import { sentencesOf, targetOf, type NotificationRow } from "./notifications.ts";
+import {
+  failedRenewalProjectOf,
+  sentencesOf,
+  targetOf,
+  type NotificationRow,
+} from "./notifications.ts";
 
 export interface NotificationViewProps {
   readonly row: NotificationRow;
@@ -50,6 +55,24 @@ function RunResult({ row }: { readonly row: NotificationRow }) {
   );
 }
 
+/** *Open the project settings* for a renewal of issue IDs that gave up, where the person may know the project. */
+function ProjectSettingsButton({ row }: { readonly row: NotificationRow }) {
+  const navigate = useNavigate();
+  const shortName = failedRenewalProjectOf(row);
+  if (shortName === undefined) {
+    return null;
+  }
+  return (
+    <Button
+      onPress={() => {
+        void navigate({ href: addressInProject(paths.projectSettings, shortName) });
+      }}
+    >
+      {t("notifications.open-project-settings")}
+    </Button>
+  );
+}
+
 /**
  * One notification (UX §4.11): what happened and when, the text of a comment, and *Open*, which
  * goes to the exact comment or change, and *Mark as read*. An unread one is marked by its color
@@ -59,8 +82,7 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
   const navigate = useNavigate();
   const sentences = sentencesOf(row);
   const what = listText(sentences);
-  const key = row.issue?.key;
-  const target = targetOf(row);
+  const [key, target] = [row.issue?.key, targetOf(row)];
   return (
     <li {...partOf(part.notification, { states: [!row.read && "unread"] })}>
       <div {...partOf(part.notificationHead)}>
@@ -88,6 +110,7 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
             {t("notifications.open")}
           </Button>
         )}
+        <ProjectSettingsButton row={row} />
         {row.read ? null : (
           <Button
             look={buttonLook.quiet}

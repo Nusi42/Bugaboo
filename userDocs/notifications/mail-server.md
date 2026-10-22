@@ -22,7 +22,7 @@ Bugaboo sends e-mail through your organization's mail server. E-mail is **off** 
 
 ## Switch it on
 
-**Send e-mail** switches e-mail on. Nothing is sent before. **Short e-mails** leaves all issue text out of the e-mails.
+**Send e-mail** switches e-mail on. Nothing is sent before. **Short e-mails** leaves all issue text and the names of projects out of the e-mails.
 
 ## Signing up
 

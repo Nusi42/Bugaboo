@@ -689,7 +689,7 @@ export const messages = {
     "The e-mail address that e-mails from Bugaboo come from, like bugaboo@example.com.",
   "setting.mail.short.name": "Short e-mails",
   "setting.mail.short.help":
-    "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
+    "E-mails leave out all issue text (titles and comments) and the names of projects, and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
   "error.mail.rejected":
     "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
   "error.mail.unavailable":
@@ -719,6 +719,9 @@ export const messages = {
   "nav.group.hearing": "Notifications and mentions",
   "nav.group.connections": "Connections",
   "shortcut.go-notifications": "Go to Notifications",
+  "notifications.issue-ids-failed-short":
+    "Bugaboo could not give every issue of a project its new ID.",
+  "notifications.open-project-settings": "Open the project settings",
   "notifications.count-capped": "{max}+",
 } as const;
 

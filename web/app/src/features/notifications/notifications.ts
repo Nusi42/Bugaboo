@@ -94,6 +94,14 @@ export function targetOf(row: NotificationRow): IssueTarget | undefined {
   return isChange(row) ? { kind: "change", at: row.at } : undefined;
 }
 
+/** The short name of the project whose issue IDs could not be renewed, if the person may know it. */
+export function failedRenewalProjectOf(row: NotificationRow): string | undefined {
+  const renewal = row.entries.find(
+    (entry) => entry.issue_ids_failed !== undefined && entry.issue_ids_failed !== null,
+  )?.issue_ids_failed;
+  return renewal?.shown === "visible" ? (renewal.short_name ?? undefined) : undefined;
+}
+
 /** What happened, in words: one sentence, or one for each field a change touched. */
 export function sentencesOf(row: NotificationRow): readonly string[] {
   const who = whoOf(row);

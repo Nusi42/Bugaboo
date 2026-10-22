@@ -19,6 +19,7 @@ at = [
   "messages/en.json#sign-up.resent",
   "messages/en.json#mail.open",
   "messages/en.json#mail.open-notifications",
+  "messages/en.json#mail.open-project-settings",
   "messages/en.json#mail.sign-up-text",
   "messages/en.json#setting.auth.sign-up-enabled.help",
   "messages/en.json#service.settings-is-link",

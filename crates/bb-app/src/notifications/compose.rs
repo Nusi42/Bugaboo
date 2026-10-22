@@ -37,9 +37,18 @@ const SENTENCE_END: &str = ".";
 /// What ends the line before a comment that is quoted below it.
 const LEAD_IN: &str = ":";
 
+/// What already ends a sentence: a value of a person may end in one of these, then the sentence
+/// gets no second mark.
+const ENDS: [char; 3] = ['.', '?', '!'];
+
 /// A sentence of the screen as a line of an e-mail.
 fn sentence_of(message: &Message) -> String {
-    format!("{}{SENTENCE_END}", message.render())
+    let text = message.render();
+    if text.ends_with(ENDS) {
+        text
+    } else {
+        format!("{text}{SENTENCE_END}")
+    }
 }
 
 /// Text of a person for the middle of a line.
@@ -130,6 +139,12 @@ fn lines_of(item: &NotificationItem, short: bool, region: &Region) -> Vec<String
     // news. The end of a run and a failed renewal are about no issue and say what they say.
     if short && item.issue.is_some() {
         return vec![news()];
+    }
+    // A short e-mail names no project either.
+    if short && matches!(item.what, NotificationWhat::IssueIdsFailed { .. }) {
+        return vec![sentence_of(&Message::from(
+            message::NOTIFICATIONS_ISSUE_IDS_FAILED_SHORT,
+        ))];
     }
     lines_about(item.by.as_ref(), &item.what, item.kind, region)
 }
@@ -230,14 +245,23 @@ pub(crate) fn compose(
     // The link of Bugaboo comes first, before any text of a person.
     let mut text = String::new();
     text.push_str(&open.render());
-    text.push_str(
-        "
-
-",
-    );
+    text.push_str("\n\n");
     for item in items.iter().take(MAIL_ENTRIES_MAX) {
         for line in lines_of(item, short, region) {
             text.push_str(&line);
+            text.push('\n');
+        }
+        // A renewal that gave up says to try again in the project settings: the link is there.
+        if let (false, NotificationWhat::IssueIdsFailed { project }) = (short, &item.what)
+            && let ProjectLabel::Visible { short_name, .. } = project
+        {
+            text.push_str(
+                &message::mail_open_project_settings(format!(
+                    "{public_url}{}",
+                    app_paths::project_settings(short_name)
+                ))
+                .render(),
+            );
             text.push('\n');
         }
         text.push('\n');

@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { describe, expect, it } from "vitest";
 
 import {
+  failedRenewalProjectOf,
   groupsOf,
   rowsOf,
   sentencesOf,
@@ -137,7 +138,14 @@ describe("ntf_01 a row says in a sentence what happened", () => {
   });
 });
 
-describe("m4_f144 a renewal of issue IDs that gave up names the project", () => {
+const failed = (issueIdsFailed: NonNullable<NotificationItem["issue_ids_failed"]>) =>
+  failedRenewalProjectOf(
+    rowOfItems(
+      entry({ kind: "run_ended", issue: null, by: null, issue_ids_failed: issueIdsFailed }),
+    ),
+  );
+
+describe("ntf_02 a renewal of issue IDs that gave up names the project", () => {
   it("names a project the person may name, and says so for one they cannot see", () => {
     expect(
       say(
@@ -159,5 +167,10 @@ describe("m4_f144 a renewal of issue IDs that gave up names the project", () => 
         }),
       ),
     ).toEqual([t("notifications.issue-ids-failed-hidden")]);
+  });
+
+  it("goes to the settings of a project the person may name, and nowhere for one they cannot see", () => {
+    expect(failed({ shown: "visible", id: "p", short_name: "WEB", name: "Website" })).toBe("WEB");
+    expect(failed({ shown: "hidden" })).toBeUndefined();
   });
 });
