@@ -260,10 +260,10 @@ fn wp13_a_value_that_ends_a_sentence_gets_no_second_mark() {
     assert!(line(&change("title", None, Some(word("Login fails")))).ends_with("Login fails."));
 }
 
-fn run_item(what: NotificationWhat) -> NotificationItem {
+fn run_item(what: NotificationWhat) -> Result<NotificationItem, bb_core::id::IdError> {
     let mut ids = SequentialIds::default();
-    NotificationItem {
-        id: bb_core::id::NotificationId::generate(&mut ids).unwrap(),
+    Ok(NotificationItem {
+        id: bb_core::id::NotificationId::generate(&mut ids)?,
         kind: NotificationKind::RunEnded,
         at: jiff::Timestamp::UNIX_EPOCH,
         read: false,
@@ -271,55 +271,57 @@ fn run_item(what: NotificationWhat) -> NotificationItem {
         comment: None,
         by: None,
         what,
-    }
+    })
+}
+
+/// The e-mail of the items, for the address of the test server.
+fn mail_of(items: &[NotificationItem], short: bool) -> Result<Composed, String> {
+    compose(items, false, short, &region(), "https://bb.test").ok_or_else(|| "no e-mail".to_owned())
 }
 
 #[test]
-fn wp13_the_e_mail_of_the_end_of_a_run_links_to_the_notifications() {
+fn wp13_the_e_mail_of_the_end_of_a_run_links_to_the_notifications() -> Result<(), String> {
     let mut ids = SequentialIds::default();
     let item = run_item(NotificationWhat::RunEnded {
         run: bb_core::id::EntityId::from(bb_core::id::UserId::generate(&mut ids)),
         done: true,
-    });
-    let mail = compose(&[item], false, false, &region(), "https://bb.test").unwrap();
+    })
+    .map_err(|error| error.to_string())?;
+    let mail = mail_of(&[item], false)?;
     assert_eq!(
         mail.subject,
         Message::from(message::MAIL_SUBJECT_RUN).render()
     );
     let link = message::mail_open_notifications("https://bb.test/notifications").render();
     assert!(mail.text.starts_with(&link), "{}", mail.text);
+    Ok(())
 }
 
-fn renewal(project: ProjectLabel) -> NotificationItem {
+fn renewal(project: ProjectLabel) -> Result<NotificationItem, bb_core::id::IdError> {
     run_item(NotificationWhat::IssueIdsFailed { project })
 }
 
-fn visible() -> ProjectLabel {
-    ProjectLabel::Visible {
-        id: bb_core::id::ProjectId::generate(&mut SequentialIds::default()).unwrap(),
+fn visible() -> Result<ProjectLabel, bb_core::id::IdError> {
+    Ok(ProjectLabel::Visible {
+        id: bb_core::id::ProjectId::generate(&mut SequentialIds::default())?,
         short_name: "WEB".to_owned(),
         name: "The web site".to_owned(),
-    }
+    })
 }
 
 #[test]
-fn wp13_the_e_mail_of_a_failed_renewal_names_a_project_the_person_sees_and_links_to_it() {
-    let mail = compose(
-        &[renewal(visible())],
-        false,
-        false,
-        &region(),
-        "https://bb.test",
-    )
-    .unwrap();
+fn wp13_the_e_mail_of_a_failed_renewal_names_a_project_the_person_sees_and_links_to_it()
+-> Result<(), String> {
+    let item = renewal(visible().map_err(|error| error.to_string())?)
+        .map_err(|error| error.to_string())?;
+    let mail = mail_of(&[item], false)?;
     assert_eq!(
         mail.subject,
         Message::from(message::MAIL_SUBJECT_IDS_FAILED).render()
     );
     assert!(
         mail.text.contains(
-            "Bugaboo could not give every issue of The web site its new ID. Open the project settings to try again.
-"
+            "Bugaboo could not give every issue of The web site its new ID. Open the project settings to try again.\n"
         ),
         "{}",
         mail.text
@@ -328,46 +330,35 @@ fn wp13_the_e_mail_of_a_failed_renewal_names_a_project_the_person_sees_and_links
     assert!(mail.text.contains(&settings), "{}", mail.text);
     let notifications = message::mail_open_notifications("https://bb.test/notifications").render();
     assert!(mail.text.starts_with(&notifications), "{}", mail.text);
+    Ok(())
 }
 
 #[test]
-fn wp13_the_short_e_mail_of_a_failed_renewal_names_no_project_and_has_no_link_to_one() {
-    let mail = compose(
-        &[renewal(visible())],
-        false,
-        true,
-        &region(),
-        "https://bb.test",
-    )
-    .unwrap();
+fn wp13_the_short_e_mail_of_a_failed_renewal_names_no_project_and_has_no_link_to_one()
+-> Result<(), String> {
+    let item = renewal(visible().map_err(|error| error.to_string())?)
+        .map_err(|error| error.to_string())?;
+    let mail = mail_of(&[item], true)?;
     assert!(!mail.text.contains("The web site"), "{}", mail.text);
     assert!(!mail.text.contains("WEB"), "{}", mail.text);
     assert!(
-        mail.text.contains(
-            "Bugaboo could not give every issue of a project its new ID.
-"
-        ),
+        mail.text
+            .contains("Bugaboo could not give every issue of a project its new ID.\n"),
         "{}",
         mail.text
     );
+    Ok(())
 }
 
 #[test]
-fn wp13_the_footer_names_the_page_where_the_person_changes_what_they_get() {
-    let mail = compose(
-        &[renewal(ProjectLabel::Hidden)],
-        false,
-        false,
-        &region(),
-        "https://bb.test",
-    )
-    .unwrap();
+fn wp13_the_footer_names_the_page_where_the_person_changes_what_they_get() -> Result<(), String> {
+    let item = renewal(ProjectLabel::Hidden).map_err(|error| error.to_string())?;
+    let mail = mail_of(&[item], false)?;
     assert!(
-        mail.text.ends_with(
-            "Bugaboo under My settings › Notification settings.
-"
-        ),
+        mail.text
+            .ends_with("Bugaboo under My settings › Notification settings.\n"),
         "{}",
         mail.text
     );
+    Ok(())
 }
