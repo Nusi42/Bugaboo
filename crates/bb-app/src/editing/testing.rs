@@ -5,7 +5,6 @@
 //! and the developer tool `bb-sample` switch the feature on; a build of the whole workspace has it
 //! on for every crate (see `bb-store/Cargo.toml`), the program (`cargo build -p bb-server`) does not.
 
-use crate::auth::locked;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
@@ -15,7 +14,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Permission, Place};
 
 use super::records::{EditableRecords, RecordFacts, Shown};
-use crate::auth::AppError;
+use crate::auth::{AppError, locked};
 use crate::ports::BoxFuture;
 
 /// The kind of the notes: `note`.
