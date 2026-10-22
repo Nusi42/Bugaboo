@@ -863,6 +863,11 @@ body {
   margin-inline: 0;
 }
 
+[data-part="files.actions"] [data-part="button"][data-variant~="quiet"],
+[data-part="item.actions"] [data-part="button"][data-variant~="quiet"] {
+  margin-inline-start: var(--size-phone-hang);
+}
+
 [data-part="button"][data-variant~="item"] {
   justify-content: flex-start;
   border-color: transparent;
@@ -2449,7 +2454,6 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-inline-start: var(--size-phone-hang);
 }
 
 [data-part="item.title"] {
@@ -4849,7 +4853,6 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-inline-start: calc(var(--size-phone-hang) + var(--pad-control));
 }
 
 [data-part="files.large"] {

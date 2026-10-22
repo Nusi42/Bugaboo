@@ -717,8 +717,9 @@ part "button[variant=quiet]" {
 // One start edge (R1) and one end edge: a text button hangs back by its own padding, so its words
 // stand on the edge of the text around it wherever the button is: first in a row, alone on a line
 // that wrapped, or under another button. Where it ends a row it hangs over the end edge by the
-// same amount (the review of M4, A3). Beside text on a computer the row it stands in steps forward
-// by the same amount. This is the one rule; no screen hangs a button back by itself.
+// same amount (the review of M4, A3). A row that stands beside text on a computer takes the hang
+// away from its quiet buttons (the rule below). This is the one rule; no screen hangs a button back
+// by itself.
 part "button[variant=quiet]:last-child" {
     margin-inline-end "calc(-1 * $pad-control)"
 }
@@ -726,6 +727,12 @@ part "button[variant=quiet]:last-child" {
 // An icon has no padding to hang back by.
 part "button[variant=quiet][variant=square]" {
     margin-inline 0
+}
+
+// Where the buttons stand under text on a phone and beside it on a computer (a file, an item of a list):
+// a quiet one hangs back by its padding on a phone only.
+part "files.actions button[variant=quiet]" "item.actions button[variant=quiet]" {
+    margin-inline-start "$size-phone-hang"
 }
 
 // An entry of a list of actions (the status list, *More*): its words start at the start edge, and it
@@ -2279,13 +2286,14 @@ part "item.main" {
 }
 
 // The buttons of an item whose words are `item.main`: on a phone they stand under the words, so a
-// quiet one hangs back by its own padding and its text starts where the words start (R1).
+// quiet one hangs back by its own padding and its text starts where the words start (R1); beside
+// the words, on a computer, it does not. The row itself does not move: a button that is not quiet
+// stands where its box begins.
 part "item.actions" {
     display flex
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    margin-inline-start "$size-phone-hang"
 }
 
 part "item.title" {
@@ -4542,10 +4550,6 @@ part "files.actions" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    // Its first button hangs back by its padding like every text button (R1). On a phone the row
-    // stands under the text, so that is all; beside the text, on a computer, the row steps forward
-    // by the same amount and nothing hangs back.
-    margin-inline-start "calc($size-phone-hang + $pad-control)"
 }
 
 // The larger preview: as big as it is, never wider than the window.
