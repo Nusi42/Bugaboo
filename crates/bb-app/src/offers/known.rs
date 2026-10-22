@@ -33,7 +33,7 @@ fn is_known(shown: &Shown, owner: Option<ProjectId>, used: bool) -> bool {
     !needs_use(shown, owner) || used
 }
 
-/// Whether a label is known, given the groups of labels the person may know: it is in no group, or
+/// Whether a label is known, given the label groups the person may know: it is in no group, or
 /// in one of them. The one definition of it, for the lists, the changes that name a label and the
 /// history.
 pub(crate) fn label_is_known(group: Option<LabelGroupId>, known: &[LabelGroup]) -> bool {
@@ -160,7 +160,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
-    /// Refuses (`resource.not_found`) a label that is in a group of labels the person may not
+    /// Refuses (`resource.not_found`) a label that is in a label group the person may not
     /// know: a label of a group nobody told them about is as good as not there.
     pub(crate) async fn ensure_label_known(
         &self,

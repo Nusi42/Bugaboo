@@ -24,7 +24,7 @@ const AT_MOST: usize = 47;
 
 /// The most statements the history of an issue may run: the history names an issue type and a label
 /// only where the reader may know it (LM1 of the M4 exit review, `offers/known.rs`), so it also
-/// reads the types, the groups of labels and what the reader sees of the projects, once for a page
+/// reads the types, the label groups and what the reader sees of the projects, once for a page
 /// and only when a row names a type or a label (51 measured; the types come from the one read of
 /// the request).
 const HISTORY_AT_MOST: usize = 51;

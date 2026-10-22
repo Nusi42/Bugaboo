@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 pub(crate) struct NameRef {
     /// What it is called.
     pub(crate) name: String,
-    /// The group of labels a label is in; none for a tag and for a label in no group.
+    /// The label group a label is in; none for a tag and for a label in no group.
     pub(crate) group: Option<LabelGroupId>,
 }
 

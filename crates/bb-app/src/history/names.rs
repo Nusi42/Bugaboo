@@ -26,7 +26,7 @@ use crate::tags::{EventLabel, event_labels};
 /// What the reader may know about the names of old events that kept a name only, from the labels
 /// there are now.
 struct LegacyNames {
-    /// Whether they may know every group of labels there is.
+    /// Whether they may know every label group there is.
     every_group: bool,
     /// The names that a label the reader may know has.
     known: BTreeSet<String>,
@@ -41,7 +41,7 @@ pub(crate) struct KnownNames {
     shown: Option<Shown>,
     /// The issue types a change named: the name the reader may read, or none.
     types: BTreeMap<IssueTypeId, Option<String>>,
-    /// Every group of labels there is, read once.
+    /// Every label group there is, read once.
     groups: Option<Vec<LabelGroup>>,
     /// Whether the reader may know a group a change named.
     known_groups: BTreeMap<LabelGroupId, bool>,
@@ -105,7 +105,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Some(ChangeValue::Text { text }))
     }
 
-    /// Every group of labels there is, read once for a reader.
+    /// Every label group there is, read once for a reader.
     async fn all_groups(&self, reading: &mut Reading<'_>) -> Result<Vec<LabelGroup>, AppError> {
         if reading.names.groups.is_none() {
             reading.names.groups = Some(
@@ -118,7 +118,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(reading.names.groups.clone().unwrap_or_default())
     }
 
-    /// Whether the reader may know a group of labels a change named.
+    /// Whether the reader may know a label group a change named.
     async fn group_known(
         &self,
         reading: &mut Reading<'_>,

@@ -46,8 +46,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(match place_from_uses(&tree, &uses, id) {
             Place::Project(project) => chain.contains(&project),
-            // Used at the organization or nowhere: anybody may adopt it. Used by projects that
-            // share no project, it is for those who manage workflows for the whole organization.
+            // Used at the organization, or used nowhere (then the permission for the whole
+            // organization was asked for above): whoever manages workflows here may adopt it. Used
+            // by projects that share no project, it is for those who manage workflows for the
+            // whole organization.
             Place::Organization if unused || is_used_at_organization(&uses, id) => true,
             Place::Organization => self
                 .evaluation_of(actor, Place::Organization)
