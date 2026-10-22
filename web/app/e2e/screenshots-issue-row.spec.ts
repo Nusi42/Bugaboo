@@ -34,6 +34,10 @@ async function takeTheSavedRow(page: Page, theme: Theme, project: string) {
 }
 
 for (const theme of themes) {
-  test(`a tag was added in ${theme.id}`, ({ page }, info) =>
-    takeTheSavedRow(page, theme, info.project.name));
+  test.describe(`the saved row in ${theme.id}`, () => {
+    // Each theme starts on fresh data: the history of WEB-1 shows this tag and no other.
+    test.use({ freshData: theme.id });
+    test(`a tag was added in ${theme.id}`, ({ page }, info) =>
+      takeTheSavedRow(page, theme, info.project.name));
+  });
 }
