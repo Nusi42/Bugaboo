@@ -9,6 +9,8 @@ const ports = readPorts();
 export default defineConfig({
   root: resolve(import.meta.dirname, ".."),
   cacheDir: resolve(repoRoot, "node_modules/.vite"),
+  // The tests of the shared wording start the built module from its inline bytes.
+  assetsInclude: ["**/*.wasm"],
   test: {
     include: ["**/*.test.{ts,tsx}"],
     exclude: ["**/node_modules/**", "**/dist/**"],

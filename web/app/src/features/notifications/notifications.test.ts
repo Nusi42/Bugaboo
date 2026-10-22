@@ -1,10 +1,11 @@
-import { markSafeHtml, type Schema } from "@bugaboo/api-client";
+import { markSafeHtml } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { describe, expect, it } from "vitest";
 
+import { testWording } from "../../shared/wording-testing.ts";
 import {
+  failedRenewalProjectOf,
   groupsOf,
-  projectSettingsOf,
   rowsOf,
   sentencesOf,
   targetOf,
@@ -45,7 +46,7 @@ function rowOfItems(...items: readonly NotificationItem[]): NotificationRow {
 
 /** The sentences of the one notification the items make. */
 function say(...items: readonly NotificationItem[]): readonly string[] {
-  return sentencesOf(rowOfItems(...items));
+  return sentencesOf(testWording, rowOfItems(...items));
 }
 
 describe("ntf_01 the items of one notification are one row", () => {
@@ -138,7 +139,14 @@ describe("ntf_01 a row says in a sentence what happened", () => {
   });
 });
 
-describe("m4_f144 a renewal of issue IDs that gave up names the project", () => {
+const failed = (issueIdsFailed: NonNullable<NotificationItem["issue_ids_failed"]>) =>
+  failedRenewalProjectOf(
+    rowOfItems(
+      entry({ kind: "run_ended", issue: null, by: null, issue_ids_failed: issueIdsFailed }),
+    ),
+  );
+
+describe("ntf_02 a renewal of issue IDs that gave up names the project", () => {
   it("names a project the person may name, and says so for one they cannot see", () => {
     expect(
       say(
@@ -162,6 +170,11 @@ describe("m4_f144 a renewal of issue IDs that gave up names the project", () => 
     ).toEqual([t("notifications.issue-ids-failed-hidden")]);
   });
 
+  it("goes to the settings of a project the person may name, and nowhere for one they cannot see", () => {
+    expect(failed({ shown: "visible", id: "p", short_name: "WEB", name: "Website" })).toBe("WEB");
+    expect(failed({ shown: "hidden" })).toBeUndefined();
+  });
+
   it("says who added a file, with its name when the file is still there", () => {
     expect(
       say(entry({ kind: "followed_activity", file_event: "added", file_name: "jam.txt" })),
@@ -169,17 +182,5 @@ describe("m4_f144 a renewal of issue IDs that gave up names the project", () => 
     expect(say(entry({ kind: "followed_activity", file_event: "added" }))).toEqual([
       t("history.file-added-unnamed", { who: "Ben" }),
     ]);
-  });
-});
-
-const failed = (project: Schema<"ProjectLabelBody">) =>
-  rowOfItems(entry({ kind: "run_ended", issue: null, by: null, issue_ids_failed: project }));
-
-describe("m4_f144 the notice of a renewal that gave up leads to the settings of its project", () => {
-  it("goes to the settings of a project the person may name, and nowhere for a hidden one", () => {
-    expect(
-      projectSettingsOf(failed({ shown: "visible", id: "p", name: "Website", short_name: "WEB" })),
-    ).toBe("/p/WEB/settings");
-    expect(projectSettingsOf(failed({ shown: "hidden" }))).toBeUndefined();
   });
 });

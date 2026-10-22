@@ -71,7 +71,7 @@ export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
 export { decimalDigits, decimalParts, ownFieldPartPrefix } from "./fields.generated.ts";
 export { megabyte, partBytes } from "./files.generated.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
-export { msPerSecond, secondsPerHour, secondsPerMinute } from "./time.ts";
+export { minutesPerHour, msPerSecond, secondsPerHour, secondsPerMinute } from "./time.ts";
 export {
   choiceColorWords,
   fieldForWords,

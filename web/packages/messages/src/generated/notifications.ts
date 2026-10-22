@@ -22,20 +22,6 @@ export const messages = {
     "You have no notifications yet. You hear of mentions, of issues assigned to you and of what happens on issues you follow.",
   "notifications.nothing-unread": "You have read everything.",
   "notifications.nothing-mentions": "Nobody has mentioned you.",
-  "notifications.mentioned": "{who} mentioned you",
-  "notifications.assigned": "{who} assigned this issue to you",
-  "notifications.commented": "{who} wrote a comment",
-  "notifications.news": "There is news on this issue",
-  "notifications.finish-asked": "{who} asks you to finish editing",
-  "notifications.taken-over": "{who} took over the editing. What you wrote is kept as your draft",
-  "notifications.released":
-    "{who} ended your editing because it was stuck, so others can edit again",
-  "notifications.run-done": "Your change to many issues is done",
-  "notifications.run-failed": "Your change to many issues stopped before it was done",
-  "notifications.issue-ids-failed":
-    "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",
-  "notifications.issue-ids-failed-hidden":
-    "Bugaboo could not give the issues of a project their new IDs. You cannot see that project any more",
   "notifications.show-result": "Show the result",
   "notifications.hide-result": "Hide the result",
   "notifications.show-all": "Show all notifications",

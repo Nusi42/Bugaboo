@@ -5,7 +5,7 @@ When you create a field you choose what kind of information it holds. The kind c
 | Kind | What it holds | Example |
 |------|---------------|---------|
 | Text | A short text | Customer name |
-| Long text | A text with Markdown, edited like a description, with a lock while somebody edits | Notes |
+| Long text | A text with Markdown, edited like a description; while somebody edits it, others see who is editing | Notes |
 | Whole number | A number without a decimal part | Affected users |
 | Decimal number | A number with up to six digits after the point | Budget |
 | Yes / No | One of two answers | Needs a refund |

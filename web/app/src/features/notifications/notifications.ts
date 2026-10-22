@@ -1,9 +1,11 @@
 import type { Schema } from "@bugaboo/api-client";
-import { t } from "@bugaboo/messages";
 
-import { changeSentence, whoOf } from "../../shared/change-sentence.ts";
-import { fileSentence } from "../../shared/file-sentence.ts";
-import { addressInProject, paths, type IssueTarget } from "../../shared/paths.ts";
+import type { Wording, WordedNotice } from "@bugaboo/wasm";
+
+import { whoOf, wordedChange } from "../../shared/change-sentence.ts";
+import { wordedFile } from "../../shared/file-sentence.ts";
+import { renderSaid } from "../../shared/said.ts";
+import type { IssueTarget } from "../../shared/paths.ts";
 
 /** One item of the list of notifications; a change has one for each field it changed. */
 export type NotificationItem = Schema<"NotificationEntry">;
@@ -95,66 +97,37 @@ export function targetOf(row: NotificationRow): IssueTarget | undefined {
   return isChange(row) ? { kind: "change", at: row.at } : undefined;
 }
 
-/**
- * Where a renewal of issue IDs that gave up sends the person: the settings of that project, so the
- * notice is not a dead end. A project the person may not name has no address to give.
- */
-export function projectSettingsOf(row: NotificationRow): string | undefined {
-  const project = row.entries.find(
-    (entry) => entry.issue_ids_failed !== undefined,
+/** The short name of the project whose issue IDs could not be renewed, if the person may know it. */
+export function failedRenewalProjectOf(row: NotificationRow): string | undefined {
+  const renewal = row.entries.find(
+    (entry) => entry.issue_ids_failed !== undefined && entry.issue_ids_failed !== null,
   )?.issue_ids_failed;
-  return project?.shown === "visible" && typeof project.short_name === "string"
-    ? addressInProject(paths.projectSettings, project.short_name)
-    : undefined;
+  return renewal?.shown === "visible" ? (renewal.short_name ?? undefined) : undefined;
+}
+
+/** What a notification says, as the shared wording takes it (`bb-core`, `wording::Notice`). */
+export function noticeOf(row: NotificationRow): WordedNotice {
+  const edit = row.entries.find((entry) => entry.notice !== undefined)?.notice;
+  const renewal = row.entries.find(
+    (entry) => entry.issue_ids_failed !== undefined && entry.issue_ids_failed !== null,
+  )?.issue_ids_failed;
+  const file = row.entries.find((entry) => entry.file_event !== undefined);
+  return {
+    kind: row.kind,
+    who: whoOf(row),
+    comment: commentOf(row) !== undefined,
+    changes: isChange(row) ? row.entries.map((entry) => wordedChange(entry)) : [],
+    notice: edit ?? null,
+    run_done: !row.entries.some((entry) => entry.run_done === false),
+    file: file === undefined ? null : wordedFile(file).what,
+    renewal:
+      renewal === undefined || renewal === null
+        ? null
+        : { project: renewal.shown === "visible" ? (renewal.name ?? null) : null },
+  };
 }
 
 /** What happened, in words: one sentence, or one for each field a change touched. */
-export function sentencesOf(row: NotificationRow): readonly string[] {
-  const who = whoOf(row);
-  if (row.kind === "mentioned") {
-    return [t("notifications.mentioned", { who })];
-  }
-  if (row.kind === "assigned") {
-    return [t("notifications.assigned", { who })];
-  }
-  if (row.kind === "edit_notice") {
-    return [editNoticeSentence(row, who)];
-  }
-  if (row.kind === "run_ended") {
-    const renewal = row.entries.find(
-      (entry) => entry.issue_ids_failed !== undefined,
-    )?.issue_ids_failed;
-    if (renewal !== undefined && renewal !== null) {
-      return [
-        renewal.shown === "visible" && renewal.name !== undefined && renewal.name !== null
-          ? t("notifications.issue-ids-failed", { project: renewal.name })
-          : t("notifications.issue-ids-failed-hidden"),
-      ];
-    }
-    return [
-      row.entries.some((entry) => entry.run_done === false)
-        ? t("notifications.run-failed")
-        : t("notifications.run-done"),
-    ];
-  }
-  const file = row.entries.find((entry) => entry.file_event !== undefined);
-  if (file !== undefined) {
-    return [fileSentence(file)];
-  }
-  if (isChange(row)) {
-    return row.entries.map((entry) => changeSentence(entry));
-  }
-  return [
-    commentOf(row) === undefined ? t("notifications.news") : t("notifications.commented", { who }),
-  ];
-}
-
-function editNoticeSentence(row: NotificationRow, who: string): string {
-  const notice = row.entries.find((entry) => entry.notice !== undefined)?.notice;
-  if (notice === "taken_over") {
-    return t("notifications.taken-over", { who });
-  }
-  return notice === "released"
-    ? t("notifications.released", { who })
-    : t("notifications.finish-asked", { who });
+export function sentencesOf(wording: Wording, row: NotificationRow): readonly string[] {
+  return wording.notificationSentences(noticeOf(row)).map((said) => renderSaid(said));
 }

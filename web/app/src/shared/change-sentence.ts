@@ -1,9 +1,11 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import type { Wording, WordedChange, WordedSide } from "@bugaboo/wasm";
 
-import { changeValueText } from "./change-value.ts";
 import { fieldNameOf } from "./field-names.ts";
-import { personName } from "./person.ts";
+import { regionWords } from "./own-value-text.ts";
+import { personName, personNameInside } from "./person.ts";
+import { renderSaid } from "./said.ts";
 
 /**
  * What the sentence of a change needs of an item that says one: the history of an issue and a
@@ -34,7 +36,7 @@ export function whoOf(entry: { readonly by?: ChangeWords["by"] | undefined }): s
   return entry.by === undefined || entry.by === null ? t("person.bugaboo") : personName(entry.by);
 }
 
-/** The value of one side of a history entry in the one shape of a change's value, if it has any. */
+/** The value of one side of an item in the one shape of a change's value, if it has any. */
 function valueOf(entry: ChangeWords, side: "before" | "after"): Schema<"ChangeValueBody"> | null {
   const before = side === "before";
   const text = before ? entry.before_text : entry.after_text;
@@ -66,25 +68,51 @@ function valueOf(entry: ChangeWords, side: "before" | "after"): Schema<"ChangeVa
   return issue === undefined || issue === null ? null : { shown: "issue", issue };
 }
 
-/** What one side of a change shows: a word, the people, or the issue; nothing for no value. */
-export function sideOf(entry: ChangeWords, side: "before" | "after"): string | undefined {
-  return changeValueText(entry.field ?? "", valueOf(entry, side));
+/**
+ * One side of a change as the shared wording takes it. What depends on the region (a number, a day,
+ * a moment) and the names of people are written here; the choice of words is `bb-core`'s.
+ */
+export function wordedSideOf(
+  value: Schema<"ChangeValueBody"> | null | undefined,
+): WordedSide | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (value.shown === "text") {
+    return { shown: "text", text: value.text };
+  }
+  if (value.shown === "names") {
+    return { shown: "names", names: value.names };
+  }
+  if (value.shown === "people") {
+    return { shown: "people", people: value.people.map((person) => personNameInside(person)) };
+  }
+  if (value.shown === "typed") {
+    return {
+      shown: "typed",
+      kind: value.kind,
+      value: value.value,
+      worded: regionWords(value.kind, value.value) ?? null,
+    };
+  }
+  return { shown: "plain", text: value.shown === "project" ? value.project.name : value.issue.key };
 }
 
-/** The sentence of a change of one field: *Ben changed Priority from Normal to High*. */
-export function changeSentence(entry: ChangeWords): string {
-  const who = whoOf(entry);
-  const field = fieldNameOf({ code: entry.field ?? "", name: entry.field_name });
-  const before = sideOf(entry, "before");
-  const after = sideOf(entry, "after");
-  if (before !== undefined && after !== undefined) {
-    return t("history.changed", { who, field, before, after });
-  }
-  if (after !== undefined) {
-    // After a colon for every field: a field such as *Assigned to* ends in the word that *set … to* would need.
-    return t("history.set", { who, field, after });
-  }
-  return before === undefined
-    ? t("history.changed-long-text", { who, field })
-    : t("history.cleared", { who, field });
+/** A change of one field as the shared wording takes it. */
+export function wordedChange(entry: ChangeWords): WordedChange {
+  return {
+    who: whoOf(entry),
+    field: entry.field ?? "",
+    field_name: fieldNameOf({ code: entry.field ?? "", name: entry.field_name }),
+    before: wordedSideOf(valueOf(entry, "before")),
+    after: wordedSideOf(valueOf(entry, "after")),
+  };
+}
+
+/**
+ * The sentence of a change of one field: *Ben changed Priority from Normal to High*. The words
+ * are chosen by `bb-core`, the code that words the e-mails of the server.
+ */
+export function changeSentence(wording: Wording, entry: ChangeWords): string {
+  return renderSaid(wording.changeSentence(wordedChange(entry)));
 }

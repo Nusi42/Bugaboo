@@ -66,9 +66,9 @@ export interface Book {
   /** What the people saw break a rule while they worked. */
   readonly broken: readonly string[];
   /** The readable ID of the issue of every file that was added. */
-  readonly files: readonly string[];
+  readonly files?: readonly string[];
   /** The IDs of the Guests of the run: what they are told is judged by what a Guest may see. */
-  readonly guests: readonly string[];
+  readonly guests?: readonly string[];
   /** The keys of the own fields the run hid from Guests. */
-  readonly hidden_from_guests: readonly string[];
+  readonly hidden_from_guests?: readonly string[];
 }

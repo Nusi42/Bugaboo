@@ -7,6 +7,9 @@ rust-version.workspace = true
 publish.workspace = true
 
 [features]
+# The data of the time zones, for what writes a moment in a named zone outside the server (the
+# generator of the test vectors). The server turns the same data on in bb-app.
+zone-data = ["jiff/tzdb-bundle-always"]
 # Describes the API types for OpenAPI (utoipa); only the HTTP layer turns it on.
 openapi = ["dep:utoipa"]
 # `SequentialIds`, the predictable ID source for tests. Only `[dev-dependencies]` switch it on.
@@ -27,6 +30,8 @@ utoipa = { workspace = true, optional = true }
 uuid = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
+# The zones that the wording tests name (the server turns the same data on in bb-app).
+jiff = { workspace = true, features = ["tzdb-bundle-always"] }
 proptest = { workspace = true }
 trybuild = { workspace = true }
 

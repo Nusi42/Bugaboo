@@ -25,4 +25,4 @@ Each issue type has a workflow. At the start, Task and Goal use *Simple* (**Open
 
 ## Two people at once
 
-If you change a value that somebody else changed after you opened the issue, Bugaboo tells you who changed it first and offers "Keep" their value or "Use mine"; nothing is overwritten unseen. The description is locked while somebody writes it: see [the issue page](issue-page.md).
+If you change a value that somebody else changed after you opened the issue, Bugaboo tells you who changed it first and offers "Keep" their value or "Use mine"; nothing is overwritten unseen. While somebody is writing the description, others see "… is editing" and cannot change it at the same time: see [the issue page](issue-page.md).

@@ -46,7 +46,7 @@ Rules:
 | **Goal**                 | A big piece of work that groups other issues under it              | epic, initiative, story            |
 | **Sub-issue / parent**   | An issue that belongs under another one                            | sub-task, child story              |
 | **Related issues**       | Issues connected to this one                                       | issue links (as UI label)          |
-| **Relation**             | One connection between two issues                                  | link, edge                         |
+| **Relation**             | One connection between two issues                                  | link, edge |
 | **Kind of relation**     | What the connection means. Each kind has a name for both directions: *blocks* / *is blocked by*, *duplicate of* / *has duplicate*, *causes* / *is caused by*, *related to* | link type |
 | **Relation map**         | A picture of everything connected to an issue, step by step        | graph, network, link cloud, dependency graph |
 | **Steps away**           | How many relations lie between two issues on the map               | depth, hops, degrees               |
@@ -221,7 +221,7 @@ Rules:
 | **My settings**          | Personal preferences                                               | profile settings, preferences      |
 | **Project settings**     | Settings of one project                                            | project admin                      |
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
-| **Reset to default**     | Take away the value set at this level, so the value from above counts again; also for a workflow or a layout that a place has of its own (it follows the project above again) | clear override, use the inherited … again (in UI) |
+| **Reset to default**     | Take away the value set at this level, so the value from above counts again; also for a workflow or a layout that a place has of its own (it goes back to the one that counts there without its own) | clear override, use the inherited … again (in UI) |
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
 | **Layout**               | Which fields appear where: on the *issue page*, in the *new-issue form*, on a *card* | screen, screen scheme      |
 | **Section**              | A titled group of fields in a layout; sections with the same *tab* are shown together under it | panel, block (in a layout) |
@@ -272,7 +272,7 @@ Rules:
 | **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
 | **E-mail & notifications** | The organization settings page where an administrator enters the mail server, sends a test e-mail and switches e-mail on | mail settings, SMTP (in UI) |
 | **Test e-mail**          | One e-mail that an administrator sends to themselves (*Send me a test e-mail*) to see that the mail server works | try it (for e-mail) |
-| **Link**                 | A web address that you open, in an e-mail or on a screen (to an issue, or to finish creating an account) | address (for a link) |
+| **Link**                 | A web address that you open, in an e-mail or on a screen (to an issue, or to finish creating an account); never the connection between two issues, which is a *Relation* (so *link* stays in the Don't-say column of *Relation*, and TXT-TERMS allows the web sense by entries in `tools/checks/terms-exemptions.toml`) | address (for a link) |
 | **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments) | — |
 | **Handle**               | A person's short unique name for mentions (`@ana.brandt`), changeable in *My settings* | username, nick (in UI) |
 

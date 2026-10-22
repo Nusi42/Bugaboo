@@ -22,7 +22,7 @@ export interface RulesWindowProps {
 /**
  * The rules of one status change in plain words (WF-03, UX §5.4): *Who can do it*, *Only if …*,
  * *Must be filled in* and *Ask for*. A form opens as a window (R10). Every change goes into the
- * draft at once; *Done* only closes the window, and the change counts after *Publish*.
+ * draft at once; *Keep these rules* only closes the window, and the change counts after *Publish*.
  */
 export function RulesWindow({
   isOpen,

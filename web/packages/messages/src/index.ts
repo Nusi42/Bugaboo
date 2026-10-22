@@ -46,17 +46,41 @@ function missing(key: string): string {
  * The values a message needs are checked at compile time.
  */
 export function t<K extends MessageKey>(key: K, ...values: ValuesOf<K>): string {
+  const formatter = formatterFor(key);
+  return formatter === undefined ? missing(key) : joined(formatter.format<string>(values[0]));
+}
+
+/** The formatter of `key`, or nothing when its part is not loaded. */
+function formatterFor(key: MessageKey): IntlMessageFormat | undefined {
   let formatter = formatters.get(key);
   if (formatter === undefined) {
     const text = textOf(key);
     if (text === undefined) {
-      return missing(key);
+      return undefined;
     }
     formatter = new IntlMessageFormat(text, locale);
     formatters.set(key, formatter);
   }
-  const result = formatter.format<string>(values[0]);
-  return Array.isArray(result) ? result.join("") : result;
+  return formatter;
+}
+
+/** The text a formatter made, which is a list of parts only for a message with markup. */
+function joined(result: string | readonly string[]): string {
+  return Array.isArray(result) ? result.join("") : String(result);
+}
+
+/**
+ * The text for a key that arrives as data, with the words for its placeholders: the message keys
+ * that the shared wording of `bb-core` picks (`bb-wasm`). A key that is not loaded is the defect
+ * `t()` reports. The words are checked by the Rust side, which builds them from the typed
+ * messages of the same catalog.
+ */
+export function textByKey(key: string, values: Readonly<Record<string, string>>): string {
+  if (!isMessageKey(key)) {
+    return missing(key);
+  }
+  const formatter = formatterFor(key);
+  return formatter === undefined ? missing(key) : joined(formatter.format<string>({ ...values }));
 }
 
 /**

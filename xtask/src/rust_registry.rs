@@ -51,7 +51,7 @@ struct Shared {
 
 impl Shared {
     fn add(&mut self, item: &syn::ItemConst) {
-        if let Some(values) = choice_values(item) {
+        if let Some(values) = choice_values(item, &self.constants) {
             self.lists.insert(item.ident.to_string(), values);
         } else if let Some((_, typescript)) = literal(&item.expr) {
             self.constants.insert(item.ident.to_string(), typescript);
@@ -198,8 +198,13 @@ fn choices_of(expr: &syn::Expr) -> syn::Result<Option<String>> {
     }
 }
 
-/// The values of `const NAME: &[Choice] = &[Choice::new("value", label), …];`.
-fn choice_values(item: &syn::ItemConst) -> Option<Vec<String>> {
+/// The values of `const NAME: &[Choice] = &[Choice::new("value", label), …];`. A value may be the
+/// name of a constant that holds the text (declared earlier), so the code that needs the value
+/// uses the same constant.
+fn choice_values(
+    item: &syn::ItemConst,
+    constants: &BTreeMap<String, String>,
+) -> Option<Vec<String>> {
     let syn::Expr::Reference(reference) = &*item.expr else {
         return None;
     };
@@ -213,7 +218,15 @@ fn choice_values(item: &syn::ItemConst) -> Option<Vec<String>> {
             let syn::Expr::Call(call) = element else {
                 return None;
             };
-            literal(call.args.first()?).map(|(text, _)| text)
+            let value = call.args.first()?;
+            if let Some((text, _)) = literal(value) {
+                return Some(text);
+            }
+            let syn::Expr::Path(path) = value else {
+                return None;
+            };
+            let typescript = constants.get(&path.path.get_ident()?.to_string())?;
+            serde_json::from_str(typescript).ok()
         })
         .collect()
 }
@@ -365,6 +378,16 @@ pub(super) const DEFAULT_LOOK: &str = "day";
         assert_eq!(settings[0].choices.as_deref(), Some("MODE_CHOICES"));
         assert_eq!(settings[1].default, "90");
         assert_eq!(lists["MODE_CHOICES"], ["device", "light"]);
+    }
+
+    #[test]
+    fn good_example_a_choice_may_name_a_constant_that_holds_its_value() {
+        let named = r#"
+pub const DAY: &str = "day";
+const LOOK_CHOICES: &[Choice] = &[Choice::new(DAY, a), Choice::new("night", b)];
+"#;
+        let (_, shared) = read_all(named).unwrap();
+        assert_eq!(shared.lists["LOOK_CHOICES"], ["day", "night"]);
     }
 
     #[test]
