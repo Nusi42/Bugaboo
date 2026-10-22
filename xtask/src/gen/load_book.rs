@@ -165,12 +165,11 @@ fn ts_type(ty: &Type, known: &mut Vec<String>) -> anyhow::Result<(String, bool)>
         }
     };
     Ok(match name.as_str() {
-        "String" => ("string".to_owned(), false),
+        "String" | "MessageKey" => ("string".to_owned(), false),
         "bool" => ("boolean".to_owned(), false),
         "i8" | "i16" | "i32" | "i64" | "isize" | "u8" | "u16" | "u32" | "u64" | "usize" | "f32"
         | "f64" => ("number".to_owned(), false),
         "Option" => (argument(known)?.0, true),
-        "MessageKey" => ("string".to_owned(), false),
         "Value" => ("unknown".to_owned(), false),
         "BTreeMap" | "HashMap" => {
             let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments else {
@@ -221,7 +220,7 @@ fn snake_case(name: &str) -> String {
 fn field_lines(
     fields: &syn::FieldsNamed,
     owner: &dyn std::fmt::Display,
-    indent: &str,
+    pad: &str,
     known: &mut Vec<String>,
 ) -> anyhow::Result<String> {
     let mut out = String::new();
@@ -232,14 +231,13 @@ fn field_lines(
         let (ts, option) = ts_type(&field.ty, known)
             .with_context(|| format!("the field `{ident}` of `{owner}`"))?;
         let (mark, ts) = match (option, serde.default, serde.skip_serializing_if) {
-            (false, true, _) => ("?", ts),
+            (false, true, _) | (true, true, true) => ("?", ts),
             (false, false, _) => ("", ts),
-            (true, true, true) => ("?", ts),
             (true, true, false) => ("?", format!("{ts} | null")),
             (true, false, _) => ("", format!("{ts} | null")),
         };
-        out.push_str(&doc_comment(&docs_of(&field.attrs), indent));
-        let _ = writeln!(out, "{indent}readonly {key}{mark}: {ts};");
+        out.push_str(&doc_comment(&docs_of(&field.attrs), pad));
+        let _ = writeln!(out, "{pad}readonly {key}{mark}: {ts};");
     }
     Ok(out)
 }
