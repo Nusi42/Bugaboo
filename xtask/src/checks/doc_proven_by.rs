@@ -39,13 +39,52 @@ impl Check for DocProvenBy {
     }
 }
 
-/// Whether a backticked word is the name of a test: a long sentence in snake case.
+/// Whether a backticked word is the name of a test, by its form: snake case with a feature ID in
+/// front, `wf_02_…`, `sec_06_…`, `iss_01a_…`, `m3_f53_…` (a digit in one of the first two parts).
+/// However short the rest, it is a name; `known_field_names` or `credential_set` are not.
 fn is_test_name(word: &str) -> bool {
+    let parts: Vec<&str> = word.split('_').collect();
     word.starts_with(|c: char| c.is_ascii_lowercase())
         && word
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
-        && word.split('_').count() >= 6
+        && parts.len() >= 2
+        && parts.iter().all(|part| !part.is_empty())
+        && parts
+            .iter()
+            .take(2)
+            .any(|part| part.chars().any(|c| c.is_ascii_digit()))
+}
+
+/// Adds a character to the cell that is being read.
+fn push(cells: &mut [String], c: char) {
+    if let Some(cell) = cells.last_mut() {
+        cell.push(c);
+    }
+}
+
+/// The cells of a table row: split at `|`, but not at `\|`, which is a pipe in the text.
+fn cells_of(line: &str) -> Vec<String> {
+    let mut cells = vec![String::new()];
+    let mut chars = line.trim().chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if chars.peek() == Some(&'|') => {
+                chars.next();
+                push(&mut cells, '|');
+            }
+            '|' => cells.push(String::new()),
+            other => push(&mut cells, other),
+        }
+    }
+    // The row starts and ends with a pipe, so the first and the last piece are empty.
+    if cells.first().is_some_and(|cell| cell.trim().is_empty()) {
+        cells.remove(0);
+    }
+    if cells.last().is_some_and(|cell| cell.trim().is_empty()) {
+        cells.pop();
+    }
+    cells
 }
 
 /// The words between backticks.
@@ -61,12 +100,14 @@ fn evaluate(path: &str, text: &str, lists: &[(&str, &[Required])]) -> Vec<Findin
             column = None;
             continue;
         }
-        let cells: Vec<&str> = line.trim().trim_matches('|').split('|').collect();
+        let cells = cells_of(line);
         let Some(at) = column else {
             column = cells.iter().position(|cell| cell.trim() == COLUMN);
             continue;
         };
-        let Some(cell) = cells.get(at) else { continue };
+        let Some(cell) = cells.get(at).map(String::as_str) else {
+            continue;
+        };
         let cited: Vec<&(&str, &[Required])> = lists
             .iter()
             .filter(|(id, _)| {
@@ -129,6 +170,21 @@ mod tests {
         assert!(evaluate("a.md", &text, &[("TEST-X", &LIST)]).is_empty());
         let other = table("TEST-X, `known_field_names`, `getMailServer`");
         assert!(evaluate("a.md", &other, &[("TEST-X", &LIST)]).is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_short_name_is_a_name_too() {
+        let text = table("TEST-X, `wf_01_short`");
+        assert_eq!(evaluate("a.md", &text, &[("TEST-X", &LIST)]).len(), 1);
+        let good = table("TEST-X, `wf_01_a_thing_that_is_required_and_long`, `m3_f53_x`");
+        assert_eq!(evaluate("a.md", &good, &[("TEST-X", &LIST)]).len(), 1);
+    }
+
+    #[test]
+    fn an_escaped_pipe_does_not_split_a_cell() {
+        assert_eq!(cells_of("| a \\| b | c |"), [" a | b ", " c "]);
+        let text = table("`a \\| b`, TEST-X, `wf_01_another_thing_nobody_requires_here`");
+        assert_eq!(evaluate("a.md", &text, &[("TEST-X", &LIST)]).len(), 1);
     }
 
     #[test]

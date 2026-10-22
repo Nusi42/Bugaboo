@@ -17,6 +17,7 @@ use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{FieldId, IssueTypeId, ProjectId, RoleId};
 use bb_core::lookup::nearest_row;
+use bb_core::offer::reaches;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::words;
 use bb_core::words::Word;
@@ -289,7 +290,7 @@ impl LevelRules {
     #[must_use]
     pub fn at(&self, roles: &BTreeSet<RoleId>, chain: &[ProjectId]) -> Self {
         let applies = |role: RoleId, project: Option<ProjectId>| {
-            roles.contains(&role) && project.is_none_or(|project| chain.contains(&project))
+            roles.contains(&role) && reaches(project, chain)
         };
         Self {
             fields: filtered(&self.fields, applies),

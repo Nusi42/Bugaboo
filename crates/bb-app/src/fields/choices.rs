@@ -45,6 +45,17 @@ fn name_taken(choices: &[FieldChoice], name: &str, except: Option<ChoiceId>) -> 
     )
 }
 
+/// Whether the choice, as it is written, has a name that is new or changed against the stored
+/// choices and that another choice has already: names stored before one rule told them apart stay
+/// as they are.
+fn renamed_into_a_taken_name(choices: &[FieldChoice], written: &FieldChoice) -> bool {
+    let renamed = choices
+        .iter()
+        .find(|choice| choice.id == written.id)
+        .is_none_or(|choice| choice.name != written.name);
+    renamed && name_taken(choices, &written.name, Some(written.id))
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The field with choices that the person manages, at the version they looked at.
     async fn field_to_manage(
@@ -237,7 +248,8 @@ pub async fn change_choice<S: AuthStore>(
     let mut after = before.clone();
     if let Some(name) = &input.name {
         after.name = clean_name(name)?;
-        if name_taken(&definition.choices, &after.name, Some(after.id)) {
+        if after.name != before.name && name_taken(&definition.choices, &after.name, Some(after.id))
+        {
             return Err(ErrorCode::NameTaken.into());
         }
     }
@@ -295,7 +307,7 @@ pub async fn change_choice<S: AuthStore>(
             let taken = known
                 .iter()
                 .find(|found| found.field.id == stored.field)
-                .is_some_and(|found| name_taken(&found.choices, &stored.name, Some(stored.id)));
+                .is_some_and(|found| renamed_into_a_taken_name(&found.choices, &stored));
             if taken {
                 return Err(stopped.stop::<S>(ErrorCode::NameTaken));
             }

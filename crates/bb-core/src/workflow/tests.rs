@@ -284,7 +284,7 @@ fn wf_02_a_new_status_gets_a_key_and_a_status_change_names_it_by_its_name() {
         change_draft(" in qa ", "done", "Pass"),
         change_draft("done", "open", "Reopen"),
     ];
-    let content = WorkflowContent::from_drafts(&statuses, &changes).unwrap();
+    let content = WorkflowContent::from_drafts(&statuses, &changes, &[]).unwrap();
     let keys: Vec<&str> = content
         .statuses
         .iter()
@@ -296,7 +296,7 @@ fn wf_02_a_new_status_gets_a_key_and_a_status_change_names_it_by_its_name() {
     // A key that the workflow has counts before a name; a status that is not there is not one.
     let unknown = [change_draft("open", "nowhere", "Go")];
     assert_eq!(
-        WorkflowContent::from_drafts(&statuses, &unknown),
+        WorkflowContent::from_drafts(&statuses, &unknown, &[]),
         Err(Problem::UnknownStatus)
     );
     // Two new statuses with the same words get keys of their own, and then are one problem.
@@ -305,7 +305,7 @@ fn wf_02_a_new_status_gets_a_key_and_a_status_change_names_it_by_its_name() {
         draft(None, "in qa", StatusGroup::InProgress),
     ];
     assert_eq!(
-        WorkflowContent::from_drafts(&twice, &[]),
+        WorkflowContent::from_drafts(&twice, &[], &[]),
         Err(Problem::NameTwice)
     );
 }
@@ -374,4 +374,50 @@ fn wf_01_a_status_key_in_json_is_its_text() {
     assert_eq!(json, "\"in-progress\"");
     assert!(serde_json::from_str::<StatusKey>("\"In Progress\"").is_err());
     assert_eq!(key(DONE).to_string(), "done");
+}
+
+#[test]
+fn wf_02_two_stored_names_that_differ_only_in_spaces_can_be_saved_again_but_not_made() {
+    // Stored before names were told apart by one rule: *In  QA* and *In QA* are two statuses.
+    let stored = [
+        WorkflowStatus {
+            key: key("in-qa"),
+            name: "In  QA".to_owned(),
+            group: StatusGroup::InProgress,
+        },
+        WorkflowStatus {
+            key: key("in-qa-2"),
+            name: "In QA".to_owned(),
+            group: StatusGroup::InProgress,
+        },
+    ];
+    let kept = [
+        draft(Some("in-qa"), "In  QA", StatusGroup::InProgress),
+        draft(Some("in-qa-2"), "In QA", StatusGroup::InProgress),
+    ];
+    assert!(WorkflowContent::from_drafts(&kept, &[], &stored).is_ok());
+    // Changing the group of one, and so not its name, is still fine.
+    let regrouped = [
+        draft(Some("in-qa"), "In  QA", StatusGroup::Done),
+        draft(Some("in-qa-2"), "In QA", StatusGroup::InProgress),
+    ];
+    assert!(WorkflowContent::from_drafts(&regrouped, &[], &stored).is_ok());
+    // A status whose name changes into the other one's words, or a new one, is not.
+    let renamed = [
+        draft(Some("in-qa"), "in   qa", StatusGroup::InProgress),
+        draft(Some("in-qa-2"), "In QA", StatusGroup::InProgress),
+    ];
+    assert_eq!(
+        WorkflowContent::from_drafts(&renamed, &[], &stored),
+        Err(Problem::NameTwice)
+    );
+    let added = [
+        draft(Some("in-qa"), "In  QA", StatusGroup::InProgress),
+        draft(Some("in-qa-2"), "In QA", StatusGroup::InProgress),
+        draft(None, "IN QA", StatusGroup::InProgress),
+    ];
+    assert_eq!(
+        WorkflowContent::from_drafts(&added, &[], &stored),
+        Err(Problem::NameTwice)
+    );
 }

@@ -36,6 +36,21 @@ async fn go(ada: &mut Browser, issue: &str, status: &str) -> Result<super::http:
     .await
 }
 
+/// The lock of the editor of the workflow, taken by `who`: its token.
+pub(super) async fn lock_workflow(who: &mut Browser, workflow: &str) -> Result<Value, Failure> {
+    let lock = who
+        .send(
+            "POST",
+            LOCKS,
+            Some(json!({
+                "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
+                "editor_id": AN_EDITOR,
+            })),
+        )
+        .await?;
+    Ok(ok(&lock)?["lock_token"].clone())
+}
+
 #[tokio::test]
 async fn wf_06_a_new_organization_offers_the_three_starter_workflows_over_http() -> TestResult {
     each_database("wf_06_starters_http", async |db| {
@@ -98,17 +113,7 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
         .clone();
         let workflow = text_in(&editor["workflow"], "id")?;
         let version = editor["workflow"]["version"].clone();
-        let lock = ok(&ada
-            .send(
-                "POST",
-                LOCKS,
-                Some(json!({
-                    "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
-                    "editor_id": AN_EDITOR,
-                })),
-            )
-            .await?)?["lock_token"]
-            .clone();
+        let lock = lock_workflow(&mut ada, &workflow).await?;
         let publish = |moves: Value| {
             json!({
                 "version": version,
@@ -218,21 +223,15 @@ async fn wf_02_publishing_and_writing_an_issue_at_once_never_strand_an_issue() -
             ok(&go(&mut ada, &moving, "in-progress").await?)?;
             let other = key_of(&ada.send("POST", &path, Some(made("Races"))).await?)?;
             let editor = ok(&ada
-                .send("POST", WORKFLOWS, Some(json!({"project": text_in(&project, "id")?})))
+                .send(
+                    "POST",
+                    WORKFLOWS,
+                    Some(json!({"project": text_in(&project, "id")?})),
+                )
                 .await?)?
             .clone();
             let workflow = text_in(&editor["workflow"], "id")?;
-            let lock = ok(&ada
-                .send(
-                    "POST",
-                    LOCKS,
-                    Some(json!({
-                        "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
-                        "editor_id": AN_EDITOR,
-                    })),
-                )
-                .await?)?["lock_token"]
-                .clone();
+            let lock = lock_workflow(&mut ada, &workflow).await?;
             let publish = json!({
                 "version": editor["workflow"]["version"],
                 "lock_token": lock,

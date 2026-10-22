@@ -255,13 +255,21 @@ async fn write_in<S: AuthStore>(
     }
     let types = S::issue_types_in(transaction).await?;
     let tree = tree_in::<S>(transaction).await?;
-    if name_taken(
-        &types,
-        &tree,
-        &written.name,
-        written.project,
-        Some(written.id),
-    ) {
+    // Only a name that is new or changed is judged: a type stored before names were told apart by
+    // one rule can still be given another icon or be retired.
+    let renamed = types
+        .iter()
+        .find(|stored| stored.id == written.id)
+        .is_none_or(|stored| stored.name != written.name);
+    if renamed
+        && name_taken(
+            &types,
+            &tree,
+            &written.name,
+            written.project,
+            Some(written.id),
+        )
+    {
         return Err(stopped.stop::<S>(ErrorCode::NameTaken));
     }
     let updated = S::update_issue_type(
@@ -319,7 +327,7 @@ pub async fn change_issue_type<S: AuthStore>(
     }
     let name = name.unwrap_or_else(|| current.name.clone());
     let tree = ctx.project_tree_now().await?;
-    if name_taken(&types, &tree, &name, current.project, Some(current.id)) {
+    if name != current.name && name_taken(&types, &tree, &name, current.project, Some(current.id)) {
         return Err(ErrorCode::NameTaken.into());
     }
     let icon = input.icon.unwrap_or(current.icon);

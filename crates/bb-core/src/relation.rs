@@ -11,7 +11,6 @@ use jiff::Timestamp;
 
 use crate::id::{IssueId, RelationId, RelationKindId, UserId};
 use crate::message::{self, MessageKey};
-use crate::names::same_name;
 use crate::personal::Entity;
 
 /// The most levels of sub-issues one chain may have. A deeper chain is refused, so the check for
@@ -118,7 +117,9 @@ impl RelationKind {
     /// person started from.
     #[must_use]
     pub fn is_symmetric(&self) -> bool {
-        same_name(&self.forward, &self.backward)
+        // Not `same_name`: this says how a kind is shown (one name or two), and a kind stored with
+        // names that differ in inner spaces has always been shown with two.
+        self.forward.to_lowercase() == self.backward.to_lowercase()
     }
 }
 
@@ -236,6 +237,22 @@ mod tests {
         (0..count)
             .map(|_| IssueId::generate(&mut ids).unwrap())
             .collect()
+    }
+
+    #[test]
+    fn iss_04_a_kind_stored_with_names_that_differ_in_inner_spaces_is_still_shown_with_two() {
+        let kind = |forward: &str, backward: &str| RelationKind {
+            id: RelationKindId::generate(&mut SequentialIds::default()).unwrap(),
+            forward: forward.to_owned(),
+            backward: backward.to_owned(),
+            position: 0,
+            retired_at: None,
+            version: 1,
+        };
+        assert!(kind("Related to", "related TO").is_symmetric());
+        // Stored before one rule told names apart: it keeps being shown as two names.
+        assert!(!kind("Related  to", "related to").is_symmetric());
+        assert!(!kind("Blocks", "Is blocked by").is_symmetric());
     }
 
     #[test]

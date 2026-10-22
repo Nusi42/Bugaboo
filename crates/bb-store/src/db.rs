@@ -32,7 +32,7 @@ use sqlx::sqlite::{
 use sqlx::{AssertSqlSafe, PgPool, Postgres, Row as _, Sqlite, SqlitePool};
 
 use crate::error::StoreError;
-use crate::locks::{Held, LockClass};
+use crate::locks::{Held, LockClass, Mode};
 
 /// How many values one statement binds at most. SQLite allows 32,766 and PostgreSQL 65,535, so the
 /// smaller counts, less a little room for the values a statement binds besides its list. This is
@@ -470,7 +470,7 @@ impl Transaction {
         class: LockClass,
         key: i32,
     ) -> Result<(), StoreError> {
-        self.locks.take(class)?;
+        self.locks.take(class, Mode::Alone)?;
         if matches!(self.inner, TxInner::Postgres(_)) {
             let mut select = SelectStatement::new();
             select.expr(
@@ -490,7 +490,7 @@ impl Transaction {
         class: LockClass,
         key: i32,
     ) -> Result<(), StoreError> {
-        self.locks.take(class)?;
+        self.locks.take(class, Mode::Shared)?;
         if matches!(self.inner, TxInner::Postgres(_)) {
             let mut select = SelectStatement::new();
             select.expr(
