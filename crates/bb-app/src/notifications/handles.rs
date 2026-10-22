@@ -29,6 +29,11 @@ use bb_core::event::{Actor as EventActor, FieldChange};
 /// What the refused tries of a handle are counted for (`Ctx::reserve_for_person`).
 const TRIES_PURPOSE: &str = "handle";
 
+/// How many answers *taken* a person is given in a day. A person who looks for a free handle needs
+/// a few; more is probing for who exists (12-security, accepted risk of M2). After them, every
+/// handle gets the same answer.
+pub const TAKEN_ANSWERS_PER_DAY: u32 = 20;
+
 /// How many people without a handle one round of making them reads.
 const MISSING_AT_ONCE: u64 = 100;
 
@@ -183,6 +188,9 @@ pub async fn change_handle<S: AuthStore>(
     if changed_lately(changed, ctx.now()) {
         return Err(ErrorCode::HandleChangedLately.into());
     }
+    // Judged before anything is looked up: a person who used up the day learns nothing, a free
+    // handle included.
+    ctx.ensure_daily_allowance(TRIES_PURPOSE, person, TAKEN_ANSWERS_PER_DAY)?;
     let slot = ctx.reserve_for_person(TRIES_PURPOSE, person)?;
     let owner = ctx
         .store()
@@ -191,7 +199,8 @@ pub async fn change_handle<S: AuthStore>(
         .map_err(failed)?;
     if owner.is_some_and(|owner| owner != person) || ctx.reserved_handles().await?.contains(&handle)
     {
-        // The refused try stays counted: nothing gives it back.
+        // The refused try stays counted: nothing gives it back, and the day counts it too.
+        ctx.spend_daily_answer(TRIES_PURPOSE, person);
         return Err(ErrorCode::NameTaken.into());
     }
     // A handle that is free is no probe.

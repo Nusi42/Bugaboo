@@ -61,7 +61,12 @@ impl Tracker {
 struct Tables {
     trackers: HashMap<u64, Tracker>,
     tallies: HashMap<u64, (Instant, u32)>,
+    /// The answers counted for a day: when the day began, and how many so far.
+    dailies: HashMap<u64, (Instant, u32)>,
 }
+
+/// How long a day of answers lasts.
+const DAY: Duration = Duration::from_hours(24);
 
 /// The window after `strikes` full windows: doubled each time, up to [`MAX_WAIT`].
 fn window_after(strikes: u32) -> Duration {
@@ -91,6 +96,7 @@ impl FailureLimits {
             tables: Mutex::new(Tables {
                 trackers: HashMap::new(),
                 tallies: HashMap::new(),
+                dailies: HashMap::new(),
             }),
             hasher: RandomState::new(),
         })
@@ -146,6 +152,36 @@ impl FailureLimits {
         Ok(tracker.count == self.limit)
     }
 
+    fn daily_wait_at(&self, key: &str, limit: u32, now: Instant) -> Option<u64> {
+        let key = self.key(key);
+        let mut tables = self.lock();
+        let (began, count) = *tables.dailies.get(&key)?;
+        if now >= began + DAY {
+            tables.dailies.remove(&key);
+            return None;
+        }
+        (count >= limit).then(|| seconds_left(began + DAY, now))
+    }
+
+    fn daily_spend_at(&self, key: &str, now: Instant) {
+        let key = self.key(key);
+        let mut tables = self.lock();
+        if tables.dailies.len() >= MAX_KEYS && !tables.dailies.contains_key(&key) {
+            tables.dailies.retain(|_, (began, _)| now < *began + DAY);
+            if tables.dailies.len() >= MAX_KEYS {
+                // Fail closed: the table is full of running days, so this person is counted as
+                // having used theirs up.
+                tables.dailies.insert(key, (now, u32::MAX));
+                return;
+            }
+        }
+        let entry = tables.dailies.entry(key).or_insert((now, 0));
+        if now >= entry.0 + DAY {
+            *entry = (now, 0);
+        }
+        entry.1 = entry.1.saturating_add(1);
+    }
+
     fn tally_at(&self, key: &str, now: Instant) -> u32 {
         let key = self.key(key);
         let mut tables = self.lock();
@@ -188,6 +224,14 @@ impl FailureLimit for FailureLimits {
         self.tally_at(key, Instant::now())
     }
 
+    fn daily_wait(&self, key: &str, limit: u32) -> Option<u64> {
+        self.daily_wait_at(key, limit, Instant::now())
+    }
+
+    fn daily_spend(&self, key: &str) {
+        self.daily_spend_at(key, Instant::now());
+    }
+
     fn forget(&self, key: &str) {
         let key = self.key(key);
         self.lock().tallies.remove(&key);
@@ -216,6 +260,26 @@ mod tests {
         assert_eq!(wait, 40);
         // Another key is not affected.
         assert_eq!(failures.reserve_at("bob@example.test", now), Ok(false));
+    }
+
+    #[test]
+    fn sec_m2_the_answers_of_a_day_run_out_and_come_back_after_the_day() {
+        let failures = FailureLimits::new(10);
+        let now = Instant::now();
+        for _ in 0..3 {
+            assert_eq!(failures.daily_wait_at("handle:ada", 3, now), None);
+            failures.daily_spend_at("handle:ada", now);
+        }
+        assert_eq!(
+            failures.daily_wait_at("handle:ada", 3, now + secs(3_600)),
+            Some(23 * 3_600)
+        );
+        // Another person has their own day, and a new day starts with the next answer.
+        assert_eq!(failures.daily_wait_at("handle:bob", 3, now), None);
+        assert_eq!(
+            failures.daily_wait_at("handle:ada", 3, now + DAY + secs(1)),
+            None
+        );
     }
 
     #[test]

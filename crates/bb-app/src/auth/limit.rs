@@ -35,6 +35,13 @@ pub trait FailureLimit: Send + Sync {
 
     /// Forgets the count of `key`.
     fn forget(&self, key: &str);
+
+    /// The seconds until `key` may be asked again, when it has used up `limit` answers of its day
+    /// (a day starts with the first answer that is counted); none while it has some left.
+    fn daily_wait(&self, key: &str, limit: u32) -> Option<u64>;
+
+    /// Counts one answer against the day of `key`.
+    fn daily_spend(&self, key: &str);
 }
 
 /// A [`FailureLimit`] that lets every try through, for the places that have no failed tries and no
@@ -53,6 +60,12 @@ impl FailureLimit for NoFailureLimit {
     fn release(&self, _key: &str) {}
 
     fn clear(&self, _key: &str) {}
+
+    fn daily_wait(&self, _key: &str, _limit: u32) -> Option<u64> {
+        None
+    }
+
+    fn daily_spend(&self, _key: &str) {}
 
     fn tally(&self, _key: &str) -> u32 {
         0
@@ -139,6 +152,35 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Reserves a try of one person for a purpose (`handle`): the tries that are refused count
     /// until the person is let through, and a person who keeps being refused waits. Only the person
     /// counts, not the network, so a shared network is not held up by one of its people.
+    /// Whether a person has used up the answers of a day for a purpose (`handle`): the answers
+    /// that tell something about other people, counted against the person for a day, and after
+    /// the allowance every try gets the same answer, whatever it asked for.
+    ///
+    /// # Errors
+    /// `rate_limit.exceeded` with the wait, when the allowance of the day is used up.
+    pub(crate) fn ensure_daily_allowance(
+        &self,
+        purpose: &str,
+        person: UserId,
+        limit: u32,
+    ) -> Result<(), AppError> {
+        match self
+            .services
+            .limiter
+            .daily_wait(&purpose_key(purpose, &person), limit)
+        {
+            Some(retry_after) => Err(AppError::Limited { retry_after }),
+            None => Ok(()),
+        }
+    }
+
+    /// Counts one answer against the day of a person for a purpose.
+    pub(crate) fn spend_daily_answer(&self, purpose: &str, person: UserId) {
+        self.services
+            .limiter
+            .daily_spend(&purpose_key(purpose, &person));
+    }
+
     pub(crate) fn reserve_for_person(
         &self,
         purpose: &str,

@@ -6,11 +6,13 @@
 use axum::http::StatusCode;
 use bb_api::DEFAULT_SIGN_IN_FAILURES_PER_MINUTE;
 use bb_app::access::StartingRole;
+use bb_app::notifications::TAKEN_ANSWERS_PER_DAY;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
-use super::http::{Browser, rig_and_app};
+use super::http::{Browser, rig_and_app, rig_and_app_with};
 use super::issues_site::Site;
+use super::rig::Tries;
 
 const HANDLE: &str = "/api/v1/me/handle";
 
@@ -72,6 +74,50 @@ async fn sec_m2_a_person_who_keeps_asking_for_taken_handles_has_to_wait() -> Tes
             .send("PUT", HANDLE, Some(json!({"handle": "eve.free"})))
             .await?;
         assert_eq!(free.code(), "rate_limit.exceeded");
+        let mut bob = Browser::signed_in_as(&app, "bob@example.test").await?;
+        let own = bob
+            .send("PUT", HANDLE, Some(json!({"handle": "bobby"})))
+            .await?;
+        assert_eq!(own.status, StatusCode::OK, "{}", own.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_m2_the_answers_taken_run_out_for_the_day_and_then_every_handle_gets_one_answer()
+-> TestResult {
+    each_database("sec_m2_handle_day", async |db| {
+        // The tries of a minute are out of the way: the allowance of the day is what stops here.
+        let (rig, app) = rig_and_app_with(db, Tries::Roomy).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        site.person_called(StartingRole::TeamMember, "bob", "Bob Baker")
+            .await?;
+        site.person_called(StartingRole::TeamMember, "eve", "Eve Evans")
+            .await?;
+        let mut eve = Browser::signed_in_as(&app, "eve@example.test").await?;
+        for number in 0..TAKEN_ANSWERS_PER_DAY {
+            let reply = eve
+                .send("PUT", HANDLE, Some(json!({"handle": "bob.baker"})))
+                .await?;
+            assert_eq!(
+                (reply.status, reply.code()),
+                (StatusCode::CONFLICT, "name.taken"),
+                "try {number}"
+            );
+        }
+        // The day is used up: a taken handle, a free one and the handle of a role get one answer.
+        for guess in ["bob.baker", "eve.free", "administrator"] {
+            let reply = eve
+                .send("PUT", HANDLE, Some(json!({"handle": guess})))
+                .await?;
+            assert_eq!(
+                (reply.status, reply.code()),
+                (StatusCode::TOO_MANY_REQUESTS, "rate_limit.exceeded"),
+                "{guess}"
+            );
+        }
+        // Another person has a day of their own.
         let mut bob = Browser::signed_in_as(&app, "bob@example.test").await?;
         let own = bob
             .send("PUT", HANDLE, Some(json!({"handle": "bobby"})))
