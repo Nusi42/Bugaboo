@@ -5,13 +5,13 @@
 //! inside the transaction of a change. The unique keys (the name of a tag, the name of a label in
 //! its group) stop two people who add the same word at the same moment from both succeeding.
 
-use bb_app::tags::TagStore;
+use bb_app::tags::{TagStore, TagUse};
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId, UserId};
 use bb_core::names::name_key;
 use bb_core::own_fields::ChoiceColor;
 use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject};
 use jiff::Timestamp;
-use sea_query::{Cond, Expr, ExprTrait as _, LikeExpr, Order, Query, SelectStatement};
+use sea_query::{Expr, ExprTrait as _, LikeExpr, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, STATEMENT_ITEMS, StoredId, Transaction, to_micros};
@@ -20,41 +20,13 @@ use crate::schema::{
     IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, TagProjectRow, TagRow,
 };
 
+mod uses;
+
+pub(crate) use uses::sight_condition;
+
 fn read_color(row: &Row, column: impl sea_query::Iden + Copy) -> Result<ChoiceColor, StoreError> {
     ChoiceColor::from_code(&row.get::<String>(column)?)
         .ok_or(StoreError::Corrupt("the color of a tag or a label"))
-}
-
-/// The condition that an issue (table `issue`) is one the person reads (SEC-06): in a project where
-/// they see every issue, or one they reported where they see only their own; not in the trash unless
-/// asked; and not of a type the sight hides in its project.
-pub(crate) fn sight_condition(sight: &IssueSight) -> Cond {
-    let readable = Cond::any()
-        .add(
-            Expr::col((IssueRow::Table, IssueRow::Project))
-                .is_in(sight.all.iter().map(|project| project.stored())),
-        )
-        .add(
-            Expr::col((IssueRow::Table, IssueRow::Project))
-                .is_in(sight.own.iter().map(|project| project.stored()))
-                .and(Expr::col((IssueRow::Table, IssueRow::ReportedBy)).eq(sight.person.stored())),
-        );
-    let visible = sight
-        .hidden
-        .iter()
-        .fold(Cond::all(), |cond, (project, issue_type)| {
-            cond.add(
-                Expr::col((IssueRow::Table, IssueRow::Project))
-                    .ne(project.stored())
-                    .or(Expr::col((IssueRow::Table, IssueRow::IssueType)).ne(issue_type.stored())),
-            )
-        });
-    let kept = if sight.with_trashed {
-        Cond::all()
-    } else {
-        Cond::all().add(Expr::col((IssueRow::Table, IssueRow::DeletedAt)).is_null())
-    };
-    Cond::all().add(kept).add(readable).add(visible)
 }
 
 fn tag_columns() -> [TagRow; 6] {
@@ -432,6 +404,15 @@ impl TagStore for AuthStorage {
             .iter()
             .map(read_tag)
             .collect()
+    }
+
+    async fn tags_with_use(
+        &self,
+        seen: &IssueSight,
+        anywhere: &IssueSight,
+        visible: &[ProjectId],
+    ) -> Result<Vec<TagUse>, StoreError> {
+        uses::tags_with_use(self, seen, anywhere, visible).await
     }
 
     async fn insert_tag(transaction: &mut Transaction, tag: &Tag) -> Result<(), StoreError> {

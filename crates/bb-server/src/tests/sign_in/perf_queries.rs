@@ -26,9 +26,9 @@ const AT_MOST: usize = 47;
 /// only where the reader may know it (LM1 of the M4 exit review, `offers/known.rs`), so it also
 /// reads the types, the label groups and what the reader sees of the projects, once for a page
 /// and only when a row names a type or a label, and the tags the reader may know the same way
-/// (55 measured: four statements for the tags, once for a page; the types come from the one read of
-/// the request).
-const HISTORY_AT_MOST: usize = 55;
+/// (52 measured: one statement for the tags, with what decides them, once for a page; the types
+/// come from the one read of the request).
+const HISTORY_AT_MOST: usize = 52;
 
 /// Counts the statements a database runs between one look and the next.
 pub(super) struct Counter<'a> {

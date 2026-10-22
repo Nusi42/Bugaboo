@@ -20,6 +20,7 @@ use serde_json::json;
 
 use super::refs::NameRef;
 use super::rewrite::{Combining, Replacement, Rewrite, Sorted};
+use super::store::{TagLimit, TagUse};
 use super::types::{
     ChangeTag, CombineTags, TagChangePreview, TagChangePreviewQuery, TagPage, TagView, TagsQuery,
 };
@@ -63,6 +64,15 @@ fn tag_name_taken(tags: &[Tag], name: &str, except: TagId) -> bool {
             .map(|tag| tag.name.as_str()),
         name,
     )
+}
+
+/// Whether a person may know a tag (SEC-06): it is limited to a project they see, or it is used
+/// on an issue they read (`seen`), or it has no limit and no issue has it any more, also none in
+/// the trash (`anywhere` is false), so it can still be cleaned up. A tag that only issues or
+/// projects they do not see know is not there for them. The one definition, for the lists and for
+/// the history.
+fn tag_is_known(each: &TagUse) -> bool {
+    each.limit == TagLimit::Visible || each.seen || (each.limit == TagLimit::None && !each.anywhere)
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -111,31 +121,34 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// or projects they do not see know is not there for them (SEC-06).
     async fn known_tags(
         &self,
-        catalogue: &Catalogue,
         shown: &crate::projects::Shown,
     ) -> Result<BTreeSet<TagId>, AppError> {
-        let wanted = catalogue.tags.len() as u64;
-        let used = self
-            .store()
-            .used_tags(&shown.issue_sight(), "", wanted)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let used_anywhere = self
-            .store()
-            .used_tags(&shown.whole_sight(), "", wanted)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        Ok(catalogue
-            .tags
-            .iter()
-            .filter(|tag| {
-                let limited = catalogue.projects_of(tag.id);
-                limited.iter().any(|project| shown.get(*project).is_some())
-                    || used.iter().any(|found| found.id == tag.id)
-                    || (limited.is_empty() && !used_anywhere.iter().any(|found| found.id == tag.id))
-            })
-            .map(|tag| tag.id)
+        Ok(self
+            .known_tag_uses(shown)
+            .await?
+            .into_iter()
+            .map(|each| each.tag.id)
             .collect())
+    }
+
+    /// The tags the person may know, with what decided it, in one statement.
+    async fn known_tag_uses(
+        &self,
+        shown: &crate::projects::Shown,
+    ) -> Result<Vec<TagUse>, AppError> {
+        let whole = shown.whole_sight();
+        let visible: Vec<ProjectId> = whole
+            .all
+            .iter()
+            .copied()
+            .filter(|project| shown.get(*project).is_some())
+            .collect();
+        let uses = self
+            .store()
+            .tags_with_use(&shown.issue_sight(), &whole, &visible)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(uses.into_iter().filter(tag_is_known).collect())
     }
 
     /// The names of the tags the person may know of, in one spelling (lower case): what the history
@@ -145,13 +158,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         shown: &crate::projects::Shown,
     ) -> Result<BTreeSet<String>, AppError> {
-        let catalogue = self.tag_catalogue().await?;
-        let known = self.known_tags(&catalogue, shown).await?;
-        Ok(catalogue
-            .tags
-            .iter()
-            .filter(|tag| known.contains(&tag.id))
-            .map(|tag| tag.name.to_lowercase())
+        Ok(self
+            .known_tag_uses(shown)
+            .await?
+            .into_iter()
+            .map(|each| each.tag.name.to_lowercase())
             .collect())
     }
 
@@ -162,7 +173,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         shown: &crate::projects::Shown,
         id: TagId,
     ) -> Result<&'a Tag, AppError> {
-        let known = self.known_tags(catalogue, shown).await?;
+        let known = self.known_tags(shown).await?;
         if !known.contains(&id) {
             return Err(ErrorCode::NotFound.into());
         }
@@ -183,7 +194,7 @@ pub async fn tags<S: AuthStore>(
     let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.tag_catalogue().await?;
     let shown = ctx.shown_to(&actor).await?;
-    let known = ctx.known_tags(&catalogue, &shown).await?;
+    let known = ctx.known_tags(&shown).await?;
     let listed: Vec<&Tag> = catalogue
         .tags
         .iter()
