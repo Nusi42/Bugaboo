@@ -7,7 +7,11 @@
 //!   function or on a block around it (`#[cfg(test)]` alone is fine: a test only runs under it),
 //! - its file is part of the crate: a chain of `mod name;` (or `#[path = "…"]`) leads from a crate
 //!   root (`lib.rs`, `main.rs`, a file in `tests/`) to it, without a `cfg` on the way,
+//! - no inner `#![cfg(…)]` at the top of its file or of a module around it switches it off,
 //! - and, when the list asks for it, the test runs on both databases (ARCH-DB-PARITY).
+//!
+//! A list that names a folder (`within`) also wants every Rust file in that folder reached by a
+//! `mod`: a test file nobody declares never runs, whether or not a required test is in it.
 //!
 //! The lists and the words of the findings are the checks' own.
 
@@ -184,18 +188,44 @@ fn attributes_before(before: &str) -> &str {
 /// Whether attributes can switch an item off: a `cfg(…)` among them. `#[cfg(test)]` alone does not,
 /// because a test only runs under it (a module of tests that clippy lets unwrap is written so).
 fn has_cfg(attributes: &str) -> bool {
-    attributes.replace("#[cfg(test)]", "").contains("cfg(")
+    attributes
+        .replace("#[cfg(test)]", "")
+        .replace("#![cfg(test)]", "")
+        .contains("cfg(")
 }
 
-/// Whether a block that encloses the position `at` has `cfg(` in its attributes (a `mod` that is
-/// switched off around the tests).
+/// Whether a `#![cfg(…)]` is among the inner attributes that start `body` (the top of a file, or
+/// the first lines inside `mod m {`): it switches off everything in that scope.
+fn starts_with_inner_cfg(body: &str) -> bool {
+    let mut rest = body.trim_start();
+    while let Some(after) = rest.strip_prefix("#![") {
+        let Some(end) = after.find(']') else {
+            return false;
+        };
+        if has_cfg(&rest[..end + 4]) {
+            return true;
+        }
+        rest = after[end + 1..].trim_start();
+    }
+    false
+}
+
+/// Whether the file, or a block that encloses the position `at`, is switched off: `cfg(` in the
+/// attributes of a block (a `mod` around the tests), or an inner `#![cfg(…)]` at the top of the
+/// file or of such a block.
 fn inside_switched_off_block(code: &str, at: usize) -> bool {
+    if starts_with_inner_cfg(code) {
+        return true;
+    }
     let mut open: Vec<bool> = Vec::new();
     let mut header_start = 0;
     for (index, character) in code[..at].char_indices() {
         match character {
             '{' => {
-                open.push(has_cfg(&code[header_start..index]));
+                open.push(
+                    has_cfg(&code[header_start..index])
+                        || starts_with_inner_cfg(&code[index + 1..]),
+                );
                 header_start = index + 1;
             }
             '}' => {
@@ -347,6 +377,17 @@ fn is_root(path: &str) -> bool {
     )
 }
 
+/// Whether `path` is `within` or below it, on a folder boundary (`…/editing` does not hold
+/// `…/editing_old.rs`). Empty `within`: anywhere.
+fn is_within(path: &str, within: &str) -> bool {
+    let folder = within.trim_end_matches('/');
+    folder.is_empty()
+        || path == folder
+        || path
+            .strip_prefix(folder)
+            .is_some_and(|rest| rest.starts_with('/'))
+}
+
 /// What is wrong with one required test, or nothing.
 enum Verdict<'a> {
     Fine,
@@ -367,7 +408,7 @@ fn judge<'a>(code: &'a [(&'a str, String, String)], tree: &Tree, each: &Required
     let mut off = None;
     let mut one_database = None;
     for (path, _, text) in code {
-        if !path.starts_with(each.within) {
+        if !is_within(path, each.within) {
             continue;
         }
         for (at, _) in text.match_indices(&needle) {
@@ -389,6 +430,32 @@ fn judge<'a>(code: &'a [(&'a str, String, String)], tree: &Tree, each: &Required
     }
 }
 
+/// The Rust files in the folders that `required` names that no `mod` reaches from a crate root (or
+/// only behind a `cfg`): tests in them never run, and nobody sees it.
+fn unreached(code: &[(&str, String, String)], tree: &Tree, required: &[Required]) -> Vec<Finding> {
+    let mut folders: Vec<&str> = required
+        .iter()
+        .map(|each| each.within)
+        .filter(|within| !within.is_empty() && !has_extension(within, "rs"))
+        .collect();
+    folders.sort_unstable();
+    folders.dedup();
+    code.iter()
+        .filter(|(path, _, _)| {
+            folders.iter().any(|folder| is_within(path, folder)) && !tree.reaches(path)
+        })
+        .map(|(path, _, _)| {
+            Finding::at(
+                *path,
+                format!(
+                    "This file is in a folder of required tests, but {NO_MODULE}. Declare it with \
+                     `mod` or delete it."
+                ),
+            )
+        })
+        .collect()
+}
+
 /// The findings for the tests of `required` that are missing (`why_needed` finishes the sentence
 /// "The test … is missing. …"), switched off, or run on one database only.
 pub(super) fn evaluate(
@@ -401,6 +468,7 @@ pub(super) fn evaluate(
         .map(|(path, text)| (path.as_str(), strip_comments(text), strip(text)))
         .collect();
     let tree = Tree::of(&code);
+    let unreached = unreached(&code, &tree, required);
     required
         .iter()
         .filter_map(|each| match judge(&code, &tree, each) {
@@ -423,259 +491,12 @@ pub(super) fn evaluate(
                 ),
             )),
         })
+        .chain(unreached)
         .collect()
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// A crate with a root that declares `mod tests;`, and the text of that module.
-    fn crate_with(tests: &str) -> Vec<Source> {
-        vec![
-            ("crates/x/src/lib.rs".to_owned(), "mod tests;\n".to_owned()),
-            ("crates/x/src/tests.rs".to_owned(), tests.to_owned()),
-        ]
-    }
-
-    const NAME: &str = "x_01_a_thing_works";
-
-    fn found(sources: &[Source]) -> usize {
-        evaluate(sources, &[Required::anywhere(NAME)], "").len()
-    }
-
-    #[test]
-    fn good_example_a_live_test_in_a_declared_module() {
-        let text = format!("#[tokio::test]\nasync fn {NAME}() {{}}\n");
-        assert_eq!(found(&crate_with(&text)), 0);
-        let plain = format!("#[test]\nfn {NAME}() {{}}\n");
-        assert_eq!(found(&crate_with(&plain)), 0);
-    }
-
-    #[test]
-    fn bad_example_a_test_in_a_module_nobody_declares() {
-        let text = format!("#[test]\nfn {NAME}() {{}}\n");
-        let sources = vec![
-            ("crates/x/src/lib.rs".to_owned(), "mod other;\n".to_owned()),
-            ("crates/x/src/tests.rs".to_owned(), text),
-        ];
-        assert_eq!(found(&sources), 1);
-    }
-
-    #[test]
-    fn bad_example_a_module_declared_only_behind_a_cfg_or_only_by_a_dead_file() {
-        let text = format!("#[test]\nfn {NAME}() {{}}\n");
-        for root in [
-            "#[cfg(feature = \"later\")]\nmod tests;\n",
-            "#[cfg(any())]\nmod tests;\n",
-        ] {
-            let sources = vec![
-                ("crates/x/src/lib.rs".to_owned(), root.to_owned()),
-                ("crates/x/src/tests.rs".to_owned(), text.clone()),
-            ];
-            assert_eq!(found(&sources), 1, "{root}");
-        }
-        // A file that only a file nobody declares declares.
-        let sources = vec![
-            ("crates/x/src/lib.rs".to_owned(), String::new()),
-            ("crates/x/src/dead.rs".to_owned(), "mod tests;\n".to_owned()),
-            ("crates/x/src/dead/tests.rs".to_owned(), text),
-        ];
-        assert_eq!(found(&sources), 1);
-    }
-
-    #[test]
-    fn good_example_modules_reached_by_a_path_attribute_a_mod_rs_or_a_tests_folder() {
-        let text = format!("#[test]\nfn {NAME}() {{}}\n");
-        let by_path = vec![
-            (
-                "crates/x/src/lib.rs".to_owned(),
-                "#[cfg(test)]\n#[path = \"deep/tests.rs\"]\nmod tests;\n".to_owned(),
-            ),
-            ("crates/x/src/deep/tests.rs".to_owned(), text.clone()),
-        ];
-        assert_eq!(found(&by_path), 0);
-        let nested = vec![
-            ("crates/x/src/lib.rs".to_owned(), "mod a;\n".to_owned()),
-            ("crates/x/src/a/mod.rs".to_owned(), "mod b;\n".to_owned()),
-            ("crates/x/src/a/b.rs".to_owned(), "mod c;\n".to_owned()),
-            ("crates/x/src/a/b/c.rs".to_owned(), text.clone()),
-        ];
-        assert_eq!(found(&nested), 0);
-        let integration = vec![
-            (
-                "crates/x/tests/all.rs".to_owned(),
-                "mod cases;\n".to_owned(),
-            ),
-            ("crates/x/tests/cases.rs".to_owned(), text),
-        ];
-        assert_eq!(found(&integration), 0);
-    }
-
-    #[test]
-    fn bad_example_a_test_that_is_no_test_any_more_or_hides_in_a_comment() {
-        for text in [
-            format!("fn {NAME}() {{}}\n"),
-            format!("// #[test]\n// fn {NAME}() {{}}\n"),
-            String::new(),
-        ] {
-            assert_eq!(found(&crate_with(&text)), 1, "{text}");
-        }
-    }
-
-    #[test]
-    fn bad_example_a_test_that_is_switched_off() {
-        for attributes in [
-            "#[test]\n#[ignore]",
-            "#[ignore]\n#[test]",
-            "#[test]\n#[ignore = \"later\"]",
-            "#[test]\n#[ignore =\n    \"later\"]",
-            "#[test]\n#[cfg_attr(windows, ignore)]",
-            "#[test]\n/// Later.\n#[ignore]",
-            "#[test]\n#[cfg_attr(\n    windows,\n    ignore\n)]",
-            "#[cfg(any())]\n#[test]",
-            "#[test]\n#[cfg(not(test))]",
-        ] {
-            let text = format!("{attributes}\nfn {NAME}() {{}}\n");
-            assert_eq!(found(&crate_with(&text)), 1, "{attributes}");
-        }
-        for block in [
-            "#[cfg(any())]\nmod later {\n#[test]\nfn NAME() {}\n}",
-            "#[cfg(any())]\nmod later {\nmod inner {\n#[test]\nfn NAME() {}\n}\n}",
-        ] {
-            let text = block.replace("NAME", NAME);
-            assert_eq!(found(&crate_with(&text)), 1, "{block}");
-        }
-    }
-
-    #[test]
-    fn good_example_doc_comments_cfg_test_and_other_attributes_are_fine() {
-        for text in [
-            format!(
-                "/// What it proves.\n#[tokio::test]\n#[doc(hidden)]\nasync fn {NAME}() {{}}\n"
-            ),
-            format!("#[cfg(test)]\nmod inner {{\n#[test]\nfn {NAME}() {{ if true {{}} }}\n}}\n"),
-            format!("mod ordinary {{\n#[test]\nfn {NAME}() {{ if true {{}} }}\n}}\n"),
-        ] {
-            assert_eq!(found(&crate_with(&text)), 0, "{text}");
-        }
-    }
-
-    #[test]
-    fn good_example_a_test_attribute_with_arguments_is_still_a_test() {
-        for attribute in [
-            "#[tokio::test(flavor = \"multi_thread\", worker_threads = 4)]",
-            "#[tokio::test(flavor = \"multi_thread\")]",
-            "#[sqlx::test]",
-        ] {
-            let text = format!(
-                "{attribute}
-async fn {NAME}() {{}}
-"
-            );
-            assert_eq!(found(&crate_with(&text)), 0, "{attribute}");
-        }
-        // A condition on `test` is no test attribute.
-        let only_cfg = format!(
-            "#[cfg(test)]
-fn {NAME}() {{}}
-"
-        );
-        assert_eq!(found(&crate_with(&only_cfg)), 1);
-    }
-
-    #[test]
-    fn bad_example_a_module_declared_in_a_string_or_a_comment_is_no_module() {
-        let text = format!(
-            "#[test]
-fn {NAME}() {{}}
-"
-        );
-        for root in [
-            "const TEXT: &str = \"mod tests;\";
-",
-            "// mod tests;
-const TEXT: &str = r#\"
 mod tests;
-\"#;
-",
-        ] {
-            let sources = vec![
-                ("crates/x/src/lib.rs".to_owned(), root.to_owned()),
-                ("crates/x/src/tests.rs".to_owned(), text.clone()),
-            ];
-            assert_eq!(found(&sources), 1, "{root}");
-        }
-    }
-
-    #[test]
-    fn good_and_bad_example_a_module_inside_an_inline_module_is_in_a_folder_of_its_name() {
-        let text = format!(
-            "#[test]
-fn {NAME}() {{}}
-"
-        );
-        let sources = |at: &str| {
-            vec![
-                (
-                    "crates/x/src/lib.rs".to_owned(),
-                    "mod outer {
-    mod inner {
-        mod tests;
-    }
-}
-"
-                    .to_owned(),
-                ),
-                (at.to_owned(), text.clone()),
-            ]
-        };
-        assert_eq!(found(&sources("crates/x/src/outer/inner/tests.rs")), 0);
-        assert_eq!(found(&sources("crates/x/src/tests.rs")), 1);
-        // A path attribute inside an inline module is relative to the folders of the modules.
-        let with_path = |at: &str| {
-            vec![
-                (
-                    "crates/x/src/lib.rs".to_owned(),
-                    "mod outer {
-    #[path = \"deep/tests.rs\"]
-    mod tests;
-}
-"
-                    .to_owned(),
-                ),
-                (at.to_owned(), text.clone()),
-            ]
-        };
-        assert_eq!(found(&with_path("crates/x/src/outer/deep/tests.rs")), 0);
-        assert_eq!(found(&with_path("crates/x/src/deep/tests.rs")), 1);
-    }
-
-    #[test]
-    fn a_test_has_to_be_where_the_list_says() {
-        let text = format!("#[test]\nfn {NAME}() {{}}\n");
-        let sources = crate_with(&text);
-        let there = [Required::anywhere(NAME).within("crates/x/src/tests.rs")];
-        assert!(evaluate(&sources, &there, "").is_empty());
-        let elsewhere = [Required::anywhere(NAME).within("crates/y/")];
-        assert_eq!(evaluate(&sources, &elsewhere, "").len(), 1);
-    }
-
-    #[test]
-    fn both_databases_look_at_the_test_and_not_at_the_one_after_it() {
-        let text = format!(
-            "mod tests {{\n    #[test]\n    fn {NAME}() {{\n        body();\n    }}\n\n    #[test]\n    fn other() {{\n        each_database(\"x\");\n    }}\n}}\n"
-        );
-        assert_eq!(
-            evaluate(&crate_with(&text), &[Required::both(NAME)], "").len(),
-            1
-        );
-        let both = format!(
-            "mod tests {{\n    #[test]\n    fn {NAME}() {{\n        each_database(\"x\");\n    }}\n}}\n"
-        );
-        assert!(evaluate(&crate_with(&both), &[Required::both(NAME)], "").is_empty());
-    }
-}
 
 /// What the example tests of a check prove, once for every check that has a list of tests.
 #[cfg(test)]
