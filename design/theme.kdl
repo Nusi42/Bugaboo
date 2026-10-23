@@ -115,6 +115,7 @@ tokens {
     size "size-col-remove" "80px"
     size "size-col-key" "96px"
     size "size-col-short" "64px"
+    size "size-col-place" "112px"
     size "size-col-priority" "96px"
     size "size-col-person" "144px"
     size "size-col-labels" "160px"
@@ -744,6 +745,12 @@ part "files.actions button[variant=quiet]" "item.actions button[variant=quiet]" 
     margin-inline-start "$size-phone-hang"
 }
 
+// The count of followers is a quiet button followed by words: its padding on the end side must not make
+// a gap before the dot, so it hangs over the end edge like any text button that ends a row.
+part "followers-state button[variant=quiet]" {
+    margin-inline-end "calc(-1 * $pad-control)"
+}
+
 // An entry of a list of actions (the status list, *More*): its words start at the start edge, and it
 // has no box until it is pointed at.
 part "button[variant=item]" {
@@ -775,15 +782,14 @@ part "button[disabled]" {
     }
 }
 
-// A main button that cannot be pressed yet is not a pale copy of the filled one, whose white words
-// are hard to read: it is an empty box with a dashed edge and muted words, which no secondary button
-// has (the review of M4, A14, and the last check: in Midnight it read as a secondary button).
+// A main button that cannot be pressed yet looks like any button that cannot be pressed: the same
+// edge, the same fill and the same pale words as a disabled secondary button, not a pale copy of the
+// filled one, whose white words are hard to read (the review of M4, A14). The dashed edge belongs to
+// the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" {
-    opacity 1
-    border-style dashed
-    border-color "$border-control"
-    background transparent
-    color "$fg-muted"
+    border-color "$border"
+    background "$bg-raised"
+    color "$fg"
 }
 
 part "button[state=busy]" {
@@ -1835,7 +1841,13 @@ part "offer-state" {
     min-width 0
 }
 
-// Why a value cannot be changed, with its lock.
+// A box for a value of one line (a text, a choice) fills the column of the value (the review of M4: "Alder
+// Street Baker|y" ended under the edge of a box of its own width).
+part "name-value.value > field" {
+    flex "1 1 100%"
+    min-width 0
+}
+
 // A priority is as high as a control, so it is level with the name of its row like the other values.
 part "name-value.value > priority" {
     min-height "$size-control"
@@ -2879,14 +2891,27 @@ part "roles.note" {
 
 // ───────────── Projects ─────────────
 
+// The short name and the place of a project after its name. The short name has a column of its own,
+// as wide as ten capitals need at most; the place stands beside it where there is room and under it
+// where there is not, so no word is broken in the middle.
 part "projects.details" {
-    display grid
-    grid-template-columns "minmax(0, $size-col-short) minmax(0, 1fr)"
+    display flex
+    flex-wrap wrap
     align-items center
     gap "$space-2 $space-3"
     min-width 0
     font-weight "$weight-bold"
-    overflow-wrap anywhere
+    overflow-wrap break-word
+}
+
+part "projects.short" {
+    flex "0 0 auto"
+    min-width "$size-col-short"
+}
+
+part "projects.place" {
+    flex "1 1 $size-col-place"
+    min-width 0
 }
 
 part "projects.preview" {
@@ -4126,9 +4151,9 @@ part "list-editor.list" {
 // clickable and is not underlined; R4: the open one is marked).
 part "list-editor.open" {
     use "surface-box"
-    display grid
-    grid-template-columns "minmax(0, 1fr) minmax(0, 1.5fr)"
+    display flex
     align-items center
+    justify-content space-between
     gap "$space-3"
     box-sizing border-box
     width "100%"
@@ -4143,6 +4168,13 @@ part "list-editor.open" {
 
 // The name breaks only between its words, and inside a word only when the word alone is wider than its
 // column (the review of M4: "Web-site" cut in two). The same two columns in every row line the details up.
+// A list whose rows have several columns of their own (the projects: the name, the short name and
+// the place) gives the rows the same two columns, so the details line up from row to row.
+part "list-editor.open[variant=columns]" {
+    display grid
+    grid-template-columns "minmax(0, 1fr) minmax(0, 1.5fr)"
+}
+
 part "list-editor.name" {
     min-width 0
     font-weight "$weight-bold"
@@ -11577,7 +11609,6 @@ part "workflow-status.head" {
     grid-template-columns "repeat(auto-fit, minmax(min($size-name, 100%), 1fr))"
     align-items end
     gap "$space-3"
-    padding-bottom "$space-5"
 }
 
 // What moves or takes away a status: buttons with words, as wide as a finger on a phone.
@@ -11663,11 +11694,16 @@ part "workflow-add" {
     flex-wrap wrap
     align-items flex-end
     gap "$space-3"
+}
+
+// Where a field stands beside another one, the message under it stands in room kept for it (only
+// while there is a message), so it never moves the fields beside it (the review of M4: the group and
+// the button dropped 22 px). Where the fields are stacked, on a phone, nothing stands beside it: the
+// message takes its own space and pushes the next field down.
+part "workflow-add[variant=error]" "workflow-status.head[variant=error]" {
     padding-bottom "$space-5"
 }
 
-// The message under a field of these rows stands in the room kept for it, so it never moves the other
-// fields of the row (the review of M4: the group and the button dropped 22 px).
 part "workflow-add field" "workflow-status.head field" {
     position relative
 }
@@ -11677,6 +11713,15 @@ part "workflow-add field.error" "workflow-status.head field.error" {
     top "100%"
     inset-inline-start 0
     width max-content
+}
+
+part "app-layout[variant=phone] workflow-add[variant=error]" "app-layout[variant=phone] workflow-status.head[variant=error]" {
+    padding-bottom 0
+}
+
+part "app-layout[variant=phone] workflow-add field.error" "app-layout[variant=phone] workflow-status.head field.error" {
+    position static
+    width auto
 }
 
 part "workflow-rules" {

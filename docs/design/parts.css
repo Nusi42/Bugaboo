@@ -129,6 +129,10 @@ body {
   margin-inline-start: var(--size-phone-hang);
 }
 
+[data-part="followers-state"] [data-part="button"][data-variant~="quiet"] {
+  margin-inline-end: calc(-1 * var(--pad-control));
+}
+
 [data-part="button"][data-variant~="item"] {
   justify-content: flex-start;
   border-color: transparent;
@@ -162,11 +166,9 @@ body {
 }
 
 [data-part="button"][data-variant~="primary"][data-disabled] {
-  opacity: 1;
-  border-style: dashed;
-  border-color: var(--border-control);
-  background: transparent;
-  color: var(--fg-muted);
+  border-color: var(--border);
+  background: var(--bg-raised);
+  color: var(--fg);
 }
 
 [data-part="button"][data-state~="busy"] {
@@ -1258,6 +1260,11 @@ body {
   min-width: 0;
 }
 
+[data-part="name-value.value"] > [data-part="field"] {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
 [data-part="name-value.value"] > [data-part="priority"] {
   min-height: var(--size-control);
 }
@@ -2303,13 +2310,23 @@ body {
 }
 
 [data-part="projects.details"] {
-  display: grid;
-  grid-template-columns: minmax(0, var(--size-col-short)) minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
   min-width: 0;
   font-weight: var(--weight-bold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+[data-part="projects.short"] {
+  flex: 0 0 auto;
+  min-width: var(--size-col-short);
+}
+
+[data-part="projects.place"] {
+  flex: 1 1 var(--size-col-place);
+  min-width: 0;
 }
 
 [data-part="projects.preview"] {
@@ -3644,9 +3661,9 @@ body {
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
   background: var(--bg-surface);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   box-sizing: border-box;
   width: 100%;
@@ -3657,6 +3674,11 @@ body {
   font-size: var(--fs-md);
   text-align: start;
   cursor: pointer;
+}
+
+[data-part="list-editor.open"][data-variant~="columns"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
 }
 
 [data-part="list-editor.name"] {
@@ -4668,7 +4690,6 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(min(var(--size-name), 100%), 1fr));
   align-items: end;
   gap: var(--space-3);
-  padding-bottom: var(--space-5);
 }
 
 [data-part="workflow-status.tools"] {
@@ -4754,6 +4775,10 @@ body {
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--space-3);
+}
+
+[data-part="workflow-add"][data-variant~="error"],
+[data-part="workflow-status.head"][data-variant~="error"] {
   padding-bottom: var(--space-5);
 }
 
@@ -4768,6 +4793,22 @@ body {
   top: 100%;
   inset-inline-start: 0;
   width: max-content;
+}
+
+[data-part="app-layout"][data-variant~="phone"] [data-part="workflow-add"][data-variant~="error"],
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="workflow-status.head"][data-variant~="error"] {
+  padding-bottom: 0;
+}
+
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="workflow-add"]
+  [data-part="field.error"],
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="workflow-status.head"]
+  [data-part="field.error"] {
+  position: static;
+  width: auto;
 }
 
 [data-part="workflow-rules"] {

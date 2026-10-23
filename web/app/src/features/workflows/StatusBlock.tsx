@@ -44,7 +44,7 @@ function StatusFields({
   const keyOf = useNameKey();
   const taken = keyOf !== undefined && statusNameTaken(draft, status.id, status.name, keyOf);
   return (
-    <div {...partOf(part.workflowStatusHead)}>
+    <div {...partOf(part.workflowStatusHead, { variants: taken ? ["error"] : [] })}>
       <TextField
         label={t("workflows.status-name")}
         value={status.name}

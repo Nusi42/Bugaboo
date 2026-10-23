@@ -27,15 +27,17 @@ export interface ListEditorProps {
   readonly openKey: string | undefined;
   readonly onOpen: (key: string) => void;
   readonly onClose: () => void;
+  /** The rows have columns of their own after the name: the details line up from row to row. */
+  readonly columns?: boolean;
 }
 
-interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen"> {
+interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen" | "columns"> {
   /** The name of the list. */
   readonly label: string;
 }
 
 /** The rows: the whole row opens its item (R8), the name first and the rest of the row after it. */
-function Rows({ rows, label, openKey, onOpen }: RowsProps) {
+function Rows({ rows, label, openKey, onOpen, columns = false }: RowsProps) {
   const ids = useId();
   const nameId = (key: string): string => [ids, "name", key].join("-");
   const detailsId = (key: string): string => [ids, "details", key].join("-");
@@ -44,7 +46,10 @@ function Rows({ rows, label, openKey, onOpen }: RowsProps) {
       {rows.map((row) => (
         <li key={row.key}>
           <Button
-            {...partOf(part.listEditorOpen, { states: [row.key === openKey && "open"] })}
+            {...partOf(part.listEditorOpen, {
+              variants: [columns && "columns"],
+              states: [row.key === openKey && "open"],
+            })}
             aria-expanded={row.key === openKey}
             // The name of the button is the name of the item; the rest of the row describes it.
             aria-labelledby={nameId(row.key)}
@@ -78,6 +83,7 @@ export function ListEditor({
   openKey,
   onOpen,
   onClose,
+  columns = false,
 }: ListEditorProps) {
   const [query, setQuery] = useState("");
   const shown = rows.filter((row) => row.name.toLowerCase().includes(query.trim().toLowerCase()));
@@ -95,7 +101,13 @@ export function ListEditor({
           onChange={setQuery}
         />
         {shown.length === 0 ? <p {...partOf(part.listEditorNothing)}>{nothing}</p> : null}
-        <Rows rows={shown} label={searchLabel} openKey={openKey} onOpen={onOpen} />
+        <Rows
+          rows={shown}
+          label={searchLabel}
+          openKey={openKey}
+          onOpen={onOpen}
+          columns={columns}
+        />
       </div>
       {open === undefined ? null : (
         <SidePanel title={open.name} onClose={onClose}>
