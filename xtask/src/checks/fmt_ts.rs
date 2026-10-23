@@ -38,4 +38,17 @@ mod tests {
     fn good_example() {
         assert!(findings("good/tidy.ts").is_empty());
     }
+
+    #[test]
+    fn good_example_files_that_are_all_on_the_ignore_list_are_no_error() {
+        // The frozen copy of the API is on the ignore list of oxfmt; a commit that holds only it must
+        // not fail with "expected at least one target file".
+        let repo = Repo::discover().unwrap();
+        let found = unformatted(repo.root(), &["tools/checks/api-frozen.json".to_owned()]).unwrap();
+        assert!(
+            found.is_empty(),
+            "{:?}",
+            found.first().map(|each| &each.message)
+        );
+    }
 }
