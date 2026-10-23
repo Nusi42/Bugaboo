@@ -68,17 +68,43 @@ export function forgetPerson(): void {
   queryClient.removeQueries({ queryKey: meOptions().queryKey });
 }
 
+/** How long the questions on their way are waited for before the cache is emptied under them. */
+const IN_FLIGHT_WAIT_MS = 5000;
+
+function afterWait(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, IN_FLIGHT_WAIT_MS);
+  });
+}
+
+/**
+ * Waits until the questions to the server that are on their way are answered. Emptying the cache
+ * under a question cancels it, and whoever waits for the answer (the guest layout, asking whether
+ * the setup is open) is left with a cancellation instead of the page it was on its way to.
+ */
+async function answersOnTheirWay(): Promise<void> {
+  const flying: Promise<unknown>[] = [];
+  for (const query of queryClient.getQueryCache().findAll({ fetchStatus: "fetching" })) {
+    if (query.promise !== undefined) {
+      flying.push(query.promise);
+    }
+  }
+  const waited = Promise.allSettled(flying);
+  await Promise.race([waited, afterWait()]);
+}
+
 /**
  * Leaves the sign-in: the app forgets who it was, goes where `go` leads (the sign-in page), and
  * only then forgets everything else it knew about the server, so what one person was allowed to
  * see does not stay in memory for the next person at this browser. The cache is emptied after the
- * page has changed, because emptying it under pages that still ask for their data makes those
- * requests fail half way.
+ * page has changed and the questions on their way are answered, because emptying it under pages that
+ * still ask for their data makes those requests fail half way.
  */
 export async function leaveSession(go: () => Promise<void>): Promise<void> {
   forgetPersonalChoices();
   queryClient.removeQueries({ queryKey: meOptions().queryKey });
   await go();
+  await answersOnTheirWay();
   queryClient.clear();
   // A change of the settings in the cache while the page was changing writes the copy for the
   // first frame again: forget it once more, now that nothing can write it.
