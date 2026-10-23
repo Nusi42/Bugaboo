@@ -338,9 +338,9 @@ status = "active"
 
 [[check]]
 id = "ARCH-API-FREEZE"
-title = "Nothing in /api/v1 is renamed or removed after the API freeze"
+title = "Nothing in /api/v1 is renamed, removed or tightened after the API freeze"
 rule = "ADR-0008"
-tool = "xtask (compares the generated OpenAPI document with the frozen copy tools/checks/api-frozen.json, stored by `cargo xtask freeze` at m4-done: a path, operation, parameter, answer, schema, property, enum value or error code that is gone fails; additions pass; the members of oneOf, anyOf and allOf count as the schema that holds them)"
+tool = "xtask (compares the generated OpenAPI document with the frozen copy tools/checks/api-frozen.json, stored by `cargo xtask freeze`; reduces both to facts and fails for a fact of the frozen copy that is gone: a path, operation, parameter, answer, header, media type, schema, property, type, format or enum value (an error code is one); an answer member that may be missing or null now; a request member or parameter that is required now and was not, a request body that is required now, a limit that is new or tighter, a pattern or default that changed, a free text that has an enum, pattern or format now, an object that is closed now. It also holds the frozen file itself: it must contain every fact of the copy at the tag m4-done, or before that at the merge base with main, and it fails when the tag or git cannot be read. The members of oneOf, anyOf and allOf count as the schema that holds them)"
 when = ["push", "ci"]
 files = ["crates/bb-api/**", "web/packages/api-client/openapi.json", "tools/checks/api-frozen.json"]
 status = "active"

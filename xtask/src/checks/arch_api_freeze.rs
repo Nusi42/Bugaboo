@@ -1,5 +1,5 @@
-//! ARCH-API-FREEZE: nothing in `/api/v1` is renamed or removed after the API freeze (ADR-0008,
-//! amendment M4).
+//! ARCH-API-FREEZE: nothing in `/api/v1` is renamed, removed or tightened after the API freeze
+//! (ADR-0008, amendment M4).
 //!
 //! The frozen copy (`tools/checks/api-frozen.json`, the generated API description in compact
 //! form) is stored by `cargo xtask freeze`; the lead does it at `m4-done`. From then on every
@@ -8,12 +8,17 @@
 //! description does not have fails; what the new description adds passes. A change that
 //! must stand needs a decision record and a new version, and then a new frozen copy.
 //!
-//! The comparison is made on *facts*: one line of text for each name, type, answer, header, media type
-//! and rule of requiredness that a client can depend on (an answer member stays always there, a
-//! request member stays optional, a limit of a request is never tightened). `cargo xtask freeze`
-//! refuses a copy that lacks a fact of the one at the tag `m4-done`, or at the merge base with main.
-//! The members of `oneOf`, `anyOf` and `allOf` count as the schema that holds them, so a new
+//! The comparison is made on *facts*: one line of text for each name, type, answer, header, media
+//! type and rule that a client can depend on. An answer member stays always there, a request member
+//! stays optional, and a request is never tightened: no new required member, parameter or body, no
+//! lower limit, no new `pattern`, `enum`, `format` or `additionalProperties: false` on what was
+//! free. The members of `oneOf`, `anyOf` and `allOf` count as the schema that holds them, so a new
 //! variant is an addition and a property that moves between variants is not seen.
+//!
+//! The frozen file itself is held too, and the check fails closed: `run` compares it with the copy
+//! at the tag `m4-done` once the tag exists, and before that with the copy at the merge base with
+//! `main` when `main` has one. A tag whose copy cannot be read, or a git that fails, is a finding,
+//! never a skip. `cargo xtask freeze` makes the same comparison before it writes.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -28,6 +33,9 @@ use crate::source::read_text;
 
 /// The frozen copy of the API description, relative to the repository root.
 pub(crate) const FROZEN_PATH: &str = "tools/checks/api-frozen.json";
+
+/// The tag of the milestone whose copy every later copy must hold.
+const FREEZE_TAG: &str = "m4-done";
 
 /// The most findings written out, so a rename of a whole family reads as one problem.
 const MOST_FINDINGS: usize = 40;
@@ -48,64 +56,130 @@ impl Check for ArchApiFreeze {
             )]);
         };
         let frozen = api_spec::parse(&text)?;
-        Ok(evaluate(&frozen, &current))
+        let mut findings = evaluate(&frozen, &current);
+        // The frozen copy must hold everything of the one it replaces.
+        match copy_to_keep(context.repo) {
+            Ok(Some((origin, kept))) => {
+                findings.extend(lost_in_the_copy(&origin, &kept, &frozen));
+            }
+            Ok(None) => {}
+            Err(error) => findings.push(Finding::at(
+                FROZEN_PATH,
+                format!("The copy the frozen copy must hold cannot be read: {error:#}"),
+            )),
+        }
+        Ok(findings)
     }
 }
 
-/// Stores the API description as it is now as the frozen copy.
-/// The copy that a new frozen copy must hold: the one at the tag `m4-done` when it exists, else the
-/// one at the merge base with `main`. `None` when there is none yet.
-fn copy_to_keep(repo: &Repo) -> Option<Value> {
-    let git = |arguments: &[&str]| {
-        let output = std::process::Command::new("git")
-            .args(arguments)
-            .current_dir(repo.root())
-            .output()
-            .ok()?;
-        output
-            .status
-            .success()
-            .then(|| String::from_utf8_lossy(&output.stdout).trim().to_owned())
-    };
-    let reference = if git(&["rev-parse", "--verify", "--quiet", "refs/tags/m4-done"]).is_some() {
-        "m4-done".to_owned()
-    } else {
-        let main = ["origin/main", "main"]
-            .into_iter()
-            .find(|name| git(&["rev-parse", "--verify", "--quiet", name]).is_some())?;
-        git(&["merge-base", "HEAD", main])?
-    };
-    let text = git(&["show", &format!("{reference}:{FROZEN_PATH}")])?;
-    serde_json::from_str(&text).ok()
+/// The findings for a frozen copy that lacks a fact of the copy it has to keep.
+fn lost_in_the_copy(origin: &str, kept: &Value, frozen: &Value) -> Vec<Finding> {
+    let gone = broken(kept, frozen);
+    if gone.is_empty() {
+        return Vec::new();
+    }
+    vec![Finding::at(
+        FROZEN_PATH,
+        format!(
+            "The frozen copy lacks {} facts of the copy {origin}, for example: {}",
+            gone.len(),
+            gone.iter().take(5).cloned().collect::<Vec<_>>().join("; ")
+        ),
+    )]
 }
 
+/// Runs `git`; the answer is its text, or an error when git does not run or fails.
+fn git(repo: &Repo, arguments: &[&str]) -> anyhow::Result<String> {
+    let output = std::process::Command::new("git")
+        .args(arguments)
+        .current_dir(repo.root())
+        .output()
+        .with_context(|| format!("git {} did not start", arguments.join(" ")))?;
+    anyhow::ensure!(
+        output.status.success(),
+        "git {} failed: {}",
+        arguments.join(" "),
+        String::from_utf8_lossy(&output.stderr).trim()
+    );
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
+}
+
+/// Whether a name is a reference of the repository.
+fn is_reference(repo: &Repo, name: &str) -> anyhow::Result<bool> {
+    Ok(!git(repo, &["for-each-ref", "--format=%(refname)", name])?.is_empty())
+}
+
+/// The frozen copy as it is stored at a commit or tag: nothing when the commit has none.
+fn copy_at(repo: &Repo, reference: &str) -> anyhow::Result<Option<Value>> {
+    let listed = git(repo, &["ls-tree", reference, "--", FROZEN_PATH])?;
+    if listed.is_empty() {
+        return Ok(None);
+    }
+    let text = git(repo, &["show", &format!("{reference}:{FROZEN_PATH}")])?;
+    let copy = serde_json::from_str(&text)
+        .with_context(|| format!("the frozen copy at {reference} is not JSON"))?;
+    Ok(Some(copy))
+}
+
+/// The copy that the frozen copy must hold, with where it is from: the one at the tag `m4-done` when
+/// the tag exists, else the one at the merge base with `main` when `main` has one. `None` when there
+/// is none yet. A tag that is there and has no readable copy, and a git that fails, are errors.
+fn copy_to_keep(repo: &Repo) -> anyhow::Result<Option<(String, Value)>> {
+    if is_reference(repo, &format!("refs/tags/{FREEZE_TAG}"))? {
+        let copy = copy_at(repo, &format!("refs/tags/{FREEZE_TAG}"))?;
+        let copy = copy.with_context(|| format!("the tag {FREEZE_TAG} has no frozen copy"))?;
+        return Ok(Some((format!("at the tag {FREEZE_TAG}"), copy)));
+    }
+    for main in ["refs/remotes/origin/main", "refs/heads/main"] {
+        if !is_reference(repo, main)? {
+            continue;
+        }
+        let base = git(repo, &["merge-base", "HEAD", main])?;
+        return Ok(
+            copy_at(repo, &base)?.map(|copy| (format!("at the merge base with {main}"), copy))
+        );
+    }
+    Ok(None)
+}
+
+/// Stores the API description as it is now as the frozen copy. It refuses a copy that lacks a fact of
+/// the one it must keep.
 pub(crate) fn write_frozen(repo: &Repo) -> anyhow::Result<()> {
     let spec = api_spec::load(repo)?;
-    if let Some(kept) = copy_to_keep(repo) {
+    if let Some((origin, kept)) = copy_to_keep(repo)? {
         let gone = broken(&kept, &spec);
-        if !gone.is_empty() {
-            anyhow::bail!(
-                "a new frozen copy must hold everything of the one at m4-done (or at the merge base with main); {} facts are gone, for example: {}",
-                gone.len(),
-                gone.iter().take(5).cloned().collect::<Vec<_>>().join("; ")
-            );
-        }
+        anyhow::ensure!(
+            gone.is_empty(),
+            "a new frozen copy must hold everything of the copy {origin}; {} facts are gone, for example: {}",
+            gone.len(),
+            gone.iter().take(5).cloned().collect::<Vec<_>>().join("; ")
+        );
     }
     let compact = serde_json::to_string(&spec).context("the API description is not JSON")?;
+    if let Some(folder) = repo.path(FROZEN_PATH).parent() {
+        std::fs::create_dir_all(folder)
+            .with_context(|| format!("could not make {}", folder.display()))?;
+    }
     std::fs::write(repo.path(FROZEN_PATH), format!("{compact}\n"))
         .with_context(|| format!("could not write {FROZEN_PATH}"))
 }
+
+/// A limit, with the fact it belongs to (a limit on something new is no tightening).
+type Limits = BTreeMap<String, (f64, String)>;
 
 /// What a client can depend on in the description.
 ///
 /// `names` holds one line of text for each fact that must stay (a frozen fact that the new
 /// description lacks is a break). `upper` and `lower` hold the limits of what a request may hold: a
-/// limit may be loosened and never tightened.
+/// limit may be loosened and never tightened. `required` holds what a request must have: a thing
+/// that is required now and was not in the frozen copy is new input, a break when its owner existed.
 #[derive(Default)]
 struct Facts {
     names: BTreeSet<String>,
-    upper: BTreeMap<String, f64>,
-    lower: BTreeMap<String, f64>,
+    upper: Limits,
+    lower: Limits,
+    /// What is required of a request, with the fact it belongs to.
+    required: BTreeMap<String, String>,
 }
 
 /// The upper and lower limits of validation.
@@ -117,6 +191,9 @@ const LOWER: [&str; 3] = ["minimum", "minLength", "minItems"];
 struct Side {
     request: bool,
     answer: bool,
+    /// Below a `oneOf` or `anyOf`: a client sends one variant, so what one variant requires is no
+    /// input of the others.
+    variant: bool,
 }
 
 /// The name of the schema a `$ref` points to.
@@ -124,8 +201,9 @@ fn ref_name(reference: &str) -> &str {
     reference.rsplit('/').next().unwrap_or(reference)
 }
 
-/// What a schema is made of, as words: the schemas it refers to and the types it has (`null`
-/// included), `oneOf`, `anyOf` and `allOf` seen through, an array as `[]` and what its items are.
+/// What a schema is made of, as words: the schemas it refers to, the types it has (`null`
+/// included), its `format`, `oneOf`, `anyOf` and `allOf` seen through, an array as `[]` and what its
+/// items are.
 fn tokens(schema: &Value) -> BTreeSet<String> {
     let mut found = BTreeSet::new();
     if let Some(reference) = schema.get("$ref").and_then(Value::as_str) {
@@ -139,6 +217,9 @@ fn tokens(schema: &Value) -> BTreeSet<String> {
             found.extend(kinds.iter().filter_map(Value::as_str).map(str::to_owned));
         }
         _ => {}
+    }
+    if let Some(format) = schema.get("format").and_then(Value::as_str) {
+        found.insert(format!("format:{format}"));
     }
     for key in ["oneOf", "anyOf", "allOf"] {
         for member in schema
@@ -221,21 +302,100 @@ fn facts(spec: &Value) -> Facts {
         let side = Side {
             request: requests.contains(name),
             answer: replies.contains(name),
+            variant: false,
         };
-        schema_facts(schema, name, side, &mut found);
+        schema_facts(schema, name, &format!("schema {name}"), side, &mut found);
     }
     found
 }
 
-fn limits(schema: &Value, at: &str, found: &mut Facts) {
+fn limits(schema: &Value, at: &str, owner: &str, found: &mut Facts) {
     for key in UPPER {
         if let Some(value) = schema.get(key).and_then(Value::as_f64) {
-            found.upper.insert(format!("{at} {key}"), value);
+            found
+                .upper
+                .insert(format!("{at} {key}"), (value, owner.to_owned()));
         }
     }
     for key in LOWER {
         if let Some(value) = schema.get(key).and_then(Value::as_f64) {
-            found.lower.insert(format!("{at} {key}"), value);
+            found
+                .lower
+                .insert(format!("{at} {key}"), (value, owner.to_owned()));
+        }
+    }
+}
+
+/// Whether a request text has no rule of its own: no word list, no pattern, no format.
+fn is_free_text(schema: &Value) -> bool {
+    let is_text = tokens(schema).contains("string");
+    is_text
+        && ["enum", "const", "pattern", "format"]
+            .iter()
+            .all(|key| schema.get(key).is_none())
+}
+
+/// The rules that only tighten what a request may be: the pattern and the default are facts that
+/// must stay as they are, a free text is a fact that vanishes when a rule is put on it, and an
+/// object that takes more than it names is a fact that vanishes when it is closed.
+fn request_rules(schema: &Value, at: &str, found: &mut Facts) {
+    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str) {
+        found.names.insert(format!("pattern {at} {pattern}"));
+    }
+    if let Some(default) = schema.get("default") {
+        found.names.insert(format!("default {at} {default}"));
+    }
+    if is_free_text(schema) {
+        found.names.insert(format!("free-text {at}"));
+    }
+    if schema.get("type").and_then(Value::as_str) == Some("object")
+        && schema.get("additionalProperties") != Some(&Value::Bool(false))
+    {
+        found.names.insert(format!("open-object {at}"));
+    }
+}
+
+/// The parameters of an operation: their types, values, rules and whether they are required.
+fn parameter_facts(spec: &Value, operation: &Value, place: &str, owner: &str, found: &mut Facts) {
+    for parameter in operation
+        .get("parameters")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        let parameter = resolve(spec, parameter);
+        let kind = parameter
+            .get("in")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        let name = parameter
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        let at = format!("{place} {kind} {name}");
+        found.names.insert(format!("parameter {at}"));
+        if parameter.get("required").and_then(Value::as_bool) == Some(true) {
+            found
+                .required
+                .insert(format!("required-parameter {at}"), owner.to_owned());
+        } else {
+            found.names.insert(format!("optional-parameter {at}"));
+        }
+        if let Some(schema) = parameter.get("schema") {
+            for token in tokens(schema) {
+                found.names.insert(format!("parameter-type {at} {token}"));
+            }
+            for value in schema
+                .get("enum")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_str)
+            {
+                found.names.insert(format!("parameter-value {at} {value}"));
+            }
+            request_rules(schema, &format!("parameter {at}"), found);
+            limits(schema, &format!("parameter {at}"), owner, found);
         }
     }
 }
@@ -249,13 +409,19 @@ fn path_facts(spec: &Value, found: &mut Facts) {
     }
     for operation in api_spec::operations(spec).into_iter().flatten() {
         let place = operation.place();
-        found.names.insert(format!(
+        let owner = format!(
             "operation {place} {}",
             operation.text("operationId").unwrap_or_default()
-        ));
+        );
+        found.names.insert(owner.clone());
         if let Some(body) = operation.body.get("requestBody") {
             found.names.insert(format!("body {place}"));
             let body = resolve(spec, body);
+            if body.get("required").and_then(Value::as_bool) == Some(true) {
+                found
+                    .required
+                    .insert(format!("required-body {place}"), owner.clone());
+            }
             for (media, content) in body
                 .get("content")
                 .and_then(Value::as_object)
@@ -272,34 +438,7 @@ fn path_facts(spec: &Value, found: &mut Facts) {
                 }
             }
         }
-        for parameter in operation
-            .body
-            .get("parameters")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            let parameter = resolve(spec, parameter);
-            let kind = parameter
-                .get("in")
-                .and_then(Value::as_str)
-                .unwrap_or_default();
-            let name = parameter
-                .get("name")
-                .and_then(Value::as_str)
-                .unwrap_or_default();
-            let at = format!("{place} {kind} {name}");
-            found.names.insert(format!("parameter {at}"));
-            if parameter.get("required").and_then(Value::as_bool) != Some(true) {
-                found.names.insert(format!("optional-parameter {at}"));
-            }
-            if let Some(schema) = parameter.get("schema") {
-                for token in tokens(schema) {
-                    found.names.insert(format!("parameter-type {at} {token}"));
-                }
-                limits(schema, &format!("parameter {at}"), found);
-            }
-        }
+        parameter_facts(spec, operation.body, &place, &owner, found);
         for (status, answer) in answers(spec, operation.body) {
             found.names.insert(format!("answer {place} {status}"));
             for header in answer
@@ -333,8 +472,9 @@ fn path_facts(spec: &Value, found: &mut Facts) {
     }
 }
 
-/// The properties, types, requiredness, limits and enum values of a schema, below the name `at`.
-fn schema_facts(schema: &Value, at: &str, side: Side, found: &mut Facts) {
+/// The properties, types, requiredness, limits and enum values of a schema, below the name `at`;
+/// `owner` is the fact of the schema they belong to.
+fn schema_facts(schema: &Value, at: &str, owner: &str, side: Side, found: &mut Facts) {
     let required: BTreeSet<&str> = schema
         .get("required")
         .and_then(Value::as_array)
@@ -342,6 +482,9 @@ fn schema_facts(schema: &Value, at: &str, side: Side, found: &mut Facts) {
         .flatten()
         .filter_map(Value::as_str)
         .collect();
+    if side.request {
+        request_rules(schema, at, found);
+    }
     if let Some(properties) = schema.get("properties").and_then(Value::as_object) {
         for (name, property) in properties {
             let here = format!("{at}.{name}");
@@ -354,14 +497,22 @@ fn schema_facts(schema: &Value, at: &str, side: Side, found: &mut Facts) {
             if side.answer && required.contains(name.as_str()) && !kinds.contains("null") {
                 found.names.insert(format!("always {here}"));
             }
-            if side.request && !required.contains(name.as_str()) {
-                found.names.insert(format!("optional {here}"));
+            if side.request {
+                if required.contains(name.as_str()) {
+                    if !side.variant {
+                        found
+                            .required
+                            .insert(format!("required-member {here}"), owner.to_owned());
+                    }
+                } else {
+                    found.names.insert(format!("optional {here}"));
+                }
             }
-            schema_facts(property, &here, side, found);
+            schema_facts(property, &here, owner, side, found);
         }
     }
     if side.request {
-        limits(schema, at, found);
+        limits(schema, at, owner, found);
     }
     for key in ["enum", "const"] {
         let values: Vec<&Value> = match schema.get(key) {
@@ -374,19 +525,23 @@ fn schema_facts(schema: &Value, at: &str, side: Side, found: &mut Facts) {
         }
     }
     if let Some(items) = schema.get("items") {
-        schema_facts(items, &format!("{at}[]"), side, found);
+        schema_facts(items, &format!("{at}[]"), owner, side, found);
     }
     if let Some(extra) = schema.get("additionalProperties") {
-        schema_facts(extra, &format!("{at}{{}}"), side, found);
+        schema_facts(extra, &format!("{at}{{}}"), owner, side, found);
     }
     for key in ["oneOf", "anyOf", "allOf"] {
+        let side = Side {
+            variant: side.variant || key != "allOf",
+            ..side
+        };
         for member in schema
             .get(key)
             .and_then(Value::as_array)
             .into_iter()
             .flatten()
         {
-            schema_facts(member, at, side, found);
+            schema_facts(member, at, owner, side, found);
         }
     }
 }
@@ -400,19 +555,38 @@ fn broken(frozen: &Value, current: &Value) -> Vec<String> {
         .filter(|fact| !now.names.contains(*fact))
         .cloned()
         .collect();
-    for (key, was) in &old.upper {
-        if now.upper.get(key).is_some_and(|is| is < was) {
-            gone.push(format!(
-                "limit {key} {was} (tightened to {})",
-                now.upper[key]
-            ));
+    // A limit that is new, or lower (upper) or higher (lower), on something that was there.
+    for (key, (is, owner)) in &now.upper {
+        match old.upper.get(key) {
+            Some((was, _)) if is < was => {
+                gone.push(format!("limit {key} {was} (tightened to {is})"));
+            }
+            None if old.names.contains(owner) => {
+                gone.push(format!(
+                    "limit {key} (a new limit of {is} on what was free)"
+                ));
+            }
+            _ => {}
         }
     }
-    for (key, was) in &old.lower {
-        if now.lower.get(key).is_some_and(|is| is > was) {
+    for (key, (is, owner)) in &now.lower {
+        match old.lower.get(key) {
+            Some((was, _)) if is > was => {
+                gone.push(format!("limit {key} {was} (tightened to {is})"));
+            }
+            None if old.names.contains(owner) => {
+                gone.push(format!(
+                    "limit {key} (a new limit of {is} on what was free)"
+                ));
+            }
+            _ => {}
+        }
+    }
+    // New input a request must have, on a route or a schema that was there.
+    for (what, owner) in &now.required {
+        if !old.required.contains_key(what) && old.names.contains(owner) {
             gone.push(format!(
-                "limit {key} {was} (tightened to {})",
-                now.lower[key]
+                "{what} (required now, and a client of the frozen API does not send it)"
             ));
         }
     }
@@ -428,7 +602,7 @@ fn evaluate(frozen: &Value, current: &Value) -> Vec<Finding> {
             Finding::at(
                 SPEC_PATH,
                 format!(
-                    "`{fact}` is in the frozen API and is gone. Renaming or removing anything of /api/v1 needs a decision record and a new version; adding is free (ADR-0008)."
+                    "`{fact}` is in the frozen API and is gone or tightened. Renaming, removing or tightening anything of /api/v1 needs a decision record and a new version; adding is free (ADR-0008)."
                 ),
             )
         })
@@ -443,237 +617,6 @@ fn evaluate(frozen: &Value, current: &Value) -> Vec<Finding> {
 }
 
 #[cfg(test)]
-mod tests {
-    use serde_json::json;
-
-    use super::*;
-
-    fn spec() -> Value {
-        json!({
-            "paths": {
-                "/api/v1/things/{thing}": {
-                    "get": {
-                        "operationId": "getThing",
-                        "parameters": [
-                            {"name": "thing", "in": "path"},
-                            {"$ref": "#/components/parameters/Fields"}
-                        ],
-                        "responses": {"200": {"description": "ok"}, "404": {"description": "none"}}
-                    }
-                }
-            },
-            "components": {
-                "parameters": {"Fields": {"name": "fields", "in": "query"}},
-                "schemas": {
-                    "Thing": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "string"},
-                            "status": {"oneOf": [{"type": "string", "enum": ["open", "done"]}]}
-                        }
-                    },
-                    "Code": {"type": "string", "enum": ["auth.wrong-credentials"]}
-                }
-            }
-        })
-    }
-
-    fn messages(frozen: &Value, current: &Value) -> Vec<String> {
-        evaluate(frozen, current)
-            .into_iter()
-            .map(|finding| finding.message)
-            .collect()
-    }
-
-    #[test]
-    fn good_example_an_addition_passes() {
-        let mut now = spec();
-        now["components"]["schemas"]["Thing"]["properties"]["title"] = json!({"type": "string"});
-        now["components"]["schemas"]["Code"]["enum"] = json!(["auth.wrong-credentials", "x.new"]);
-        now["components"]["schemas"]["Other"] = json!({"type": "object"});
-        now["paths"]["/api/v1/more"] =
-            json!({"get": {"operationId": "getMore", "responses": {"200": {"description": "ok"}}}});
-        assert!(messages(&spec(), &now).is_empty());
-        assert!(messages(&spec(), &spec()).is_empty());
-    }
-
-    #[test]
-    fn bad_example_a_rename_or_a_removal_fails_for_each_name_that_is_gone() {
-        let mut now = spec();
-        now["components"]["schemas"]["Thing"]["properties"]
-            .as_object_mut()
-            .unwrap()
-            .remove("id");
-        now["components"]["schemas"]["Code"]["enum"] = json!(["auth.wrong_credentials"]);
-        now["paths"]["/api/v1/things/{thing}"]["get"]["operationId"] = json!("readThing");
-        let found = messages(&spec(), &now).join("\n");
-        assert!(found.contains("`property Thing.id`"), "{found}");
-        assert!(
-            found.contains("`value Code auth.wrong-credentials`"),
-            "{found}"
-        );
-        assert!(
-            found.contains("`operation GET /api/v1/things/{thing} getThing`"),
-            "{found}"
-        );
-    }
-
-    #[test]
-    fn bad_example_a_removed_route_parameter_answer_and_schema_fail() {
-        let mut now = spec();
-        now["paths"] = json!({});
-        now["components"]["schemas"] = json!({});
-        let found = messages(&spec(), &now).join("\n");
-        assert!(found.contains("`path /api/v1/things/{thing}`"), "{found}");
-        assert!(found.contains("`schema Thing`"), "{found}");
-        // A parameter of a route that is still there, and an answer of it.
-        let mut now = spec();
-        now["paths"]["/api/v1/things/{thing}"]["get"]["parameters"] =
-            json!([{"name": "thing", "in": "path"}]);
-        now["paths"]["/api/v1/things/{thing}"]["get"]["responses"]
-            .as_object_mut()
-            .unwrap()
-            .remove("404");
-        let found = messages(&spec(), &now).join("\n");
-        assert!(
-            found.contains("`parameter GET /api/v1/things/{thing} query fields`"),
-            "{found}"
-        );
-        assert!(
-            found.contains("`answer GET /api/v1/things/{thing} 404`"),
-            "{found}"
-        );
-    }
-
-    fn typed() -> Value {
-        json!({
-            "paths": {
-                "/api/v1/things": {
-                    "post": {
-                        "operationId": "createThing",
-                        "parameters": [{"name": "limit", "in": "query", "schema": {"type": "integer", "maximum": 100}}],
-                        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/NewThing"}}}},
-                        "responses": {"200": {
-                            "headers": {"etag": {"schema": {"type": "string"}}},
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Thing"}}}
-                        }}
-                    }
-                }
-            },
-            "components": {"schemas": {
-                "NewThing": {"type": "object", "required": ["name"], "properties": {
-                    "name": {"type": "string"}, "note": {"type": "string"}
-                }},
-                "Thing": {"type": "object", "required": ["id", "title"], "properties": {
-                    "id": {"type": "string"}, "title": {"type": "string"}
-                }}
-            }}
-        })
-    }
-
-    #[test]
-    fn good_example_an_optional_request_property_a_new_answer_member_and_a_new_operation() {
-        let mut now = typed();
-        now["components"]["schemas"]["NewThing"]["properties"]["tag"] = json!({"type": "string"});
-        now["components"]["schemas"]["Thing"]["properties"]["extra"] = json!({"type": "string"});
-        now["components"]["schemas"]["NewThing"]["properties"]["note"]["maxLength"] = json!(500);
-        now["paths"]["/api/v1/other"] = json!({"get": {"operationId": "getOther", "responses": {"200": {"description": "ok"}}}});
-        assert!(messages(&typed(), &now).is_empty());
-        // A limit that is loosened passes.
-        now["paths"]["/api/v1/things"]["post"]["parameters"][0]["schema"]["maximum"] = json!(200);
-        assert!(messages(&typed(), &now).is_empty());
-    }
-
-    #[test]
-    fn bad_example_a_type_a_required_member_and_an_answer_that_are_not_what_they_were() {
-        let found = |change: &dyn Fn(&mut Value)| {
-            let mut now = typed();
-            change(&mut now);
-            messages(&typed(), &now).join("\n")
-        };
-        // A property of another type.
-        let text = found(&|now| {
-            now["components"]["schemas"]["Thing"]["properties"]["id"] = json!({"type": "integer"});
-        });
-        assert!(text.contains("`type Thing.id string`"), "{text}");
-        // A request property that became required.
-        let text = found(&|now| {
-            now["components"]["schemas"]["NewThing"]["required"] = json!(["name", "note"]);
-        });
-        assert!(text.contains("`optional NewThing.note`"), "{text}");
-        // An answer member that may be missing or null now.
-        let text = found(&|now| {
-            now["components"]["schemas"]["Thing"]["required"] = json!(["id"]);
-        });
-        assert!(text.contains("`always Thing.title`"), "{text}");
-        let text = found(&|now| {
-            now["components"]["schemas"]["Thing"]["properties"]["title"] =
-                json!({"type": ["string", "null"]});
-        });
-        assert!(text.contains("`always Thing.title`"), "{text}");
-        // Another request schema, answer schema, header and media type.
-        let text = found(&|now| {
-            let post = &mut now["paths"]["/api/v1/things"]["post"];
-            post["requestBody"]["content"]["application/json"]["schema"] =
-                json!({"$ref": "#/components/schemas/Thing"});
-            post["responses"]["200"]["content"]["application/json"]["schema"] =
-                json!({"$ref": "#/components/schemas/NewThing"});
-            post["responses"]["200"]["headers"] = json!({});
-            post["responses"]["200"]["content"] =
-                json!({"text/plain": {"schema": {"type": "string"}}});
-        });
-        assert!(
-            text.contains("`request POST /api/v1/things application/json NewThing`"),
-            "{text}"
-        );
-        assert!(
-            text.contains("answer-schema POST /api/v1/things 200 application/json Thing"),
-            "{text}"
-        );
-        assert!(
-            text.contains("header POST /api/v1/things 200 etag"),
-            "{text}"
-        );
-        assert!(
-            text.contains("media POST /api/v1/things 200 application/json"),
-            "{text}"
-        );
-    }
-
-    #[test]
-    fn bad_example_a_tightened_limit_and_a_parameter_that_became_required() {
-        let mut now = typed();
-        now["paths"]["/api/v1/things"]["post"]["parameters"][0]["schema"]["maximum"] = json!(50);
-        now["paths"]["/api/v1/things"]["post"]["parameters"][0]["required"] = json!(true);
-        let text = messages(&typed(), &now).join("\n");
-        assert!(text.contains("maximum 100 (tightened to 50)"), "{text}");
-        assert!(
-            text.contains("optional-parameter POST /api/v1/things query limit"),
-            "{text}"
-        );
-        // A request property with an upper limit that is lowered.
-        let mut frozen = typed();
-        frozen["components"]["schemas"]["NewThing"]["properties"]["note"]["maxLength"] = json!(500);
-        let mut now = frozen.clone();
-        now["components"]["schemas"]["NewThing"]["properties"]["note"]["maxLength"] = json!(100);
-        let text = messages(&frozen, &now).join("\n");
-        assert!(text.contains("maxLength 500 (tightened to 100)"), "{text}");
-    }
-
-    #[test]
-    fn a_new_variant_is_an_addition_and_a_long_list_of_findings_is_cut() {
-        let mut now = spec();
-        now["components"]["schemas"]["Thing"]["properties"]["status"]["oneOf"]
-            .as_array_mut()
-            .unwrap()
-            .push(json!({"type": "string", "enum": ["archived"]}));
-        assert!(messages(&spec(), &now).is_empty());
-        let mut frozen = spec();
-        for number in 0..60 {
-            frozen["components"]["schemas"][format!("Old{number}")] = json!({"type": "object"});
-        }
-        let found = messages(&frozen, &spec());
-        assert_eq!(found.len(), MOST_FINDINGS + 1);
-        assert!(found[MOST_FINDINGS].contains("And 20 more"), "{found:?}");
-    }
-}
+mod copy_tests;
+#[cfg(test)]
+mod tests;
