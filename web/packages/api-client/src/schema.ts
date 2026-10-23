@@ -3178,9 +3178,9 @@ export interface paths {
     };
     /**
      * The workflows there are, by name, for choosing one for a place. Needs the permission *Manage
-     *     workflows* at the place. A page holds at most 200 workflows of a list that stops there: a 201st
-     *     workflow is not listed (the cap is `WORKFLOWS_LISTED_MAX` in the program; an organization has a
-     *     handful).
+     *     workflows* at the place. A page holds at most 100 workflows, and the list stops at 200: a 201st
+     *     workflow is not listed (an organization has a handful). The sentence is held to the constants
+     *     by a test, because the description of a route takes a text and no constant.
      */
     get: operations["listWorkflows"];
     put?: never;

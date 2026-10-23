@@ -45,9 +45,20 @@ The frozen copy is `tools/checks/api-frozen.json`, the generated description in 
 - **The paths of previews and of the person.** The five patterns of the routes of previews stay. The rule for a new route: `/auth` is signing in and credentials, `/me` is one's own preferences.
 - **`RecordKind` is closed.** It lists 26 kinds of record, and the use cases refuse those that cannot be edited (the answer is `resource.not-found`). The enum only grows. A word that is not in it (also the form with an underscore) is refused as an invalid request, `400` `request.invalid`, in a body and in an address.
 
+### Open and closed (decided by the lead, WP-16)
+
+- **Open.** Every enum of an answer, every `kind` union, every `oneOf` variant and every error code is open: a client must accept a value it does not know, and a new value there is an addition. No answer enum is marked closed today.
+- **Closed.** What a request names is closed to the server: the values of an enum in a request (`RecordKind`, a level, a setting type) are refused when unknown, and ARCH-API-FREEZE refuses to take one away or to put a rule on a text that had none.
+
+### Kept in v1 for good, schemas (decided by the lead, WP-16)
+
+- **The `Page_*` names.** The 26 schemas that utoipa names `Page_X` for the page of a list of `X` keep these names. They are the name of a page of an item, and the client types are made from them.
+- **`IssueItem`.** The six operations that answer `IssueItem` (`changeIssue`, `saveIssueDescription`, `saveIssueFieldText`, `moveIssue`, `restoreIssue`, `createIssue`) keep it: its members are always there when no `fields=` is sent, so the optional types are only the type of the list.
+- **The tables of levels.** `FieldLevelTableBody`, `PeopleLevelTableBody` and their rows, cells and answers have plain names (a macro writes one struct for each kind of subject), so there is no generic schema name left.
+
 ### Compatible later (not in the freeze)
 
-These are additions after the freeze and break no client: optional and nullable members that are always there (new bodies, M4-F174), the per-route list of error codes and the wording of the shared `400` and `409` answers (B2), the plain names of the generic schemas and the open `fields` maps with inline field keys (B11, M4-F177), cursors for the capped lists (M4-F172) and a stable cursor in the store for the lists of fields and workflows (M4-F171).
+These are additions after the freeze and break no client: optional and nullable members that are always there in new bodies (M4-F174), the per-route list of error codes and the wording of the shared `400` and `409` answers (B2), the open `fields` maps with inline field keys (B11, M4-F177), cursors for the capped lists (M4-F172), a stable cursor in the store for the lists of fields and workflows (M4-F171) and a `truncated` member of the list of workflows (M4-F180).
 
 ## Alternatives considered
 

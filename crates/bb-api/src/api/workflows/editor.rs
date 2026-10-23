@@ -92,9 +92,9 @@ pub(crate) struct TryParams {
 }
 
 /// The workflows there are, by name, for choosing one for a place. Needs the permission *Manage
-/// workflows* at the place. A page holds at most 200 workflows of a list that stops there: a 201st
-/// workflow is not listed (the cap is `WORKFLOWS_LISTED_MAX` in the program; an organization has a
-/// handful).
+/// workflows* at the place. A page holds at most 100 workflows, and the list stops at 200: a 201st
+/// workflow is not listed (an organization has a handful). The sentence is held to the constants
+/// by a test, because the description of a route takes a text and no constant.
 #[utoipa::path(
     get,
     path = "/api/v1/workflows",
@@ -409,7 +409,8 @@ mod cap_tests {
         let said = format!("{} {}", route["summary"], route["description"]);
         assert!(
             said.contains(&format!(
-                "at most {} workflows",
+                "at most {} workflows, and the list stops at {}",
+                bb_core::paging::PAGE_SIZE_MAX,
                 bb_app::workflows::WORKFLOWS_LISTED_MAX
             )),
             "{said}"
