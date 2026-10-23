@@ -44,9 +44,10 @@ fn an_assignment_from_nobody_says_who_assigned_it_to_whom() {
         said(Some(people(&[])), Some(people(&["Someone (Team member)"]))),
         "Ben assigned this issue to Someone (Team member)"
     );
+    // A field set when the issue was made is a set field.
     assert_eq!(
         said(None, Some(people(&["Thea"]))),
-        "Ben assigned this issue to Thea"
+        "Ben set Priority: Thea"
     );
     // From one person to another it stays a change of the field.
     assert_eq!(

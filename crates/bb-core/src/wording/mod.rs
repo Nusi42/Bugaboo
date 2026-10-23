@@ -293,6 +293,15 @@ pub struct Change {
     pub after: Option<Side>,
 }
 
+/// Whether a side holds no person: nothing, or an empty list of people.
+fn is_nobody(side: Option<&Side>) -> bool {
+    match side {
+        None => true,
+        Some(Side::People { people }) => people.is_empty(),
+        Some(_) => false,
+    }
+}
+
 /// The sentence of a change of one field: *Ben changed Priority from Normal to High*.
 #[must_use]
 pub fn change_sentence(change: &Change) -> Said {
@@ -304,12 +313,10 @@ pub fn change_sentence(change: &Change) -> Said {
     );
     // Nobody was assigned before: the sentence is about the assignment, not about a field changing
     // from *nobody* to somebody.
-    let nobody = |side: &Option<Side>| match side {
-        None => true,
-        Some(Side::People { people }) => people.is_empty(),
-        Some(_) => false,
-    };
-    let from_nobody = nobody(&change.before) && !nobody(&change.after);
+    // Somebody is put where nobody was: an assignment. A field that was never there and is set (an
+    // issue made with it) stays *set Assigned to: Thea*.
+    let from_nobody = matches!(&change.before, Some(Side::People { people }) if people.is_empty())
+        && !is_nobody(change.after.as_ref());
     match (side(&change.before), side(&change.after)) {
         (_, Some(after)) if field == Some(Field::AssignedTo) && from_nobody => {
             said!(message::history_assigned, after, who)
