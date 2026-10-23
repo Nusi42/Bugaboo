@@ -4,6 +4,8 @@
 //! person. All need *Manage workflows* at the place. The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).
 
+use crate::api::auth::answer;
+use crate::lean::{ListParams, Listed, Page};
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::workflows::{
@@ -18,7 +20,8 @@ use utoipa_axum::routes;
 
 use super::bodies::{
     ChangeDraftBody, PublishPreviewAnswer, PublishPreviewBody, PublishWorkflowBody, PublishedBody,
-    StatusDraftBody, TriedBody, WorkflowEditorBody, WorkflowListBody, workflow_in_path,
+    StatusDraftBody, TriedBody, WORKFLOW_FIELDS, WORKFLOWS_LIST, WorkflowEditorBody, WorkflowItem,
+    workflow_in_path,
 };
 use crate::api::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
@@ -94,15 +97,17 @@ pub(crate) struct TryParams {
     path = "/api/v1/workflows",
     operation_id = "listWorkflows",
     tag = "workflows",
-    params(WorkflowsParams),
-    responses((status = 200, description = "The workflows.", body = WorkflowListBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+    params(WorkflowsParams, ListParams),
+    responses((status = 200, description = "The workflows, a page at a time.", body = Page<WorkflowItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_workflows(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<WorkflowsParams>,
+    ApiQuery(paging): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
+    let (cursor, bad_cursor) = paging.start(WORKFLOWS_LIST);
     let list = auth
         .api()?
         .workflows(
@@ -113,7 +118,17 @@ async fn list_workflows(
             },
         )
         .await?;
-    answer_authorized(&list.map(|list| WorkflowListBody::from(&list)))
+    bad_cursor?;
+    let limit = usize::try_from(paging.limit()).unwrap_or(usize::MAX);
+    let page = list.map(|list| {
+        Listed::cut(
+            list.workflows.iter().map(WorkflowItem::from).collect(),
+            cursor.as_deref(),
+            limit,
+        )
+    });
+    let fields = paging.fields_readable(&WORKFLOW_FIELDS, &page.hidden_properties())?;
+    Ok(answer(Page::of_authorized(WORKFLOWS_LIST, &page, &fields)?))
 }
 
 /// The workflow that counts at a place, for somebody who may change it: its statuses, status

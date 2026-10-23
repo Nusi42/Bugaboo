@@ -6345,11 +6345,40 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "The fields.",
+            "description": "The fields, a page at a time.",
             "headers": {
               "etag": {
                 "schema": {
@@ -6361,7 +6390,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldListBody"
+                  "$ref": "#/components/schemas/Page_FieldItem"
                 }
               }
             }
@@ -22549,11 +22578,40 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "The workflows.",
+            "description": "The workflows, a page at a time.",
             "headers": {
               "etag": {
                 "schema": {
@@ -22565,7 +22623,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WorkflowListBody"
+                  "$ref": "#/components/schemas/Page_WorkflowItem"
                 }
               }
             }
@@ -25396,6 +25454,106 @@
           }
         }
       },
+      "FieldItem": {
+        "type": "object",
+        "description": "An own field in a list: the members that were asked for.",
+        "properties": {
+          "applies_to": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldFor",
+                "description": "What it is added to."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "choices": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/FieldChoiceBody"
+            },
+            "description": "The choices of a *Pick one* or *Pick several* field, in order."
+          },
+          "default_value": {
+            "description": "The value a new item starts with, in the form of the type; `null` for none."
+          },
+          "help": {
+            "type": ["string", "null"],
+            "description": "Words that help people fill it in."
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the field, which is its key in levels, values and history."
+          },
+          "kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldType",
+                "description": "What kind of information it holds."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "look": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Look",
+                "description": "How the value is shown."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "may_manage": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person may change the definition (*Manage fields*)."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "never_to_assistant": {
+            "type": ["boolean", "null"],
+            "description": "The assistant is never sent the value."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "Whether the field is retired: no new values, old ones stay."
+          },
+          "rules": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Rules",
+                "description": "The rules. The browser checks them for instant feedback; the server decides."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldScopeBody",
+                "description": "Where it is used."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
       "FieldKey": {
         "type": "string",
         "description": "The key of a field: the word of a built-in field, or the ID of an own field."
@@ -25440,20 +25598,6 @@
           "field": {
             "$ref": "#/components/schemas/FieldKeyBody",
             "description": "The field."
-          }
-        }
-      },
-      "FieldListBody": {
-        "type": "object",
-        "description": "The fields a person sees.",
-        "required": ["fields"],
-        "properties": {
-          "fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldBody"
-            },
-            "description": "The fields, in the order they are offered in."
           }
         }
       },
@@ -29149,6 +29293,121 @@
           }
         }
       },
+      "Page_FieldItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An own field in a list: the members that were asked for.",
+              "properties": {
+                "applies_to": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldFor",
+                      "description": "What it is added to."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "choices": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/FieldChoiceBody"
+                  },
+                  "description": "The choices of a *Pick one* or *Pick several* field, in order."
+                },
+                "default_value": {
+                  "description": "The value a new item starts with, in the form of the type; `null` for none."
+                },
+                "help": {
+                  "type": ["string", "null"],
+                  "description": "Words that help people fill it in."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the field, which is its key in levels, values and history."
+                },
+                "kind": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldType",
+                      "description": "What kind of information it holds."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "look": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Look",
+                      "description": "How the value is shown."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "may_manage": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the person may change the definition (*Manage fields*)."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What it is called."
+                },
+                "never_to_assistant": {
+                  "type": ["boolean", "null"],
+                  "description": "The assistant is never sent the value."
+                },
+                "retired": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the field is retired: no new values, old ones stay."
+                },
+                "rules": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Rules",
+                      "description": "The rules. The browser checks them for instant feedback; the server decides."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "scope": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldScopeBody",
+                      "description": "Where it is used."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_GroupItem": {
         "type": "object",
         "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
@@ -30391,6 +30650,40 @@
                 "whole_organization": {
                   "type": ["boolean", "null"],
                   "description": "Whether it is for every project."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_WorkflowItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A workflow in the list: the members that were asked for.",
+              "properties": {
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the workflow."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What it is called."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
                 }
               }
             },
@@ -33128,26 +33421,6 @@
           }
         }
       },
-      "WorkflowChoiceBody": {
-        "type": "object",
-        "description": "A workflow in the list.",
-        "required": ["id", "name", "version"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the workflow."
-          },
-          "name": {
-            "type": "string",
-            "description": "What it is called."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Counts up with every change."
-          }
-        }
-      },
       "WorkflowEditorBody": {
         "type": "object",
         "description": "What the editor shows for a place.",
@@ -33238,21 +33511,22 @@
           }
         }
       },
-      "WorkflowListBody": {
+      "WorkflowItem": {
         "type": "object",
-        "description": "The workflows there are.",
-        "required": ["workflows", "truncated"],
+        "description": "A workflow in the list: the members that were asked for.",
         "properties": {
-          "truncated": {
-            "type": "boolean",
-            "description": "The list was cut off at its cap."
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the workflow."
           },
-          "workflows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WorkflowChoiceBody"
-            },
-            "description": "The workflows, by name."
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       }

@@ -1,9 +1,12 @@
-import { ownFieldPartPrefix, type Schema } from "@bugaboo/api-client";
+import { dataOf, ownFieldPartPrefix, pageSizeMax, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { IssueBlockProps } from "../issues/index.ts";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import { linesFrom } from "../../shared/paged.ts";
+import { known } from "../../shared/present.ts";
+import { queryKeys } from "../../shared/query-keys.ts";
 import { detailsText } from "../../shared/list-text.ts";
 import type { Picked } from "../../shared/reference.ts";
 
@@ -61,17 +64,91 @@ export function useFieldTypes() {
 export function useFields(
   options: { readonly project?: string | undefined; readonly retired?: boolean } = {},
 ) {
+  const query = {
+    ...(options.project === undefined ? {} : { project: options.project }),
+    ...(options.retired === true ? { retired: true } : {}),
+  };
   return useQuery({
-    ...api.query.queryOptions("get", "/api/v1/fields", {
+    queryKey: queryKeys.fields.list(query),
+    queryFn: () => readAllFields(query),
+  });
+}
+
+/** Reads the pages of the list of fields one after the other: a form needs every field. */
+async function readAllFields(query: {
+  readonly project?: string;
+  readonly retired?: boolean;
+}): Promise<{ readonly fields: readonly OwnField[] }> {
+  return { fields: await readFieldPages(query, undefined, []) };
+}
+
+async function readFieldPages(
+  query: { readonly project?: string; readonly retired?: boolean },
+  cursor: string | undefined,
+  before: readonly OwnField[],
+): Promise<readonly OwnField[]> {
+  const page = dataOf(
+    await api.client.GET("/api/v1/fields", {
       params: {
-        query: {
-          ...(options.project === undefined ? {} : { project: options.project }),
-          ...(options.retired === true ? { retired: true } : {}),
-        },
+        query: { ...query, limit: pageSizeMax, ...(cursor === undefined ? {} : { cursor }) },
       },
     }),
-    select: (page: Schema<"FieldListBody">) => page,
-  });
+  );
+  const fields = [...before, ...linesFrom([page], fieldOf)];
+  return page.next_cursor === undefined || page.next_cursor === null
+    ? fields
+    : readFieldPages(query, page.next_cursor, fields);
+}
+
+/** A field of the list, or nothing for an item that came without what a field needs. */
+function fieldOf(item: Schema<"FieldItem">): OwnField | undefined {
+  const [id, name, help, kind] = [
+    known(item.id),
+    known(item.name),
+    known(item.help),
+    known(item.kind),
+  ];
+  const [appliesTo, rules, look] = [known(item.applies_to), known(item.rules), known(item.look)];
+  const [scope, choices, never] = [
+    known(item.scope),
+    known(item.choices),
+    known(item.never_to_assistant),
+  ];
+  const [retired, mayManage, version] = [
+    known(item.retired),
+    known(item.may_manage),
+    known(item.version),
+  ];
+  return id === undefined ||
+    name === undefined ||
+    help === undefined ||
+    kind === undefined ||
+    appliesTo === undefined ||
+    rules === undefined ||
+    look === undefined ||
+    scope === undefined ||
+    choices === undefined ||
+    never === undefined ||
+    retired === undefined ||
+    mayManage === undefined ||
+    version === undefined
+    ? undefined
+    : {
+        id,
+        name,
+        help,
+        kind,
+        applies_to: appliesTo,
+        rules,
+        default_value: item.default_value ?? null,
+        look,
+        never_to_assistant: never,
+        retired,
+        scope,
+        choices,
+        may_manage: mayManage,
+        version,
+      };
 }
 
 /** One field. */

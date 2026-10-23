@@ -9,9 +9,9 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::fields::{
-    AddChoice, ChangeChoice, ChangeField, ChoiceView, CombineChoices, CreateField, FieldPage,
-    FieldQuery, FieldTypePage, FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, NewChoice,
-    ReorderChoices, SaveFieldText, ScopeView,
+    AddChoice, ChangeChoice, ChangeField, ChoiceView, CombineChoices, CreateField, FieldQuery,
+    FieldTypePage, FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, NewChoice, ReorderChoices,
+    SaveFieldText, ScopeView,
 };
 use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LockToken, ProjectId};
 use bb_core::issue::IssueIcon;

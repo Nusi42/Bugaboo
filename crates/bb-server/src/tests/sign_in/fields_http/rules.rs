@@ -125,9 +125,9 @@ async fn cf_03_a_field_for_one_project_is_not_offered_elsewhere() -> TestResult 
         let key = id_in(&field)?;
         // Offered in ACME, not in BETA.
         let in_acme = ada.send("GET", &format!("{FIELDS}?project=ACME"), None).await?;
-        assert_eq!(ok(&in_acme)?["fields"].as_array().map(Vec::len), Some(1));
+        assert_eq!(ok(&in_acme)?["items"].as_array().map(Vec::len), Some(1));
         let in_beta = ada.send("GET", &format!("{FIELDS}?project=BETA"), None).await?;
-        assert_eq!(ok(&in_beta)?["fields"].as_array().map(Vec::len), Some(0));
+        assert_eq!(ok(&in_beta)?["items"].as_array().map(Vec::len), Some(0));
         let body = |project: &str| {
             json!({"issue_type": site.kind, "title": "Here", "fields": { &key: "Acme" }, "project": project})
         };

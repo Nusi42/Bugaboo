@@ -18,9 +18,25 @@ export function fieldNamed(
   return found;
 }
 
+/** Every field of the organization, each read whole through the API. */
+export async function readFields(session: ApiSession): Promise<readonly Schema<"FieldBody">[]> {
+  const listed = dataOf(await session.client.GET("/api/v1/fields")).items;
+  const ids: string[] = [];
+  for (const item of listed) {
+    if (typeof item.id === "string") {
+      ids.push(item.id);
+    }
+  }
+  return Promise.all(
+    ids.map(async (field) =>
+      dataOf(await session.client.GET("/api/v1/fields/{field}", { params: { path: { field } } })),
+    ),
+  );
+}
+
 /** A field of the organization by its name, read through the API. */
 export async function fieldOf(session: ApiSession, name: string): Promise<Schema<"FieldBody">> {
-  return fieldNamed(dataOf(await session.client.GET("/api/v1/fields")).fields, name);
+  return fieldNamed(await readFields(session), name);
 }
 
 /** Makes an own field for issues, through the API; the field as the server made it. */

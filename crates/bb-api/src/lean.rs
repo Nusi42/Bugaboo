@@ -257,6 +257,28 @@ impl Page<Value> {
     }
 }
 
+impl<V> Listed<V> {
+    /// The page of a list that the use case reads whole (it has a hard cap) and the route cuts: the
+    /// items after the position `after` of the cursor, at most `limit` of them, and the position of
+    /// the last one when there are more. A position is the number of the item in the list, so a list
+    /// that changed between two requests is cut at the same place, never fails.
+    pub(crate) fn cut(all: Vec<V>, after: Option<&str>, limit: usize) -> Self {
+        let start = after
+            .and_then(|position| position.parse::<usize>().ok())
+            .map_or(0, |last| last.saturating_add(1));
+        let mut rest: Vec<V> = all.into_iter().skip(start).collect();
+        let more = rest.len() > limit;
+        rest.truncate(limit);
+        let next = more.then(|| {
+            start
+                .saturating_add(rest.len())
+                .saturating_sub(1)
+                .to_string()
+        });
+        Self { items: rest, next }
+    }
+}
+
 /// The items of a page as a use case gave them, before they are cut to the fields asked for and the
 /// position is sealed: what `Authorized` wraps, so the mask reaches the items.
 #[derive(Serialize)]
@@ -326,6 +348,31 @@ mod tests {
         FieldSpec::on_request("status"),
         FieldSpec::on_request("cost_center"),
     ];
+
+    #[test]
+    fn perf_02_a_list_read_whole_is_cut_into_pages_that_walk_every_item_once() {
+        let all: Vec<u32> = (0..250).collect();
+        let mut seen = Vec::new();
+        let mut after: Option<String> = None;
+        let mut sizes = Vec::new();
+        loop {
+            let page = Listed::cut(all.clone(), after.as_deref(), 100);
+            sizes.push(page.items.len());
+            seen.extend(page.items);
+            match page.next {
+                Some(position) => after = Some(position),
+                None => break,
+            }
+        }
+        assert_eq!(sizes, [100, 100, 50]);
+        assert_eq!(seen, all);
+        // A list that is empty, or that fits one page, has no next page; a position past the end
+        // gives an empty page and no next one.
+        assert!(Listed::cut(Vec::<u32>::new(), None, 100).next.is_none());
+        assert!(Listed::cut(vec![1, 2, 3], None, 3).next.is_none());
+        let past = Listed::cut(vec![1, 2, 3], Some("99"), 3);
+        assert!(past.items.is_empty() && past.next.is_none());
+    }
 
     /// One row of the pretend list.
     #[derive(Serialize)]

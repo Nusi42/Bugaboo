@@ -87,7 +87,7 @@ async fn cf_06_an_own_field_follows_its_level_per_role_and_per_issue_type() -> T
         // The definition of the field is not shown to a role that sees it nowhere.
         let mut nobody = reader_of(&site, &rig, "nora@example.test", &see, &[]).await?;
         let list = nobody.send("GET", FIELDS, None).await?;
-        assert_eq!(ok(&list)?["fields"].as_array().map(Vec::len), Some(0));
+        assert_eq!(ok(&list)?["items"].as_array().map(Vec::len), Some(0));
         let one = nobody.send("GET", &format!("{FIELDS}/{key}"), None).await?;
         assert_eq!(one.code(), "resource.not-found");
         Ok(())
@@ -320,7 +320,7 @@ async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_row
         // At the organization the lead reads the field that they may see and that sits in a
         // project they see.
         let list = lead.send("GET", FIELDS, None).await?;
-        assert_eq!(ok(&list)?["fields"].as_array().map(Vec::len), Some(1));
+        assert_eq!(ok(&list)?["items"].as_array().map(Vec::len), Some(1));
         // A field they may not see answers like one that is not there; a field they may see does not.
         let hidden = lead
             .send("GET", &format!("{FIELDS}/{salary_id}"), None)

@@ -4270,6 +4270,35 @@ export interface components {
       /** @description The IDs of the roles it is shown to. */
       roles: string[];
     };
+    /** @description An own field in a list: the members that were asked for. */
+    FieldItem: {
+      applies_to?: components["schemas"]["FieldFor"] | null;
+      /** @description The choices of a *Pick one* or *Pick several* field, in order. */
+      choices?: components["schemas"]["FieldChoiceBody"][] | null;
+      /** @description The value a new item starts with, in the form of the type; `null` for none. */
+      default_value?: unknown;
+      /** @description Words that help people fill it in. */
+      help?: string | null;
+      /** @description The ID of the field, which is its key in levels, values and history. */
+      id?: string | null;
+      kind?: components["schemas"]["FieldType"] | null;
+      look?: components["schemas"]["Look"] | null;
+      /** @description Whether the person may change the definition (*Manage fields*). */
+      may_manage?: boolean | null;
+      /** @description What it is called. */
+      name?: string | null;
+      /** @description The assistant is never sent the value. */
+      never_to_assistant?: boolean | null;
+      /** @description Whether the field is retired: no new values, old ones stay. */
+      retired?: boolean | null;
+      rules?: components["schemas"]["Rules"] | null;
+      scope?: components["schemas"]["FieldScopeBody"] | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version?: number | null;
+    };
     /** @description The key of a field: the word of a built-in field, or the ID of an own field. */
     FieldKey: string;
     /**
@@ -4297,11 +4326,6 @@ export interface components {
       before: components["schemas"]["WordBody"];
       /** @description The field. */
       field: components["schemas"]["FieldKeyBody"];
-    };
-    /** @description The fields a person sees. */
-    FieldListBody: {
-      /** @description The fields, in the order they are offered in. */
-      fields: components["schemas"]["FieldBody"][];
     };
     /** @description Where a field is used, as the person may know it. */
     FieldScopeBody: {
@@ -6004,6 +6028,43 @@ export interface components {
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
      *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
+    Page_FieldItem: {
+      /** @description The items of this page. */
+      items: {
+        applies_to?: components["schemas"]["FieldFor"] | null;
+        /** @description The choices of a *Pick one* or *Pick several* field, in order. */
+        choices?: components["schemas"]["FieldChoiceBody"][] | null;
+        /** @description The value a new item starts with, in the form of the type; `null` for none. */
+        default_value?: unknown;
+        /** @description Words that help people fill it in. */
+        help?: string | null;
+        /** @description The ID of the field, which is its key in levels, values and history. */
+        id?: string | null;
+        kind?: components["schemas"]["FieldType"] | null;
+        look?: components["schemas"]["Look"] | null;
+        /** @description Whether the person may change the definition (*Manage fields*). */
+        may_manage?: boolean | null;
+        /** @description What it is called. */
+        name?: string | null;
+        /** @description The assistant is never sent the value. */
+        never_to_assistant?: boolean | null;
+        /** @description Whether the field is retired: no new values, old ones stay. */
+        retired?: boolean | null;
+        rules?: components["schemas"]["Rules"] | null;
+        scope?: components["schemas"]["FieldScopeBody"] | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
     Page_GroupItem: {
       /** @description The items of this page. */
       items: {
@@ -6527,6 +6588,26 @@ export interface components {
         version?: number | null;
         /** @description Whether it is for every project. */
         whole_organization?: boolean | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_WorkflowItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description The ID of the workflow. */
+        id?: string | null;
+        /** @description What it is called. */
+        name?: string | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -7962,18 +8043,6 @@ export interface components {
       /** @description The key of the message that names it. */
       message_key: string;
     };
-    /** @description A workflow in the list. */
-    WorkflowChoiceBody: {
-      /** @description The ID of the workflow. */
-      id: string;
-      /** @description What it is called. */
-      name: string;
-      /**
-       * Format: int64
-       * @description Counts up with every change.
-       */
-      version: number;
-    };
     /** @description What the editor shows for a place. */
     WorkflowEditorBody: {
       /** @description Its status changes. */
@@ -7993,12 +8062,17 @@ export interface components {
       statuses: components["schemas"]["StatusRef"][];
       workflow?: components["schemas"]["SlotBody"] | null;
     };
-    /** @description The workflows there are. */
-    WorkflowListBody: {
-      /** @description The list was cut off at its cap. */
-      truncated: boolean;
-      /** @description The workflows, by name. */
-      workflows: components["schemas"]["WorkflowChoiceBody"][];
+    /** @description A workflow in the list: the members that were asked for. */
+    WorkflowItem: {
+      /** @description The ID of the workflow. */
+      id?: string | null;
+      /** @description What it is called. */
+      name?: string | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version?: number | null;
     };
   };
   responses: never;
@@ -12956,6 +13030,12 @@ export interface operations {
         project?: string;
         /** @description Also the retired fields. */
         retired?: boolean;
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -12963,7 +13043,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The fields. */
+      /** @description The fields, a page at a time. */
       200: {
         headers: {
           /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
@@ -12971,7 +13051,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["FieldListBody"];
+          "application/json": components["schemas"]["Page_FieldItem"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
@@ -25160,6 +25240,12 @@ export interface operations {
       query?: {
         /** @description The project, by its ID or its short name; leave it out for the whole organization. */
         project?: string;
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -25167,7 +25253,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The workflows. */
+      /** @description The workflows, a page at a time. */
       200: {
         headers: {
           /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
@@ -25175,7 +25261,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["WorkflowListBody"];
+          "application/json": components["schemas"]["Page_WorkflowItem"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */

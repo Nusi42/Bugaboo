@@ -7,7 +7,7 @@ import { countRequests } from "./support/requests.ts";
 import { ada, bob, ownId, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
-import { fieldNamed, prepareFieldsIssue } from "./support/fields.ts";
+import { fieldNamed, prepareFieldsIssue, readFields } from "./support/fields.ts";
 import { createIssue, savedNote } from "./support/issues.ts";
 
 // Own fields on the issue page (CF-01, CF-06, M3 WP-05 with WP-06): the fields are filled in on
@@ -101,7 +101,7 @@ test("cf_06 fields are filled on the issue page and Severity is hidden from a Gu
 }) => {
   await signIn(page, ada);
   const admin = await signedInAdmin(server);
-  const { fields } = dataOf(await admin.client.GET("/api/v1/fields"));
+  const fields = await readFields(admin);
   const severity = fieldNamed(fields, "Severity");
   const platforms = fieldNamed(fields, "Platforms");
   const customer = fieldNamed(fields, "Customer");

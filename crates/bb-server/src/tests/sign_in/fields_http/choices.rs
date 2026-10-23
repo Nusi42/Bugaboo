@@ -142,7 +142,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
         let list = tim
             .send("GET", &format!("{FIELDS}?project=ACME"), None)
             .await?;
-        assert_eq!(ok(&list)?["fields"].as_array().map(Vec::len), Some(1));
+        assert_eq!(ok(&list)?["items"].as_array().map(Vec::len), Some(1));
         Ok(())
     })
     .await

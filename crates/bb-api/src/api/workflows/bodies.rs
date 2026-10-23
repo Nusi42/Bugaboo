@@ -2,9 +2,10 @@
 //! change, the statuses and status changes an editor sends, and what the editor shows.
 
 use crate::api::editing::SlotBody;
+use crate::lean::FieldSpec;
 use bb_app::workflows::{
     EditorChange, EditorGroup, EditorRole, PublishPreview, RuleField, Tried, TriedChange,
-    TriedVerdict, WorkflowEditor, WorkflowList, WorkflowListItem, WorkflowSlot,
+    TriedVerdict, WorkflowEditor, WorkflowListItem, WorkflowSlot,
 };
 use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
@@ -411,43 +412,38 @@ impl From<&WorkflowEditor> for WorkflowEditorBody {
     }
 }
 
-/// A workflow in the list.
+/// The fields of a workflow in a list that can be asked for: all of them are by default.
+pub(super) const WORKFLOW_FIELDS: [FieldSpec; 3] = [
+    FieldSpec::by_default("id"),
+    FieldSpec::by_default("name"),
+    FieldSpec::by_default("version"),
+];
+
+/// The name of the list of workflows, so its cursors are its own.
+pub(super) const WORKFLOWS_LIST: &str = "workflows";
+
+/// A workflow in the list: the members that were asked for.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct WorkflowChoiceBody {
+pub(crate) struct WorkflowItem {
     /// The ID of the workflow.
-    id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
     /// What it is called.
-    name: String,
-    /// Counts up with every change.
-    version: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<i64>,
 }
 
-/// The workflows there are.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct WorkflowListBody {
-    /// The workflows, by name.
-    workflows: Vec<WorkflowChoiceBody>,
-    /// The list was cut off at its cap.
-    truncated: bool,
-}
+impl Masked for WorkflowItem {}
 
-impl Masked for WorkflowListBody {}
-
-impl From<&WorkflowList> for WorkflowListBody {
-    fn from(list: &WorkflowList) -> Self {
+impl From<&WorkflowListItem> for WorkflowItem {
+    fn from(item: &WorkflowListItem) -> Self {
         Self {
-            truncated: list.truncated,
-            workflows: list
-                .workflows
-                .iter()
-                .map(
-                    |WorkflowListItem { id, name, version }| WorkflowChoiceBody {
-                        id: id.to_string(),
-                        name: name.clone(),
-                        version: *version,
-                    },
-                )
-                .collect(),
+            id: Some(item.id.to_string()),
+            name: Some(item.name.clone()),
+            version: Some(item.version),
         }
     }
 }

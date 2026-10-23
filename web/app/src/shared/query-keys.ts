@@ -42,6 +42,8 @@ export const queryKeys = {
   fields: {
     /** The projects offered while choosing where a field is used. */
     projectChoices: (search: string) => ["fields", "projects", search],
+    /** The list of fields with the filters it was read with: under the path of the read, so a change of a field reads it again. */
+    list: (query: object) => ["get", "/api/v1/fields", { params: { query } }],
   },
   projects: {
     all: ["projects"],

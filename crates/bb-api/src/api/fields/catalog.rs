@@ -1,11 +1,13 @@
 //! The kinds of field, the list of fields, one field and where it is used.
 
 use super::{
-    ApiError, ApiPath, ApiQuery, AuthHandle, FieldBody, FieldId, FieldListBody, FieldQuery,
-    FieldTypeListBody, FieldTypesQuery, FieldUsedByBody, FieldsParams, FieldsQuery,
-    ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Response, Session, State,
-    answer_authorized, path_id,
+    ApiError, ApiPath, ApiQuery, AuthHandle, FIELD_FIELDS, FIELDS_LIST, FieldBody, FieldId,
+    FieldItem, FieldQuery, FieldTypeListBody, FieldTypesQuery, FieldUsedByBody, FieldsParams,
+    FieldsQuery, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Response, Session,
+    State, answer_authorized, path_id,
 };
+use crate::api::auth::answer;
+use crate::lean::{ListParams, Listed, Page};
 
 /// The kinds of information a field can hold, with what each kind allows.
 #[utoipa::path(
@@ -33,15 +35,17 @@ pub(super) async fn list_field_types(
     path = "/api/v1/fields",
     operation_id = "listFields",
     tag = "fields",
-    params(FieldsParams),
-    responses((status = 200, description = "The fields.", body = FieldListBody), NotSignedInAnswer, NotFoundAnswer)
+    params(FieldsParams, ListParams),
+    responses((status = 200, description = "The fields, a page at a time.", body = Page<FieldItem>), NotSignedInAnswer, NotFoundAnswer)
 )]
 pub(super) async fn list_fields(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<FieldsParams>,
+    ApiQuery(paging): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
+    let (cursor, bad_cursor) = paging.start(FIELDS_LIST);
     let page = auth
         .api()?
         .fields(
@@ -54,7 +58,17 @@ pub(super) async fn list_fields(
             },
         )
         .await?;
-    answer_authorized(&page.map(|page| FieldListBody::from(&page)))
+    bad_cursor?;
+    let limit = usize::try_from(paging.limit()).unwrap_or(usize::MAX);
+    let list = page.map(|page| {
+        Listed::cut(
+            page.fields.iter().map(FieldItem::from).collect(),
+            cursor.as_deref(),
+            limit,
+        )
+    });
+    let fields = paging.fields_readable(&FIELD_FIELDS, &list.hidden_properties())?;
+    Ok(answer(Page::of_authorized(FIELDS_LIST, &list, &fields)?))
 }
 
 /// One own field the person sees.

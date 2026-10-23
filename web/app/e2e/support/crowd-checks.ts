@@ -2,6 +2,7 @@ import { dataOf, pageSizeMax, type Schema } from "@bugaboo/api-client";
 
 import { type ApiSession } from "./api.ts";
 import { type MadeIssue, readIssue } from "./issues.ts";
+import { readFields } from "./fields.ts";
 
 /** The changes in the history of an issue: for each event, the fields it changed. */
 export type Changes = Readonly<Record<string, readonly string[]>>;
@@ -94,7 +95,7 @@ export async function ownChoices(
 ): Promise<Readonly<Record<string, string>>> {
   const values = (await readIssue(session, issue)).issue.own_fields ?? {};
   const fields: Known[] = [];
-  for (const field of dataOf(await session.client.GET("/api/v1/fields")).fields) {
+  for (const field of await readFields(session)) {
     const choices: Named[] = [];
     for (const choice of field.choices) {
       choices.push({ id: choice.id, name: choice.name });

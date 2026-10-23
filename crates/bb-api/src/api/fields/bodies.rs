@@ -1,10 +1,11 @@
 //! The bodies, queries and inputs of the routes of own fields.
 
 use super::{
-    ApiError, ChoiceColor, ChoiceView, Deserialize, Edit, FieldFor, FieldPage, FieldType,
-    FieldTypePage, FieldUsage, FieldView, IssueIcon, IssueTypeId, IssueTypeRef, KindTrait, Look,
-    Masked, ProjectId, ProjectRef, Rules, Scope, ScopeView, Serialize, ToSchema, Value, body_id,
+    ApiError, ChoiceColor, ChoiceView, Deserialize, Edit, FieldFor, FieldType, FieldTypePage,
+    FieldUsage, FieldView, IssueIcon, IssueTypeId, IssueTypeRef, KindTrait, Look, Masked,
+    ProjectId, ProjectRef, Rules, Scope, ScopeView, Serialize, ToSchema, Value, body_id,
 };
+use crate::lean::FieldSpec;
 
 /// A choice of a field.
 #[derive(Serialize, ToSchema)]
@@ -111,19 +112,95 @@ impl From<&FieldView> for FieldBody {
     }
 }
 
-/// The fields a person sees.
+/// The fields of an own field in a list that can be asked for, and which of them a list holds when
+/// the request names none: all of them.
+pub(super) const FIELD_FIELDS: [FieldSpec; 14] = [
+    FieldSpec::by_default("id"),
+    FieldSpec::by_default("name"),
+    FieldSpec::by_default("help"),
+    FieldSpec::by_default("kind"),
+    FieldSpec::by_default("applies_to"),
+    FieldSpec::by_default("rules"),
+    FieldSpec::by_default("default_value"),
+    FieldSpec::by_default("look"),
+    FieldSpec::by_default("never_to_assistant"),
+    FieldSpec::by_default("retired"),
+    FieldSpec::by_default("scope"),
+    FieldSpec::by_default("choices"),
+    FieldSpec::by_default("may_manage"),
+    FieldSpec::by_default("version"),
+];
+
+/// The name of the list of fields, so its cursors are its own.
+pub(super) const FIELDS_LIST: &str = "fields";
+
+/// An own field in a list: the members that were asked for.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct FieldListBody {
-    /// The fields, in the order they are offered in.
-    pub(super) fields: Vec<FieldBody>,
+pub(crate) struct FieldItem {
+    /// The ID of the field, which is its key in levels, values and history.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) id: Option<String>,
+    /// What it is called.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) name: Option<String>,
+    /// Words that help people fill it in.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) help: Option<String>,
+    /// What kind of information it holds.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) kind: Option<FieldType>,
+    /// What it is added to.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) applies_to: Option<FieldFor>,
+    /// The rules. The browser checks them for instant feedback; the server decides.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) rules: Option<Rules>,
+    /// The value a new item starts with, in the form of the type; `null` for none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<serde_json::Value>)]
+    pub(super) default_value: Option<Value>,
+    /// How the value is shown.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) look: Option<Look>,
+    /// The assistant is never sent the value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) never_to_assistant: Option<bool>,
+    /// Whether the field is retired: no new values, old ones stay.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) retired: Option<bool>,
+    /// Where it is used.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) scope: Option<FieldScopeBody>,
+    /// The choices of a *Pick one* or *Pick several* field, in order.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) choices: Option<Vec<FieldChoiceBody>>,
+    /// Whether the person may change the definition (*Manage fields*).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) may_manage: Option<bool>,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) version: Option<i64>,
 }
 
-impl Masked for FieldListBody {}
+impl Masked for FieldItem {}
 
-impl From<&FieldPage> for FieldListBody {
-    fn from(page: &FieldPage) -> Self {
+impl From<&FieldView> for FieldItem {
+    fn from(field: &FieldView) -> Self {
         Self {
-            fields: page.fields.iter().map(FieldBody::from).collect(),
+            id: Some(field.id.to_string()),
+            name: Some(field.name.clone()),
+            help: Some(field.help.clone()),
+            kind: Some(field.kind),
+            applies_to: Some(field.applies_to),
+            rules: Some(field.rules.clone()),
+            default_value: field.default_value.clone(),
+            look: Some(field.look),
+            never_to_assistant: Some(field.never_to_assistant),
+            retired: Some(field.retired),
+            scope: Some(FieldScopeBody::from(&field.scope)),
+            choices: Some(field.choices.iter().map(FieldChoiceBody::from).collect()),
+            may_manage: Some(field.may_manage),
+            version: Some(field.version),
         }
     }
 }
