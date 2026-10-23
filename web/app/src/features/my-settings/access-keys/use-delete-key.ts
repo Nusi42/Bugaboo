@@ -24,8 +24,8 @@ export function useDeleteKey(): OptimisticMutation<{ readonly id: string }> {
         ? undefined
         : { ...before, items: before.items.filter((one) => one.id !== id) },
     send: ({ id }) =>
-      api.client.DELETE("/api/v1/access-keys/{access_key_id}", {
-        params: { path: { access_key_id: id } },
+      api.client.DELETE("/api/v1/access-keys/{access_key}", {
+        params: { path: { access_key: id } },
       }),
   });
 }

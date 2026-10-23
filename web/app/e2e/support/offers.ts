@@ -28,8 +28,8 @@ export async function prepareOffers(server: Instance): Promise<void> {
   await giveRole(admin, cleoId, roleName.projectLead, "WEB");
   const viewer = (await roleIds(admin)).get(roleName.viewer) ?? "";
   const copy = dataOf(
-    await admin.client.POST("/api/v1/roles/{role_id}/copy", {
-      params: { path: { role_id: viewer } },
+    await admin.client.POST("/api/v1/roles/{role}/copy", {
+      params: { path: { role: viewer } },
       body: { name: "Careful" },
     }),
   );

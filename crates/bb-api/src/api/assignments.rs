@@ -382,10 +382,10 @@ async fn assign_project_role(
 /// where the row is; nothing that would leave nobody who can manage roles.
 #[utoipa::path(
     delete,
-    path = "/api/v1/assignments/{assignment_id}",
+    path = "/api/v1/assignments/{assignment}",
     operation_id = "removeAssignment",
     tag = "roles",
-    params(("assignment_id" = String, Path, description = "The ID of the row.")),
+    params(("assignment" = String, Path, description = "The ID of the row.")),
     responses(
         (status = 204, description = "The row is gone."),
         NotSignedInAnswer,

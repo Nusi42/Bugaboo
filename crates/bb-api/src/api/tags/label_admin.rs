@@ -137,10 +137,10 @@ pub(super) async fn create_label_group(
 /// Changes a group of labels. Needs *Manage labels and tags* where the group was made.
 #[utoipa::path(
     patch,
-    path = "/api/v1/label-groups/{group}",
+    path = "/api/v1/label-groups/{label_group}",
     operation_id = "changeLabelGroup",
     tag = "tags",
-    params(("group" = String, Path, description = "The ID of the group.")),
+    params(("label_group" = String, Path, description = "The ID of the label group.")),
     request_body = ChangeLabelGroupBody,
     responses(
         (status = 200, description = "The group as it is now.", body = LabelGroupBody),

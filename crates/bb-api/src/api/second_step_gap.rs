@@ -35,10 +35,10 @@ impl Masked for SecondStepGapBody {}
 /// change and delete roles*.
 #[utoipa::path(
     get,
-    path = "/api/v1/roles/{role_id}/second-step-gap",
+    path = "/api/v1/roles/{role}/second-step-gap",
     operation_id = "getSecondStepGap",
     tag = "auth",
-    params(("role_id" = String, Path, description = "The ID of the role.")),
+    params(("role" = String, Path, description = "The ID of the role.")),
     responses((status = 200, description = "How many people with the role have no second step yet.", body = SecondStepGapBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_second_step_gap(

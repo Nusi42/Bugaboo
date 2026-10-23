@@ -12,7 +12,7 @@ routes = [
   "POST /api/v1/auth/setup",
   "POST /api/v1/auth/sign-out",
   "DELETE /api/v1/auth/sessions",
-  "DELETE /api/v1/auth/sessions/{session_id}",
+  "DELETE /api/v1/auth/sessions/{session}",
   "POST /api/v1/auth/password",
   "POST /api/v1/auth/second-step",
   "POST /api/v1/auth/second-step/passkey",
@@ -21,7 +21,7 @@ routes = [
   "POST /api/v1/auth/passkey/sign-in/options",
   "POST /api/v1/auth/passkeys",
   "POST /api/v1/auth/passkeys/options",
-  "POST /api/v1/auth/passkeys/{passkey_id}/remove",
+  "POST /api/v1/auth/passkeys/{passkey}/remove",
   "POST /api/v1/auth/two-step/code-app",
   "POST /api/v1/auth/two-step/code-app/confirm",
   "POST /api/v1/auth/two-step/code-app/remove",
@@ -53,16 +53,16 @@ routes = [
   "POST /api/v1/projects/{project}/issues",
   "POST /api/v1/projects/{project}/sub-projects",
   "POST /api/v1/roles",
-  "POST /api/v1/roles/{role_id}/copy",
+  "POST /api/v1/roles/{role}/copy",
 ]
 reason = "Making a new record has no earlier version that could be stale; a name that is taken is refused on its own (name.taken)."
 
 [[exempt]]
 routes = [
-  "DELETE /api/v1/access-keys/{access_key_id}",
-  "DELETE /api/v1/assignments/{assignment_id}",
-  "DELETE /api/v1/auth/invitations/{invitation_id}",
-  "DELETE /api/v1/groups/{group_id}",
+  "DELETE /api/v1/access-keys/{access_key}",
+  "DELETE /api/v1/assignments/{assignment}",
+  "DELETE /api/v1/auth/invitations/{invitation}",
+  "DELETE /api/v1/groups/{group}",
   "DELETE /api/v1/issues/{issue}",
   "POST /api/v1/issues/{issue}/restore",
   "DELETE /api/v1/relations/{relation}",
@@ -70,9 +70,9 @@ routes = [
   "POST /api/v1/comments/{comment}/restore",
   "PUT /api/v1/issues/{issue}/follow",
   "DELETE /api/v1/issues/{issue}/follow",
-  "DELETE /api/v1/roles/{role_id}",
-  "PUT /api/v1/groups/{group_id}/members/{person_id}",
-  "DELETE /api/v1/groups/{group_id}/members/{person_id}",
+  "DELETE /api/v1/roles/{role}",
+  "PUT /api/v1/groups/{group}/members/{person}",
+  "DELETE /api/v1/groups/{group}/members/{person}",
 ]
 reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not-found, and a row that is there already is there. An issue or a comment goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite. A relation is one fact between two issues, and following an issue is a mark of one person: neither has text to lose."
 
@@ -110,7 +110,7 @@ routes = [
   "PUT /api/v1/projects/{project}/settings/{key}",
   "DELETE /api/v1/projects/{project}/settings/{key}",
   "PUT /api/v1/field-permissions/{role}/{field}",
-  "PUT /api/v1/people-visibility/{role}/{kind}",
+  "PUT /api/v1/people-visibility/{role}/{people_kind}",
 ]
 reason = "Accepted for now (M3-F31): each route sets one single value, one setting or one level cell, from a screen that applies the change at once and does not carry the version of each row yet. Nothing else is overwritten with it, the last writer wins, and the event and the security log say who set it."
 

@@ -12,7 +12,7 @@ export async function twoStepOf(page: Page): Promise<unknown> {
   const role = pathname.split("/").at(-1) ?? "";
   const session = sessionOver(page.context().request, origin);
   const answer = dataOf(
-    await session.client.GET("/api/v1/roles/{role_id}", { params: { path: { role_id: role } } }),
+    await session.client.GET("/api/v1/roles/{role}", { params: { path: { role: role } } }),
   );
   return answer.role.two_step;
 }

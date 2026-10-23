@@ -391,10 +391,10 @@ async fn create_invitation(
 /// Takes an invitation back. Needs the permission *Invite people*.
 #[utoipa::path(
     delete,
-    path = "/api/v1/auth/invitations/{invitation_id}",
+    path = "/api/v1/auth/invitations/{invitation}",
     operation_id = "revokeInvitation",
     tag = "auth",
-    params(("invitation_id" = String, Path, description = "The ID of the invitation.")),
+    params(("invitation" = String, Path, description = "The ID of the invitation.")),
     responses((status = 204, description = "Taken back."), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn revoke_invitation(

@@ -300,10 +300,10 @@ async fn create_group(
 /// change who is in them*.
 #[utoipa::path(
     get,
-    path = "/api/v1/groups/{group_id}",
+    path = "/api/v1/groups/{group}",
     operation_id = "getGroup",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group.")),
+    params(("group" = String, Path, description = "The ID of the group.")),
     responses((status = 200, description = "The group.", body = GroupDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_group(
@@ -330,10 +330,10 @@ async fn get_group(
 /// them*.
 #[utoipa::path(
     patch,
-    path = "/api/v1/groups/{group_id}",
+    path = "/api/v1/groups/{group}",
     operation_id = "renameGroup",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group.")),
+    params(("group" = String, Path, description = "The ID of the group.")),
     request_body = RenameGroupBody,
     responses(
         (status = 200, description = "The group as it is now.", body = GroupBody),
@@ -372,10 +372,10 @@ async fn rename_group(
 /// access*, *Decide who has which role* there.
 #[utoipa::path(
     delete,
-    path = "/api/v1/groups/{group_id}",
+    path = "/api/v1/groups/{group}",
     operation_id = "deleteGroup",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group.")),
+    params(("group" = String, Path, description = "The ID of the group.")),
     responses(
         (status = 204, description = "The group is gone."),
         NotSignedInAnswer,
@@ -407,10 +407,10 @@ async fn delete_group(
 /// and change who is in them*.
 #[utoipa::path(
     get,
-    path = "/api/v1/groups/{group_id}/members",
+    path = "/api/v1/groups/{group}/members",
     operation_id = "listGroupMembers",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group."), ListParams),
+    params(("group" = String, Path, description = "The ID of the group."), ListParams),
     responses((status = 200, description = "The people in the group.", body = Page<MemberItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_group_members(
@@ -449,12 +449,12 @@ async fn list_group_members(
 /// themselves.
 #[utoipa::path(
     put,
-    path = "/api/v1/groups/{group_id}/members/{person_id}",
+    path = "/api/v1/groups/{group}/members/{person}",
     operation_id = "addGroupMember",
     tag = "groups",
     params(
-        ("group_id" = String, Path, description = "The ID of the group."),
-        ("person_id" = String, Path, description = "The ID of the person.")
+        ("group" = String, Path, description = "The ID of the group."),
+        ("person" = String, Path, description = "The ID of the person.")
     ),
     responses(
         (status = 204, description = "The person is in the group."),
@@ -488,12 +488,12 @@ async fn add_group_member(
 /// who is in them*, and, where the group has *No access*, *Decide who has which role* there.
 #[utoipa::path(
     delete,
-    path = "/api/v1/groups/{group_id}/members/{person_id}",
+    path = "/api/v1/groups/{group}/members/{person}",
     operation_id = "removeGroupMember",
     tag = "groups",
     params(
-        ("group_id" = String, Path, description = "The ID of the group."),
-        ("person_id" = String, Path, description = "The ID of the person.")
+        ("group" = String, Path, description = "The ID of the group."),
+        ("person" = String, Path, description = "The ID of the person.")
     ),
     responses(
         (status = 204, description = "The person is not in the group."),
@@ -529,10 +529,10 @@ async fn remove_group_member(
 /// them*. Names only, never e-mail addresses.
 #[utoipa::path(
     get,
-    path = "/api/v1/groups/{group_id}/member-choices",
+    path = "/api/v1/groups/{group}/member-choices",
     operation_id = "listMemberChoices",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group."), ListParams, ChoiceFilter),
+    params(("group" = String, Path, description = "The ID of the group."), ListParams, ChoiceFilter),
     responses((status = 200, description = "The people to choose from.", body = Page<ChoiceItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_member_choices(

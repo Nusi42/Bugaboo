@@ -353,10 +353,10 @@ async fn create_role(
 /// delete roles*.
 #[utoipa::path(
     get,
-    path = "/api/v1/roles/{role_id}",
+    path = "/api/v1/roles/{role}",
     operation_id = "getRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role.")),
+    params(("role" = String, Path, description = "The ID of the role.")),
     responses((status = 200, description = "The role.", body = RoleDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_role(
@@ -384,10 +384,10 @@ async fn get_role(
 /// that would leave nobody who can manage roles.
 #[utoipa::path(
     patch,
-    path = "/api/v1/roles/{role_id}",
+    path = "/api/v1/roles/{role}",
     operation_id = "changeRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role.")),
+    params(("role" = String, Path, description = "The ID of the role.")),
     request_body = ChangeRoleBody,
     responses(
         (status = 200, description = "The role as it is now.", body = RoleBody),
@@ -427,10 +427,10 @@ async fn change_role(
 /// place in every row that gave it. Needs the permission *Create, change and delete roles*.
 #[utoipa::path(
     delete,
-    path = "/api/v1/roles/{role_id}",
+    path = "/api/v1/roles/{role}",
     operation_id = "deleteRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role."), DeleteRoleFilter),
+    params(("role" = String, Path, description = "The ID of the role."), DeleteRoleFilter),
     responses(
         (status = 204, description = "The role is gone."),
         InvalidAnswer,
@@ -472,10 +472,10 @@ async fn delete_role(
 /// than they hold themselves.
 #[utoipa::path(
     post,
-    path = "/api/v1/roles/{role_id}/copy",
+    path = "/api/v1/roles/{role}/copy",
     operation_id = "copyRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role to copy.")),
+    params(("role" = String, Path, description = "The ID of the role to copy.")),
     request_body = CopyRoleBody,
     responses(
         (status = 200, description = "The new role.", body = RoleBody),
@@ -512,10 +512,10 @@ async fn copy_role(
 /// starting permissions*). Needs the permission *Create, change and delete roles*.
 #[utoipa::path(
     post,
-    path = "/api/v1/roles/{role_id}/reset",
+    path = "/api/v1/roles/{role}/reset",
     operation_id = "resetRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role.")),
+    params(("role" = String, Path, description = "The ID of the role.")),
     request_body = ResetRoleBody,
     responses(
         (status = 200, description = "The role as it is now.", body = RoleBody),

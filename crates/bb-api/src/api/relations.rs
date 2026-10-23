@@ -336,10 +336,10 @@ async fn create_relation_kind(
 /// permission *Manage issue types, kinds of relation and layouts*.
 #[utoipa::path(
     patch,
-    path = "/api/v1/relation-kinds/{kind}",
+    path = "/api/v1/relation-kinds/{relation_kind}",
     operation_id = "changeRelationKind",
     tag = "relations",
-    params(("kind" = String, Path, description = "The ID of the kind of relation.")),
+    params(("relation_kind" = String, Path, description = "The ID of the kind of relation.")),
     request_body = ChangeRelationKindBody,
     responses(
         (status = 200, description = "The kind of relation as it is now.", body = RelationKindItem),

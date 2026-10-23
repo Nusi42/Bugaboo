@@ -57,7 +57,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/access-keys/{access_key_id}": {
+  "/api/v1/access-keys/{access_key}": {
     parameters: {
       query?: never;
       header?: never;
@@ -140,7 +140,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/assignments/{assignment_id}": {
+  "/api/v1/assignments/{assignment}": {
     parameters: {
       query?: never;
       header?: never;
@@ -252,7 +252,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/auth/invitations/{invitation_id}": {
+  "/api/v1/auth/invitations/{invitation}": {
     parameters: {
       query?: never;
       header?: never;
@@ -357,7 +357,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/auth/passkeys/{passkey_id}/remove": {
+  "/api/v1/auth/passkeys/{passkey}/remove": {
     parameters: {
       query?: never;
       header?: never;
@@ -460,7 +460,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/auth/sessions/{session_id}": {
+  "/api/v1/auth/sessions/{session}": {
     parameters: {
       query?: never;
       header?: never;
@@ -1200,7 +1200,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/groups/{group_id}": {
+  "/api/v1/groups/{group}": {
     parameters: {
       query?: never;
       header?: never;
@@ -1229,7 +1229,7 @@ export interface paths {
     patch: operations["renameGroup"];
     trace?: never;
   };
-  "/api/v1/groups/{group_id}/member-choices": {
+  "/api/v1/groups/{group}/member-choices": {
     parameters: {
       query?: never;
       header?: never;
@@ -1250,7 +1250,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/groups/{group_id}/members": {
+  "/api/v1/groups/{group}/members": {
     parameters: {
       query?: never;
       header?: never;
@@ -1270,7 +1270,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/groups/{group_id}/members/{person_id}": {
+  "/api/v1/groups/{group}/members/{person}": {
     parameters: {
       query?: never;
       header?: never;
@@ -1853,7 +1853,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/label-groups/{group}": {
+  "/api/v1/label-groups/{label_group}": {
     parameters: {
       query?: never;
       header?: never;
@@ -1870,7 +1870,7 @@ export interface paths {
     patch: operations["changeLabelGroup"];
     trace?: never;
   };
-  "/api/v1/label-groups/{group}/offers": {
+  "/api/v1/label-groups/{label_group}/offers": {
     parameters: {
       query?: never;
       header?: never;
@@ -2395,7 +2395,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/people-visibility/{role}/{kind}": {
+  "/api/v1/people-visibility/{role}/{people_kind}": {
     parameters: {
       query?: never;
       header?: never;
@@ -2417,7 +2417,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/people/{person_id}": {
+  "/api/v1/people/{person}": {
     parameters: {
       query?: never;
       header?: never;
@@ -2793,7 +2793,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/relation-kinds/{kind}": {
+  "/api/v1/relation-kinds/{relation_kind}": {
     parameters: {
       query?: never;
       header?: never;
@@ -2854,7 +2854,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/roles/{role_id}": {
+  "/api/v1/roles/{role}": {
     parameters: {
       query?: never;
       header?: never;
@@ -2883,7 +2883,7 @@ export interface paths {
     patch: operations["changeRole"];
     trace?: never;
   };
-  "/api/v1/roles/{role_id}/copy": {
+  "/api/v1/roles/{role}/copy": {
     parameters: {
       query?: never;
       header?: never;
@@ -2904,7 +2904,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/roles/{role_id}/reset": {
+  "/api/v1/roles/{role}/reset": {
     parameters: {
       query?: never;
       header?: never;
@@ -2924,7 +2924,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/roles/{role_id}/second-step-gap": {
+  "/api/v1/roles/{role}/second-step-gap": {
     parameters: {
       query?: never;
       header?: never;
@@ -8530,7 +8530,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the key. */
-        access_key_id: string;
+        access_key: string;
       };
       cookie?: never;
     };
@@ -8957,7 +8957,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the row. */
-        assignment_id: string;
+        assignment: string;
       };
       cookie?: never;
     };
@@ -9488,7 +9488,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the invitation. */
-        invitation_id: string;
+        invitation: string;
       };
       cookie?: never;
     };
@@ -9896,7 +9896,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the passkey. */
-        passkey_id: string;
+        passkey: string;
       };
       cookie?: never;
     };
@@ -10409,7 +10409,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the session. */
-        session_id: string;
+        session: string;
       };
       cookie?: never;
     };
@@ -14240,7 +14240,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the group. */
-        group_id: string;
+        group: string;
       };
       cookie?: never;
     };
@@ -14330,7 +14330,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the group. */
-        group_id: string;
+        group: string;
       };
       cookie?: never;
     };
@@ -14416,7 +14416,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the group. */
-        group_id: string;
+        group: string;
       };
       cookie?: never;
     };
@@ -14526,7 +14526,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the group. */
-        group_id: string;
+        group: string;
       };
       cookie?: never;
     };
@@ -14623,7 +14623,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the group. */
-        group_id: string;
+        group: string;
       };
       cookie?: never;
     };
@@ -14713,9 +14713,9 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the group. */
-        group_id: string;
+        group: string;
         /** @description The ID of the person. */
-        person_id: string;
+        person: string;
       };
       cookie?: never;
     };
@@ -14792,9 +14792,9 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the group. */
-        group_id: string;
+        group: string;
         /** @description The ID of the person. */
-        person_id: string;
+        person: string;
       };
       cookie?: never;
     };
@@ -18044,8 +18044,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description The ID of the group. */
-        group: string;
+        /** @description The ID of the label group. */
+        label_group: string;
       };
       cookie?: never;
     };
@@ -18152,8 +18152,8 @@ export interface operations {
       };
       header?: never;
       path: {
-        /** @description The ID of the group. */
-        group: string;
+        /** @description The ID of the label group. */
+        label_group: string;
       };
       cookie?: never;
     };
@@ -18233,8 +18233,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description The ID of the group. */
-        group: string;
+        /** @description The ID of the label group. */
+        label_group: string;
       };
       cookie?: never;
     };
@@ -20792,7 +20792,7 @@ export interface operations {
         /** @description The ID of the role. */
         role: string;
         /** @description The key of the kind of people information. */
-        kind: components["schemas"]["PeopleKind"];
+        people_kind: components["schemas"]["PeopleKind"];
       };
       cookie?: never;
     };
@@ -20882,7 +20882,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the person. */
-        person_id: string;
+        person: string;
       };
       cookie?: never;
     };
@@ -23036,7 +23036,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the kind of relation. */
-        kind: string;
+        relation_kind: string;
       };
       cookie?: never;
     };
@@ -23390,7 +23390,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the role. */
-        role_id: string;
+        role: string;
       };
       cookie?: never;
     };
@@ -23486,7 +23486,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the role. */
-        role_id: string;
+        role: string;
       };
       cookie?: never;
     };
@@ -23581,7 +23581,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the role. */
-        role_id: string;
+        role: string;
       };
       cookie?: never;
     };
@@ -23682,7 +23682,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the role to copy. */
-        role_id: string;
+        role: string;
       };
       cookie?: never;
     };
@@ -23783,7 +23783,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the role. */
-        role_id: string;
+        role: string;
       };
       cookie?: never;
     };
@@ -23884,7 +23884,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the role. */
-        role_id: string;
+        role: string;
       };
       cookie?: never;
     };

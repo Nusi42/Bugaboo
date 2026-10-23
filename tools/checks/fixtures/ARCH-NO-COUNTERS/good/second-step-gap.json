@@ -1,6 +1,6 @@
 {
   "paths": {
-    "/api/v1/roles/{role_id}/second-step-gap": {
+    "/api/v1/roles/{role}/second-step-gap": {
       "get": {
         "operationId": "getSecondStepGap",
         "responses": {

@@ -18,7 +18,7 @@ export interface CopyRoleProps {
 export function CopyRole({ id, name }: CopyRoleProps) {
   const [typed, setTyped] = useState(t("roles.copy-of", { name }));
   const navigate = useNavigate();
-  const copy = api.query.useMutation("post", "/api/v1/roles/{role_id}/copy", {
+  const copy = api.query.useMutation("post", "/api/v1/roles/{role}/copy", {
     onSuccess: (made: Schema<"RoleBody">) => {
       refreshAccess();
       void navigate({ to: roleAddress(made.id) });
@@ -27,7 +27,7 @@ export function CopyRole({ id, name }: CopyRoleProps) {
   return (
     <Form
       onSubmit={() => {
-        copy.mutate({ params: { path: { role_id: id } }, body: { name: typed.trim() } });
+        copy.mutate({ params: { path: { role: id } }, body: { name: typed.trim() } });
       }}
     >
       <p {...partOf(part.muted)}>{t("roles.copy-help")}</p>

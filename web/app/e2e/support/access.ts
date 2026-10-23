@@ -73,8 +73,8 @@ export async function createGroup(admin: ApiSession, name: string): Promise<stri
 
 /** Puts a person into a group, through the API. */
 export async function addToGroup(admin: ApiSession, group: string, person: string): Promise<void> {
-  await admin.client.PUT("/api/v1/groups/{group_id}/members/{person_id}", {
-    params: { path: { group_id: group, person_id: person } },
+  await admin.client.PUT("/api/v1/groups/{group}/members/{person}", {
+    params: { path: { group, person } },
   });
 }
 
@@ -99,8 +99,8 @@ export async function setPeopleLevel(
   where: { readonly role: string; readonly kind: Schema<"PeopleKind"> },
   level: Schema<"PeopleLevel">,
 ): Promise<void> {
-  await admin.client.PUT("/api/v1/people-visibility/{role}/{kind}", {
-    params: { path: { role: where.role, kind: where.kind } },
+  await admin.client.PUT("/api/v1/people-visibility/{role}/{people_kind}", {
+    params: { path: { role: where.role, people_kind: where.kind } },
     body: { level },
   });
 }

@@ -15,10 +15,10 @@ import type { RelationKindLine } from "./relation-kinds.ts";
 export function EditRelationKind({ kind }: { readonly kind: RelationKindLine }) {
   const [forward, setForward] = useState(kind.forward);
   const [backward, setBackward] = useState(kind.backward);
-  const change = api.query.useMutation("patch", "/api/v1/relation-kinds/{kind}", {
+  const change = api.query.useMutation("patch", "/api/v1/relation-kinds/{relation_kind}", {
     onSuccess: refreshRelationKinds,
   });
-  const path = { params: { path: { kind: kind.id } } } as const;
+  const path = { params: { path: { relation_kind: kind.id } } } as const;
   return (
     <div {...partOf(part.stack)}>
       <Form

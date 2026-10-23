@@ -337,10 +337,10 @@ async fn add_passkey(
 /// Removes a passkey. The password is typed again.
 #[utoipa::path(
     post,
-    path = "/api/v1/auth/passkeys/{passkey_id}/remove",
+    path = "/api/v1/auth/passkeys/{passkey}/remove",
     operation_id = "removePasskey",
     tag = "auth",
-    params(("passkey_id" = String, Path, description = "The ID of the passkey.")),
+    params(("passkey" = String, Path, description = "The ID of the passkey.")),
     request_body = PasswordOnlyBody,
     responses(
         (status = 204, description = "Removed."),

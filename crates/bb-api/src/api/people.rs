@@ -137,10 +137,10 @@ async fn list_people(
 /// e-mail address and correct their names*.
 #[utoipa::path(
     get,
-    path = "/api/v1/people/{person_id}",
+    path = "/api/v1/people/{person}",
     operation_id = "getPerson",
     tag = "people",
-    params(("person_id" = String, Path, description = "The ID of the person.")),
+    params(("person" = String, Path, description = "The ID of the person.")),
     responses((status = 200, description = "The person.", body = PersonDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_person(

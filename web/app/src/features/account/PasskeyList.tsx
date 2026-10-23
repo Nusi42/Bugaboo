@@ -17,7 +17,7 @@ interface PasskeyRowProps {
 
 /** One passkey: its name, when it was added and used, and *Remove*. */
 function PasskeyRow({ passkey, onRemoved }: PasskeyRowProps) {
-  const remove = api.query.useMutation("post", "/api/v1/auth/passkeys/{passkey_id}/remove", {
+  const remove = api.query.useMutation("post", "/api/v1/auth/passkeys/{passkey}/remove", {
     onSuccess: () => {
       refreshTwoStep();
       onRemoved();
@@ -47,7 +47,7 @@ function PasskeyRow({ passkey, onRemoved }: PasskeyRowProps) {
         cancelLabel={t("common.cancel")}
         onConfirm={(password) => {
           remove.mutate({
-            params: { path: { passkey_id: passkey.id } },
+            params: { path: { passkey: passkey.id } },
             body: { password },
           });
         }}

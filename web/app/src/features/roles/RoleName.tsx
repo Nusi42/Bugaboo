@@ -16,13 +16,13 @@ export interface RoleNameProps {
 /** *Rename*: the name of the role, saved with the button. A starting role can be renamed too. */
 export function RoleName({ id, name, version }: RoleNameProps) {
   const [typed, setTyped] = useState(name);
-  const rename = api.query.useMutation("patch", "/api/v1/roles/{role_id}", {
+  const rename = api.query.useMutation("patch", "/api/v1/roles/{role}", {
     onSuccess: refreshAccess,
   });
   return (
     <Form
       onSubmit={() => {
-        rename.mutate({ params: { path: { role_id: id } }, body: { name: typed.trim(), version } });
+        rename.mutate({ params: { path: { role: id } }, body: { name: typed.trim(), version } });
       }}
     >
       <TextField

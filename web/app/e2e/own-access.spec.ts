@@ -29,8 +29,8 @@ test.use({
       await addToGroup(admin, admins, adaId);
       await giveGroupRole(admin, admins, roleName.administrator, null);
       const adasRow = await rowOfPerson(bobSession, adaId);
-      await bobSession.client.DELETE("/api/v1/assignments/{assignment_id}", {
-        params: { path: { assignment_id: adasRow ?? "" } },
+      await bobSession.client.DELETE("/api/v1/assignments/{assignment}", {
+        params: { path: { assignment: adasRow ?? "" } },
       });
       await bobSession.dispose();
       await createProject(admin, "ACME", "Acme");

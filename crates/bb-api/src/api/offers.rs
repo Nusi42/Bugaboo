@@ -243,10 +243,10 @@ async fn change_issue_type_offers(
 /// is signed in.
 #[utoipa::path(
     get,
-    path = "/api/v1/label-groups/{group}/offers",
+    path = "/api/v1/label-groups/{label_group}/offers",
     operation_id = "listLabelGroupOffers",
     tag = "tags",
-    params(("group" = String, Path, description = "The ID of the group."), ListParams),
+    params(("label_group" = String, Path, description = "The ID of the label group."), ListParams),
     responses((status = 200, description = "The rows.", body = Page<OfferRowItem>), NotSignedInAnswer, NotFoundAnswer)
 )]
 async fn list_label_group_offers(
@@ -270,10 +270,10 @@ async fn list_label_group_offers(
 /// judged on its own: it needs the permission *Manage labels and tags* there.
 #[utoipa::path(
     put,
-    path = "/api/v1/label-groups/{group}/offers",
+    path = "/api/v1/label-groups/{label_group}/offers",
     operation_id = "changeLabelGroupOffers",
     tag = "tags",
-    params(("group" = String, Path, description = "The ID of the group.")),
+    params(("label_group" = String, Path, description = "The ID of the label group.")),
     request_body = ChangeOffersBody,
     responses(
         (status = 200, description = "Every row, and the version of the group.", body = OffersBody),

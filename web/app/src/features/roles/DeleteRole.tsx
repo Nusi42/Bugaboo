@@ -50,7 +50,7 @@ export function DeleteRole({ id, name, used }: DeleteRoleProps) {
               if (go) {
                 remove.mutate({
                   params: {
-                    path: { role_id: id },
+                    path: { role: id },
                     query: taking === null ? {} : { replacement: taking },
                   },
                 });

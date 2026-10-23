@@ -106,7 +106,7 @@ async fn invitations(tour: &mut Tour) -> TestResult {
     let reply = ada
         .route(
             "DELETE",
-            "/api/v1/auth/invitations/{invitation_id}",
+            "/api/v1/auth/invitations/{invitation}",
             &format!("{api}/invitations/{id}"),
             None,
         )
@@ -366,7 +366,7 @@ async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &st
     let reply = ada
         .route(
             "POST",
-            "/api/v1/auth/passkeys/{passkey_id}/remove",
+            "/api/v1/auth/passkeys/{passkey}/remove",
             &format!("{api}/passkeys/{passkey_id}/remove"),
             Some(json!({"password": PASSWORD})),
         )
@@ -401,7 +401,7 @@ async fn sessions_and_password(tour: &mut Tour) -> TestResult {
     let reply = ada
         .route(
             "DELETE",
-            "/api/v1/auth/sessions/{session_id}",
+            "/api/v1/auth/sessions/{session}",
             &format!("{api}/sessions/{other}"),
             None,
         )

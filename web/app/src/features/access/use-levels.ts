@@ -76,9 +76,9 @@ export function usePeopleVisibility(
     isCached: isLevelTable,
     apply: applied,
     send: async (change) => {
-      await api.client.PUT("/api/v1/people-visibility/{role}/{kind}", {
+      await api.client.PUT("/api/v1/people-visibility/{role}/{people_kind}", {
         params: {
-          path: { role: change.role, kind: change.subject },
+          path: { role: change.role, people_kind: change.subject },
           query: placeQuery(project),
         },
         body: { level: change.level },

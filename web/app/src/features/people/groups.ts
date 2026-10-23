@@ -58,8 +58,8 @@ export function useGroup(id: string) {
     queryKey: queryKeys.groups.one(id),
     queryFn: async () =>
       dataOf(
-        await api.client.GET("/api/v1/groups/{group_id}", {
-          params: { path: { group_id: id } },
+        await api.client.GET("/api/v1/groups/{group}", {
+          params: { path: { group: id } },
         }),
       ),
   });
@@ -70,9 +70,9 @@ export function useMembers(group: string) {
   return usePaged({
     queryKey: queryKeys.groups.members(group),
     read: (after) =>
-      api.client.GET("/api/v1/groups/{group_id}/members", {
+      api.client.GET("/api/v1/groups/{group}/members", {
         params: {
-          path: { group_id: group },
+          path: { group: group },
           query: {
             fields: fieldList<Schema<"MemberItem">>(["person"]),
             limit: pageSize.usual,
@@ -88,9 +88,9 @@ export function useMemberChoices(group: string, search: string) {
   return usePaged({
     queryKey: queryKeys.groups.choices(group, search),
     read: (after) =>
-      api.client.GET("/api/v1/groups/{group_id}/member-choices", {
+      api.client.GET("/api/v1/groups/{group}/member-choices", {
         params: {
-          path: { group_id: group },
+          path: { group: group },
           query: {
             fields: fieldList<Schema<"ChoiceItem">>(["id", "name", "already_in"]),
             limit: pageSize.short,

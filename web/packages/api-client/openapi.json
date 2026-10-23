@@ -469,14 +469,14 @@
         "x-permission": "own-account"
       }
     },
-    "/api/v1/access-keys/{access_key_id}": {
+    "/api/v1/access-keys/{access_key}": {
       "delete": {
         "tags": ["access-keys"],
         "summary": "Deletes an access key at once. A deleted key cannot come back.",
         "operationId": "deleteAccessKey",
         "parameters": [
           {
-            "name": "access_key_id",
+            "name": "access_key",
             "in": "path",
             "description": "The ID of the key.",
             "required": true,
@@ -1053,14 +1053,14 @@
         "x-permission": "decide-roles"
       }
     },
-    "/api/v1/assignments/{assignment_id}": {
+    "/api/v1/assignments/{assignment}": {
       "delete": {
         "tags": ["roles"],
         "summary": "Takes a row of *Who has which role* away. Needs the permission *Decide who has which role*\nwhere the row is; nothing that would leave nobody who can manage roles.",
         "operationId": "removeAssignment",
         "parameters": [
           {
-            "name": "assignment_id",
+            "name": "assignment",
             "in": "path",
             "description": "The ID of the row.",
             "required": true,
@@ -1728,14 +1728,14 @@
         "x-secret": true
       }
     },
-    "/api/v1/auth/invitations/{invitation_id}": {
+    "/api/v1/auth/invitations/{invitation}": {
       "delete": {
         "tags": ["auth"],
         "summary": "Takes an invitation back. Needs the permission *Invite people*.",
         "operationId": "revokeInvitation",
         "parameters": [
           {
-            "name": "invitation_id",
+            "name": "invitation",
             "in": "path",
             "description": "The ID of the invitation.",
             "required": true,
@@ -2230,14 +2230,14 @@
         "x-permission": "own-account"
       }
     },
-    "/api/v1/auth/passkeys/{passkey_id}/remove": {
+    "/api/v1/auth/passkeys/{passkey}/remove": {
       "post": {
         "tags": ["auth"],
         "summary": "Removes a passkey. The password is typed again.",
         "operationId": "removePasskey",
         "parameters": [
           {
-            "name": "passkey_id",
+            "name": "passkey",
             "in": "path",
             "description": "The ID of the passkey.",
             "required": true,
@@ -2851,14 +2851,14 @@
         "x-permission": "own-account"
       }
     },
-    "/api/v1/auth/sessions/{session_id}": {
+    "/api/v1/auth/sessions/{session}": {
       "delete": {
         "tags": ["auth"],
         "summary": "Ends one session of the person.",
         "operationId": "endSession",
         "parameters": [
           {
-            "name": "session_id",
+            "name": "session",
             "in": "path",
             "description": "The ID of the session.",
             "required": true,
@@ -7776,14 +7776,14 @@
         "x-permission": "manage-groups"
       }
     },
-    "/api/v1/groups/{group_id}": {
+    "/api/v1/groups/{group}": {
       "get": {
         "tags": ["groups"],
         "summary": "One group, with what it is used for. Needs the permission *Create, rename and delete groups and\nchange who is in them*.",
         "operationId": "getGroup",
         "parameters": [
           {
-            "name": "group_id",
+            "name": "group",
             "in": "path",
             "description": "The ID of the group.",
             "required": true,
@@ -7900,7 +7900,7 @@
         "operationId": "deleteGroup",
         "parameters": [
           {
-            "name": "group_id",
+            "name": "group",
             "in": "path",
             "description": "The ID of the group.",
             "required": true,
@@ -8000,7 +8000,7 @@
         "operationId": "renameGroup",
         "parameters": [
           {
-            "name": "group_id",
+            "name": "group",
             "in": "path",
             "description": "The ID of the group.",
             "required": true,
@@ -8122,14 +8122,14 @@
         "x-permission": "manage-groups"
       }
     },
-    "/api/v1/groups/{group_id}/member-choices": {
+    "/api/v1/groups/{group}/member-choices": {
       "get": {
         "tags": ["groups"],
         "summary": "The people that can be put into a group, by name, a page at a time; those who are in it\nalready say so. Needs the permission *Create, rename and delete groups and change who is in\nthem*. Names only, never e-mail addresses.",
         "operationId": "listMemberChoices",
         "parameters": [
           {
-            "name": "group_id",
+            "name": "group",
             "in": "path",
             "description": "The ID of the group.",
             "required": true,
@@ -8279,14 +8279,14 @@
         "x-permission": "manage-groups"
       }
     },
-    "/api/v1/groups/{group_id}/members": {
+    "/api/v1/groups/{group}/members": {
       "get": {
         "tags": ["groups"],
         "summary": "The people in a group, a page at a time. Needs the permission *Create, rename and delete groups\nand change who is in them*.",
         "operationId": "listGroupMembers",
         "parameters": [
           {
-            "name": "group_id",
+            "name": "group",
             "in": "path",
             "description": "The ID of the group.",
             "required": true,
@@ -8427,14 +8427,14 @@
         "x-permission": "manage-groups"
       }
     },
-    "/api/v1/groups/{group_id}/members/{person_id}": {
+    "/api/v1/groups/{group}/members/{person}": {
       "put": {
         "tags": ["groups"],
         "summary": "Puts a person into a group. Needs the permission *Create, rename and delete groups and change\nwho is in them*; nobody puts somebody into a group that has a role with more than they hold\nthemselves.",
         "operationId": "addGroupMember",
         "parameters": [
           {
-            "name": "group_id",
+            "name": "group",
             "in": "path",
             "description": "The ID of the group.",
             "required": true,
@@ -8443,7 +8443,7 @@
             }
           },
           {
-            "name": "person_id",
+            "name": "person",
             "in": "path",
             "description": "The ID of the person.",
             "required": true,
@@ -8533,7 +8533,7 @@
         "operationId": "removeGroupMember",
         "parameters": [
           {
-            "name": "group_id",
+            "name": "group",
             "in": "path",
             "description": "The ID of the group.",
             "required": true,
@@ -8542,7 +8542,7 @@
             }
           },
           {
-            "name": "person_id",
+            "name": "person",
             "in": "path",
             "description": "The ID of the person.",
             "required": true,
@@ -12929,16 +12929,16 @@
         "x-permission": "manage-labels"
       }
     },
-    "/api/v1/label-groups/{group}": {
+    "/api/v1/label-groups/{label_group}": {
       "patch": {
         "tags": ["tags"],
         "summary": "Changes a group of labels. Needs *Manage labels and tags* where the group was made.",
         "operationId": "changeLabelGroup",
         "parameters": [
           {
-            "name": "group",
+            "name": "label_group",
             "in": "path",
-            "description": "The ID of the group.",
+            "description": "The ID of the label group.",
             "required": true,
             "schema": {
               "type": "string"
@@ -13058,16 +13058,16 @@
         "x-permission": "manage-labels"
       }
     },
-    "/api/v1/label-groups/{group}/offers": {
+    "/api/v1/label-groups/{label_group}/offers": {
       "get": {
         "tags": ["tags"],
         "summary": "Where a group of labels is offered: the rows that say so, a page at a time. Open to everybody who\nis signed in.",
         "operationId": "listLabelGroupOffers",
         "parameters": [
           {
-            "name": "group",
+            "name": "label_group",
             "in": "path",
-            "description": "The ID of the group.",
+            "description": "The ID of the label group.",
             "required": true,
             "schema": {
               "type": "string"
@@ -13200,9 +13200,9 @@
         "operationId": "changeLabelGroupOffers",
         "parameters": [
           {
-            "name": "group",
+            "name": "label_group",
             "in": "path",
-            "description": "The ID of the group.",
+            "description": "The ID of the label group.",
             "required": true,
             "schema": {
               "type": "string"
@@ -16490,7 +16490,7 @@
         "x-permission": "decide-what-roles-see"
       }
     },
-    "/api/v1/people-visibility/{role}/{kind}": {
+    "/api/v1/people-visibility/{role}/{people_kind}": {
       "put": {
         "tags": ["access"],
         "summary": "Sets how a role sees one kind of people information, for the whole organization (the role's\nown level) or for one project and its sub-projects; `null` takes a project's setting away. A\nlevel above the person's own is refused. Needs the permission *Decide which fields and which\npeople information each role sees* in the place.",
@@ -16506,7 +16506,7 @@
             }
           },
           {
-            "name": "kind",
+            "name": "people_kind",
             "in": "path",
             "description": "The key of the kind of people information.",
             "required": true,
@@ -16620,14 +16620,14 @@
         "x-permission": "decide-what-roles-see"
       }
     },
-    "/api/v1/people/{person_id}": {
+    "/api/v1/people/{person}": {
       "get": {
         "tags": ["people"],
         "summary": "One person with their e-mail address, groups and roles. Needs the permission *See everybody's\ne-mail address and correct their names*.",
         "operationId": "getPerson",
         "parameters": [
           {
-            "name": "person_id",
+            "name": "person",
             "in": "path",
             "description": "The ID of the person.",
             "required": true,
@@ -19590,14 +19590,14 @@
         "x-permission": "manage-issue-types"
       }
     },
-    "/api/v1/relation-kinds/{kind}": {
+    "/api/v1/relation-kinds/{relation_kind}": {
       "patch": {
         "tags": ["relations"],
         "summary": "Changes the names of a kind of relation, or retires it (or offers it again). Needs the\npermission *Manage issue types, kinds of relation and layouts*.",
         "operationId": "changeRelationKind",
         "parameters": [
           {
-            "name": "kind",
+            "name": "relation_kind",
             "in": "path",
             "description": "The ID of the kind of relation.",
             "required": true,
@@ -20055,14 +20055,14 @@
         "x-permission": "manage-roles"
       }
     },
-    "/api/v1/roles/{role_id}": {
+    "/api/v1/roles/{role}": {
       "get": {
         "tags": ["roles"],
         "summary": "One role, with its permissions and what it is used for. Needs the permission *Create, change and\ndelete roles*.",
         "operationId": "getRole",
         "parameters": [
           {
-            "name": "role_id",
+            "name": "role",
             "in": "path",
             "description": "The ID of the role.",
             "required": true,
@@ -20179,7 +20179,7 @@
         "operationId": "deleteRole",
         "parameters": [
           {
-            "name": "role_id",
+            "name": "role",
             "in": "path",
             "description": "The ID of the role.",
             "required": true,
@@ -20298,7 +20298,7 @@
         "operationId": "changeRole",
         "parameters": [
           {
-            "name": "role_id",
+            "name": "role",
             "in": "path",
             "description": "The ID of the role.",
             "required": true,
@@ -20420,14 +20420,14 @@
         "x-permission": "manage-roles"
       }
     },
-    "/api/v1/roles/{role_id}/copy": {
+    "/api/v1/roles/{role}/copy": {
       "post": {
         "tags": ["roles"],
         "summary": "Creates a role from a copy of another: its permissions, its two-step switch and its levels.\nNeeds the permission *Create, change and delete roles*; nobody copies a role that holds more\nthan they hold themselves.",
         "operationId": "copyRole",
         "parameters": [
           {
-            "name": "role_id",
+            "name": "role",
             "in": "path",
             "description": "The ID of the role to copy.",
             "required": true,
@@ -20549,14 +20549,14 @@
         "x-permission": "manage-roles"
       }
     },
-    "/api/v1/roles/{role_id}/reset": {
+    "/api/v1/roles/{role}/reset": {
       "post": {
         "tags": ["roles"],
         "summary": "Gives a starting role back the permissions and levels it had at the start (*Reset to the\nstarting permissions*). Needs the permission *Create, change and delete roles*.",
         "operationId": "resetRole",
         "parameters": [
           {
-            "name": "role_id",
+            "name": "role",
             "in": "path",
             "description": "The ID of the role.",
             "required": true,
@@ -20678,14 +20678,14 @@
         "x-permission": "manage-roles"
       }
     },
-    "/api/v1/roles/{role_id}/second-step-gap": {
+    "/api/v1/roles/{role}/second-step-gap": {
       "get": {
         "tags": ["auth"],
         "summary": "How many people with a role still have to set up a second step. Needs the permission *Create,\nchange and delete roles*.",
         "operationId": "getSecondStepGap",
         "parameters": [
           {
-            "name": "role_id",
+            "name": "role",
             "in": "path",
             "description": "The ID of the role.",
             "required": true,

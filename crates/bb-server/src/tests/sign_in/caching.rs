@@ -244,15 +244,14 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 "EXAMPLE"
             };
             let filled = template
-                .replace("{role_id}", &role)
-                .replace("{group_id}", &group_id)
-                .replace("{person_id}", &person_id)
+                .replace("{role}", &role)
+                .replace("{label_group}", &label_group_id)
                 .replace("{person}", &person_id)
                 .replace("{issue}", &readable_id)
                 .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
                 .replace("{issue_type}", &issue_type_id)
-                .replace("{group}", &label_group_id)
+                .replace("{group}", &group_id)
                 .replace("{run}", &run_id)
                 .replace("{upload}", &upload_id)
                 .replace("{project}", project);

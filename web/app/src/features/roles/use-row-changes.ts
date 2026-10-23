@@ -94,8 +94,8 @@ export function useRowChanges(project: string | null): RowChanges {
       }
       removeKeepingFocus(() => {
         api.client
-          .DELETE("/api/v1/assignments/{assignment_id}", {
-            params: { path: { assignment_id: row.id } },
+          .DELETE("/api/v1/assignments/{assignment}", {
+            params: { path: { assignment: row.id } },
           })
           .then(() => {
             refreshAccess();

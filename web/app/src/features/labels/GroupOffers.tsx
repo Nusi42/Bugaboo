@@ -11,11 +11,11 @@ import { refreshLabels, type LabelGroup } from "./labels.ts";
  * is offered, and the form that adds one. Each line is judged where it is for.
  */
 export function GroupOffers({ group }: { readonly group: LabelGroup }) {
-  const path = { params: { path: { group: group.id } } } as const;
-  const rows = api.query.useQuery("get", "/api/v1/label-groups/{group}/offers", {
+  const path = { params: { path: { label_group: group.id } } } as const;
+  const rows = api.query.useQuery("get", "/api/v1/label-groups/{label_group}/offers", {
     params: { ...path.params, query: { limit: pageSize.largest } },
   });
-  const change = api.query.useMutation("put", "/api/v1/label-groups/{group}/offers", {
+  const change = api.query.useMutation("put", "/api/v1/label-groups/{label_group}/offers", {
     onSuccess: () => {
       refreshLabels();
       void rows.refetch();

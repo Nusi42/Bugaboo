@@ -37,7 +37,7 @@ pub(crate) struct NewPeopleLevelBody {
 #[derive(Deserialize)]
 pub(crate) struct PeopleCellPath {
     role: String,
-    kind: PeopleKind,
+    people_kind: PeopleKind,
 }
 
 /// How every role sees every kind of people information, for the whole organization or for one
@@ -77,12 +77,12 @@ async fn get_people_visibility(
 /// people information each role sees* in the place.
 #[utoipa::path(
     put,
-    path = "/api/v1/people-visibility/{role}/{kind}",
+    path = "/api/v1/people-visibility/{role}/{people_kind}",
     operation_id = "changePeopleVisibility",
     tag = "access",
     params(
         ("role" = String, Path, description = "The ID of the role."),
-        ("kind" = PeopleKind, Path, description = "The key of the kind of people information."),
+        ("people_kind" = PeopleKind, Path, description = "The key of the kind of people information."),
         PlaceParams
     ),
     request_body = NewPeopleLevelBody,
@@ -111,7 +111,7 @@ async fn change_people_visibility(
                 session_token,
                 role,
                 project,
-                kind: path.kind,
+                kind: path.people_kind,
                 level: body.level,
             },
         )

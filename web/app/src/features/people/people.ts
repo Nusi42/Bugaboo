@@ -63,8 +63,8 @@ export function usePerson(id: string) {
     queryKey: queryKeys.people.one(id),
     queryFn: async () =>
       dataOf(
-        await api.client.GET("/api/v1/people/{person_id}", {
-          params: { path: { person_id: id } },
+        await api.client.GET("/api/v1/people/{person}", {
+          params: { path: { person: id } },
         }),
       ),
   });

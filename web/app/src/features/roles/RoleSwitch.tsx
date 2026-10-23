@@ -13,8 +13,8 @@ export interface RoleSwitchProps {
 /** How many people with the role still have to set up a second step: the number that goes next to the switch. */
 function Gap({ id }: { readonly id: string }) {
   const gap = useQuery(
-    api.query.queryOptions("get", "/api/v1/roles/{role_id}/second-step-gap", {
-      params: { path: { role_id: id } },
+    api.query.queryOptions("get", "/api/v1/roles/{role}/second-step-gap", {
+      params: { path: { role: id } },
     }),
   );
   if (gap.data === undefined) {

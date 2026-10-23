@@ -415,10 +415,10 @@ async fn sign_out_everywhere(
 /// Ends one session of the person.
 #[utoipa::path(
     delete,
-    path = "/api/v1/auth/sessions/{session_id}",
+    path = "/api/v1/auth/sessions/{session}",
     operation_id = "endSession",
     tag = "auth",
-    params(("session_id" = String, Path, description = "The ID of the session.")),
+    params(("session" = String, Path, description = "The ID of the session.")),
     responses((status = 204, description = "The session ended."), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn end_session(

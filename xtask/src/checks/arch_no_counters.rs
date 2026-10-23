@@ -351,7 +351,7 @@ mod tests {
         serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
     }
 
-    const GAP_ROUTE: &str = "GET /api/v1/roles/{role_id}/second-step-gap";
+    const GAP_ROUTE: &str = "GET /api/v1/roles/{role}/second-step-gap";
     const GAP_REASON: &str = "Only people the viewer may see are counted: whoever holds Manage roles sees names everywhere in Organization settings (M2-Q3).";
 
     #[test]

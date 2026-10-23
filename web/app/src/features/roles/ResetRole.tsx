@@ -17,7 +17,7 @@ export interface ResetRoleProps {
  * had at the start come back; the name stays. A dialog says exactly what happens.
  */
 export function ResetRole({ id, name, version }: ResetRoleProps) {
-  const reset = api.query.useMutation("post", "/api/v1/roles/{role_id}/reset", {
+  const reset = api.query.useMutation("post", "/api/v1/roles/{role}/reset", {
     onSuccess: refreshAccess,
   });
   return (
@@ -35,7 +35,7 @@ export function ResetRole({ id, name, version }: ResetRoleProps) {
           confirmLabel={t("roles.reset")}
           cancelLabel={t("common.cancel")}
           onConfirm={() => {
-            reset.mutate({ params: { path: { role_id: id } }, body: { version } });
+            reset.mutate({ params: { path: { role: id } }, body: { version } });
           }}
         />
       </div>
