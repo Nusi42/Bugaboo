@@ -86,7 +86,7 @@ async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_i
             .await?;
         let own = cell(&fields.body, "cost-center", contributor)?;
         assert_eq!(own["level"], "can-see");
-        assert_eq!(own["origin"], json!({"kind": "role_own"}));
+        assert_eq!(own["origin"], json!({"kind": "role-own"}));
         // A role that was given no level at all is closed: nothing set, so hidden.
         let blank = org.role("Blank", &[Permission::SeeProjects]).await?;
         let again = ada

@@ -236,7 +236,7 @@ async fn iss_02_a_retired_type_is_not_missing_on_a_move() -> TestResult {
         assert_eq!(skips(&preview, "rows"), vec![None, None]);
         assert_eq!(
             preview["rows"][1]["detail"]["notes"][0]["kind"],
-            "type_not_used"
+            "type-not-used"
         );
         assert_eq!(preview["rows"][1]["detail"]["notes"][0]["project"], "Into");
         assert_eq!(preview["rows"][0]["detail"]["notes"], json!([]));

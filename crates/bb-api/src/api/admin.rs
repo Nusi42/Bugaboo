@@ -54,7 +54,7 @@ impl ProbeHandle {
 
 /// Which database the server uses.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 enum RunningDatabaseBody {
     /// The database inside the data folder.
     BuiltIn,
@@ -92,7 +92,7 @@ struct CertificateBody {
 
 /// Why the chain of the security log does not verify.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 enum LogBreakBody {
     /// An entry is missing, twice or out of order.
     Gap,
@@ -126,7 +126,7 @@ impl From<LogBreak> for LogBreakBody {
 
 /// The result of checking the security log.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 enum LogResult {
     /// Every entry verifies.
     Valid,
@@ -198,7 +198,7 @@ impl From<LogState> for SecurityLogBody {
 
 /// Whether other accounts on this computer can open a part of the data folder.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 enum AccessBody {
     /// Only the account that runs Bugaboo can open it.
     Private,

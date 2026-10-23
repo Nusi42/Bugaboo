@@ -27,7 +27,7 @@ function row(overrides: Partial<Row>): Row {
 describe("sec_03 the reasons of Check access in plain sentences", () => {
   it("reads as the example of the design: a group, a role, a parent project", () => {
     const reason: Reason = {
-      kind: "given_by_role",
+      kind: "given-by-role",
       role: teamMember,
       row: row({ who: { kind: "group", group: backend }, inherited: true }),
     };
@@ -39,7 +39,7 @@ describe("sec_03 the reasons of Check access in plain sentences", () => {
 
   it("says a role of the whole organization applies in every project", () => {
     const reason: Reason = {
-      kind: "given_by_role",
+      kind: "given-by-role",
       role: teamMember,
       row: row({ project: null, applies_to: "organization", inherited: true }),
     };
@@ -51,7 +51,7 @@ describe("sec_03 the reasons of Check access in plain sentences", () => {
 
   it("never names a project the checker cannot see", () => {
     const reason: Reason = {
-      kind: "given_by_role",
+      kind: "given-by-role",
       role: teamMember,
       row: row({ project: hidden, inherited: true }),
     };
@@ -65,7 +65,7 @@ describe("sec_03 what a No access does in plain sentences", () => {
   it("says what a No access does to a role, and what is kept above it", () => {
     const noAccess = row({ project: website });
     const removed: Reason = {
-      kind: "removed_by_no_access",
+      kind: "removed-by-no-access",
       role: teamMember,
       row: row({}),
       no_access: noAccess,
@@ -74,12 +74,12 @@ describe("sec_03 what a No access does in plain sentences", () => {
       "Ana has the role Team member in ACME.",
       "But Ana has No access in Website, and that wins over the role.",
     ]);
-    const kept: Reason = { ...removed, kind: "kept_from_removed_row" };
+    const kept: Reason = { ...removed, kind: "kept-from-removed-row" };
     expect(reasonSentences(ana, website, kept)).toHaveLength(3);
   });
 
   it("names a person who is shown by role in the middle of a sentence in lower case", () => {
-    const reason: Reason = { kind: "no_role_gives_it" };
+    const reason: Reason = { kind: "no-role-gives-it" };
     expect(reasonSentences({ shown: "role", role: "Guest" }, website, reason)).toEqual([
       "No role someone (Guest) has here gives this.",
     ]);
@@ -110,7 +110,7 @@ describe("sec_04 the levels of Check access in plain sentences", () => {
 
   it("says the highest level counts when several roles say something, and what a key does", () => {
     const says = [
-      { role: { id: "r", name: "Viewer" }, level: "can-see", set: { kind: "role_own" } },
+      { role: { id: "r", name: "Viewer" }, level: "can-see", set: { kind: "role-own" } },
       { role: { id: "q", name: "Guest" }, level: "hidden", set: { kind: "unset" } },
     ] as const;
     const sentences = levelSentences(ana, name, says, true);

@@ -125,7 +125,7 @@ impl From<&LockHolder> for LockHolderBody {
 
 /// The answer to asking for a lock.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "status", rename_all = "snake_case")]
+#[serde(tag = "status", rename_all = "kebab-case")]
 pub(crate) enum LockOutcomeBody {
     /// The editor has the lock.
     Taken(TakenLockBody),
@@ -185,7 +185,7 @@ pub(crate) struct HeartbeatBody {
 
 /// Whether the editor still has the lock, and if not, why.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "status", rename_all = "snake_case")]
+#[serde(tag = "status", rename_all = "kebab-case")]
 pub(crate) enum LockStatusBody {
     /// The lease is renewed.
     Held {

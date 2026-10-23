@@ -63,7 +63,7 @@ pub(crate) struct ManyChangeBody {
 
 /// What is done to every issue of the selection.
 #[derive(Deserialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ManyChangeActionBody {
     /// Change fields (*Change fields*, *Change status*).
     Change {
@@ -161,7 +161,7 @@ pub(crate) struct ApplyManyChangesBody {
 
 /// A value in a change, as the person may see it.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "shown", rename_all = "snake_case")]
+#[serde(tag = "shown", rename_all = "kebab-case")]
 pub(crate) enum ChangeValueBody {
     /// A word, a name or a number.
     Text {
@@ -250,7 +250,7 @@ impl From<&FieldChangeView> for FieldChangeBody {
 
 /// Something a person should know about a change that will be made, beside what changes.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ManyChangeNoteBody {
     /// The issue moves to a project that does not use its issue type. It keeps the type.
     TypeNotUsed {
@@ -277,7 +277,7 @@ impl From<&ManyChangeNote> for ManyChangeNoteBody {
 
 /// What a row of the preview says will happen to the issue.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ManyChangeDetailBody {
     /// The fields that would change.
     Changes {

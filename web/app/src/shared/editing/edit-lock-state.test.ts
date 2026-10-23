@@ -27,7 +27,7 @@ const stillHeld: Heartbeat = {
   draft_saved: false,
 };
 const ranOut: Heartbeat = {
-  lock: { status: "ran_out" },
+  lock: { status: "ran-out" },
   notices: [],
   draft_saved: false,
 };

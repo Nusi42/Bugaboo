@@ -54,7 +54,7 @@ impl From<&AppRoleRef> for RoleRef {
 /// Where a row of *Who has which role* is: the whole organization, a project, or a project the
 /// person cannot see (which is not named).
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum PlaceRef {
     /// The whole organization.
     Organization,

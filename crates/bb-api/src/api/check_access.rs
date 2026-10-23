@@ -46,7 +46,7 @@ pub(crate) struct GroupRefBody {
 
 /// Whom a row of *Who has which role* was for.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ReasonWhoBody {
     /// The person who is checked.
     Person,
@@ -95,7 +95,7 @@ impl From<&ReasonRowView> for ReasonRowBody {
 
 /// Why a permission is given or not.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ReasonBody {
     /// The role of a row gives it.
     GivenByRole {
@@ -201,7 +201,7 @@ impl From<&PermissionAnswer> for PermissionAnswerBody {
 
 /// Where the level a role says was set.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum LevelPlaceBody {
     /// For a project (the place or the nearest parent that set one).
     Project {

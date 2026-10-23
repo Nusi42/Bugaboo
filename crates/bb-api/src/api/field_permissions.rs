@@ -98,7 +98,7 @@ impl From<&RoleRef> for RoleRefBody {
 
 /// Where the level of a cell was set.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum LevelOriginBody {
     /// For the project itself.
     SetHere,

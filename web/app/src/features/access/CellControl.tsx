@@ -42,8 +42,8 @@ export function CellControl<Level extends string>({
   const origin = originText(cell.origin);
   const resettable = typed
     ? cell.for_type === true &&
-      (inProject ? cell.origin.kind === "set_here" : cell.origin.kind === "role_own")
-    : inProject && cell.origin.kind === "set_here";
+      (inProject ? cell.origin.kind === "set-here" : cell.origin.kind === "role-own")
+    : inProject && cell.origin.kind === "set-here";
   return (
     <div {...partOf(part.accessCell)}>
       <SelectField

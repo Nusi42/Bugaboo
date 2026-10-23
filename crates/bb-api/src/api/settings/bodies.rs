@@ -46,7 +46,7 @@ impl From<ValueBody> for SettingValue {
 
 /// The type of a setting.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(super) enum KindBody {
     /// Yes or no.
     Bool,
@@ -58,7 +58,7 @@ pub(super) enum KindBody {
 
 /// What kind of text a text setting holds.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(super) enum FormatBody {
     /// Any text.
     Free,
@@ -78,7 +78,7 @@ pub(super) enum FormatBody {
 
 /// Where a setting can be set.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(super) enum LevelBody {
     /// The whole organization.
     Organization,
@@ -127,7 +127,7 @@ pub(super) struct ListLimitsBody {
 
 /// Where the value that counts comes from.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(super) enum SourceKindBody {
     /// Nobody set it: the standard value.
     Default,

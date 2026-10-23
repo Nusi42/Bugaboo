@@ -72,29 +72,29 @@ function partsOf(
   place: ProjectLabel | null | undefined,
   reason: Reason,
 ): readonly (string | undefined)[] {
-  if (reason.kind === "given_by_role") {
+  if (reason.kind === "given-by-role") {
     return [roleSentence(person, reason.row, reason.role), inheritedSentence(reason.row, place)];
   }
-  if (reason.kind === "removed_by_no_access") {
+  if (reason.kind === "removed-by-no-access") {
     return [
       roleSentence(person, reason.row, reason.role),
       blockedSentence(person, reason.no_access),
     ];
   }
-  if (reason.kind === "kept_from_removed_row") {
+  if (reason.kind === "kept-from-removed-row") {
     return [
       roleSentence(person, reason.row, reason.role),
       blockedSentence(person, reason.no_access),
       t("check-access.reason.kept"),
     ];
   }
-  if (reason.kind === "counts_only_for_the_organization") {
+  if (reason.kind === "counts-only-for-the-organization") {
     return [t("check-access.reason.organization-only", { role: reason.role.name })];
   }
-  if (reason.kind === "narrowed_by_key") {
+  if (reason.kind === "narrowed-by-key") {
     return [t("check-access.reason.narrowed-by-key")];
   }
-  if (reason.kind === "outside_key_projects") {
+  if (reason.kind === "outside-key-projects") {
     return [t("check-access.reason.outside-key")];
   }
   return [t("check-access.reason.none", { person: personNameInside(person) })];
@@ -136,7 +136,7 @@ export function levelSentences(
         project: projectText(each.set.project),
       });
     }
-    return each.set.kind === "role_own"
+    return each.set.kind === "role-own"
       ? t("check-access.level.role-organization", { role: each.role.name, level })
       : t("check-access.level.role-unset", { role: each.role.name });
   });

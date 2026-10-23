@@ -208,7 +208,7 @@ pub(crate) struct DeleteRoleFilter {
 
 /// Where a permission counts, as the API names it.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(crate) enum CountsBody {
     /// Only from a role given for the whole organization: a role given on a project that holds
     /// the permission gives nothing for it, and the role page says so.

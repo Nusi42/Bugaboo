@@ -20,8 +20,8 @@ export type ManyChangeRun = Schema<"ManyChangeRunBody">;
 export const manyChangeKind = {
   change: "change",
   move: "move",
-  label: "add_label",
-  relation: "add_relation",
+  label: "add-label",
+  relation: "add-relation",
   delete: "delete",
 } as const satisfies Record<string, ManyChangeKind>;
 

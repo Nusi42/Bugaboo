@@ -101,7 +101,7 @@ export function SettingControl({ setting, onChange }: SettingControlProps) {
       />
     );
   }
-  if (setting.format === "time_zone" && typeof value === "string") {
+  if (setting.format === "time-zone" && typeof value === "string") {
     return (
       <SelectField
         label={wordsOf(setting.name_key)}

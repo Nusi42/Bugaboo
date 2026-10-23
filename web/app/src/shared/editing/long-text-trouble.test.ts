@@ -36,7 +36,7 @@ describe("iss_17 every refusal that keeps a draft has a reason", () => {
 describe("iss_17 a refused save tells why the lock is gone", () => {
   it("says who took over when the server says so after a save was refused for a lost lock (M3 review)", async () => {
     // Ben used *Edit anyway* and saved: the lock is gone, and only the note for this person is left.
-    const tookOver = { ...stillHeld, lock: { status: "taken_over", by: ben } } as const;
+    const tookOver = { ...stillHeld, lock: { status: "taken-over", by: ben } } as const;
     const w = world({
       save: () => Promise.reject(refusal("edit.lock-lost")),
       heartbeat: () => Promise.resolve(tookOver),
@@ -144,7 +144,7 @@ describe("iss_17 what the heartbeat brings back", () => {
 describe("iss_17 what the heartbeat brings back about the lock", () => {
   it("keeps the text when somebody took the editing over", async () => {
     const w = world({
-      heartbeat: () => Promise.resolve({ ...stillHeld, lock: { status: "taken_over", by: ben } }),
+      heartbeat: () => Promise.resolve({ ...stillHeld, lock: { status: "taken-over", by: ben } }),
     });
     w.editor.open();
     w.editor.type("Mine");
@@ -155,7 +155,7 @@ describe("iss_17 what the heartbeat brings back about the lock", () => {
   });
 
   it("takes the lock again when the lease ran out and nobody has it", async () => {
-    const answers = inTurn({ ...stillHeld, lock: { status: "ran_out" } } as const, stillHeld);
+    const answers = inTurn({ ...stillHeld, lock: { status: "ran-out" } } as const, stillHeld);
     const locks = inTurn(taken("t1"), taken("t3"));
     const w = world({
       heartbeat: () => Promise.resolve(answers()),
@@ -173,7 +173,7 @@ describe("iss_17 what the heartbeat brings back about the lock", () => {
   it("says the time ran out when somebody else has the lock by then", async () => {
     const locks = inTurn(taken("t1"), heldBy(false));
     const w = world({
-      heartbeat: () => Promise.resolve({ ...stillHeld, lock: { status: "ran_out" } }),
+      heartbeat: () => Promise.resolve({ ...stillHeld, lock: { status: "ran-out" } }),
       take: () => Promise.resolve(locks()),
     });
     w.editor.open();

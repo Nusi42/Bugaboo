@@ -25716,10 +25716,10 @@
         "enum": [
           "free",
           "choice",
-          "time_zone",
-          "page_address",
-          "shortcut_keys",
-          "window_sizes",
+          "time-zone",
+          "page-address",
+          "shortcut-keys",
+          "window-sizes",
           "hosts"
         ]
       },
@@ -27105,7 +27105,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["set_here"]
+                "enum": ["set-here"]
               }
             }
           },
@@ -27131,7 +27131,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["role_own"]
+                "enum": ["role-own"]
               }
             }
           },
@@ -27173,7 +27173,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["role_own"]
+                "enum": ["role-own"]
               }
             }
           },
@@ -27473,7 +27473,7 @@
             "properties": {
               "status": {
                 "type": "string",
-                "enum": ["ran_out"]
+                "enum": ["ran-out"]
               }
             }
           },
@@ -27488,7 +27488,7 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["taken_over"]
+                "enum": ["taken-over"]
               }
             }
           }
@@ -27500,8 +27500,8 @@
         "description": "Why the chain of the security log does not verify.",
         "enum": [
           "gap",
-          "broken_link",
-          "changed_content",
+          "broken-link",
+          "changed-content",
           "checkpoint",
           "truncated",
           "anchor",
@@ -27587,7 +27587,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["add_label"]
+                "enum": ["add-label"]
               },
               "label": {
                 "type": "string",
@@ -27606,7 +27606,7 @@
               },
               "kind": {
                 "type": "string",
-                "enum": ["add_relation"]
+                "enum": ["add-relation"]
               },
               "other": {
                 "type": "string",
@@ -27734,7 +27734,7 @@
               },
               "kind": {
                 "type": "string",
-                "enum": ["type_not_used"]
+                "enum": ["type-not-used"]
               },
               "project": {
                 "type": "string",
@@ -31836,7 +31836,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["given_by_role"]
+                "enum": ["given-by-role"]
               },
               "role": {
                 "$ref": "#/components/schemas/RoleRefBody",
@@ -31855,7 +31855,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["kept_from_removed_row"]
+                "enum": ["kept-from-removed-row"]
               },
               "no_access": {
                 "$ref": "#/components/schemas/ReasonRowBody",
@@ -31878,7 +31878,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["removed_by_no_access"]
+                "enum": ["removed-by-no-access"]
               },
               "no_access": {
                 "$ref": "#/components/schemas/ReasonRowBody",
@@ -31901,7 +31901,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["counts_only_for_the_organization"]
+                "enum": ["counts-only-for-the-organization"]
               },
               "role": {
                 "$ref": "#/components/schemas/RoleRefBody",
@@ -31920,7 +31920,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["narrowed_by_key"]
+                "enum": ["narrowed-by-key"]
               }
             }
           },
@@ -31931,7 +31931,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["outside_key_projects"]
+                "enum": ["outside-key-projects"]
               }
             }
           },
@@ -31942,7 +31942,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["no_role_gives_it"]
+                "enum": ["no-role-gives-it"]
               }
             }
           }
@@ -32442,7 +32442,7 @@
       "RunningDatabaseBody": {
         "type": "string",
         "description": "Which database the server uses.",
-        "enum": ["built_in", "sqlite", "postgres"]
+        "enum": ["built-in", "sqlite", "postgres"]
       },
       "SaveCommentBody": {
         "type": "object",
@@ -33433,7 +33433,7 @@
               },
               "verdict": {
                 "type": "string",
-                "enum": ["not_allowed"]
+                "enum": ["not-allowed"]
               },
               "why": {
                 "$ref": "#/components/schemas/Why",

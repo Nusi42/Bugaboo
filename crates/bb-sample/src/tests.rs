@@ -461,7 +461,7 @@ impl Later for CheckingAccess {
                 .map_err(|error| failed(&error))?;
                 for permission in answer["permissions"].as_array().into_iter().flatten() {
                     for reason in permission["reasons"].as_array().into_iter().flatten() {
-                        if reason["kind"] == "given_by_role"
+                        if reason["kind"] == "given-by-role"
                             && let Some(role) = reason["role"]["name"].as_str()
                         {
                             self.held

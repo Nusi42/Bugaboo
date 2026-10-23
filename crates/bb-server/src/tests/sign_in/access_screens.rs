@@ -131,7 +131,7 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
         let own = cell_of(&mut ada, None).await?;
         assert_eq!(
             (own["level"].as_str(), own["origin"]["kind"].as_str()),
-            (Some("can-see"), Some("role_own"))
+            (Some("can-see"), Some("role-own"))
         );
 
         // Hidden on ACME: set there, inherited by WEB and by API below it.
@@ -144,7 +144,7 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
         let here = cell_of(&mut ada, Some(acme)).await?;
         assert_eq!(
             (here["level"].as_str(), here["origin"]["kind"].as_str()),
-            (Some("hidden"), Some("set_here"))
+            (Some("hidden"), Some("set-here"))
         );
         for below in [web, api] {
             let inherited = cell_of(&mut ada, Some(below)).await?;
@@ -167,7 +167,7 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
                 web_cell["level"].as_str(),
                 web_cell["origin"]["kind"].as_str()
             ),
-            (Some("can-see"), Some("set_here"))
+            (Some("can-see"), Some("set-here"))
         );
         let api_cell = cell_of(&mut ada, Some(api)).await?;
         assert_eq!(api_cell["level"], "can-see");
@@ -438,7 +438,7 @@ async fn priv_12_who_sees_people_is_set_per_role_and_kind_and_inherited_like_fie
             .await?;
         assert_eq!(
             cell(&web_table.body, "project-members", guest)?["origin"]["kind"],
-            "set_here"
+            "set-here"
         );
         // A person's kind that does not exist is no kind.
         let none = ada
@@ -651,7 +651,7 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
             .ok_or("no answer for see-projects")?;
         assert_eq!(see["allowed"], true);
         assert_eq!(see["topic"], "projects");
-        assert_eq!(see["reasons"][0]["kind"], "given_by_role");
+        assert_eq!(see["reasons"][0]["kind"], "given-by-role");
         assert_eq!(see["reasons"][0]["row"]["inherited"], true);
         assert_eq!(
             see["reasons"][0]["row"]["project"],

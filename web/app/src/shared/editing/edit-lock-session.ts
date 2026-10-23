@@ -176,10 +176,10 @@ export class EditLockSession {
     if (asked !== undefined) {
       this.options.onAsked?.(asked.from);
     }
-    if (answer.lock.status === "taken_over") {
+    if (answer.lock.status === "taken-over") {
       this.forget();
       this.options.onLost("taken-over", answer.lock.by);
-    } else if (answer.lock.status === "ran_out") {
+    } else if (answer.lock.status === "ran-out") {
       await this.ranOut();
     }
   }
@@ -248,7 +248,7 @@ export class EditLockSession {
       if (from !== undefined) {
         this.options.onAsked?.(from);
       }
-      return answer.lock.status === "taken_over"
+      return answer.lock.status === "taken-over"
         ? { reason: "taken-over", by: answer.lock.by }
         : { reason };
     } catch {

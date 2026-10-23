@@ -68,7 +68,7 @@ const HISTORY_FIELDS: [FieldSpec; 31] = [
 
 /// What an item of the history is.
 #[derive(Clone, Copy, Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(crate) enum HistoryEntryKind {
     /// A comment.
     Comment,

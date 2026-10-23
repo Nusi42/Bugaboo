@@ -496,7 +496,7 @@ impl From<&bb_app::workflows::Published> for PublishedBody {
 
 /// What the judge says about one status change.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "verdict", rename_all = "snake_case")]
+#[serde(tag = "verdict", rename_all = "kebab-case")]
 pub(crate) enum TriedVerdictBody {
     /// The person may make it.
     Allowed,

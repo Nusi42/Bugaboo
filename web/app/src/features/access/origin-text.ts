@@ -11,7 +11,7 @@ export function projectText(project: ProjectLabel): string {
 
 /** Where the level of a cell was set, in words; nothing for a role's own level, which is the usual case. */
 export function originText(origin: Origin): string | undefined {
-  if (origin.kind === "set_here") {
+  if (origin.kind === "set-here") {
     return t("access.origin-here");
   }
   if (origin.kind === "inherited") {

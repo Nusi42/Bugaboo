@@ -4440,10 +4440,10 @@ export interface components {
     FormatBody:
       | "free"
       | "choice"
-      | "time_zone"
-      | "page_address"
-      | "shortcut_keys"
-      | "window_sizes"
+      | "time-zone"
+      | "page-address"
+      | "shortcut-keys"
+      | "window-sizes"
       | "hosts";
     /** @description A group after it was made or renamed. */
     GroupBody: {
@@ -5096,7 +5096,7 @@ export interface components {
     LevelOriginBody:
       | {
           /** @enum {string} */
-          kind: "set_here";
+          kind: "set-here";
         }
       | {
           /** @description The project above, or *a project you can't see*. */
@@ -5106,7 +5106,7 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          kind: "role_own";
+          kind: "role-own";
         }
       | {
           /** @enum {string} */
@@ -5122,7 +5122,7 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          kind: "role_own";
+          kind: "role-own";
         }
       | {
           /** @enum {string} */
@@ -5241,13 +5241,13 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          status: "ran_out";
+          status: "ran-out";
         }
       | {
           /** @description Who, as the person who asks may see them. */
           by: components["schemas"]["PersonRef"];
           /** @enum {string} */
-          status: "taken_over";
+          status: "taken-over";
         };
     /**
      * @description Why the chain of the security log does not verify.
@@ -5255,8 +5255,8 @@ export interface components {
      */
     LogBreakBody:
       | "gap"
-      | "broken_link"
-      | "changed_content"
+      | "broken-link"
+      | "changed-content"
       | "checkpoint"
       | "truncated"
       | "anchor"
@@ -5311,7 +5311,7 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          kind: "add_label";
+          kind: "add-label";
           /** @description The ID of the label. */
           label: string;
         }
@@ -5319,7 +5319,7 @@ export interface components {
           /** @description Which end the issues of the selection are. */
           direction: components["schemas"]["Direction"];
           /** @enum {string} */
-          kind: "add_relation";
+          kind: "add-relation";
           /** @description The issue at the other end, by its readable or internal ID. */
           other: string;
           /** @description The ID of the kind of relation. */
@@ -5376,7 +5376,7 @@ export interface components {
       /** @description The name of the issue type. */
       issue_type: string;
       /** @enum {string} */
-      kind: "type_not_used";
+      kind: "type-not-used";
       /** @description The name of the project the issue moves to. */
       project: string;
     };
@@ -7208,7 +7208,7 @@ export interface components {
     ReasonBody:
       | {
           /** @enum {string} */
-          kind: "given_by_role";
+          kind: "given-by-role";
           /** @description The role. */
           role: components["schemas"]["RoleRefBody"];
           /** @description The row. */
@@ -7216,7 +7216,7 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          kind: "kept_from_removed_row";
+          kind: "kept-from-removed-row";
           /** @description The *No access* that decided. */
           no_access: components["schemas"]["ReasonRowBody"];
           /** @description Its role. */
@@ -7226,7 +7226,7 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          kind: "removed_by_no_access";
+          kind: "removed-by-no-access";
           /** @description The *No access* that decided. */
           no_access: components["schemas"]["ReasonRowBody"];
           /** @description Its role. */
@@ -7236,7 +7236,7 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          kind: "counts_only_for_the_organization";
+          kind: "counts-only-for-the-organization";
           /** @description The role. */
           role: components["schemas"]["RoleRefBody"];
           /** @description The row. */
@@ -7244,15 +7244,15 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          kind: "narrowed_by_key";
+          kind: "narrowed-by-key";
         }
       | {
           /** @enum {string} */
-          kind: "outside_key_projects";
+          kind: "outside-key-projects";
         }
       | {
           /** @enum {string} */
-          kind: "no_role_gives_it";
+          kind: "no-role-gives-it";
         };
     /** @description One row of *Who has which role* that played a part. */
     ReasonRowBody: {
@@ -7534,7 +7534,7 @@ export interface components {
      * @description Which database the server uses.
      * @enum {string}
      */
-    RunningDatabaseBody: "built_in" | "sqlite" | "postgres";
+    RunningDatabaseBody: "built-in" | "sqlite" | "postgres";
     /** @description The new text of a comment, saved under the lock the editor holds. */
     SaveCommentBody: {
       /** @description The token the lock on the text was taken with. */
@@ -8017,7 +8017,7 @@ export interface components {
           /** @description The key of the field it is about, when the person who tries may see it too. */
           field?: string | null;
           /** @enum {string} */
-          verdict: "not_allowed";
+          verdict: "not-allowed";
           /** @description Why. */
           why: components["schemas"]["Why"];
         };

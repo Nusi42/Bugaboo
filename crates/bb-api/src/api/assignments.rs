@@ -105,7 +105,7 @@ impl From<&AssignmentView> for AssignmentItem {
 
 /// What kind of thing a choice is.
 #[derive(Clone, Copy, Deserialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(crate) enum ChoiceKindBody {
     /// People.
     Person,

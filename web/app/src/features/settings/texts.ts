@@ -16,9 +16,9 @@ export function wordsOf(key: string): string {
  */
 export function hasNoGenericControl(setting: Setting): boolean {
   return (
-    setting.format === "shortcut_keys" ||
-    setting.format === "page_address" ||
-    setting.format === "window_sizes"
+    setting.format === "shortcut-keys" ||
+    setting.format === "page-address" ||
+    setting.format === "window-sizes"
   );
 }
 

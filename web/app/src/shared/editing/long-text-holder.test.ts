@@ -19,7 +19,7 @@ describe("iss_17 the box and the lock", () => {
       () => Promise.reject(new ApiError(0, undefined)),
     );
     const w = world({
-      heartbeat: () => Promise.resolve({ ...stillHeld, lock: { status: "ran_out" } }),
+      heartbeat: () => Promise.resolve({ ...stillHeld, lock: { status: "ran-out" } }),
       take: () => locks()(),
     });
     w.editor.open();
