@@ -4,6 +4,7 @@
 //! person. All need *Manage workflows* at the place. The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).
 
+use crate::api::access_bodies::NamedVersionItem;
 use crate::api::auth::answer;
 use crate::lean::{ListParams, Listed, Page};
 use axum::extract::State;
@@ -20,7 +21,7 @@ use utoipa_axum::routes;
 
 use super::bodies::{
     ChangeDraftBody, PublishPreviewAnswer, PublishPreviewBody, PublishWorkflowBody, PublishedBody,
-    StatusDraftBody, TriedBody, WORKFLOW_FIELDS, WORKFLOWS_LIST, WorkflowEditorBody, WorkflowItem,
+    StatusDraftBody, TriedBody, WORKFLOW_FIELDS, WORKFLOWS_LIST, WorkflowEditorBody,
     workflow_in_path,
 };
 use crate::api::auth::{
@@ -98,7 +99,7 @@ pub(crate) struct TryParams {
     operation_id = "listWorkflows",
     tag = "workflows",
     params(WorkflowsParams, ListParams),
-    responses((status = 200, description = "The workflows, a page at a time.", body = Page<WorkflowItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+    responses((status = 200, description = "The workflows, a page at a time.", body = Page<NamedVersionItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_workflows(
     State(auth): State<AuthHandle>,
@@ -122,7 +123,7 @@ async fn list_workflows(
     let limit = usize::try_from(paging.limit()).unwrap_or(usize::MAX);
     let page = list.map(|list| {
         Listed::cut(
-            list.workflows.iter().map(WorkflowItem::from).collect(),
+            list.workflows.iter().map(NamedVersionItem::from).collect(),
             cursor.as_deref(),
             limit,
         )

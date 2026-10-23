@@ -211,7 +211,6 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
 #[into_params(parameter_in = Query)]
 pub(crate) struct TabParams {
     /// Everything (the default), only the comments, or only the changes.
-    #[param(inline)]
     tab: Option<HistoryTab>,
 }
 

@@ -215,8 +215,9 @@ impl Fields {
     }
 }
 
-/// One page of a list. `T` is the view of an item for the API description; an answer holds the
-/// items cut to the chosen fields ([`Page::of_authorized`]).
+// `T` is the view of an item for the API description; an answer holds the items cut to the chosen
+// fields (`Page::of_authorized`).
+/// One page of a list: its items, and where the next page starts.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct Page<T> {
     /// The items of this page.

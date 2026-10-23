@@ -27,8 +27,8 @@ use utoipa_axum::routes;
 use super::access_bodies::cursor_error;
 use super::access_keys::ProjectLabelBody;
 use super::auth::{
-    AuthHandle, Info, InvalidAnswer, NotSignedInAnswer, Session, TooSoonAnswer, answer,
-    answer_authorized, done,
+    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotSignedInAnswer, Session, TooSoonAnswer,
+    answer, answer_authorized, done,
 };
 use super::body_id;
 use super::many_changes::FieldChangeBody;
@@ -192,7 +192,6 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
 #[into_params(parameter_in = Query)]
 pub(crate) struct FilterParams {
     /// All of them (the default), the unread ones, or the ones that mention the person.
-    #[param(inline)]
     filter: Option<NotificationFilter>,
 }
 
@@ -350,7 +349,7 @@ async fn read_notifications(
     operation_id = "setMailPassword",
     tag = "notifications",
     request_body = MailPasswordBody,
-    responses((status = 204, description = "The password is stored."), InvalidAnswer, NotSignedInAnswer)
+    responses((status = 204, description = "The password is stored."), InvalidAnswer, NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn set_mail_password(
     State(auth): State<AuthHandle>,
@@ -377,7 +376,7 @@ async fn set_mail_password(
     path = "/api/v1/mail",
     operation_id = "getMailServer",
     tag = "notifications",
-    responses((status = 200, description = "Whether it is entered.", body = MailServerStatusBody), NotSignedInAnswer)
+    responses((status = 200, description = "Whether it is entered.", body = MailServerStatusBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn get_mail_password(
     State(auth): State<AuthHandle>,
@@ -401,7 +400,14 @@ async fn get_mail_password(
     path = "/api/v1/mail/test",
     operation_id = "sendTestEmail",
     tag = "notifications",
-    responses((status = 204, description = "The mail server took the e-mail."), NotSignedInAnswer, TooSoonAnswer)
+    responses(
+        (status = 204, description = "The mail server took the e-mail."),
+        (status = 409, description = "E-mail is off, or the connection to the mail server is not secure (mail.off, mail.insecure).", body = bb_core::Problem),
+        (status = 502, description = "The mail server did not take the e-mail (mail.rejected).", body = bb_core::Problem),
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        TooSoonAnswer
+    )
 )]
 async fn send_test_email(
     State(auth): State<AuthHandle>,

@@ -359,7 +359,9 @@ fn check_spec(spec: &Value, table: &[Entry]) -> Vec<Finding> {
         for status in STANDARD_STATUSES {
             let content = operation
                 .body
-                .pointer(&format!("/responses/{status}/content"));
+                .pointer(&format!("/responses/{status}"))
+                .map(|answer| api_spec::resolve(spec, answer))
+                .and_then(|answer| answer.get("content"));
             if content
                 .and_then(|content| content.get("application/problem+json"))
                 .is_none()

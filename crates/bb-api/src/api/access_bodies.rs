@@ -7,6 +7,7 @@
 use bb_app::access::ProjectLabel;
 use bb_app::people::{GroupView, HeldRole};
 use bb_app::roles::RoleRef as AppRoleRef;
+use bb_app::workflows::WorkflowListItem;
 use bb_core::ErrorCode;
 use bb_core::access::AppliesTo;
 use bb_policy::Masked;
@@ -83,6 +84,42 @@ impl From<Option<&ProjectLabel>> for PlaceRef {
     }
 }
 
+/// A group or a workflow in a list: the members that were asked for.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct NamedVersionItem {
+    /// The ID.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) id: Option<String>,
+    /// What it is called.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) name: Option<String>,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) version: Option<i64>,
+}
+
+impl Masked for NamedVersionItem {}
+
+impl From<&GroupView> for NamedVersionItem {
+    fn from(group: &GroupView) -> Self {
+        Self {
+            id: Some(group.id.to_string()),
+            name: Some(group.name.clone()),
+            version: Some(group.version),
+        }
+    }
+}
+
+impl From<&WorkflowListItem> for NamedVersionItem {
+    fn from(item: &WorkflowListItem) -> Self {
+        Self {
+            id: Some(item.id.to_string()),
+            name: Some(item.name.clone()),
+            version: Some(item.version),
+        }
+    }
+}
+
 /// A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
 /// Website" needs.
 #[derive(Serialize, ToSchema)]
@@ -103,7 +140,7 @@ impl From<&HeldRole> for RoleAtRef {
             id: held.id.to_string(),
             role: held.role.as_ref().map(NamedRef::from),
             place: PlaceRef::from(held.project.as_ref()),
-            applies_to: held.applies_to.into(),
+            applies_to: held.applies_to,
         }
     }
 }

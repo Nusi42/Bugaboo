@@ -5,7 +5,7 @@ use crate::api::editing::SlotBody;
 use crate::lean::FieldSpec;
 use bb_app::workflows::{
     EditorChange, EditorGroup, EditorRole, PublishPreview, RuleField, Tried, TriedChange,
-    TriedVerdict, WorkflowEditor, WorkflowListItem, WorkflowSlot,
+    TriedVerdict, WorkflowEditor, WorkflowSlot,
 };
 use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
@@ -421,32 +421,6 @@ pub(super) const WORKFLOW_FIELDS: [FieldSpec; 3] = [
 
 /// The name of the list of workflows, so its cursors are its own.
 pub(super) const WORKFLOWS_LIST: &str = "workflows";
-
-/// A workflow in the list: the members that were asked for.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct WorkflowItem {
-    /// The ID of the workflow.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    id: Option<String>,
-    /// What it is called.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    name: Option<String>,
-    /// Counts up with every change. A change is made on the version that was looked at.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    version: Option<i64>,
-}
-
-impl Masked for WorkflowItem {}
-
-impl From<&WorkflowListItem> for WorkflowItem {
-    fn from(item: &WorkflowListItem) -> Self {
-        Self {
-            id: Some(item.id.to_string()),
-            name: Some(item.name.clone()),
-            version: Some(item.version),
-        }
-    }
-}
 
 /// What *Publish* did.
 #[derive(Serialize, ToSchema)]

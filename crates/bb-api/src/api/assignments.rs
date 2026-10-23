@@ -96,7 +96,7 @@ impl From<&AssignmentView> for AssignmentItem {
             group,
             role: row.role.as_ref().map(NamedRef::from),
             place: Some(PlaceRef::from(row.project.as_ref())),
-            applies_to: Some(row.applies_to.into()),
+            applies_to: Some(row.applies_to),
             inherited: Some(row.inherited),
             given_at: Some(row.given_at.to_string()),
         }
@@ -372,7 +372,7 @@ async fn assign_project_role(
             subject,
             given,
             project: Some(project),
-            applies_to: body.applies_to.into(),
+            applies_to: body.applies_to,
         },
     )
     .await

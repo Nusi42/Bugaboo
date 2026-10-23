@@ -5,6 +5,7 @@
 //! as the refusal of the use case.
 
 use crate::api::NameBody;
+use crate::api::access_bodies::NamedVersionItem;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::people::{
@@ -36,32 +37,6 @@ const GROUP_FIELDS: [FieldSpec; 3] = [
 ];
 /// The name of the list, so its cursors are its own.
 const GROUPS_LIST: &str = "groups";
-
-/// A group in a list: the fields that can be asked for.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct GroupItem {
-    /// The ID of the group.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    id: Option<String>,
-    /// What it is called.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    name: Option<String>,
-    /// Counts up with every change. A change is made on the version that was looked at.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    version: Option<i64>,
-}
-
-impl Masked for GroupItem {}
-
-impl From<&GroupView> for GroupItem {
-    fn from(group: &GroupView) -> Self {
-        Self {
-            id: Some(group.id.to_string()),
-            name: Some(group.name.clone()),
-            version: Some(group.version),
-        }
-    }
-}
 
 /// A group after it was made or renamed.
 #[derive(Serialize, ToSchema)]
@@ -225,7 +200,7 @@ pub(crate) fn choice_page(
     operation_id = "listGroups",
     tag = "groups",
     params(ListParams),
-    responses((status = 200, description = "The groups, by name.", body = Page<GroupItem>), NotSignedInAnswer, ForbiddenAnswer)
+    responses((status = 200, description = "The groups, by name.", body = Page<NamedVersionItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn list_groups(
     State(auth): State<AuthHandle>,
@@ -249,7 +224,7 @@ async fn list_groups(
         .map_err(cursor_error)?;
     bad_cursor?;
     let listed = found.map(|list| Listed {
-        items: list.groups.iter().map(GroupItem::from).collect(),
+        items: list.groups.iter().map(NamedVersionItem::from).collect(),
         next: list.next_cursor,
     });
     let fields = params.fields_readable(&GROUP_FIELDS, &listed.hidden_properties())?;
@@ -579,7 +554,7 @@ mod tests {
     fn perf_02_the_field_tables_name_exactly_the_fields_of_their_items() {
         crate::lean::assert_fields_are_the_keys_of(
             &GROUP_FIELDS,
-            &GroupItem {
+            &NamedVersionItem {
                 id: Some("i".to_owned()),
                 name: Some("n".to_owned()),
                 version: Some(1),
