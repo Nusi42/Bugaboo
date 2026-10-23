@@ -99,7 +99,12 @@ pub(crate) fn unformatted(root: &Path, files: &[String]) -> anyhow::Result<Vec<F
 }
 
 fn unformatted_batch(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
-    let mut args = vec!["--list-different", "--config", ".oxfmtrc.json"];
+    let mut args = vec![
+        "--list-different",
+        "--no-error-on-unmatched-pattern",
+        "--config",
+        ".oxfmtrc.json",
+    ];
     args.extend(files.iter().map(String::as_str));
     let result = run(root, "oxfmt", &args)?;
     let mut findings: Vec<Finding> = result
