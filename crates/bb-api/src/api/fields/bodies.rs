@@ -70,7 +70,7 @@ pub(crate) struct FieldBody {
     /// The rules. The browser checks them for instant feedback; the server decides.
     pub(super) rules: Rules,
     /// The value a new item starts with, in the form of the type; `null` for none.
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<serde_json::Value>)]
     pub(super) default_value: Option<Value>,
     /// How the value is shown.
     pub(super) look: Look,
@@ -209,7 +209,7 @@ pub(crate) struct NewFieldBody {
     pub(super) rules: Option<Rules>,
     /// The value a new item starts with, in the form of the type. A *Pick one* or *Pick several*
     /// field gets its default after its choices exist.
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<serde_json::Value>)]
     pub(super) default_value: Option<Value>,
     /// How the value is shown; the starting look of the type when left out.
     pub(super) look: Option<Look>,
@@ -234,7 +234,7 @@ pub(crate) struct ChangeFieldBody {
     pub(super) rules: Option<Rules>,
     /// A new default value; `null` takes it away.
     #[serde(default, deserialize_with = "crate::api::null_or_value")]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<serde_json::Value>)]
     pub(super) default_value: Edit<Value>,
     /// A new look.
     pub(super) look: Option<Look>,

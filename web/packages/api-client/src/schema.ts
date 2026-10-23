@@ -3523,7 +3523,7 @@ export interface components {
     /** @description What to change about an own field: what is left out stays as it is. */
     ChangeFieldBody: {
       /** @description A new default value; `null` takes it away. */
-      default_value?: Record<string, unknown> | null;
+      default_value?: unknown;
       /** @description New help text; an empty text takes it away. */
       help?: string | null;
       look?: components["schemas"]["Look"] | null;
@@ -4210,7 +4210,7 @@ export interface components {
       /** @description The choices of a *Pick one* or *Pick several* field, in order. */
       choices: components["schemas"]["FieldChoiceBody"][];
       /** @description The value a new item starts with, in the form of the type; `null` for none. */
-      default_value?: Record<string, unknown> | null;
+      default_value?: unknown;
       /** @description Words that help people fill it in. */
       help: string;
       /** @description The ID of the field, which is its key in levels, values and history. */
@@ -5518,7 +5518,7 @@ export interface components {
        * @description The value a new item starts with, in the form of the type. A *Pick one* or *Pick several*
        *     field gets its default after its choices exist.
        */
-      default_value?: Record<string, unknown> | null;
+      default_value?: unknown;
       /** @description Words that help people fill it in. */
       help?: string | null;
       /** @description What kind of information it holds. */

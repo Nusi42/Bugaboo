@@ -23916,7 +23916,6 @@
         "required": ["version"],
         "properties": {
           "default_value": {
-            "type": ["object", "null"],
             "description": "A new default value; `null` takes it away."
           },
           "help": {
@@ -25254,7 +25253,6 @@
             "description": "The choices of a *Pick one* or *Pick several* field, in order."
           },
           "default_value": {
-            "type": ["object", "null"],
             "description": "The value a new item starts with, in the form of the type; `null` for none."
           },
           "help": {
@@ -28038,7 +28036,6 @@
             "description": "The choices of a *Pick one* or *Pick several* field."
           },
           "default_value": {
-            "type": ["object", "null"],
             "description": "The value a new item starts with, in the form of the type. A *Pick one* or *Pick several*\nfield gets its default after its choices exist."
           },
           "help": {
