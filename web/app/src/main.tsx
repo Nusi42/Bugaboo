@@ -6,7 +6,12 @@ import { createRoot } from "react-dom/client";
 
 import { installPersonalSources } from "./shared/personal-sources.ts";
 import { paths } from "./shared/paths.ts";
-import { onSecondStepRequired, onSessionLost, queryClient } from "./shared/query-client.ts";
+import {
+  ignoreCancelledQuestion,
+  onSecondStepRequired,
+  onSessionLost,
+  queryClient,
+} from "./shared/query-client.ts";
 import { forgetPerson, leaveSession } from "./shared/session.ts";
 import { router } from "./routes/router.tsx";
 
@@ -21,6 +26,8 @@ applyInitialAppearance();
 
 // An answer that says the sign-in is gone, or does not fit this page, takes the person to the
 // sign-in page, and the cache forgets what the last person was allowed to see (M1-F51).
+window.addEventListener("unhandledrejection", ignoreCancelledQuestion);
+
 onSessionLost((reason) => {
   void leaveSession(async () => {
     // Already on the sign-in page: nothing to explain that is not shown there.
