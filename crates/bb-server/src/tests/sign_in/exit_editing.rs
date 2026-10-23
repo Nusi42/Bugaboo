@@ -354,3 +354,38 @@ async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_a_kind_of_record_that_is_no_word_of_the_api_is_an_invalid_request() -> TestResult {
+    each_database("sec_06_unknown_record_kind", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_, mut ada) = Site::start(&rig, &app).await?;
+        // A made-up kind, and the form with the underscore of a stored word: both are refused as an
+        // invalid request (400), in a body and in an address, never as a thing that is not found.
+        for kind in ["nothing", "issue_type"] {
+            let body = json!({
+                "target": {"record": {"kind": kind, "id": AN_EDITOR}, "part": "description"},
+                "editor_id": AN_EDITOR,
+            });
+            let refused = ada.send("POST", LOCKS, Some(body)).await?;
+            assert_eq!(
+                refused.status,
+                StatusCode::BAD_REQUEST,
+                "{kind}: {}",
+                refused.body
+            );
+            assert_eq!(refused.code(), "request.invalid", "{kind}");
+            let query =
+                format!("{LOCKS}?record_kind={kind}&record_id={AN_EDITOR}&part=description");
+            let refused = ada.send("GET", &query, None).await?;
+            assert_eq!(
+                refused.status,
+                StatusCode::BAD_REQUEST,
+                "{kind}: {}",
+                refused.body
+            );
+        }
+        Ok(())
+    })
+    .await
+}

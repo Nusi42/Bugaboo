@@ -11,12 +11,13 @@ pub(crate) struct RecordKind(EntityKind);
 impl RecordKind {
     /// The word of the API for a stored kind.
     fn word(&self) -> String {
-        self.0.as_str().replace('_', "-")
+        crate::api::api_word(self.0.as_str())
     }
 
     /// The kind with this word, if it is one of the kinds the use cases know.
     fn parse(word: &str) -> Option<Self> {
-        CoreRecordKind::from_code(&word.replace('-', "_")).map(|kind| Self(EntityKind::from(kind)))
+        let stored = crate::api::stored_word(word)?;
+        CoreRecordKind::from_code(&stored).map(|kind| Self(EntityKind::from(kind)))
     }
 }
 
@@ -42,7 +43,7 @@ impl utoipa::PartialSchema for RecordKind {
             .enum_values(Some(
                 CoreRecordKind::ALL
                     .iter()
-                    .map(|kind| kind.code().replace('_', "-")),
+                    .map(|kind| crate::api::api_word(kind.code())),
             ))
             .into()
     }
@@ -511,6 +512,30 @@ impl From<&Versions> for VersionsBody {
                     version: item.version,
                 })
                 .collect(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod record_kind_tests {
+    use super::*;
+
+    #[test]
+    fn a_record_kind_round_trips_in_words_with_hyphens_and_refuses_the_rest() {
+        for kind in CoreRecordKind::ALL {
+            let word = crate::api::api_word(kind.code());
+            let parsed: RecordKind = serde_json::from_str(&format!("\"{word}\"")).unwrap();
+            assert_eq!(
+                serde_json::to_string(&parsed).unwrap(),
+                format!("\"{word}\"")
+            );
+        }
+        // The form with the underscore, a made-up kind and a capital are not words of the API.
+        for refused in ["issue_type", "label_group", "nothing", "Issue", ""] {
+            assert!(
+                serde_json::from_str::<RecordKind>(&format!("\"{refused}\"")).is_err(),
+                "{refused}"
+            );
         }
     }
 }
