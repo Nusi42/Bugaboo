@@ -283,7 +283,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             .await?;
             let record = json!({"kind": "comment", "id": text_in(&comment, "id")?});
             Ok(Save::new(
-                "PATCH",
+                "PUT",
                 format!("/api/v1/comments/{}", text_in(&comment, "id")?),
                 json!({"text": "Second"}),
                 &comment["version"],

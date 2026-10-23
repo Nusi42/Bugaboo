@@ -730,7 +730,12 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    put?: never;
+    /**
+     * Saves the new text of a comment. Only the author changes a text. The editor holds the lock on
+     *     the text (`edit-locks`, the part `text`) and sends its token and the version it started from;
+     *     every earlier text is kept.
+     */
+    put: operations["saveComment"];
     post?: never;
     /**
      * Puts a comment into the trash (*Undo* takes it out again). The author may, and whoever may
@@ -739,12 +744,7 @@ export interface paths {
     delete: operations["deleteComment"];
     options?: never;
     head?: never;
-    /**
-     * Saves the new text of a comment. Only the author changes a text. The editor holds the lock on
-     *     the text (`edit-locks`, the part `text`) and sends its token and the version it started from;
-     *     every earlier text is kept.
-     */
-    patch: operations["saveComment"];
+    patch?: never;
     trace?: never;
   };
   "/api/v1/comments/{comment}/restore": {
@@ -9136,33 +9136,6 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  deleteComment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The ID of the comment. */
-        comment: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The comment is in the trash. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["NotSignedIn"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
   saveComment: {
     parameters: {
       query?: never;
@@ -9194,6 +9167,33 @@ export interface operations {
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deleteComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the comment. */
+        comment: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The comment is in the trash. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

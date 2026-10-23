@@ -193,7 +193,7 @@ async fn add_comment(
 /// the text (`edit-locks`, the part `text`) and sends its token and the version it started from;
 /// every earlier text is kept.
 #[utoipa::path(
-    patch,
+    put,
     path = "/api/v1/comments/{comment}",
     operation_id = "saveComment",
     tag = "comments",

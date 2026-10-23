@@ -221,7 +221,7 @@ async fn text_request(
             let comment = comment_for(fixture, browser, &issue).await?;
             let token = lock_for(browser, &comment).await?;
             (
-                "PATCH",
+                "PUT",
                 format!("/api/v1/comments/{comment}"),
                 Some(json!({"version": 1, "lock_token": token, "text": "Changed by the matrix."})),
             )

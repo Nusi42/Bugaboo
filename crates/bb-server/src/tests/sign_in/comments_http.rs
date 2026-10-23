@@ -76,7 +76,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
         let token = lock(&mut ada, &id).await?;
         let saved = ada
             .send(
-                "PATCH",
+                "PUT",
                 &format!("/api/v1/comments/{id}"),
                 Some(json!({"version": 1, "lock_token": token, "text": "It jams on page three."})),
             )
@@ -97,7 +97,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
         // stale version is told as a conflict.
         let again = ada
             .send(
-                "PATCH",
+                "PUT",
                 &format!("/api/v1/comments/{id}"),
                 Some(json!({"version": 1, "lock_token": token, "text": "Late."})),
             )
@@ -106,7 +106,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
         let fresh = lock(&mut ada, &id).await?;
         let stale = ada
             .send(
-                "PATCH",
+                "PUT",
                 &format!("/api/v1/comments/{id}"),
                 Some(json!({"version": 1, "lock_token": fresh, "text": "Stale."})),
             )

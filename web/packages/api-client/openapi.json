@@ -2168,47 +2168,7 @@
       }
     },
     "/api/v1/comments/{comment}": {
-      "delete": {
-        "tags": ["comments"],
-        "summary": "Puts a comment into the trash (*Undo* takes it out again). The author may, and whoever may\nchange issues.",
-        "operationId": "deleteComment",
-        "parameters": [
-          {
-            "name": "comment",
-            "in": "path",
-            "description": "The ID of the comment.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "The comment is in the trash."
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "comment"
-      },
-      "patch": {
+      "put": {
         "tags": ["comments"],
         "summary": "Saves the new text of a comment. Only the author changes a text. The editor holds the lock on\nthe text (`edit-locks`, the part `text`) and sends its token and the version it started from;\nevery earlier text is kept.",
         "operationId": "saveComment",
@@ -2273,6 +2233,46 @@
           }
         },
         "x-long-text": true,
+        "x-permission": "comment"
+      },
+      "delete": {
+        "tags": ["comments"],
+        "summary": "Puts a comment into the trash (*Undo* takes it out again). The author may, and whoever may\nchange issues.",
+        "operationId": "deleteComment",
+        "parameters": [
+          {
+            "name": "comment",
+            "in": "path",
+            "description": "The ID of the comment.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The comment is in the trash."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
         "x-permission": "comment"
       }
     },
