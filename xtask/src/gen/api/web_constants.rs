@@ -193,6 +193,11 @@ const WORD_LISTS: [&str; 13] = [
     "OnlyIfTest",
 ];
 
+/// The schemas whose members that are always there the browser needs by name, with the name of the
+/// constant: a list read with `fields=` has each member optional, and the browser narrows an item
+/// to the whole schema by checking exactly these (the table `FIELD_FIELDS` of `bb-api` makes them).
+const MEMBER_LISTS: [(&str, &str); 1] = [("FieldBody", "fieldMembers")];
+
 /// `IssueIcon` as `issueIconWords`.
 fn words_name(schema: &str) -> String {
     let mut name = String::new();
@@ -233,6 +238,25 @@ export const {} = [{}] as const;
 ",
             words_name(schema),
             words.join(", ")
+        );
+    }
+    for (schema, name) in MEMBER_LISTS {
+        let members = spec["components"]["schemas"][schema]["required"]
+            .as_array()
+            .with_context(|| {
+                format!("the API description has no required members of `{schema}`")
+            })?;
+        let members: Vec<String> = members
+            .iter()
+            .filter_map(|member| member.as_str().map(|text| format!("{text:?}")))
+            .collect();
+        let _ = write!(
+            out,
+            "/** The members of `{schema}` that are always there, as the server lists them. */
+export const {name} = [{}] as const;
+
+",
+            members.join(", ")
         );
     }
     let Some((_, issues)) = sources.iter().find(|(path, _)| path == ISSUE_SOURCE) else {

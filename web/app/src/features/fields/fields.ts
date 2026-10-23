@@ -1,11 +1,17 @@
-import { dataOf, ownFieldPartPrefix, pageSizeMax, type Schema } from "@bugaboo/api-client";
+import {
+  dataOf,
+  fieldMembers,
+  ownFieldPartPrefix,
+  pageSizeMax,
+  type Schema,
+} from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { IssueBlockProps } from "../issues/index.ts";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 import { linesFrom } from "../../shared/paged.ts";
-import { known } from "../../shared/present.ts";
+import { holdsAll } from "../../shared/present.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { detailsText } from "../../shared/list-text.ts";
 import type { Picked } from "../../shared/reference.ts";
@@ -104,55 +110,9 @@ async function readFieldPages(
     : readFieldPages(query, next, fields);
 }
 
-/** A field of the list, or nothing for an item that came without what a field needs. */
+/** A field of the list, or nothing for an item that came without what a field always has. */
 function fieldOf(item: Schema<"FieldItem">): OwnField | undefined {
-  const [id, name, help, kind] = [
-    known(item.id),
-    known(item.name),
-    known(item.help),
-    known(item.kind),
-  ];
-  const [appliesTo, rules, look] = [known(item.applies_to), known(item.rules), known(item.look)];
-  const [scope, choices, never] = [
-    known(item.scope),
-    known(item.choices),
-    known(item.never_to_assistant),
-  ];
-  const [retired, mayManage, version] = [
-    known(item.retired),
-    known(item.may_manage),
-    known(item.version),
-  ];
-  return id === undefined ||
-    name === undefined ||
-    help === undefined ||
-    kind === undefined ||
-    appliesTo === undefined ||
-    rules === undefined ||
-    look === undefined ||
-    scope === undefined ||
-    choices === undefined ||
-    never === undefined ||
-    retired === undefined ||
-    mayManage === undefined ||
-    version === undefined
-    ? undefined
-    : {
-        id,
-        name,
-        help,
-        kind,
-        applies_to: appliesTo,
-        rules,
-        default_value: item.default_value ?? null,
-        look,
-        never_to_assistant: never,
-        retired,
-        scope,
-        choices,
-        may_manage: mayManage,
-        version,
-      };
+  return holdsAll(item, fieldMembers) ? item : undefined;
 }
 
 /** One field. */

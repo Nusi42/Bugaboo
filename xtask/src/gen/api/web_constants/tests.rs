@@ -267,6 +267,7 @@ fn the_words_of_a_vocabulary_come_from_the_api_description_in_their_order() {
         .map(|name| format!(r#""{name}":{{"type":"string","enum":["bug","flag"]}}"#))
         .collect::<Vec<_>>()
         .join(",");
+    let schemas = format!(r#"{schemas},"FieldBody":{{"required":["id","name"]}}"#);
     let spec = format!(r#"{{"components":{{"schemas":{{{schemas}}}}}}}"#);
     let issues = (
         ISSUE_SOURCE.to_owned(),
@@ -281,6 +282,10 @@ words! { pub enum Priority { Low => \"low\", Normal => \"normal\" } }"
         "{text}"
     );
     assert!(text.contains("export const choiceColorWords = [\"bug\", \"flag\"] as const;"));
+    assert!(
+        text.contains("export const fieldMembers = [\"id\", \"name\"] as const;"),
+        "{text}"
+    );
     assert!(words("{}", &[issues]).is_err());
     assert!(words("not json", &[]).is_err());
     assert!(
