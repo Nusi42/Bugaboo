@@ -8,7 +8,7 @@ export type PeopleLevelCode = Schema<"PeopleLevel">;
 /** A project as a name in a sentence, or *a project you cannot see*. */
 export type ProjectLabel = Schema<"ProjectLabelBody">;
 /** A role as a column of a table. */
-export type RoleColumn = Schema<"RoleRefBody">;
+export type RoleColumn = Schema<"NamedRef">;
 /** Where the level of a cell was set. */
 export type Origin = Schema<"LevelOriginBody">;
 

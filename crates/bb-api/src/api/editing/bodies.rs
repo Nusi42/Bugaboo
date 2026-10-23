@@ -48,6 +48,27 @@ impl EditWhatBody {
     }
 }
 
+/// The layout or the workflow set at exactly the place that was asked about.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct SlotBody {
+    /// The ID of the layout or workflow, which the edit lock is about.
+    pub(crate) id: String,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    pub(crate) version: i64,
+}
+
+/// A long text to save under the edit lock the person holds: the description of an issue, a comment
+/// or the long text of an own field.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct SaveTextBody {
+    /// The version of the record the person started from.
+    pub(crate) version: i64,
+    /// The token the edit lock was taken with.
+    pub(crate) lock_token: String,
+    /// The new text, in Markdown.
+    pub(crate) text: String,
+}
+
 /// Which thing a person wants the lock on, and from which open editor.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct TakeLockBody {
@@ -271,15 +292,6 @@ pub(crate) struct ReleaseLockBody {
 pub(crate) struct EditWhatOnlyBody {
     /// The thing somebody else is editing.
     pub(super) what: EditWhatBody,
-}
-
-/// Take the editing over from the person who is editing.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct EditAnywayBody {
-    /// The thing somebody else is editing.
-    pub(super) what: EditWhatBody,
-    /// The open editor (a tab) that takes over.
-    pub(super) editor_id: String,
 }
 
 /// What a draft is for: a part of a record (`kind`, `id` and `part`), or the form that makes a new

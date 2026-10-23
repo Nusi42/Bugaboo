@@ -1445,7 +1445,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InvitationLookupBody"
+                  "$ref": "#/components/schemas/EmailBody"
                 }
               }
             }
@@ -1638,7 +1638,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/InviteBody"
+                "$ref": "#/components/schemas/EmailBody"
               }
             }
           },
@@ -3199,7 +3199,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SignUpBody"
+                "$ref": "#/components/schemas/EmailBody"
               }
             }
           },
@@ -4428,7 +4428,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveCommentBody"
+                "$ref": "#/components/schemas/SaveTextBody"
               }
             }
           },
@@ -5569,7 +5569,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EditAnywayBody"
+                "$ref": "#/components/schemas/TakeLockBody"
               }
             }
           },
@@ -7677,7 +7677,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GroupNameBody"
+                "$ref": "#/components/schemas/NameBody"
               }
             }
           },
@@ -9738,7 +9738,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveDescriptionBody"
+                "$ref": "#/components/schemas/SaveTextBody"
               }
             }
           },
@@ -9877,7 +9877,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveFieldTextBody"
+                "$ref": "#/components/schemas/SaveTextBody"
               }
             }
           },
@@ -12320,7 +12320,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewTagBody"
+                "$ref": "#/components/schemas/NameBody"
               }
             }
           },
@@ -15324,7 +15324,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewHandleBody"
+                "$ref": "#/components/schemas/HandleBody"
               }
             }
           },
@@ -20440,7 +20440,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CopyRoleBody"
+                "$ref": "#/components/schemas/NameBody"
               }
             }
           },
@@ -23604,11 +23604,6 @@
         "description": "Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.",
         "enum": ["organization", "project", "project-and-sub-projects"]
       },
-      "AppliesToBody": {
-        "type": "string",
-        "description": "Where a role given to somebody counts (*Where it counts*).",
-        "enum": ["organization", "project", "project-and-sub-projects"]
-      },
       "ApplyManyChangesBody": {
         "type": "object",
         "description": "The issues to change, with the versions the preview read, and what to do.",
@@ -23634,7 +23629,7 @@
           "applies_to": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/AppliesToBody",
+                "$ref": "#/components/schemas/AppliesTo",
                 "description": "Where it counts."
               },
               {
@@ -23649,7 +23644,7 @@
           "group": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/GroupRef",
+                "$ref": "#/components/schemas/NamedRef",
                 "description": "The group the row is for; not there for a person."
               },
               {
@@ -23690,7 +23685,7 @@
           "role": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/RoleRef",
+                "$ref": "#/components/schemas/NamedRef",
                 "description": "The role; not there for *No access*."
               },
               {
@@ -24792,17 +24787,6 @@
         ],
         "description": "The answer to a change that found the record at another version, or to any other refused\nchange: the usual problem, and for `edit.version-changed` the `conflict` member."
       },
-      "CopyRoleBody": {
-        "type": "object",
-        "description": "A role to make from a copy of another.",
-        "required": ["name"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "What the copy is called."
-          }
-        }
-      },
       "CountsBody": {
         "type": "string",
         "description": "Where a permission counts, as the API names it.",
@@ -25031,21 +25015,6 @@
           }
         }
       },
-      "EditAnywayBody": {
-        "type": "object",
-        "description": "Take the editing over from the person who is editing.",
-        "required": ["what", "editor_id"],
-        "properties": {
-          "editor_id": {
-            "type": "string",
-            "description": "The open editor (a tab) that takes over."
-          },
-          "what": {
-            "$ref": "#/components/schemas/EditWhatBody",
-            "description": "The thing somebody else is editing."
-          }
-        }
-      },
       "EditWhatBody": {
         "type": "object",
         "description": "One thing being edited: one part of one record.",
@@ -25128,21 +25097,6 @@
           }
         }
       },
-      "EditorRoleBody": {
-        "type": "object",
-        "description": "A role the editor can tick.",
-        "required": ["id", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the role."
-          },
-          "name": {
-            "type": "string",
-            "description": "Its name."
-          }
-        }
-      },
       "EditorSectionBody": {
         "type": "object",
         "description": "A section of a layout in the editor.",
@@ -25162,6 +25116,17 @@
           "title": {
             "type": "string",
             "description": "Its title; may be empty."
+          }
+        }
+      },
+      "EmailBody": {
+        "type": "object",
+        "description": "An e-mail address, in a request or an answer: where a sign-up link goes, whom to invite, whom an\ninvitation is for.",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The e-mail address."
           }
         }
       },
@@ -25777,47 +25742,6 @@
           }
         }
       },
-      "GroupNameBody": {
-        "type": "object",
-        "description": "A name for a group.",
-        "required": ["name"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "What the group is called."
-          }
-        }
-      },
-      "GroupRef": {
-        "type": "object",
-        "description": "A group named in an answer.",
-        "required": ["id", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the group."
-          },
-          "name": {
-            "type": "string",
-            "description": "What it is called."
-          }
-        }
-      },
-      "GroupRefBody": {
-        "type": "object",
-        "description": "A group named in a reason.",
-        "required": ["id", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the group."
-          },
-          "name": {
-            "type": "string",
-            "description": "What the group is called."
-          }
-        }
-      },
       "GroupUsedByBody": {
         "type": "object",
         "description": "What a group is used for, as far as the person who asks may see.",
@@ -25843,12 +25767,12 @@
       },
       "HandleBody": {
         "type": "object",
-        "description": "The handle of the person.",
+        "description": "A handle: the one a person has, or the new one they ask for. Without the `@`: lower case or\nASCII letters `a`…`z`, digits, `.`, `-` and `_`, like `ana.brandt`. Nobody else has it, nobody had\nit, and no group or role has it.",
         "required": ["handle"],
         "properties": {
           "handle": {
             "type": "string",
-            "description": "The handle, without the `@`: lower case, words joined by dots, like `ana.brandt`."
+            "description": "The handle, without the `@`."
           }
         }
       },
@@ -26228,28 +26152,6 @@
           "id": {
             "type": ["string", "null"],
             "description": "The ID of the invitation."
-          }
-        }
-      },
-      "InvitationLookupBody": {
-        "type": "object",
-        "description": "Which address an invitation is for.",
-        "required": ["email"],
-        "properties": {
-          "email": {
-            "type": "string",
-            "description": "The address the account will get."
-          }
-        }
-      },
-      "InviteBody": {
-        "type": "object",
-        "description": "Somebody to invite.",
-        "required": ["email"],
-        "properties": {
-          "email": {
-            "type": "string",
-            "description": "The e-mail address to invite."
           }
         }
       },
@@ -26913,7 +26815,7 @@
           "layout": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/LayoutSlotBody",
+                "$ref": "#/components/schemas/SlotBody",
                 "description": "The layout set at this place. Without it the place uses the layout it inherits (or the\nstarting layout), and *Customize* makes one."
               },
               {
@@ -26935,7 +26837,7 @@
           "roles": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/EditorRoleBody"
+              "$ref": "#/components/schemas/NamedRef"
             },
             "description": "The roles that can be ticked, in the order of roles; none when the person may not choose\nthe roles of a field."
           },
@@ -26952,22 +26854,6 @@
         "type": "string",
         "description": "What a layout is for: the issue page or the new-issue form.",
         "enum": ["new-issue", "issue-page"]
-      },
-      "LayoutSlotBody": {
-        "type": "object",
-        "description": "The layout set at exactly the place that was asked about.",
-        "required": ["id", "version"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the layout, which the edit lock is about."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Counts up with every change. A change is made on the version that was looked at."
-          }
-        }
       },
       "LevelAnswerBody_FieldKey_FieldLevel": {
         "type": "object",
@@ -27289,7 +27175,7 @@
           "roles": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RoleRefBody"
+              "$ref": "#/components/schemas/NamedRef"
             },
             "description": "The roles, in the order of roles: the columns."
           },
@@ -27338,7 +27224,7 @@
           "roles": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RoleRefBody"
+              "$ref": "#/components/schemas/NamedRef"
             },
             "description": "The roles, in the order of roles: the columns."
           },
@@ -28171,9 +28057,20 @@
         "description": "Where a person may move a project to.",
         "enum": ["nowhere", "into-projects", "into-projects-or-top"]
       },
-      "NamedBody": {
+      "NameBody": {
         "type": "object",
-        "description": "A role or a group a rule can name.",
+        "description": "A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue.",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name."
+          }
+        }
+      },
+      "NamedRef": {
+        "type": "object",
+        "description": "A role or a group named in an answer: its ID and what it is called (empty when it was deleted\nmeanwhile). One schema for everything that is only an ID and a name.",
         "required": ["id", "name"],
         "properties": {
           "id": {
@@ -28182,7 +28079,7 @@
           },
           "name": {
             "type": "string",
-            "description": "The name."
+            "description": "What it is called."
           }
         }
       },
@@ -28335,17 +28232,6 @@
                 "type": "null"
               }
             ]
-          }
-        }
-      },
-      "NewHandleBody": {
-        "type": "object",
-        "description": "The new handle.",
-        "required": ["handle"],
-        "properties": {
-          "handle": {
-            "type": "string",
-            "description": "The handle, without the `@`: the ASCII letters `a`…`z`, digits, `.`, `-` and `_`. Nobody\nelse has it, nobody had it, and no group or role has it."
           }
         }
       },
@@ -28545,7 +28431,7 @@
         "required": ["who", "applies_to"],
         "properties": {
           "applies_to": {
-            "$ref": "#/components/schemas/AppliesToBody",
+            "$ref": "#/components/schemas/AppliesTo",
             "description": "Where it counts: only the project, or the project and its sub-projects. *No access* always\ncovers the project and its sub-projects."
           },
           "role": {
@@ -28611,17 +28497,6 @@
           "two_step": {
             "type": "boolean",
             "description": "Whether everybody with it needs two-step sign-in."
-          }
-        }
-      },
-      "NewTagBody": {
-        "type": "object",
-        "description": "A tag to put on an issue.",
-        "required": ["name"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "The name of the tag. A name nobody used makes the tag."
           }
         }
       },
@@ -29213,7 +29088,7 @@
                 "applies_to": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/AppliesToBody",
+                      "$ref": "#/components/schemas/AppliesTo",
                       "description": "Where it counts."
                     },
                     {
@@ -29228,7 +29103,7 @@
                 "group": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/GroupRef",
+                      "$ref": "#/components/schemas/NamedRef",
                       "description": "The group the row is for; not there for a person."
                     },
                     {
@@ -29269,7 +29144,7 @@
                 "role": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/RoleRef",
+                      "$ref": "#/components/schemas/NamedRef",
                       "description": "The role; not there for *No access*."
                     },
                     {
@@ -30492,7 +30367,7 @@
                 "groups": {
                   "type": ["array", "null"],
                   "items": {
-                    "$ref": "#/components/schemas/GroupRef"
+                    "$ref": "#/components/schemas/NamedRef"
                   },
                   "description": "The groups the person is in. Left out when the viewer may not see groups."
                 },
@@ -31172,7 +31047,7 @@
           "groups": {
             "type": ["array", "null"],
             "items": {
-              "$ref": "#/components/schemas/GroupRef"
+              "$ref": "#/components/schemas/NamedRef"
             },
             "description": "The groups the person is in. Left out when the viewer may not see groups."
           },
@@ -31661,25 +31536,6 @@
           }
         }
       },
-      "ProjectRefBody": {
-        "type": "object",
-        "description": "A project a value comes from.",
-        "required": ["id", "short_name", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the project."
-          },
-          "name": {
-            "type": "string",
-            "description": "Its name."
-          },
-          "short_name": {
-            "type": "string",
-            "description": "Its short name."
-          }
-        }
-      },
       "ProjectShown": {
         "type": "string",
         "description": "Whether the owner may know the project.",
@@ -31805,7 +31661,7 @@
         "required": ["workflow"],
         "properties": {
           "workflow": {
-            "$ref": "#/components/schemas/WorkflowSlotBody",
+            "$ref": "#/components/schemas/SlotBody",
             "description": "The workflow, with its new version."
           }
         }
@@ -31839,7 +31695,7 @@
                 "enum": ["given-by-role"]
               },
               "role": {
-                "$ref": "#/components/schemas/RoleRefBody",
+                "$ref": "#/components/schemas/NamedRef",
                 "description": "The role."
               },
               "row": {
@@ -31862,7 +31718,7 @@
                 "description": "The *No access* that decided."
               },
               "role": {
-                "$ref": "#/components/schemas/RoleRefBody",
+                "$ref": "#/components/schemas/NamedRef",
                 "description": "Its role."
               },
               "row": {
@@ -31885,7 +31741,7 @@
                 "description": "The *No access* that decided."
               },
               "role": {
-                "$ref": "#/components/schemas/RoleRefBody",
+                "$ref": "#/components/schemas/NamedRef",
                 "description": "Its role."
               },
               "row": {
@@ -31904,7 +31760,7 @@
                 "enum": ["counts-only-for-the-organization"]
               },
               "role": {
-                "$ref": "#/components/schemas/RoleRefBody",
+                "$ref": "#/components/schemas/NamedRef",
                 "description": "The role."
               },
               "row": {
@@ -32002,7 +31858,7 @@
             "required": ["group", "kind"],
             "properties": {
               "group": {
-                "$ref": "#/components/schemas/GroupRefBody",
+                "$ref": "#/components/schemas/NamedRef",
                 "description": "The group."
               },
               "kind": {
@@ -32167,7 +32023,7 @@
         "required": ["id", "place", "applies_to"],
         "properties": {
           "applies_to": {
-            "$ref": "#/components/schemas/AppliesToBody",
+            "$ref": "#/components/schemas/AppliesTo",
             "description": "Where it counts."
           },
           "id": {
@@ -32181,7 +32037,7 @@
           "role": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/RoleRef",
+                "$ref": "#/components/schemas/NamedRef",
                 "description": "The role; `null` for *No access*."
               },
               {
@@ -32285,36 +32141,6 @@
           }
         }
       },
-      "RoleRef": {
-        "type": "object",
-        "description": "A role named in an answer.",
-        "required": ["id", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the role."
-          },
-          "name": {
-            "type": "string",
-            "description": "What it is called; empty when the role was deleted meanwhile."
-          }
-        }
-      },
-      "RoleRefBody": {
-        "type": "object",
-        "description": "A role as a column of the table.",
-        "required": ["id", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the role."
-          },
-          "name": {
-            "type": "string",
-            "description": "What the role is called."
-          }
-        }
-      },
       "RoleSaysBody_FieldLevel": {
         "type": "object",
         "description": "What one role says about a field or a kind.",
@@ -32326,7 +32152,7 @@
             "enum": ["hidden", "can-see", "can-change"]
           },
           "role": {
-            "$ref": "#/components/schemas/RoleRefBody",
+            "$ref": "#/components/schemas/NamedRef",
             "description": "The role."
           },
           "set": {
@@ -32346,7 +32172,7 @@
             "enum": ["hidden", "role-only", "names"]
           },
           "role": {
-            "$ref": "#/components/schemas/RoleRefBody",
+            "$ref": "#/components/schemas/NamedRef",
             "description": "The role."
           },
           "set": {
@@ -32444,46 +32270,6 @@
         "description": "Which database the server uses.",
         "enum": ["built-in", "sqlite", "postgres"]
       },
-      "SaveCommentBody": {
-        "type": "object",
-        "description": "The new text of a comment, saved under the lock the editor holds.",
-        "required": ["version", "lock_token", "text"],
-        "properties": {
-          "lock_token": {
-            "type": "string",
-            "description": "The token the lock on the text was taken with."
-          },
-          "text": {
-            "type": "string",
-            "description": "The new text, in Markdown."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version of the comment the person started from."
-          }
-        }
-      },
-      "SaveDescriptionBody": {
-        "type": "object",
-        "description": "The description to save under the lock the person holds.",
-        "required": ["version", "lock_token", "text"],
-        "properties": {
-          "lock_token": {
-            "type": "string",
-            "description": "The token of the edit lock the person holds on the description."
-          },
-          "text": {
-            "type": "string",
-            "description": "The description, in Markdown."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version the person started from."
-          }
-        }
-      },
       "SaveDraftBody": {
         "type": "object",
         "description": "A draft to keep.",
@@ -32496,26 +32282,6 @@
           "target": {
             "$ref": "#/components/schemas/DraftTargetBody",
             "description": "What the draft is for."
-          }
-        }
-      },
-      "SaveFieldTextBody": {
-        "type": "object",
-        "description": "The long text of an own field, saved under the edit lock of the person.",
-        "required": ["version", "lock_token", "text"],
-        "properties": {
-          "lock_token": {
-            "type": "string",
-            "description": "The token the edit lock was taken with."
-          },
-          "text": {
-            "type": "string",
-            "description": "The text, in Markdown."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version of the issue the person started from."
           }
         }
       },
@@ -32539,6 +32305,26 @@
             "type": "integer",
             "format": "int64",
             "description": "The version the person looked at."
+          }
+        }
+      },
+      "SaveTextBody": {
+        "type": "object",
+        "description": "A long text to save under the edit lock the person holds: the description of an issue, a comment\nor the long text of an own field.",
+        "required": ["version", "lock_token", "text"],
+        "properties": {
+          "lock_token": {
+            "type": "string",
+            "description": "The token the edit lock was taken with."
+          },
+          "text": {
+            "type": "string",
+            "description": "The new text, in Markdown."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the record the person started from."
           }
         }
       },
@@ -32958,17 +32744,6 @@
           }
         }
       },
-      "SignUpBody": {
-        "type": "object",
-        "description": "Somebody who asks for an account on their own.",
-        "required": ["email"],
-        "properties": {
-          "email": {
-            "type": "string",
-            "description": "The e-mail address. The link that makes the account goes there."
-          }
-        }
-      },
       "SignUpPolicyBody": {
         "type": "object",
         "description": "Who may sign up on their own.",
@@ -33040,6 +32815,22 @@
           "not-valid"
         ]
       },
+      "SlotBody": {
+        "type": "object",
+        "description": "The layout or the workflow set at exactly the place that was asked about.",
+        "required": ["id", "version"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the layout or workflow, which the edit lock is about."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
       "SourceBody": {
         "type": "object",
         "description": "Where the value that counts comes from.",
@@ -33052,7 +32843,7 @@
           "project": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ProjectRefBody",
+                "$ref": "#/components/schemas/ProjectRef",
                 "description": "For a value from a project: which one. Missing when the person cannot see the project."
               },
               {
@@ -33694,7 +33485,7 @@
           "groups": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/NamedBody"
+              "$ref": "#/components/schemas/NamedRef"
             },
             "description": "The groups *Who can do it* can name."
           },
@@ -33738,7 +33529,7 @@
           "roles": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/NamedBody"
+              "$ref": "#/components/schemas/NamedRef"
             },
             "description": "The roles *Who can do it* can name."
           },
@@ -33752,7 +33543,7 @@
           "workflow": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/WorkflowSlotBody",
+                "$ref": "#/components/schemas/SlotBody",
                 "description": "The workflow set at this place. Without it the place uses the workflow it inherits (or the\nstarting workflow), and *Create* makes one."
               },
               {
@@ -33777,22 +33568,6 @@
               "$ref": "#/components/schemas/WorkflowChoiceBody"
             },
             "description": "The workflows, by name."
-          }
-        }
-      },
-      "WorkflowSlotBody": {
-        "type": "object",
-        "description": "The workflow set at exactly the place that was asked about.",
-        "required": ["id", "version"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the workflow, which the edit lock is about."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       }

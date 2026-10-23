@@ -370,13 +370,6 @@ impl From<&LabelGroupView> for LabelGroupItem {
     }
 }
 
-/// A tag to put on an issue.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct NewTagBody {
-    /// The name of the tag. A name nobody used makes the tag.
-    pub(super) name: String,
-}
-
 /// A label to put on an issue.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct NewIssueLabelBody {

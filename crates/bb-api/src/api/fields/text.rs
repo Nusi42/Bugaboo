@@ -3,8 +3,9 @@
 use super::{
     ApiError, ApiJson, ApiPath, AuthHandle, ConflictAnswer, FieldId, ForbiddenAnswer, Info,
     InvalidAnswer, IssueItem, LockToken, NotFoundAnswer, NotSignedInAnswer, Response,
-    SaveFieldText, SaveFieldTextBody, Session, State, answer_authorized, body_id, path_id,
+    SaveFieldText, Session, State, answer_authorized, body_id, path_id,
 };
+use crate::api::editing::SaveTextBody;
 
 /// Saves the long text of an own field of an issue, under the edit lock of the person. Needs the
 /// right to change the issue and the field; a lock that ran out, a take-over or a change made
@@ -18,7 +19,7 @@ use super::{
         ("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue."),
         ("field" = String, Path, description = "The ID of the long text field.")
     ),
-    request_body = SaveFieldTextBody,
+    request_body = SaveTextBody,
     responses(
         (status = 200, description = "The issue as it is now.", body = IssueItem),
         InvalidAnswer,
@@ -33,7 +34,7 @@ pub(super) async fn save_issue_field_text(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath((issue, field)): ApiPath<(String, String)>,
-    ApiJson(body): ApiJson<SaveFieldTextBody>,
+    ApiJson(body): ApiJson<SaveTextBody>,
 ) -> Result<Response, ApiError> {
     let saved = auth
         .api()?

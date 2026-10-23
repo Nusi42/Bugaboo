@@ -4,6 +4,7 @@
 //! that (the last administrator, no escalation, a *No access* that a change would lift) comes back
 //! as the refusal of the use case.
 
+use crate::api::NameBody;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::people::{
@@ -119,13 +120,6 @@ impl From<&GroupDetail> for GroupDetailBody {
             },
         }
     }
-}
-
-/// A name for a group.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct GroupNameBody {
-    /// What the group is called.
-    name: String,
 }
 
 /// A new name for a group, made on the version that was looked at.
@@ -268,7 +262,7 @@ async fn list_groups(
     path = "/api/v1/groups",
     operation_id = "createGroup",
     tag = "groups",
-    request_body = GroupNameBody,
+    request_body = NameBody,
     responses(
         (status = 200, description = "The group.", body = GroupBody),
         InvalidAnswer,
@@ -281,7 +275,7 @@ async fn create_group(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<GroupNameBody>,
+    ApiJson(body): ApiJson<NameBody>,
 ) -> Result<Response, ApiError> {
     let made = auth
         .api()?

@@ -3390,11 +3390,6 @@ export interface components {
      * @enum {string}
      */
     AppliesTo: "organization" | "project" | "project-and-sub-projects";
-    /**
-     * @description Where a role given to somebody counts (*Where it counts*).
-     * @enum {string}
-     */
-    AppliesToBody: "organization" | "project" | "project-and-sub-projects";
     /** @description The issues to change, with the versions the preview read, and what to do. */
     ApplyManyChangesBody: {
       /** @description What to do. */
@@ -3404,10 +3399,10 @@ export interface components {
     };
     /** @description A row of *Who has which role*: the fields that can be asked for. */
     AssignmentItem: {
-      applies_to?: components["schemas"]["AppliesToBody"] | null;
+      applies_to?: components["schemas"]["AppliesTo"] | null;
       /** @description When the row was made. */
       given_at?: string | null;
-      group?: components["schemas"]["GroupRef"] | null;
+      group?: components["schemas"]["NamedRef"] | null;
       /** @description The ID of the row. */
       id?: string | null;
       /**
@@ -3417,7 +3412,7 @@ export interface components {
       inherited?: boolean | null;
       person?: components["schemas"]["PersonRef"] | null;
       place?: components["schemas"]["PlaceRef"] | null;
-      role?: components["schemas"]["RoleRef"] | null;
+      role?: components["schemas"]["NamedRef"] | null;
     };
     /** @description A file on an issue or a comment, as the reader sees it. */
     AttachmentItem: {
@@ -3925,11 +3920,6 @@ export interface components {
       conflict?: components["schemas"]["ConflictBody"] | null;
       taken_over_by?: components["schemas"]["PersonRef"] | null;
     };
-    /** @description A role to make from a copy of another. */
-    CopyRoleBody: {
-      /** @description What the copy is called. */
-      name: string;
-    };
     /**
      * @description Where a permission counts, as the API names it.
      * @enum {string}
@@ -4063,13 +4053,6 @@ export interface components {
       /** @description How many of the issues the person does not see. They are counted, never named. */
       unseen: number;
     };
-    /** @description Take the editing over from the person who is editing. */
-    EditAnywayBody: {
-      /** @description The open editor (a tab) that takes over. */
-      editor_id: string;
-      /** @description The thing somebody else is editing. */
-      what: components["schemas"]["EditWhatBody"];
-    };
     /** @description One thing being edited: one part of one record. */
     EditWhatBody: {
       /** @description Which long text of the record, like `description`. */
@@ -4112,13 +4095,6 @@ export interface components {
       /** @description The IDs of the roles the layout shows it to. */
       roles: string[];
     };
-    /** @description A role the editor can tick. */
-    EditorRoleBody: {
-      /** @description The ID of the role. */
-      id: string;
-      /** @description Its name. */
-      name: string;
-    };
     /** @description A section of a layout in the editor. */
     EditorSectionBody: {
       /** @description Its fields, in order. */
@@ -4127,6 +4103,14 @@ export interface components {
       tab: string;
       /** @description Its title; may be empty. */
       title: string;
+    };
+    /**
+     * @description An e-mail address, in a request or an answer: where a sign-up link goes, whom to invite, whom an
+     *     invitation is for.
+     */
+    EmailBody: {
+      /** @description The e-mail address. */
+      email: string;
     };
     /**
      * @description What went wrong. Clients react to this text, which never changes.
@@ -4476,25 +4460,6 @@ export interface components {
        */
       version?: number | null;
     };
-    /** @description A name for a group. */
-    GroupNameBody: {
-      /** @description What the group is called. */
-      name: string;
-    };
-    /** @description A group named in an answer. */
-    GroupRef: {
-      /** @description The ID of the group. */
-      id: string;
-      /** @description What it is called. */
-      name: string;
-    };
-    /** @description A group named in a reason. */
-    GroupRefBody: {
-      /** @description The ID of the group. */
-      id: string;
-      /** @description What the group is called. */
-      name: string;
-    };
     /** @description What a group is used for, as far as the person who asks may see. */
     GroupUsedByBody: {
       /**
@@ -4511,9 +4476,13 @@ export interface components {
       /** @description Whether the group has a role for the whole organization. */
       whole_organization: boolean;
     };
-    /** @description The handle of the person. */
+    /**
+     * @description A handle: the one a person has, or the new one they ask for. Without the `@`: lower case or
+     *     ASCII letters `a`…`z`, digits, `.`, `-` and `_`, like `ana.brandt`. Nobody else has it, nobody had
+     *     it, and no group or role has it.
+     */
     HandleBody: {
-      /** @description The handle, without the `@`: lower case, words joined by dots, like `ana.brandt`. */
+      /** @description The handle, without the `@`. */
       handle: string;
     };
     /** @description The answer to a heartbeat. */
@@ -4652,16 +4621,6 @@ export interface components {
       expires_at?: string | null;
       /** @description The ID of the invitation. */
       id?: string | null;
-    };
-    /** @description Which address an invitation is for. */
-    InvitationLookupBody: {
-      /** @description The address the account will get. */
-      email: string;
-    };
-    /** @description Somebody to invite. */
-    InviteBody: {
-      /** @description The e-mail address to invite. */
-      email: string;
     };
     /** @description One issue with what the person may do with it. */
     IssueDetailBody: {
@@ -4989,13 +4948,13 @@ export interface components {
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
       /** @description The issue page or the new-issue form. */
       kind: components["schemas"]["LayoutKind"];
-      layout?: components["schemas"]["LayoutSlotBody"] | null;
+      layout?: components["schemas"]["SlotBody"] | null;
       project?: components["schemas"]["ProjectRef"] | null;
       /**
        * @description The roles that can be ticked, in the order of roles; none when the person may not choose
        *     the roles of a field.
        */
-      roles: components["schemas"]["EditorRoleBody"][];
+      roles: components["schemas"]["NamedRef"][];
       /** @description The sections, in order. */
       sections: components["schemas"]["EditorSectionBody"][];
     };
@@ -5004,16 +4963,6 @@ export interface components {
      * @enum {string}
      */
     LayoutKind: "new-issue" | "issue-page";
-    /** @description The layout set at exactly the place that was asked about. */
-    LayoutSlotBody: {
-      /** @description The ID of the layout, which the edit lock is about. */
-      id: string;
-      /**
-       * Format: int64
-       * @description Counts up with every change. A change is made on the version that was looked at.
-       */
-      version: number;
-    };
     /** @description A field or a kind with its level and what each role says. */
     LevelAnswerBody_FieldKey_FieldLevel: {
       /** @description An access key lowered the level to *Can see*. */
@@ -5177,7 +5126,7 @@ export interface components {
       levels: ("hidden" | "can-see" | "can-change")[];
       project?: components["schemas"]["ProjectLabelBody"] | null;
       /** @description The roles, in the order of roles: the columns. */
-      roles: components["schemas"]["RoleRefBody"][];
+      roles: components["schemas"]["NamedRef"][];
       /** @description The fields or kinds, in the order of their catalogue: the rows. */
       rows: components["schemas"]["LevelRowBody_FieldKey_FieldLevel"][];
       /** @description There are more roles than the table holds; the first ones are shown. */
@@ -5191,7 +5140,7 @@ export interface components {
       levels: ("hidden" | "role-only" | "names")[];
       project?: components["schemas"]["ProjectLabelBody"] | null;
       /** @description The roles, in the order of roles: the columns. */
-      roles: components["schemas"]["RoleRefBody"][];
+      roles: components["schemas"]["NamedRef"][];
       /** @description The fields or kinds, in the order of their catalogue: the rows. */
       rows: components["schemas"]["LevelRowBody_PeopleKind_PeopleLevel"][];
       /** @description There are more roles than the table holds; the first ones are shown. */
@@ -5563,11 +5512,19 @@ export interface components {
      * @enum {string}
      */
     MoveRightBody: "nowhere" | "into-projects" | "into-projects-or-top";
-    /** @description A role or a group a rule can name. */
-    NamedBody: {
+    /** @description A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue. */
+    NameBody: {
+      /** @description The name. */
+      name: string;
+    };
+    /**
+     * @description A role or a group named in an answer: its ID and what it is called (empty when it was deleted
+     *     meanwhile). One schema for everything that is only an ID and a name.
+     */
+    NamedRef: {
       /** @description The ID. */
       id: string;
-      /** @description The name. */
+      /** @description What it is called. */
       name: string;
     };
     /**
@@ -5623,14 +5580,6 @@ export interface components {
      */
     NewFieldLevelBody: {
       level?: components["schemas"]["FieldLevel"] | null;
-    };
-    /** @description The new handle. */
-    NewHandleBody: {
-      /**
-       * @description The handle, without the `@`: the ASCII letters `a`…`z`, digits, `.`, `-` and `_`. Nobody
-       *     else has it, nobody had it, and no group or role has it.
-       */
-      handle: string;
     };
     /** @description An issue to make. */
     NewIssueBody: {
@@ -5726,7 +5675,7 @@ export interface components {
        * @description Where it counts: only the project, or the project and its sub-projects. *No access* always
        *     covers the project and its sub-projects.
        */
-      applies_to: components["schemas"]["AppliesToBody"];
+      applies_to: components["schemas"]["AppliesTo"];
       /** @description The ID of the role; left out for *No access*. */
       role?: string | null;
       /** @description Whom the row is for. */
@@ -5759,11 +5708,6 @@ export interface components {
       permissions: components["schemas"]["Permission"][];
       /** @description Whether everybody with it needs two-step sign-in. */
       two_step: boolean;
-    };
-    /** @description A tag to put on an issue. */
-    NewTagBody: {
-      /** @description The name of the tag. A name nobody used makes the tag. */
-      name: string;
     };
     /** @description A new value for a setting. */
     NewValueBody: {
@@ -6005,10 +5949,10 @@ export interface components {
     Page_AssignmentItem: {
       /** @description The items of this page. */
       items: {
-        applies_to?: components["schemas"]["AppliesToBody"] | null;
+        applies_to?: components["schemas"]["AppliesTo"] | null;
         /** @description When the row was made. */
         given_at?: string | null;
-        group?: components["schemas"]["GroupRef"] | null;
+        group?: components["schemas"]["NamedRef"] | null;
         /** @description The ID of the row. */
         id?: string | null;
         /**
@@ -6018,7 +5962,7 @@ export interface components {
         inherited?: boolean | null;
         person?: components["schemas"]["PersonRef"] | null;
         place?: components["schemas"]["PlaceRef"] | null;
-        role?: components["schemas"]["RoleRef"] | null;
+        role?: components["schemas"]["NamedRef"] | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -6512,7 +6456,7 @@ export interface components {
         /** @description The e-mail address. Only people who manage people see it. */
         email?: string | null;
         /** @description The groups the person is in. Left out when the viewer may not see groups. */
-        groups?: components["schemas"]["GroupRef"][] | null;
+        groups?: components["schemas"]["NamedRef"][] | null;
         person?: components["schemas"]["PersonRef"] | null;
         /**
          * @description The roles the person has through rows of their own, in the places where the viewer
@@ -6870,7 +6814,7 @@ export interface components {
       /** @description The e-mail address. Only people who manage people see it. */
       email?: string | null;
       /** @description The groups the person is in. Left out when the viewer may not see groups. */
-      groups?: components["schemas"]["GroupRef"][] | null;
+      groups?: components["schemas"]["NamedRef"][] | null;
       person?: components["schemas"]["PersonRef"] | null;
       /**
        * @description The roles the person has through rows of their own, in the places where the viewer
@@ -7117,15 +7061,6 @@ export interface components {
       /** @description The letters of its issue IDs and address. */
       short_name: string;
     };
-    /** @description A project a value comes from. */
-    ProjectRefBody: {
-      /** @description The ID of the project. */
-      id: string;
-      /** @description Its name. */
-      name: string;
-      /** @description Its short name. */
-      short_name: string;
-    };
     /**
      * @description Whether the owner may know the project.
      * @enum {string}
@@ -7192,7 +7127,7 @@ export interface components {
     /** @description What *Publish* did. */
     PublishedBody: {
       /** @description The workflow, with its new version. */
-      workflow: components["schemas"]["WorkflowSlotBody"];
+      workflow: components["schemas"]["SlotBody"];
     };
     /** @description The notifications to mark as read. */
     ReadNotificationsBody: {
@@ -7210,7 +7145,7 @@ export interface components {
           /** @enum {string} */
           kind: "given-by-role";
           /** @description The role. */
-          role: components["schemas"]["RoleRefBody"];
+          role: components["schemas"]["NamedRef"];
           /** @description The row. */
           row: components["schemas"]["ReasonRowBody"];
         }
@@ -7220,7 +7155,7 @@ export interface components {
           /** @description The *No access* that decided. */
           no_access: components["schemas"]["ReasonRowBody"];
           /** @description Its role. */
-          role: components["schemas"]["RoleRefBody"];
+          role: components["schemas"]["NamedRef"];
           /** @description The row. */
           row: components["schemas"]["ReasonRowBody"];
         }
@@ -7230,7 +7165,7 @@ export interface components {
           /** @description The *No access* that decided. */
           no_access: components["schemas"]["ReasonRowBody"];
           /** @description Its role. */
-          role: components["schemas"]["RoleRefBody"];
+          role: components["schemas"]["NamedRef"];
           /** @description The row. */
           row: components["schemas"]["ReasonRowBody"];
         }
@@ -7238,7 +7173,7 @@ export interface components {
           /** @enum {string} */
           kind: "counts-only-for-the-organization";
           /** @description The role. */
-          role: components["schemas"]["RoleRefBody"];
+          role: components["schemas"]["NamedRef"];
           /** @description The row. */
           row: components["schemas"]["ReasonRowBody"];
         }
@@ -7274,7 +7209,7 @@ export interface components {
         }
       | {
           /** @description The group. */
-          group: components["schemas"]["GroupRefBody"];
+          group: components["schemas"]["NamedRef"];
           /** @enum {string} */
           kind: "group";
         };
@@ -7366,12 +7301,12 @@ export interface components {
      */
     RoleAtRef: {
       /** @description Where it counts. */
-      applies_to: components["schemas"]["AppliesToBody"];
+      applies_to: components["schemas"]["AppliesTo"];
       /** @description The ID of the row of *Who has which role*. */
       id: string;
       /** @description Where the row is. */
       place: components["schemas"]["PlaceRef"];
-      role?: components["schemas"]["RoleRef"] | null;
+      role?: components["schemas"]["NamedRef"] | null;
     };
     /** @description A role as it is after it was made or changed. */
     RoleBody: {
@@ -7426,20 +7361,6 @@ export interface components {
        */
       version?: number | null;
     };
-    /** @description A role named in an answer. */
-    RoleRef: {
-      /** @description The ID of the role. */
-      id: string;
-      /** @description What it is called; empty when the role was deleted meanwhile. */
-      name: string;
-    };
-    /** @description A role as a column of the table. */
-    RoleRefBody: {
-      /** @description The ID of the role. */
-      id: string;
-      /** @description What the role is called. */
-      name: string;
-    };
     /** @description What one role says about a field or a kind. */
     RoleSaysBody_FieldLevel: {
       /**
@@ -7448,7 +7369,7 @@ export interface components {
        */
       level: "hidden" | "can-see" | "can-change";
       /** @description The role. */
-      role: components["schemas"]["RoleRefBody"];
+      role: components["schemas"]["NamedRef"];
       /** @description Where it was set. */
       set: components["schemas"]["LevelPlaceBody"];
     };
@@ -7460,7 +7381,7 @@ export interface components {
        */
       level: "hidden" | "role-only" | "names";
       /** @description The role. */
-      role: components["schemas"]["RoleRefBody"];
+      role: components["schemas"]["NamedRef"];
       /** @description Where it was set. */
       set: components["schemas"]["LevelPlaceBody"];
     };
@@ -7535,48 +7456,12 @@ export interface components {
      * @enum {string}
      */
     RunningDatabaseBody: "built-in" | "sqlite" | "postgres";
-    /** @description The new text of a comment, saved under the lock the editor holds. */
-    SaveCommentBody: {
-      /** @description The token the lock on the text was taken with. */
-      lock_token: string;
-      /** @description The new text, in Markdown. */
-      text: string;
-      /**
-       * Format: int64
-       * @description The version of the comment the person started from.
-       */
-      version: number;
-    };
-    /** @description The description to save under the lock the person holds. */
-    SaveDescriptionBody: {
-      /** @description The token of the edit lock the person holds on the description. */
-      lock_token: string;
-      /** @description The description, in Markdown. */
-      text: string;
-      /**
-       * Format: int64
-       * @description The version the person started from.
-       */
-      version: number;
-    };
     /** @description A draft to keep. */
     SaveDraftBody: {
       /** @description The text and the version it started from. */
       draft: components["schemas"]["DraftTextBody"];
       /** @description What the draft is for. */
       target: components["schemas"]["DraftTargetBody"];
-    };
-    /** @description The long text of an own field, saved under the edit lock of the person. */
-    SaveFieldTextBody: {
-      /** @description The token the edit lock was taken with. */
-      lock_token: string;
-      /** @description The text, in Markdown. */
-      text: string;
-      /**
-       * Format: int64
-       * @description The version of the issue the person started from.
-       */
-      version: number;
     };
     /** @description The sections of a layout to save. */
     SaveLayoutBody: {
@@ -7587,6 +7472,21 @@ export interface components {
       /**
        * Format: int64
        * @description The version the person looked at.
+       */
+      version: number;
+    };
+    /**
+     * @description A long text to save under the edit lock the person holds: the description of an issue, a comment
+     *     or the long text of an own field.
+     */
+    SaveTextBody: {
+      /** @description The token the edit lock was taken with. */
+      lock_token: string;
+      /** @description The new text, in Markdown. */
+      text: string;
+      /**
+       * Format: int64
+       * @description The version of the record the person started from.
        */
       version: number;
     };
@@ -7786,11 +7686,6 @@ export interface components {
        */
       check_your_mail: boolean;
     };
-    /** @description Somebody who asks for an account on their own. */
-    SignUpBody: {
-      /** @description The e-mail address. The link that makes the account goes there. */
-      email: string;
-    };
     /** @description Who may sign up on their own. */
     SignUpPolicyBody: {
       /** @description The e-mail domains that may sign up. Empty: every domain, while signing up is on. */
@@ -7828,11 +7723,21 @@ export interface components {
       | "field-rule"
       | "workflow"
       | "not-valid";
+    /** @description The layout or the workflow set at exactly the place that was asked about. */
+    SlotBody: {
+      /** @description The ID of the layout or workflow, which the edit lock is about. */
+      id: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
+    };
     /** @description Where the value that counts comes from. */
     SourceBody: {
       /** @description Which level. */
       kind: components["schemas"]["SourceKindBody"];
-      project?: components["schemas"]["ProjectRefBody"] | null;
+      project?: components["schemas"]["ProjectRef"] | null;
     };
     /**
      * @description Where the value that counts comes from.
@@ -8149,17 +8054,17 @@ export interface components {
       /** @description The fields the rules can name. */
       fields: components["schemas"]["RuleFieldBody"][];
       /** @description The groups *Who can do it* can name. */
-      groups: components["schemas"]["NamedBody"][];
+      groups: components["schemas"]["NamedRef"][];
       inherited_from?: components["schemas"]["InheritedFromBody"] | null;
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
       /** @description What the workflow is called. */
       name: string;
       project?: components["schemas"]["ProjectRef"] | null;
       /** @description The roles *Who can do it* can name. */
-      roles: components["schemas"]["NamedBody"][];
+      roles: components["schemas"]["NamedRef"][];
       /** @description Its statuses, in order. */
       statuses: components["schemas"]["StatusRef"][];
-      workflow?: components["schemas"]["WorkflowSlotBody"] | null;
+      workflow?: components["schemas"]["SlotBody"] | null;
     };
     /** @description The workflows there are. */
     WorkflowListBody: {
@@ -8167,16 +8072,6 @@ export interface components {
       truncated: boolean;
       /** @description The workflows, by name. */
       workflows: components["schemas"]["WorkflowChoiceBody"][];
-    };
-    /** @description The workflow set at exactly the place that was asked about. */
-    WorkflowSlotBody: {
-      /** @description The ID of the workflow, which the edit lock is about. */
-      id: string;
-      /**
-       * Format: int64
-       * @description Counts up with every change. A change is made on the version that was looked at.
-       */
-      version: number;
     };
   };
   responses: never;
@@ -9274,7 +9169,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["InvitationLookupBody"];
+          "application/json": components["schemas"]["EmailBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
@@ -9411,7 +9306,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["InviteBody"];
+        "application/json": components["schemas"]["EmailBody"];
       };
     };
     responses: {
@@ -10696,7 +10591,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["SignUpBody"];
+        "application/json": components["schemas"]["EmailBody"];
       };
     };
     responses: {
@@ -11654,7 +11549,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["SaveCommentBody"];
+        "application/json": components["schemas"]["SaveTextBody"];
       };
     };
     responses: {
@@ -12530,7 +12425,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["EditAnywayBody"];
+        "application/json": components["schemas"]["TakeLockBody"];
       };
     };
     responses: {
@@ -14154,7 +14049,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["GroupNameBody"];
+        "application/json": components["schemas"]["NameBody"];
       };
     };
     responses: {
@@ -15703,7 +15598,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["SaveDescriptionBody"];
+        "application/json": components["schemas"]["SaveTextBody"];
       };
     };
     responses: {
@@ -15806,7 +15701,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["SaveFieldTextBody"];
+        "application/json": components["schemas"]["SaveTextBody"];
       };
     };
     responses: {
@@ -17574,7 +17469,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["NewTagBody"];
+        "application/json": components["schemas"]["NameBody"];
       };
     };
     responses: {
@@ -19892,7 +19787,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["NewHandleBody"];
+        "application/json": components["schemas"]["HandleBody"];
       };
     };
     responses: {
@@ -23688,7 +23583,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["CopyRoleBody"];
+        "application/json": components["schemas"]["NameBody"];
       };
     };
     responses: {

@@ -10,21 +10,22 @@ use bb_app::roles::RoleRef as AppRoleRef;
 use bb_core::ErrorCode;
 use bb_core::access::AppliesTo;
 use bb_policy::Masked;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::errors::ApiError;
 
-/// A group named in an answer.
+/// A role or a group named in an answer: its ID and what it is called (empty when it was deleted
+/// meanwhile). One schema for everything that is only an ID and a name.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct GroupRef {
-    /// The ID of the group.
+pub(crate) struct NamedRef {
+    /// The ID.
     pub(crate) id: String,
     /// What it is called.
     pub(crate) name: String,
 }
 
-impl From<&GroupView> for GroupRef {
+impl From<&GroupView> for NamedRef {
     fn from(group: &GroupView) -> Self {
         Self {
             id: group.id.to_string(),
@@ -33,16 +34,7 @@ impl From<&GroupView> for GroupRef {
     }
 }
 
-/// A role named in an answer.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct RoleRef {
-    /// The ID of the role.
-    pub(crate) id: String,
-    /// What it is called; empty when the role was deleted meanwhile.
-    pub(crate) name: String,
-}
-
-impl From<&AppRoleRef> for RoleRef {
+impl From<&AppRoleRef> for NamedRef {
     fn from(role: &AppRoleRef) -> Self {
         Self {
             id: role.id.to_string(),
@@ -91,38 +83,6 @@ impl From<Option<&ProjectLabel>> for PlaceRef {
     }
 }
 
-/// Where a role given to somebody counts (*Where it counts*).
-#[derive(Clone, Copy, Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum AppliesToBody {
-    /// The whole organization.
-    Organization,
-    /// Only the project the row is on.
-    Project,
-    /// The project the row is on and its sub-projects.
-    ProjectAndSubProjects,
-}
-
-impl From<AppliesTo> for AppliesToBody {
-    fn from(applies_to: AppliesTo) -> Self {
-        match applies_to {
-            AppliesTo::Organization => Self::Organization,
-            AppliesTo::Project => Self::Project,
-            AppliesTo::ProjectAndSubProjects => Self::ProjectAndSubProjects,
-        }
-    }
-}
-
-impl From<AppliesToBody> for AppliesTo {
-    fn from(applies_to: AppliesToBody) -> Self {
-        match applies_to {
-            AppliesToBody::Organization => Self::Organization,
-            AppliesToBody::Project => Self::Project,
-            AppliesToBody::ProjectAndSubProjects => Self::ProjectAndSubProjects,
-        }
-    }
-}
-
 /// A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
 /// Website" needs.
 #[derive(Serialize, ToSchema)]
@@ -130,18 +90,18 @@ pub(crate) struct RoleAtRef {
     /// The ID of the row of *Who has which role*.
     id: String,
     /// The role; `null` for *No access*.
-    role: Option<RoleRef>,
+    role: Option<NamedRef>,
     /// Where the row is.
     place: PlaceRef,
     /// Where it counts.
-    applies_to: AppliesToBody,
+    applies_to: AppliesTo,
 }
 
 impl From<&HeldRole> for RoleAtRef {
     fn from(held: &HeldRole) -> Self {
         Self {
             id: held.id.to_string(),
-            role: held.role.as_ref().map(RoleRef::from),
+            role: held.role.as_ref().map(NamedRef::from),
             place: PlaceRef::from(held.project.as_ref()),
             applies_to: held.applies_to.into(),
         }

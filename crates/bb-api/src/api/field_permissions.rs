@@ -11,7 +11,7 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::{FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable};
-use bb_app::roles::{RoleRef, SetFieldLevel};
+use bb_app::roles::SetFieldLevel;
 use bb_core::access::FieldLevel;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, ProjectId, RoleId};
@@ -21,6 +21,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::access_bodies::NamedRef;
 use super::access_keys::ProjectLabelBody;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
@@ -75,24 +76,6 @@ impl TypeParams {
             .as_deref()
             .map(path_id::<IssueTypeId>)
             .transpose()
-    }
-}
-
-/// A role as a column of the table.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct RoleRefBody {
-    /// The ID of the role.
-    id: String,
-    /// What the role is called.
-    name: String,
-}
-
-impl From<&RoleRef> for RoleRefBody {
-    fn from(role: &RoleRef) -> Self {
-        Self {
-            id: role.id.to_string(),
-            name: role.name.clone(),
-        }
     }
 }
 
@@ -160,7 +143,7 @@ pub(crate) struct LevelTableBody<K, L> {
     /// The ID of the issue type the levels are for, or `null` for all issue types.
     issue_type: Option<String>,
     /// The roles, in the order of roles: the columns.
-    roles: Vec<RoleRefBody>,
+    roles: Vec<NamedRef>,
     /// There are more roles than the table holds; the first ones are shown.
     truncated: bool,
     /// The levels a cell can be set to, the lowest first.
@@ -177,7 +160,7 @@ impl<K: Copy, L: Copy> LevelTableBody<K, L> {
         Self {
             project: table.place.as_ref().map(ProjectLabelBody::from),
             issue_type: table.issue_type.map(|issue_type| issue_type.to_string()),
-            roles: table.roles.iter().map(RoleRefBody::from).collect(),
+            roles: table.roles.iter().map(NamedRef::from).collect(),
             truncated: table.truncated,
             levels: levels.to_vec(),
             rows: table.rows.iter().map(row_body).collect(),

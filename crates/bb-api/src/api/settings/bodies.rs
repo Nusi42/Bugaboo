@@ -7,6 +7,8 @@ use super::{
     SettingView, ToSchema, answer_authorized, problem_answers,
 };
 
+use crate::api::projects::ProjectRef;
+
 problem_answers! {
     /// A lower level cannot change what the organization locked.
     LockedAnswer => ("409", "The organization locked this setting (setting.locked)."),
@@ -139,17 +141,6 @@ pub(super) enum SourceKindBody {
     Person,
 }
 
-/// A project a value comes from.
-#[derive(Serialize, ToSchema)]
-pub(super) struct ProjectRefBody {
-    /// The ID of the project.
-    pub(super) id: String,
-    /// Its short name.
-    pub(super) short_name: String,
-    /// Its name.
-    pub(super) name: String,
-}
-
 /// Where the value that counts comes from.
 #[derive(Serialize, ToSchema)]
 pub(super) struct SourceBody {
@@ -157,7 +148,7 @@ pub(super) struct SourceBody {
     pub(super) kind: SourceKindBody,
     /// For a value from a project: which one. Missing when the person cannot see the project.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) project: Option<ProjectRefBody>,
+    pub(super) project: Option<ProjectRef>,
 }
 
 impl From<&SettingSource> for SourceBody {
@@ -172,7 +163,7 @@ impl From<&SettingSource> for SourceBody {
                 name,
             }) => (
                 SourceKindBody::Project,
-                Some(ProjectRefBody {
+                Some(ProjectRef {
                     id: id.to_string(),
                     short_name: short_name.clone(),
                     name: name.clone(),

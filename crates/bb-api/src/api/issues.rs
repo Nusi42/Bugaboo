@@ -8,6 +8,7 @@
 //! `version` it looked at. The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).
 
+use crate::api::editing::SaveTextBody;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{
@@ -297,17 +298,6 @@ pub(crate) struct ChangeIssueBody {
     fields: BTreeMap<String, serde_json::Value>,
 }
 
-/// The description to save under the lock the person holds.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct SaveDescriptionBody {
-    /// The version the person started from.
-    version: i64,
-    /// The token of the edit lock the person holds on the description.
-    lock_token: String,
-    /// The description, in Markdown.
-    text: String,
-}
-
 /// The people in a request body.
 fn people_in_body(people: Option<&[String]>) -> Result<Option<Vec<UserId>>, ApiError> {
     people
@@ -565,7 +555,7 @@ async fn change_issue(
     operation_id = "saveIssueDescription",
     tag = "issues",
     params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
-    request_body = SaveDescriptionBody,
+    request_body = SaveTextBody,
     responses(
         (status = 200, description = "The issue as it is now.", body = IssueItem),
         InvalidAnswer,
@@ -580,7 +570,7 @@ async fn save_issue_description(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(issue): ApiPath<String>,
-    ApiJson(body): ApiJson<SaveDescriptionBody>,
+    ApiJson(body): ApiJson<SaveTextBody>,
 ) -> Result<Response, ApiError> {
     let lock_token = body_id(&body.lock_token)?;
     let saved = auth

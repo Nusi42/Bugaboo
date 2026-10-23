@@ -34,9 +34,9 @@ field = "email"
 reason = "The address an invitation is for belongs to nobody yet, because there is no account. Only people who hold Invite people see it."
 
 [[exempt]]
-type = "InvitationLookupBody"
+type = "EmailBody"
 field = "email"
-reason = "The page of an invitation link shows the address the invitation is for to whoever holds the secret link, who is that person. There is no account yet."
+reason = "The page of an invitation link shows the address the invitation is for to whoever holds the secret link, who is that person. There is no account yet. The same body carries the address of a request to invite or to sign up, which only goes in."
 
 [[exempt]]
 type = "PersonLine"

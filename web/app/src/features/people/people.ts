@@ -16,7 +16,7 @@ const SHOWN_FIELDS = fieldList<ListItem>(["person", "email", "groups", "roles"])
 export interface PersonLine extends NamedPerson {
   readonly email: string;
   /** The groups the person is in, when the viewer may see groups. */
-  readonly groups: readonly Schema<"GroupRef">[] | null;
+  readonly groups: readonly Schema<"NamedRef">[] | null;
   readonly roles: readonly Schema<"RoleAtRef">[];
 }
 

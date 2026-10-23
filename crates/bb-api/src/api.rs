@@ -301,6 +301,21 @@ pub(crate) fn not_found() -> Response {
     ApiError::new(ErrorCode::NotFound).into_response()
 }
 
+/// A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct NameBody {
+    /// The name.
+    pub(crate) name: String,
+}
+
+/// An e-mail address, in a request or an answer: where a sign-up link goes, whom to invite, whom an
+/// invitation is for.
+#[derive(Deserialize, Serialize, ToSchema)]
+pub(crate) struct EmailBody {
+    /// The e-mail address.
+    pub(crate) email: String,
+}
+
 /// The ID in an address of the API; a text that is no ID names nothing, so it is not found.
 pub(crate) fn path_id<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
     text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))

@@ -33,7 +33,7 @@ export interface EditorActions {
 /** What the parts of the editor know about the editor they are in. */
 export interface EditorContext {
   readonly kind: FormKind;
-  readonly roles: readonly Schema<"EditorRoleBody">[];
+  readonly roles: readonly Schema<"NamedRef">[];
   /** Whether the person may choose the roles of a field; without it the rows show no roles. */
   readonly chooseRoles: boolean;
   /** Whether fields can be dragged: not on a phone. */

@@ -824,12 +824,12 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
                 fields:      [{ field, level, reasons: [Reason] }],
                 people:      [{ kind, level, reasons: [Reason] }] }
 
-Reason = { kind: "role",          role: RoleRef, through: Person | GroupRef, on: Place, applies_to, inherited: bool }
-       | { kind: "no-access",     through: Person | GroupRef, on: Place }        // the row that removed the roles
-       | { kind: "kept-above",    role: RoleRef, through: Person | GroupRef, on: Place }  // decide-roles kept over No access
-       | { kind: "not-given",     roles: [RoleRef] }                              // the roles they have here; empty: none
-       | { kind: "organization-only", role: RoleRef, on: Place }                  // counts only for the whole organization
-       | { kind: "level",         role: RoleRef, level, set_on: Place | "role" }  // a field or people level and where it was set
+Reason = { kind: "role",          role: NamedRef, through: Person | NamedRef, on: Place, applies_to, inherited: bool }
+       | { kind: "no-access",     through: Person | NamedRef, on: Place }        // the row that removed the roles
+       | { kind: "kept-above",    role: NamedRef, through: Person | NamedRef, on: Place }  // decide-roles kept over No access
+       | { kind: "not-given",     roles: [NamedRef] }                              // the roles they have here; empty: none
+       | { kind: "organization-only", role: NamedRef, on: Place }                  // counts only for the whole organization
+       | { kind: "level",         role: NamedRef, level, set_on: Place | "role" }  // a field or people level and where it was set
 Place  = "organization" | ProjectRef | "hidden"                                    // "hidden": a project the checker cannot see</code></pre>
 <p>Example: <em>"Yes. Ana is in the group Backend, which has the role Team member in ACME. Website is inside ACME, so the role applies here too."</em> comes from <code>role</code> with <code>through: Backend</code>, <code>on: ACME</code>, <code>inherited: true</code>. The decision always equals the engine's, and the reasons are enough to reach it (property test <code>sec_03_check_access_explains_every_result_with_the_chain_of_reasons</code>).</p>
 <h4>No counts that leak (PRIV-13)</h4>

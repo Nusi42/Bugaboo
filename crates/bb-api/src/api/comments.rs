@@ -5,6 +5,7 @@
 //! server by `bb-markdown` for the reader (the mark `x-safe-html`). Saving a new text is the save
 //! of a long text: it takes the token of the edit lock besides the version (ARCH-VERSIONED).
 
+use crate::api::editing::SaveTextBody;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::comments::{
@@ -143,17 +144,6 @@ pub(crate) struct NewCommentBody {
     text: String,
 }
 
-/// The new text of a comment, saved under the lock the editor holds.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct SaveCommentBody {
-    /// The version of the comment the person started from.
-    version: i64,
-    /// The token the lock on the text was taken with.
-    lock_token: String,
-    /// The new text, in Markdown.
-    text: String,
-}
-
 /// What the writer has typed after `@`.
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
@@ -208,7 +198,7 @@ async fn add_comment(
     operation_id = "saveComment",
     tag = "comments",
     params(("comment" = String, Path, description = "The ID of the comment.")),
-    request_body = SaveCommentBody,
+    request_body = SaveTextBody,
     responses(
         (status = 200, description = "The comment as it is now.", body = CommentItem),
         InvalidAnswer,
@@ -223,7 +213,7 @@ async fn save_comment(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(comment): ApiPath<String>,
-    ApiJson(body): ApiJson<SaveCommentBody>,
+    ApiJson(body): ApiJson<SaveTextBody>,
 ) -> Result<Response, ApiError> {
     let comment = path_id::<CommentId>(&comment)?;
     let lock_token = body_id::<LockToken>(&body.lock_token)?;

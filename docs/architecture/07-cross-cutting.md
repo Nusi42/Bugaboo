@@ -287,12 +287,12 @@ CheckAccess = { person: PersonRef, place: Organization | ProjectRef,
                 fields:      [{ field, level, reasons: [Reason] }],
                 people:      [{ kind, level, reasons: [Reason] }] }
 
-Reason = { kind: "role",          role: RoleRef, through: Person | GroupRef, on: Place, applies_to, inherited: bool }
-       | { kind: "no-access",     through: Person | GroupRef, on: Place }        // the row that removed the roles
-       | { kind: "kept-above",    role: RoleRef, through: Person | GroupRef, on: Place }  // decide-roles kept over No access
-       | { kind: "not-given",     roles: [RoleRef] }                              // the roles they have here; empty: none
-       | { kind: "organization-only", role: RoleRef, on: Place }                  // counts only for the whole organization
-       | { kind: "level",         role: RoleRef, level, set_on: Place | "role" }  // a field or people level and where it was set
+Reason = { kind: "role",          role: NamedRef, through: Person | NamedRef, on: Place, applies_to, inherited: bool }
+       | { kind: "no-access",     through: Person | NamedRef, on: Place }        // the row that removed the roles
+       | { kind: "kept-above",    role: NamedRef, through: Person | NamedRef, on: Place }  // decide-roles kept over No access
+       | { kind: "not-given",     roles: [NamedRef] }                              // the roles they have here; empty: none
+       | { kind: "organization-only", role: NamedRef, on: Place }                  // counts only for the whole organization
+       | { kind: "level",         role: NamedRef, level, set_on: Place | "role" }  // a field or people level and where it was set
 Place  = "organization" | ProjectRef | "hidden"                                    // "hidden": a project the checker cannot see
 ```
 

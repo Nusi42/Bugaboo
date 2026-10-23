@@ -6,6 +6,7 @@
 //! beyond that (nobody adds a permission they do not hold, the last administrator, a role in
 //! use deleted without a replacement) comes back as the refusal of the use case.
 
+use crate::api::NameBody;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::roles::{
@@ -175,13 +176,6 @@ pub(crate) struct NewRoleBody {
     permissions: Vec<Permission>,
     /// Whether everybody with it needs two-step sign-in.
     two_step: bool,
-}
-
-/// A role to make from a copy of another.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct CopyRoleBody {
-    /// What the copy is called.
-    name: String,
 }
 
 /// What to change about a role: what is left out stays as it is.
@@ -476,7 +470,7 @@ async fn delete_role(
     operation_id = "copyRole",
     tag = "roles",
     params(("role" = String, Path, description = "The ID of the role to copy.")),
-    request_body = CopyRoleBody,
+    request_body = NameBody,
     responses(
         (status = 200, description = "The new role.", body = RoleBody),
         InvalidAnswer,
@@ -491,7 +485,7 @@ async fn copy_role(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(role_id): ApiPath<String>,
-    ApiJson(body): ApiJson<CopyRoleBody>,
+    ApiJson(body): ApiJson<NameBody>,
 ) -> Result<Response, ApiError> {
     let role = path_id::<RoleId>(&role_id)?;
     let copied = auth

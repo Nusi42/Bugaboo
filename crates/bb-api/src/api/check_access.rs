@@ -23,26 +23,17 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_bodies::cursor_error;
+use super::access_bodies::{NamedRef, cursor_error};
 use super::access_keys::ProjectLabelBody;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer,
     answer_authorized,
 };
-use super::field_permissions::{PlaceParams, RoleRefBody, TypeParams};
+use super::field_permissions::{PlaceParams, TypeParams};
 use super::issues::IssueTypeRef;
 use super::path_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
-
-/// A group named in a reason.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct GroupRefBody {
-    /// The ID of the group.
-    id: String,
-    /// What the group is called.
-    name: String,
-}
 
 /// Whom a row of *Who has which role* was for.
 #[derive(Serialize, ToSchema)]
@@ -53,7 +44,7 @@ pub(crate) enum ReasonWhoBody {
     /// A group of theirs.
     Group {
         /// The group.
-        group: GroupRefBody,
+        group: NamedRef,
     },
 }
 
@@ -80,7 +71,7 @@ impl From<&ReasonRowView> for ReasonRowBody {
             who: match &row.who {
                 ReasonWho::Person => ReasonWhoBody::Person,
                 ReasonWho::Group { group } => ReasonWhoBody::Group {
-                    group: GroupRefBody {
+                    group: NamedRef {
                         id: group.id.to_string(),
                         name: group.name.clone(),
                     },
@@ -102,14 +93,14 @@ pub(crate) enum ReasonBody {
         /// The row.
         row: ReasonRowBody,
         /// The role.
-        role: RoleRefBody,
+        role: NamedRef,
     },
     /// *Decide who has which role* is kept from a row that *No access* removed.
     KeptFromRemovedRow {
         /// The row.
         row: ReasonRowBody,
         /// Its role.
-        role: RoleRefBody,
+        role: NamedRef,
         /// The *No access* that decided.
         no_access: ReasonRowBody,
     },
@@ -118,7 +109,7 @@ pub(crate) enum ReasonBody {
         /// The row.
         row: ReasonRowBody,
         /// Its role.
-        role: RoleRefBody,
+        role: NamedRef,
         /// The *No access* that decided.
         no_access: ReasonRowBody,
     },
@@ -127,7 +118,7 @@ pub(crate) enum ReasonBody {
         /// The row.
         row: ReasonRowBody,
         /// The role.
-        role: RoleRefBody,
+        role: NamedRef,
     },
     /// The access key does not keep it.
     NarrowedByKey,
@@ -230,7 +221,7 @@ impl From<&LevelPlace> for LevelPlaceBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct RoleSaysBody<L> {
     /// The role.
-    role: RoleRefBody,
+    role: NamedRef,
     /// Its level.
     level: L,
     /// Where it was set.
@@ -264,7 +255,7 @@ fn level_body<K: Copy, L: Copy>(decision: &LevelAnswer<K, L>) -> LevelAnswerBody
 
 fn says<L: Copy>(says: &RoleSays<L>) -> RoleSaysBody<L> {
     RoleSaysBody {
-        role: RoleRefBody::from(&says.role),
+        role: NamedRef::from(&says.role),
         level: says.level,
         set: LevelPlaceBody::from(&says.set),
     }

@@ -18,7 +18,7 @@ export interface RowLine {
   readonly id: string;
   readonly who: Subject;
   /** The role, or `null` for *No access*. */
-  readonly role: Schema<"RoleRef"> | null;
+  readonly role: Schema<"NamedRef"> | null;
   readonly place: RowPlace;
   readonly appliesTo: WhereItCounts;
   /** The row comes from above the place the list is for. */

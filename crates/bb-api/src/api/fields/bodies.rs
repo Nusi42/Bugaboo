@@ -344,14 +344,3 @@ impl From<&FieldTypePage> for FieldTypeListBody {
         }
     }
 }
-
-/// The long text of an own field, saved under the edit lock of the person.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct SaveFieldTextBody {
-    /// The version of the issue the person started from.
-    pub(super) version: i64,
-    /// The token the edit lock was taken with.
-    pub(super) lock_token: String,
-    /// The text, in Markdown.
-    pub(super) text: String,
-}

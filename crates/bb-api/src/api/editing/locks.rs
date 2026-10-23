@@ -1,9 +1,9 @@
 //! The lock on a text: taking, reading, keeping alive, releasing, asking to finish and editing anyway.
 
 use super::{
-    ApiError, ApiJson, ApiQuery, AskToFinish, AuthHandle, DraftText, EditAnyway, EditAnywayBody,
-    EditWhatBody, EditWhatOnlyBody, EditWhatQuery, EditorId, ForbiddenAnswer, HeartbeatAnswerBody,
-    HeartbeatBody, HeartbeatQuery, Info, InvalidAnswer, LockHolderBody, LockOutcomeBody, LockToken,
+    ApiError, ApiJson, ApiQuery, AskToFinish, AuthHandle, DraftText, EditAnyway, EditWhatBody,
+    EditWhatOnlyBody, EditWhatQuery, EditorId, ForbiddenAnswer, HeartbeatAnswerBody, HeartbeatBody,
+    HeartbeatQuery, Info, InvalidAnswer, LockHolderBody, LockOutcomeBody, LockToken,
     NotFoundAnswer, NotSignedInAnswer, ReadLockQuery, RecordRefBody, ReleaseLockBody,
     ReleaseLockQuery, ReleaseStuckLock, Response, Session, State, TakeLockBody, TakeLockQuery,
     answer_authorized, body_id, done,
@@ -196,7 +196,7 @@ pub(super) async fn ask_to_finish(
     path = "/api/v1/edit-locks/edit-anyway",
     operation_id = "editAnyway",
     tag = "editing",
-    request_body = EditAnywayBody,
+    request_body = TakeLockBody,
     responses(
         (status = 200, description = "The editor has the lock now.", body = LockOutcomeBody),
         InvalidAnswer,
@@ -209,7 +209,7 @@ pub(super) async fn edit_anyway(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<EditAnywayBody>,
+    ApiJson(body): ApiJson<TakeLockBody>,
 ) -> Result<Response, ApiError> {
     let outcome = auth
         .api()?

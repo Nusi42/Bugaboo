@@ -155,7 +155,7 @@ async function give(
   who: Who,
   role: string,
   project: string | null,
-  appliesTo: Schema<"AppliesToBody">,
+  appliesTo: Schema<"AppliesTo">,
 ): Promise<void> {
   await (project === null
     ? admin.client.POST("/api/v1/assignments", { body: { who, role } })
@@ -171,7 +171,7 @@ export async function giveRole(
   person: string,
   role: string,
   project: string | null,
-  appliesTo: Schema<"AppliesToBody"> = "project-and-sub-projects",
+  appliesTo: Schema<"AppliesTo"> = "project-and-sub-projects",
 ): Promise<void> {
   await give(admin, { person }, await roleId(admin, role), project, appliesTo);
 }

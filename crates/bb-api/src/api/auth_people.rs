@@ -1,6 +1,7 @@
 //! Making accounts: the first administrator with the setup code, signing up, invitations, and
 //! the rule for who may sign up.
 
+use crate::api::EmailBody;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse as _, Response};
@@ -38,13 +39,6 @@ pub(crate) struct SetupBody {
     password: String,
 }
 
-/// Somebody who asks for an account on their own.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct SignUpBody {
-    /// The e-mail address. The link that makes the account goes there.
-    email: String,
-}
-
 /// Somebody who makes an account from an invitation.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct AcceptBody {
@@ -61,20 +55,6 @@ pub(crate) struct AcceptBody {
 pub(crate) struct SecretBody {
     /// The secret from the link (the part after the `#`).
     secret: String,
-}
-
-/// Which address an invitation is for.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct InvitationLookupBody {
-    /// The address the account will get.
-    email: String,
-}
-
-/// Somebody to invite.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct InviteBody {
-    /// The e-mail address to invite.
-    email: String,
 }
 
 /// The fields of an invitation that can be asked for, and which of them a list holds when the
@@ -222,7 +202,7 @@ pub(crate) struct SignUpAnswer {
     path = "/api/v1/auth/sign-up",
     operation_id = "signUp",
     tag = "auth",
-    request_body = SignUpBody,
+    request_body = EmailBody,
     responses(
         (status = 202, description = "An e-mail goes to the address, the same answer for every address.", body = SignUpAnswer),
         InvalidAnswer,
@@ -232,7 +212,7 @@ pub(crate) struct SignUpAnswer {
 async fn sign_up(
     State(auth): State<AuthHandle>,
     Info(info): Info,
-    ApiJson(body): ApiJson<SignUpBody>,
+    ApiJson(body): ApiJson<EmailBody>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .sign_up(info, SignUp { email: body.email })
@@ -254,7 +234,7 @@ async fn sign_up(
     operation_id = "lookUpInvitation",
     tag = "auth",
     request_body = SecretBody,
-    responses((status = 200, description = "The invitation works.", body = InvitationLookupBody), InvalidAnswer)
+    responses((status = 200, description = "The invitation works.", body = EmailBody), InvalidAnswer)
 )]
 async fn look_up_invitation(
     State(auth): State<AuthHandle>,
@@ -270,7 +250,7 @@ async fn look_up_invitation(
             },
         )
         .await?;
-    Ok(answer(InvitationLookupBody { email: found.email }))
+    Ok(answer(EmailBody { email: found.email }))
 }
 
 /// Creates an account from an invitation link, and signs the person in.
@@ -358,7 +338,7 @@ async fn list_invitations(
     path = "/api/v1/auth/invitations",
     operation_id = "createInvitation",
     tag = "auth",
-    request_body = InviteBody,
+    request_body = EmailBody,
     responses(
         (status = 200, description = "The invitation with its link.", body = CreatedInvitationBody),
         InvalidAnswer,
@@ -370,7 +350,7 @@ async fn create_invitation(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<InviteBody>,
+    ApiJson(body): ApiJson<EmailBody>,
 ) -> Result<Response, ApiError> {
     let created = auth
         .api()?

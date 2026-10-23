@@ -7,7 +7,7 @@ import { projectText } from "./origin-text.ts";
 
 type Reason = Schema<"ReasonBody">;
 type Row = Schema<"ReasonRowBody">;
-type Role = Schema<"RoleRefBody">;
+type Role = Schema<"NamedRef">;
 type PlaceOfLevel = Schema<"LevelPlaceBody">;
 
 /** What one role says about a field or a kind, as *Check access* answers it. */
