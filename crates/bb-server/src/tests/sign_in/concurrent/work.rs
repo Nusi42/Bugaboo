@@ -44,7 +44,7 @@ pub(super) async fn workflow_that_asks(
             "POST",
             LOCKS,
             Some(json!({
-                "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
+                "target": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
                 "editor_id": AN_EDITOR,
             })),
         )

@@ -26,7 +26,10 @@ function memory(): { readonly store: () => KeyStore; readonly items: Map<string,
   return { store: () => store, items };
 }
 
-const description: DraftTarget = { kind: "issue", id: "i1", part: "description" };
+const description: DraftTarget = {
+  record: { kind: "issue", id: "i1" },
+  part: "description",
+};
 const newIssue: DraftTarget = { kind: "issue", project: "p1" };
 const now = Date.parse("2026-10-10T10:00:00Z");
 

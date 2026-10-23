@@ -4869,16 +4869,16 @@
         "operationId": "readDraft",
         "parameters": [
           {
-            "name": "kind",
+            "name": "record_kind",
             "in": "query",
-            "description": "The kind of record, like `issue`.",
+            "description": "The kind of record.",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/RecordKind"
             }
           },
           {
-            "name": "id",
+            "name": "record_id",
             "in": "query",
             "description": "The ID of the record, for a draft of a part of a record.",
             "required": false,
@@ -5212,16 +5212,16 @@
         "operationId": "readEditLock",
         "parameters": [
           {
-            "name": "kind",
+            "name": "record_kind",
             "in": "query",
-            "description": "The kind of record, like `issue`.",
+            "description": "The kind of record.",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/RecordKind"
             }
           },
           {
-            "name": "id",
+            "name": "record_id",
             "in": "query",
             "description": "The ID of the record.",
             "required": true,
@@ -5468,7 +5468,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EditWhatOnlyBody"
+                "$ref": "#/components/schemas/EditTargetOnlyBody"
               }
             }
           },
@@ -5867,7 +5867,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EditWhatOnlyBody"
+                "$ref": "#/components/schemas/EditTargetOnlyBody"
               }
             }
           },
@@ -24944,27 +24944,17 @@
         }
       },
       "DraftTargetBody": {
-        "type": "object",
-        "description": "What a draft is for: a part of a record (`kind`, `id` and `part`), or the form that makes a new\nrecord of a kind in a project (`kind` and `project`).",
-        "required": ["kind"],
-        "properties": {
-          "id": {
-            "type": ["string", "null"],
-            "description": "The ID of the record, for a draft of a part of a record."
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/EditTargetBody",
+            "description": "A part of a record."
           },
-          "kind": {
-            "type": "string",
-            "description": "The kind of record, like `issue`."
-          },
-          "part": {
-            "type": ["string", "null"],
-            "description": "Which long text of the record, for a draft of a part of a record."
-          },
-          "project": {
-            "type": ["string", "null"],
-            "description": "The project, for a draft of a new record."
+          {
+            "$ref": "#/components/schemas/NewRecordTargetBody",
+            "description": "The form that makes a new record."
           }
-        }
+        ],
+        "description": "What a draft is for: a part of a record, or the form that makes a new record in a project."
       },
       "DraftTextBody": {
         "type": "object",
@@ -25015,7 +25005,7 @@
           }
         }
       },
-      "EditWhatBody": {
+      "EditTargetBody": {
         "type": "object",
         "description": "One thing being edited: one part of one record.",
         "required": ["record", "part"],
@@ -25030,13 +25020,13 @@
           }
         }
       },
-      "EditWhatOnlyBody": {
+      "EditTargetOnlyBody": {
         "type": "object",
         "description": "Which thing somebody else is editing.",
-        "required": ["what"],
+        "required": ["target"],
         "properties": {
-          "what": {
-            "$ref": "#/components/schemas/EditWhatBody",
+          "target": {
+            "$ref": "#/components/schemas/EditTargetBody",
             "description": "The thing somebody else is editing."
           }
         }
@@ -25801,7 +25791,7 @@
       "HeartbeatBody": {
         "type": "object",
         "description": "A heartbeat: the editor is still open.",
-        "required": ["what", "lock_token"],
+        "required": ["target", "lock_token"],
         "properties": {
           "draft": {
             "oneOf": [
@@ -25818,8 +25808,8 @@
             "type": "string",
             "description": "The lock token the lock was taken with."
           },
-          "what": {
-            "$ref": "#/components/schemas/EditWhatBody",
+          "target": {
+            "$ref": "#/components/schemas/EditTargetBody",
             "description": "The thing that is being edited."
           }
         }
@@ -28358,6 +28348,21 @@
           "who": {
             "$ref": "#/components/schemas/WhoBody",
             "description": "Whom the row is for."
+          }
+        }
+      },
+      "NewRecordTargetBody": {
+        "type": "object",
+        "description": "The form that makes a new record of a kind in a project, as the target of a draft.",
+        "required": ["kind", "project"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/RecordKind",
+            "description": "The kind of record the form makes."
+          },
+          "project": {
+            "type": "string",
+            "description": "The project it is made in."
           }
         }
       },
@@ -31516,6 +31521,38 @@
         ],
         "description": "Whom a row of *Who has which role* was for."
       },
+      "RecordKind": {
+        "type": "string",
+        "description": "The kind of a record, like `issue`.",
+        "enum": [
+          "access-key",
+          "attachment",
+          "change-run",
+          "field",
+          "assignment",
+          "comment",
+          "follower",
+          "group",
+          "invitation",
+          "issue",
+          "issue-type",
+          "label",
+          "label-group",
+          "passkey",
+          "person",
+          "project",
+          "relation",
+          "layout",
+          "relation-kind",
+          "workflow",
+          "role",
+          "session",
+          "setting",
+          "setup-code",
+          "starting-roles",
+          "tag"
+        ]
+      },
       "RecordRefBody": {
         "type": "object",
         "description": "A record, by its kind and ID.",
@@ -31526,8 +31563,8 @@
             "description": "The ID of the record."
           },
           "kind": {
-            "type": "string",
-            "description": "The kind of record, like `issue`."
+            "$ref": "#/components/schemas/RecordKind",
+            "description": "The kind of record."
           }
         }
       },
@@ -31609,14 +31646,14 @@
       "ReleaseLockBody": {
         "type": "object",
         "description": "Which lock to let go of, and the token it was taken with.",
-        "required": ["what", "lock_token"],
+        "required": ["target", "lock_token"],
         "properties": {
           "lock_token": {
             "type": "string",
             "description": "The lock token the lock was taken with."
           },
-          "what": {
-            "$ref": "#/components/schemas/EditWhatBody",
+          "target": {
+            "$ref": "#/components/schemas/EditTargetBody",
             "description": "The thing that was edited."
           }
         }
@@ -32745,14 +32782,14 @@
       "TakeLockBody": {
         "type": "object",
         "description": "Which thing a person wants the lock on, and from which open editor.",
-        "required": ["what", "editor_id"],
+        "required": ["target", "editor_id"],
         "properties": {
           "editor_id": {
             "type": "string",
             "description": "The open editor (a tab): an ID the browser makes when the editor opens."
           },
-          "what": {
-            "$ref": "#/components/schemas/EditWhatBody",
+          "target": {
+            "$ref": "#/components/schemas/EditTargetBody",
             "description": "The thing that is going to be edited."
           }
         }

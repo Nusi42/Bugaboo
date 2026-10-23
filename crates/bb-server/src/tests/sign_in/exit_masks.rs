@@ -104,7 +104,7 @@ async fn lock_description(person: &mut Browser, id: &str) -> Result<Value, Failu
             "POST",
             LOCKS,
             Some(json!({
-                "what": {"record": {"kind": "issue", "id": id}, "part": "description"},
+                "target": {"record": {"kind": "issue", "id": id}, "part": "description"},
                 "editor_id": AN_EDITOR,
             })),
         )

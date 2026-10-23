@@ -93,7 +93,7 @@ async fn lock_for(browser: &mut Browser, comment: &str) -> Result<String, Failur
             "POST",
             "/api/v1/edit-locks",
             Some(json!({
-                "what": {"record": {"kind": "comment", "id": comment}, "part": "text"},
+                "target": {"record": {"kind": "comment", "id": comment}, "part": "text"},
                 "editor_id": AN_EDITOR,
             })),
         )

@@ -536,7 +536,7 @@ async fn iss_17_every_route_with_a_version_answers_a_stale_save_with_the_current
                     .send(
                         "POST",
                         LOCKS,
-                        Some(json!({"what": what, "editor_id": AN_EDITOR})),
+                        Some(json!({"target": what, "editor_id": AN_EDITOR})),
                     )
                     .await?;
                 body["lock_token"] = ok(&taken)?["lock_token"].clone();

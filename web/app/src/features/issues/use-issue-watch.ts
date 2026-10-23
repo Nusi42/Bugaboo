@@ -12,7 +12,7 @@ import type { IssueView } from "./slots.ts";
 export function useIssueWatch(issue: IssueView, address: string): number {
   const version = versionOf(issue);
   const watched = useMemo(
-    () => [{ record: { kind: "issue", id: issue.id ?? address }, version }],
+    () => [{ record: { kind: "issue" as const, id: issue.id ?? address }, version }],
     [issue.id, address, version],
   );
   useVersionWatch(watched, () => {

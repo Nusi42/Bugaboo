@@ -37,7 +37,7 @@ async fn draft_of(browser: &mut Browser, layout: &str) -> Result<Option<String>,
     let slot = browser
         .send(
             "GET",
-            &format!("/api/v1/drafts?kind=layout&id={layout}&part=layout"),
+            &format!("/api/v1/drafts?record_kind=layout&record_id={layout}&part=layout"),
             None,
         )
         .await?;
@@ -147,7 +147,7 @@ async fn iss_17_a_layout_is_not_taken_away_while_somebody_else_edits_it() -> Tes
                 "POST",
                 &format!("{}/release", super::layouts_http::LOCKS),
                 Some(json!({
-                    "what": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
+                    "target": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
                     "lock_token": token_of(&held)?,
                 })),
             )

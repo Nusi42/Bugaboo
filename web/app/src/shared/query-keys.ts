@@ -1,4 +1,4 @@
-import type { EditWhat } from "@bugaboo/api-client";
+import type { EditTarget } from "@bugaboo/api-client";
 
 import { queryClient } from "./query-client.ts";
 
@@ -55,7 +55,7 @@ export const queryKeys = {
   },
   editing: {
     /** Who is editing a thing now (a layout, a workflow): what its edit lock is about. */
-    now: (what: EditWhat) => ["editing", "now", what.record.kind, what.record.id, what.part],
+    now: (what: EditTarget) => ["editing", "now", what.record.kind, what.record.id, what.part],
   },
   labels: {
     all: ["labels"],

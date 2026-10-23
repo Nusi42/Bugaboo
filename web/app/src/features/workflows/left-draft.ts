@@ -19,7 +19,7 @@ import { isRecord } from "../../shared/is-record.ts";
 
 /** What a workflow's draft is kept for. */
 function targetOf(workflow: string): DraftTarget {
-  return { kind: "workflow", id: workflow, part: workflowEditPart };
+  return { record: { kind: "workflow", id: workflow }, part: workflowEditPart };
 }
 
 function isStatus(value: unknown): value is DraftStatus {

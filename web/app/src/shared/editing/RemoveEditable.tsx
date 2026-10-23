@@ -1,4 +1,4 @@
-import type { EditWhat } from "@bugaboo/api-client";
+import type { EditTarget } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, buttonLook, ConfirmDialog } from "@bugaboo/ui";
 
@@ -18,7 +18,7 @@ export interface RemoveWords {
 
 export interface RemoveEditableProps {
   /** The thing that is taken away: what its edit lock is about. */
-  readonly what: EditWhat;
+  readonly what: EditTarget;
   readonly words: RemoveWords;
   /** Takes it away. */
   readonly onConfirm: () => void;

@@ -43,7 +43,7 @@ pub(super) async fn lock_workflow(who: &mut Browser, workflow: &str) -> Result<V
             "POST",
             LOCKS,
             Some(json!({
-                "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
+                "target": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
                 "editor_id": AN_EDITOR,
             })),
         )

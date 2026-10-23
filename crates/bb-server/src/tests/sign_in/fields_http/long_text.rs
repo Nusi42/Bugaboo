@@ -9,7 +9,7 @@ async fn take_notes_lock(ada: &mut Browser, id: &str, field: &str) -> Result<Rep
             "POST",
             "/api/v1/edit-locks",
             Some(json!({
-                "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
+                "target": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
                 "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
             })),
         )

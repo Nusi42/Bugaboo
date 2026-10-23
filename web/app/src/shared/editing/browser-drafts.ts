@@ -33,9 +33,9 @@ type Drafts = Readonly<Record<string, BrowserDraft>>;
 /** What a draft is for, as one text: the kind, then the record and part, or the project. */
 export function addressOf(person: string, target: DraftTarget): string {
   const what =
-    typeof target.project === "string"
-      ? `new:${target.kind}:${target.project}`
-      : `edit:${target.kind}:${target.id ?? ""}:${target.part ?? ""}`;
+    "record" in target
+      ? `edit:${target.record.kind}:${target.record.id}:${target.part}`
+      : `new:${target.kind}:${target.project}`;
   return `${person}:${what}`;
 }
 

@@ -1,4 +1,4 @@
-import type { EditWhat } from "@bugaboo/api-client";
+import type { EditTarget } from "@bugaboo/api-client";
 import { useState, type ReactNode } from "react";
 
 import type { EditedThing } from "./edited-thing.ts";
@@ -15,7 +15,7 @@ export interface Saving {
 
 export interface LockedEditorProps {
   /** What the lock is about: the layout or the workflow, edited as a whole. */
-  readonly what: EditWhat;
+  readonly what: EditTarget;
   readonly thing: EditedThing;
   /** The note that the lock was lost and the changes are kept; it comes with *Try again*. */
   readonly lost: string;

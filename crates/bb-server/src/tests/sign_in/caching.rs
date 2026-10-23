@@ -185,7 +185,7 @@ async fn a_type_and_a_label_group(ada: &mut Browser) -> Result<(String, String),
 fn with_query(template: &str, filled: String, project: &str, project_id: &str) -> String {
     match template {
         "/api/v1/drafts" | "/api/v1/edit-locks" => {
-            format!("{filled}?kind=project&id={project_id}&part=description")
+            format!("{filled}?record_kind=project&record_id={project_id}&part=description")
         }
         "/api/v1/layouts/form" | "/api/v1/layouts/editor" => {
             format!("{filled}?project={project}&kind=new-issue")

@@ -42,7 +42,7 @@ async fn lock(browser: &mut Browser, comment: &str) -> Result<String, Failure> {
             "POST",
             "/api/v1/edit-locks",
             Some(json!({
-                "what": {"record": {"kind": "comment", "id": comment}, "part": "text"},
+                "target": {"record": {"kind": "comment", "id": comment}, "part": "text"},
                 "editor_id": AN_EDITOR,
             })),
         )
@@ -120,7 +120,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
                 "POST",
                 "/api/v1/edit-locks",
                 Some(json!({
-                    "what": {"record": {"kind": "comment", "id": id}, "part": "text"},
+                    "target": {"record": {"kind": "comment", "id": id}, "part": "text"},
                     "editor_id": AN_EDITOR,
                 })),
             )

@@ -78,7 +78,7 @@ impl Target {
                 "POST",
                 LOCKS,
                 Some(json!({
-                    "what": {"record": {"kind": "issue", "id": self.issue}, "part": self.part},
+                    "target": {"record": {"kind": "issue", "id": self.issue}, "part": self.part},
                     "editor_id": AN_EDITOR,
                 })),
             )
@@ -168,7 +168,7 @@ async fn adr_0019_a_stale_long_text_gets_the_structured_answer_and_the_text_is_k
                 .send(
                     "GET",
                     &format!(
-                        "{DRAFTS}?kind=issue&id={}&part={}",
+                        "{DRAFTS}?record_kind=issue&record_id={}&part={}",
                         target.issue, target.part
                     ),
                     None,

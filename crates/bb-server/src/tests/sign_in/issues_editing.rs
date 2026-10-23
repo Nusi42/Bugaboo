@@ -27,7 +27,7 @@ async fn lock(browser: &mut Browser, id: &str) -> Result<String, Failure> {
         .send(
             "POST",
             LOCKS,
-            Some(json!({"what": what(id), "editor_id": AN_EDITOR})),
+            Some(json!({"target": what(id), "editor_id": AN_EDITOR})),
         )
         .await?;
     assert_eq!(taken.body["status"], "taken", "{}", taken.body);
@@ -89,7 +89,7 @@ async fn iss_17_the_description_is_saved_under_the_lock_and_rendered_by_the_serv
         let draft = ada
             .send(
                 "GET",
-                &format!("/api/v1/drafts?kind=issue&id={id}&part=description"),
+                &format!("/api/v1/drafts?record_kind=issue&record_id={id}&part=description"),
                 None,
             )
             .await?;
@@ -133,7 +133,7 @@ async fn ux_06_the_box_learns_who_is_editing_before_the_first_key() -> TestResul
         let (mut vera, _) = site.person(StartingRole::Viewer, "vera").await?;
         let made = site.create(&mut ada, "Somebody is typing").await?;
         let (id, _) = ids_of(ok(&made)?)?;
-        let ask = format!("{LOCKS}?kind=issue&id={id}&part=description");
+        let ask = format!("{LOCKS}?record_kind=issue&record_id={id}&part=description");
         // Nobody edits: nothing is held, and asking takes no lock.
         let free = tim.send("GET", &ask, None).await?;
         assert_eq!(ok(&free)?["held"], Value::Null);
@@ -150,7 +150,7 @@ async fn ux_06_the_box_learns_who_is_editing_before_the_first_key() -> TestResul
             .send(
                 "POST",
                 LOCKS,
-                Some(json!({"what": what(&id), "editor_id": AN_EDITOR})),
+                Some(json!({"target": what(&id), "editor_id": AN_EDITOR})),
             )
             .await?;
         assert_eq!(taken.body["status"], "held");
@@ -174,7 +174,7 @@ async fn iss_17_who_may_not_change_the_issue_gets_no_lock_and_no_save() -> TestR
             .send(
                 "POST",
                 LOCKS,
-                Some(json!({"what": what(&id), "editor_id": AN_EDITOR})),
+                Some(json!({"target": what(&id), "editor_id": AN_EDITOR})),
             )
             .await?;
         assert_eq!(refused.status, StatusCode::FORBIDDEN);

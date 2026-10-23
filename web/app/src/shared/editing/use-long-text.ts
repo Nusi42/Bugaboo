@@ -10,7 +10,8 @@ import {
   throwAwayDraft,
   newEditorId,
   type DraftTarget,
-  type EditWhat,
+  type EditTarget,
+  type RecordRef,
 } from "@bugaboo/api-client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
@@ -24,7 +25,7 @@ import type { Editing, LongTextDeps } from "./long-text-model.ts";
 /** A long text of a record: which one, what it is now, and how to save and read it. */
 export interface LongTextOptions {
   /** The kind of record, like `issue`. */
-  readonly kind: string;
+  readonly kind: RecordRef["kind"];
   /** The internal ID of the record. */
   readonly id: string;
   /** Which long text of the record, like `description`. */
@@ -48,8 +49,8 @@ type Which = Omit<LongTextOptions, "saved" | "version">;
 /** The calls of one long text, with the real client behind them. */
 function depsOf(which: Which): LongTextDeps {
   const { kind, id, part } = which;
-  const what = (): EditWhat => ({ record: { kind, id }, part });
-  const target = (): DraftTarget => ({ kind, id, part });
+  const what = (): EditTarget => ({ record: { kind, id }, part });
+  const target = (): DraftTarget => ({ record: { kind, id }, part });
   const client = api.client;
   return {
     take: (editor) => takeEditLock(client, what(), editor),

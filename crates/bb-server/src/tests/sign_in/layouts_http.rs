@@ -78,7 +78,7 @@ pub(super) async fn take_lock(
             "POST",
             LOCKS,
             Some(json!({
-                "what": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
+                "target": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
                 "editor_id": editor,
             })),
         )

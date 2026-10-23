@@ -34,7 +34,7 @@ async fn take(
         .send(
             "POST",
             LOCKS,
-            Some(json!({"what": what(issue, part), "editor_id": AN_EDITOR})),
+            Some(json!({"target": what(issue, part), "editor_id": AN_EDITOR})),
         )
         .await
 }
@@ -49,7 +49,7 @@ async fn draft(
             "PUT",
             DRAFTS,
             Some(json!({
-                "target": {"kind": "issue", "id": issue, "part": part},
+                "target": {"record": {"kind": "issue", "id": issue}, "part": part},
                 "draft": {"text": "typed", "base_version": 1},
             })),
         )
@@ -117,7 +117,7 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
             ],
         )
         .await?;
-        let read = |part: &str| format!("{LOCKS}?kind=issue&id={id}&part={part}");
+        let read = |part: &str| format!("{LOCKS}?record_kind=issue&record_id={id}&part={part}");
         // Sam sees the field: they may read who is editing it, not take it or draft on it.
         let held = sam.send("GET", &read(&part), None).await?;
         assert_eq!(held.status, StatusCode::OK, "{}", held.body);
@@ -170,7 +170,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
         let (_, one_more) = issue_of_type(&site, &mut ada, &site.kind, "One more").await?;
         let kept = draft(&mut ada, &one_more, "description").await?;
         assert_eq!(kept.status, StatusCode::OK, "{}", kept.body);
-        let read = |id: &str| format!("{DRAFTS}?kind=issue&id={id}&part=description");
+        let read = |id: &str| format!("{DRAFTS}?record_kind=issue&record_id={id}&part=description");
         assert!(ada.send("GET", &read(&first), None).await?.body["draft"].is_null());
         assert!(ada.send("GET", &read(&one_more), None).await?.body["draft"].is_object());
         // A save with a lock nobody holds is refused as before (`edit.lock-lost`), and the text is kept as
@@ -198,7 +198,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
                 "POST",
                 &format!("{LOCKS}/heartbeat"),
                 Some(json!({
-                    "what": what(&one_more, "description"),
+                    "target": what(&one_more, "description"),
                     "lock_token": locked["lock_token"],
                     "draft": {"text": "Still typing", "base_version": 1},
                 })),
@@ -246,7 +246,7 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
         )
         .await?;
         ok(&take(&mut ada, &id, "description").await?)?;
-        let release = json!({"what": what(&id, "description")});
+        let release = json!({"target": what(&id, "description")});
         let refused = ray
             .send(
                 "POST",
@@ -259,7 +259,7 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
         let held = ada
             .send(
                 "GET",
-                &format!("{LOCKS}?kind=issue&id={id}&part=description"),
+                &format!("{LOCKS}?record_kind=issue&record_id={id}&part=description"),
                 None,
             )
             .await?;
@@ -283,7 +283,7 @@ async fn sec_06_a_layout_is_not_known_to_who_cannot_edit_layouts() -> TestResult
         let layout = editor["layout"]["id"].as_str().ok_or("no layout")?;
         let ask = |record: &str| {
             json!({
-                "what": {"record": {"kind": "layout", "id": record}, "part": "layout"},
+                "target": {"record": {"kind": "layout", "id": record}, "part": "layout"},
                 "editor_id": AN_EDITOR,
             })
         };
@@ -330,7 +330,7 @@ async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
         ] {
             let body = |part: &str| {
                 json!({
-                    "what": {"record": {"kind": kind, "id": id}, "part": part},
+                    "target": {"record": {"kind": kind, "id": id}, "part": part},
                     "editor_id": AN_EDITOR,
                 })
             };
@@ -341,7 +341,7 @@ async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
                     "PUT",
                     DRAFTS,
                     Some(json!({
-                        "target": {"kind": kind, "id": id, "part": bad},
+                        "target": {"record": {"kind": kind, "id": id}, "part": bad},
                         "draft": {"text": "typed", "base_version": 1},
                     })),
                 )

@@ -10,7 +10,7 @@ import {
   releaseEditLock,
   sendHeartbeat,
   takeEditLock,
-  type EditWhat,
+  type EditTarget,
 } from "@bugaboo/api-client";
 
 import { type Work } from "./book.ts";
@@ -21,7 +21,7 @@ import { addFile, hear, moveOn } from "./work.ts";
 /** How often a stale change is sent again on the newer version before it is called stuck. */
 const MOST_TRIES = 40;
 
-function whatOf(work: Work): EditWhat {
+function whatOf(work: Work): EditTarget {
   return { record: { kind: "issue", id: work.id }, part: descriptionEditPart };
 }
 
@@ -96,8 +96,7 @@ async function lockOn(context: Context, work: Work, editor: string): Promise<str
 /** A refused save keeps the text: whether it is the draft of the person is written in the book. */
 async function keptAsDraft(context: Context, work: Work, text: string): Promise<void> {
   const draft = await readDraft(context.client, {
-    kind: "issue",
-    id: work.id,
+    record: { kind: "issue", id: work.id },
     part: descriptionEditPart,
   });
   context.book.drafted({

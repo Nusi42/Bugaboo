@@ -79,10 +79,10 @@ async function publishChanged(
   if (slot === undefined || slot === null) {
     throw new TypeError("The place has no workflow of its own.");
   }
-  const what = { record: { kind: "workflow", id: slot.id }, part: workflowEditPart };
+  const what = { record: { kind: "workflow", id: slot.id }, part: workflowEditPart } as const;
   const taken = dataOf(
     await admin.client.POST("/api/v1/edit-locks", {
-      body: { what, editor_id: crypto.randomUUID() },
+      body: { target: what, editor_id: crypto.randomUUID() },
     }),
   );
   if (taken.status !== "taken") {
@@ -111,7 +111,7 @@ async function publishChanged(
     }),
   );
   await admin.client.POST("/api/v1/edit-locks/release", {
-    body: { what, lock_token: taken.lock_token },
+    body: { target: what, lock_token: taken.lock_token },
   });
 }
 

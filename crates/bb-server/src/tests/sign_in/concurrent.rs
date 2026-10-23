@@ -156,7 +156,7 @@ impl Person {
     /// Asks for the lock; when somebody else holds it and this person may, takes it over.
     async fn lock(&mut self, work: &Work) -> Result<Option<String>, Failure> {
         let editor = format!("00000000-0000-4000-8000-{:012}", self.number);
-        let body = json!({"what": what_of(&work.id), "editor_id": editor});
+        let body = json!({"target": what_of(&work.id), "editor_id": editor});
         let taken = self.browser.send("POST", LOCKS, Some(body.clone())).await?;
         if ok(&taken)?["status"] == "taken" {
             return Ok(token_of(&taken.body));
@@ -209,7 +209,7 @@ impl Person {
         let text = format!("Text {}-{round} on {}", self.number, work.key);
         let version = self.read(work).await?;
         let started = self.clock.now().as_second();
-        let beat = json!({"what": what_of(&work.id), "lock_token": token,
+        let beat = json!({"target": what_of(&work.id), "lock_token": token,
             "draft": {"text": text, "base_version": version}});
         let beat = self
             .browser
@@ -261,7 +261,10 @@ impl Person {
             .browser
             .send(
                 "GET",
-                &format!("/api/v1/drafts?kind=issue&id={}&part=description", work.id),
+                &format!(
+                    "/api/v1/drafts?record_kind=issue&record_id={}&part=description",
+                    work.id
+                ),
                 None,
             )
             .await?;

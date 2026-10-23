@@ -2,11 +2,59 @@
 
 use super::*;
 
+/// The kind of a record, written in words joined by hyphens (`issue`, `issue-type`). It is the kind
+/// that is stored, with the underscore of the stored word written as a hyphen like every word of the
+/// API.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct RecordKind(EntityKind);
+
+impl RecordKind {
+    /// The word of the API for a stored kind.
+    fn word(&self) -> String {
+        self.0.as_str().replace('_', "-")
+    }
+
+    /// The kind with this word, if it is one of the kinds the use cases know.
+    fn parse(word: &str) -> Option<Self> {
+        CoreRecordKind::from_code(&word.replace('-', "_")).map(|kind| Self(EntityKind::from(kind)))
+    }
+}
+
+impl Serialize for RecordKind {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&self.word())
+    }
+}
+
+impl<'de> Deserialize<'de> for RecordKind {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let word = <std::borrow::Cow<'de, str>>::deserialize(deserializer)?;
+        Self::parse(&word).ok_or_else(|| serde::de::Error::custom("not a kind of record"))
+    }
+}
+
+impl utoipa::PartialSchema for RecordKind {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        use utoipa::openapi::schema::{ObjectBuilder, Type};
+        ObjectBuilder::new()
+            .schema_type(Type::String)
+            .description(Some("The kind of a record, like `issue`."))
+            .enum_values(Some(
+                CoreRecordKind::ALL
+                    .iter()
+                    .map(|kind| kind.code().replace('_', "-")),
+            ))
+            .into()
+    }
+}
+
+impl ToSchema for RecordKind {}
+
 /// A record, by its kind and ID.
 #[derive(Deserialize, Serialize, ToSchema)]
 pub(crate) struct RecordRefBody {
-    /// The kind of record, like `issue`.
-    pub(super) kind: String,
+    /// The kind of record.
+    pub(super) kind: RecordKind,
     /// The ID of the record.
     pub(super) id: String,
 }
@@ -14,7 +62,7 @@ pub(crate) struct RecordRefBody {
 impl RecordRefBody {
     pub(super) fn record(&self) -> Result<EntityRef, ApiError> {
         Ok(EntityRef {
-            kind: EntityKind::new(&self.kind).map_err(|_| ApiError::new(ErrorCode::NotFound))?,
+            kind: self.kind.0.clone(),
             id: EntityId::from_str(&self.id).map_err(|_| ApiError::new(ErrorCode::NotFound))?,
         })
     }
@@ -23,7 +71,7 @@ impl RecordRefBody {
 impl From<&EntityRef> for RecordRefBody {
     fn from(record: &EntityRef) -> Self {
         Self {
-            kind: record.kind.as_str().to_owned(),
+            kind: RecordKind(record.kind.clone()),
             id: record.id.to_string(),
         }
     }
@@ -31,15 +79,15 @@ impl From<&EntityRef> for RecordRefBody {
 
 /// One thing being edited: one part of one record.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct EditWhatBody {
+pub(crate) struct EditTargetBody {
     /// The record.
     pub(super) record: RecordRefBody,
     /// Which long text of the record, like `description`.
     pub(super) part: String,
 }
 
-impl EditWhatBody {
-    pub(super) fn what(&self) -> Result<EditWhat, ApiError> {
+impl EditTargetBody {
+    pub(super) fn target(&self) -> Result<EditWhat, ApiError> {
         Ok(EditWhat {
             record: self.record.record()?,
             part: TechnicalName::new(&self.part)
@@ -73,7 +121,7 @@ pub(crate) struct SaveTextBody {
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct TakeLockBody {
     /// The thing that is going to be edited.
-    pub(super) what: EditWhatBody,
+    pub(super) target: EditTargetBody,
     /// The open editor (a tab): an ID the browser makes when the editor opens.
     pub(super) editor_id: String,
 }
@@ -116,15 +164,28 @@ impl From<&HeldLock> for HeldLockBody {
 }
 
 /// Which thing to ask about, in the address.
-#[derive(Deserialize, ToSchema, utoipa::IntoParams)]
+#[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
-pub(crate) struct EditWhatQuery {
-    /// The kind of record, like `issue`.
-    pub(super) kind: String,
+pub(crate) struct EditTargetQuery {
+    /// The kind of record.
+    pub(super) record_kind: RecordKind,
     /// The ID of the record.
-    pub(super) id: String,
+    pub(super) record_id: String,
     /// Which long text of the record, like `description`.
     pub(super) part: String,
+}
+
+impl EditTargetQuery {
+    pub(super) fn target(self) -> Result<EditWhat, ApiError> {
+        EditTargetBody {
+            record: RecordRefBody {
+                kind: self.record_kind,
+                id: self.record_id,
+            },
+            part: self.part,
+        }
+        .target()
+    }
 }
 
 /// Whether somebody is editing a thing now.
@@ -197,7 +258,7 @@ impl From<DraftTextBody> for DraftText {
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct HeartbeatBody {
     /// The thing that is being edited.
-    pub(super) what: EditWhatBody,
+    pub(super) target: EditTargetBody,
     /// The lock token the lock was taken with.
     pub(super) lock_token: String,
     /// The text so far: kept as the draft of the person, also when the lock is gone.
@@ -282,50 +343,82 @@ impl From<&HeartbeatAnswer> for HeartbeatAnswerBody {
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ReleaseLockBody {
     /// The thing that was edited.
-    pub(super) what: EditWhatBody,
+    pub(super) target: EditTargetBody,
     /// The lock token the lock was taken with.
     pub(super) lock_token: String,
 }
 
 /// Which thing somebody else is editing.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct EditWhatOnlyBody {
+pub(crate) struct EditTargetOnlyBody {
     /// The thing somebody else is editing.
-    pub(super) what: EditWhatBody,
+    pub(super) target: EditTargetBody,
 }
 
-/// What a draft is for: a part of a record (`kind`, `id` and `part`), or the form that makes a new
-/// record of a kind in a project (`kind` and `project`).
-#[derive(Deserialize, ToSchema, utoipa::IntoParams)]
+/// The form that makes a new record of a kind in a project, as the target of a draft.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct NewRecordTargetBody {
+    /// The kind of record the form makes.
+    pub(super) kind: RecordKind,
+    /// The project it is made in.
+    pub(super) project: String,
+}
+
+/// What a draft is for: a part of a record, or the form that makes a new record in a project.
+#[derive(Deserialize, ToSchema)]
+#[serde(untagged)]
+pub(crate) enum DraftTargetBody {
+    /// A part of a record.
+    Part(EditTargetBody),
+    /// The form that makes a new record.
+    NewRecord(NewRecordTargetBody),
+}
+
+impl DraftTargetBody {
+    pub(super) fn target(&self) -> Result<DraftTarget, ApiError> {
+        match self {
+            Self::Part(part) => Ok(DraftTarget::Editing(part.target()?)),
+            Self::NewRecord(form) => Ok(DraftTarget::NewRecord {
+                project: body_id::<ProjectId>(&form.project)?,
+                kind: form.kind.0.clone(),
+            }),
+        }
+    }
+}
+
+/// What a draft is for, in the address: a part of a record (`record_kind`, `record_id` and
+/// `part`), or the form that makes a new record of a kind in a project (`record_kind` and
+/// `project`).
+#[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
-pub(crate) struct DraftTargetBody {
-    /// The kind of record, like `issue`.
-    pub(super) kind: String,
+pub(crate) struct DraftTargetQuery {
+    /// The kind of record.
+    pub(super) record_kind: RecordKind,
     /// The ID of the record, for a draft of a part of a record.
-    pub(super) id: Option<String>,
+    pub(super) record_id: Option<String>,
     /// Which long text of the record, for a draft of a part of a record.
     pub(super) part: Option<String>,
     /// The project, for a draft of a new record.
     pub(super) project: Option<String>,
 }
 
-impl DraftTargetBody {
-    pub(super) fn target(&self) -> Result<DraftTarget, ApiError> {
+impl DraftTargetQuery {
+    pub(super) fn target(self) -> Result<DraftTarget, ApiError> {
         let invalid = || ApiError::new(ErrorCode::InvalidRequest);
-        match (&self.id, &self.part, &self.project) {
+        match (self.record_id, self.part, self.project) {
             (Some(id), Some(part), None) => Ok(DraftTarget::Editing(
-                EditWhatBody {
+                EditTargetBody {
                     record: RecordRefBody {
-                        kind: self.kind.clone(),
-                        id: id.clone(),
+                        kind: self.record_kind,
+                        id,
                     },
-                    part: part.clone(),
+                    part,
                 }
-                .what()?,
+                .target()?,
             )),
             (None, None, Some(project)) => Ok(DraftTarget::NewRecord {
-                project: body_id::<ProjectId>(project)?,
-                kind: EntityKind::new(&self.kind).map_err(|_| invalid())?,
+                project: body_id::<ProjectId>(&project)?,
+                kind: self.record_kind.0,
             }),
             _ => Err(invalid()),
         }

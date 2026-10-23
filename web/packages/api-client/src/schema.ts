@@ -4010,20 +4010,10 @@ export interface components {
     DraftSlotBody: {
       draft?: components["schemas"]["DraftBody"] | null;
     };
-    /**
-     * @description What a draft is for: a part of a record (`kind`, `id` and `part`), or the form that makes a new
-     *     record of a kind in a project (`kind` and `project`).
-     */
-    DraftTargetBody: {
-      /** @description The ID of the record, for a draft of a part of a record. */
-      id?: string | null;
-      /** @description The kind of record, like `issue`. */
-      kind: string;
-      /** @description Which long text of the record, for a draft of a part of a record. */
-      part?: string | null;
-      /** @description The project, for a draft of a new record. */
-      project?: string | null;
-    };
+    /** @description What a draft is for: a part of a record, or the form that makes a new record in a project. */
+    DraftTargetBody:
+      | components["schemas"]["EditTargetBody"]
+      | components["schemas"]["NewRecordTargetBody"];
     /** @description The text so far of a draft, with the version it started from. */
     DraftTextBody: {
       /**
@@ -4054,16 +4044,16 @@ export interface components {
       unseen: number;
     };
     /** @description One thing being edited: one part of one record. */
-    EditWhatBody: {
+    EditTargetBody: {
       /** @description Which long text of the record, like `description`. */
       part: string;
       /** @description The record. */
       record: components["schemas"]["RecordRefBody"];
     };
     /** @description Which thing somebody else is editing. */
-    EditWhatOnlyBody: {
+    EditTargetOnlyBody: {
       /** @description The thing somebody else is editing. */
-      what: components["schemas"]["EditWhatBody"];
+      target: components["schemas"]["EditTargetBody"];
     };
     /** @description A status change in the editor. */
     EditorChangeBody: {
@@ -4500,7 +4490,7 @@ export interface components {
       /** @description The lock token the lock was taken with. */
       lock_token: string;
       /** @description The thing that is being edited. */
-      what: components["schemas"]["EditWhatBody"];
+      target: components["schemas"]["EditTargetBody"];
     };
     /** @description Somebody else is editing. */
     HeldLockBody: {
@@ -5654,6 +5644,13 @@ export interface components {
       role?: string | null;
       /** @description Whom the row is for. */
       who: components["schemas"]["WhoBody"];
+    };
+    /** @description The form that makes a new record of a kind in a project, as the target of a draft. */
+    NewRecordTargetBody: {
+      /** @description The kind of record the form makes. */
+      kind: components["schemas"]["RecordKind"];
+      /** @description The project it is made in. */
+      project: string;
     };
     /** @description A relation to add. */
     NewRelationBody: {
@@ -7107,12 +7104,43 @@ export interface components {
           /** @enum {string} */
           kind: "group";
         };
+    /**
+     * @description The kind of a record, like `issue`.
+     * @enum {string}
+     */
+    RecordKind:
+      | "access-key"
+      | "attachment"
+      | "change-run"
+      | "field"
+      | "assignment"
+      | "comment"
+      | "follower"
+      | "group"
+      | "invitation"
+      | "issue"
+      | "issue-type"
+      | "label"
+      | "label-group"
+      | "passkey"
+      | "person"
+      | "project"
+      | "relation"
+      | "layout"
+      | "relation-kind"
+      | "workflow"
+      | "role"
+      | "session"
+      | "setting"
+      | "setup-code"
+      | "starting-roles"
+      | "tag";
     /** @description A record, by its kind and ID. */
     RecordRefBody: {
       /** @description The ID of the record. */
       id: string;
-      /** @description The kind of record, like `issue`. */
-      kind: string;
+      /** @description The kind of record. */
+      kind: components["schemas"]["RecordKind"];
     };
     /** @description The version of one record on the screen. */
     RecordVersionBody: {
@@ -7164,7 +7192,7 @@ export interface components {
       /** @description The lock token the lock was taken with. */
       lock_token: string;
       /** @description The thing that was edited. */
-      what: components["schemas"]["EditWhatBody"];
+      target: components["schemas"]["EditTargetBody"];
     };
     /** @description A new name for a group, made on the version that was looked at. */
     RenameGroupBody: {
@@ -7762,7 +7790,7 @@ export interface components {
       /** @description The open editor (a tab): an ID the browser makes when the editor opens. */
       editor_id: string;
       /** @description The thing that is going to be edited. */
-      what: components["schemas"]["EditWhatBody"];
+      target: components["schemas"]["EditTargetBody"];
     };
     /** @description The editor has the lock. */
     TakenLockBody: {
@@ -11776,10 +11804,10 @@ export interface operations {
   readDraft: {
     parameters: {
       query: {
-        /** @description The kind of record, like `issue`. */
-        kind: string;
+        /** @description The kind of record. */
+        record_kind: components["schemas"]["RecordKind"];
         /** @description The ID of the record, for a draft of a part of a record. */
-        id?: string;
+        record_id?: string;
         /** @description Which long text of the record, for a draft of a part of a record. */
         part?: string;
         /** @description The project, for a draft of a new record. */
@@ -12039,10 +12067,10 @@ export interface operations {
   readEditLock: {
     parameters: {
       query: {
-        /** @description The kind of record, like `issue`. */
-        kind: string;
+        /** @description The kind of record. */
+        record_kind: components["schemas"]["RecordKind"];
         /** @description The ID of the record. */
-        id: string;
+        record_id: string;
         /** @description Which long text of the record, like `description`. */
         part: string;
       };
@@ -12237,7 +12265,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["EditWhatOnlyBody"];
+        "application/json": components["schemas"]["EditTargetOnlyBody"];
       };
     };
     responses: {
@@ -12571,7 +12599,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["EditWhatOnlyBody"];
+        "application/json": components["schemas"]["EditTargetOnlyBody"];
       };
     };
     responses: {

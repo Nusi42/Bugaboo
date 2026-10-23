@@ -49,7 +49,7 @@ export type {
   Client,
   DraftTarget,
   DraftText,
-  EditWhat,
+  EditTarget,
   Heartbeat,
   LockOutcome,
   RecordRef,

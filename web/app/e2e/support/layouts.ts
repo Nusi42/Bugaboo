@@ -71,10 +71,10 @@ async function putFieldsInFirstSection(
   slot: NonNullable<Schema<"LayoutEditorBody">["layout"]>,
   placed: readonly Placed[],
 ): Promise<void> {
-  const what = { record: { kind: "layout", id: slot.id }, part: layoutEditPart };
+  const what = { record: { kind: "layout", id: slot.id }, part: layoutEditPart } as const;
   const taken = dataOf(
     await admin.client.POST("/api/v1/edit-locks", {
-      body: { what, editor_id: crypto.randomUUID() },
+      body: { target: what, editor_id: crypto.randomUUID() },
     }),
   );
   if (taken.status !== "taken") {
@@ -100,7 +100,7 @@ async function putFieldsInFirstSection(
     }),
   );
   await admin.client.POST("/api/v1/edit-locks/release", {
-    body: { what, lock_token: taken.lock_token },
+    body: { target: what, lock_token: taken.lock_token },
   });
 }
 
