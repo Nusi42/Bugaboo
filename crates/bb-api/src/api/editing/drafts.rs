@@ -48,7 +48,7 @@ pub(super) async fn save_draft(
 #[utoipa::path(
     get,
     path = "/api/v1/drafts",
-    operation_id = "readDraft",
+    operation_id = "getDraft",
     tag = "editing",
     params(DraftTargetQuery),
     responses(

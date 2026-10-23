@@ -56,6 +56,7 @@ pub(super) fn tidy(document: &mut Ordered) {
     share_paging_parameters(document);
     share_answers(document);
     clean_texts(document);
+    moments_have_a_format(document);
 }
 
 /// A page of a list holds a copy of its item in the description that utoipa writes; it refers to
@@ -347,6 +348,35 @@ fn clean_texts(document: &mut Ordered) {
     });
 }
 
+/// Whether a property of that name holds a moment: `at`, `since`, or a name that ends in `_at`.
+fn names_a_moment(name: &str) -> bool {
+    name == "at" || name == "since" || name.ends_with("_at")
+}
+
+/// Whether the schema is a text, or a text that can be missing.
+fn is_text(schema: &Ordered) -> bool {
+    match schema.get("type") {
+        Some(Ordered::Leaf(serde_json::Value::String(kind))) => kind == "string",
+        Some(Ordered::Array(kinds)) => kinds.iter().any(|kind| kind.text() == Some("string")),
+        _ => false,
+    }
+}
+
+/// A property that holds a moment says so: `format: date-time` (B5). The server writes every moment as
+/// a text of RFC 3339 (`2027-01-15T08:00:00Z`).
+fn moments_have_a_format(document: &mut Ordered) {
+    document.for_each_mut(&mut |value| {
+        let Some(Ordered::Object(properties)) = value.get_mut("properties") else {
+            return;
+        };
+        for (name, property) in properties {
+            if names_a_moment(name) && is_text(property) && property.get("format").is_none() {
+                property.set("format", Ordered::string("date-time"));
+            }
+        }
+    });
+}
+
 /// The prefixes of the numbers of the work: a feature, a decision record, a follow-up.
 const TICKET_PREFIXES: [&str; 22] = [
     "ADR", "SEC", "ISS", "WF", "ATT", "NTF", "CF", "TAG", "PERF", "PRIV", "CFG", "AUTH", "UX",
@@ -433,6 +463,23 @@ mod tests {
             clean_text("Two things (ADR-0025, decision 6)."),
             "Two things (ADR-0025, decision 6)."
         );
+    }
+
+    #[test]
+    fn a_property_that_holds_a_moment_says_so_and_a_number_called_at_does_not() {
+        let text = r#"{"components": {"schemas": {"Row": {"properties": {
+            "created_at": {"type": "string"},
+            "closed_at": {"type": ["string", "null"]},
+            "broken_at": {"type": ["integer", "null"]},
+            "title": {"type": "string"}
+        }}}}}"#;
+        let tidied: serde_json::Value =
+            serde_json::from_str(&super::super::ordered::finished_text(text).unwrap()).unwrap();
+        let row = &tidied["components"]["schemas"]["Row"]["properties"];
+        assert_eq!(row["created_at"]["format"], "date-time");
+        assert_eq!(row["closed_at"]["format"], "date-time");
+        assert!(row["broken_at"].get("format").is_none());
+        assert!(row["title"].get("format").is_none());
     }
 
     #[test]

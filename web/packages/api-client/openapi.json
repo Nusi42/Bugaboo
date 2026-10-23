@@ -117,7 +117,7 @@
         "x-secret": true
       }
     },
-    "/api/v1/access-keys/projects": {
+    "/api/v1/access-keys/project-choices": {
       "get": {
         "tags": ["access-keys"],
         "summary": "The projects the person may limit a key to: those they know about, by short name, a page at a\ntime.",
@@ -443,7 +443,7 @@
       "post": {
         "tags": ["roles"],
         "summary": "Gives a role to a person or a group for the whole organization. Needs the permission *Decide\nwho has which role* for the whole organization; nobody gives a role with more than they hold\nthemselves.",
-        "operationId": "assignRole",
+        "operationId": "createAssignment",
         "requestBody": {
           "content": {
             "application/json": {
@@ -632,96 +632,6 @@
         "x-permission": "by-record"
       }
     },
-    "/api/v1/auth/invitation/accept": {
-      "post": {
-        "tags": ["auth"],
-        "summary": "Creates an account from an invitation link, and signs the person in.",
-        "operationId": "acceptInvitation",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AcceptBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The account was made and is signed in.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SignedInBody"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "public"
-      }
-    },
-    "/api/v1/auth/invitation/lookup": {
-      "post": {
-        "tags": ["auth"],
-        "summary": "Shows which address an invitation is for. It is a `POST` so the secret is in the body, not in\nan address that logs and browser history keep.",
-        "operationId": "lookUpInvitation",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SecretBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The invitation works.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmailBody"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "public"
-      }
-    },
     "/api/v1/auth/invitations": {
       "get": {
         "tags": ["auth"],
@@ -830,11 +740,101 @@
         "x-secret": true
       }
     },
+    "/api/v1/auth/invitations/accept": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Creates an account from an invitation link, and signs the person in.",
+        "operationId": "acceptInvitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The account was made and is signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedInBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "public"
+      }
+    },
+    "/api/v1/auth/invitations/lookup": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Shows which address an invitation is for. It is a `POST` so the secret is in the body, not in\nan address that logs and browser history keep.",
+        "operationId": "lookUpInvitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecretBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The invitation works.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "public"
+      }
+    },
     "/api/v1/auth/invitations/{invitation}": {
       "delete": {
         "tags": ["auth"],
         "summary": "Takes an invitation back. Needs the permission *Invite people*.",
-        "operationId": "revokeInvitation",
+        "operationId": "takeBackInvitation",
         "parameters": [
           {
             "name": "invitation",
@@ -2436,7 +2436,7 @@
       "get": {
         "tags": ["editing"],
         "summary": "The draft of the person for a target: theirs, and nobody else's.",
-        "operationId": "readDraft",
+        "operationId": "getDraft",
         "parameters": [
           {
             "name": "record_kind",
@@ -2617,7 +2617,7 @@
       "get": {
         "tags": ["editing"],
         "summary": "Says whether somebody is editing a long text, and who, without taking the lock: the box asks\nwhen it opens, so a person who comes second is told before the first key.",
-        "operationId": "readEditLock",
+        "operationId": "getEditLock",
         "parameters": [
           {
             "name": "record_kind",
@@ -2851,7 +2851,7 @@
       "post": {
         "tags": ["editing"],
         "summary": "Renews the lease of a lock, keeps the text so far as the draft of the person (also when the lock\nis gone), and hands over what others did since the last heartbeat: somebody asked to finish, or\ntook the editing over.",
-        "operationId": "heartbeatEditLock",
+        "operationId": "renewEditLock",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3811,7 +3811,7 @@
             "content": {
               "application/octet-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/PartBytes"
+                  "$ref": "#/components/schemas/FileBytes"
                 }
               }
             }
@@ -4052,7 +4052,7 @@
       "patch": {
         "tags": ["groups"],
         "summary": "Renames a group. Needs the permission *Create, rename and delete groups and change who is in\nthem*.",
-        "operationId": "renameGroup",
+        "operationId": "changeGroup",
         "parameters": [
           {
             "name": "group",
@@ -8104,7 +8104,7 @@
       "post": {
         "tags": ["notifications"],
         "summary": "Marks notifications of the person as read: the ones named, or all of them.",
-        "operationId": "readNotifications",
+        "operationId": "markNotificationsRead",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8145,7 +8145,7 @@
       "get": {
         "tags": ["notifications"],
         "summary": "How many notifications the person has not read: the number on the menu entry.",
-        "operationId": "getUnreadNotifications",
+        "operationId": "getUnreadCount",
         "responses": {
           "200": {
             "description": "The number.",
@@ -11281,7 +11281,7 @@
           "content": {
             "application/octet-stream": {
               "schema": {
-                "$ref": "#/components/schemas/PartBytes"
+                "$ref": "#/components/schemas/FileBytes"
               }
             }
           },
@@ -11945,11 +11945,6 @@
           }
         }
       },
-      "AccessBody": {
-        "type": "string",
-        "description": "Whether other accounts on this computer can open a part of the data folder.",
-        "enum": ["private", "open", "unknown"]
-      },
       "AccessKeyBody": {
         "type": "object",
         "description": "An access key as its owner sees it after making it.",
@@ -11970,11 +11965,13 @@
           },
           "created_at": {
             "type": "string",
-            "description": "When it was made."
+            "description": "When it was made.",
+            "format": "date-time"
           },
           "expires_at": {
             "type": "string",
-            "description": "When it stops working."
+            "description": "When it stops working.",
+            "format": "date-time"
           },
           "id": {
             "type": "string",
@@ -12021,7 +12018,8 @@
           },
           "created_at": {
             "type": ["string", "null"],
-            "description": "When it was made."
+            "description": "When it was made.",
+            "format": "date-time"
           },
           "expired": {
             "type": ["boolean", "null"],
@@ -12029,7 +12027,8 @@
           },
           "expires_at": {
             "type": ["string", "null"],
-            "description": "When it stops working."
+            "description": "When it stops working.",
+            "format": "date-time"
           },
           "id": {
             "type": ["string", "null"],
@@ -12037,7 +12036,8 @@
           },
           "last_used_at": {
             "type": ["string", "null"],
-            "description": "The last time it was used, to the minute. Left out when it was never used."
+            "description": "The last time it was used, to the minute. Left out when it was never used.",
+            "format": "date-time"
           },
           "name": {
             "type": ["string", "null"],
@@ -12188,7 +12188,8 @@
           },
           "given_at": {
             "type": ["string", "null"],
-            "description": "When the row was made."
+            "description": "When the row was made.",
+            "format": "date-time"
           },
           "group": {
             "oneOf": [
@@ -12263,7 +12264,8 @@
         "properties": {
           "added_at": {
             "type": "string",
-            "description": "When it was added."
+            "description": "When it was added.",
+            "format": "date-time"
           },
           "added_by": {
             "$ref": "#/components/schemas/PersonRef",
@@ -12375,7 +12377,8 @@
         "properties": {
           "expires_at": {
             "type": "string",
-            "description": "When it stops being valid."
+            "description": "When it stops being valid.",
+            "format": "date-time"
           }
         }
       },
@@ -13184,11 +13187,13 @@
           },
           "created_at": {
             "type": "string",
-            "description": "When it was written."
+            "description": "When it was written.",
+            "format": "date-time"
           },
           "edited_at": {
             "type": ["string", "null"],
-            "description": "When its text was last changed, if it was."
+            "description": "When its text was last changed, if it was.",
+            "format": "date-time"
           },
           "html": {
             "type": "string",
@@ -13234,7 +13239,8 @@
           },
           "saved_at": {
             "type": "string",
-            "description": "When it was saved."
+            "description": "When it was saved.",
+            "format": "date-time"
           },
           "text": {
             "type": "string",
@@ -13269,7 +13275,8 @@
         "properties": {
           "changed_at": {
             "type": ["string", "null"],
-            "description": "When, as a moment in time."
+            "description": "When, as a moment in time.",
+            "format": "date-time"
           },
           "changed_by": {
             "oneOf": [
@@ -13335,11 +13342,6 @@
         ],
         "description": "The answer to a change that found the record at another version, or to any other refused\nchange: the usual problem, and for `edit.version-changed` the `conflict` member."
       },
-      "CountsBody": {
-        "type": "string",
-        "description": "Where a permission counts, as the API names it.",
-        "enum": ["organization", "project"]
-      },
       "CreateKeyBody": {
         "type": "object",
         "description": "An access key to make.",
@@ -13351,7 +13353,8 @@
           },
           "expires_at": {
             "type": ["string", "null"],
-            "description": "When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the\ndefault number of days from now. It cannot be later than the longest time."
+            "description": "When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the\ndefault number of days from now. It cannot be later than the longest time.",
+            "format": "date-time"
           },
           "name": {
             "type": "string",
@@ -13413,23 +13416,23 @@
         "required": ["folder", "database", "files", "backups", "setup_code_file"],
         "properties": {
           "backups": {
-            "$ref": "#/components/schemas/AccessBody",
+            "$ref": "#/components/schemas/FolderAccess",
             "description": "The folder for backups."
           },
           "database": {
-            "$ref": "#/components/schemas/AccessBody",
+            "$ref": "#/components/schemas/FolderAccess",
             "description": "The built-in database file and the files next to it."
           },
           "files": {
-            "$ref": "#/components/schemas/AccessBody",
+            "$ref": "#/components/schemas/FolderAccess",
             "description": "The folder for attachments."
           },
           "folder": {
-            "$ref": "#/components/schemas/AccessBody",
+            "$ref": "#/components/schemas/FolderAccess",
             "description": "The data folder itself."
           },
           "setup_code_file": {
-            "$ref": "#/components/schemas/AccessBody",
+            "$ref": "#/components/schemas/FolderAccess",
             "description": "The file with the setup code of a server without a console."
           }
         }
@@ -13440,7 +13443,7 @@
         "required": ["kind", "ok"],
         "properties": {
           "kind": {
-            "$ref": "#/components/schemas/RunningDatabaseBody",
+            "$ref": "#/components/schemas/DatabaseKind",
             "description": "Which one it is. The address is never shown: it can hold a password."
           },
           "ok": {
@@ -13448,6 +13451,11 @@
             "description": "Whether it answered."
           }
         }
+      },
+      "DatabaseKind": {
+        "type": "string",
+        "description": "Which database the server uses.",
+        "enum": ["built-in", "sqlite", "postgres"]
       },
       "Direction": {
         "type": "string",
@@ -13466,7 +13474,8 @@
           },
           "saved_at": {
             "type": "string",
-            "description": "When the draft last changed."
+            "description": "When the draft last changed.",
+            "format": "date-time"
           },
           "text": {
             "type": "string",
@@ -14209,6 +14218,10 @@
           }
         }
       },
+      "FileBytes": {
+        "type": "string",
+        "format": "binary"
+      },
       "FileEvent": {
         "type": "string",
         "description": "What happened to a file of an issue: added, deleted or brought back.",
@@ -14230,6 +14243,11 @@
             "description": "Whether the reader may add files to the issue itself."
           }
         }
+      },
+      "FolderAccess": {
+        "type": "string",
+        "description": "Whether other accounts on this computer can open a part of the data folder.",
+        "enum": ["private", "open", "unknown"]
       },
       "FollowReason": {
         "type": "string",
@@ -14297,19 +14315,6 @@
             "description": "Its title; may be empty."
           }
         }
-      },
-      "FormatBody": {
-        "type": "string",
-        "description": "What kind of text a text setting holds.",
-        "enum": [
-          "free",
-          "choice",
-          "time-zone",
-          "page-address",
-          "shortcut-keys",
-          "window-sizes",
-          "hosts"
-        ]
       },
       "GroupBody": {
         "type": "object",
@@ -14443,7 +14448,8 @@
           },
           "since": {
             "type": "string",
-            "description": "Since when."
+            "description": "Since when.",
+            "format": "date-time"
           },
           "yours_elsewhere": {
             "type": "boolean",
@@ -14458,7 +14464,8 @@
         "properties": {
           "at": {
             "type": "string",
-            "description": "When it happened."
+            "description": "When it happened.",
+            "format": "date-time"
           },
           "by": {
             "oneOf": [
@@ -14499,7 +14506,8 @@
           },
           "edited_at": {
             "type": ["string", "null"],
-            "description": "A comment: when its text was last changed."
+            "description": "A comment: when its text was last changed.",
+            "format": "date-time"
           },
           "event": {
             "type": "string",
@@ -14638,7 +14646,8 @@
         "properties": {
           "created_at": {
             "type": "string",
-            "description": "When it was made."
+            "description": "When it was made.",
+            "format": "date-time"
           },
           "email": {
             "type": "string",
@@ -14646,7 +14655,8 @@
           },
           "expires_at": {
             "type": "string",
-            "description": "When it stops working."
+            "description": "When it stops working.",
+            "format": "date-time"
           },
           "id": {
             "type": "string",
@@ -14660,7 +14670,8 @@
         "properties": {
           "created_at": {
             "type": ["string", "null"],
-            "description": "When it was made."
+            "description": "When it was made.",
+            "format": "date-time"
           },
           "email": {
             "type": ["string", "null"],
@@ -14668,7 +14679,8 @@
           },
           "expires_at": {
             "type": ["string", "null"],
-            "description": "When it stops working."
+            "description": "When it stops working.",
+            "format": "date-time"
           },
           "id": {
             "type": ["string", "null"],
@@ -14749,11 +14761,13 @@
           },
           "closed_at": {
             "type": ["string", "null"],
-            "description": "When it entered the group *Done*, while it is in it. Hidden with the status."
+            "description": "When it entered the group *Done*, while it is in it. Hidden with the status.",
+            "format": "date-time"
           },
           "created_at": {
             "type": ["string", "null"],
-            "description": "When it was made."
+            "description": "When it was made.",
+            "format": "date-time"
           },
           "description": {
             "type": ["string", "null"],
@@ -14846,7 +14860,8 @@
           },
           "updated_at": {
             "type": ["string", "null"],
-            "description": "When it was last changed."
+            "description": "When it was last changed.",
+            "format": "date-time"
           },
           "version": {
             "type": ["integer", "null"],
@@ -15076,11 +15091,6 @@
         "type": "string",
         "description": "What the key may do: see only, see and change, everything its owner can do, or single permissions.",
         "enum": ["see-only", "see-and-change", "everything", "permissions"]
-      },
-      "KindBody": {
-        "type": "string",
-        "description": "The type of a setting.",
-        "enum": ["bool", "integer", "text"]
       },
       "KindTrait": {
         "type": "string",
@@ -15449,11 +15459,6 @@
             ]
           }
         }
-      },
-      "LevelBody": {
-        "type": "string",
-        "description": "Where a setting can be set.",
-        "enum": ["organization", "project", "person"]
       },
       "LevelCellBody_FieldLevel": {
         "type": "object",
@@ -15865,7 +15870,8 @@
             "properties": {
               "expires_at": {
                 "type": "string",
-                "description": "When it runs out now."
+                "description": "When it runs out now.",
+                "format": "date-time"
               },
               "status": {
                 "type": "string",
@@ -15902,7 +15908,7 @@
         ],
         "description": "Whether the editor still has the lock, and if not, why."
       },
-      "LogBreakBody": {
+      "LogBreakReason": {
         "type": "string",
         "description": "Why the chain of the security log does not verify.",
         "enum": [
@@ -16303,7 +16309,8 @@
           },
           "created_at": {
             "type": "string",
-            "description": "When it was asked for."
+            "description": "When it was asked for.",
+            "format": "date-time"
           },
           "done": {
             "type": "integer",
@@ -16313,7 +16320,8 @@
           },
           "finished_at": {
             "type": ["string", "null"],
-            "description": "When it ended; left out while it goes on."
+            "description": "When it ended; left out while it goes on.",
+            "format": "date-time"
           },
           "id": {
             "type": "string",
@@ -16438,7 +16446,8 @@
         "properties": {
           "added_at": {
             "type": ["string", "null"],
-            "description": "When the person was put into the group."
+            "description": "When the person was put into the group.",
+            "format": "date-time"
           },
           "person": {
             "oneOf": [
@@ -16573,7 +16582,7 @@
           }
         }
       },
-      "MoveRightBody": {
+      "MoveRightKind": {
         "type": "string",
         "description": "Where a person may move a project to.",
         "enum": ["nowhere", "into-projects", "into-projects-or-top"]
@@ -17086,7 +17095,8 @@
         "properties": {
           "at": {
             "type": "string",
-            "description": "When."
+            "description": "When.",
+            "format": "date-time"
           },
           "from": {
             "$ref": "#/components/schemas/PersonRef",
@@ -17110,7 +17120,8 @@
         "properties": {
           "at": {
             "type": "string",
-            "description": "When it happened."
+            "description": "When it happened.",
+            "format": "date-time"
           },
           "by": {
             "oneOf": [
@@ -17944,10 +17955,6 @@
           }
         }
       },
-      "PartBytes": {
-        "type": "string",
-        "format": "binary"
-      },
       "PasskeyAnswerBody": {
         "type": "object",
         "description": "What the device answered to a passkey challenge.",
@@ -17970,7 +17977,8 @@
         "properties": {
           "created_at": {
             "type": "string",
-            "description": "When it was added."
+            "description": "When it was added.",
+            "format": "date-time"
           },
           "id": {
             "type": "string",
@@ -17982,7 +17990,8 @@
           },
           "last_used_at": {
             "type": ["string", "null"],
-            "description": "When it was last used to sign in."
+            "description": "When it was last used to sign in.",
+            "format": "date-time"
           }
         }
       },
@@ -18120,7 +18129,7 @@
             "description": "The key of the permission."
           },
           "scope": {
-            "$ref": "#/components/schemas/CountsBody",
+            "$ref": "#/components/schemas/PermissionPlace",
             "description": "Where it counts."
           },
           "topic": {
@@ -18143,6 +18152,11 @@
             "description": "What it is about."
           }
         }
+      },
+      "PermissionPlace": {
+        "type": "string",
+        "description": "Where a permission counts, as the API names it.",
+        "enum": ["organization", "project"]
       },
       "PermissionsBody": {
         "type": "object",
@@ -18202,7 +18216,8 @@
         "properties": {
           "created_at": {
             "type": "string",
-            "description": "When the account was made."
+            "description": "When the account was made.",
+            "format": "date-time"
           },
           "person": {
             "$ref": "#/components/schemas/PersonItem",
@@ -18294,10 +18309,10 @@
           },
           {
             "type": "object",
-            "description": "A removed person: the screen says \"Former user {label}\". No ID.",
-            "required": ["label", "shown"],
+            "description": "A removed person: the screen says \"Former user {code}\". No ID.",
+            "required": ["code", "shown"],
             "properties": {
-              "label": {
+              "code": {
                 "type": "string",
                 "description": "The random code, like `K7Q2`."
               },
@@ -18604,7 +18619,7 @@
             "description": "Whether the person may change the short name."
           },
           "may_move": {
-            "$ref": "#/components/schemas/MoveRightBody",
+            "$ref": "#/components/schemas/MoveRightKind",
             "description": "Where the person may move the project to."
           },
           "own_fields": {
@@ -19476,11 +19491,6 @@
           }
         }
       },
-      "RunningDatabaseBody": {
-        "type": "string",
-        "description": "Which database the server uses.",
-        "enum": ["built-in", "sqlite", "postgres"]
-      },
       "SaveDraftBody": {
         "type": "object",
         "description": "A draft to keep.",
@@ -19656,7 +19666,7 @@
           "reason": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/LogBreakBody",
+                "$ref": "#/components/schemas/LogBreakReason",
                 "description": "What is wrong with it (when it breaks)."
               },
               {
@@ -19724,7 +19734,8 @@
           },
           "started_at": {
             "type": "string",
-            "description": "When the server started."
+            "description": "When the server started.",
+            "format": "date-time"
           },
           "uptime_seconds": {
             "type": "integer",
@@ -19757,7 +19768,8 @@
           },
           "last_seen_at": {
             "type": "string",
-            "description": "The last time it was used."
+            "description": "The last time it was used.",
+            "format": "date-time"
           },
           "network": {
             "type": ["string", "null"],
@@ -19765,7 +19777,8 @@
           },
           "started_at": {
             "type": "string",
-            "description": "When the person signed in."
+            "description": "When the person signed in.",
+            "format": "date-time"
           },
           "system": {
             "type": ["string", "null"],
@@ -19833,7 +19846,7 @@
             "description": "The standard value."
           },
           "format": {
-            "$ref": "#/components/schemas/FormatBody",
+            "$ref": "#/components/schemas/SettingFormat",
             "description": "For text: what kind of text."
           },
           "help_key": {
@@ -19845,13 +19858,13 @@
             "description": "The key: the topic, a dot and the name, like `topic.name`."
           },
           "kind": {
-            "$ref": "#/components/schemas/KindBody",
+            "$ref": "#/components/schemas/SettingType",
             "description": "What it holds."
           },
           "levels": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/LevelBody"
+              "$ref": "#/components/schemas/SettingLevel"
             },
             "description": "Where it can be set."
           },
@@ -19891,6 +19904,34 @@
             "description": "The value that counts here."
           }
         }
+      },
+      "SettingFormat": {
+        "type": "string",
+        "description": "What kind of text a text setting holds.",
+        "enum": [
+          "free",
+          "choice",
+          "time-zone",
+          "page-address",
+          "shortcut-keys",
+          "window-sizes",
+          "hosts"
+        ]
+      },
+      "SettingLevel": {
+        "type": "string",
+        "description": "Where a setting can be set.",
+        "enum": ["organization", "project", "person"]
+      },
+      "SettingSourceKind": {
+        "type": "string",
+        "description": "Where the value that counts comes from.",
+        "enum": ["default", "organization", "project", "person"]
+      },
+      "SettingType": {
+        "type": "string",
+        "description": "The type of a setting.",
+        "enum": ["bool", "integer", "text"]
       },
       "SettingsBody": {
         "type": "object",
@@ -20048,7 +20089,7 @@
         "required": ["kind"],
         "properties": {
           "kind": {
-            "$ref": "#/components/schemas/SourceKindBody",
+            "$ref": "#/components/schemas/SettingSourceKind",
             "description": "Which level."
           },
           "project": {
@@ -20063,11 +20104,6 @@
             ]
           }
         }
-      },
-      "SourceKindBody": {
-        "type": "string",
-        "description": "Where the value that counts comes from.",
-        "enum": ["default", "organization", "project", "person"]
       },
       "StandingBody": {
         "type": "object",
@@ -20324,7 +20360,8 @@
         "properties": {
           "expires_at": {
             "type": "string",
-            "description": "When the lock runs out if no heartbeat renews it."
+            "description": "When the lock runs out if no heartbeat renews it.",
+            "format": "date-time"
           },
           "heartbeat_seconds": {
             "type": "integer",

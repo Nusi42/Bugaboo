@@ -205,9 +205,9 @@ fn priv_12_the_person_ref_is_the_tagged_union_of_architecture_7() {
     );
     assert_eq!(
         json(&PersonRef::Former {
-            label: "K7Q2".to_owned()
+            code: "K7Q2".to_owned()
         }),
-        serde_json::json!({"shown": "former", "label": "K7Q2"})
+        serde_json::json!({"shown": "former", "code": "K7Q2"})
     );
 }
 
@@ -227,7 +227,7 @@ fn priv_13_a_removed_person_is_a_former_user_with_names_and_someone_otherwise() 
         (
             PeopleLevel::Names,
             PersonRef::Former {
-                label: "K7Q2".to_owned(),
+                code: "K7Q2".to_owned(),
             },
         ),
         (PeopleLevel::RoleOnly, PersonRef::Someone),

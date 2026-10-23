@@ -359,7 +359,7 @@ async fn rules_and_projects(ada: &mut Browser) -> Result<(), Failure> {
     assert_eq!(rules.body["permissions"][0]["key"], "see-projects");
     assert_eq!(rules.body["permissions"][0]["topic"], "projects");
     let projects = ada
-        .send("GET", "/api/v1/access-keys/projects", None)
+        .send("GET", "/api/v1/access-keys/project-choices", None)
         .await?;
     assert_eq!(projects.body["items"], json!([]));
     assert_eq!(projects.body["next_cursor"], Value::Null);

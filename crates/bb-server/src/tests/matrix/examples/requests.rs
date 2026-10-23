@@ -61,12 +61,12 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
         ),
         "lookUpInvitation" => (
             "POST",
-            "/api/v1/auth/invitation/lookup".into(),
+            "/api/v1/auth/invitations/lookup".into(),
             Some(json!({"secret": "not a secret"})),
         ),
         "acceptInvitation" => (
             "POST",
-            "/api/v1/auth/invitation/accept".into(),
+            "/api/v1/auth/invitations/accept".into(),
             Some(json!({"secret": "not a secret", "display_name": "Bob", "password": PASSWORD})),
         ),
         // Whoever is signed in, and the choices a person makes for themselves.
@@ -88,8 +88,8 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
         ),
         // The person's own notifications.
         "listNotifications" => ("GET", "/api/v1/notifications".into(), None),
-        "getUnreadNotifications" => ("GET", "/api/v1/notifications/unread".into(), None),
-        "readNotifications" => (
+        "getUnreadCount" => ("GET", "/api/v1/notifications/unread".into(), None),
+        "markNotificationsRead" => (
             "POST",
             "/api/v1/notifications/read".into(),
             Some(json!({"up_to": "01900000-0000-7000-8000-000000000000"})),
@@ -196,7 +196,7 @@ pub(super) async fn own_request(
             None,
         ),
         "getAccessKeyRules" => ("GET", "/api/v1/access-keys/rules".into(), None),
-        "listProjectChoices" => ("GET", "/api/v1/access-keys/projects".into(), None),
+        "listProjectChoices" => ("GET", "/api/v1/access-keys/project-choices".into(), None),
         _ => return Ok(None),
     }))
 }
@@ -214,7 +214,7 @@ pub(super) async fn organization_request(
             "/api/v1/auth/invitations".into(),
             Some(json!({"email": format!("invited{}@example.test", fixture.next_number())})),
         ),
-        "revokeInvitation" => {
+        "takeBackInvitation" => {
             // An invitation that is there, so a person who is let in takes a real one back.
             let made = fixture
                 .rig()

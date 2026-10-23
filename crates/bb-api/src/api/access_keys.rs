@@ -442,7 +442,7 @@ impl From<&ProjectChoice> for ProjectChoiceItem {
 /// time.
 #[utoipa::path(
     get,
-    path = "/api/v1/access-keys/projects",
+    path = "/api/v1/access-keys/project-choices",
     operation_id = "listProjectChoices",
     tag = "access-keys",
     params(ListParams),

@@ -300,7 +300,7 @@ async fn get_group(
 #[utoipa::path(
     patch,
     path = "/api/v1/groups/{group}",
-    operation_id = "renameGroup",
+    operation_id = "changeGroup",
     tag = "groups",
     params(("group" = String, Path, description = "The ID of the group.")),
     request_body = RenameGroupBody,

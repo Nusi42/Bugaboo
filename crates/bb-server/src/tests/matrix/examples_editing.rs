@@ -29,12 +29,12 @@ pub(super) fn editing_request(fixture: &Fixture<'_>, operation: &str) -> Option<
             "/api/v1/edit-locks".into(),
             Some(json!({"target": editing_what(&target), "editor_id": AN_EDITOR})),
         ),
-        "readEditLock" => (
+        "getEditLock" => (
             "GET",
             format!("/api/v1/edit-locks?record_kind=project&record_id={target}&part=description"),
             None,
         ),
-        "heartbeatEditLock" => (
+        "renewEditLock" => (
             "POST",
             "/api/v1/edit-locks/heartbeat".into(),
             Some(json!({
@@ -71,7 +71,7 @@ pub(super) fn editing_request(fixture: &Fixture<'_>, operation: &str) -> Option<
                 "draft": {"text": "Typed by the matrix", "base_version": 1}
             })),
         ),
-        "readDraft" => (
+        "getDraft" => (
             "GET",
             format!("/api/v1/drafts?record_kind=project&record_id={target}&part=description"),
             None,

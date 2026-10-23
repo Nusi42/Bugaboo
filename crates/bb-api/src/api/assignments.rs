@@ -276,7 +276,7 @@ async fn list_assignments(
 #[utoipa::path(
     post,
     path = "/api/v1/assignments",
-    operation_id = "assignRole",
+    operation_id = "createAssignment",
     tag = "roles",
     request_body = NewOrganizationRowBody,
     responses(

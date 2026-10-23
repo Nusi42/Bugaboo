@@ -20,7 +20,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/access-keys/projects": {
+  "/api/v1/access-keys/project-choices": {
     parameters: {
       query?: never;
       header?: never;
@@ -133,7 +133,7 @@ export interface paths {
      *     who has which role* for the whole organization; nobody gives a role with more than they hold
      *     themselves.
      */
-    post: operations["assignRole"];
+    post: operations["createAssignment"];
     delete?: never;
     options?: never;
     head?: never;
@@ -197,7 +197,25 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/auth/invitation/accept": {
+  "/api/v1/auth/invitations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The open invitations, a page at a time. Needs the permission *Invite people*. */
+    get: operations["listInvitations"];
+    put?: never;
+    /** Creates an invitation. The link is shown once. Needs the permission *Invite people*. */
+    post: operations["createInvitation"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/invitations/accept": {
     parameters: {
       query?: never;
       header?: never;
@@ -214,7 +232,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/auth/invitation/lookup": {
+  "/api/v1/auth/invitations/lookup": {
     parameters: {
       query?: never;
       header?: never;
@@ -234,24 +252,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/auth/invitations": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The open invitations, a page at a time. Needs the permission *Invite people*. */
-    get: operations["listInvitations"];
-    put?: never;
-    /** Creates an invitation. The link is shown once. Needs the permission *Invite people*. */
-    post: operations["createInvitation"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/v1/auth/invitations/{invitation}": {
     parameters: {
       query?: never;
@@ -263,7 +263,7 @@ export interface paths {
     put?: never;
     post?: never;
     /** Takes an invitation back. Needs the permission *Invite people*. */
-    delete: operations["revokeInvitation"];
+    delete: operations["takeBackInvitation"];
     options?: never;
     head?: never;
     patch?: never;
@@ -813,7 +813,7 @@ export interface paths {
       cookie?: never;
     };
     /** The draft of the person for a target: theirs, and nobody else's. */
-    get: operations["readDraft"];
+    get: operations["getDraft"];
     /**
      * Keeps a text as the draft of the person, in place of the older one for the same target. Only the
      *     person can read it, until it is saved, thrown away, or 30 days old.
@@ -854,7 +854,7 @@ export interface paths {
      * Says whether somebody is editing a long text, and who, without taking the lock: the box asks
      *     when it opens, so a person who comes second is told before the first key.
      */
-    get: operations["readEditLock"];
+    get: operations["getEditLock"];
     put?: never;
     /**
      * Takes the lock on a long text, on the first keystroke, or says who is editing it. The lock is a
@@ -922,7 +922,7 @@ export interface paths {
      *     is gone), and hands over what others did since the last heartbeat: somebody asked to finish, or
      *     took the editing over.
      */
-    post: operations["heartbeatEditLock"];
+    post: operations["renewEditLock"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1226,7 +1226,7 @@ export interface paths {
      * Renames a group. Needs the permission *Create, rename and delete groups and change who is in
      *     them*.
      */
-    patch: operations["renameGroup"];
+    patch: operations["changeGroup"];
     trace?: never;
   };
   "/api/v1/groups/{group}/member-choices": {
@@ -2293,7 +2293,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Marks notifications of the person as read: the ones named, or all of them. */
-    post: operations["readNotifications"];
+    post: operations["markNotificationsRead"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2308,7 +2308,7 @@ export interface paths {
       cookie?: never;
     };
     /** How many notifications the person has not read: the number on the menu entry. */
-    get: operations["getUnreadNotifications"];
+    get: operations["getUnreadCount"];
     put?: never;
     post?: never;
     delete?: never;
@@ -3295,18 +3295,19 @@ export interface components {
       /** @description The secret from the invitation link (the part after the `#`). */
       secret: string;
     };
-    /**
-     * @description Whether other accounts on this computer can open a part of the data folder.
-     * @enum {string}
-     */
-    AccessBody: "private" | "open" | "unknown";
     /** @description An access key as its owner sees it after making it. */
     AccessKeyBody: {
       /** @description What it may do. */
       choice: components["schemas"]["KeyChoice"];
-      /** @description When it was made. */
+      /**
+       * Format: date-time
+       * @description When it was made.
+       */
       created_at: string;
-      /** @description When it stops working. */
+      /**
+       * Format: date-time
+       * @description When it stops working.
+       */
       expires_at: string;
       /** @description The ID of the key. */
       id: string;
@@ -3325,15 +3326,24 @@ export interface components {
      */
     AccessKeyItem: {
       choice?: components["schemas"]["KeyChoice"] | null;
-      /** @description When it was made. */
+      /**
+       * Format: date-time
+       * @description When it was made.
+       */
       created_at?: string | null;
       /** @description Whether it has stopped working. */
       expired?: boolean | null;
-      /** @description When it stops working. */
+      /**
+       * Format: date-time
+       * @description When it stops working.
+       */
       expires_at?: string | null;
       /** @description The ID of the key. */
       id?: string | null;
-      /** @description The last time it was used, to the minute. Left out when it was never used. */
+      /**
+       * Format: date-time
+       * @description The last time it was used, to the minute. Left out when it was never used.
+       */
       last_used_at?: string | null;
       /** @description What the person called it. */
       name?: string | null;
@@ -3400,7 +3410,10 @@ export interface components {
     /** @description A row of *Who has which role*: the fields that can be asked for. */
     AssignmentItem: {
       applies_to?: components["schemas"]["AppliesTo"] | null;
-      /** @description When the row was made. */
+      /**
+       * Format: date-time
+       * @description When the row was made.
+       */
       given_at?: string | null;
       group?: components["schemas"]["NamedRef"] | null;
       /** @description The ID of the row. */
@@ -3416,7 +3429,10 @@ export interface components {
     };
     /** @description A file on an issue or a comment, as the reader sees it. */
     AttachmentItem: {
-      /** @description When it was added. */
+      /**
+       * Format: date-time
+       * @description When it was added.
+       */
       added_at: string;
       /** @description Who added it, as the reader may see people of the kind *Authors*. */
       added_by: components["schemas"]["PersonRef"];
@@ -3485,7 +3501,10 @@ export interface components {
     };
     /** @description The HTTPS certificate the server uses itself. */
     CertificateBody: {
-      /** @description When it stops being valid. */
+      /**
+       * Format: date-time
+       * @description When it stops being valid.
+       */
       expires_at: string;
     };
     /** @description A challenge for a passkey, as the passkey library writes it. */
@@ -3854,9 +3873,15 @@ export interface components {
     CommentItem: {
       /** @description Who wrote it, as the reader may see people of the kind *Authors*. */
       author: components["schemas"]["PersonRef"];
-      /** @description When it was written. */
+      /**
+       * Format: date-time
+       * @description When it was written.
+       */
       created_at: string;
-      /** @description When its text was last changed, if it was. */
+      /**
+       * Format: date-time
+       * @description When its text was last changed, if it was.
+       */
       edited_at?: string | null;
       /** @description The text as safe HTML, made on the server for this reader. */
       html: SafeHtml;
@@ -3880,7 +3905,10 @@ export interface components {
     CommentTextItem: {
       /** @description The text as safe HTML, made on the server for this reader. */
       html: SafeHtml;
-      /** @description When it was saved. */
+      /**
+       * Format: date-time
+       * @description When it was saved.
+       */
       saved_at: string;
       /** @description The text, in Markdown. */
       text: string;
@@ -3899,7 +3927,10 @@ export interface components {
     };
     /** @description What changed a record since the person looked at it. */
     ConflictBody: {
-      /** @description When, as a moment in time. */
+      /**
+       * Format: date-time
+       * @description When, as a moment in time.
+       */
       changed_at?: string | null;
       changed_by?: components["schemas"]["PersonRef"] | null;
       /** @description The values those fields have now. */
@@ -3920,16 +3951,12 @@ export interface components {
       conflict?: components["schemas"]["ConflictBody"] | null;
       taken_over_by?: components["schemas"]["PersonRef"] | null;
     };
-    /**
-     * @description Where a permission counts, as the API names it.
-     * @enum {string}
-     */
-    CountsBody: "organization" | "project";
     /** @description An access key to make. */
     CreateKeyBody: {
       /** @description What it may do. */
       choice: components["schemas"]["KeyChoice"];
       /**
+       * Format: date-time
        * @description When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the
        *     default number of days from now. It cannot be later than the longest time.
        */
@@ -3972,23 +3999,28 @@ export interface components {
      */
     DataFolderOpenBody: {
       /** @description The folder for backups. */
-      backups: components["schemas"]["AccessBody"];
+      backups: components["schemas"]["FolderAccess"];
       /** @description The built-in database file and the files next to it. */
-      database: components["schemas"]["AccessBody"];
+      database: components["schemas"]["FolderAccess"];
       /** @description The folder for attachments. */
-      files: components["schemas"]["AccessBody"];
+      files: components["schemas"]["FolderAccess"];
       /** @description The data folder itself. */
-      folder: components["schemas"]["AccessBody"];
+      folder: components["schemas"]["FolderAccess"];
       /** @description The file with the setup code of a server without a console. */
-      setup_code_file: components["schemas"]["AccessBody"];
+      setup_code_file: components["schemas"]["FolderAccess"];
     };
     /** @description The database. */
     DatabaseBody: {
       /** @description Which one it is. The address is never shown: it can hold a password. */
-      kind: components["schemas"]["RunningDatabaseBody"];
+      kind: components["schemas"]["DatabaseKind"];
       /** @description Whether it answered. */
       ok: boolean;
     };
+    /**
+     * @description Which database the server uses.
+     * @enum {string}
+     */
+    DatabaseKind: "built-in" | "sqlite" | "postgres";
     /**
      * @description Which end of a relation a person starts from: the forward name or the backward one.
      * @enum {string}
@@ -4001,7 +4033,10 @@ export interface components {
        * @description The version of the record the person started from.
        */
       base_version?: number | null;
-      /** @description When the draft last changed. */
+      /**
+       * Format: date-time
+       * @description When the draft last changed.
+       */
       saved_at: string;
       /** @description The text. */
       text: string;
@@ -4386,6 +4421,8 @@ export interface components {
       /** @description The field is not limited to projects. */
       whole_organization: boolean;
     };
+    /** Format: binary */
+    FileBytes: string;
     /**
      * @description What happened to a file of an issue: added, deleted or brought back.
      * @enum {string}
@@ -4401,6 +4438,11 @@ export interface components {
       /** @description Whether the reader may add files to the issue itself. */
       may_add: boolean;
     };
+    /**
+     * @description Whether other accounts on this computer can open a part of the data folder.
+     * @enum {string}
+     */
+    FolderAccess: "private" | "open" | "unknown";
     /**
      * @description Why a person follows an issue: they reported it, were assigned to it, commented on it or chose to.
      * @enum {string}
@@ -4431,18 +4473,6 @@ export interface components {
       /** @description Its title; may be empty. */
       title: string;
     };
-    /**
-     * @description What kind of text a text setting holds.
-     * @enum {string}
-     */
-    FormatBody:
-      | "free"
-      | "choice"
-      | "time-zone"
-      | "page-address"
-      | "shortcut-keys"
-      | "window-sizes"
-      | "hosts";
     /** @description A group after it was made or renamed. */
     GroupBody: {
       /** @description The ID of the group. */
@@ -4510,21 +4540,30 @@ export interface components {
       can_edit_anyway: boolean;
       /** @description Who is editing, as the person who asks may see them. */
       holder: components["schemas"]["PersonRef"];
-      /** @description Since when. */
+      /**
+       * Format: date-time
+       * @description Since when.
+       */
       since: string;
       /** @description The holder is the person who asks, in another window. */
       yours_elsewhere: boolean;
     };
     /** @description One item of the history of an issue. */
     HistoryEntryItem: {
-      /** @description When it happened. */
+      /**
+       * Format: date-time
+       * @description When it happened.
+       */
       at: string;
       by?: components["schemas"]["PersonRef"] | null;
       change?: components["schemas"]["FieldChangeBody"] | null;
       /** @description A comment: its ID. */
       comment?: string | null;
       direction?: components["schemas"]["Direction"] | null;
-      /** @description A comment: when its text was last changed. */
+      /**
+       * Format: date-time
+       * @description A comment: when its text was last changed.
+       */
       edited_at?: string | null;
       /** @description The event the item was made from; the items of one event share it. */
       event: string;
@@ -4575,11 +4614,17 @@ export interface components {
     };
     /** @description An invitation as the administrator sees it. */
     InvitationBody: {
-      /** @description When it was made. */
+      /**
+       * Format: date-time
+       * @description When it was made.
+       */
       created_at: string;
       /** @description The address it is for. */
       email: string;
-      /** @description When it stops working. */
+      /**
+       * Format: date-time
+       * @description When it stops working.
+       */
       expires_at: string;
       /** @description The ID of the invitation. */
       id: string;
@@ -4589,11 +4634,17 @@ export interface components {
      *     were asked for.
      */
     InvitationItem: {
-      /** @description When it was made. */
+      /**
+       * Format: date-time
+       * @description When it was made.
+       */
       created_at?: string | null;
       /** @description The address it is for. */
       email?: string | null;
-      /** @description When it stops working. */
+      /**
+       * Format: date-time
+       * @description When it stops working.
+       */
       expires_at?: string | null;
       /** @description The ID of the invitation. */
       id?: string | null;
@@ -4648,9 +4699,15 @@ export interface components {
     IssueItem: {
       /** @description Who works on it, as the viewer may see people of this kind. */
       assigned_to?: components["schemas"]["PersonRef"][] | null;
-      /** @description When it entered the group *Done*, while it is in it. Hidden with the status. */
+      /**
+       * Format: date-time
+       * @description When it entered the group *Done*, while it is in it. Hidden with the status.
+       */
       closed_at?: string | null;
-      /** @description When it was made. */
+      /**
+       * Format: date-time
+       * @description When it was made.
+       */
       created_at?: string | null;
       /** @description The long text, in Markdown. */
       description?: string | null;
@@ -4671,7 +4728,10 @@ export interface components {
       status_changes?: components["schemas"]["StatusChangeRef"][] | null;
       /** @description What it is about. */
       title?: string | null;
-      /** @description When it was last changed. */
+      /**
+       * Format: date-time
+       * @description When it was last changed.
+       */
       updated_at?: string | null;
       /**
        * Format: int64
@@ -4780,11 +4840,6 @@ export interface components {
      * @enum {string}
      */
     KeyChoice: "see-only" | "see-and-change" | "everything" | "permissions";
-    /**
-     * @description The type of a setting.
-     * @enum {string}
-     */
-    KindBody: "bool" | "integer" | "text";
     /**
      * @description What is true of a kind of information.
      * @enum {string}
@@ -4984,11 +5039,6 @@ export interface components {
         | "pictures"
         | "project-members";
     };
-    /**
-     * @description Where a setting can be set.
-     * @enum {string}
-     */
-    LevelBody: "organization" | "project" | "person";
     /** @description The level of one role. */
     LevelCellBody_FieldLevel: {
       /** @description The level was set for the issue type of the table, not for all issue types. */
@@ -5159,7 +5209,10 @@ export interface components {
     /** @description Whether the editor still has the lock, and if not, why. */
     LockStatusBody:
       | {
-          /** @description When it runs out now. */
+          /**
+           * Format: date-time
+           * @description When it runs out now.
+           */
           expires_at: string;
           /** @enum {string} */
           status: "held";
@@ -5178,7 +5231,7 @@ export interface components {
      * @description Why the chain of the security log does not verify.
      * @enum {string}
      */
-    LogBreakBody:
+    LogBreakReason:
       | "gap"
       | "broken-link"
       | "changed-content"
@@ -5347,14 +5400,20 @@ export interface components {
        * @description How many of those it changed.
        */
       changed: number;
-      /** @description When it was asked for. */
+      /**
+       * Format: date-time
+       * @description When it was asked for.
+       */
       created_at: string;
       /**
        * Format: int32
        * @description How many it has looked at.
        */
       done: number;
-      /** @description When it ended; left out while it goes on. */
+      /**
+       * Format: date-time
+       * @description When it ended; left out while it goes on.
+       */
       finished_at?: string | null;
       /** @description The ID of the run. */
       id: string;
@@ -5425,7 +5484,10 @@ export interface components {
     };
     /** @description A person in a group: the fields that can be asked for. */
     MemberItem: {
-      /** @description When the person was put into the group. */
+      /**
+       * Format: date-time
+       * @description When the person was put into the group.
+       */
       added_at?: string | null;
       person?: components["schemas"]["PersonRef"] | null;
     };
@@ -5487,7 +5549,7 @@ export interface components {
      * @description Where a person may move a project to.
      * @enum {string}
      */
-    MoveRightBody: "nowhere" | "into-projects" | "into-projects-or-top";
+    MoveRightKind: "nowhere" | "into-projects" | "into-projects-or-top";
     /** @description A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue. */
     NameBody: {
       /** @description The name. */
@@ -5718,7 +5780,10 @@ export interface components {
     };
     /** @description A note for the person who is editing. */
     NoticeBody: {
-      /** @description When. */
+      /**
+       * Format: date-time
+       * @description When.
+       */
       at: string;
       /** @description Who did it, as the person who asks may see them. */
       from: components["schemas"]["PersonRef"];
@@ -5732,7 +5797,10 @@ export interface components {
     NoticeKind: "finish-asked" | "taken-over" | "released";
     /** @description One item of the list of notifications. */
     NotificationEntry: {
-      /** @description When it happened. */
+      /**
+       * Format: date-time
+       * @description When it happened.
+       */
       at: string;
       by?: components["schemas"]["PersonRef"] | null;
       change?: components["schemas"]["FieldChangeBody"] | null;
@@ -6075,8 +6143,6 @@ export interface components {
        */
       version: number;
     };
-    /** Format: binary */
-    PartBytes: string;
     /** @description What the device answered to a passkey challenge. */
     PasskeyAnswerBody: {
       /** @description The challenge that was answered. */
@@ -6086,13 +6152,19 @@ export interface components {
     };
     /** @description A passkey the person registered. */
     PasskeyBody: {
-      /** @description When it was added. */
+      /**
+       * Format: date-time
+       * @description When it was added.
+       */
       created_at: string;
       /** @description The ID to remove it with. */
       id: string;
       /** @description The name the person gave it. */
       label: string;
-      /** @description When it was last used to sign in. */
+      /**
+       * Format: date-time
+       * @description When it was last used to sign in.
+       */
       last_used_at?: string | null;
     };
     /** @description The new password with the current one. */
@@ -6186,7 +6258,7 @@ export interface components {
       /** @description The key of the permission. */
       key: components["schemas"]["Permission"];
       /** @description Where it counts. */
-      scope: components["schemas"]["CountsBody"];
+      scope: components["schemas"]["PermissionPlace"];
       /** @description What it is about. */
       topic: components["schemas"]["Topic"];
     };
@@ -6200,6 +6272,11 @@ export interface components {
       /** @description What it is about. */
       topic: components["schemas"]["Topic"];
     };
+    /**
+     * @description Where a permission counts, as the API names it.
+     * @enum {string}
+     */
+    PermissionPlace: "organization" | "project";
     /** @description The permission catalogue, topic by topic. */
     PermissionsBody: {
       /** @description The permissions in the order of the catalogue. */
@@ -6223,7 +6300,10 @@ export interface components {
     };
     /** @description One person with their groups and roles. */
     PersonDetailBody: {
-      /** @description When the account was made. */
+      /**
+       * Format: date-time
+       * @description When the account was made.
+       */
       created_at: string;
       /** @description The person, with their e-mail address, groups and roles. */
       person: components["schemas"]["PersonItem"];
@@ -6266,7 +6346,7 @@ export interface components {
         }
       | {
           /** @description The random code, like `K7Q2`. */
-          label: string;
+          code: string;
           /** @enum {string} */
           shown: "former";
         };
@@ -6427,7 +6507,7 @@ export interface components {
       /** @description Whether the person may change the short name. */
       may_change_short_name: boolean;
       /** @description Where the person may move the project to. */
-      may_move: components["schemas"]["MoveRightBody"];
+      may_move: components["schemas"]["MoveRightKind"];
       /**
        * @description The values of the own fields of the project, by the key (ID) of the field: only the fields
        *     the person may see.
@@ -6909,11 +6989,6 @@ export interface components {
       /** @description The value has to be there. */
       required?: boolean;
     };
-    /**
-     * @description Which database the server uses.
-     * @enum {string}
-     */
-    RunningDatabaseBody: "built-in" | "sqlite" | "postgres";
     /** @description A draft to keep. */
     SaveDraftBody: {
       /** @description The text and the version it started from. */
@@ -7016,7 +7091,7 @@ export interface components {
        * @description The place of the last entry (when it verifies and has entries).
        */
       head_seq?: number | null;
-      reason?: components["schemas"]["LogBreakBody"] | null;
+      reason?: components["schemas"]["LogBreakReason"] | null;
       /** @description The outcome. */
       result: components["schemas"]["LogResult"];
       /**
@@ -7041,7 +7116,10 @@ export interface components {
       database: components["schemas"]["DatabaseBody"];
       /** @description The check of the security log. */
       security_log: components["schemas"]["SecurityLogBody"];
-      /** @description When the server started. */
+      /**
+       * Format: date-time
+       * @description When the server started.
+       */
       started_at: string;
       /**
        * Format: int64
@@ -7059,11 +7137,17 @@ export interface components {
       current: boolean;
       /** @description The ID to end it with. */
       id: string;
-      /** @description The last time it was used. */
+      /**
+       * Format: date-time
+       * @description The last time it was used.
+       */
       last_seen_at: string;
       /** @description The network it came from, shortened. */
       network?: string | null;
-      /** @description When the person signed in. */
+      /**
+       * Format: date-time
+       * @description When the person signed in.
+       */
       started_at: string;
       /** @description The name of the system, if known. */
       system?: string | null;
@@ -7086,15 +7170,15 @@ export interface components {
       /** @description The standard value. */
       default: components["schemas"]["ValueBody"];
       /** @description For text: what kind of text. */
-      format: components["schemas"]["FormatBody"];
+      format: components["schemas"]["SettingFormat"];
       /** @description The key of the message that explains it in one line. */
       help_key: string;
       /** @description The key: the topic, a dot and the name, like `topic.name`. */
       key: string;
       /** @description What it holds. */
-      kind: components["schemas"]["KindBody"];
+      kind: components["schemas"]["SettingType"];
       /** @description Where it can be set. */
-      levels: components["schemas"]["LevelBody"][];
+      levels: components["schemas"]["SettingLevel"][];
       list?: components["schemas"]["ListLimitsBody"] | null;
       /** @description Whether administrators can lock it. */
       lockable: boolean;
@@ -7112,6 +7196,33 @@ export interface components {
       /** @description The value that counts here. */
       value: components["schemas"]["ValueBody"];
     };
+    /**
+     * @description What kind of text a text setting holds.
+     * @enum {string}
+     */
+    SettingFormat:
+      | "free"
+      | "choice"
+      | "time-zone"
+      | "page-address"
+      | "shortcut-keys"
+      | "window-sizes"
+      | "hosts";
+    /**
+     * @description Where a setting can be set.
+     * @enum {string}
+     */
+    SettingLevel: "organization" | "project" | "person";
+    /**
+     * @description Where the value that counts comes from.
+     * @enum {string}
+     */
+    SettingSourceKind: "default" | "organization" | "project" | "person";
+    /**
+     * @description The type of a setting.
+     * @enum {string}
+     */
+    SettingType: "bool" | "integer" | "text";
     /** @description The settings of a topic, in the order of the registry. */
     SettingsBody: {
       /** @description The settings. */
@@ -7194,14 +7305,9 @@ export interface components {
     /** @description Where the value that counts comes from. */
     SourceBody: {
       /** @description Which level. */
-      kind: components["schemas"]["SourceKindBody"];
+      kind: components["schemas"]["SettingSourceKind"];
       project?: components["schemas"]["ProjectRef"] | null;
     };
-    /**
-     * @description Where the value that counts comes from.
-     * @enum {string}
-     */
-    SourceKindBody: "default" | "organization" | "project" | "person";
     /** @description What a person has in one project. */
     StandingBody: {
       /** @description A *No access* holds the person back there. */
@@ -7325,7 +7431,10 @@ export interface components {
     };
     /** @description The editor has the lock. */
     TakenLockBody: {
-      /** @description When the lock runs out if no heartbeat renews it. */
+      /**
+       * Format: date-time
+       * @description When the lock runs out if no heartbeat renews it.
+       */
       expires_at: string;
       /**
        * Format: int64
@@ -7926,7 +8035,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  assignRole: {
+  createAssignment: {
     parameters: {
       query?: never;
       header?: never;
@@ -8043,64 +8152,6 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  acceptInvitation: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AcceptBody"];
-      };
-    };
-    responses: {
-      /** @description The account was made and is signed in. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SignedInBody"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  lookUpInvitation: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SecretBody"];
-      };
-    };
-    responses: {
-      /** @description The invitation works. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["EmailBody"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
   listInvitations: {
     parameters: {
       query?: {
@@ -8167,7 +8218,65 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  revokeInvitation: {
+  acceptInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcceptBody"];
+      };
+    };
+    responses: {
+      /** @description The account was made and is signed in. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SignedInBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  lookUpInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SecretBody"];
+      };
+    };
+    responses: {
+      /** @description The invitation works. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EmailBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  takeBackInvitation: {
     parameters: {
       query?: never;
       header?: never;
@@ -9183,7 +9292,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  readDraft: {
+  getDraft: {
     parameters: {
       query: {
         /** @description The kind of record. */
@@ -9281,7 +9390,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  readEditLock: {
+  getEditLock: {
     parameters: {
       query: {
         /** @description The kind of record. */
@@ -9411,7 +9520,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  heartbeatEditLock: {
+  renewEditLock: {
     parameters: {
       query?: never;
       header?: never;
@@ -9949,7 +10058,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/octet-stream": components["schemas"]["PartBytes"];
+          "application/octet-stream": components["schemas"]["FileBytes"];
         };
       };
       304: components["responses"]["NotModified"];
@@ -10086,7 +10195,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  renameGroup: {
+  changeGroup: {
     parameters: {
       query?: never;
       header?: never;
@@ -12358,7 +12467,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  readNotifications: {
+  markNotificationsRead: {
     parameters: {
       query?: never;
       header?: never;
@@ -12386,7 +12495,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  getUnreadNotifications: {
+  getUnreadCount: {
     parameters: {
       query?: never;
       header?: never;
@@ -14139,7 +14248,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/octet-stream": components["schemas"]["PartBytes"];
+        "application/octet-stream": components["schemas"]["FileBytes"];
       };
     };
     responses: {

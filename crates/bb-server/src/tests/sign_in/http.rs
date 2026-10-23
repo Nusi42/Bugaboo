@@ -196,7 +196,7 @@ impl Browser {
         let accepted = person
             .send(
                 "POST",
-                "/api/v1/auth/invitation/accept",
+                "/api/v1/auth/invitations/accept",
                 Some(json!({"secret": secret, "display_name": display_name, "password": PASSWORD})),
             )
             .await?;

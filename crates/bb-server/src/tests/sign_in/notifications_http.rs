@@ -478,7 +478,7 @@ async fn mail_and_sign_up_on(rig: &Rig) -> Result<(), Failure> {
 
 const EVE: &str = "eve@example.test";
 const SIGN_UP: &str = "/api/v1/auth/sign-up";
-const ACCEPT: &str = "/api/v1/auth/invitation/accept";
+const ACCEPT: &str = "/api/v1/auth/invitations/accept";
 
 fn sign_up_body(address: &str) -> Value {
     json!({"email": address})

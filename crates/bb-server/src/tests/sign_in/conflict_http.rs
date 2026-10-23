@@ -26,7 +26,7 @@ const VERSIONED: [&str; 29] = [
     "reorderChoices",
     "changeChoice",
     "combineChoices",
-    "renameGroup",
+    "changeGroup",
     "changeIssueType",
     "changeIssueTypeOffers",
     "changeIssue",
@@ -138,7 +138,7 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
                 &now["version"],
             )
         }
-        "renameGroup" => {
+        "changeGroup" => {
             let group = made(ada, "/api/v1/groups", json!({"name": "Backend"})).await?;
             Save::new(
                 "PATCH",

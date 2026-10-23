@@ -55,7 +55,7 @@ impl ProbeHandle {
 /// Which database the server uses.
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
-enum RunningDatabaseBody {
+enum DatabaseKind {
     /// The database inside the data folder.
     BuiltIn,
     /// A SQLite file.
@@ -64,7 +64,7 @@ enum RunningDatabaseBody {
     Postgres,
 }
 
-impl From<RunningDatabase> for RunningDatabaseBody {
+impl From<RunningDatabase> for DatabaseKind {
     fn from(kind: RunningDatabase) -> Self {
         match kind {
             RunningDatabase::BuiltIn => Self::BuiltIn,
@@ -78,7 +78,7 @@ impl From<RunningDatabase> for RunningDatabaseBody {
 #[derive(Serialize, ToSchema)]
 struct DatabaseBody {
     /// Which one it is. The address is never shown: it can hold a password.
-    kind: RunningDatabaseBody,
+    kind: DatabaseKind,
     /// Whether it answered.
     ok: bool,
 }
@@ -93,7 +93,7 @@ struct CertificateBody {
 /// Why the chain of the security log does not verify.
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
-enum LogBreakBody {
+enum LogBreakReason {
     /// An entry is missing, twice or out of order.
     Gap,
     /// An entry does not point to the one before it.
@@ -110,7 +110,7 @@ enum LogBreakBody {
     Behind,
 }
 
-impl From<LogBreak> for LogBreakBody {
+impl From<LogBreak> for LogBreakReason {
     fn from(reason: LogBreak) -> Self {
         match reason {
             LogBreak::Gap => Self::Gap,
@@ -153,7 +153,7 @@ struct SecurityLogBody {
     /// The place of the first entry that does not verify (when it breaks).
     broken_at: Option<i64>,
     /// What is wrong with it (when it breaks).
-    reason: Option<LogBreakBody>,
+    reason: Option<LogBreakReason>,
     /// How many entries could not be written since the server started. A failed write does not
     /// stop a sign-in, so a number above zero means the log lags: check the disk and the rights
     /// on the data folder.
@@ -199,7 +199,7 @@ impl From<LogState> for SecurityLogBody {
 /// Whether other accounts on this computer can open a part of the data folder.
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
-enum AccessBody {
+enum FolderAccess {
     /// Only the account that runs Bugaboo can open it.
     Private,
     /// Other accounts can open it: too open.
@@ -208,7 +208,7 @@ enum AccessBody {
     Unknown,
 }
 
-impl From<Access> for AccessBody {
+impl From<Access> for FolderAccess {
     fn from(access: Access) -> Self {
         match access {
             Access::Private => Self::Private,
@@ -223,15 +223,15 @@ impl From<Access> for AccessBody {
 #[derive(Serialize, ToSchema)]
 struct DataFolderOpenBody {
     /// The data folder itself.
-    folder: AccessBody,
+    folder: FolderAccess,
     /// The built-in database file and the files next to it.
-    database: AccessBody,
+    database: FolderAccess,
     /// The folder for attachments.
-    files: AccessBody,
+    files: FolderAccess,
     /// The folder for backups.
-    backups: AccessBody,
+    backups: FolderAccess,
     /// The file with the setup code of a server without a console.
-    setup_code_file: AccessBody,
+    setup_code_file: FolderAccess,
 }
 
 impl From<DataFolderRights> for DataFolderOpenBody {

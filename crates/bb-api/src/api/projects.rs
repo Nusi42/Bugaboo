@@ -150,7 +150,7 @@ pub(crate) struct ProjectFilter {
 /// Where a person may move a project to.
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) enum MoveRightBody {
+pub(crate) enum MoveRightKind {
     /// Not anywhere.
     Nowhere,
     /// Into other projects, not to the top level.
@@ -159,7 +159,7 @@ pub(crate) enum MoveRightBody {
     IntoProjectsOrTop,
 }
 
-impl From<MoveRight> for MoveRightBody {
+impl From<MoveRight> for MoveRightKind {
     fn from(right: MoveRight) -> Self {
         match right {
             MoveRight::Nowhere => Self::Nowhere,
@@ -184,7 +184,7 @@ pub(crate) struct ProjectDetailBody {
     /// Whether the person may change the short name.
     may_change_short_name: bool,
     /// Where the person may move the project to.
-    may_move: MoveRightBody,
+    may_move: MoveRightKind,
     /// The values of the own fields of the project, by the key (ID) of the field: only the fields
     /// the person may see.
     own_fields: OwnValues,

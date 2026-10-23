@@ -78,8 +78,8 @@ async fn invitations(tour: &mut Tour) -> TestResult {
     let reply = bob
         .route(
             "POST",
-            "/api/v1/auth/invitation/lookup",
-            &format!("{api}/invitation/lookup"),
+            "/api/v1/auth/invitations/lookup",
+            &format!("{api}/invitations/lookup"),
             Some(json!({"secret": secret})),
         )
         .await?;
@@ -87,8 +87,8 @@ async fn invitations(tour: &mut Tour) -> TestResult {
     let reply = bob
         .route(
             "POST",
-            "/api/v1/auth/invitation/accept",
-            &format!("{api}/invitation/accept"),
+            "/api/v1/auth/invitations/accept",
+            &format!("{api}/invitations/accept"),
             Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
         )
         .await?;

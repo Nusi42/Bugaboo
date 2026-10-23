@@ -199,9 +199,9 @@ pub(crate) struct PartQuery {
 }
 
 /// The bytes of a part, as they are.
-pub(crate) struct PartBytes;
+pub(crate) struct FileBytes;
 
-impl utoipa::PartialSchema for PartBytes {
+impl utoipa::PartialSchema for FileBytes {
     fn schema() -> RefOr<utoipa::openapi::schema::Schema> {
         utoipa::openapi::schema::ObjectBuilder::new()
             .schema_type(utoipa::openapi::schema::Type::String)
@@ -212,7 +212,7 @@ impl utoipa::PartialSchema for PartBytes {
     }
 }
 
-impl ToSchema for PartBytes {}
+impl ToSchema for FileBytes {}
 
 /// Starts an upload of a file to an issue, or to a comment under it. Needs the right to change the
 /// issue (a Guest: an issue they reported), or, for a comment, to have written it. A file that is
@@ -301,7 +301,7 @@ async fn get_upload(
     operation_id = "sendUploadPart",
     tag = "files",
     params(("upload" = String, Path, description = "The ID of the upload."), PartQuery),
-    request_body(content = PartBytes, content_type = "application/octet-stream"),
+    request_body(content = FileBytes, content_type = "application/octet-stream"),
     responses(
         (status = 200, description = "The upload, with the bytes the server has now.", body = UploadItem),
         InvalidAnswer,
@@ -603,7 +603,7 @@ fn download_headers(name: &str, media_type: &str, size: u64) -> HeaderMap {
     tag = "files",
     params(("file" = String, Path, description = "The signed address of a file, as the list of files gives it.")),
     responses(
-        (status = 200, description = "The bytes of the file, or the PNG of its preview.", content_type = "application/octet-stream", body = PartBytes),
+        (status = 200, description = "The bytes of the file, or the PNG of its preview.", content_type = "application/octet-stream", body = FileBytes),
         NotSignedInAnswer,
         NotFoundAnswer
     )

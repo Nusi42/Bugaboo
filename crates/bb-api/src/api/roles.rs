@@ -203,7 +203,7 @@ pub(crate) struct DeleteRoleFilter {
 /// Where a permission counts, as the API names it.
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) enum CountsBody {
+pub(crate) enum PermissionPlace {
     /// Only from a role given for the whole organization: a role given on a project that holds
     /// the permission gives nothing for it, and the role page says so.
     Organization,
@@ -211,7 +211,7 @@ pub(crate) enum CountsBody {
     Project,
 }
 
-impl From<Counts> for CountsBody {
+impl From<Counts> for PermissionPlace {
     fn from(counts: Counts) -> Self {
         match counts {
             Counts::Organization => Self::Organization,
@@ -229,7 +229,7 @@ pub(crate) struct PermissionBody {
     /// What it is about.
     topic: Topic,
     /// Where it counts.
-    scope: CountsBody,
+    scope: PermissionPlace,
 }
 
 /// The permission catalogue, topic by topic.

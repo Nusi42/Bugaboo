@@ -286,7 +286,7 @@ async fn list_notifications(
 #[utoipa::path(
     get,
     path = "/api/v1/notifications/unread",
-    operation_id = "getUnreadNotifications",
+    operation_id = "getUnreadCount",
     tag = "notifications",
     responses((status = 200, description = "The number.", body = UnreadBody), NotSignedInAnswer)
 )]
@@ -308,7 +308,7 @@ async fn get_unread_notifications(
 #[utoipa::path(
     post,
     path = "/api/v1/notifications/read",
-    operation_id = "readNotifications",
+    operation_id = "markNotificationsRead",
     tag = "notifications",
     request_body = ReadNotificationsBody,
     responses((status = 204, description = "They are marked."), InvalidAnswer, NotSignedInAnswer)

@@ -19,7 +19,7 @@ export function AcceptForm({ secret, email }: AcceptFormProps) {
   const afterSignIn = useAfterSignIn();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const accept = api.query.useMutation("post", "/api/v1/auth/invitation/accept", {
+  const accept = api.query.useMutation("post", "/api/v1/auth/invitations/accept", {
     onSuccess: (answer) => {
       // The secret is used up: it leaves the address and the history of the browser.
       window.history.replaceState(null, "", window.location.pathname + window.location.search);

@@ -50,7 +50,7 @@ pub(super) async fn take_edit_lock(
 #[utoipa::path(
     get,
     path = "/api/v1/edit-locks",
-    operation_id = "readEditLock",
+    operation_id = "getEditLock",
     tag = "editing",
     params(EditTargetQuery),
     responses(
@@ -87,7 +87,7 @@ pub(super) async fn read_edit_lock(
 #[utoipa::path(
     post,
     path = "/api/v1/edit-locks/heartbeat",
-    operation_id = "heartbeatEditLock",
+    operation_id = "renewEditLock",
     tag = "editing",
     request_body = HeartbeatBody,
     responses(

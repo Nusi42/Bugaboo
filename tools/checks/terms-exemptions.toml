@@ -25,7 +25,7 @@ at = [
   "messages/en.json#service.settings-is-link",
   "messages/en.json#service.data-folder-real",
   "api:property CreatedInvitationBody.link_path",
-  "api:enum LogBreakBody broken-link",
+  "api:enum LogBreakReason broken-link",
 ]
 reason = "A web link that a person sends or opens (the glossary term Link), a link in the file system, or a link in the chain of the security log (an entry that does not point to the one before it). Not the connection between two issues, which is a Relation."
 

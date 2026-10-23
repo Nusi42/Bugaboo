@@ -230,7 +230,7 @@ async fn sign_up(
 /// an address that logs and browser history keep.
 #[utoipa::path(
     post,
-    path = "/api/v1/auth/invitation/lookup",
+    path = "/api/v1/auth/invitations/lookup",
     operation_id = "lookUpInvitation",
     tag = "auth",
     request_body = SecretBody,
@@ -256,7 +256,7 @@ async fn look_up_invitation(
 /// Creates an account from an invitation link, and signs the person in.
 #[utoipa::path(
     post,
-    path = "/api/v1/auth/invitation/accept",
+    path = "/api/v1/auth/invitations/accept",
     operation_id = "acceptInvitation",
     tag = "auth",
     request_body = AcceptBody,
@@ -372,7 +372,7 @@ async fn create_invitation(
 #[utoipa::path(
     delete,
     path = "/api/v1/auth/invitations/{invitation}",
-    operation_id = "revokeInvitation",
+    operation_id = "takeBackInvitation",
     tag = "auth",
     params(("invitation" = String, Path, description = "The ID of the invitation.")),
     responses((status = 204, description = "Taken back."), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)

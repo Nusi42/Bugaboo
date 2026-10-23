@@ -141,8 +141,8 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route("takeEditLock", Declared::ByRecord, Answer::Secret),
-    route("readEditLock", Declared::ByRecord, Answer::NeverStored),
-    route("heartbeatEditLock", Declared::ByRecord, Answer::Ordinary),
+    route("getEditLock", Declared::ByRecord, Answer::NeverStored),
+    route("renewEditLock", Declared::ByRecord, Answer::Ordinary),
     route("releaseEditLock", Declared::SignedIn, Answer::Ordinary),
     route("askToFinish", Declared::ByRecord, Answer::Ordinary),
     route(
@@ -156,7 +156,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route("saveDraft", Declared::ByRecord, Answer::Ordinary),
-    route("readDraft", Declared::ByRecord, Answer::NeverStored),
+    route("getDraft", Declared::ByRecord, Answer::NeverStored),
     route("throwAwayDraft", Declared::SignedIn, Answer::Ordinary),
     route_reading("checkVersions", Declared::ByRecord, Answer::Ordinary),
     route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
@@ -188,7 +188,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Secret,
     ),
     route(
-        "revokeInvitation",
+        "takeBackInvitation",
         Declared::Permission(Permission::ManageInvitations),
         Answer::Ordinary,
     ),
@@ -518,12 +518,12 @@ pub const ROUTES: &[Route] = &[
     route("getMyHandle", Declared::SignedIn, Answer::NeverStored),
     route("changeMyHandle", Declared::SignedIn, Answer::Ordinary),
     route("listNotifications", Declared::SignedIn, Answer::NeverStored),
+    route("getUnreadCount", Declared::SignedIn, Answer::NeverStored),
     route(
-        "getUnreadNotifications",
+        "markNotificationsRead",
         Declared::SignedIn,
-        Answer::NeverStored,
+        Answer::Ordinary,
     ),
-    route("readNotifications", Declared::SignedIn, Answer::Ordinary),
     route(
         "setMailPassword",
         Declared::Permission(Permission::ChangeOrganizationSettings),
@@ -676,7 +676,7 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
-        "renameGroup",
+        "changeGroup",
         Declared::Permission(Permission::ManageGroups),
         Answer::Ordinary,
     ),
@@ -751,7 +751,7 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
-        "assignRole",
+        "createAssignment",
         Declared::Permission(Permission::DecideRoles),
         Answer::Ordinary,
     ),

@@ -108,7 +108,7 @@ export async function createPerson(
 ): Promise<ApiSession> {
   const link = await invite(admin, person.email);
   const session = openSession(server.url);
-  await session.client.POST("/api/v1/auth/invitation/accept", {
+  await session.client.POST("/api/v1/auth/invitations/accept", {
     body: { secret: secretOf(link), display_name: person.name, password: person.password },
   });
   return session;

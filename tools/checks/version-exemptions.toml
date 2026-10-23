@@ -26,8 +26,8 @@ routes = [
   "POST /api/v1/auth/two-step/code-app/confirm",
   "POST /api/v1/auth/two-step/code-app/remove",
   "POST /api/v1/auth/two-step/backup-codes",
-  "POST /api/v1/auth/invitation/accept",
-  "POST /api/v1/auth/invitation/lookup",
+  "POST /api/v1/auth/invitations/accept",
+  "POST /api/v1/auth/invitations/lookup",
 ]
 reason = "Signing in and a person's own sign-in data have no stored version: each step answers for itself (a password or a code that is right or wrong, a session that ends), and nobody else can have changed it meanwhile."
 
