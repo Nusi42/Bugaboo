@@ -17300,10 +17300,15 @@
             "description": "The key of the field: the word of a built-in field or the ID of an own field."
           },
           "test": {
-            "$ref": "#/components/schemas/Test",
+            "$ref": "#/components/schemas/OnlyIfTest",
             "description": "What it must be like."
           }
         }
+      },
+      "OnlyIfTest": {
+        "type": "string",
+        "description": "What a condition of a status change asks of a field.",
+        "enum": ["filled", "empty"]
       },
       "OwnChangeBody": {
         "oneOf": [
@@ -19105,6 +19110,11 @@
           }
         }
       },
+      "RefusalReason": {
+        "type": "string",
+        "description": "Why a status change is not allowed.",
+        "enum": ["no-such-change", "not-for-you", "not-named", "only-if", "cannot-fill"]
+      },
       "RelatedIssueItem": {
         "type": "object",
         "description": "One relation as one end of it reads it.",
@@ -20379,11 +20389,6 @@
           }
         }
       },
-      "Test": {
-        "type": "string",
-        "description": "What a condition of a status change asks of a field.",
-        "enum": ["filled", "empty"]
-      },
       "Topic": {
         "type": "string",
         "description": "What a group of permissions is about.",
@@ -20475,7 +20480,7 @@
                 "enum": ["not-allowed"]
               },
               "why": {
-                "$ref": "#/components/schemas/Why",
+                "$ref": "#/components/schemas/RefusalReason",
                 "description": "Why."
               }
             }
@@ -20670,11 +20675,6 @@
             "description": "The reader is not shown the people of the project, so no role is named."
           }
         }
-      },
-      "Why": {
-        "type": "string",
-        "description": "Why a status change is not allowed.",
-        "enum": ["no-such-change", "not-for-you", "not-named", "only-if", "cannot-fill"]
       },
       "WordBody": {
         "type": "object",

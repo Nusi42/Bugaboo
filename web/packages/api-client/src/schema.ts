@@ -5878,8 +5878,13 @@ export interface components {
       /** @description The key of the field: the word of a built-in field or the ID of an own field. */
       field: string;
       /** @description What it must be like. */
-      test: components["schemas"]["Test"];
+      test: components["schemas"]["OnlyIfTest"];
     };
+    /**
+     * @description What a condition of a status change asks of a field.
+     * @enum {string}
+     */
+    OnlyIfTest: "filled" | "empty";
     /** @description The change that is about to be made. */
     OwnChangeBody:
       | {
@@ -6764,6 +6769,11 @@ export interface components {
        */
       version?: number | null;
     };
+    /**
+     * @description Why a status change is not allowed.
+     * @enum {string}
+     */
+    RefusalReason: "no-such-change" | "not-for-you" | "not-named" | "only-if" | "cannot-fill";
     /** @description One relation as one end of it reads it. */
     RelatedIssueItem: {
       /** @description Which end the issue asked about is at. */
@@ -7450,11 +7460,6 @@ export interface components {
       lock_token: string;
     };
     /**
-     * @description What a condition of a status change asks of a field.
-     * @enum {string}
-     */
-    Test: "filled" | "empty";
-    /**
      * @description What a group of permissions is about.
      * @enum {string}
      */
@@ -7491,7 +7496,7 @@ export interface components {
           /** @enum {string} */
           verdict: "not-allowed";
           /** @description Why. */
-          why: components["schemas"]["Why"];
+          why: components["schemas"]["RefusalReason"];
         };
     /** @description How the second step of a person is set up. */
     TwoStepBody: {
@@ -7587,11 +7592,6 @@ export interface components {
       /** @description The reader is not shown the people of the project, so no role is named. */
       roles_hidden: boolean;
     };
-    /**
-     * @description Why a status change is not allowed.
-     * @enum {string}
-     */
-    Why: "no-such-change" | "not-for-you" | "not-named" | "only-if" | "cannot-fill";
     /**
      * @description A word of the vocabulary with the message that names it: a kind of people information
      *     or a level.

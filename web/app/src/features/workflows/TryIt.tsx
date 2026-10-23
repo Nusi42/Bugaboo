@@ -33,7 +33,7 @@ function namesOf(fields: WorkflowEditor["fields"], keys: readonly string[]): str
 }
 
 /** Why the judge turned a status change down, said to the person who tries the workflow (who is not the person it is tried for). */
-function reasonOf(why: Schema<"Why">): string {
+function reasonOf(why: Schema<"RefusalReason">): string {
   if (why === "not-for-you") {
     return t("workflows.try-not-for-you");
   }

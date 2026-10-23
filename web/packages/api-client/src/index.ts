@@ -86,7 +86,7 @@ export {
   notificationKindWords,
   priorityWords,
   statusGroupWords,
-  testWords,
+  onlyIfTestWords,
 } from "./words.generated.ts";
 export {
   settingChoices,

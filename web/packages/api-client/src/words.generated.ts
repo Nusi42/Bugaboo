@@ -106,8 +106,8 @@ export const notificationKindWords = [
 /** Every word of `NotificationFilter`, in the order the server lists them. */
 export const notificationFilterWords = ["all", "unread", "mentions"] as const;
 
-/** Every word of `Test`, in the order the server lists them. */
-export const testWords = ["filled", "empty"] as const;
+/** Every word of `OnlyIfTest`, in the order the server lists them. */
+export const onlyIfTestWords = ["filled", "empty"] as const;
 
 /** The priority a new issue has when the form does not say: the server decides, the form shows it. */
 export const newIssuePriority = "normal";

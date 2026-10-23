@@ -36,7 +36,7 @@ words! {
     }
 }
 
-words_in_api!(Why, "Why a status change is not allowed.");
+words_in_api!(Why as "RefusalReason", "Why a status change is not allowed.");
 
 impl Why {
     /// The error code a refusal for this reason is answered with.

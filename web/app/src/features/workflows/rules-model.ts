@@ -7,7 +7,7 @@ export interface RuleCondition {
   /** Names the condition in the editor while it is changed; it is not sent. */
   readonly id: string;
   readonly field: string;
-  readonly test: Schema<"Test">;
+  readonly test: Schema<"OnlyIfTest">;
 }
 
 /** A field a rule can name, by the name people read, and whether a rule may ask for it in the small form. */

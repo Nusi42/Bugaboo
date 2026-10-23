@@ -190,7 +190,7 @@ const WORD_LISTS: [&str; 13] = [
     "HistoryTab",
     "NotificationKind",
     "NotificationFilter",
-    "Test",
+    "OnlyIfTest",
 ];
 
 /// `IssueIcon` as `issueIconWords`.
