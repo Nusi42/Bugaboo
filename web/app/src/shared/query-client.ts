@@ -1,4 +1,4 @@
-import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import { CancelledError, MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
 import { isSecondStepRequired, sessionLostReason, type SessionLostReason } from "./errors.ts";
 
@@ -48,3 +48,16 @@ export const queryClient = new QueryClient({
   mutationCache: new MutationCache({ onError: lost }),
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
+
+/**
+ * A question that was cancelled (the cache was emptied under it when somebody signed this place
+ * out) is expected, not a defect: nobody is waiting for its answer any more. The browser reports a
+ * rejection that nobody handles as an error of the app; this says that this one is none.
+ */
+export function ignoreCancelledQuestion(
+  event: Readonly<{ reason: unknown; preventDefault: () => void }>,
+): void {
+  if (event.reason instanceof CancelledError) {
+    event.preventDefault();
+  }
+}
