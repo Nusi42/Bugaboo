@@ -338,7 +338,7 @@ async fn list_project_assignments(
 #[utoipa::path(
     post,
     path = "/api/v1/projects/{project}/assignments",
-    operation_id = "assignProjectRole",
+    operation_id = "createProjectAssignment",
     tag = "roles",
     params(("project" = String, Path, description = "The ID of the project.")),
     request_body = NewProjectRowBody,

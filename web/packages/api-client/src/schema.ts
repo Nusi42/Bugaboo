@@ -908,27 +908,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/edit-locks/heartbeat": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Renews the lease of a lock, keeps the text so far as the draft of the person (also when the lock
-     *     is gone), and hands over what others did since the last heartbeat: somebody asked to finish, or
-     *     took the editing over.
-     */
-    post: operations["renewEditLock"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/v1/edit-locks/let-go": {
     parameters: {
       query?: never;
@@ -960,6 +939,27 @@ export interface paths {
      *     else is editing*; it is written to the security log.
      */
     post: operations["letGoOfStuckEditLock"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/edit-locks/renew": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Renews the lease of a lock, keeps the text so far as the draft of the person (also when the lock
+     *     is gone), and hands over what others did since the last heartbeat: somebody asked to finish, or
+     *     took the editing over.
+     */
+    post: operations["renewEditLock"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2569,7 +2569,7 @@ export interface paths {
      *     *Decide who has which role* in the project; nobody gives a role with more than they hold
      *     there themselves.
      */
-    post: operations["assignProjectRole"];
+    post: operations["createProjectAssignment"];
     delete?: never;
     options?: never;
     head?: never;
@@ -3560,6 +3560,16 @@ export interface components {
        */
       version: number;
     };
+    /** @description A new name for a group, made on the version that was looked at. */
+    ChangeGroupBody: {
+      /** @description What the group is called from now on. */
+      name: string;
+      /**
+       * Format: int64
+       * @description The version of the group the person looked at; a change made meanwhile stops this one.
+       */
+      version: number;
+    };
     /**
      * @description What to change about an issue: what is left out stays as it is. The description is not here: it
      *     is saved under its edit lock (`saveIssueDescription`), and a body that names it is refused.
@@ -4516,23 +4526,6 @@ export interface components {
     HandleBody: {
       /** @description The handle, without the `@`. */
       handle: string;
-    };
-    /** @description The answer to a heartbeat. */
-    HeartbeatAnswerBody: {
-      /** @description The text that came with the heartbeat was kept as the draft of the person. */
-      draft_saved: boolean;
-      /** @description Whether the editor still has the lock. */
-      lock: components["schemas"]["LockStatusBody"];
-      /** @description What others did since the last heartbeat; each note is shown once. */
-      notices: components["schemas"]["NoticeBody"][];
-    };
-    /** @description A heartbeat: the editor is still open. */
-    HeartbeatBody: {
-      draft?: components["schemas"]["DraftTextBody"] | null;
-      /** @description The lock token the lock was taken with. */
-      lock_token: string;
-      /** @description The thing that is being edited. */
-      target: components["schemas"]["EditTargetBody"];
     };
     /** @description Somebody else is editing. */
     HeldLockBody: {
@@ -6805,15 +6798,22 @@ export interface components {
        */
       version?: number | null;
     };
-    /** @description A new name for a group, made on the version that was looked at. */
-    RenameGroupBody: {
-      /** @description What the group is called from now on. */
-      name: string;
-      /**
-       * Format: int64
-       * @description The version of the group the person looked at; a change made meanwhile stops this one.
-       */
-      version: number;
+    /** @description The answer to a heartbeat. */
+    RenewAnswerBody: {
+      /** @description The text that came with the heartbeat was kept as the draft of the person. */
+      draft_saved: boolean;
+      /** @description Whether the editor still has the lock. */
+      lock: components["schemas"]["LockStatusBody"];
+      /** @description What others did since the last heartbeat; each note is shown once. */
+      notices: components["schemas"]["NoticeBody"][];
+    };
+    /** @description A heartbeat: the editor is still open. */
+    RenewBody: {
+      draft?: components["schemas"]["DraftTextBody"] | null;
+      /** @description The lock token the lock was taken with. */
+      lock_token: string;
+      /** @description The thing that is being edited. */
+      target: components["schemas"]["EditTargetBody"];
     };
     /** @description The new order of the choices. */
     ReorderChoicesBody: {
@@ -9520,38 +9520,6 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  renewEditLock: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["HeartbeatBody"];
-      };
-    };
-    responses: {
-      /** @description Whether the editor still has the lock, and the notes for it. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HeartbeatAnswerBody"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["NotSignedIn"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      413: components["responses"]["TooLarge"];
-      429: components["responses"]["TooManyRequests"];
-      500: components["responses"]["InternalError"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
   letGoOfEditLock: {
     parameters: {
       query?: never;
@@ -9599,6 +9567,38 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  renewEditLock: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RenewBody"];
+      };
+    };
+    responses: {
+      /** @description Whether the editor still has the lock, and the notes for it. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RenewAnswerBody"];
+        };
       };
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
@@ -10207,7 +10207,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["RenameGroupBody"];
+        "application/json": components["schemas"]["ChangeGroupBody"];
       };
     };
     responses: {
@@ -13036,7 +13036,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  assignProjectRole: {
+  createProjectAssignment: {
     parameters: {
       query?: never;
       header?: never;

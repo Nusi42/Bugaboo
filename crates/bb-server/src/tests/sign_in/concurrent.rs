@@ -213,7 +213,7 @@ impl Person {
             "draft": {"text": text, "base_version": version}});
         let beat = self
             .browser
-            .send("POST", &format!("{LOCKS}/heartbeat"), Some(beat))
+            .send("POST", &format!("{LOCKS}/renew"), Some(beat))
             .await?;
         ok(&beat)?;
         // Every fifth editor closes the laptop and never lets go: the lease has to end it.

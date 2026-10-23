@@ -2847,60 +2847,6 @@
         "x-secret": true
       }
     },
-    "/api/v1/edit-locks/heartbeat": {
-      "post": {
-        "tags": ["editing"],
-        "summary": "Renews the lease of a lock, keeps the text so far as the draft of the person (also when the lock\nis gone), and hands over what others did since the last heartbeat: somebody asked to finish, or\ntook the editing over.",
-        "operationId": "renewEditLock",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HeartbeatBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Whether the editor still has the lock, and the notes for it.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeartbeatAnswerBody"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/NotSignedIn"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-permission": "by-record"
-      }
-    },
     "/api/v1/edit-locks/let-go": {
       "post": {
         "tags": ["editing"],
@@ -2987,6 +2933,60 @@
           }
         },
         "x-permission": "edit-anyway"
+      }
+    },
+    "/api/v1/edit-locks/renew": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "Renews the lease of a lock, keeps the text so far as the draft of the person (also when the lock\nis gone), and hands over what others did since the last heartbeat: somebody asked to finish, or\ntook the editing over.",
+        "operationId": "renewEditLock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Whether the editor still has the lock, and the notes for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenewAnswerBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "by-record"
       }
     },
     "/api/v1/field-permissions": {
@@ -4068,7 +4068,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RenameGroupBody"
+                "$ref": "#/components/schemas/ChangeGroupBody"
               }
             }
           },
@@ -9105,7 +9105,7 @@
       "post": {
         "tags": ["roles"],
         "summary": "Gives a role, or *No access*, to a person or a group on a project. Needs the permission\n*Decide who has which role* in the project; nobody gives a role with more than they hold\nthere themselves.",
-        "operationId": "assignProjectRole",
+        "operationId": "createProjectAssignment",
         "parameters": [
           {
             "name": "project",
@@ -12526,6 +12526,22 @@
           }
         }
       },
+      "ChangeGroupBody": {
+        "type": "object",
+        "description": "A new name for a group, made on the version that was looked at.",
+        "required": ["name", "version"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "What the group is called from now on."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the group the person looked at; a change made meanwhile stops this one."
+          }
+        }
+      },
       "ChangeIssueBody": {
         "type": "object",
         "description": "What to change about an issue: what is left out stays as it is. The description is not here: it\nis saved under its edit lock (`saveIssueDescription`), and a body that names it is refused.",
@@ -14382,54 +14398,6 @@
           "handle": {
             "type": "string",
             "description": "The handle, without the `@`."
-          }
-        }
-      },
-      "HeartbeatAnswerBody": {
-        "type": "object",
-        "description": "The answer to a heartbeat.",
-        "required": ["lock", "notices", "draft_saved"],
-        "properties": {
-          "draft_saved": {
-            "type": "boolean",
-            "description": "The text that came with the heartbeat was kept as the draft of the person."
-          },
-          "lock": {
-            "$ref": "#/components/schemas/LockStatusBody",
-            "description": "Whether the editor still has the lock."
-          },
-          "notices": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NoticeBody"
-            },
-            "description": "What others did since the last heartbeat; each note is shown once."
-          }
-        }
-      },
-      "HeartbeatBody": {
-        "type": "object",
-        "description": "A heartbeat: the editor is still open.",
-        "required": ["target", "lock_token"],
-        "properties": {
-          "draft": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/DraftTextBody",
-                "description": "The text so far: kept as the draft of the person, also when the lock is gone."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "lock_token": {
-            "type": "string",
-            "description": "The lock token the lock was taken with."
-          },
-          "target": {
-            "$ref": "#/components/schemas/EditTargetBody",
-            "description": "The thing that is being edited."
           }
         }
       },
@@ -19196,19 +19164,51 @@
           }
         }
       },
-      "RenameGroupBody": {
+      "RenewAnswerBody": {
         "type": "object",
-        "description": "A new name for a group, made on the version that was looked at.",
-        "required": ["name", "version"],
+        "description": "The answer to a heartbeat.",
+        "required": ["lock", "notices", "draft_saved"],
         "properties": {
-          "name": {
-            "type": "string",
-            "description": "What the group is called from now on."
+          "draft_saved": {
+            "type": "boolean",
+            "description": "The text that came with the heartbeat was kept as the draft of the person."
           },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version of the group the person looked at; a change made meanwhile stops this one."
+          "lock": {
+            "$ref": "#/components/schemas/LockStatusBody",
+            "description": "Whether the editor still has the lock."
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoticeBody"
+            },
+            "description": "What others did since the last heartbeat; each note is shown once."
+          }
+        }
+      },
+      "RenewBody": {
+        "type": "object",
+        "description": "A heartbeat: the editor is still open.",
+        "required": ["target", "lock_token"],
+        "properties": {
+          "draft": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DraftTextBody",
+                "description": "The text so far: kept as the draft of the person, also when the lock is gone."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lock_token": {
+            "type": "string",
+            "description": "The lock token the lock was taken with."
+          },
+          "target": {
+            "$ref": "#/components/schemas/EditTargetBody",
+            "description": "The thing that is being edited."
           }
         }
       },

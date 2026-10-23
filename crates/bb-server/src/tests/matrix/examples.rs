@@ -267,7 +267,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("listAssignments"),
     Example::route("createAssignment"),
     Example::route("listProjectAssignments"),
-    Example::route("assignProjectRole"),
+    Example::route("createProjectAssignment"),
     Example::route("removeAssignment"),
     Example::route("listAssignmentChoices"),
     Example::route("listProjectAssignmentChoices"),

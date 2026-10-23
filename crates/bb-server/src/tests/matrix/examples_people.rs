@@ -223,7 +223,7 @@ async fn rows_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
             format!("/api/v1/projects/{target}/assignments"),
             None,
         ),
-        "assignProjectRole" => (
+        "createProjectAssignment" => (
             "POST",
             format!("/api/v1/projects/{target}/assignments"),
             Some(json!({

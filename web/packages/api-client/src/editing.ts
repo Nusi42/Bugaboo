@@ -23,7 +23,7 @@ export type DraftTarget = Schema<"DraftTargetBody">;
 /** The answer to asking for a lock: it is taken, or somebody else is editing. */
 export type LockOutcome = Schema<"LockOutcomeBody">;
 /** The answer to a heartbeat. */
-export type Heartbeat = Schema<"HeartbeatAnswerBody">;
+export type Heartbeat = Schema<"RenewAnswerBody">;
 /** The text so far of a draft, with the version it started from. */
 export type DraftText = Schema<"DraftTextBody">;
 
@@ -67,7 +67,7 @@ export async function sendHeartbeat(
   draft?: DraftText,
 ): Promise<Heartbeat> {
   return dataOf(
-    await client.POST("/api/v1/edit-locks/heartbeat", {
+    await client.POST("/api/v1/edit-locks/renew", {
       body: { target: what, lock_token: lockToken, ...(draft === undefined ? {} : { draft }) },
     }),
   );

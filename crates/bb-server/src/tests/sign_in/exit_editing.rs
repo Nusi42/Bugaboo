@@ -196,7 +196,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
         let beat = ada
             .send(
                 "POST",
-                &format!("{LOCKS}/heartbeat"),
+                &format!("{LOCKS}/renew"),
                 Some(json!({
                     "target": what(&one_more, "description"),
                     "lock_token": locked["lock_token"],

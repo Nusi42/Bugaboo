@@ -2,11 +2,11 @@
 
 use super::{
     ApiError, ApiJson, ApiQuery, AskToFinish, AuthHandle, DraftText, EditAnyway,
-    EditTargetOnlyBody, EditTargetQuery, EditorId, ForbiddenAnswer, HeartbeatAnswerBody,
-    HeartbeatBody, HeartbeatQuery, Info, InvalidAnswer, LetGoBody, LockHolderBody, LockOutcomeBody,
-    LockToken, NotFoundAnswer, NotSignedInAnswer, ReadLockQuery, ReleaseLockQuery,
-    ReleaseStuckLock, Response, Session, State, TakeLockBody, TakeLockQuery, answer_authorized,
-    body_id, done,
+    EditTargetOnlyBody, EditTargetQuery, EditorId, ForbiddenAnswer, HeartbeatQuery, Info,
+    InvalidAnswer, LetGoBody, LockHolderBody, LockOutcomeBody, LockToken, NotFoundAnswer,
+    NotSignedInAnswer, ReadLockQuery, ReleaseLockQuery, ReleaseStuckLock, RenewAnswerBody,
+    RenewBody, Response, Session, State, TakeLockBody, TakeLockQuery, answer_authorized, body_id,
+    done,
 };
 
 /// Takes the lock on a long text, on the first keystroke, or says who is editing it. The lock is a
@@ -86,12 +86,12 @@ pub(super) async fn read_edit_lock(
 /// took the editing over.
 #[utoipa::path(
     post,
-    path = "/api/v1/edit-locks/heartbeat",
+    path = "/api/v1/edit-locks/renew",
     operation_id = "renewEditLock",
     tag = "editing",
-    request_body = HeartbeatBody,
+    request_body = RenewBody,
     responses(
-        (status = 200, description = "Whether the editor still has the lock, and the notes for it.", body = HeartbeatAnswerBody),
+        (status = 200, description = "Whether the editor still has the lock, and the notes for it.", body = RenewAnswerBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
@@ -102,7 +102,7 @@ pub(super) async fn heartbeat_edit_lock(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<HeartbeatBody>,
+    ApiJson(body): ApiJson<RenewBody>,
 ) -> Result<Response, ApiError> {
     let heartbeat = auth
         .api()?
@@ -116,7 +116,7 @@ pub(super) async fn heartbeat_edit_lock(
             },
         )
         .await?;
-    answer_authorized(&heartbeat.map(|heartbeat| HeartbeatAnswerBody::from(&heartbeat)))
+    answer_authorized(&heartbeat.map(|heartbeat| RenewAnswerBody::from(&heartbeat)))
 }
 
 /// Lets go of a lock: the text was saved, or the editor was closed.

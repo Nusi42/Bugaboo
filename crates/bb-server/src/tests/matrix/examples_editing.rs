@@ -36,7 +36,7 @@ pub(super) fn editing_request(fixture: &Fixture<'_>, operation: &str) -> Option<
         ),
         "renewEditLock" => (
             "POST",
-            "/api/v1/edit-locks/heartbeat".into(),
+            "/api/v1/edit-locks/renew".into(),
             Some(json!({
                 "target": editing_what(&target),
                 "lock_token": NO_LOCK_TOKEN,

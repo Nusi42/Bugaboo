@@ -257,7 +257,7 @@ impl From<DraftTextBody> for DraftText {
 
 /// A heartbeat: the editor is still open.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct HeartbeatBody {
+pub(crate) struct RenewBody {
     /// The thing that is being edited.
     pub(super) target: EditTargetBody,
     /// The lock token the lock was taken with.
@@ -319,7 +319,7 @@ impl From<&NoticeView> for NoticeBody {
 
 /// The answer to a heartbeat.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct HeartbeatAnswerBody {
+pub(crate) struct RenewAnswerBody {
     /// Whether the editor still has the lock.
     pub(super) lock: LockStatusBody,
     /// What others did since the last heartbeat; each note is shown once.
@@ -328,9 +328,9 @@ pub(crate) struct HeartbeatAnswerBody {
     pub(super) draft_saved: bool,
 }
 
-impl Masked for HeartbeatAnswerBody {}
+impl Masked for RenewAnswerBody {}
 
-impl From<&HeartbeatAnswer> for HeartbeatAnswerBody {
+impl From<&HeartbeatAnswer> for RenewAnswerBody {
     fn from(heartbeat: &HeartbeatAnswer) -> Self {
         Self {
             lock: LockStatusBody::from(&heartbeat.lock),

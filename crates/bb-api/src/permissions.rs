@@ -771,7 +771,7 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
-        "assignProjectRole",
+        "createProjectAssignment",
         Declared::Permission(Permission::DecideRoles),
         Answer::Ordinary,
     ),

@@ -107,7 +107,7 @@ reason = "The name of the error code for the CSRF token that the browser app sen
 term = "token"
 at = [
   "api:property TakenLockBody.lock_token",
-  "api:property HeartbeatBody.lock_token",
+  "api:property RenewBody.lock_token",
   "api:property LetGoBody.lock_token",
   "api:property SaveTextBody.lock_token",
   "api:property SaveLayoutBody.lock_token",

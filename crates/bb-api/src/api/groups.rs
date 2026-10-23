@@ -99,7 +99,7 @@ impl From<&GroupDetail> for GroupDetailBody {
 
 /// A new name for a group, made on the version that was looked at.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct RenameGroupBody {
+pub(crate) struct ChangeGroupBody {
     /// What the group is called from now on.
     name: String,
     /// The version of the group the person looked at; a change made meanwhile stops this one.
@@ -303,7 +303,7 @@ async fn get_group(
     operation_id = "changeGroup",
     tag = "groups",
     params(("group" = String, Path, description = "The ID of the group.")),
-    request_body = RenameGroupBody,
+    request_body = ChangeGroupBody,
     responses(
         (status = 200, description = "The group as it is now.", body = GroupBody),
         InvalidAnswer,
@@ -318,7 +318,7 @@ async fn rename_group(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(group_id): ApiPath<String>,
-    ApiJson(body): ApiJson<RenameGroupBody>,
+    ApiJson(body): ApiJson<ChangeGroupBody>,
 ) -> Result<Response, ApiError> {
     let group = path_id::<GroupId>(&group_id)?;
     let renamed = auth
