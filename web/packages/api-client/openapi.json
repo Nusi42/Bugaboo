@@ -3025,7 +3025,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LevelTableBody_FieldKey_FieldLevel"
+                  "$ref": "#/components/schemas/FieldLevelTableBody"
                 }
               }
             }
@@ -8356,7 +8356,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LevelTableBody_PeopleKind_PeopleLevel"
+                  "$ref": "#/components/schemas/PeopleLevelTableBody"
                 }
               }
             }
@@ -12992,7 +12992,7 @@
           "fields": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/LevelAnswerBody_FieldKey_FieldLevel"
+              "$ref": "#/components/schemas/FieldLevelAnswerBody"
             },
             "description": "Every field of the catalogue."
           },
@@ -13017,7 +13017,7 @@
           "kinds": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/LevelAnswerBody_PeopleKind_PeopleLevel"
+              "$ref": "#/components/schemas/PeopleLevelAnswerBody"
             },
             "description": "Every kind of people information."
           },
@@ -14093,6 +14093,59 @@
         "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
         "enum": ["hidden", "can-see", "can-change"]
       },
+      "FieldLevelAnswerBody": {
+        "type": "object",
+        "description": "A field or a kind with its level and what each role says.",
+        "required": ["subject", "level", "roles", "capped_by_key"],
+        "properties": {
+          "capped_by_key": {
+            "type": "boolean",
+            "description": "An access key lowered the level to *Can see*."
+          },
+          "level": {
+            "$ref": "#/components/schemas/FieldLevel",
+            "description": "The level the person has."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; none for a field of the catalogue or a kind."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldRoleSaysBody"
+            },
+            "description": "What each role that counts says."
+          },
+          "subject": {
+            "$ref": "#/components/schemas/FieldKey",
+            "description": "The field or the kind."
+          }
+        }
+      },
+      "FieldLevelCellBody": {
+        "type": "object",
+        "description": "The level of one role.",
+        "required": ["role", "level", "for_type", "origin"],
+        "properties": {
+          "for_type": {
+            "type": "boolean",
+            "description": "The level was set for the issue type of the table, not for all issue types."
+          },
+          "level": {
+            "$ref": "#/components/schemas/FieldLevel",
+            "description": "Its level in the place."
+          },
+          "origin": {
+            "$ref": "#/components/schemas/LevelOriginBody",
+            "description": "Where it was set."
+          },
+          "role": {
+            "type": "string",
+            "description": "The ID of the role."
+          }
+        }
+      },
       "FieldLevelChangeBody": {
         "type": "object",
         "description": "A level of a field that the move changes for the person.",
@@ -14109,6 +14162,97 @@
           "field": {
             "$ref": "#/components/schemas/FieldKeyBody",
             "description": "The field."
+          }
+        }
+      },
+      "FieldLevelRowBody": {
+        "type": "object",
+        "required": ["subject", "yours", "cells"],
+        "properties": {
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldLevelCellBody"
+            },
+            "description": "One cell for each role, in the order of `roles`."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; none for a field of the catalogue or a kind."
+          },
+          "subject": {
+            "$ref": "#/components/schemas/FieldKey",
+            "description": "The field or the kind."
+          },
+          "yours": {
+            "$ref": "#/components/schemas/FieldLevel",
+            "description": "The highest level the person who asks may set here: their own."
+          }
+        }
+      },
+      "FieldLevelTableBody": {
+        "type": "object",
+        "description": "What each role sees, for one place.",
+        "required": ["roles", "truncated", "levels", "rows"],
+        "properties": {
+          "issue_type": {
+            "type": ["string", "null"],
+            "description": "The ID of the issue type the levels are for, or `null` for all issue types."
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldLevel"
+            },
+            "description": "The levels a cell can be set to, the lowest first."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLabelBody",
+                "description": "The project, or `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedRef"
+            },
+            "description": "The roles, in the order of roles: the columns."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldLevelRowBody"
+            },
+            "description": "The fields or kinds, in the order of their catalogue: the rows."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "There are more roles than the table holds; the first ones are shown."
+          }
+        }
+      },
+      "FieldRoleSaysBody": {
+        "type": "object",
+        "description": "What one role says about a field or a kind.",
+        "required": ["role", "level", "set"],
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/FieldLevel",
+            "description": "Its level."
+          },
+          "role": {
+            "$ref": "#/components/schemas/NamedRef",
+            "description": "The role."
+          },
+          "set": {
+            "$ref": "#/components/schemas/LevelPlaceBody",
+            "description": "Where it was set."
           }
         }
       },
@@ -15364,128 +15508,6 @@
           }
         }
       },
-      "LevelAnswerBody_FieldKey_FieldLevel": {
-        "type": "object",
-        "description": "A field or a kind with its level and what each role says.",
-        "required": ["subject", "level", "roles", "capped_by_key"],
-        "properties": {
-          "capped_by_key": {
-            "type": "boolean",
-            "description": "An access key lowered the level to *Can see*."
-          },
-          "level": {
-            "type": "string",
-            "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
-            "enum": ["hidden", "can-see", "can-change"]
-          },
-          "name": {
-            "type": ["string", "null"],
-            "description": "The name of an own field; none for a field of the catalogue or a kind."
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RoleSaysBody_FieldLevel"
-            },
-            "description": "What each role that counts says."
-          },
-          "subject": {
-            "type": "string",
-            "description": "The key of a field: the word of a built-in field, or the ID of an own field."
-          }
-        }
-      },
-      "LevelAnswerBody_PeopleKind_PeopleLevel": {
-        "type": "object",
-        "description": "A field or a kind with its level and what each role says.",
-        "required": ["subject", "level", "roles", "capped_by_key"],
-        "properties": {
-          "capped_by_key": {
-            "type": "boolean",
-            "description": "An access key lowered the level to *Can see*."
-          },
-          "level": {
-            "type": "string",
-            "description": "How people of one kind are shown: by name, by their role only, or hidden.",
-            "enum": ["hidden", "role-only", "names"]
-          },
-          "name": {
-            "type": ["string", "null"],
-            "description": "The name of an own field; none for a field of the catalogue or a kind."
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RoleSaysBody_PeopleLevel"
-            },
-            "description": "What each role that counts says."
-          },
-          "subject": {
-            "type": "string",
-            "description": "A kind of people information, by its key.",
-            "enum": [
-              "assigned-to",
-              "reported-by",
-              "last-changed-by",
-              "authors",
-              "editing",
-              "followers",
-              "time-entries",
-              "mentions",
-              "pictures",
-              "project-members"
-            ]
-          }
-        }
-      },
-      "LevelCellBody_FieldLevel": {
-        "type": "object",
-        "description": "The level of one role.",
-        "required": ["role", "level", "for_type", "origin"],
-        "properties": {
-          "for_type": {
-            "type": "boolean",
-            "description": "The level was set for the issue type of the table, not for all issue types."
-          },
-          "level": {
-            "type": "string",
-            "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
-            "enum": ["hidden", "can-see", "can-change"]
-          },
-          "origin": {
-            "$ref": "#/components/schemas/LevelOriginBody",
-            "description": "Where it was set."
-          },
-          "role": {
-            "type": "string",
-            "description": "The ID of the role."
-          }
-        }
-      },
-      "LevelCellBody_PeopleLevel": {
-        "type": "object",
-        "description": "The level of one role.",
-        "required": ["role", "level", "for_type", "origin"],
-        "properties": {
-          "for_type": {
-            "type": "boolean",
-            "description": "The level was set for the issue type of the table, not for all issue types."
-          },
-          "level": {
-            "type": "string",
-            "description": "How people of one kind are shown: by name, by their role only, or hidden.",
-            "enum": ["hidden", "role-only", "names"]
-          },
-          "origin": {
-            "$ref": "#/components/schemas/LevelOriginBody",
-            "description": "Where it was set."
-          },
-          "role": {
-            "type": "string",
-            "description": "The ID of the role."
-          }
-        }
-      },
       "LevelOriginBody": {
         "oneOf": [
           {
@@ -15580,170 +15602,6 @@
           }
         ],
         "description": "Where the level a role says was set."
-      },
-      "LevelRowBody_FieldKey_FieldLevel": {
-        "type": "object",
-        "description": "A field or a kind of people information with the level of every role.",
-        "required": ["subject", "yours", "cells"],
-        "properties": {
-          "cells": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LevelCellBody_FieldLevel"
-            },
-            "description": "One cell for each role, in the order of `roles`."
-          },
-          "name": {
-            "type": ["string", "null"],
-            "description": "The name of an own field; none for a field of the catalogue or a kind."
-          },
-          "subject": {
-            "type": "string",
-            "description": "The key of a field: the word of a built-in field, or the ID of an own field."
-          },
-          "yours": {
-            "type": "string",
-            "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
-            "enum": ["hidden", "can-see", "can-change"]
-          }
-        }
-      },
-      "LevelRowBody_PeopleKind_PeopleLevel": {
-        "type": "object",
-        "description": "A field or a kind of people information with the level of every role.",
-        "required": ["subject", "yours", "cells"],
-        "properties": {
-          "cells": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LevelCellBody_PeopleLevel"
-            },
-            "description": "One cell for each role, in the order of `roles`."
-          },
-          "name": {
-            "type": ["string", "null"],
-            "description": "The name of an own field; none for a field of the catalogue or a kind."
-          },
-          "subject": {
-            "type": "string",
-            "description": "A kind of people information, by its key.",
-            "enum": [
-              "assigned-to",
-              "reported-by",
-              "last-changed-by",
-              "authors",
-              "editing",
-              "followers",
-              "time-entries",
-              "mentions",
-              "pictures",
-              "project-members"
-            ]
-          },
-          "yours": {
-            "type": "string",
-            "description": "How people of one kind are shown: by name, by their role only, or hidden.",
-            "enum": ["hidden", "role-only", "names"]
-          }
-        }
-      },
-      "LevelTableBody_FieldKey_FieldLevel": {
-        "type": "object",
-        "description": "What each role sees, for one place.",
-        "required": ["roles", "truncated", "levels", "rows"],
-        "properties": {
-          "issue_type": {
-            "type": ["string", "null"],
-            "description": "The ID of the issue type the levels are for, or `null` for all issue types."
-          },
-          "levels": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
-              "enum": ["hidden", "can-see", "can-change"]
-            },
-            "description": "The levels a cell can be set to, the lowest first."
-          },
-          "project": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ProjectLabelBody",
-                "description": "The project, or `null` for the whole organization."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NamedRef"
-            },
-            "description": "The roles, in the order of roles: the columns."
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LevelRowBody_FieldKey_FieldLevel"
-            },
-            "description": "The fields or kinds, in the order of their catalogue: the rows."
-          },
-          "truncated": {
-            "type": "boolean",
-            "description": "There are more roles than the table holds; the first ones are shown."
-          }
-        }
-      },
-      "LevelTableBody_PeopleKind_PeopleLevel": {
-        "type": "object",
-        "description": "What each role sees, for one place.",
-        "required": ["roles", "truncated", "levels", "rows"],
-        "properties": {
-          "issue_type": {
-            "type": ["string", "null"],
-            "description": "The ID of the issue type the levels are for, or `null` for all issue types."
-          },
-          "levels": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "description": "How people of one kind are shown: by name, by their role only, or hidden.",
-              "enum": ["hidden", "role-only", "names"]
-            },
-            "description": "The levels a cell can be set to, the lowest first."
-          },
-          "project": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ProjectLabelBody",
-                "description": "The project, or `null` for the whole organization."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NamedRef"
-            },
-            "description": "The roles, in the order of roles: the columns."
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LevelRowBody_PeopleKind_PeopleLevel"
-            },
-            "description": "The fields or kinds, in the order of their catalogue: the rows."
-          },
-          "truncated": {
-            "type": "boolean",
-            "description": "There are more roles than the table holds; the first ones are shown."
-          }
-        }
       },
       "LiftBody": {
         "type": "object",
@@ -18025,6 +17883,59 @@
         "description": "How people of one kind are shown: by name, by their role only, or hidden.",
         "enum": ["hidden", "role-only", "names"]
       },
+      "PeopleLevelAnswerBody": {
+        "type": "object",
+        "description": "A field or a kind with its level and what each role says.",
+        "required": ["subject", "level", "roles", "capped_by_key"],
+        "properties": {
+          "capped_by_key": {
+            "type": "boolean",
+            "description": "An access key lowered the level to *Can see*."
+          },
+          "level": {
+            "$ref": "#/components/schemas/PeopleLevel",
+            "description": "The level the person has."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; none for a field of the catalogue or a kind."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeopleRoleSaysBody"
+            },
+            "description": "What each role that counts says."
+          },
+          "subject": {
+            "$ref": "#/components/schemas/PeopleKind",
+            "description": "The field or the kind."
+          }
+        }
+      },
+      "PeopleLevelCellBody": {
+        "type": "object",
+        "description": "The level of one role.",
+        "required": ["role", "level", "for_type", "origin"],
+        "properties": {
+          "for_type": {
+            "type": "boolean",
+            "description": "The level was set for the issue type of the table, not for all issue types."
+          },
+          "level": {
+            "$ref": "#/components/schemas/PeopleLevel",
+            "description": "Its level in the place."
+          },
+          "origin": {
+            "$ref": "#/components/schemas/LevelOriginBody",
+            "description": "Where it was set."
+          },
+          "role": {
+            "type": "string",
+            "description": "The ID of the role."
+          }
+        }
+      },
       "PeopleLevelChangeBody": {
         "type": "object",
         "description": "A level of a kind of people information that the move changes for the person.",
@@ -18041,6 +17952,97 @@
           "kind": {
             "$ref": "#/components/schemas/WordBody",
             "description": "The kind of people information."
+          }
+        }
+      },
+      "PeopleLevelRowBody": {
+        "type": "object",
+        "required": ["subject", "yours", "cells"],
+        "properties": {
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeopleLevelCellBody"
+            },
+            "description": "One cell for each role, in the order of `roles`."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; none for a field of the catalogue or a kind."
+          },
+          "subject": {
+            "$ref": "#/components/schemas/PeopleKind",
+            "description": "The field or the kind."
+          },
+          "yours": {
+            "$ref": "#/components/schemas/PeopleLevel",
+            "description": "The highest level the person who asks may set here: their own."
+          }
+        }
+      },
+      "PeopleLevelTableBody": {
+        "type": "object",
+        "description": "What each role sees, for one place.",
+        "required": ["roles", "truncated", "levels", "rows"],
+        "properties": {
+          "issue_type": {
+            "type": ["string", "null"],
+            "description": "The ID of the issue type the levels are for, or `null` for all issue types."
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeopleLevel"
+            },
+            "description": "The levels a cell can be set to, the lowest first."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLabelBody",
+                "description": "The project, or `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedRef"
+            },
+            "description": "The roles, in the order of roles: the columns."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeopleLevelRowBody"
+            },
+            "description": "The fields or kinds, in the order of their catalogue: the rows."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "There are more roles than the table holds; the first ones are shown."
+          }
+        }
+      },
+      "PeopleRoleSaysBody": {
+        "type": "object",
+        "description": "What one role says about a field or a kind.",
+        "required": ["role", "level", "set"],
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/PeopleLevel",
+            "description": "Its level."
+          },
+          "role": {
+            "$ref": "#/components/schemas/NamedRef",
+            "description": "The role."
+          },
+          "set": {
+            "$ref": "#/components/schemas/LevelPlaceBody",
+            "description": "Where it was set."
           }
         }
       },
@@ -19369,46 +19371,6 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "Counts up with every change. A change is made on the version that was looked at."
-          }
-        }
-      },
-      "RoleSaysBody_FieldLevel": {
-        "type": "object",
-        "description": "What one role says about a field or a kind.",
-        "required": ["role", "level", "set"],
-        "properties": {
-          "level": {
-            "type": "string",
-            "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
-            "enum": ["hidden", "can-see", "can-change"]
-          },
-          "role": {
-            "$ref": "#/components/schemas/NamedRef",
-            "description": "The role."
-          },
-          "set": {
-            "$ref": "#/components/schemas/LevelPlaceBody",
-            "description": "Where it was set."
-          }
-        }
-      },
-      "RoleSaysBody_PeopleLevel": {
-        "type": "object",
-        "description": "What one role says about a field or a kind.",
-        "required": ["role", "level", "set"],
-        "properties": {
-          "level": {
-            "type": "string",
-            "description": "How people of one kind are shown: by name, by their role only, or hidden.",
-            "enum": ["hidden", "role-only", "names"]
-          },
-          "role": {
-            "$ref": "#/components/schemas/NamedRef",
-            "description": "The role."
-          },
-          "set": {
-            "$ref": "#/components/schemas/LevelPlaceBody",
-            "description": "Where it was set."
           }
         }
       },

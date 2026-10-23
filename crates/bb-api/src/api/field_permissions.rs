@@ -12,9 +12,10 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::{FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable};
 use bb_app::roles::SetFieldLevel;
-use bb_core::access::FieldLevel;
+use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, ProjectId, RoleId};
+use bb_core::people_kinds::PeopleKind;
 use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -109,82 +110,110 @@ impl From<&LevelOrigin> for LevelOriginBody {
     }
 }
 
-/// The level of one role.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct LevelCellBody<L> {
-    /// The ID of the role.
-    role: String,
-    /// Its level in the place.
-    level: L,
-    /// The level was set for the issue type of the table, not for all issue types.
-    for_type: bool,
-    /// Where it was set.
-    origin: LevelOriginBody,
-}
-
-/// A field or a kind of people information with the level of every role.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct LevelRowBody<K, L> {
-    /// The field or the kind.
-    subject: K,
-    /// The name of an own field; none for a field of the catalogue or a kind.
-    name: Option<String>,
-    /// The highest level the person who asks may set here: their own.
-    yours: L,
-    /// One cell for each role, in the order of `roles`.
-    cells: Vec<LevelCellBody<L>>,
-}
-
-/// What each role sees, for one place.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct LevelTableBody<K, L> {
-    /// The project, or `null` for the whole organization.
-    project: Option<ProjectLabelBody>,
-    /// The ID of the issue type the levels are for, or `null` for all issue types.
-    issue_type: Option<String>,
-    /// The roles, in the order of roles: the columns.
-    roles: Vec<NamedRef>,
-    /// There are more roles than the table holds; the first ones are shown.
-    truncated: bool,
-    /// The levels a cell can be set to, the lowest first.
-    levels: Vec<L>,
-    /// The fields or kinds, in the order of their catalogue: the rows.
-    rows: Vec<LevelRowBody<K, L>>,
-}
-
-impl<K, L> Masked for LevelTableBody<K, L> {}
-
-impl<K: Copy, L: Copy> LevelTableBody<K, L> {
-    /// The body of a table; `levels` are the choices of a cell.
-    pub(super) fn of(table: &LevelTable<K, L>, levels: &[L]) -> Self {
-        Self {
-            project: table.place.as_ref().map(ProjectLabelBody::from),
-            issue_type: table.issue_type.map(|issue_type| issue_type.to_string()),
-            roles: table.roles.iter().map(NamedRef::from).collect(),
-            truncated: table.truncated,
-            levels: levels.to_vec(),
-            rows: table.rows.iter().map(row_body).collect(),
+/// Writes the bodies of a table of levels for one kind of subject: the cell of a role, the row of a
+/// field or a kind, and the table. A schema has the name of its type, so each kind of subject has
+/// plain names (`FieldLevelTableBody`, `PeopleLevelTableBody`) and not a generic one.
+macro_rules! level_table_bodies {
+    ($cell:ident, $row:ident, $table:ident, $subject:ty, $level:ty, $what:literal) => {
+        /// The level of one role.
+        #[derive(Serialize, ToSchema)]
+        pub(crate) struct $cell {
+            /// The ID of the role.
+            role: String,
+            /// Its level in the place.
+            level: $level,
+            /// The level was set for the issue type of the table, not for all issue types.
+            for_type: bool,
+            /// Where it was set.
+            origin: LevelOriginBody,
         }
-    }
+
+        impl From<&LevelCell<$level>> for $cell {
+            fn from(cell: &LevelCell<$level>) -> Self {
+                Self {
+                    role: cell.role.to_string(),
+                    level: cell.level,
+                    for_type: cell.for_type,
+                    origin: LevelOriginBody::from(&cell.origin),
+                }
+            }
+        }
+
+        #[doc = concat!("A ", $what, " with the level of every role.")]
+        #[derive(Serialize, ToSchema)]
+        pub(crate) struct $row {
+            /// The field or the kind.
+            subject: $subject,
+            /// The name of an own field; none for a field of the catalogue or a kind.
+            name: Option<String>,
+            /// The highest level the person who asks may set here: their own.
+            yours: $level,
+            /// One cell for each role, in the order of `roles`.
+            cells: Vec<$cell>,
+        }
+
+        impl From<&LevelRow<$subject, $level>> for $row {
+            fn from(row: &LevelRow<$subject, $level>) -> Self {
+                Self {
+                    subject: row.subject,
+                    name: row.name.clone(),
+                    yours: row.yours,
+                    cells: row.cells.iter().map($cell::from).collect(),
+                }
+            }
+        }
+
+        /// What each role sees, for one place.
+        #[derive(Serialize, ToSchema)]
+        pub(crate) struct $table {
+            /// The project, or `null` for the whole organization.
+            project: Option<ProjectLabelBody>,
+            /// The ID of the issue type the levels are for, or `null` for all issue types.
+            issue_type: Option<String>,
+            /// The roles, in the order of roles: the columns.
+            roles: Vec<NamedRef>,
+            /// There are more roles than the table holds; the first ones are shown.
+            truncated: bool,
+            /// The levels a cell can be set to, the lowest first.
+            levels: Vec<$level>,
+            /// The fields or kinds, in the order of their catalogue: the rows.
+            rows: Vec<$row>,
+        }
+
+        impl Masked for $table {}
+
+        impl $table {
+            /// The body of a table; `levels` are the choices of a cell.
+            pub(super) fn of(table: &LevelTable<$subject, $level>, levels: &[$level]) -> Self {
+                Self {
+                    project: table.place.as_ref().map(ProjectLabelBody::from),
+                    issue_type: table.issue_type.map(|issue_type| issue_type.to_string()),
+                    roles: table.roles.iter().map(NamedRef::from).collect(),
+                    truncated: table.truncated,
+                    levels: levels.to_vec(),
+                    rows: table.rows.iter().map($row::from).collect(),
+                }
+            }
+        }
+    };
 }
 
-fn row_body<K: Copy, L: Copy>(row: &LevelRow<K, L>) -> LevelRowBody<K, L> {
-    LevelRowBody {
-        subject: row.subject,
-        name: row.name.clone(),
-        yours: row.yours,
-        cells: row.cells.iter().map(cell_body).collect(),
-    }
-}
-
-fn cell_body<L: Copy>(cell: &LevelCell<L>) -> LevelCellBody<L> {
-    LevelCellBody {
-        role: cell.role.to_string(),
-        level: cell.level,
-        for_type: cell.for_type,
-        origin: LevelOriginBody::from(&cell.origin),
-    }
-}
+level_table_bodies!(
+    FieldLevelCellBody,
+    FieldLevelRowBody,
+    FieldLevelTableBody,
+    FieldKey,
+    FieldLevel,
+    "field"
+);
+level_table_bodies!(
+    PeopleLevelCellBody,
+    PeopleLevelRowBody,
+    PeopleLevelTableBody,
+    PeopleKind,
+    PeopleLevel,
+    "kind of people information"
+);
 
 /// The level to set, or `null` to take away what the project set for the role, so the level
 /// from above counts again.
@@ -210,7 +239,7 @@ pub(crate) struct FieldCellPath {
     operation_id = "getFieldPermissions",
     tag = "access",
     params(TypeParams),
-    responses((status = 200, description = "The field permissions.", body = LevelTableBody<FieldKey, FieldLevel>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+    responses((status = 200, description = "The field permissions.", body = FieldLevelTableBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_field_permissions(
     State(auth): State<AuthHandle>,
@@ -231,7 +260,7 @@ async fn get_field_permissions(
             },
         )
         .await?;
-    answer_authorized(&table.map(|table| LevelTableBody::of(&table, FieldLevel::ALL)))
+    answer_authorized(&table.map(|table| FieldLevelTableBody::of(&table, FieldLevel::ALL)))
 }
 
 /// Sets the level of a field for a role, for the whole organization (the role's own level) or for

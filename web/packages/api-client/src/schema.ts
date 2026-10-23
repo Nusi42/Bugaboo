@@ -3789,7 +3789,7 @@ export interface components {
        */
       differs_by_type: boolean;
       /** @description Every field of the catalogue. */
-      fields: components["schemas"]["LevelAnswerBody_FieldKey_FieldLevel"][];
+      fields: components["schemas"]["FieldLevelAnswerBody"][];
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
       /**
        * @description The issue types the question may ask about: those the place offers and that are not
@@ -3797,7 +3797,7 @@ export interface components {
        */
       issue_types?: components["schemas"]["IssueTypeRef"][];
       /** @description Every kind of people information. */
-      kinds: components["schemas"]["LevelAnswerBody_PeopleKind_PeopleLevel"][];
+      kinds: components["schemas"]["PeopleLevelAnswerBody"][];
       /** @description Every permission that counts here. */
       permissions: components["schemas"]["PermissionAnswerBody"][];
       /** @description The person who was checked, as the person who asks may see them. */
@@ -4365,6 +4365,30 @@ export interface components {
      * @enum {string}
      */
     FieldLevel: "hidden" | "can-see" | "can-change";
+    /** @description A field or a kind with its level and what each role says. */
+    FieldLevelAnswerBody: {
+      /** @description An access key lowered the level to *Can see*. */
+      capped_by_key: boolean;
+      /** @description The level the person has. */
+      level: components["schemas"]["FieldLevel"];
+      /** @description The name of an own field; none for a field of the catalogue or a kind. */
+      name?: string | null;
+      /** @description What each role that counts says. */
+      roles: components["schemas"]["FieldRoleSaysBody"][];
+      /** @description The field or the kind. */
+      subject: components["schemas"]["FieldKey"];
+    };
+    /** @description The level of one role. */
+    FieldLevelCellBody: {
+      /** @description The level was set for the issue type of the table, not for all issue types. */
+      for_type: boolean;
+      /** @description Its level in the place. */
+      level: components["schemas"]["FieldLevel"];
+      /** @description Where it was set. */
+      origin: components["schemas"]["LevelOriginBody"];
+      /** @description The ID of the role. */
+      role: string;
+    };
     /** @description A level of a field that the move changes for the person. */
     FieldLevelChangeBody: {
       /** @description The level after the move. */
@@ -4373,6 +4397,39 @@ export interface components {
       before: components["schemas"]["WordBody"];
       /** @description The field. */
       field: components["schemas"]["FieldKeyBody"];
+    };
+    FieldLevelRowBody: {
+      /** @description One cell for each role, in the order of `roles`. */
+      cells: components["schemas"]["FieldLevelCellBody"][];
+      /** @description The name of an own field; none for a field of the catalogue or a kind. */
+      name?: string | null;
+      /** @description The field or the kind. */
+      subject: components["schemas"]["FieldKey"];
+      /** @description The highest level the person who asks may set here: their own. */
+      yours: components["schemas"]["FieldLevel"];
+    };
+    /** @description What each role sees, for one place. */
+    FieldLevelTableBody: {
+      /** @description The ID of the issue type the levels are for, or `null` for all issue types. */
+      issue_type?: string | null;
+      /** @description The levels a cell can be set to, the lowest first. */
+      levels: components["schemas"]["FieldLevel"][];
+      project?: components["schemas"]["ProjectLabelBody"] | null;
+      /** @description The roles, in the order of roles: the columns. */
+      roles: components["schemas"]["NamedRef"][];
+      /** @description The fields or kinds, in the order of their catalogue: the rows. */
+      rows: components["schemas"]["FieldLevelRowBody"][];
+      /** @description There are more roles than the table holds; the first ones are shown. */
+      truncated: boolean;
+    };
+    /** @description What one role says about a field or a kind. */
+    FieldRoleSaysBody: {
+      /** @description Its level. */
+      level: components["schemas"]["FieldLevel"];
+      /** @description The role. */
+      role: components["schemas"]["NamedRef"];
+      /** @description Where it was set. */
+      set: components["schemas"]["LevelPlaceBody"];
     };
     /** @description Where a field is used, as the person may know it. */
     FieldScopeBody: {
@@ -4996,79 +5053,6 @@ export interface components {
       /** @description The thing that was edited. */
       target: components["schemas"]["EditTargetBody"];
     };
-    /** @description A field or a kind with its level and what each role says. */
-    LevelAnswerBody_FieldKey_FieldLevel: {
-      /** @description An access key lowered the level to *Can see*. */
-      capped_by_key: boolean;
-      /**
-       * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
-       * @enum {string}
-       */
-      level: "hidden" | "can-see" | "can-change";
-      /** @description The name of an own field; none for a field of the catalogue or a kind. */
-      name?: string | null;
-      /** @description What each role that counts says. */
-      roles: components["schemas"]["RoleSaysBody_FieldLevel"][];
-      /** @description The key of a field: the word of a built-in field, or the ID of an own field. */
-      subject: string;
-    };
-    /** @description A field or a kind with its level and what each role says. */
-    LevelAnswerBody_PeopleKind_PeopleLevel: {
-      /** @description An access key lowered the level to *Can see*. */
-      capped_by_key: boolean;
-      /**
-       * @description How people of one kind are shown: by name, by their role only, or hidden.
-       * @enum {string}
-       */
-      level: "hidden" | "role-only" | "names";
-      /** @description The name of an own field; none for a field of the catalogue or a kind. */
-      name?: string | null;
-      /** @description What each role that counts says. */
-      roles: components["schemas"]["RoleSaysBody_PeopleLevel"][];
-      /**
-       * @description A kind of people information, by its key.
-       * @enum {string}
-       */
-      subject:
-        | "assigned-to"
-        | "reported-by"
-        | "last-changed-by"
-        | "authors"
-        | "editing"
-        | "followers"
-        | "time-entries"
-        | "mentions"
-        | "pictures"
-        | "project-members";
-    };
-    /** @description The level of one role. */
-    LevelCellBody_FieldLevel: {
-      /** @description The level was set for the issue type of the table, not for all issue types. */
-      for_type: boolean;
-      /**
-       * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
-       * @enum {string}
-       */
-      level: "hidden" | "can-see" | "can-change";
-      /** @description Where it was set. */
-      origin: components["schemas"]["LevelOriginBody"];
-      /** @description The ID of the role. */
-      role: string;
-    };
-    /** @description The level of one role. */
-    LevelCellBody_PeopleLevel: {
-      /** @description The level was set for the issue type of the table, not for all issue types. */
-      for_type: boolean;
-      /**
-       * @description How people of one kind are shown: by name, by their role only, or hidden.
-       * @enum {string}
-       */
-      level: "hidden" | "role-only" | "names";
-      /** @description Where it was set. */
-      origin: components["schemas"]["LevelOriginBody"];
-      /** @description The ID of the role. */
-      role: string;
-    };
     /** @description Where the level of a cell was set. */
     LevelOriginBody:
       | {
@@ -5105,75 +5089,6 @@ export interface components {
           /** @enum {string} */
           kind: "unset";
         };
-    /** @description A field or a kind of people information with the level of every role. */
-    LevelRowBody_FieldKey_FieldLevel: {
-      /** @description One cell for each role, in the order of `roles`. */
-      cells: components["schemas"]["LevelCellBody_FieldLevel"][];
-      /** @description The name of an own field; none for a field of the catalogue or a kind. */
-      name?: string | null;
-      /** @description The key of a field: the word of a built-in field, or the ID of an own field. */
-      subject: string;
-      /**
-       * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
-       * @enum {string}
-       */
-      yours: "hidden" | "can-see" | "can-change";
-    };
-    /** @description A field or a kind of people information with the level of every role. */
-    LevelRowBody_PeopleKind_PeopleLevel: {
-      /** @description One cell for each role, in the order of `roles`. */
-      cells: components["schemas"]["LevelCellBody_PeopleLevel"][];
-      /** @description The name of an own field; none for a field of the catalogue or a kind. */
-      name?: string | null;
-      /**
-       * @description A kind of people information, by its key.
-       * @enum {string}
-       */
-      subject:
-        | "assigned-to"
-        | "reported-by"
-        | "last-changed-by"
-        | "authors"
-        | "editing"
-        | "followers"
-        | "time-entries"
-        | "mentions"
-        | "pictures"
-        | "project-members";
-      /**
-       * @description How people of one kind are shown: by name, by their role only, or hidden.
-       * @enum {string}
-       */
-      yours: "hidden" | "role-only" | "names";
-    };
-    /** @description What each role sees, for one place. */
-    LevelTableBody_FieldKey_FieldLevel: {
-      /** @description The ID of the issue type the levels are for, or `null` for all issue types. */
-      issue_type?: string | null;
-      /** @description The levels a cell can be set to, the lowest first. */
-      levels: ("hidden" | "can-see" | "can-change")[];
-      project?: components["schemas"]["ProjectLabelBody"] | null;
-      /** @description The roles, in the order of roles: the columns. */
-      roles: components["schemas"]["NamedRef"][];
-      /** @description The fields or kinds, in the order of their catalogue: the rows. */
-      rows: components["schemas"]["LevelRowBody_FieldKey_FieldLevel"][];
-      /** @description There are more roles than the table holds; the first ones are shown. */
-      truncated: boolean;
-    };
-    /** @description What each role sees, for one place. */
-    LevelTableBody_PeopleKind_PeopleLevel: {
-      /** @description The ID of the issue type the levels are for, or `null` for all issue types. */
-      issue_type?: string | null;
-      /** @description The levels a cell can be set to, the lowest first. */
-      levels: ("hidden" | "role-only" | "names")[];
-      project?: components["schemas"]["ProjectLabelBody"] | null;
-      /** @description The roles, in the order of roles: the columns. */
-      roles: components["schemas"]["NamedRef"][];
-      /** @description The fields or kinds, in the order of their catalogue: the rows. */
-      rows: components["schemas"]["LevelRowBody_PeopleKind_PeopleLevel"][];
-      /** @description There are more roles than the table holds; the first ones are shown. */
-      truncated: boolean;
-    };
     /** @description Somebody who could take away a *No access* that applies to them after the move. */
     LiftBody: {
       /** @description The person, as the person who asks may see them. */
@@ -6206,6 +6121,30 @@ export interface components {
      * @enum {string}
      */
     PeopleLevel: "hidden" | "role-only" | "names";
+    /** @description A field or a kind with its level and what each role says. */
+    PeopleLevelAnswerBody: {
+      /** @description An access key lowered the level to *Can see*. */
+      capped_by_key: boolean;
+      /** @description The level the person has. */
+      level: components["schemas"]["PeopleLevel"];
+      /** @description The name of an own field; none for a field of the catalogue or a kind. */
+      name?: string | null;
+      /** @description What each role that counts says. */
+      roles: components["schemas"]["PeopleRoleSaysBody"][];
+      /** @description The field or the kind. */
+      subject: components["schemas"]["PeopleKind"];
+    };
+    /** @description The level of one role. */
+    PeopleLevelCellBody: {
+      /** @description The level was set for the issue type of the table, not for all issue types. */
+      for_type: boolean;
+      /** @description Its level in the place. */
+      level: components["schemas"]["PeopleLevel"];
+      /** @description Where it was set. */
+      origin: components["schemas"]["LevelOriginBody"];
+      /** @description The ID of the role. */
+      role: string;
+    };
     /** @description A level of a kind of people information that the move changes for the person. */
     PeopleLevelChangeBody: {
       /** @description The level after the move. */
@@ -6214,6 +6153,39 @@ export interface components {
       before: components["schemas"]["WordBody"];
       /** @description The kind of people information. */
       kind: components["schemas"]["WordBody"];
+    };
+    PeopleLevelRowBody: {
+      /** @description One cell for each role, in the order of `roles`. */
+      cells: components["schemas"]["PeopleLevelCellBody"][];
+      /** @description The name of an own field; none for a field of the catalogue or a kind. */
+      name?: string | null;
+      /** @description The field or the kind. */
+      subject: components["schemas"]["PeopleKind"];
+      /** @description The highest level the person who asks may set here: their own. */
+      yours: components["schemas"]["PeopleLevel"];
+    };
+    /** @description What each role sees, for one place. */
+    PeopleLevelTableBody: {
+      /** @description The ID of the issue type the levels are for, or `null` for all issue types. */
+      issue_type?: string | null;
+      /** @description The levels a cell can be set to, the lowest first. */
+      levels: components["schemas"]["PeopleLevel"][];
+      project?: components["schemas"]["ProjectLabelBody"] | null;
+      /** @description The roles, in the order of roles: the columns. */
+      roles: components["schemas"]["NamedRef"][];
+      /** @description The fields or kinds, in the order of their catalogue: the rows. */
+      rows: components["schemas"]["PeopleLevelRowBody"][];
+      /** @description There are more roles than the table holds; the first ones are shown. */
+      truncated: boolean;
+    };
+    /** @description What one role says about a field or a kind. */
+    PeopleRoleSaysBody: {
+      /** @description Its level. */
+      level: components["schemas"]["PeopleLevel"];
+      /** @description The role. */
+      role: components["schemas"]["NamedRef"];
+      /** @description Where it was set. */
+      set: components["schemas"]["LevelPlaceBody"];
     };
     /**
      * @description One permission of the catalogue.
@@ -6910,30 +6882,6 @@ export interface components {
        * @description Counts up with every change. A change is made on the version that was looked at.
        */
       version?: number | null;
-    };
-    /** @description What one role says about a field or a kind. */
-    RoleSaysBody_FieldLevel: {
-      /**
-       * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
-       * @enum {string}
-       */
-      level: "hidden" | "can-see" | "can-change";
-      /** @description The role. */
-      role: components["schemas"]["NamedRef"];
-      /** @description Where it was set. */
-      set: components["schemas"]["LevelPlaceBody"];
-    };
-    /** @description What one role says about a field or a kind. */
-    RoleSaysBody_PeopleLevel: {
-      /**
-       * @description How people of one kind are shown: by name, by their role only, or hidden.
-       * @enum {string}
-       */
-      level: "hidden" | "role-only" | "names";
-      /** @description The role. */
-      role: components["schemas"]["NamedRef"];
-      /** @description Where it was set. */
-      set: components["schemas"]["LevelPlaceBody"];
     };
     /** @description What a role is used for, as far as the person who asks may see. */
     RoleUsedByBody: {
@@ -9639,7 +9587,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["LevelTableBody_FieldKey_FieldLevel"];
+          "application/json": components["schemas"]["FieldLevelTableBody"];
         };
       };
       304: components["responses"]["NotModified"];
@@ -12639,7 +12587,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["LevelTableBody_PeopleKind_PeopleLevel"];
+          "application/json": components["schemas"]["PeopleLevelTableBody"];
         };
       };
       304: components["responses"]["NotModified"];

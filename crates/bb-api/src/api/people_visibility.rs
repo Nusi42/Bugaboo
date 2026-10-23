@@ -21,7 +21,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
 };
-use super::field_permissions::{LevelTableBody, PlaceParams};
+use super::field_permissions::{PeopleLevelTableBody, PlaceParams};
 use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
@@ -49,7 +49,7 @@ pub(crate) struct PeopleCellPath {
     operation_id = "getPeopleVisibility",
     tag = "access",
     params(PlaceParams),
-    responses((status = 200, description = "How roles see people.", body = LevelTableBody<PeopleKind, PeopleLevel>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+    responses((status = 200, description = "How roles see people.", body = PeopleLevelTableBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_people_visibility(
     State(auth): State<AuthHandle>,
@@ -68,7 +68,7 @@ async fn get_people_visibility(
             },
         )
         .await?;
-    answer_authorized(&table.map(|table| LevelTableBody::of(&table, PeopleLevel::ALL)))
+    answer_authorized(&table.map(|table| PeopleLevelTableBody::of(&table, PeopleLevel::ALL)))
 }
 
 /// Sets how a role sees one kind of people information, for the whole organization (the role's
