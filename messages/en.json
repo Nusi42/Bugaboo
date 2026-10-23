@@ -709,6 +709,7 @@
   "issue-field.activity": "Activity",
   "issue-field.cost-center": "Cost center",
   "issue-field.issue-type": "Issue type",
+  "issue-field.readable-id": "Issue ID",
   "issue-field.parent": "Part of",
   "issue-field.sub-issue": "Sub-issue",
   "issue-field.project": "Project",

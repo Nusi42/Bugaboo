@@ -10,6 +10,7 @@ export interface FieldKeyWords {
 /** The members History names that are not fields of the catalogue, by their code. */
 const memberKeys: Readonly<Record<string, string>> = {
   "issue-type": "issue-field.issue-type",
+  "readable-id": "issue-field.readable-id",
   parent: "issue-field.parent",
   "sub-issue": "issue-field.sub-issue",
   project: "issue-field.project",

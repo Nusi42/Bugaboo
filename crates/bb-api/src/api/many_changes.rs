@@ -250,10 +250,20 @@ impl FieldChangeBody {
     }
 }
 
+/// The word of the API for the field of a change: the renewal of an issue's ID is stored as `key`, a
+/// word the glossary rules out, and the API says `readable-id`.
+fn field_word(stored: &str) -> String {
+    if stored == "key" {
+        "readable-id".to_owned()
+    } else {
+        stored.to_owned()
+    }
+}
+
 impl From<&FieldChangeView> for FieldChangeBody {
     fn from(change: &FieldChangeView) -> Self {
         Self {
-            field: change.field.clone(),
+            field: field_word(&change.field),
             name: change.name.clone(),
             before: change.before.as_ref().map(ChangeValueBody::from),
             after: change.after.as_ref().map(ChangeValueBody::from),
@@ -651,4 +661,15 @@ where
         .routes(routes!(apply_many_changes))
         .routes(routes!(get_many_changes_run))
         .routes(routes!(stop_many_changes_run))
+}
+
+#[cfg(test)]
+mod field_word_tests {
+    use super::field_word;
+
+    #[test]
+    fn the_renewal_of_an_issue_id_is_the_field_readable_id_and_other_fields_stay() {
+        assert_eq!(field_word("key"), "readable-id");
+        assert_eq!(field_word("title"), "title");
+    }
 }

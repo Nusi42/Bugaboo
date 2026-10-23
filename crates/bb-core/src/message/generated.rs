@@ -1772,6 +1772,9 @@ pub const ISSUE_FIELD_PRIORITY: MessageKey = MessageKey::new("issue-field.priori
 /// The message `issue-field.project`.
 pub const ISSUE_FIELD_PROJECT: MessageKey = MessageKey::new("issue-field.project");
 
+/// The message `issue-field.readable-id`.
+pub const ISSUE_FIELD_READABLE_ID: MessageKey = MessageKey::new("issue-field.readable-id");
+
 /// The message `issue-field.reported-by`.
 pub const ISSUE_FIELD_REPORTED_BY: MessageKey = MessageKey::new("issue-field.reported-by");
 
@@ -11046,6 +11049,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.planned-for-release", "Planned for release"),
     ("issue-field.priority", "Priority"),
     ("issue-field.project", "Project"),
+    ("issue-field.readable-id", "Issue ID"),
     ("issue-field.reported-by", "Reported by"),
     ("issue-field.status", "Status"),
     ("issue-field.sub-issue", "Sub-issue"),
