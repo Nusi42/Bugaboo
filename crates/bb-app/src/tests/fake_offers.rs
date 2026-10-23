@@ -8,9 +8,11 @@ use bb_core::tags::IssueSight;
 use super::fake::{FakeError, FakeStore, Tx};
 use crate::offers::OfferStore;
 
-/// Whether the person of the sight reads the issue.
-fn reads(sight: &IssueSight, issue: &Issue) -> bool {
+/// Whether the person of the sight reads the issue: the one definition for the in-memory store (the
+/// trash, the types hidden in a project, the projects where they see all issues or their own).
+pub(super) fn reads(sight: &IssueSight, issue: &Issue) -> bool {
     (sight.with_trashed || issue.deleted_at.is_none())
+        && !sight.hidden.contains(&(issue.project, issue.issue_type))
         && (sight.all.contains(&issue.project)
             || (sight.own.contains(&issue.project) && issue.reported_by == sight.person))
 }

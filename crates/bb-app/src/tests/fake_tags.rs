@@ -7,6 +7,7 @@ use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, Ta
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
+use super::fake_offers::reads;
 use crate::tags::{TagLimit, TagStore, TagUse};
 
 fn page_after(mut issues: Vec<IssueId>, after: Option<IssueId>, limit: u64) -> Vec<IssueId> {
@@ -134,14 +135,10 @@ impl TagStore for FakeStore {
                 .filter(|tag| {
                     state.issue_tags.iter().any(|link| {
                         link.tag == tag.id
-                            && state.issues.iter().any(|issue| {
-                                issue.id == link.issue
-                                    && (sight.with_trashed || issue.deleted_at.is_none())
-                                    && !sight.hidden.contains(&(issue.project, issue.issue_type))
-                                    && (sight.all.contains(&issue.project)
-                                        || (sight.own.contains(&issue.project)
-                                            && issue.reported_by == sight.person))
-                            })
+                            && state
+                                .issues
+                                .iter()
+                                .any(|issue| issue.id == link.issue && reads(sight, issue))
                     })
                 })
                 .cloned()
@@ -161,14 +158,10 @@ impl TagStore for FakeStore {
         let used_in = |state: &State, tag: &Tag, sight: &IssueSight| {
             state.issue_tags.iter().any(|link| {
                 link.tag == tag.id
-                    && state.issues.iter().any(|issue| {
-                        issue.id == link.issue
-                            && (sight.with_trashed || issue.deleted_at.is_none())
-                            && !sight.hidden.contains(&(issue.project, issue.issue_type))
-                            && (sight.all.contains(&issue.project)
-                                || (sight.own.contains(&issue.project)
-                                    && issue.reported_by == sight.person))
-                    })
+                    && state
+                        .issues
+                        .iter()
+                        .any(|issue| issue.id == link.issue && reads(sight, issue))
             })
         };
         Ok(self.read(|state| {

@@ -10,6 +10,7 @@ use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, Ta
 use jiff::Timestamp;
 
 use crate::issues::IssueStore;
+use crate::store_macros::{queries, reads, writes};
 
 /// A tag with what decides whether a person may know it (`Ctx::known_tag_names`).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,7 +35,6 @@ pub enum TagLimit {
     /// To projects, one of which the person sees.
     Visible,
 }
-use crate::store_macros::{queries, reads, writes};
 
 /// What the tag and label use cases need from storage.
 pub trait TagStore: IssueStore + 'static {
