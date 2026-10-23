@@ -929,7 +929,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/edit-locks/release": {
+  "/api/v1/edit-locks/let-go": {
     parameters: {
       query?: never;
       header?: never;
@@ -939,14 +939,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Lets go of a lock: the text was saved, or the editor was closed. */
-    post: operations["releaseEditLock"];
+    post: operations["letGoOfEditLock"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/edit-locks/release-stuck": {
+  "/api/v1/edit-locks/let-go-stuck": {
     parameters: {
       query?: never;
       header?: never;
@@ -959,7 +959,7 @@ export interface paths {
      * Releases a lock that is stuck, whoever holds it. Needs the permission *Take over text somebody
      *     else is editing*; it is written to the security log.
      */
-    post: operations["releaseStuckEditLock"];
+    post: operations["letGoOfStuckEditLock"];
     delete?: never;
     options?: never;
     head?: never;
@@ -4994,6 +4994,13 @@ export interface components {
      * @enum {string}
      */
     LayoutKind: "new-issue" | "issue-page";
+    /** @description Which lock to let go of, and the token it was taken with. */
+    LetGoBody: {
+      /** @description The lock token the lock was taken with. */
+      lock_token: string;
+      /** @description The thing that was edited. */
+      target: components["schemas"]["EditTargetBody"];
+    };
     /** @description A field or a kind with its level and what each role says. */
     LevelAnswerBody_FieldKey_FieldLevel: {
       /** @description An access key lowered the level to *Can see*. */
@@ -5791,10 +5798,10 @@ export interface components {
       kind: components["schemas"]["NoticeKind"];
     };
     /**
-     * @description What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock.
+     * @description What the person who is editing is told: somebody asked them to finish, took the editing over, or let go of the lock.
      * @enum {string}
      */
-    NoticeKind: "finish-asked" | "taken-over" | "released";
+    NoticeKind: "finish-asked" | "taken-over" | "let-go";
     /** @description One item of the list of notifications. */
     NotificationEntry: {
       /**
@@ -6797,13 +6804,6 @@ export interface components {
        * @description Counts up with every change. A change is made on the version that was looked at.
        */
       version?: number | null;
-    };
-    /** @description Which lock to let go of, and the token it was taken with. */
-    ReleaseLockBody: {
-      /** @description The lock token the lock was taken with. */
-      lock_token: string;
-      /** @description The thing that was edited. */
-      target: components["schemas"]["EditTargetBody"];
     };
     /** @description A new name for a group, made on the version that was looked at. */
     RenameGroupBody: {
@@ -9552,7 +9552,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  releaseEditLock: {
+  letGoOfEditLock: {
     parameters: {
       query?: never;
       header?: never;
@@ -9561,7 +9561,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ReleaseLockBody"];
+        "application/json": components["schemas"]["LetGoBody"];
       };
     };
     responses: {
@@ -9580,7 +9580,7 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
-  releaseStuckEditLock: {
+  letGoOfStuckEditLock: {
     parameters: {
       query?: never;
       header?: never;

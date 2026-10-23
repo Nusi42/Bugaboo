@@ -108,7 +108,7 @@ term = "token"
 at = [
   "api:property TakenLockBody.lock_token",
   "api:property HeartbeatBody.lock_token",
-  "api:property ReleaseLockBody.lock_token",
+  "api:property LetGoBody.lock_token",
   "api:property SaveTextBody.lock_token",
   "api:property SaveLayoutBody.lock_token",
   "api:property PublishWorkflowBody.lock_token",

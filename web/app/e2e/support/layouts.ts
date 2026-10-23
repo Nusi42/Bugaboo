@@ -99,7 +99,7 @@ async function putFieldsInFirstSection(
       body: { version: slot.version, lock_token: taken.lock_token, sections },
     }),
   );
-  await admin.client.POST("/api/v1/edit-locks/release", {
+  await admin.client.POST("/api/v1/edit-locks/let-go", {
     body: { target: what, lock_token: taken.lock_token },
   });
 }

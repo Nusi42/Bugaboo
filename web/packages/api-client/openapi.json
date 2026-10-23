@@ -2901,16 +2901,16 @@
         "x-permission": "by-record"
       }
     },
-    "/api/v1/edit-locks/release": {
+    "/api/v1/edit-locks/let-go": {
       "post": {
         "tags": ["editing"],
         "summary": "Lets go of a lock: the text was saved, or the editor was closed.",
-        "operationId": "releaseEditLock",
+        "operationId": "letGoOfEditLock",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReleaseLockBody"
+                "$ref": "#/components/schemas/LetGoBody"
               }
             }
           },
@@ -2942,11 +2942,11 @@
         "x-permission": "signed-in"
       }
     },
-    "/api/v1/edit-locks/release-stuck": {
+    "/api/v1/edit-locks/let-go-stuck": {
       "post": {
         "tags": ["editing"],
         "summary": "Releases a lock that is stuck, whoever holds it. Needs the permission *Take over text somebody\nelse is editing*; it is written to the security log.",
-        "operationId": "releaseStuckEditLock",
+        "operationId": "letGoOfStuckEditLock",
         "requestBody": {
           "content": {
             "application/json": {
@@ -15386,6 +15386,21 @@
         "description": "What a layout is for: the issue page or the new-issue form.",
         "enum": ["new-issue", "issue-page"]
       },
+      "LetGoBody": {
+        "type": "object",
+        "description": "Which lock to let go of, and the token it was taken with.",
+        "required": ["target", "lock_token"],
+        "properties": {
+          "lock_token": {
+            "type": "string",
+            "description": "The lock token the lock was taken with."
+          },
+          "target": {
+            "$ref": "#/components/schemas/EditTargetBody",
+            "description": "The thing that was edited."
+          }
+        }
+      },
       "LevelAnswerBody_FieldKey_FieldLevel": {
         "type": "object",
         "description": "A field or a kind with its level and what each role says.",
@@ -17110,8 +17125,8 @@
       },
       "NoticeKind": {
         "type": "string",
-        "description": "What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock.",
-        "enum": ["finish-asked", "taken-over", "released"]
+        "description": "What the person who is editing is told: somebody asked them to finish, took the editing over, or let go of the lock.",
+        "enum": ["finish-asked", "taken-over", "let-go"]
       },
       "NotificationEntry": {
         "type": "object",
@@ -19178,21 +19193,6 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "Counts up with every change. A change is made on the version that was looked at."
-          }
-        }
-      },
-      "ReleaseLockBody": {
-        "type": "object",
-        "description": "Which lock to let go of, and the token it was taken with.",
-        "required": ["target", "lock_token"],
-        "properties": {
-          "lock_token": {
-            "type": "string",
-            "description": "The lock token the lock was taken with."
-          },
-          "target": {
-            "$ref": "#/components/schemas/EditTargetBody",
-            "description": "The thing that was edited."
           }
         }
       },

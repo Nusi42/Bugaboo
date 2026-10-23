@@ -301,7 +301,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("takeEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::with("getEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::with("renewEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
-    Example::route("releaseEditLock"),
+    Example::route("letGoOfEditLock"),
     Example::with(
         "askToFinish",
         &[ON_THE_TARGET, Quirk::NamesAMissingThing, Quirk::SessionOnly],
@@ -316,7 +316,7 @@ pub(super) const EXAMPLES: &[Example] = &[
         ],
     ),
     Example::with(
-        "releaseStuckEditLock",
+        "letGoOfStuckEditLock",
         &[
             Quirk::AtTheTargetProject,
             Quirk::HidesUnseen,

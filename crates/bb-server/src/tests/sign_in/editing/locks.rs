@@ -235,7 +235,7 @@ async fn iss_17_the_person_whose_lock_was_released_is_told_who_released_it() -> 
         let beat = stage.heartbeat(&stage.ben, token, None).await?;
         assert_eq!(beat.lock, LockStatus::RanOut);
         assert_eq!(beat.notices.len(), 1);
-        assert_eq!(beat.notices[0].kind, NoticeKind::Released);
+        assert_eq!(beat.notices[0].kind, NoticeKind::LetGo);
         // Ben sees editors as *Someone*: the note is made with the people kind of editing.
         assert_eq!(beat.notices[0].from, PersonRef::Someone);
         // Each note is told once.

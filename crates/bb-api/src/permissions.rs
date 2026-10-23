@@ -143,7 +143,7 @@ pub const ROUTES: &[Route] = &[
     route("takeEditLock", Declared::ByRecord, Answer::Secret),
     route("getEditLock", Declared::ByRecord, Answer::NeverStored),
     route("renewEditLock", Declared::ByRecord, Answer::Ordinary),
-    route("releaseEditLock", Declared::SignedIn, Answer::Ordinary),
+    route("letGoOfEditLock", Declared::SignedIn, Answer::Ordinary),
     route("askToFinish", Declared::ByRecord, Answer::Ordinary),
     route(
         "editAnyway",
@@ -151,7 +151,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Secret,
     ),
     route(
-        "releaseStuckEditLock",
+        "letGoOfStuckEditLock",
         Declared::Permission(Permission::EditAnyway),
         Answer::Ordinary,
     ),

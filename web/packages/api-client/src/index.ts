@@ -34,7 +34,7 @@ export {
   inGroupsOfOneCheck,
   newEditorId,
   readDraft,
-  releaseEditLock,
+  letGoOfEditLock,
   saveDraft,
   sendHeartbeat,
   keepsTextAsDraft,

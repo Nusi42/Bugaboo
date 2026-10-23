@@ -2,7 +2,7 @@ import {
   askToFinish,
   editAnyway,
   newEditorId,
-  releaseEditLock,
+  letGoOfEditLock,
   sendHeartbeat,
   startHeartbeats,
   takeEditLock,
@@ -25,7 +25,7 @@ function depsOf(what: EditTarget): SessionDeps {
     editAnyway: (editor) => editAnyway(client, what, editor),
     askToFinish: () => askToFinish(client, what),
     heartbeat: (token) => sendHeartbeat(client, what, token),
-    release: (token) => releaseEditLock(client, what, token),
+    release: (token) => letGoOfEditLock(client, what, token),
     startHeartbeats,
     newEditorId,
   };

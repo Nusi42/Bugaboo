@@ -43,9 +43,9 @@ pub(super) fn editing_request(fixture: &Fixture<'_>, operation: &str) -> Option<
                 "draft": {"text": "Typed by the matrix", "base_version": 1}
             })),
         ),
-        "releaseEditLock" => (
+        "letGoOfEditLock" => (
             "POST",
-            "/api/v1/edit-locks/release".into(),
+            "/api/v1/edit-locks/let-go".into(),
             Some(json!({"target": editing_what(&target), "lock_token": NO_LOCK_TOKEN})),
         ),
         "askToFinish" => (
@@ -58,9 +58,9 @@ pub(super) fn editing_request(fixture: &Fixture<'_>, operation: &str) -> Option<
             "/api/v1/edit-locks/edit-anyway".into(),
             Some(json!({"target": editing_what(&target), "editor_id": AN_EDITOR})),
         ),
-        "releaseStuckEditLock" => (
+        "letGoOfStuckEditLock" => (
             "POST",
-            "/api/v1/edit-locks/release-stuck".into(),
+            "/api/v1/edit-locks/let-go-stuck".into(),
             Some(json!({"target": editing_what(&target)})),
         ),
         "saveDraft" => (

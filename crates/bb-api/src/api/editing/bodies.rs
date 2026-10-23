@@ -342,7 +342,7 @@ impl From<&HeartbeatAnswer> for HeartbeatAnswerBody {
 
 /// Which lock to let go of, and the token it was taken with.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct ReleaseLockBody {
+pub(crate) struct LetGoBody {
     /// The thing that was edited.
     pub(super) target: EditTargetBody,
     /// The lock token the lock was taken with.

@@ -501,7 +501,7 @@ pub async fn release_stuck_lock<S: AuthStore>(
                         recipient: former.holder,
                         record: former.record,
                         part: former.part,
-                        kind: NoticeKind::Released,
+                        kind: NoticeKind::LetGo,
                         from: me,
                         at: now,
                     };

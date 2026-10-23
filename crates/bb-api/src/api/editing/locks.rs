@@ -3,8 +3,8 @@
 use super::{
     ApiError, ApiJson, ApiQuery, AskToFinish, AuthHandle, DraftText, EditAnyway,
     EditTargetOnlyBody, EditTargetQuery, EditorId, ForbiddenAnswer, HeartbeatAnswerBody,
-    HeartbeatBody, HeartbeatQuery, Info, InvalidAnswer, LockHolderBody, LockOutcomeBody, LockToken,
-    NotFoundAnswer, NotSignedInAnswer, ReadLockQuery, ReleaseLockBody, ReleaseLockQuery,
+    HeartbeatBody, HeartbeatQuery, Info, InvalidAnswer, LetGoBody, LockHolderBody, LockOutcomeBody,
+    LockToken, NotFoundAnswer, NotSignedInAnswer, ReadLockQuery, ReleaseLockQuery,
     ReleaseStuckLock, Response, Session, State, TakeLockBody, TakeLockQuery, answer_authorized,
     body_id, done,
 };
@@ -122,17 +122,17 @@ pub(super) async fn heartbeat_edit_lock(
 /// Lets go of a lock: the text was saved, or the editor was closed.
 #[utoipa::path(
     post,
-    path = "/api/v1/edit-locks/release",
-    operation_id = "releaseEditLock",
+    path = "/api/v1/edit-locks/let-go",
+    operation_id = "letGoOfEditLock",
     tag = "editing",
-    request_body = ReleaseLockBody,
+    request_body = LetGoBody,
     responses((status = 204, description = "The lock is gone."), InvalidAnswer, NotSignedInAnswer)
 )]
 pub(super) async fn release_edit_lock(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<ReleaseLockBody>,
+    ApiJson(body): ApiJson<LetGoBody>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .release_lock(
@@ -222,8 +222,8 @@ pub(super) async fn edit_anyway(
 /// else is editing*; it is written to the security log.
 #[utoipa::path(
     post,
-    path = "/api/v1/edit-locks/release-stuck",
-    operation_id = "releaseStuckEditLock",
+    path = "/api/v1/edit-locks/let-go-stuck",
+    operation_id = "letGoOfStuckEditLock",
     tag = "editing",
     request_body = EditTargetOnlyBody,
     responses(

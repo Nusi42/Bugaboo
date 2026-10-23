@@ -145,7 +145,7 @@ async fn iss_17_a_layout_is_not_taken_away_while_somebody_else_edits_it() -> Tes
         let released = lena
             .send(
                 "POST",
-                &format!("{}/release", super::layouts_http::LOCKS),
+                &format!("{}/let-go", super::layouts_http::LOCKS),
                 Some(json!({
                     "target": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
                     "lock_token": token_of(&held)?,

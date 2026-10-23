@@ -21,9 +21,10 @@ const NOTIFICATION_KINDS: [(&str, &str); 4] = [
 ];
 
 /// The kinds of notes about editing that changed.
-const NOTICE_KINDS: [(&str, &str); 2] = [
+const NOTICE_KINDS: [(&str, &str); 3] = [
     ("finish_asked", "finish-asked"),
     ("taken_over", "taken-over"),
+    ("released", "let-go"),
 ];
 
 pub(super) fn steps() -> Vec<Step> {
@@ -204,7 +205,7 @@ mod tests {
                 .iter()
                 .map(|row| row.get::<String>(EditNoticeRow::Kind))
                 .collect::<Result<_, _>>()?;
-            assert_eq!(found, ["finish-asked", "released"]);
+            assert_eq!(found, ["finish-asked", "let-go"]);
             Ok(())
         })
         .await

@@ -6,7 +6,7 @@ import { heartbeatSeconds, leaseSeconds, versionsMax } from "./editing.generated
 import {
   inGroupsOfOneCheck,
   readDraft,
-  releaseEditLock,
+  letGoOfEditLock,
   sendHeartbeat,
   startHeartbeatsOn,
   versionsOf,
@@ -59,7 +59,7 @@ describe("iss_17 the numbers of editing come from the server code", () => {
 describe("iss_05 the release of a lock", () => {
   it("goes out with keepalive, so a window that closes or reloads at once still lets go (M3-F105)", async () => {
     const { client, sent } = serving(() => ({}));
-    await releaseEditLock(client, what, "lock-1");
+    await letGoOfEditLock(client, what, "lock-1");
     expect(sent[0]?.keepalive).toBe(true);
     expect(sent[0]?.body).toEqual({ target: what, lock_token: "lock-1" });
   });

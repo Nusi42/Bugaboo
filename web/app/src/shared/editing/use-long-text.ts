@@ -3,7 +3,7 @@ import {
   editAnyway,
   readDraft,
   readEditLock,
-  releaseEditLock,
+  letGoOfEditLock,
   sendHeartbeat,
   startHeartbeats,
   takeEditLock,
@@ -58,7 +58,7 @@ function depsOf(which: Which): LongTextDeps {
     editAnyway: (editor) => editAnyway(client, what(), editor),
     askToFinish: () => askToFinish(client, what()),
     heartbeat: (token, draft) => sendHeartbeat(client, what(), token, draft),
-    release: (token) => releaseEditLock(client, what(), token),
+    release: (token) => letGoOfEditLock(client, what(), token),
     save: (input) => which.save(input),
     refresh: () => which.refresh(),
     serverDraft: async () => {

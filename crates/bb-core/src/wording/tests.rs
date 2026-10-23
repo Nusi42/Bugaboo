@@ -196,7 +196,7 @@ fn the_end_of_a_run_and_a_failed_renewal_have_their_own_sentences() {
 #[test]
 fn a_note_about_editing_says_which_note() {
     let mut edit = notice(NotificationKind::EditNotice);
-    edit.notice = Some(NoticeKind::Released);
+    edit.notice = Some(NoticeKind::LetGo);
     assert!(sentences(&edit)[0].contains("ended your editing"));
     edit.notice = Some(NoticeKind::TakenOver);
     assert!(sentences(&edit)[0].contains("took over"));

@@ -92,10 +92,10 @@ reason = "These only read: they are sent as POST because they carry a body, and 
 routes = [
   "POST /api/v1/edit-locks",
   "POST /api/v1/edit-locks/heartbeat",
-  "POST /api/v1/edit-locks/release",
+  "POST /api/v1/edit-locks/let-go",
   "POST /api/v1/edit-locks/ask-to-finish",
   "POST /api/v1/edit-locks/edit-anyway",
-  "POST /api/v1/edit-locks/release-stuck",
+  "POST /api/v1/edit-locks/let-go-stuck",
   "PUT /api/v1/drafts",
   "POST /api/v1/drafts/throw-away",
 ]

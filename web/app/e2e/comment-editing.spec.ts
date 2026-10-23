@@ -39,9 +39,7 @@ async function showComments(page: Page): Promise<void> {
 
 /** Whether the answer is the one to the request that lets go of an edit lock. */
 function isRelease(answer: Response): boolean {
-  return (
-    answer.request().method() === "POST" && answer.url().endsWith("/api/v1/edit-locks/release")
-  );
+  return answer.request().method() === "POST" && answer.url().endsWith("/api/v1/edit-locks/let-go");
 }
 
 /** The button that edits the comment. */

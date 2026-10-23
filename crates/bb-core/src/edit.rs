@@ -146,14 +146,14 @@ words! {
         FinishAsked => "finish-asked",
         /// Somebody took the editing over (*Edit anyway*); their text is kept as their draft.
         TakenOver => "taken-over",
-        /// An administrator released the lock because it was stuck (*Release stuck lock*).
-        Released => "released",
+        /// An administrator let go of the lock because it was stuck (*Release stuck lock*).
+        LetGo => "let-go",
     }
 }
 
 words_in_api!(
     NoticeKind,
-    "What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock."
+    "What the person who is editing is told: somebody asked them to finish, took the editing over, or let go of the lock."
 );
 
 /// The lease on one thing being edited: who holds it, in which editor, until when (ADR-0019). A

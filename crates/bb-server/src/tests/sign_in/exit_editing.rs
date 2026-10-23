@@ -250,7 +250,7 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
         let refused = ray
             .send(
                 "POST",
-                &format!("{LOCKS}/release-stuck"),
+                &format!("{LOCKS}/let-go-stuck"),
                 Some(release.clone()),
             )
             .await?;
@@ -265,7 +265,7 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
             .await?;
         assert!(held.body["held"].is_object(), "{}", held.body);
         let freed = kay
-            .send("POST", &format!("{LOCKS}/release-stuck"), Some(release))
+            .send("POST", &format!("{LOCKS}/let-go-stuck"), Some(release))
             .await?;
         assert_eq!(freed.status, StatusCode::NO_CONTENT, "{}", freed.body);
         Ok(())

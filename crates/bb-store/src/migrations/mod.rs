@@ -544,7 +544,7 @@ mod tests {
             ),
             (
                 21,
-                "60f4e966955fd206d33fc0fc1823263937423f96d13242758987d5f1eed25c22",
+                "d80ffbf5d3a0b8999ffadcf0dbf1a9fe63bd1d1628f7973ce02aabc7368f816d",
             ),
         ];
         for (version, wanted) in APPLIED {
