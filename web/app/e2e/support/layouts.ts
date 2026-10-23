@@ -77,7 +77,7 @@ async function putFieldsInFirstSection(
       body: { target: what, editor_id: crypto.randomUUID() },
     }),
   );
-  if (taken.status !== "taken") {
+  if (taken.kind !== "taken") {
     throw new TypeError("Somebody else is editing the layout.");
   }
   const sections = editor.sections.map((section) => ({

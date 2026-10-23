@@ -15811,9 +15811,9 @@
               },
               {
                 "type": "object",
-                "required": ["status"],
+                "required": ["kind"],
                 "properties": {
-                  "status": {
+                  "kind": {
                     "type": "string",
                     "enum": ["taken"]
                   }
@@ -15830,11 +15830,11 @@
               },
               {
                 "type": "object",
-                "required": ["status"],
+                "required": ["kind"],
                 "properties": {
-                  "status": {
+                  "kind": {
                     "type": "string",
-                    "enum": ["held"]
+                    "enum": ["held-by-other"]
                   }
                 }
               }
@@ -15849,25 +15849,25 @@
           {
             "type": "object",
             "description": "The lease is renewed.",
-            "required": ["expires_at", "status"],
+            "required": ["expires_at", "kind"],
             "properties": {
               "expires_at": {
                 "type": "string",
                 "description": "When it runs out now.",
                 "format": "date-time"
               },
-              "status": {
+              "kind": {
                 "type": "string",
-                "enum": ["held"]
+                "enum": ["renewed"]
               }
             }
           },
           {
             "type": "object",
             "description": "No heartbeat came for a minute, or the lock was let go. The draft is kept.",
-            "required": ["status"],
+            "required": ["kind"],
             "properties": {
-              "status": {
+              "kind": {
                 "type": "string",
                 "enum": ["ran-out"]
               }
@@ -15876,13 +15876,13 @@
           {
             "type": "object",
             "description": "Somebody took the editing over (*Edit anyway*). The draft is kept.",
-            "required": ["by", "status"],
+            "required": ["by", "kind"],
             "properties": {
               "by": {
                 "$ref": "#/components/schemas/PersonRef",
                 "description": "Who, as the person who asks may see them."
               },
-              "status": {
+              "kind": {
                 "type": "string",
                 "enum": ["taken-over"]
               }

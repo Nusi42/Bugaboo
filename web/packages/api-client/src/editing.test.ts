@@ -67,7 +67,7 @@ describe("iss_05 the release of a lock", () => {
 
 describe("iss_17 the heartbeat", () => {
   it("sends the lock token with the text so far, and nothing about the draft without one", async () => {
-    const beat = { status: "held", expires_at: "x" };
+    const beat = { kind: "renewed", expires_at: "x" };
     const { client, sent } = serving(() => ({ lock: beat, notices: [], draft_saved: true }));
     await sendHeartbeat(client, what, "lock-1", { text: "So far", base_version: 3 });
     await sendHeartbeat(client, what, "lock-1");

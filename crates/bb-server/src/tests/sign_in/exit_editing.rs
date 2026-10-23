@@ -80,10 +80,10 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
         }
         // The two parts of an issue work.
         assert_eq!(
-            ok(&take(&mut ada, &id, "description").await?)?["status"],
+            ok(&take(&mut ada, &id, "description").await?)?["kind"],
             "taken"
         );
-        assert_eq!(ok(&take(&mut ada, &id, &part).await?)?["status"], "taken");
+        assert_eq!(ok(&take(&mut ada, &id, &part).await?)?["kind"], "taken");
         // A role that changes issues but sees the long text only, and one that does not see it.
         let permissions = [
             Permission::SeeProjects,
@@ -300,7 +300,7 @@ async fn sec_06_a_layout_is_not_known_to_who_cannot_edit_layouts() -> TestResult
         assert_eq!(nowhere.code(), "resource.not-found", "{}", nowhere.body);
         // Whoever edits layouts takes the lock.
         let taken = ada.send("POST", LOCKS, Some(ask(layout))).await?;
-        assert_eq!(ok(&taken)?["status"], "taken");
+        assert_eq!(ok(&taken)?["kind"], "taken");
         Ok(())
     })
     .await
@@ -348,7 +348,7 @@ async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
                 .await?;
             assert_eq!(draft_bad.code(), "resource.not-found", "{kind}");
             let right = ada.send("POST", LOCKS, Some(body(good))).await?;
-            assert_eq!(ok(&right)?["status"], "taken", "{kind}");
+            assert_eq!(ok(&right)?["kind"], "taken", "{kind}");
         }
         Ok(())
     })

@@ -8,7 +8,7 @@ import type { HeldBySomebody, LongTextDeps } from "./long-text-model.ts";
 export const ben = { shown: "name", id: "u2", name: "Ben" } as const;
 
 export const taken = (token: string): LockOutcome => ({
-  status: "taken",
+  kind: "taken",
   lock_token: token,
   expires_at: "2026-10-10T10:01:00Z",
   lease_seconds: 60,
@@ -16,7 +16,7 @@ export const taken = (token: string): LockOutcome => ({
 });
 
 export const heldBy = (can: boolean): LockOutcome => ({
-  status: "held",
+  kind: "held-by-other",
   holder: ben,
   since: "2026-10-10T09:58:00Z",
   yours_elsewhere: false,
@@ -24,7 +24,7 @@ export const heldBy = (can: boolean): LockOutcome => ({
 });
 
 export const stillHeld: Heartbeat = {
-  lock: { status: "held", expires_at: "2026-10-10T10:01:00Z" },
+  lock: { kind: "renewed", expires_at: "2026-10-10T10:01:00Z" },
   notices: [],
   draft_saved: true,
 };

@@ -108,7 +108,7 @@ export async function saveDescription(
       },
     }),
   );
-  if (taken.status !== "taken") {
+  if (taken.kind !== "taken") {
     throw new TypeError("Somebody else is editing.");
   }
   await session.client.PUT("/api/v1/issues/{issue}/description", {

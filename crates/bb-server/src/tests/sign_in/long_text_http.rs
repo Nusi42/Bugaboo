@@ -83,7 +83,7 @@ impl Target {
                 })),
             )
             .await?;
-        assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+        assert_eq!(taken.body["kind"], "taken", "{}", taken.body);
         Ok(ok(&taken)?["lock_token"]
             .as_str()
             .ok_or("no lock token")?

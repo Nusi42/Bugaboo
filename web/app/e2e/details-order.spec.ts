@@ -35,7 +35,7 @@ async function prepareDetailsOrder(server: Instance): Promise<void> {
       body: { target: what, editor_id: crypto.randomUUID() },
     }),
   );
-  if (taken.status !== "taken") {
+  if (taken.kind !== "taken") {
     throw new TypeError("Somebody else is editing the layout.");
   }
   const field = (word: Schema<"EditorFieldBody">["field"]) => ({ field: word, roles });

@@ -4,7 +4,7 @@ import { rig } from "./edit-lock-testing.ts";
 import { ben, settle, taken } from "./long-text-testing.ts";
 
 const tookOver = {
-  lock: { status: "taken-over", by: ben },
+  lock: { kind: "taken-over", by: ben },
   notices: [],
   draft_saved: false,
 } as const;
@@ -52,7 +52,7 @@ describe("iss_17 a ran-out that takes the lock again is overtaken by a refused s
     const asking = session.take();
     answers[0]?.(taken("T"));
     await asking;
-    answerWith({ lock: { status: "ran-out" }, notices: [], draft_saved: false });
+    answerWith({ lock: { kind: "ran-out" }, notices: [], draft_saved: false });
     const retaking = beat();
     await settle();
     // The lock is asked for again; meanwhile a refused save asks why and gives the lock up.

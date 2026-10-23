@@ -14,7 +14,7 @@ async fn take_notes_lock(ada: &mut Browser, id: &str, field: &str) -> Result<Rep
             })),
         )
         .await?;
-    assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+    assert_eq!(taken.body["kind"], "taken", "{}", taken.body);
     Ok(taken)
 }
 

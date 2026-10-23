@@ -5200,11 +5200,11 @@ export interface components {
     LockOutcomeBody:
       | (components["schemas"]["TakenLockBody"] & {
           /** @enum {string} */
-          status: "taken";
+          kind: "taken";
         })
       | (components["schemas"]["HeldLockBody"] & {
           /** @enum {string} */
-          status: "held";
+          kind: "held-by-other";
         });
     /** @description Whether the editor still has the lock, and if not, why. */
     LockStatusBody:
@@ -5215,17 +5215,17 @@ export interface components {
            */
           expires_at: string;
           /** @enum {string} */
-          status: "held";
+          kind: "renewed";
         }
       | {
           /** @enum {string} */
-          status: "ran-out";
+          kind: "ran-out";
         }
       | {
           /** @description Who, as the person who asks may see them. */
           by: components["schemas"]["PersonRef"];
           /** @enum {string} */
-          status: "taken-over";
+          kind: "taken-over";
         };
     /**
      * @description Why the chain of the security log does not verify.

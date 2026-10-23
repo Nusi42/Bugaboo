@@ -3,7 +3,7 @@ import type { Heartbeat, LockOutcome } from "@bugaboo/api-client";
 import type { LostReason, Who } from "./long-text-model.ts";
 
 /** The lock somebody else holds, as the server says it. */
-export type HeldElsewhere = Extract<LockOutcome, { readonly status: "held" }>;
+export type HeldElsewhere = Extract<LockOutcome, { readonly kind: "held-by-other" }>;
 
 /** The text and version a heartbeat keeps as the person's draft. */
 export interface HeartbeatDraft {
@@ -115,7 +115,7 @@ export class EditLockSession {
         return { kind: "stale" };
       }
       this.asking = false;
-      if (outcome.status === "held") {
+      if (outcome.kind === "held-by-other") {
         this.sweep();
         return { kind: "held", lock: outcome };
       }
@@ -134,7 +134,7 @@ export class EditLockSession {
 
   /** The answer of an ask that was overtaken: its lock is let go, if it is nobody's. */
   private stray(outcome: LockOutcome): void {
-    if (outcome.status !== "taken") {
+    if (outcome.kind !== "taken") {
       return;
     }
     if (this.asking) {
@@ -176,10 +176,10 @@ export class EditLockSession {
     if (asked !== undefined) {
       this.options.onAsked?.(asked.from);
     }
-    if (answer.lock.status === "taken-over") {
+    if (answer.lock.kind === "taken-over") {
       this.forget();
       this.options.onLost("taken-over", answer.lock.by);
-    } else if (answer.lock.status === "ran-out") {
+    } else if (answer.lock.kind === "ran-out") {
       await this.ranOut();
     }
   }
@@ -248,7 +248,7 @@ export class EditLockSession {
       if (from !== undefined) {
         this.options.onAsked?.(from);
       }
-      return answer.lock.status === "taken-over"
+      return answer.lock.kind === "taken-over"
         ? { reason: "taken-over", by: answer.lock.by }
         : { reason };
     } catch {

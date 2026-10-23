@@ -82,7 +82,7 @@ async function look(context: Context, work: Work): Promise<void> {
 /** The lock, taken, or taken over from somebody when the person may; nothing when somebody holds it. */
 async function lockOn(context: Context, work: Work, editor: string): Promise<string | undefined> {
   const asked = await takeEditLock(context.client, whatOf(work), editor);
-  if (asked.status === "taken") {
+  if (asked.kind === "taken") {
     return asked.lock_token;
   }
   if (!asked.can_edit_anyway || pick(context.random, 4) !== 0) {
@@ -90,7 +90,7 @@ async function lockOn(context: Context, work: Work, editor: string): Promise<str
   }
   const over = await editAnyway(context.client, whatOf(work), editor);
   context.book.tookOver();
-  return over.status === "taken" ? over.lock_token : undefined;
+  return over.kind === "taken" ? over.lock_token : undefined;
 }
 
 /** A refused save keeps the text: whether it is the draft of the person is written in the book. */

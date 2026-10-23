@@ -47,7 +47,7 @@ describe("iss_17 nothing is started after the screen went away", () => {
     const second = deferred<Lock>();
     const locks = inTurn(Promise.resolve(taken("t1")), second.promise);
     const w = world({
-      heartbeat: () => Promise.resolve({ ...stillHeld, lock: { status: "ran-out" } }),
+      heartbeat: () => Promise.resolve({ ...stillHeld, lock: { kind: "ran-out" } }),
       take: () => locks(),
     });
     w.editor.open();

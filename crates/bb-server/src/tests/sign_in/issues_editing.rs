@@ -30,7 +30,7 @@ async fn lock(browser: &mut Browser, id: &str) -> Result<String, Failure> {
             Some(json!({"target": what(id), "editor_id": AN_EDITOR})),
         )
         .await?;
-    assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+    assert_eq!(taken.body["kind"], "taken", "{}", taken.body);
     Ok(taken.body["lock_token"]
         .as_str()
         .ok_or("no token")?
@@ -153,7 +153,7 @@ async fn ux_06_the_box_learns_who_is_editing_before_the_first_key() -> TestResul
                 Some(json!({"target": what(&id), "editor_id": AN_EDITOR})),
             )
             .await?;
-        assert_eq!(taken.body["status"], "held");
+        assert_eq!(taken.body["kind"], "held-by-other");
         // A person who may not change the issue is not told who edits.
         let refused = vera.send("GET", &ask, None).await?;
         assert_eq!(refused.status, StatusCode::FORBIDDEN);

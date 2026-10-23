@@ -6,7 +6,7 @@ import type { SessionDeps } from "./edit-lock-session.ts";
 import { EditLockController } from "./edit-lock-state.ts";
 
 const taken: LockOutcome = {
-  status: "taken",
+  kind: "taken",
   lock_token: "token-1",
   expires_at: "2026-10-13T10:00:00Z",
   lease_seconds: 60,
@@ -14,7 +14,7 @@ const taken: LockOutcome = {
 };
 
 const held: LockOutcome = {
-  status: "held",
+  kind: "held-by-other",
   holder: { shown: "name", id: "p1", name: "Ada" },
   since: "2026-10-13T09:59:00Z",
   yours_elsewhere: false,
@@ -22,12 +22,12 @@ const held: LockOutcome = {
 };
 
 const stillHeld: Heartbeat = {
-  lock: { status: "held", expires_at: "2026-10-13T10:01:00Z" },
+  lock: { kind: "renewed", expires_at: "2026-10-13T10:01:00Z" },
   notices: [],
   draft_saved: false,
 };
 const ranOut: Heartbeat = {
-  lock: { status: "ran-out" },
+  lock: { kind: "ran-out" },
   notices: [],
   draft_saved: false,
 };
@@ -174,7 +174,7 @@ describe("iss_17 the edit lock on a layout", () => {
     expect(lock.snapshot()).toEqual({
       phase: "held",
       held: {
-        status: "held",
+        kind: "held-by-other",
         holder: { shown: "name", id: "p1", name: "Ada" },
         since: "2026-10-13T09:59:00Z",
         yours_elsewhere: false,

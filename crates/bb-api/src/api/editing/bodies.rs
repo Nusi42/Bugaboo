@@ -208,12 +208,12 @@ impl From<&LockHolder> for LockHolderBody {
 
 /// The answer to asking for a lock.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "status", rename_all = "kebab-case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum LockOutcomeBody {
     /// The editor has the lock.
     Taken(TakenLockBody),
     /// Somebody else is editing.
-    Held(HeldLockBody),
+    HeldByOther(HeldLockBody),
 }
 
 impl Masked for LockOutcomeBody {}
@@ -232,7 +232,7 @@ impl From<&LockOutcome> for LockOutcomeBody {
                 lease_seconds: *lease_seconds,
                 heartbeat_seconds: *heartbeat_seconds,
             }),
-            LockOutcome::Held(held) => Self::Held(HeldLockBody::from(held)),
+            LockOutcome::Held(held) => Self::HeldByOther(HeldLockBody::from(held)),
         }
     }
 }
@@ -268,10 +268,10 @@ pub(crate) struct RenewBody {
 
 /// Whether the editor still has the lock, and if not, why.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "status", rename_all = "kebab-case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum LockStatusBody {
     /// The lease is renewed.
-    Held {
+    Renewed {
         /// When it runs out now.
         expires_at: String,
     },
@@ -287,7 +287,7 @@ pub(crate) enum LockStatusBody {
 impl From<&LockStatus> for LockStatusBody {
     fn from(status: &LockStatus) -> Self {
         match status {
-            LockStatus::Held { expires_at } => Self::Held {
+            LockStatus::Held { expires_at } => Self::Renewed {
                 expires_at: expires_at.to_string(),
             },
             LockStatus::RanOut => Self::RanOut,

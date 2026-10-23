@@ -132,14 +132,14 @@ async fn iss_17_a_layout_is_not_taken_away_while_somebody_else_edits_it() -> Tes
 
         // Lena is editing: Ada is told so and the layout stays.
         let held = take_lock(&mut lena, &layout, ANOTHER_EDITOR).await?;
-        assert_eq!(held["status"], "taken");
+        assert_eq!(held["kind"], "taken");
         let refused = ada.send("DELETE", &delete, None).await?;
         assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.body);
         assert_eq!(refused.code(), "edit.in-progress");
         assert!(!editor_of(&mut ada, "ACME").await?["layout"].is_null());
         // Ada's reading of the lock names Lena, as the reader may know her.
         let asked = take_lock(&mut ada, &layout, AN_EDITOR).await?;
-        assert_eq!(asked["status"], "held");
+        assert_eq!(asked["kind"], "held-by-other");
 
         // Lena gives up her lock; Ada takes one of her own, and taking the layout away lets it go.
         let released = lena
@@ -154,7 +154,7 @@ async fn iss_17_a_layout_is_not_taken_away_while_somebody_else_edits_it() -> Tes
             .await?;
         assert!(released.status.is_success(), "{}", released.body);
         let own = take_lock(&mut ada, &layout, AN_EDITOR).await?;
-        assert_eq!(own["status"], "taken");
+        assert_eq!(own["kind"], "taken");
         let gone = ada.send("DELETE", &delete, None).await?;
         assert_eq!(gone.status, StatusCode::NO_CONTENT, "{}", gone.body);
         assert!(editor_of(&mut ada, "ACME").await?["layout"].is_null());
@@ -162,7 +162,7 @@ async fn iss_17_a_layout_is_not_taken_away_while_somebody_else_edits_it() -> Tes
         let again = customize(&mut ada, "ACME").await?;
         let (second, _) = slot(&again)?;
         assert_eq!(
-            take_lock(&mut lena, &second, ANOTHER_EDITOR).await?["status"],
+            take_lock(&mut lena, &second, ANOTHER_EDITOR).await?["kind"],
             "taken"
         );
         Ok(())

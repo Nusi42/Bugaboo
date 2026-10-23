@@ -158,7 +158,7 @@ impl Person {
         let editor = format!("00000000-0000-4000-8000-{:012}", self.number);
         let body = json!({"target": what_of(&work.id), "editor_id": editor});
         let taken = self.browser.send("POST", LOCKS, Some(body.clone())).await?;
-        if ok(&taken)?["status"] == "taken" {
+        if ok(&taken)?["kind"] == "taken" {
             return Ok(token_of(&taken.body));
         }
         if taken.body["can_edit_anyway"] != true {
