@@ -287,10 +287,10 @@ reason = "The choices of a field are part of its definition; a field has at most
 route = "GET /api/v1/fields"
 property = "rules"
 embedded = true
-reason = "The rules of a field are part of its definition, a small value (M4-F171)."
+reason = "The rules of a field are part of its definition, a small value (M4-F179)."
 
 [[exempt]]
 route = "GET /api/v1/fields"
 property = "scope"
 embedded = true
-reason = "Where a field is used is part of its definition; the projects in it are references (M4-F171)."
+reason = "Where a field is used is part of its definition; the projects in it are references (M4-F179)."

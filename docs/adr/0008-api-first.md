@@ -39,6 +39,16 @@ The lead decided what the API looks like when it is frozen (the exit review, *AP
 
 The frozen copy is `tools/checks/api-frozen.json`, the generated description in compact form, written by `cargo xtask freeze`. WP-16 stored the first copy, so ARCH-API-FREEZE already guards the names above; the lead stores the last one at `m4-done` (and again, with a decision, for a change of a name that must stand before it). ARCH-API-LINT keeps the style: one casing for enum values, no duplicate or orphan schema, no `_id` in a path parameter. The glossary words in the names of the API are TXT-TERMS, which reads the same description.
 
+### Kept in v1 for good (decided by the lead, WP-16)
+
+- **The server status.** `/api/v1/status`, `ServerStatus` and its routes keep their names. A health route is conventional, and the glossary has a row for *server status*, so it is not the status of an issue.
+- **The paths of previews and of the person.** The five patterns of the routes of previews stay. The rule for a new route: `/auth` is signing in and credentials, `/me` is one's own preferences.
+- **`RecordKind` is closed.** It lists 26 kinds of record, and the use cases refuse those that cannot be edited (the answer is `resource.not-found`). The enum only grows. A word that is not in it (also the form with an underscore) is refused as an invalid request, `400` `request.invalid`, in a body and in an address.
+
+### Compatible later (not in the freeze)
+
+These are additions after the freeze and break no client: optional and nullable members that are always there (new bodies, M4-F174), the per-route list of error codes and the wording of the shared `400` and `409` answers (B2), the plain names of the generic schemas and the open `fields` maps with inline field keys (B11, M4-F177), cursors for the capped lists (M4-F172) and a stable cursor in the store for the lists of fields and workflows (M4-F171).
+
 ## Alternatives considered
 
 - **Hand-written TypeScript types:** drift. Rejected.

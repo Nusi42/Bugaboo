@@ -501,10 +501,7 @@ mod tests {
             &parameters(&REQUIRED_PARAMETERS, true),
             &json!({"type": "array", "items": {"type": "string"}}),
         );
-        let found = messages(&bare, &[]).join(
-            "
-",
-        );
+        let found = messages(&bare, &[]).join("\n");
         assert!(found.contains("bare array"), "{found}");
     }
 
@@ -628,10 +625,7 @@ mod tests {
             embedded: true,
             ..exemption(&route, "nothing", "Not a member of the item (M4-F171).")
         };
-        let found = messages(&spec, &[stale]).join(
-            "
-",
-        );
+        let found = messages(&spec, &[stale]).join("\n");
         assert!(found.contains("matches no list"), "{found}");
     }
 
