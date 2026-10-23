@@ -10,7 +10,7 @@ function setting(key: string, value: string | number): MySettings["settings"][nu
     key,
     name_key: "setting.mail.host.name",
     help_key: "setting.mail.host.help",
-    kind: typeof value === "number" ? "integer" : "text",
+    kind: typeof value === "number" ? "whole-number" : "text",
     format: "free",
     choices: [],
     levels: ["organization"],

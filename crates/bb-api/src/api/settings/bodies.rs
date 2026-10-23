@@ -51,9 +51,9 @@ impl From<ValueBody> for SettingValue {
 #[serde(rename_all = "kebab-case")]
 pub(super) enum SettingType {
     /// Yes or no.
-    Bool,
+    YesNo,
     /// A whole number.
-    Integer,
+    WholeNumber,
     /// Text.
     Text,
 }
@@ -224,8 +224,8 @@ impl From<&SettingView> for SettingBody {
             name_key: definition.name().to_string(),
             help_key: definition.help().to_string(),
             kind: match definition.default() {
-                DefaultValue::Bool(_) => SettingType::Bool,
-                DefaultValue::Integer(_) => SettingType::Integer,
+                DefaultValue::Bool(_) => SettingType::YesNo,
+                DefaultValue::Integer(_) => SettingType::WholeNumber,
                 DefaultValue::Text(_) => SettingType::Text,
             },
             format: match format {

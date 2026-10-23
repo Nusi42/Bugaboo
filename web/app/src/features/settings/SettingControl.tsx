@@ -34,7 +34,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
   const [draft, setDraft] = useState(String(setting.value));
   const [problem, setProblem] = useState<string>();
   const bounds = setting.bounds ?? undefined;
-  const number = setting.kind === "integer";
+  const number = setting.kind === "whole-number";
   const between =
     bounds === undefined
       ? undefined
@@ -77,7 +77,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
  */
 export function SettingControl({ setting, onChange }: SettingControlProps) {
   const value = setting.value;
-  if (setting.kind === "bool" && typeof value === "boolean") {
+  if (setting.kind === "yes-no" && typeof value === "boolean") {
     return <Switch label={wordsOf(setting.name_key)} isSelected={value} onChange={onChange} />;
   }
   if (setting.format === "choice" && typeof value === "string") {

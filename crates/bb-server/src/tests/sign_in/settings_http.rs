@@ -63,7 +63,7 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
         let switch = setting(&list.body, "appearance.less-motion")?;
         assert_eq!(
             (&switch["kind"], &switch["value"]),
-            (&json!("bool"), &json!(false))
+            (&json!("yes-no"), &json!(false))
         );
         // A whole number says its bounds, on the organization's level.
         let rules = ada

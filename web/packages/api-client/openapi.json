@@ -19941,7 +19941,7 @@
       "SettingType": {
         "type": "string",
         "description": "The type of a setting.",
-        "enum": ["bool", "integer", "text"]
+        "enum": ["yes-no", "whole-number", "text"]
       },
       "SettingsBody": {
         "type": "object",

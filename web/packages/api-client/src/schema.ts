@@ -7232,7 +7232,7 @@ export interface components {
      * @description The type of a setting.
      * @enum {string}
      */
-    SettingType: "bool" | "integer" | "text";
+    SettingType: "yes-no" | "whole-number" | "text";
     /** @description The settings of a topic, in the order of the registry. */
     SettingsBody: {
       /** @description The settings. */
