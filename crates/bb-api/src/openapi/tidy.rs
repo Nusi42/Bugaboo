@@ -30,6 +30,20 @@ const PAGING_PARAMETERS: [(&str, &str); 3] = [
 /// The headers, by the name of the header and the name it has in `components`.
 const HEADERS: [(&str, &str); 2] = [("etag", "ETag"), ("retry-after", "RetryAfter")];
 
+/// The answers with a name of their own: the status, the start of the description and the name. The
+/// others of a status are named for the status and a number.
+const NAMED_ANSWERS: [(&str, &str, &str); 5] = [
+    (
+        "400",
+        "The request is not valid: a cursor",
+        "BadListRequest",
+    ),
+    ("401", "The password is wrong", "WrongPassword"),
+    ("409", "The part does not start", "UploadPartConflict"),
+    ("413", "The file is bigger", "FileTooBig"),
+    ("415", "The organization does not accept", "FileTypeBlocked"),
+];
+
 /// The words for the status of an answer, as the name of a shared answer.
 fn status_name(status: &str) -> String {
     match status {
@@ -287,7 +301,11 @@ fn share_answers(document: &mut Ordered) {
     // Their names, in the order of use.
     let mut names: Vec<(String, String, String)> = Vec::new();
     for (status, written, _) in &shared {
-        let wanted = status_name(status);
+        let described = |start: &str| written.contains(&format!("\"description\":\"{start}"));
+        let wanted = NAMED_ANSWERS
+            .iter()
+            .find(|(known, start, _)| known == status && described(start))
+            .map_or_else(|| status_name(status), |(_, _, name)| (*name).to_owned());
         let mut name = wanted.clone();
         let mut number = 1;
         while names.iter().any(|(_, _, known)| *known == name) {

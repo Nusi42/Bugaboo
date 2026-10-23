@@ -402,8 +402,8 @@ async fn get_mail_password(
     tag = "notifications",
     responses(
         (status = 204, description = "The mail server took the e-mail."),
-        (status = 409, description = "E-mail is off, or the connection to the mail server is not secure (mail.off, mail.insecure).", body = bb_core::Problem),
-        (status = 502, description = "The mail server did not take the e-mail (mail.rejected).", body = bb_core::Problem),
+        (status = 409, description = "E-mail is off, or the connection to the mail server is not secure (mail.off, mail.insecure).", body = bb_core::Problem, content_type = "application/problem+json"),
+        (status = 502, description = "The mail server did not take the e-mail (mail.rejected).", body = bb_core::Problem, content_type = "application/problem+json"),
         NotSignedInAnswer,
         ForbiddenAnswer,
         TooSoonAnswer

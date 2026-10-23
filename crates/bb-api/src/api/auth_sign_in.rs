@@ -148,7 +148,7 @@ async fn get_auth_status(
     responses(
         (status = 200, description = "Signed in, or the second step is still to do.", body = SignedInBody),
         InvalidAnswer,
-        (status = 401, description = "The e-mail address or the password is wrong (auth.wrong-credentials).", body = bb_core::Problem)
+        (status = 401, description = "The e-mail address or the password is wrong (auth.wrong-credentials).", body = bb_core::Problem, content_type = "application/problem+json")
     )
 )]
 async fn sign_in(
@@ -180,7 +180,7 @@ async fn sign_in(
     request_body = CodeBody,
     responses(
         (status = 200, description = "Signed in.", body = SignedInBody),
-        (status = 401, description = "The code is wrong or was used already, or there is no half finished sign-in (auth.wrong-second-step-code, auth.not-signed-in).", body = bb_core::Problem),
+        (status = 401, description = "The code is wrong or was used already, or there is no half finished sign-in (auth.wrong-second-step-code, auth.not-signed-in).", body = bb_core::Problem, content_type = "application/problem+json"),
         ForbiddenAnswer
     )
 )]

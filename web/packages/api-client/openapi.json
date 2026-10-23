@@ -42,7 +42,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -153,7 +153,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -361,7 +361,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -419,7 +419,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -668,7 +668,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -1117,7 +1117,7 @@
             "description": "Removed."
           },
           "401": {
-            "$ref": "#/components/responses/NotSignedIn2"
+            "$ref": "#/components/responses/WrongPassword"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -1221,7 +1221,7 @@
           "401": {
             "description": "The code is wrong or was used already, or there is no half finished sign-in (auth.wrong-second-step-code, auth.not-signed-in).",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
@@ -1474,7 +1474,7 @@
           "401": {
             "description": "The setup code is wrong, or setup is over (auth.wrong-setup-code).",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
@@ -1529,7 +1529,7 @@
           "401": {
             "description": "The e-mail address or the password is wrong (auth.wrong-credentials).",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
@@ -1612,7 +1612,7 @@
           "403": {
             "description": "Signing up is not possible here (auth.sign-up-refused): it is off, the domain is not listed, or e-mail is off.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
@@ -1838,7 +1838,7 @@
             "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "$ref": "#/components/responses/NotSignedIn2"
+            "$ref": "#/components/responses/WrongPassword"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -1944,7 +1944,7 @@
           "401": {
             "description": "The code is wrong (auth.wrong-second-step-code, auth.not-signed-in).",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
@@ -1991,7 +1991,7 @@
             "description": "Switched off."
           },
           "401": {
-            "$ref": "#/components/responses/NotSignedIn2"
+            "$ref": "#/components/responses/WrongPassword"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -2066,7 +2066,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -2370,7 +2370,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -3244,7 +3244,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -3875,7 +3875,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -4170,7 +4170,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -4240,7 +4240,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -4413,7 +4413,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -4599,7 +4599,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -5159,7 +5159,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -5355,7 +5355,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -5431,7 +5431,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -5688,7 +5688,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -5894,7 +5894,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -6201,7 +6201,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -6399,13 +6399,13 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "$ref": "#/components/responses/Conflict2"
+            "$ref": "#/components/responses/UploadPartConflict"
           },
           "413": {
-            "$ref": "#/components/responses/TooLarge2"
+            "$ref": "#/components/responses/FileTooBig"
           },
           "415": {
-            "$ref": "#/components/responses/Answer415"
+            "$ref": "#/components/responses/FileTypeBlocked"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -6465,7 +6465,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -6651,7 +6651,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -6783,7 +6783,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -7499,11 +7499,6 @@
           "409": {
             "description": "E-mail is off, or the connection to the mail server is not secure (mail.off, mail.insecure).",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConflictProblem"
@@ -7527,7 +7522,7 @@
           "502": {
             "description": "The mail server did not take the e-mail (mail.rejected).",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
@@ -8312,7 +8307,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -8642,7 +8637,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -8918,7 +8913,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -9008,7 +9003,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -9078,7 +9073,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -9214,7 +9209,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -9951,7 +9946,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -10176,7 +10171,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -10968,7 +10963,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -11311,13 +11306,13 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "$ref": "#/components/responses/Conflict2"
+            "$ref": "#/components/responses/UploadPartConflict"
           },
           "413": {
-            "$ref": "#/components/responses/TooLarge2"
+            "$ref": "#/components/responses/FileTooBig"
           },
           "415": {
-            "$ref": "#/components/responses/Answer415"
+            "$ref": "#/components/responses/FileTypeBlocked"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -11416,13 +11411,13 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "$ref": "#/components/responses/Conflict2"
+            "$ref": "#/components/responses/UploadPartConflict"
           },
           "413": {
-            "$ref": "#/components/responses/TooLarge2"
+            "$ref": "#/components/responses/FileTooBig"
           },
           "415": {
-            "$ref": "#/components/responses/Answer415"
+            "$ref": "#/components/responses/FileTypeBlocked"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -11533,7 +11528,7 @@
             "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest2"
+            "$ref": "#/components/responses/BadListRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -20854,7 +20849,7 @@
           }
         }
       },
-      "BadRequest2": {
+      "BadListRequest": {
         "description": "The request is not valid: a cursor that is not one of this list, or a name in `fields` that does not exist (request.bad-cursor, request.unknown-field).",
         "content": {
           "application/problem+json": {
@@ -20959,17 +20954,17 @@
           }
         }
       },
-      "NotSignedIn2": {
+      "WrongPassword": {
         "description": "The password is wrong (auth.wrong-credentials, auth.not-signed-in).",
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "schema": {
               "$ref": "#/components/schemas/Problem"
             }
           }
         }
       },
-      "Conflict2": {
+      "UploadPartConflict": {
         "description": "The part does not start where the file stands, or the upload is not complete yet (file.wrong-part, file.incomplete).",
         "content": {
           "application/problem+json": {
@@ -20979,7 +20974,7 @@
           }
         }
       },
-      "TooLarge2": {
+      "FileTooBig": {
         "description": "The file is bigger than the project allows, or the part is bigger than a part may be (file.too-big, request.too-large).",
         "content": {
           "application/problem+json": {
@@ -20989,7 +20984,7 @@
           }
         }
       },
-      "Answer415": {
+      "FileTypeBlocked": {
         "description": "The organization does not accept this type of file (file.type-blocked).",
         "content": {
           "application/problem+json": {
