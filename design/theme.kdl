@@ -11676,7 +11676,7 @@ part "workflow-add field.error" "workflow-status.head field.error" {
     position absolute
     top "100%"
     inset-inline-start 0
-    width "100%"
+    width max-content
 }
 
 part "workflow-rules" {

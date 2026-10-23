@@ -4767,7 +4767,7 @@ body {
   position: absolute;
   top: 100%;
   inset-inline-start: 0;
-  width: 100%;
+  width: max-content;
 }
 
 [data-part="workflow-rules"] {
