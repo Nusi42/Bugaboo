@@ -55,155 +55,98 @@ impl From<&ScopeView> for FieldScopeBody {
     }
 }
 
-/// An own field.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct FieldBody {
+/// Declares the members of an own field once. The macro writes `FieldBody`, the field as it is shown
+/// whole (`getField`, the answer of a change), and `FieldItem`, the same members in a list, where
+/// `fields=` chooses which are there and each may be missing, with the one conversion from
+/// `FieldView` for both and the table of the names that can be asked for.
+macro_rules! own_field_members {
+    ($($(#[$doc:meta])* $name:ident: $type:ty = |$field:ident| $value:expr),+ $(,)?) => {
+        /// An own field.
+        #[derive(Serialize, ToSchema)]
+        pub(crate) struct FieldBody {
+            $($(#[$doc])* pub(super) $name: $type,)+
+            /// The value a new item starts with, in the form of the type; `null` for none.
+            #[schema(value_type = Option<serde_json::Value>)]
+            pub(super) default_value: Option<Value>,
+        }
+
+        /// An own field in a list: the members that were asked for.
+        #[derive(Serialize, ToSchema)]
+        pub(crate) struct FieldItem {
+            $(
+                $(#[$doc])*
+                #[serde(skip_serializing_if = "Option::is_none")]
+                pub(super) $name: Option<$type>,
+            )+
+            /// The value a new item starts with, in the form of the type; `null` for none.
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[schema(value_type = Option<serde_json::Value>)]
+            pub(super) default_value: Option<Value>,
+        }
+
+        impl From<&FieldView> for FieldBody {
+            fn from(field: &FieldView) -> Self {
+                Self {
+                    $($name: { let $field = field; $value },)+
+                    default_value: field.default_value.clone(),
+                }
+            }
+        }
+
+        impl From<&FieldView> for FieldItem {
+            fn from(field: &FieldView) -> Self {
+                let whole = FieldBody::from(field);
+                Self {
+                    $($name: Some(whole.$name),)+
+                    default_value: whole.default_value,
+                }
+            }
+        }
+
+        /// The names of an own field in a list that can be asked for; all are there by default.
+        pub(super) const FIELD_FIELDS: [FieldSpec; own_field_members!(@count $($name)+) + 1] = [
+            $(FieldSpec::by_default(stringify!($name)),)+
+            FieldSpec::by_default("default_value"),
+        ];
+    };
+    (@count) => { 0 };
+    (@count $head:ident $($tail:ident)*) => { 1 + own_field_members!(@count $($tail)*) };
+}
+
+own_field_members! {
     /// The ID of the field, which is its key in levels, values and history.
-    pub(super) id: String,
+    id: String = |field| field.id.to_string(),
     /// What it is called.
-    pub(super) name: String,
+    name: String = |field| field.name.clone(),
     /// Words that help people fill it in.
-    pub(super) help: String,
+    help: String = |field| field.help.clone(),
     /// What kind of information it holds.
-    pub(super) kind: FieldType,
+    kind: FieldType = |field| field.kind,
     /// What it is added to.
-    pub(super) applies_to: FieldFor,
+    applies_to: FieldFor = |field| field.applies_to,
     /// The rules. The browser checks them for instant feedback; the server decides.
-    pub(super) rules: Rules,
-    /// The value a new item starts with, in the form of the type; `null` for none.
-    #[schema(value_type = Option<serde_json::Value>)]
-    pub(super) default_value: Option<Value>,
+    rules: Rules = |field| field.rules.clone(),
     /// How the value is shown.
-    pub(super) look: Look,
+    look: Look = |field| field.look,
     /// The assistant is never sent the value.
-    pub(super) never_to_assistant: bool,
+    never_to_assistant: bool = |field| field.never_to_assistant,
     /// Whether the field is retired: no new values, old ones stay.
-    pub(super) retired: bool,
+    retired: bool = |field| field.retired,
     /// Where it is used.
-    pub(super) scope: FieldScopeBody,
+    scope: FieldScopeBody = |field| FieldScopeBody::from(&field.scope),
     /// The choices of a *Pick one* or *Pick several* field, in order.
-    pub(super) choices: Vec<FieldChoiceBody>,
+    choices: Vec<FieldChoiceBody> = |field| field.choices.iter().map(FieldChoiceBody::from).collect(),
     /// Whether the person may change the definition (*Manage fields*).
-    pub(super) may_manage: bool,
+    may_manage: bool = |field| field.may_manage,
     /// Counts up with every change. A change is made on the version that was looked at.
-    pub(super) version: i64,
+    version: i64 = |field| field.version,
 }
 
 impl Masked for FieldBody {}
-
-impl From<&FieldView> for FieldBody {
-    fn from(field: &FieldView) -> Self {
-        Self {
-            id: field.id.to_string(),
-            name: field.name.clone(),
-            help: field.help.clone(),
-            kind: field.kind,
-            applies_to: field.applies_to,
-            rules: field.rules.clone(),
-            default_value: field.default_value.clone(),
-            look: field.look,
-            never_to_assistant: field.never_to_assistant,
-            retired: field.retired,
-            scope: FieldScopeBody::from(&field.scope),
-            choices: field.choices.iter().map(FieldChoiceBody::from).collect(),
-            may_manage: field.may_manage,
-            version: field.version,
-        }
-    }
-}
-
-/// The fields of an own field in a list that can be asked for, and which of them a list holds when
-/// the request names none: all of them.
-pub(super) const FIELD_FIELDS: [FieldSpec; 14] = [
-    FieldSpec::by_default("id"),
-    FieldSpec::by_default("name"),
-    FieldSpec::by_default("help"),
-    FieldSpec::by_default("kind"),
-    FieldSpec::by_default("applies_to"),
-    FieldSpec::by_default("rules"),
-    FieldSpec::by_default("default_value"),
-    FieldSpec::by_default("look"),
-    FieldSpec::by_default("never_to_assistant"),
-    FieldSpec::by_default("retired"),
-    FieldSpec::by_default("scope"),
-    FieldSpec::by_default("choices"),
-    FieldSpec::by_default("may_manage"),
-    FieldSpec::by_default("version"),
-];
+impl Masked for FieldItem {}
 
 /// The name of the list of fields, so its cursors are its own.
 pub(super) const FIELDS_LIST: &str = "fields";
-
-/// An own field in a list: the members that were asked for.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct FieldItem {
-    /// The ID of the field, which is its key in levels, values and history.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) id: Option<String>,
-    /// What it is called.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) name: Option<String>,
-    /// Words that help people fill it in.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) help: Option<String>,
-    /// What kind of information it holds.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) kind: Option<FieldType>,
-    /// What it is added to.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) applies_to: Option<FieldFor>,
-    /// The rules. The browser checks them for instant feedback; the server decides.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) rules: Option<Rules>,
-    /// The value a new item starts with, in the form of the type; `null` for none.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<serde_json::Value>)]
-    pub(super) default_value: Option<Value>,
-    /// How the value is shown.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) look: Option<Look>,
-    /// The assistant is never sent the value.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) never_to_assistant: Option<bool>,
-    /// Whether the field is retired: no new values, old ones stay.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) retired: Option<bool>,
-    /// Where it is used.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) scope: Option<FieldScopeBody>,
-    /// The choices of a *Pick one* or *Pick several* field, in order.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) choices: Option<Vec<FieldChoiceBody>>,
-    /// Whether the person may change the definition (*Manage fields*).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) may_manage: Option<bool>,
-    /// Counts up with every change. A change is made on the version that was looked at.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) version: Option<i64>,
-}
-
-impl Masked for FieldItem {}
-
-impl From<&FieldView> for FieldItem {
-    fn from(field: &FieldView) -> Self {
-        Self {
-            id: Some(field.id.to_string()),
-            name: Some(field.name.clone()),
-            help: Some(field.help.clone()),
-            kind: Some(field.kind),
-            applies_to: Some(field.applies_to),
-            rules: Some(field.rules.clone()),
-            default_value: field.default_value.clone(),
-            look: Some(field.look),
-            never_to_assistant: Some(field.never_to_assistant),
-            retired: Some(field.retired),
-            scope: Some(FieldScopeBody::from(&field.scope)),
-            choices: Some(field.choices.iter().map(FieldChoiceBody::from).collect()),
-            may_manage: Some(field.may_manage),
-            version: Some(field.version),
-        }
-    }
-}
 
 /// Where an own field is used now.
 #[derive(Serialize, ToSchema)]
