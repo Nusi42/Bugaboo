@@ -2,11 +2,13 @@
 //! capitals, a label's name is used once in its group, combining keeps one link for an issue that
 //! had both, and the suggestions only look at issues that are not in the trash.
 
+use bb_app::access::PolicyStore as _;
 use bb_app::issues::IssueStore as _;
 use bb_app::ports::{BoxFuture, ChangeStore};
-use bb_app::tags::TagStore;
+use bb_app::tags::{TagLimit, TagStore};
 use bb_core::id::{IdSource, IssueId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::ChoiceColor;
+use bb_core::project::{Project, ShortName};
 use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag};
 use bb_core::version::FIRST_VERSION;
 use bb_testing::{TestResult, each_database};
@@ -66,43 +68,40 @@ async fn tag_01_a_name_is_one_tag_whatever_its_capitals() -> TestResult {
 }
 
 /// The one statement that says which tags are used: by the sight, and anywhere (the trash too).
-/// `logout` is on the trashed issue only.
+/// `logout` is on the trashed issue only; `aaa-here` is unused and limited to the project the
+/// person sees, `zzz-away` unused and limited to a project they do not see.
 async fn tags_with_use_says(
     storage: &AuthStorage,
     everything: &IssueSight,
     elsewhere: &IssueSight,
     project: ProjectId,
 ) -> TestResult {
-    // The same question for every tag in one statement: used by the sight, and used anywhere (the
-    // trash too). `logout` is on the trashed issue only.
     let whole = IssueSight {
         with_trashed: true,
         ..everything.clone()
     };
-    let uses: Vec<(String, bool, bool)> = storage
-        .tags_with_use(everything, &whole, &[])
+    let uses: Vec<(String, bool, bool, TagLimit)> = storage
+        .tags_with_use(everything, &whole, &[project])
         .await?
         .into_iter()
-        .map(|each| (each.tag.name, each.seen, each.anywhere))
+        .map(|each| (each.tag.name, each.seen, each.anywhere, each.limit))
         .collect();
     assert_eq!(
         uses,
         [
-            ("100%_sure".to_owned(), true, true),
-            ("login".to_owned(), true, true),
-            ("logout".to_owned(), false, true),
+            ("100%_sure".to_owned(), true, true, TagLimit::None),
+            ("aaa-here".to_owned(), false, false, TagLimit::Visible),
+            ("login".to_owned(), true, true, TagLimit::None),
+            ("logout".to_owned(), false, true, TagLimit::None),
+            ("zzz-away".to_owned(), false, false, TagLimit::Hidden),
         ]
     );
     let unseen = storage.tags_with_use(elsewhere, &whole, &[]).await?;
-    assert!(unseen.iter().all(|each| !each.seen && each.anywhere));
-    // A tag with a limit says so, and whether the limit is to a project the person sees.
-    let uses = storage
-        .tags_with_use(everything, &whole, &[project])
-        .await?;
-    assert!(
-        uses.iter()
-            .all(|each| each.limit == bb_app::tags::TagLimit::None)
-    );
+    assert!(unseen.iter().all(|each| !each.seen));
+    assert_eq!(unseen.iter().filter(|each| each.anywhere).count(), 3);
+    // Where the person sees no project, the limit to the first is a hidden one.
+    let blind = storage.tags_with_use(everything, &whole, &[]).await?;
+    assert!(blind.iter().all(|each| each.limit != TagLimit::Visible));
     Ok(())
 }
 
@@ -123,15 +122,34 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
             link(&world, 0, other.id),
             link(&world, 1, logout.id),
         ];
+        let (here, away) = (tag(&mut source, "aaa-here"), tag(&mut source, "zzz-away"));
+        let nowhere = ProjectId::generate(&mut source).unwrap();
+        let other_project = Project {
+            id: nowhere,
+            parent: None,
+            short_name: ShortName::new("OTH").unwrap(),
+            name: "Other".to_owned(),
+            version: FIRST_VERSION,
+        };
         let (rows, trashed) = (
-            [login.clone(), logout.clone(), other.clone()],
+            [
+                login.clone(),
+                logout.clone(),
+                other.clone(),
+                here.clone(),
+                away.clone(),
+            ],
             world.issues[1].id,
         );
+        let project = world.project;
         changed(storage, &mut source, move |tx| {
             Box::pin(async move {
+                AuthStorage::insert_project(tx, &other_project).await?;
                 for row in &rows {
                     AuthStorage::insert_tag(tx, row).await?;
                 }
+                AuthStorage::replace_tag_projects(tx, here.id, &[project]).await?;
+                AuthStorage::replace_tag_projects(tx, away.id, &[nowhere]).await?;
                 for link in &links {
                     AuthStorage::insert_issue_tag(tx, link).await?;
                 }
@@ -156,7 +174,6 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
         // The characters of a pattern are text.
         let found = storage.used_tags(&everything, "%_", 10).await?;
         assert_eq!(found, vec![other]);
-        let nowhere = ProjectId::generate(&mut source).unwrap();
         let elsewhere = IssueSight {
             all: vec![nowhere],
             own: Vec::new(),
