@@ -7088,7 +7088,7 @@ export interface components {
        * Format: int64
        * @description The place of the first entry that does not verify (when it breaks).
        */
-      broken_at?: number | null;
+      broken_seq?: number | null;
       /**
        * Format: int64
        * @description How many entries were checked (when it verifies).

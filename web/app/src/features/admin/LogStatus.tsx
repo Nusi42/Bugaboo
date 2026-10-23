@@ -26,7 +26,7 @@ function Result({ log }: { readonly log: SecurityLog }) {
     return (
       <Alert tone={alertTone.danger}>
         {t("security-log.broken", {
-          seq: log.broken_at ?? 0,
+          seq: log.broken_seq ?? 0,
           reason: reason === undefined ? "" : t(reason),
         })}
       </Alert>

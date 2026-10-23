@@ -62,7 +62,7 @@ describe("ops_08 how serious the state of the server is", () => {
     );
     const broken: State = {
       ...healthy(),
-      security_log: { result: "broken", broken_at: 7, reason: "gap", write_failures: 0 },
+      security_log: { result: "broken", broken_seq: 7, reason: "gap", write_failures: 0 },
     };
     expect(levelOf(broken, NOW)).toBe("problem");
     const unreadable: State = {
@@ -71,7 +71,7 @@ describe("ops_08 how serious the state of the server is", () => {
     };
     const behind: State = {
       ...healthy(),
-      security_log: { result: "broken", broken_at: 9, reason: "behind", write_failures: 0 },
+      security_log: { result: "broken", broken_seq: 9, reason: "behind", write_failures: 0 },
     };
     expect(levelOf(behind, NOW)).toBe("problem");
     expect(levelOf(unreadable, NOW)).toBe("problem");

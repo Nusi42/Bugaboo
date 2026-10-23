@@ -130,7 +130,7 @@ impl From<LogBreak> for LogBreakReason {
 enum LogResult {
     /// Every entry verifies.
     Valid,
-    /// The chain breaks: see `broken_at` and `reason`.
+    /// The chain breaks: see `broken_seq` and `reason`.
     Broken,
     /// The log could not be read.
     Unreadable,
@@ -151,7 +151,7 @@ struct SecurityLogBody {
     /// anchor is a warning: nothing then shows that the end was not cut off.
     anchored: Option<bool>,
     /// The place of the first entry that does not verify (when it breaks).
-    broken_at: Option<i64>,
+    broken_seq: Option<i64>,
     /// What is wrong with it (when it breaks).
     reason: Option<LogBreakReason>,
     /// How many entries could not be written since the server started. A failed write does not
@@ -168,7 +168,7 @@ impl From<LogState> for SecurityLogBody {
             head_seq: None,
             head_hash: None,
             anchored: None,
-            broken_at: None,
+            broken_seq: None,
             reason: None,
             write_failures: 0,
         };
@@ -187,7 +187,7 @@ impl From<LogState> for SecurityLogBody {
             },
             LogState::Broken { seq, reason } => Self {
                 result: LogResult::Broken,
-                broken_at: Some(seq),
+                broken_seq: Some(seq),
                 reason: Some(reason.into()),
                 ..empty
             },
