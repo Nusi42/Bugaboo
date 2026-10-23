@@ -204,7 +204,7 @@ async fn sec_06_a_related_issue_is_shown_by_the_levels_of_its_own_type() -> Test
                 .send(
                     "POST",
                     &format!("{ISSUES}/{bug}/relations"),
-                    Some(json!({"other": other, "kind": blocks, "direction": "forward"})),
+                    Some(json!({"other": other, "relation_kind": blocks, "direction": "forward"})),
                 )
                 .await?)?;
         }

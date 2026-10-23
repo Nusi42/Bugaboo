@@ -166,7 +166,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": victim, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": victim, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?;
         assert_eq!(ok(&added)?["name"], "blocks");
@@ -176,7 +176,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": victim, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": victim, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?;
         assert_eq!(again.code(), "relation.exists");
@@ -197,7 +197,9 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{victim}/relations"),
-                Some(json!({"other": blocker, "kind": related_to, "direction": "backward"})),
+                Some(
+                    json!({"other": blocker, "relation_kind": related_to, "direction": "backward"}),
+                ),
             )
             .await?;
         assert_eq!(ok(&backward)?["name"], "related to");
@@ -206,7 +208,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": victim, "kind": related_to, "direction": "forward"})),
+                Some(json!({"other": victim, "relation_kind": related_to, "direction": "forward"})),
             )
             .await?;
         assert_eq!(alike.code(), "relation.exists");
@@ -215,7 +217,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": blocker, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": blocker, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?;
         assert_eq!(itself.code(), "request.invalid");
@@ -237,7 +239,7 @@ async fn iss_04_a_relation_to_a_hidden_issue_is_not_shown() -> TestResult {
             .send(
                 "POST",
                 &format!("{ISSUES}/{secret}/relations"),
-                Some(json!({"other": theirs, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": theirs, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?)?;
         // Ada sees it on both; Gus sees his own issue with nothing related to it, and no sign
@@ -256,7 +258,7 @@ async fn iss_04_a_relation_to_a_hidden_issue_is_not_shown() -> TestResult {
             .send(
                 "POST",
                 &format!("{ISSUES}/{theirs}/relations"),
-                Some(json!({"other": secret, "kind": related_to, "direction": "forward"})),
+                Some(json!({"other": secret, "relation_kind": related_to, "direction": "forward"})),
             )
             .await?;
         assert_eq!(refused.code(), "resource.not-found");
@@ -285,7 +287,7 @@ async fn iss_04_adding_and_removing_is_in_both_histories() -> TestResult {
             .send(
                 "POST",
                 &format!("{ISSUES}/{first}/relations"),
-                Some(json!({"other": second, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": second, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?;
         let relation = ok(&added)?["id"].as_str().ok_or("no ID")?.to_owned();
@@ -371,7 +373,7 @@ async fn iss_04_relations_made_at_the_same_moment_do_not_pass_the_limit() -> Tes
                 .send(
                     "POST",
                     &format!("{ISSUES}/{hub}/relations"),
-                    Some(json!({"other": other, "kind": blocks, "direction": "forward"})),
+                    Some(json!({"other": other, "relation_kind": blocks, "direction": "forward"})),
                 )
                 .await?;
             ok(&added)?;

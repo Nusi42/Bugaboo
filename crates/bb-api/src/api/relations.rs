@@ -49,7 +49,7 @@ const SUB_ISSUES_LIST: &str = "sub-issues";
 /// The fields of a related issue in a list.
 const RELATED_FIELDS: [FieldSpec; 5] = [
     FieldSpec::by_default("id"),
-    FieldSpec::by_default("kind"),
+    FieldSpec::by_default("relation_kind"),
     FieldSpec::by_default("direction"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("issue"),
@@ -157,7 +157,7 @@ pub(crate) struct RelatedIssueItem {
     /// The ID of the relation, to take it away again.
     id: String,
     /// What it means (the ID of its kind).
-    kind: String,
+    relation_kind: String,
     /// Which end the issue asked about is at.
     direction: Direction,
     /// What that end reads (*blocks*, *is blocked by*).
@@ -172,7 +172,7 @@ impl From<&RelationView> for RelatedIssueItem {
     fn from(view: &RelationView) -> Self {
         Self {
             id: view.id.to_string(),
-            kind: view.kind.to_string(),
+            relation_kind: view.kind.to_string(),
             direction: view.direction,
             name: view.name.clone(),
             issue: IssueRef::from(&view.issue),
@@ -243,7 +243,7 @@ pub(crate) struct NewRelationBody {
     /// The issue at the other end, by its readable or internal ID.
     other: String,
     /// What the relation means (the ID of its kind).
-    kind: String,
+    relation_kind: String,
     /// Which end the issue of the route is: *this issue blocks the other* is `forward`.
     direction: Direction,
 }
@@ -561,7 +561,7 @@ async fn add_relation(
                 session_token,
                 issue,
                 other: body.other,
-                kind: body_id::<RelationKindId>(&body.kind)?,
+                kind: body_id::<RelationKindId>(&body.relation_kind)?,
                 direction: body.direction,
             },
         )
@@ -655,7 +655,7 @@ mod tests {
         crate::lean::assert_fields_are_the_keys_of(&KIND_FIELDS, &kind);
         let related = RelatedIssueItem {
             id: String::new(),
-            kind: String::new(),
+            relation_kind: String::new(),
             direction: Direction::Forward,
             name: String::new(),
             issue: line,

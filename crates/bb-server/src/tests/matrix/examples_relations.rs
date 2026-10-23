@@ -174,7 +174,7 @@ pub(super) async fn relation_request(
                 format!("/api/v1/issues/{first}/relations"),
                 Some(json!({
                     "other": other,
-                    "kind": a_kind(fixture).await?,
+                    "relation_kind": a_kind(fixture).await?,
                     "direction": "forward",
                 })),
             )

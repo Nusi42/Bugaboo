@@ -143,7 +143,7 @@ async fn fill(
                 .await?)?,
             "readable_id",
         )?;
-        let body = json!({"other": other, "kind": blocks, "direction": "forward"});
+        let body = json!({"other": other, "relation_kind": blocks, "direction": "forward"});
         ok(&ada
             .send("POST", &format!("{ISSUES}/{issue}/relations"), Some(body))
             .await?)?;
@@ -371,7 +371,7 @@ async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_run_the_same_stat
                 .send(
                     "POST",
                     &format!("{ISSUES}/{first}/relations"),
-                    Some(json!({"other": second, "kind": kind, "direction": "forward"})),
+                    Some(json!({"other": second, "relation_kind": kind, "direction": "forward"})),
                 )
                 .await?)?,
             "id",

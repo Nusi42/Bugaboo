@@ -16993,19 +16993,19 @@
       "NewRelationBody": {
         "type": "object",
         "description": "A relation to add.",
-        "required": ["other", "kind", "direction"],
+        "required": ["other", "relation_kind", "direction"],
         "properties": {
           "direction": {
             "$ref": "#/components/schemas/Direction",
             "description": "Which end the issue of the route is: *this issue blocks the other* is `forward`."
           },
-          "kind": {
-            "type": "string",
-            "description": "What the relation means (the ID of its kind)."
-          },
           "other": {
             "type": "string",
             "description": "The issue at the other end, by its readable or internal ID."
+          },
+          "relation_kind": {
+            "type": "string",
+            "description": "What the relation means (the ID of its kind)."
           }
         }
       },
@@ -19118,7 +19118,7 @@
       "RelatedIssueItem": {
         "type": "object",
         "description": "One relation as one end of it reads it.",
-        "required": ["id", "kind", "direction", "name", "issue"],
+        "required": ["id", "relation_kind", "direction", "name", "issue"],
         "properties": {
           "direction": {
             "$ref": "#/components/schemas/Direction",
@@ -19132,13 +19132,13 @@
             "$ref": "#/components/schemas/IssueRef",
             "description": "The issue at the other end."
           },
-          "kind": {
-            "type": "string",
-            "description": "What it means (the ID of its kind)."
-          },
           "name": {
             "type": "string",
             "description": "What that end reads (*blocks*, *is blocked by*)."
+          },
+          "relation_kind": {
+            "type": "string",
+            "description": "What it means (the ID of its kind)."
           }
         }
       },

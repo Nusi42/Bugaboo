@@ -125,7 +125,7 @@ function useAddRelation(readableId: string) {
     if (choice !== undefined) {
       add.mutate({
         params: { path: { issue: readableId } },
-        body: { other: other.trim(), kind: choice.kind, direction: choice.direction },
+        body: { other: other.trim(), relation_kind: choice.kind, direction: choice.direction },
       });
     }
   };

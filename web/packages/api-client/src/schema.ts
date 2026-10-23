@@ -5742,10 +5742,10 @@ export interface components {
     NewRelationBody: {
       /** @description Which end the issue of the route is: *this issue blocks the other* is `forward`. */
       direction: components["schemas"]["Direction"];
-      /** @description What the relation means (the ID of its kind). */
-      kind: string;
       /** @description The issue at the other end, by its readable or internal ID. */
       other: string;
+      /** @description What the relation means (the ID of its kind). */
+      relation_kind: string;
     };
     /** @description A kind of relation to make. */
     NewRelationKindBody: {
@@ -6782,10 +6782,10 @@ export interface components {
       id: string;
       /** @description The issue at the other end. */
       issue: components["schemas"]["IssueRef"];
-      /** @description What it means (the ID of its kind). */
-      kind: string;
       /** @description What that end reads (*blocks*, *is blocked by*). */
       name: string;
+      /** @description What it means (the ID of its kind). */
+      relation_kind: string;
     };
     /**
      * @description What happened to a relation.
