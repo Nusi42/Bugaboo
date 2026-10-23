@@ -24,6 +24,7 @@ M4 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | Exit A | [WP-14](WP-14-exit-screens.md) | Exit review: screens | Builder | `bugaboo.win5` / `WIN5` |
 | Exit A | [WP-15](WP-15-exit-structure.md) | Exit review: structure, checks and docs | Builder | `bugaboo.win2` / `WIN2` |
 | Exit B | [WP-16](WP-16-api-before-the-freeze.md) | The API before the freeze, ARCH-API-FREEZE | Builder | `bugaboo.win2` / `WIN2` |
+| Exit B | [WP-17](WP-17-last-screen-fixes.md) | The last screen fixes before the M4 review (added later) | Builder | `bugaboo.win5` / `WIN5` |
 
 Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files were written in WP-01, after the maintainer's answers.
 
