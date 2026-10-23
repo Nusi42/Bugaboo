@@ -304,11 +304,12 @@ pub fn change_sentence(change: &Change) -> Said {
     );
     // Nobody was assigned before: the sentence is about the assignment, not about a field changing
     // from *nobody* to somebody.
-    let from_nobody = match &change.before {
+    let nobody = |side: &Option<Side>| match side {
         None => true,
         Some(Side::People { people }) => people.is_empty(),
         Some(_) => false,
     };
+    let from_nobody = nobody(&change.before) && !nobody(&change.after);
     match (side(&change.before), side(&change.after)) {
         (_, Some(after)) if field == Some(Field::AssignedTo) && from_nobody => {
             said!(message::history_assigned, after, who)
