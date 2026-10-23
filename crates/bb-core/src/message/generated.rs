@@ -7717,6 +7717,15 @@ pub fn notifications_issue_ids_failed(project: impl std::fmt::Display) -> Messag
     )
 }
 
+/// The message `notifications.let-go`.
+#[must_use]
+pub fn notifications_let_go(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.let-go"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
 /// The message `notifications.locked-way`.
 #[must_use]
 pub fn notifications_locked_way(
@@ -7756,15 +7765,6 @@ pub fn notifications_open_name(what: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.open-name"),
         vec![("what", Value::Text(what.to_string()))],
-    )
-}
-
-/// The message `notifications.released`.
-#[must_use]
-pub fn notifications_released(who: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("notifications.released"),
-        vec![("who", Value::Text(who.to_string()))],
     )
 }
 
@@ -11871,6 +11871,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("notifications.kind", "What happens"),
     (
+        "notifications.let-go",
+        "{who} ended your editing because it was stuck, so others can edit again",
+    ),
+    (
         "notifications.locked-way",
         "{way}: {value} · Set by your organization",
     ),
@@ -11895,10 +11899,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "notifications.open-project-settings",
         "Open the project settings",
-    ),
-    (
-        "notifications.released",
-        "{who} ended your editing because it was stuck, so others can edit again",
     ),
     (
         "notifications.run-done",

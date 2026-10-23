@@ -404,7 +404,7 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
         NotificationKind::Assigned => one(said!(message::notifications_assigned, who())),
         NotificationKind::EditNotice => one(match notice.notice {
             Some(NoticeKind::TakenOver) => said!(message::notifications_taken_over, who()),
-            Some(NoticeKind::LetGo) => said!(message::notifications_released, who()),
+            Some(NoticeKind::LetGo) => said!(message::notifications_let_go, who()),
             Some(NoticeKind::FinishAsked) | None => {
                 said!(message::notifications_finish_asked, who())
             }

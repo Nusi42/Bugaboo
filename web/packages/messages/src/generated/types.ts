@@ -309,11 +309,11 @@ export interface MessageArguments {
   "notifications.finish-asked": { who: string | number };
   "notifications.group-name": { issue: string | number };
   "notifications.issue-ids-failed": { project: string | number };
+  "notifications.let-go": { who: string | number };
   "notifications.locked-way": { value: string | number; way: string | number };
   "notifications.mark-read-name": { what: string | number };
   "notifications.mentioned": { who: string | number };
   "notifications.open-name": { what: string | number };
-  "notifications.released": { who: string | number };
   "notifications.taken-over": { who: string | number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };

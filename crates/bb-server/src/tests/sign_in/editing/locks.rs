@@ -161,7 +161,7 @@ async fn sec_17_releasing_a_stuck_lock_is_in_the_security_log() -> TestResult {
                 .security_log_entries(0, 10_000)
                 .await?
                 .into_iter()
-                .filter(|entry| entry.action.as_str() == SecurityAction::EditLockReleased.code())
+                .filter(|entry| entry.action.as_str() == SecurityAction::EditLockLetGo.code())
                 .collect())
         };
         let (token, _) = stage.lock(&stage.ben).await?;

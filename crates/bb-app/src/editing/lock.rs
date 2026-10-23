@@ -515,7 +515,7 @@ pub async fn release_stuck_lock<S: AuthStore>(
         .map_err(|error| stopped.answer::<S>(&error, ErrorCode::NotFound))?;
     if ended.load(std::sync::atomic::Ordering::Relaxed) {
         ctx.note(
-            SecurityAction::EditLockReleased,
+            SecurityAction::EditLockLetGo,
             Some(actor.person.id),
             Some(input.what.record.clone()),
         )

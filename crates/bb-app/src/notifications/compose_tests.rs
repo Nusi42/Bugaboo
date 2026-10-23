@@ -143,7 +143,7 @@ fn ntf_02_the_notice_of_a_released_edit_is_not_the_one_of_a_takeover() {
         notice(NoticeKind::LetGo),
         [format!(
             "{}.",
-            message::notifications_released("Ana").render()
+            message::notifications_let_go("Ana").render()
         )]
     );
     assert_ne!(notice(NoticeKind::LetGo), notice(NoticeKind::TakenOver));
