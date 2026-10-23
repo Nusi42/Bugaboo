@@ -620,3 +620,28 @@ fn evaluate(frozen: &Value, current: &Value) -> Vec<Finding> {
 mod copy_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod examples {
+    use serde_json::json;
+
+    use super::*;
+
+    fn frozen() -> Value {
+        json!({"components": {"schemas": {"Thing": {"type": "object", "properties": {"id": {"type": "string"}}}}}})
+    }
+
+    #[test]
+    fn bad_example_a_property_that_is_gone() {
+        let now =
+            json!({"components": {"schemas": {"Thing": {"type": "object", "properties": {}}}}});
+        assert!(!evaluate(&frozen(), &now).is_empty());
+    }
+
+    #[test]
+    fn good_example_a_property_that_is_added() {
+        let mut now = frozen();
+        now["components"]["schemas"]["Thing"]["properties"]["title"] = json!({"type": "string"});
+        assert!(evaluate(&frozen(), &now).is_empty());
+    }
+}
