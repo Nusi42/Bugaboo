@@ -173,6 +173,25 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
     .await
 }
 
+/// An issue made in the project, by its readable ID.
+async fn issue_in(
+    site: &Site<'_>,
+    ada: &mut Browser,
+    project: &str,
+    title: &str,
+) -> Result<String, Failure> {
+    Ok(ok(&ada
+        .send(
+            "POST",
+            &format!("{PROJECTS}/{project}/issues"),
+            Some(site.new_issue(title)),
+        )
+        .await?)?["readable_id"]
+        .as_str()
+        .ok_or("no readable ID")?
+        .to_owned())
+}
+
 #[tokio::test]
 async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags() -> TestResult {
     each_database("sec_06_manager_list", async |db| {
@@ -188,16 +207,7 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
             .as_str()
             .ok_or("no project ID")?
             .to_owned();
-        let hidden = ok(&ada
-            .send(
-                "POST",
-                &format!("{PROJECTS}/{secret}/issues"),
-                Some(site.new_issue("A secret")),
-            )
-            .await?)?["readable_id"]
-            .as_str()
-            .ok_or("no key")?
-            .to_owned();
+        let hidden = issue_in(&site, &mut ada, &secret, "A secret").await?;
         let open = site.create(&mut ada, "Something open").await?;
         let open = ok(&open)?["readable_id"]
             .as_str()
@@ -242,16 +252,7 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
         ok(&ada
             .send("DELETE", &format!("{ISSUES}/{open}/tags/{limited}"), None)
             .await?)?;
-        let other = ok(&ada
-            .send(
-                "POST",
-                &format!("{PROJECTS}/{secret}/issues"),
-                Some(site.new_issue("Another secret")),
-            )
-            .await?)?["readable_id"]
-            .as_str()
-            .ok_or("no key")?
-            .to_owned();
+        let other = issue_in(&site, &mut ada, &secret, "Another secret").await?;
         tag(&mut ada, &other, "trashed-secret").await?;
         let gone = ada
             .send("DELETE", &format!("{ISSUES}/{other}"), None)

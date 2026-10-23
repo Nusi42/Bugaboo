@@ -78,6 +78,87 @@ mod tests {
         assert_eq!(new_notices, hyphenated::<NoticeKind>());
     }
 
+    /// A person, so the rows that name one have somebody to name.
+    async fn insert_person(database: &Database, person: &[u8]) -> TestResult {
+        let mut made = Query::insert();
+        made.into_table(PersonRow::Table)
+            .columns([
+                PersonRow::Id,
+                PersonRow::DisplayName,
+                PersonRow::Email,
+                PersonRow::CreatedAt,
+            ])
+            .values([
+                Expr::val(person.to_vec()),
+                Expr::val("Ana"),
+                Expr::val("ana@example.test"),
+                Expr::val(1_i64),
+            ])?;
+        database.execute(&made).await?;
+        Ok(())
+    }
+
+    /// A notification of the kind, as a database of migration 20 holds it.
+    async fn insert_notification(
+        database: &Database,
+        person: &[u8],
+        number: u8,
+        kind: &str,
+    ) -> TestResult {
+        let mut row = Query::insert();
+        row.into_table(NotificationRow::Table)
+            .columns([
+                NotificationRow::Id,
+                NotificationRow::Recipient,
+                NotificationRow::Kind,
+                NotificationRow::Event,
+                NotificationRow::Once,
+                NotificationRow::At,
+                NotificationRow::Changes,
+                NotificationRow::InApp,
+                NotificationRow::Mail,
+            ])
+            .values([
+                Expr::val(vec![10 + number; 16]),
+                Expr::val(person.to_vec()),
+                Expr::val(kind),
+                Expr::val(vec![20_u8; 16]),
+                Expr::val(format!("once-{number}")),
+                Expr::val(2_i64),
+                Expr::val("[]"),
+                Expr::val(true),
+                Expr::val("never"),
+            ])?;
+        database.execute(&row).await?;
+        Ok(())
+    }
+
+    /// A note about editing of the kind, as a database of migration 20 holds it.
+    async fn insert_notice(database: &Database, person: &[u8], kind: &str) -> TestResult {
+        let mut row = Query::insert();
+        row.into_table(EditNoticeRow::Table)
+            .columns([
+                EditNoticeRow::Recipient,
+                EditNoticeRow::RecordKind,
+                EditNoticeRow::RecordId,
+                EditNoticeRow::Part,
+                EditNoticeRow::Kind,
+                EditNoticeRow::FromPerson,
+                EditNoticeRow::At,
+            ])
+            .values([
+                Expr::val(person.to_vec()),
+                Expr::val("issue"),
+                Expr::val(vec![30_u8; 16]),
+                Expr::val("description"),
+                Expr::val(kind),
+                Expr::val(person.to_vec()),
+                Expr::val(3_i64),
+            ])?;
+        database.execute(&row).await?;
+        Ok(())
+    }
+
     #[tokio::test]
     async fn m4_wp16_migration_21_gives_the_kinds_the_hyphenated_words_and_keeps_the_rest()
     -> TestResult {
@@ -85,72 +166,14 @@ mod tests {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(20, at(0)).await?;
             let person = vec![1_u8; 16];
-            let mut made = Query::insert();
-            made.into_table(PersonRow::Table)
-                .columns([
-                    PersonRow::Id,
-                    PersonRow::DisplayName,
-                    PersonRow::Email,
-                    PersonRow::CreatedAt,
-                ])
-                .values([
-                    Expr::val(person.clone()),
-                    Expr::val("Ana"),
-                    Expr::val("ana@example.test"),
-                    Expr::val(1_i64),
-                ])?;
-            database.execute(&made).await?;
+            insert_person(&database, &person).await?;
             // One row of each kind: the old words and one that did not change.
             let kinds = ["mentioned", "followed_activity", "run_ended", "edit_notice"];
             for (number, kind) in kinds.iter().enumerate() {
-                let mut row = Query::insert();
-                row.into_table(NotificationRow::Table)
-                    .columns([
-                        NotificationRow::Id,
-                        NotificationRow::Recipient,
-                        NotificationRow::Kind,
-                        NotificationRow::Event,
-                        NotificationRow::Once,
-                        NotificationRow::At,
-                        NotificationRow::Changes,
-                        NotificationRow::InApp,
-                        NotificationRow::Mail,
-                    ])
-                    .values([
-                        Expr::val(vec![10 + u8::try_from(number)?; 16]),
-                        Expr::val(person.clone()),
-                        Expr::val(*kind),
-                        Expr::val(vec![20_u8; 16]),
-                        Expr::val(format!("once-{number}")),
-                        Expr::val(2_i64),
-                        Expr::val("[]"),
-                        Expr::val(true),
-                        Expr::val("never"),
-                    ])?;
-                database.execute(&row).await?;
+                insert_notification(&database, &person, u8::try_from(number)?, kind).await?;
             }
             for kind in ["finish_asked", "released"] {
-                let mut row = Query::insert();
-                row.into_table(EditNoticeRow::Table)
-                    .columns([
-                        EditNoticeRow::Recipient,
-                        EditNoticeRow::RecordKind,
-                        EditNoticeRow::RecordId,
-                        EditNoticeRow::Part,
-                        EditNoticeRow::Kind,
-                        EditNoticeRow::FromPerson,
-                        EditNoticeRow::At,
-                    ])
-                    .values([
-                        Expr::val(person.clone()),
-                        Expr::val("issue"),
-                        Expr::val(vec![30_u8; 16]),
-                        Expr::val("description"),
-                        Expr::val(kind),
-                        Expr::val(person.clone()),
-                        Expr::val(3_i64),
-                    ])?;
-                database.execute(&row).await?;
+                insert_notice(&database, &person, kind).await?;
             }
 
             database.migrate(at(1)).await?;
