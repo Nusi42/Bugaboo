@@ -66,6 +66,31 @@ test("sec_12 a place can be signed out of from another one", async ({ page, brow
   await other.context().close();
 });
 
+test("sec_12 a place that is signed out of still reaches the sign-in page while the page asks the server", async ({
+  page,
+  browser,
+  server,
+}) => {
+  await endEverySession(server, ada);
+  const other = await anotherBrowser(browser, server);
+  await signIn(other, ada);
+  await signIn(page, ada);
+  await openFromMenu(page, t("nav.sessions"));
+  await signOutOfOther(page).click();
+  await expect(places(page)).toHaveCount(1);
+  // What the sign-in page asks the server (is the setup open?) is still on its way when the cache
+  // is emptied: the question must be answered, not cancelled, and the page must be there.
+  await other.route("**/api/v1/**", async (route) => {
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 300);
+    });
+    await route.continue();
+  });
+  await other.reload();
+  await expectSignInPage(other);
+  await other.context().close();
+});
+
 test("auth_01 signing out everywhere ends every place, this one included", async ({
   page,
   browser,
