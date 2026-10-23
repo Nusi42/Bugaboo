@@ -237,6 +237,19 @@ pub(crate) struct FieldChangeBody {
     after: Option<ChangeValueBody>,
 }
 
+#[cfg(test)]
+impl FieldChangeBody {
+    /// A change with every member filled, for the tests that hold a table of fields to the members.
+    pub(crate) fn blank() -> Self {
+        Self {
+            field: String::new(),
+            name: Some(String::new()),
+            before: None,
+            after: None,
+        }
+    }
+}
+
 impl From<&FieldChangeView> for FieldChangeBody {
     fn from(change: &FieldChangeView) -> Self {
         Self {

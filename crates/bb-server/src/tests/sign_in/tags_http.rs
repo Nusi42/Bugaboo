@@ -192,10 +192,10 @@ fn history_of(history: &Value, field: &str) -> Vec<(Vec<String>, Vec<String>)> {
         .map(|items| {
             items
                 .iter()
-                .filter(|item| item["field"] == field)
+                .filter(|item| item["change"]["field"] == field)
                 .map(|item| {
-                    let list = |name: &str| -> Vec<String> {
-                        item[name]
+                    let list = |side: &str| -> Vec<String> {
+                        item["change"][side]["names"]
                             .as_array()
                             .map(|each| {
                                 each.iter()
@@ -204,7 +204,7 @@ fn history_of(history: &Value, field: &str) -> Vec<(Vec<String>, Vec<String>)> {
                             })
                             .unwrap_or_default()
                     };
-                    (list("before_names"), list("after_names"))
+                    (list("before"), list("after"))
                 })
                 .collect()
         })

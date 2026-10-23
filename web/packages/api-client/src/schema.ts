@@ -4515,32 +4515,10 @@ export interface components {
     };
     /** @description One item of the history of an issue. */
     HistoryEntryItem: {
-      after_issue?: components["schemas"]["IssueRef"] | null;
-      /** @description A change: the names of the choices the field holds now. */
-      after_names?: string[] | null;
-      /** @description A change: the people the field holds now. */
-      after_people?: components["schemas"]["PersonRef"][] | null;
-      after_project?: components["schemas"]["ProjectRef"] | null;
-      /** @description A change: what the field is now, when it is a word or a name. */
-      after_text?: string | null;
-      /** @description The same for what the field is now. */
-      after_value?: unknown;
       /** @description When it happened. */
       at: string;
-      before_issue?: components["schemas"]["IssueRef"] | null;
-      /** @description A change: the names of the choices the field held, in order. */
-      before_names?: string[] | null;
-      /** @description A change: the people the field held, as the kind of the field says. */
-      before_people?: components["schemas"]["PersonRef"][] | null;
-      before_project?: components["schemas"]["ProjectRef"] | null;
-      /** @description A change: what the field was, when it is a word or a name. */
-      before_text?: string | null;
-      /**
-       * @description A change of an own field that a screen words itself (yes or no, a length of time, a number,
-       *     a day): what the field was, as the JSON of its kind.
-       */
-      before_value?: unknown;
       by?: components["schemas"]["PersonRef"] | null;
+      change?: components["schemas"]["FieldChangeBody"] | null;
       /** @description A comment: its ID. */
       comment?: string | null;
       direction?: components["schemas"]["Direction"] | null;
@@ -4548,11 +4526,6 @@ export interface components {
       edited_at?: string | null;
       /** @description The event the item was made from; the items of one event share it. */
       event: string;
-      /** @description A change: the key of the field. */
-      field?: string | null;
-      field_kind?: components["schemas"]["FieldType"] | null;
-      /** @description A change of an own field: its name. */
-      field_name?: string | null;
       file_event?: components["schemas"]["FileEvent"] | null;
       /** @description A file: its name. */
       file_name?: string | null;
@@ -4565,8 +4538,9 @@ export interface components {
       may_delete?: boolean | null;
       /** @description A comment: whether the reader may change its text. */
       may_edit?: boolean | null;
-      /** @description A relation: `added` or `removed`. */
-      relation?: string | null;
+      relation_event?: components["schemas"]["RelationEvent"] | null;
+      /** @description A relation: what the relation reads (*blocks*). */
+      relation_name?: string | null;
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
       /**
@@ -5737,39 +5711,12 @@ export interface components {
     NoticeKind: "finish-asked" | "taken-over" | "released";
     /** @description One item of the list of notifications. */
     NotificationEntry: {
-      after_issue?: components["schemas"]["IssueRef"] | null;
-      /** @description The same for what the field is now. */
-      after_names?: string[] | null;
-      /** @description The same for who they are now. */
-      after_people?: components["schemas"]["PersonRef"][] | null;
-      after_project?: components["schemas"]["ProjectRef"] | null;
-      /** @description A change: what the field is now, in words. */
-      after_text?: string | null;
-      /** @description The same for what the field is now. */
-      after_value?: unknown;
       /** @description When it happened. */
       at: string;
-      before_issue?: components["schemas"]["IssueRef"] | null;
-      /** @description A change of a field that is a list of names (labels, tags): what it was. */
-      before_names?: string[] | null;
-      /** @description A change of a field that holds people: who they were, each as the reader may see people. */
-      before_people?: components["schemas"]["PersonRef"][] | null;
-      before_project?: components["schemas"]["ProjectRef"] | null;
-      /** @description A change: what the field was, in words. */
-      before_text?: string | null;
-      /**
-       * @description A change of an own field that a screen words itself (yes or no, a length of time, a
-       *     number, a day): what the field was, as the JSON of its kind.
-       */
-      before_value?: unknown;
       by?: components["schemas"]["PersonRef"] | null;
+      change?: components["schemas"]["FieldChangeBody"] | null;
       /** @description A comment: its ID, which *Open* goes to. */
       comment?: string | null;
-      /** @description A change: the key of the field. */
-      field?: string | null;
-      field_kind?: components["schemas"]["FieldType"] | null;
-      /** @description A change of an own field: its name. */
-      field_name?: string | null;
       file_event?: components["schemas"]["FileEvent"] | null;
       /** @description A file of the issue: its name, when the file is still there. */
       file_name?: string | null;
@@ -6083,32 +6030,10 @@ export interface components {
     Page_HistoryEntryItem: {
       /** @description The items of this page. */
       items: {
-        after_issue?: components["schemas"]["IssueRef"] | null;
-        /** @description A change: the names of the choices the field holds now. */
-        after_names?: string[] | null;
-        /** @description A change: the people the field holds now. */
-        after_people?: components["schemas"]["PersonRef"][] | null;
-        after_project?: components["schemas"]["ProjectRef"] | null;
-        /** @description A change: what the field is now, when it is a word or a name. */
-        after_text?: string | null;
-        /** @description The same for what the field is now. */
-        after_value?: unknown;
         /** @description When it happened. */
         at: string;
-        before_issue?: components["schemas"]["IssueRef"] | null;
-        /** @description A change: the names of the choices the field held, in order. */
-        before_names?: string[] | null;
-        /** @description A change: the people the field held, as the kind of the field says. */
-        before_people?: components["schemas"]["PersonRef"][] | null;
-        before_project?: components["schemas"]["ProjectRef"] | null;
-        /** @description A change: what the field was, when it is a word or a name. */
-        before_text?: string | null;
-        /**
-         * @description A change of an own field that a screen words itself (yes or no, a length of time, a number,
-         *     a day): what the field was, as the JSON of its kind.
-         */
-        before_value?: unknown;
         by?: components["schemas"]["PersonRef"] | null;
+        change?: components["schemas"]["FieldChangeBody"] | null;
         /** @description A comment: its ID. */
         comment?: string | null;
         direction?: components["schemas"]["Direction"] | null;
@@ -6116,11 +6041,6 @@ export interface components {
         edited_at?: string | null;
         /** @description The event the item was made from; the items of one event share it. */
         event: string;
-        /** @description A change: the key of the field. */
-        field?: string | null;
-        field_kind?: components["schemas"]["FieldType"] | null;
-        /** @description A change of an own field: its name. */
-        field_name?: string | null;
         file_event?: components["schemas"]["FileEvent"] | null;
         /** @description A file: its name. */
         file_name?: string | null;
@@ -6133,8 +6053,9 @@ export interface components {
         may_delete?: boolean | null;
         /** @description A comment: whether the reader may change its text. */
         may_edit?: boolean | null;
-        /** @description A relation: `added` or `removed`. */
-        relation?: string | null;
+        relation_event?: components["schemas"]["RelationEvent"] | null;
+        /** @description A relation: what the relation reads (*blocks*). */
+        relation_name?: string | null;
         /** @description A comment: the text, in Markdown. */
         text?: string | null;
         /**
@@ -6371,39 +6292,12 @@ export interface components {
     Page_NotificationEntry: {
       /** @description The items of this page. */
       items: {
-        after_issue?: components["schemas"]["IssueRef"] | null;
-        /** @description The same for what the field is now. */
-        after_names?: string[] | null;
-        /** @description The same for who they are now. */
-        after_people?: components["schemas"]["PersonRef"][] | null;
-        after_project?: components["schemas"]["ProjectRef"] | null;
-        /** @description A change: what the field is now, in words. */
-        after_text?: string | null;
-        /** @description The same for what the field is now. */
-        after_value?: unknown;
         /** @description When it happened. */
         at: string;
-        before_issue?: components["schemas"]["IssueRef"] | null;
-        /** @description A change of a field that is a list of names (labels, tags): what it was. */
-        before_names?: string[] | null;
-        /** @description A change of a field that holds people: who they were, each as the reader may see people. */
-        before_people?: components["schemas"]["PersonRef"][] | null;
-        before_project?: components["schemas"]["ProjectRef"] | null;
-        /** @description A change: what the field was, in words. */
-        before_text?: string | null;
-        /**
-         * @description A change of an own field that a screen words itself (yes or no, a length of time, a
-         *     number, a day): what the field was, as the JSON of its kind.
-         */
-        before_value?: unknown;
         by?: components["schemas"]["PersonRef"] | null;
+        change?: components["schemas"]["FieldChangeBody"] | null;
         /** @description A comment: its ID, which *Open* goes to. */
         comment?: string | null;
-        /** @description A change: the key of the field. */
-        field?: string | null;
-        field_kind?: components["schemas"]["FieldType"] | null;
-        /** @description A change of an own field: its name. */
-        field_name?: string | null;
         file_event?: components["schemas"]["FileEvent"] | null;
         /** @description A file of the issue: its name, when the file is still there. */
         file_name?: string | null;
@@ -7244,6 +7138,11 @@ export interface components {
       /** @description What that end reads (*blocks*, *is blocked by*). */
       name: string;
     };
+    /**
+     * @description What happened to a relation.
+     * @enum {string}
+     */
+    RelationEvent: "added" | "removed";
     /** @description A kind of relation: the fields that can be asked for. */
     RelationKindItem: {
       /** @description What the other issue reads. */

@@ -11,61 +11,14 @@ import { renderSaid } from "./said.ts";
  * What the sentence of a change needs of an item that says one: the history of an issue and a
  * notification both carry these fields, so both word a change the same way.
  */
-export type ChangeWords = Pick<
-  Schema<"HistoryEntryItem">,
-  | "by"
-  | "field"
-  | "field_name"
-  | "field_kind"
-  | "before_text"
-  | "after_text"
-  | "before_value"
-  | "after_value"
-  | "before_names"
-  | "after_names"
-  | "before_people"
-  | "after_people"
-  | "before_issue"
-  | "after_issue"
-  | "before_project"
-  | "after_project"
->;
+export interface ChangeWords {
+  readonly by?: Schema<"HistoryEntryItem">["by"];
+  readonly change?: Schema<"FieldChangeBody"> | null | undefined;
+}
 
 /** Who did it, at the start of a sentence; Bugaboo itself when nobody is named. */
 export function whoOf(entry: { readonly by?: ChangeWords["by"] | undefined }): string {
   return entry.by === undefined || entry.by === null ? t("person.bugaboo") : personName(entry.by);
-}
-
-/** The value of one side of an item in the one shape of a change's value, if it has any. */
-function valueOf(entry: ChangeWords, side: "before" | "after"): Schema<"ChangeValueBody"> | null {
-  const before = side === "before";
-  const text = before ? entry.before_text : entry.after_text;
-  const value = before ? entry.before_value : entry.after_value;
-  const names = before ? entry.before_names : entry.after_names;
-  const people = before ? entry.before_people : entry.after_people;
-  const issue = before ? entry.before_issue : entry.after_issue;
-  const project = before ? entry.before_project : entry.after_project;
-  if (text !== undefined && text !== null) {
-    return { shown: "text", text };
-  }
-  if (
-    value !== undefined &&
-    value !== null &&
-    entry.field_kind !== undefined &&
-    entry.field_kind !== null
-  ) {
-    return { shown: "typed", kind: entry.field_kind, value };
-  }
-  if (names !== undefined && names !== null) {
-    return { shown: "names", names };
-  }
-  if (people !== undefined && people !== null) {
-    return { shown: "people", people };
-  }
-  if (project !== undefined && project !== null) {
-    return { shown: "project", project };
-  }
-  return issue === undefined || issue === null ? null : { shown: "issue", issue };
 }
 
 /**
@@ -103,12 +56,13 @@ export function wordedSideOf(
 
 /** A change of one field as the shared wording takes it. */
 export function wordedChange(entry: ChangeWords): WordedChange {
+  const code = entry.change?.field ?? "";
   return {
     who: whoOf(entry),
-    field: entry.field ?? "",
-    field_name: fieldNameOf({ code: entry.field ?? "", name: entry.field_name }),
-    before: wordedSideOf(valueOf(entry, "before")),
-    after: wordedSideOf(valueOf(entry, "after")),
+    field: code,
+    field_name: fieldNameOf({ code, name: entry.change?.name }),
+    before: wordedSideOf(entry.change?.before),
+    after: wordedSideOf(entry.change?.after),
   };
 }
 

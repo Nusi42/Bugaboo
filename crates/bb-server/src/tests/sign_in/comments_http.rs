@@ -327,7 +327,7 @@ async fn iss_06_history_leaves_out_changes_to_fields_the_reader_cannot_see() -> 
         let fields = |history: &Reply| -> Vec<String> {
             items(history)
                 .iter()
-                .filter_map(|item| item["field"].as_str().map(str::to_owned))
+                .filter_map(|item| item["change"]["field"].as_str().map(str::to_owned))
                 .collect()
         };
         // Ada sees every change, the reader the ones to fields they may see; a change that is
@@ -674,7 +674,7 @@ async fn iss_06_a_page_of_hidden_rows_still_answers_with_a_cursor_and_repeats_no
                 Some(format!(
                     "{}/{}",
                     item["event"].as_str()?,
-                    item["field"].as_str()?
+                    item["change"]["field"].as_str()?
                 ))
             }));
             match ok(&page)?["next_cursor"].as_str() {

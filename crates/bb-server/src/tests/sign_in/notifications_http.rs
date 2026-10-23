@@ -59,8 +59,8 @@ async fn ntf_01_a_follower_hears_over_http_and_marks_what_was_read() -> TestResu
         let entry = &entries[0];
         assert_eq!(entry["kind"], "followed-activity");
         assert_eq!(entry["read"], false);
-        assert_eq!(entry["field"], "status");
-        assert_eq!(entry["after_text"], "done");
+        assert_eq!(entry["change"]["field"], "status");
+        assert_eq!(entry["change"]["after"]["text"], "done");
         assert_eq!(entry["issue"]["readable_id"], issue.as_str());
         assert_eq!(entry["by"]["name"], "Bob Baker");
         assert!(
@@ -124,10 +124,12 @@ async fn ntf_01_the_people_of_a_change_stay_people_as_the_reader_may_see_them() 
         let heard = items(&gus.send("GET", NOTIFICATIONS, None).await?);
         let change = heard
             .iter()
-            .find(|item| item["field"] == "assigned-to")
+            .find(|item| item["change"]["field"] == "assigned-to")
             .ok_or("no change of the assignee")?;
-        assert!(change.get("after_text").is_none(), "{change}");
-        let people = change["after_people"].as_array().ok_or("no people")?;
+        assert!(change.pointer("/change/after/text").is_none(), "{change}");
+        let people = change["change"]["after"]["people"]
+            .as_array()
+            .ok_or("no people")?;
         assert_eq!(people.len(), 1);
         let shown = people[0].to_string();
         assert!(
@@ -198,7 +200,7 @@ async fn sec_06_a_notification_and_an_e_mail_leave_out_a_field_the_role_of_the_r
         let heard = items(&reader.send("GET", NOTIFICATIONS, None).await?);
         let fields: Vec<&str> = heard
             .iter()
-            .filter_map(|item| item["field"].as_str())
+            .filter_map(|item| item["change"]["field"].as_str())
             .collect();
         assert!(
             fields.contains(&"title") || fields.contains(&"status"),

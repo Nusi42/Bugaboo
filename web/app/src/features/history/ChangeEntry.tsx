@@ -9,7 +9,7 @@ import { changeSentence, plainSentenceOf, useScrollTo } from "./history.ts";
 
 /** What tells the items of one event apart: the field that changed, the relation or the file. */
 function keyOf(item: Schema<"HistoryEntryItem">): string {
-  return [item.event, item.field ?? item.relation ?? item.file_event ?? ""].join(" ");
+  return [item.event, item.change?.field ?? item.relation_name ?? item.file_event ?? ""].join(" ");
 }
 
 /**

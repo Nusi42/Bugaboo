@@ -159,10 +159,10 @@ export function plainSentenceOf(entry: HistoryEntry): string | undefined {
 /** The sentence of a relation that was added or taken away. */
 export function relationSentence(entry: HistoryEntry): string {
   const message =
-    entry.relation === "added" ? "history.relation-added" : "history.relation-removed";
+    entry.relation_event === "added" ? "history.relation-added" : "history.relation-removed";
   return t(message, {
     who: whoOf(entry),
-    name: entry.field ?? "",
+    name: entry.relation_name ?? "",
     issue: entry.issue?.readable_id ?? "",
   });
 }

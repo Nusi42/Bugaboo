@@ -25852,101 +25852,26 @@
         "description": "One item of the history of an issue.",
         "required": ["event", "at", "kind"],
         "properties": {
-          "after_issue": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IssueRef",
-                "description": "A change: the issue the field holds now."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "after_names": {
-            "type": ["array", "null"],
-            "items": {
-              "type": "string"
-            },
-            "description": "A change: the names of the choices the field holds now."
-          },
-          "after_people": {
-            "type": ["array", "null"],
-            "items": {
-              "$ref": "#/components/schemas/PersonRef"
-            },
-            "description": "A change: the people the field holds now."
-          },
-          "after_project": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ProjectRef",
-                "description": "A change of the project: the project the issue is in now."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "after_text": {
-            "type": ["string", "null"],
-            "description": "A change: what the field is now, when it is a word or a name."
-          },
-          "after_value": {
-            "description": "The same for what the field is now."
-          },
           "at": {
             "type": "string",
             "description": "When it happened."
-          },
-          "before_issue": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IssueRef",
-                "description": "A change: the issue the field held (the parent), when the reader may see it."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "before_names": {
-            "type": ["array", "null"],
-            "items": {
-              "type": "string"
-            },
-            "description": "A change: the names of the choices the field held, in order."
-          },
-          "before_people": {
-            "type": ["array", "null"],
-            "items": {
-              "$ref": "#/components/schemas/PersonRef"
-            },
-            "description": "A change: the people the field held, as the kind of the field says."
-          },
-          "before_project": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ProjectRef",
-                "description": "A change of the project: the project the issue was in, when the reader may see it."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "before_text": {
-            "type": ["string", "null"],
-            "description": "A change: what the field was, when it is a word or a name."
-          },
-          "before_value": {
-            "description": "A change of an own field that a screen words itself (yes or no, a length of time, a number,\na day): what the field was, as the JSON of its kind."
           },
           "by": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/PersonRef",
                 "description": "Who did it, as the reader may see people of the kind *Authors*; left out for Bugaboo itself."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "change": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldChangeBody",
+                "description": "A change: the field that changed, with what it was and what it is now."
               },
               {
                 "type": "null"
@@ -25975,25 +25900,6 @@
           "event": {
             "type": "string",
             "description": "The event the item was made from; the items of one event share it."
-          },
-          "field": {
-            "type": ["string", "null"],
-            "description": "A change: the key of the field."
-          },
-          "field_kind": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/FieldType",
-                "description": "A change of an own field: its kind, which says how `before_value` and `after_value` are\nworded."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "field_name": {
-            "type": ["string", "null"],
-            "description": "A change of an own field: its name."
           },
           "file_event": {
             "oneOf": [
@@ -26038,9 +25944,20 @@
             "type": ["boolean", "null"],
             "description": "A comment: whether the reader may change its text."
           },
-          "relation": {
+          "relation_event": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RelationEvent",
+                "description": "A relation: whether it was added or taken away."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "relation_name": {
             "type": ["string", "null"],
-            "description": "A relation: `added` or `removed`."
+            "description": "A relation: what the relation reads (*blocks*)."
           },
           "text": {
             "type": ["string", "null"],
@@ -28554,95 +28471,9 @@
         "description": "One item of the list of notifications.",
         "required": ["id", "kind", "at", "read"],
         "properties": {
-          "after_issue": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IssueRef",
-                "description": "The same for what it is now."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "after_names": {
-            "type": ["array", "null"],
-            "items": {
-              "type": "string"
-            },
-            "description": "The same for what the field is now."
-          },
-          "after_people": {
-            "type": ["array", "null"],
-            "items": {
-              "$ref": "#/components/schemas/PersonRef"
-            },
-            "description": "The same for who they are now."
-          },
-          "after_project": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ProjectRef",
-                "description": "The same for the project it is in now."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "after_text": {
-            "type": ["string", "null"],
-            "description": "A change: what the field is now, in words."
-          },
-          "after_value": {
-            "description": "The same for what the field is now."
-          },
           "at": {
             "type": "string",
             "description": "When it happened."
-          },
-          "before_issue": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IssueRef",
-                "description": "A change of a field that is an issue: the issue it was, when the reader may see it."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "before_names": {
-            "type": ["array", "null"],
-            "items": {
-              "type": "string"
-            },
-            "description": "A change of a field that is a list of names (labels, tags): what it was."
-          },
-          "before_people": {
-            "type": ["array", "null"],
-            "items": {
-              "$ref": "#/components/schemas/PersonRef"
-            },
-            "description": "A change of a field that holds people: who they were, each as the reader may see people."
-          },
-          "before_project": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ProjectRef",
-                "description": "A change of the project: the project the issue was in, when the reader may see it."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "before_text": {
-            "type": ["string", "null"],
-            "description": "A change: what the field was, in words."
-          },
-          "before_value": {
-            "description": "A change of an own field that a screen words itself (yes or no, a length of time, a\nnumber, a day): what the field was, as the JSON of its kind."
           },
           "by": {
             "oneOf": [
@@ -28655,28 +28486,20 @@
               }
             ]
           },
-          "comment": {
-            "type": ["string", "null"],
-            "description": "A comment: its ID, which *Open* goes to."
-          },
-          "field": {
-            "type": ["string", "null"],
-            "description": "A change: the key of the field."
-          },
-          "field_kind": {
+          "change": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/FieldType",
-                "description": "A change of an own field: its kind, which says how `before_value` and `after_value` are\nworded."
+                "$ref": "#/components/schemas/FieldChangeBody",
+                "description": "A change: the field that changed, with what it was and what it is now."
               },
               {
                 "type": "null"
               }
             ]
           },
-          "field_name": {
+          "comment": {
             "type": ["string", "null"],
-            "description": "A change of an own field: its name."
+            "description": "A comment: its ID, which *Open* goes to."
           },
           "file_event": {
             "oneOf": [
@@ -29370,101 +29193,26 @@
               "description": "One item of the history of an issue.",
               "required": ["event", "at", "kind"],
               "properties": {
-                "after_issue": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/IssueRef",
-                      "description": "A change: the issue the field holds now."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "after_names": {
-                  "type": ["array", "null"],
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "A change: the names of the choices the field holds now."
-                },
-                "after_people": {
-                  "type": ["array", "null"],
-                  "items": {
-                    "$ref": "#/components/schemas/PersonRef"
-                  },
-                  "description": "A change: the people the field holds now."
-                },
-                "after_project": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProjectRef",
-                      "description": "A change of the project: the project the issue is in now."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "after_text": {
-                  "type": ["string", "null"],
-                  "description": "A change: what the field is now, when it is a word or a name."
-                },
-                "after_value": {
-                  "description": "The same for what the field is now."
-                },
                 "at": {
                   "type": "string",
                   "description": "When it happened."
-                },
-                "before_issue": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/IssueRef",
-                      "description": "A change: the issue the field held (the parent), when the reader may see it."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "before_names": {
-                  "type": ["array", "null"],
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "A change: the names of the choices the field held, in order."
-                },
-                "before_people": {
-                  "type": ["array", "null"],
-                  "items": {
-                    "$ref": "#/components/schemas/PersonRef"
-                  },
-                  "description": "A change: the people the field held, as the kind of the field says."
-                },
-                "before_project": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProjectRef",
-                      "description": "A change of the project: the project the issue was in, when the reader may see it."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "before_text": {
-                  "type": ["string", "null"],
-                  "description": "A change: what the field was, when it is a word or a name."
-                },
-                "before_value": {
-                  "description": "A change of an own field that a screen words itself (yes or no, a length of time, a number,\na day): what the field was, as the JSON of its kind."
                 },
                 "by": {
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/PersonRef",
                       "description": "Who did it, as the reader may see people of the kind *Authors*; left out for Bugaboo itself."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "change": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldChangeBody",
+                      "description": "A change: the field that changed, with what it was and what it is now."
                     },
                     {
                       "type": "null"
@@ -29493,25 +29241,6 @@
                 "event": {
                   "type": "string",
                   "description": "The event the item was made from; the items of one event share it."
-                },
-                "field": {
-                  "type": ["string", "null"],
-                  "description": "A change: the key of the field."
-                },
-                "field_kind": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/FieldType",
-                      "description": "A change of an own field: its kind, which says how `before_value` and `after_value` are\nworded."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "field_name": {
-                  "type": ["string", "null"],
-                  "description": "A change of an own field: its name."
                 },
                 "file_event": {
                   "oneOf": [
@@ -29556,9 +29285,20 @@
                   "type": ["boolean", "null"],
                   "description": "A comment: whether the reader may change its text."
                 },
-                "relation": {
+                "relation_event": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RelationEvent",
+                      "description": "A relation: whether it was added or taken away."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "relation_name": {
                   "type": ["string", "null"],
-                  "description": "A relation: `added` or `removed`."
+                  "description": "A relation: what the relation reads (*blocks*)."
                 },
                 "text": {
                   "type": ["string", "null"],
@@ -30094,95 +29834,9 @@
               "description": "One item of the list of notifications.",
               "required": ["id", "kind", "at", "read"],
               "properties": {
-                "after_issue": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/IssueRef",
-                      "description": "The same for what it is now."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "after_names": {
-                  "type": ["array", "null"],
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "The same for what the field is now."
-                },
-                "after_people": {
-                  "type": ["array", "null"],
-                  "items": {
-                    "$ref": "#/components/schemas/PersonRef"
-                  },
-                  "description": "The same for who they are now."
-                },
-                "after_project": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProjectRef",
-                      "description": "The same for the project it is in now."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "after_text": {
-                  "type": ["string", "null"],
-                  "description": "A change: what the field is now, in words."
-                },
-                "after_value": {
-                  "description": "The same for what the field is now."
-                },
                 "at": {
                   "type": "string",
                   "description": "When it happened."
-                },
-                "before_issue": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/IssueRef",
-                      "description": "A change of a field that is an issue: the issue it was, when the reader may see it."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "before_names": {
-                  "type": ["array", "null"],
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "A change of a field that is a list of names (labels, tags): what it was."
-                },
-                "before_people": {
-                  "type": ["array", "null"],
-                  "items": {
-                    "$ref": "#/components/schemas/PersonRef"
-                  },
-                  "description": "A change of a field that holds people: who they were, each as the reader may see people."
-                },
-                "before_project": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProjectRef",
-                      "description": "A change of the project: the project the issue was in, when the reader may see it."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "before_text": {
-                  "type": ["string", "null"],
-                  "description": "A change: what the field was, in words."
-                },
-                "before_value": {
-                  "description": "A change of an own field that a screen words itself (yes or no, a length of time, a\nnumber, a day): what the field was, as the JSON of its kind."
                 },
                 "by": {
                   "oneOf": [
@@ -30195,28 +29849,20 @@
                     }
                   ]
                 },
-                "comment": {
-                  "type": ["string", "null"],
-                  "description": "A comment: its ID, which *Open* goes to."
-                },
-                "field": {
-                  "type": ["string", "null"],
-                  "description": "A change: the key of the field."
-                },
-                "field_kind": {
+                "change": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/FieldType",
-                      "description": "A change of an own field: its kind, which says how `before_value` and `after_value` are\nworded."
+                      "$ref": "#/components/schemas/FieldChangeBody",
+                      "description": "A change: the field that changed, with what it was and what it is now."
                     },
                     {
                       "type": "null"
                     }
                   ]
                 },
-                "field_name": {
+                "comment": {
                   "type": ["string", "null"],
-                  "description": "A change of an own field: its name."
+                  "description": "A comment: its ID, which *Open* goes to."
                 },
                 "file_event": {
                   "oneOf": [
@@ -31927,6 +31573,11 @@
             "description": "What that end reads (*blocks*, *is blocked by*)."
           }
         }
+      },
+      "RelationEvent": {
+        "type": "string",
+        "description": "What happened to a relation.",
+        "enum": ["added", "removed"]
       },
       "RelationKindItem": {
         "type": "object",

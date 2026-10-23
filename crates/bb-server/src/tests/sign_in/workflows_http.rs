@@ -158,12 +158,12 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
             .as_array()
             .ok_or("no history")?
             .iter()
-            .filter(|each| each["field"] == "status")
+            .filter(|each| each["change"]["field"] == "status")
             .collect();
         // Newest first: the move, the change to *In progress*, and the start.
         assert_eq!(statuses.len(), 3, "{}", history.body);
-        assert_eq!(statuses[0]["before_text"], "in-progress");
-        assert_eq!(statuses[0]["after_text"], "open");
+        assert_eq!(statuses[0]["change"]["before"]["text"], "in-progress");
+        assert_eq!(statuses[0]["change"]["after"]["text"], "open");
         Ok(())
     })
     .await

@@ -34,7 +34,7 @@ export async function changesOf(
   const events: Record<string, readonly string[]> = { ...found };
   for (const item of page.items) {
     if (item.kind === "change") {
-      events[item.event] = [...(events[item.event] ?? []), item.field ?? ""];
+      events[item.event] = [...(events[item.event] ?? []), item.change?.field ?? ""];
     }
   }
   return page.next_cursor === null || page.next_cursor === undefined

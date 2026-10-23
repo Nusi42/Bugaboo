@@ -311,8 +311,8 @@ async fn iss_04_adding_and_removing_is_in_both_histories() -> TestResult {
                 .filter(|item| item["kind"] == "relation")
                 .map(|item| {
                     (
-                        item["relation"].as_str().unwrap_or_default(),
-                        item["field"].as_str().unwrap_or_default(),
+                        item["relation_event"].as_str().unwrap_or_default(),
+                        item["relation_name"].as_str().unwrap_or_default(),
                         item["issue"]["readable_id"].as_str().unwrap_or_default(),
                     )
                 })

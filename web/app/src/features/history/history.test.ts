@@ -10,6 +10,7 @@ import {
   relationSentence,
   type HistoryEntry,
 } from "./history.ts";
+import { withChange, type FlatChange } from "../../shared/change-fixtures.ts";
 import { fileSentence } from "../../shared/file-sentence.ts";
 import { testWording } from "../../shared/wording-testing.ts";
 import { mentionBeingTyped, withMention } from "./mention-text.ts";
@@ -17,8 +18,14 @@ import { mentionBeingTyped, withMention } from "./mention-text.ts";
 const ben = { shown: "name", id: "b", name: "Ben" } as const;
 const ana = { shown: "name", id: "a", name: "Ana" } as const;
 
-function change(overrides: Partial<Schema<"HistoryEntryItem">>): HistoryEntry {
-  return { event: "e1", at: "2027-01-15T08:00:00Z", by: ben, kind: "change", ...overrides };
+function change(overrides: Partial<Schema<"HistoryEntryItem">> & FlatChange): HistoryEntry {
+  return {
+    event: "e1",
+    at: "2027-01-15T08:00:00Z",
+    by: ben,
+    kind: "change",
+    ...withChange(overrides),
+  };
 }
 
 describe("iss_06 the history lists choices", () => {
@@ -120,8 +127,8 @@ describe("iss_06 relations and the items of one event", () => {
       relationSentence(
         change({
           kind: "relation",
-          relation: "added",
-          field: "blocks",
+          relation_event: "added",
+          relation_name: "blocks",
           issue: {
             id: "i2",
             readable_id: "WEB-147",

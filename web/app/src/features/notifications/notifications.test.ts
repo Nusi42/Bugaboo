@@ -2,6 +2,7 @@ import { markSafeHtml } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { describe, expect, it } from "vitest";
 
+import { withChange, type FlatChange } from "../../shared/change-fixtures.ts";
 import { testWording } from "../../shared/wording-testing.ts";
 import {
   failedRenewalProjectOf,
@@ -23,7 +24,7 @@ const issue = (key: string) =>
     issue_type: { id: "t", name: "Task", icon: "bug", retired: false },
   }) as const;
 
-function entry(overrides: Partial<NotificationItem>): NotificationItem {
+function entry(overrides: Partial<NotificationItem> & FlatChange): NotificationItem {
   return {
     id: "n1",
     kind: "followed-activity",
@@ -31,7 +32,7 @@ function entry(overrides: Partial<NotificationItem>): NotificationItem {
     read: false,
     issue: issue("WEB-1"),
     by: ben,
-    ...overrides,
+    ...withChange(overrides),
   };
 }
 
