@@ -82,7 +82,7 @@ function NotificationActions({
   isReading,
 }: NotificationViewProps & { readonly what: string }) {
   const navigate = useNavigate();
-  const [key, target] = [row.issue?.key, targetOf(row)];
+  const [key, target] = [row.issue?.readable_id, targetOf(row)];
   return (
     <div {...partOf(part.notificationActions)}>
       {key === undefined ? null : (

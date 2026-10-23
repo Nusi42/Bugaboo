@@ -29,7 +29,7 @@ export function useIssuePage(detail: IssueDetail, address: string): IssuePageSta
     issueType: issue.issue_type?.id,
     kind: "issue-page",
   });
-  const key = issue.key ?? address;
+  const key = issue.readable_id ?? address;
   const version = useIssueWatch(issue, address);
   usePageTitle(t("issues.title-of", { key, title: issue.title ?? "" }));
   return {

@@ -128,7 +128,7 @@ async fn an_issue_per_type(
         .as_str()
         .ok_or("no type")?
         .to_owned();
-    let in_bug = ok(&site.create(ada, "A bug").await?)?["key"]
+    let in_bug = ok(&site.create(ada, "A bug").await?)?["readable_id"]
         .as_str()
         .ok_or("no key")?
         .to_owned();
@@ -138,7 +138,7 @@ async fn an_issue_per_type(
             &acme_issues(),
             Some(json!({"issue_type": task, "title": "A question"})),
         )
-        .await?)?["key"]
+        .await?)?["readable_id"]
         .as_str()
         .ok_or("no key")?
         .to_owned();

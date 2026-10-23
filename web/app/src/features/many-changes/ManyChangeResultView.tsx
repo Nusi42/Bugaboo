@@ -15,7 +15,7 @@ export function SkippedList({ skipped }: { readonly skipped: ManyChangeRun["skip
   const lines: readonly { readonly key: string; readonly text: string }[] = skipped.map((each) => ({
     key: [each.issue?.id ?? "", each.reason].join(":"),
     text: t("many-changes.skipped-line", {
-      issue: each.issue?.key ?? t("many-changes.issue-unknown"),
+      issue: each.issue?.readable_id ?? t("many-changes.issue-unknown"),
       reason: skipText(each.reason),
     }),
   }));

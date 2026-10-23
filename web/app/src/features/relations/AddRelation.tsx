@@ -109,7 +109,7 @@ function useAddRelation(readableId: string) {
   const add = api.query.useMutation("post", "/api/v1/issues/{issue}/relations", {
     onSuccess: (relation) => {
       refreshIssueRelations();
-      setMade({ relation: relation.id, other: relation.issue.key, name: relation.name });
+      setMade({ relation: relation.id, other: relation.issue.readable_id, name: relation.name });
       setOther("");
       setChosen(null);
     },

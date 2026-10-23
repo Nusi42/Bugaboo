@@ -45,7 +45,7 @@ fn ids_of(made: &Value) -> Result<(String, String), Failure> {
             .map(str::to_owned)
             .ok_or_else(|| Failure::from(format!("no {name}")))
     };
-    Ok((text("id")?, text("key")?))
+    Ok((text("id")?, text("readable_id")?))
 }
 
 #[tokio::test]

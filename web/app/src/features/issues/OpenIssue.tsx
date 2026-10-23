@@ -24,7 +24,7 @@ export interface OpenIssueProps {
 export function OpenIssue({ open, onFocus, onClose }: OpenIssueProps) {
   const { sheet } = useIssueTakesScreen();
   const found = useIssue(sheet ? open : undefined).data;
-  const key = found?.issue.key;
+  const key = found?.issue.readable_id;
   const page = (
     <IssuePage
       address={open}

@@ -35,7 +35,7 @@ function referenceText(value: unknown): string {
       return personName(value);
     }
     const name = memberOf(value, "name");
-    const key = memberOf(value, "key");
+    const key = memberOf(value, "readable_id");
     if (typeof name === "string") {
       return name;
     }

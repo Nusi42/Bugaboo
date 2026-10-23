@@ -83,14 +83,14 @@ words! {
         /// An issue was assigned to the person.
         Assigned => "assigned",
         /// A status change, a comment or a file on an issue the person follows.
-        FollowedActivity => "followed_activity",
+        FollowedActivity => "followed-activity",
         /// Other changes to fields of an issue the person follows.
-        FollowedFields => "followed_fields",
+        FollowedFields => "followed-fields",
         /// A run of many changes the person asked for has ended, or a job they asked for died.
-        RunEnded => "run_ended",
+        RunEnded => "run-ended",
         /// Somebody asked the person to finish editing, or took the editing over (*Ask … to
         /// finish*, *Edit anyway*).
-        EditNotice => "edit_notice",
+        EditNotice => "edit-notice",
     }
     messages label = "notification.kind."
 }

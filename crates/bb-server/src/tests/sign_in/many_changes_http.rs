@@ -179,7 +179,7 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
             vec![Some("changed-since".to_owned()), None]
         );
         // The skipped issue is named, and left as it is.
-        assert_eq!(result["outcomes"][0]["issue"]["key"], first);
+        assert_eq!(result["outcomes"][0]["issue"]["readable_id"], first);
         let left = ada.send("GET", &format!("{ISSUES}/{first}"), None).await?;
         assert_eq!(ok(&left)?["issue"]["status"]["key"], "open");
         Ok(())
@@ -256,7 +256,7 @@ async fn iss_02_a_retired_type_is_not_missing_on_a_move() -> TestResult {
         // The bug has an ID of the new project, and the old one still finds it.
         let by_old = ada.send("GET", &format!("{ISSUES}/{bug}"), None).await?;
         assert!(
-            ok(&by_old)?["issue"]["key"]
+            ok(&by_old)?["issue"]["readable_id"]
                 .as_str()
                 .is_some_and(|key| key.starts_with("INTO-"))
         );

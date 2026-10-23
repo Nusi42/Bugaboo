@@ -71,7 +71,10 @@ async fn m3_f28_an_issue_can_be_assigned_to_those_who_may_see_it_only() -> TestR
         // Assigning is refused alike for a person who does not exist, one with no role and a
         // Guest who did not report the issue.
         let made = site.create(&mut ada, "Who does it").await?;
-        let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        let issue = ok(&made)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         for person in [outsider.to_string(), gus_id.to_string(), NOBODY.to_owned()] {
             assert_eq!(
                 assign(&mut ada, &issue, 1, &person).await?,
@@ -80,7 +83,10 @@ async fn m3_f28_an_issue_can_be_assigned_to_those_who_may_see_it_only() -> TestR
         }
         // A Guest can be assigned to the issue they reported themselves.
         let own = site.create(&mut gus, "Gus found it").await?;
-        let own_key = ok(&own)?["key"].as_str().ok_or("no key")?.to_owned();
+        let own_key = ok(&own)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         let on_gus = assign(&mut ada, &own_key, 1, &gus_id.to_string()).await?;
         assert_eq!(on_gus.0, StatusCode::OK);
         let on_cora = assign(&mut ada, &issue, 1, &cora.to_string()).await?;
@@ -188,7 +194,10 @@ async fn m3_f28_an_assigned_person_who_lost_access_does_not_stop_a_change() -> T
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (_, cora) = site.person(StartingRole::Contributor, "cora").await?;
         let made = site.create(&mut ada, "Cora has it").await?;
-        let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        let issue = ok(&made)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         assert_eq!(
             assign(&mut ada, &issue, 1, &cora.to_string()).await?.0,
             StatusCode::OK
@@ -239,7 +248,10 @@ async fn adr_0027_who_is_shown_only_themselves_can_assign_only_themselves() -> T
         .await?;
         // The list offers Tim only himself, and sending the ID of somebody else is no way round it.
         let made = site.create(&mut ada, "Who does it").await?;
-        let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        let issue = ok(&made)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         assert_eq!(
             assign(&mut tim, &issue, 1, &cora.to_string()).await?,
             (StatusCode::BAD_REQUEST, "request.invalid".to_owned())

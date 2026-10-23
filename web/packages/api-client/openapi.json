@@ -26351,10 +26351,6 @@
               }
             ]
           },
-          "key": {
-            "type": ["string", "null"],
-            "description": "The readable ID now (`WEB-142`, `WEB-K7Q2X`)."
-          },
           "own_fields": {
             "oneOf": [
               {
@@ -26387,6 +26383,10 @@
                 "type": "null"
               }
             ]
+          },
+          "readable_id": {
+            "type": ["string", "null"],
+            "description": "The readable ID now (`WEB-142`, `WEB-K7Q2X`)."
           },
           "reported_by": {
             "oneOf": [
@@ -26477,7 +26477,7 @@
       "IssueRef": {
         "type": "object",
         "description": "An issue as a small reference: its readable ID and what the viewer may see of it in its own\nproject. A title or a status that the viewer's role hides there is left out.",
-        "required": ["id", "key", "project", "issue_type"],
+        "required": ["id", "readable_id", "project", "issue_type"],
         "properties": {
           "id": {
             "type": "string",
@@ -26486,10 +26486,6 @@
           "issue_type": {
             "$ref": "#/components/schemas/IssueTypeRef",
             "description": "Its issue type."
-          },
-          "key": {
-            "type": "string",
-            "description": "The readable ID now (`WEB-142`)."
           },
           "priority": {
             "oneOf": [
@@ -26505,6 +26501,10 @@
           "project": {
             "$ref": "#/components/schemas/ProjectRef",
             "description": "The project it is in."
+          },
+          "readable_id": {
+            "type": "string",
+            "description": "The readable ID now (`WEB-142`)."
           },
           "status": {
             "oneOf": [
@@ -28672,7 +28672,7 @@
       "NoticeKind": {
         "type": "string",
         "description": "What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock.",
-        "enum": ["finish_asked", "taken_over", "released"]
+        "enum": ["finish-asked", "taken-over", "released"]
       },
       "NotificationEntry": {
         "type": "object",
@@ -28897,10 +28897,10 @@
         "enum": [
           "mentioned",
           "assigned",
-          "followed_activity",
-          "followed_fields",
-          "run_ended",
-          "edit_notice"
+          "followed-activity",
+          "followed-fields",
+          "run-ended",
+          "edit-notice"
         ]
       },
       "OfferChangeBody": {
@@ -29786,10 +29786,6 @@
                     }
                   ]
                 },
-                "key": {
-                  "type": ["string", "null"],
-                  "description": "The readable ID now (`WEB-142`, `WEB-K7Q2X`)."
-                },
                 "own_fields": {
                   "oneOf": [
                     {
@@ -29822,6 +29818,10 @@
                       "type": "null"
                     }
                   ]
+                },
+                "readable_id": {
+                  "type": ["string", "null"],
+                  "description": "The readable ID now (`WEB-142`, `WEB-K7Q2X`)."
                 },
                 "reported_by": {
                   "oneOf": [
@@ -29885,7 +29885,7 @@
             "items": {
               "type": "object",
               "description": "An issue as a small reference: its readable ID and what the viewer may see of it in its own\nproject. A title or a status that the viewer's role hides there is left out.",
-              "required": ["id", "key", "project", "issue_type"],
+              "required": ["id", "readable_id", "project", "issue_type"],
               "properties": {
                 "id": {
                   "type": "string",
@@ -29894,10 +29894,6 @@
                 "issue_type": {
                   "$ref": "#/components/schemas/IssueTypeRef",
                   "description": "Its issue type."
-                },
-                "key": {
-                  "type": "string",
-                  "description": "The readable ID now (`WEB-142`)."
                 },
                 "priority": {
                   "oneOf": [
@@ -29913,6 +29909,10 @@
                 "project": {
                   "$ref": "#/components/schemas/ProjectRef",
                   "description": "The project it is in."
+                },
+                "readable_id": {
+                  "type": "string",
+                  "description": "The readable ID now (`WEB-142`)."
                 },
                 "status": {
                   "oneOf": [

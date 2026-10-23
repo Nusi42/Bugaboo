@@ -183,10 +183,15 @@ export async function createBug(admin: ApiSession, title: string): Promise<MadeI
       body: { issue_type: await firstIssueType(admin), title },
     }),
   );
-  if (made.id === undefined || made.id === null || made.key === undefined || made.key === null) {
+  if (
+    made.id === undefined ||
+    made.id === null ||
+    made.readable_id === undefined ||
+    made.readable_id === null
+  ) {
     throw new TypeError("The server made an issue without an ID.");
   }
-  return { id: made.id, key: made.key };
+  return { id: made.id, key: made.readable_id };
 }
 
 /** Puts the issues in the status *In progress*, one after the other. */

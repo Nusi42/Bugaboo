@@ -100,10 +100,10 @@ export async function addFile(context: Context, work: Work): Promise<void> {
  */
 function checkWhatAGuestReads(
   context: Context,
-  items: readonly { readonly issue?: { readonly key: string } | null }[],
+  items: readonly { readonly issue?: { readonly readable_id: string } | null }[],
 ): void {
   for (const item of items) {
-    const key = item.issue?.key;
+    const key = item.issue?.readable_id;
     if (key !== undefined && !context.issues.some((work) => work.key === key)) {
       throw new Error(`A Guest was shown ${key}, which they did not report.`);
     }

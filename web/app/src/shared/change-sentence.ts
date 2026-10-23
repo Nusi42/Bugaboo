@@ -95,7 +95,10 @@ export function wordedSideOf(
       worded: regionWords(value.kind, value.value) ?? null,
     };
   }
-  return { shown: "plain", text: value.shown === "project" ? value.project.name : value.issue.key };
+  return {
+    shown: "plain",
+    text: value.shown === "project" ? value.project.name : value.issue.readable_id,
+  };
 }
 
 /** A change of one field as the shared wording takes it. */

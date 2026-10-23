@@ -141,7 +141,7 @@ async fn fill(
             ok(&site
                 .create(ada, &format!("Other {number} of {issue}"))
                 .await?)?,
-            "key",
+            "readable_id",
         )?;
         let body = json!({"other": other, "kind": blocks, "direction": "forward"});
         ok(&ada
@@ -153,7 +153,7 @@ async fn fill(
             ok(&site
                 .create(ada, &format!("Part {number} of {issue}"))
                 .await?)?,
-            "key",
+            "readable_id",
         )?;
         let body = json!({"version": 1, "parent": issue});
         ok(&ada
@@ -218,9 +218,9 @@ async fn perf_05_the_reads_of_an_issue_page_run_as_many_statements_for_a_busy_is
     each_database("perf_05_issue_page", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let named = text_in(ok(&site.create(&mut ada, "Named").await?)?, "key")?;
-        let quiet = text_in(ok(&site.create(&mut ada, "Quiet").await?)?, "key")?;
-        let busy = text_in(ok(&site.create(&mut ada, "Busy").await?)?, "key")?;
+        let named = text_in(ok(&site.create(&mut ada, "Named").await?)?, "readable_id")?;
+        let quiet = text_in(ok(&site.create(&mut ada, "Quiet").await?)?, "readable_id")?;
+        let busy = text_in(ok(&site.create(&mut ada, "Busy").await?)?, "readable_id")?;
         let two = Size {
             relations: 2,
             parts: 2,
@@ -275,7 +275,7 @@ async fn perf_05_a_page_of_forty_issues_runs_as_many_statements_as_a_page_of_fiv
         for number in 0..40 {
             let key = text_in(
                 ok(&site.create(&mut ada, &format!("Issue {number}")).await?)?,
-                "key",
+                "readable_id",
             )?;
             ok(&ada
                 .send(
@@ -299,7 +299,7 @@ async fn perf_05_tag_suggestions_run_as_many_statements_for_twelve_projects_as_f
     each_database("perf_05_suggestions", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = text_in(ok(&site.create(&mut ada, "One").await?)?, "key")?;
+        let issue = text_in(ok(&site.create(&mut ada, "One").await?)?, "readable_id")?;
         ok(&ada
             .send(
                 "POST",
@@ -346,8 +346,14 @@ async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_run_the_same_stat
         let (site, mut ada) = Site::start(&rig, &app).await?;
         // A Guest sees the project ACME and only the issues they reported.
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let first = text_in(ok(&site.create(&mut ada, "Ada's first").await?)?, "key")?;
-        let second = text_in(ok(&site.create(&mut ada, "Ada's second").await?)?, "key")?;
+        let first = text_in(
+            ok(&site.create(&mut ada, "Ada's first").await?)?,
+            "readable_id",
+        )?;
+        let second = text_in(
+            ok(&site.create(&mut ada, "Ada's second").await?)?,
+            "readable_id",
+        )?;
         let comment = ok(&ada
             .send(
                 "POST",

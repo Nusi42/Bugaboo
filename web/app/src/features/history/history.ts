@@ -163,6 +163,6 @@ export function relationSentence(entry: HistoryEntry): string {
   return t(message, {
     who: whoOf(entry),
     name: entry.field ?? "",
-    issue: entry.issue?.key ?? "",
+    issue: entry.issue?.readable_id ?? "",
   });
 }

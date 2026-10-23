@@ -44,7 +44,7 @@ async fn iss_06_history_shows_an_own_field_by_the_mask_of_the_reader() -> TestRe
                 })),
             )
             .await?;
-        let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        let issue = ok(&made)?["readable_id"].as_str().ok_or("no key")?.to_owned();
         let version = ok(&made)?["version"].clone();
         ok(&ada
             .send(

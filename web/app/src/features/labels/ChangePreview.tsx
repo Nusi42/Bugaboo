@@ -21,7 +21,7 @@ export function ChangePreviewView({ preview }: { readonly preview: Schema<"Chang
         nothing={t("preview.nothing")}
         groups={preview.issues.map((each) => ({
           key: each.issue.id,
-          heading: <strong>{each.issue.key}</strong>,
+          heading: <strong>{each.issue.readable_id}</strong>,
           lines: [
             {
               key: "names",

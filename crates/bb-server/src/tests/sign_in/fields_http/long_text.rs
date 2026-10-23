@@ -33,7 +33,7 @@ async fn locked_notes(
     let made = ok(&site.create(ada, "Has notes").await?)?.clone();
     let (id, key) = (
         id_in(&made)?,
-        made["key"].as_str().ok_or("no key")?.to_owned(),
+        made["readable_id"].as_str().ok_or("no key")?.to_owned(),
     );
     let taken = take_notes_lock(ada, &id, &field).await?;
     Ok((field, made, key, taken))

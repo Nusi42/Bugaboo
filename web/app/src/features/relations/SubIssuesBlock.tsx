@@ -154,7 +154,10 @@ function PartOf({
       <span>{t("issue-field.parent")}</span>
       <IssueRefLine issue={above}>
         {mayChange ? (
-          <TakeOut child={readableId} label={t("sub-issues.not-part-of", { key: above.key })} />
+          <TakeOut
+            child={readableId}
+            label={t("sub-issues.not-part-of", { key: above.readable_id })}
+          />
         ) : null}
       </IssueRefLine>
     </div>
@@ -191,11 +194,14 @@ function Parts({
     <ListGrid label={t("sub-issues.title")}>
       {parts.map((sub) => (
         <IssueRefRow
-          key={sub.key}
+          key={sub.readable_id}
           issue={sub}
           action={
             mayChange ? (
-              <TakeOut child={sub.key} label={t("sub-issues.take-out", { key: sub.key })} />
+              <TakeOut
+                child={sub.readable_id}
+                label={t("sub-issues.take-out", { key: sub.readable_id })}
+              />
             ) : undefined
           }
         />

@@ -227,14 +227,14 @@ async fn cfg_01_a_database_of_migration_17_takes_the_table_of_fields_taken_off_a
         // The migrations after 17 are applied, this one among them and as the last (the numbers
         // between belong to other packages, and there may be none yet).
         let applied = old.migrate(Timestamp::UNIX_EPOCH).await?;
-        assert_eq!(applied.last(), Some(&20));
+        assert_eq!(applied.last(), Some(&21));
         assert!(applied.iter().all(|version| *version > 17), "{applied:?}");
         assert_eq!(
             old.applied_migrations()
                 .await?
                 .last()
                 .map(|record| record.version),
-            Some(20)
+            Some(21)
         );
         Ok(())
     })

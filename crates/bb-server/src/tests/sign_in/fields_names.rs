@@ -93,7 +93,7 @@ async fn cf_06_the_list_for_a_field_follows_its_level_for_the_issue_type() -> Te
         );
         // An issue decides its type: the list for an issue of type Bug is refused as well.
         let made = ok(&site.create(&mut ada, "A bug").await?)?.clone();
-        let key = made["key"].as_str().ok_or("no key")?;
+        let key = made["readable_id"].as_str().ok_or("no key")?;
         let for_issue = people_for(&mut tim, &site, &format!("field={tester}&issue={key}")).await?;
         assert_eq!(
             outcome(&for_issue),
@@ -220,7 +220,10 @@ async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people(
 
 /// Changes the own fields of an issue on the version it has now; the answer.
 async fn set(who: &mut Browser, issue: &Value, fields: Value) -> Result<Reply, Failure> {
-    let path = format!("{ISSUES}/{}", issue["key"].as_str().ok_or("no key")?);
+    let path = format!(
+        "{ISSUES}/{}",
+        issue["readable_id"].as_str().ok_or("no key")?
+    );
     let version = ok(&who.send("GET", &path, None).await?)?["issue"]["version"].clone();
     who.send(
         "PATCH",
@@ -301,7 +304,7 @@ async fn cf_07_undo_does_not_put_back_a_group_or_an_issue_that_is_gone() -> Test
         let trashed = ada
             .send(
                 "DELETE",
-                &format!("{ISSUES}/{}", gone["key"].as_str().ok_or("no key")?),
+                &format!("{ISSUES}/{}", gone["readable_id"].as_str().ok_or("no key")?),
                 None,
             )
             .await?;

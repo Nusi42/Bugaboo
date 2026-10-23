@@ -8,7 +8,7 @@ import type { IssueDetail } from "./slots.ts";
 const address = "WEB-142";
 
 const detail: IssueDetail = {
-  issue: { id: "i1", key: address, title: "Login fails", version: 4 },
+  issue: { id: "i1", readable_id: address, title: "Login fails", version: 4 },
   own_fields_html: [],
   may_change: true,
   may_delete: false,

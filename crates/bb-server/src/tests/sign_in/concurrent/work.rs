@@ -128,7 +128,7 @@ pub(super) async fn guests_issue(
     let body = ok(&made)?;
     Ok(Work {
         id: text_in(body, "id")?,
-        key: text_in(body, "key")?,
+        key: text_in(body, "readable_id")?,
         reporter: Some(guest_id.to_owned()),
     })
 }
@@ -210,7 +210,7 @@ impl Person {
             .map(|field| format!("\"{}\"", field.code()))
             .collect();
         for item in items {
-            if let Some(key) = item["issue"]["key"].as_str()
+            if let Some(key) = item["issue"]["readable_id"].as_str()
                 && !self.issues.iter().any(|work| work.key == key)
             {
                 return Err(format!("a Guest was shown {key}, which they did not report").into());

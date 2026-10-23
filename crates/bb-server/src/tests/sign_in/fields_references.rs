@@ -82,7 +82,7 @@ async fn cf_01_a_person_in_a_field_is_judged_like_assigned_to_and_the_list_offer
         let by_gus = ok(&site.create(&mut gus, "Gus found it").await?)?.clone();
         let by_ada = ok(&site.create(&mut ada, "Ada found it").await?)?.clone();
         let list = format!("{PROJECTS}/{}/assignable-people", site.acme);
-        let for_gus = format!("issue={}", by_gus["key"].as_str().ok_or("no key")?);
+        let for_gus = format!("issue={}", by_gus["readable_id"].as_str().ok_or("no key")?);
         // The list for *Assigned to* still needs the right to change *Assigned to*; the list for
         // a field needs the right to change that field.
         let plain = filler.send("GET", &list, None).await?;
@@ -314,7 +314,7 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
         let again = json!({ &key: &major, &tester: me });
         ok(&set_on_issue(&mut ada, &made, version, again).await?)?;
         let version = version_of(&mut ada, &key_in(&made)?).await?;
-        let path = format!("{ISSUES}/{}", made["key"].as_str().ok_or("no key")?);
+        let path = format!("{ISSUES}/{}", made["readable_id"].as_str().ok_or("no key")?);
         let renamed = ada
             .send(
                 "PATCH",
@@ -359,7 +359,7 @@ async fn offered_and_accepted(
     people: &[String],
 ) -> Result<Vec<(String, bool, bool, bool, bool)>, Failure> {
     let made = ok(&site.create(ada, "Who is named").await?)?.clone();
-    let key = made["key"].as_str().ok_or("no key")?.to_owned();
+    let key = made["readable_id"].as_str().ok_or("no key")?.to_owned();
     let list = format!("{PROJECTS}/{}/assignable-people", site.acme);
     let assigned = ok(&viewer
         .send("GET", &format!("{list}?issue={key}"), None)

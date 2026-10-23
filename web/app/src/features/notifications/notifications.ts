@@ -65,7 +65,7 @@ export interface IssueGroup {
 export function groupsOf(rows: readonly NotificationRow[]): readonly IssueGroup[] {
   const byKey = new Map<string, readonly NotificationRow[]>();
   for (const row of rows) {
-    const key = row.issue?.key ?? row.id;
+    const key = row.issue?.readable_id ?? row.id;
     byKey.set(key, [...(byKey.get(key) ?? []), row]);
   }
   const groups: IssueGroup[] = [];

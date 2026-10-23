@@ -20,7 +20,7 @@ export function IssueRefLine({
   const word = statusWordsOf(issue);
   return (
     <span {...partOf(part.issueRef)}>
-      <strong {...partOf(part.strong)}>{issue.key}</strong>
+      <strong {...partOf(part.strong)}>{issue.readable_id}</strong>
       {issue.title === undefined || issue.title === null ? null : <span>{issue.title}</span>}
       {group === undefined || group === null || word === undefined ? null : (
         <StatusPill group={group} label={word} />

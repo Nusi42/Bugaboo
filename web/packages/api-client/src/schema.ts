@@ -4722,11 +4722,11 @@ export interface components {
       /** @description The internal ID, which never changes. */
       id?: string | null;
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
-      /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
-      key?: string | null;
       own_fields?: components["schemas"]["OwnValues"] | null;
       priority?: components["schemas"]["Priority"] | null;
       project?: components["schemas"]["ProjectRef"] | null;
+      /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
+      readable_id?: string | null;
       reported_by?: components["schemas"]["PersonRef"] | null;
       status?: components["schemas"]["StatusRef"] | null;
       /**
@@ -4776,11 +4776,11 @@ export interface components {
       id: string;
       /** @description Its issue type. */
       issue_type: components["schemas"]["IssueTypeRef"];
-      /** @description The readable ID now (`WEB-142`). */
-      key: string;
       priority?: components["schemas"]["Priority"] | null;
       /** @description The project it is in. */
       project: components["schemas"]["ProjectRef"];
+      /** @description The readable ID now (`WEB-142`). */
+      readable_id: string;
       status?: components["schemas"]["StatusRef"] | null;
       /** @description What it is about. */
       title?: string | null;
@@ -5790,7 +5790,7 @@ export interface components {
      * @description What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock.
      * @enum {string}
      */
-    NoticeKind: "finish_asked" | "taken_over" | "released";
+    NoticeKind: "finish-asked" | "taken-over" | "released";
     /** @description One item of the list of notifications. */
     NotificationEntry: {
       after_issue?: components["schemas"]["IssueRef"] | null;
@@ -5861,10 +5861,10 @@ export interface components {
     NotificationKind:
       | "mentioned"
       | "assigned"
-      | "followed_activity"
-      | "followed_fields"
-      | "run_ended"
-      | "edit_notice";
+      | "followed-activity"
+      | "followed-fields"
+      | "run-ended"
+      | "edit-notice";
     /** @description One place to change. */
     OfferChangeBody: {
       /**
@@ -6239,11 +6239,11 @@ export interface components {
         /** @description The internal ID, which never changes. */
         id?: string | null;
         issue_type?: components["schemas"]["IssueTypeRef"] | null;
-        /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
-        key?: string | null;
         own_fields?: components["schemas"]["OwnValues"] | null;
         priority?: components["schemas"]["Priority"] | null;
         project?: components["schemas"]["ProjectRef"] | null;
+        /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
+        readable_id?: string | null;
         reported_by?: components["schemas"]["PersonRef"] | null;
         status?: components["schemas"]["StatusRef"] | null;
         /**
@@ -6275,11 +6275,11 @@ export interface components {
         id: string;
         /** @description Its issue type. */
         issue_type: components["schemas"]["IssueTypeRef"];
-        /** @description The readable ID now (`WEB-142`). */
-        key: string;
         priority?: components["schemas"]["Priority"] | null;
         /** @description The project it is in. */
         project: components["schemas"]["ProjectRef"];
+        /** @description The readable ID now (`WEB-142`). */
+        readable_id: string;
         status?: components["schemas"]["StatusRef"] | null;
         /** @description What it is about. */
         title?: string | null;

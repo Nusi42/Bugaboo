@@ -277,7 +277,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             let issue = ok(&site.create(ada, "Commented").await?)?.clone();
             let comment = made(
                 ada,
-                &format!("{ISSUES}/{}/comments", text_in(&issue, "key")?),
+                &format!("{ISSUES}/{}/comments", text_in(&issue, "readable_id")?),
                 json!({"text": "First"}),
             )
             .await?;
@@ -296,7 +296,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
         | "setIssueParent"
         | "saveIssueFieldText" => {
             let issue = ok(&site.create(ada, "An issue").await?)?.clone();
-            let key = text_in(&issue, "key")?;
+            let key = text_in(&issue, "readable_id")?;
             let record = json!({"kind": "issue", "id": text_in(&issue, "id")?});
             let version = &issue["version"];
             match id {
@@ -328,7 +328,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
                     Save::new(
                         "PUT",
                         format!("{ISSUES}/{key}/parent"),
-                        json!({"parent": text_in(&parent, "key")?}),
+                        json!({"parent": text_in(&parent, "readable_id")?}),
                         version,
                     )
                 }
@@ -413,7 +413,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             for name in ["slow", "fast"] {
                 made(
                     ada,
-                    &format!("{ISSUES}/{}/tags", text_in(&issue, "key")?),
+                    &format!("{ISSUES}/{}/tags", text_in(&issue, "readable_id")?),
                     json!({"name": name}),
                 )
                 .await?;

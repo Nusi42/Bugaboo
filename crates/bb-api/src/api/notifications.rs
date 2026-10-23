@@ -527,7 +527,7 @@ mod tests {
     fn perf_02_the_field_table_names_exactly_the_fields_of_an_item() {
         let issue = || IssueRef {
             id: String::new(),
-            key: String::new(),
+            readable_id: String::new(),
             project: ProjectRef {
                 id: String::new(),
                 short_name: String::new(),

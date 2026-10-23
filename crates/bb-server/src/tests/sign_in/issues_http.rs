@@ -366,7 +366,7 @@ async fn iss_01_an_issue_goes_to_the_trash_and_comes_back_with_undo() -> TestRes
             "whoever may not restore is not told that it is in the trash"
         );
         let back = ada.send("POST", &format!("{path}/restore"), None).await?;
-        assert_eq!(ok(&back)?["key"], key);
+        assert_eq!(ok(&back)?["readable_id"], key);
         assert_eq!(titles(&ada.send("GET", &list, None).await?), ["Mistake"]);
         assert_eq!(
             ada.send("POST", &format!("{path}/restore"), None)

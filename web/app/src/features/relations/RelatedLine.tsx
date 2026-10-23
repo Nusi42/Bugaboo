@@ -45,7 +45,10 @@ export function RelatedLine({
         mayChange ? (
           <TakeAway
             relation={each.id}
-            label={t("related-issues.take-away", { name: each.name, other: each.issue.key })}
+            label={t("related-issues.take-away", {
+              name: each.name,
+              other: each.issue.readable_id,
+            })}
           />
         ) : undefined
       }

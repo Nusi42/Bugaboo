@@ -133,7 +133,10 @@ async fn an_issue_in_example(ada: &mut Browser) -> Result<String, Failure> {
         )
         .await?;
     assert_eq!(issue.status, StatusCode::OK, "{}", issue.body);
-    Ok(issue.body["key"].as_str().ok_or("no issue")?.to_owned())
+    Ok(issue.body["readable_id"]
+        .as_str()
+        .ok_or("no issue")?
+        .to_owned())
 }
 
 /// An own field, for the route that names one: its ID.

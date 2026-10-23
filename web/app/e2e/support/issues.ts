@@ -71,10 +71,15 @@ export async function createIssue(
       },
     }),
   );
-  if (made.id === undefined || made.id === null || made.key === undefined || made.key === null) {
+  if (
+    made.id === undefined ||
+    made.id === null ||
+    made.readable_id === undefined ||
+    made.readable_id === null
+  ) {
     throw new TypeError("The server made an issue without an ID.");
   }
-  return { id: made.id, key: made.key };
+  return { id: made.id, key: made.readable_id };
 }
 
 /** Chooses where the person opens issues: in the focus view or in the side panel. */

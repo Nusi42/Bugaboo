@@ -257,7 +257,7 @@ pub(crate) mod tests {
             "notifications": {
                 "total": 100,
                 "read": 40,
-                "by_kind": { "assigned": 30, "followed_activity": 50 },
+                "by_kind": { "assigned": 30, "followed-activity": 50 },
                 "to": { "viewer": 30, "team_member": 70, "guest": 5 },
                 "to_guests_about_others": 0,
             },

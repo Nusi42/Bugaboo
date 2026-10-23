@@ -39,8 +39,8 @@ export async function allIssues(
   const page = await listPage(session, project, cursor);
   const keys = [...found];
   for (const item of page.items) {
-    if (typeof item.key === "string") {
-      keys.push(item.key);
+    if (typeof item.readable_id === "string") {
+      keys.push(item.readable_id);
     }
   }
   const next = page.next_cursor ?? undefined;

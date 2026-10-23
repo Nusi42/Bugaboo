@@ -351,7 +351,7 @@ mod tests {
         };
         let line = || IssueRef {
             id: String::new(),
-            key: String::new(),
+            readable_id: String::new(),
             project: project(),
             issue_type: IssueTypeRef {
                 id: String::new(),

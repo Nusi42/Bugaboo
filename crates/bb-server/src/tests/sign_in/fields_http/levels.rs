@@ -160,7 +160,7 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
             .await?)?
         .clone();
         assert!(made["own_fields"][&notes].is_string(), "{made}");
-        let issue = made["key"].as_str().ok_or("no key")?.to_owned();
+        let issue = made["readable_id"].as_str().ok_or("no key")?.to_owned();
         let path = format!("{ISSUES}/{issue}");
         // A role that changes the title, with the own field hidden (it has no level for it).
         let mut writer = reader_of(

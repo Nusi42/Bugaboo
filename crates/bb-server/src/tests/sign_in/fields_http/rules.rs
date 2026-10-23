@@ -51,7 +51,10 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
         let issue = ok(&made)?;
         assert_eq!(issue["own_fields"][&key], "Acme");
         // A change is refused the same way, and a required field cannot be emptied.
-        let path = format!("{ISSUES}/{}", issue["key"].as_str().ok_or("no key")?);
+        let path = format!(
+            "{ISSUES}/{}",
+            issue["readable_id"].as_str().ok_or("no key")?
+        );
         let version = &issue["version"];
         refused(
             &ada.send(

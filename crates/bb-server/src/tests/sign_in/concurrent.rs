@@ -330,7 +330,7 @@ async fn the_crowd(
         let body = ok(&made)?;
         issues.push(Work {
             id: body["id"].as_str().ok_or("no id")?.to_owned(),
-            key: body["key"].as_str().ok_or("no key")?.to_owned(),
+            key: body["readable_id"].as_str().ok_or("no key")?.to_owned(),
             reporter: None,
         });
     }

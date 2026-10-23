@@ -61,9 +61,15 @@ async fn sec_06_a_person_who_sees_only_their_own_issues_is_offered_only_their_ow
         )
         .await?;
         let theirs = site.create(&mut gus, "Gus's problem").await?;
-        let theirs = ok(&theirs)?["key"].as_str().ok_or("no key")?.to_owned();
+        let theirs = ok(&theirs)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         let others = site.create(&mut ada, "Ada's problem").await?;
-        let others = ok(&others)?["key"].as_str().ok_or("no key")?.to_owned();
+        let others = ok(&others)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         tag(&mut gus, &theirs, "plan-a").await?;
         tag(&mut ada, &others, "plan-b").await?;
         let path = format!("{PROJECTS}/ACME/tag-suggestions?text=plan");
@@ -188,12 +194,15 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
                 &format!("{PROJECTS}/{secret}/issues"),
                 Some(site.new_issue("A secret")),
             )
-            .await?)?["key"]
+            .await?)?["readable_id"]
             .as_str()
             .ok_or("no key")?
             .to_owned();
         let open = site.create(&mut ada, "Something open").await?;
-        let open = ok(&open)?["key"].as_str().ok_or("no key")?.to_owned();
+        let open = ok(&open)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         tag(&mut ada, &hidden, "takeover-plan").await?;
         let made = tag(&mut ada, &open, "open-tag").await?;
         // A tag no issue has any more is still there to be cleaned up.
@@ -239,7 +248,7 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
                 &format!("{PROJECTS}/{secret}/issues"),
                 Some(site.new_issue("Another secret")),
             )
-            .await?)?["key"]
+            .await?)?["readable_id"]
             .as_str()
             .ok_or("no key")?
             .to_owned();
@@ -278,7 +287,10 @@ async fn sec_06_a_name_with_an_invisible_character_and_a_long_search_are_refused
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let issue = site.create(&mut ada, "Login fails").await?;
-        let issue = ok(&issue)?["key"].as_str().ok_or("no key")?.to_owned();
+        let issue = ok(&issue)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         // A zero-width space and an override of the direction make a name that looks like another.
         for name in ["login\u{200B}", "\u{202E}login", "lo\u{FEFF}gin"] {
             let put = ada

@@ -97,10 +97,10 @@ export const historyTabWords = ["everything", "comments", "changes"] as const;
 export const notificationKindWords = [
   "mentioned",
   "assigned",
-  "followed_activity",
-  "followed_fields",
-  "run_ended",
-  "edit_notice",
+  "followed-activity",
+  "followed-fields",
+  "run-ended",
+  "edit-notice",
 ] as const;
 
 /** Every word of `NotificationFilter`, in the order the server lists them. */

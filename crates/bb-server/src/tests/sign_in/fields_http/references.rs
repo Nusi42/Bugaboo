@@ -96,7 +96,10 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
         let (guest, _) = site.person(StartingRole::Guest, "gus").await?;
         let mut guest = guest;
         let second = ok(&site.create(&mut guest, "The second").await?)?.clone();
-        let path = format!("{ISSUES}/{}", second["key"].as_str().ok_or("no key")?);
+        let path = format!(
+            "{ISSUES}/{}",
+            second["readable_id"].as_str().ok_or("no key")?
+        );
         let values = json!({
             tester: me, reviewers: [me], team: group, duplicate: first["id"],
         });
@@ -113,7 +116,7 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
         assert_eq!(own[tester]["shown"], "name", "{own}");
         assert_eq!(own[reviewers][0]["shown"], "name", "{own}");
         assert_eq!(own[team]["id"], json!(group), "{own}");
-        assert_eq!(own[duplicate]["key"], first["key"], "{own}");
+        assert_eq!(own[duplicate]["readable_id"], first["readable_id"], "{own}");
         // The Guest sees only the issue they reported: the issue named in the field is not theirs
         // to see, so the field shows nothing.
         let seen = guest.send("GET", &path, None).await?;

@@ -37,7 +37,7 @@ describe("iss_17 asking why a save was refused leaves no lock and no beat behind
     await asking;
     answerWith({
       ...tookOver,
-      notices: [{ kind: "finish_asked", from: ben, at: "2026-10-10T10:00:00Z" }],
+      notices: [{ kind: "finish-asked", from: ben, at: "2026-10-10T10:00:00Z" }],
     });
     await session.explain("ran-out");
     expect(asked).toEqual([ben]);

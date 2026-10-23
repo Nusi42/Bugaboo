@@ -36,9 +36,9 @@ fn parsed(sources: &[Source], path: &str) -> anyhow::Result<syn::File> {
     syn::parse_file(text).with_context(|| format!("{path} is not Rust"))
 }
 
-/// `followed_activity` as `FollowedActivity`.
+/// `followed-activity` as `FollowedActivity`.
 fn pascal_case(word: &str) -> String {
-    word.split('_')
+    word.split('-')
         .filter_map(|part| {
             let mut letters = part.chars();
             letters
@@ -155,7 +155,7 @@ fn settings_table(sources: &[Source], spec: &str) -> anyhow::Result<String> {
         let (Some(app), Some(mail)) = (keys.get(APP), keys.get(MAIL)) else {
             bail!("`{KIND_TYPE}::{SETTING_FUNCTION}` has no setting for both ways of `{word}`");
         };
-        let _ = writeln!(table, "  {word}: {{ app: {app:?}, mail: {mail:?} }},");
+        let _ = writeln!(table, "  {word:?}: {{ app: {app:?}, mail: {mail:?} }},");
     }
     Ok(table)
 }

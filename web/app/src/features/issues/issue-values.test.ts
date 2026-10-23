@@ -11,7 +11,7 @@ const inProgress = { key: "in-progress", name: "In progress", group: "in-progres
 const detail: IssueDetail = {
   issue: {
     id: "i1",
-    key: "WEB-142",
+    readable_id: "WEB-142",
     title: "Login fails",
     status: open,
     priority: "normal",

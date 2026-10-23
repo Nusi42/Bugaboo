@@ -42,7 +42,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 /// request names none: what a row of a list needs.
 const ISSUE_FIELDS: [FieldSpec; 16] = [
     FieldSpec::by_default("id"),
-    FieldSpec::by_default("key"),
+    FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
     FieldSpec::by_default("issue_type"),
     FieldSpec::by_default("title"),
@@ -104,7 +104,7 @@ pub(crate) struct IssueItem {
     /// The readable ID now (`WEB-142`, `WEB-K7Q2X`).
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
-    key: Option<String>,
+    readable_id: Option<String>,
     /// The project it is in.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(nested)]
@@ -169,7 +169,7 @@ impl From<&IssueView> for IssueItem {
     fn from(issue: &IssueView) -> Self {
         Self {
             id: Some(issue.id.to_string()),
-            key: Some(issue.key.clone()),
+            readable_id: Some(issue.key.clone()),
             project: Some(ProjectRef::from(&issue.project)),
             issue_type: Some(IssueTypeRef::from(&issue.issue_type)),
             title: Some(issue.title.clone()),
@@ -740,7 +740,7 @@ mod tests {
     fn perf_02_the_field_table_names_exactly_the_fields_of_an_issue() {
         let item = IssueItem {
             id: Some(String::new()),
-            key: Some(String::new()),
+            readable_id: Some(String::new()),
             project: Some(ProjectRef {
                 id: String::new(),
                 short_name: String::new(),

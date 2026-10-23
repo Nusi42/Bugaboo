@@ -266,7 +266,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 found.get("name").and_then(Value::as_str).map(text)
             }
             (FieldType::Issue, Value::Object(found)) => {
-                found.get("key").and_then(Value::as_str).map(text)
+                found.get("readable_id").and_then(Value::as_str).map(text)
             }
             (
                 FieldType::YesNo

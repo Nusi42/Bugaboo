@@ -143,9 +143,9 @@ words! {
     /// What the person who is editing is told at their next heartbeat.
     pub enum NoticeKind {
         /// Somebody asked them to finish (*Ask … to finish*).
-        FinishAsked => "finish_asked",
+        FinishAsked => "finish-asked",
         /// Somebody took the editing over (*Edit anyway*); their text is kept as their draft.
-        TakenOver => "taken_over",
+        TakenOver => "taken-over",
         /// An administrator released the lock because it was stuck (*Release stuck lock*).
         Released => "released",
     }

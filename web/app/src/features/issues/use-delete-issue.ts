@@ -21,7 +21,7 @@ export interface DeleteHandlers {
  * because the page they were on is gone. A refused delete stays on the page, which says why.
  */
 export function deleteIssue(issue: IssueView, handlers: DeleteHandlers): void {
-  const key = known(issue.key) ?? known(issue.id);
+  const key = known(issue.readable_id) ?? known(issue.id);
   if (key === undefined) {
     return;
   }

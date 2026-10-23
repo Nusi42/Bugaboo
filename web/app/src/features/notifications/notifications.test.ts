@@ -17,7 +17,7 @@ const ben = { shown: "name", id: "b", name: "Ben" } as const;
 const issue = (key: string) =>
   ({
     id: key,
-    key,
+    readable_id: key,
     title: "A title",
     project: { id: "p", short_name: "WEB", name: "Web" },
     issue_type: { id: "t", name: "Task", icon: "bug", retired: false },
@@ -26,7 +26,7 @@ const issue = (key: string) =>
 function entry(overrides: Partial<NotificationItem>): NotificationItem {
   return {
     id: "n1",
-    kind: "followed_activity",
+    kind: "followed-activity",
     at: "2027-01-15T08:00:00Z",
     read: false,
     issue: issue("WEB-1"),
@@ -78,7 +78,7 @@ describe("ntf_01 the rows are grouped by issue, the issue with the newest row fi
   });
 
   it("keeps a notification without an issue in a group of its own", () => {
-    const groups = groupsOf(rowsOf([entry({ id: "1", issue: null, kind: "run_ended" })]));
+    const groups = groupsOf(rowsOf([entry({ id: "1", issue: null, kind: "run-ended" })]));
     expect(groups).toHaveLength(1);
     expect(groups[0]?.issue).toBeNull();
   });
@@ -128,13 +128,13 @@ describe("ntf_01 a row says in a sentence what happened", () => {
 
   it("says who asked to finish editing, and how a run ended", () => {
     expect(
-      say(entry({ kind: "edit_notice", notice: "finish_asked", part: "description" })),
+      say(entry({ kind: "edit-notice", notice: "finish-asked", part: "description" })),
     ).toEqual([t("notifications.finish-asked", { who: "Ben" })]);
     expect(
-      say(entry({ kind: "run_ended", issue: null, by: null, run: "r", run_done: true })),
+      say(entry({ kind: "run-ended", issue: null, by: null, run: "r", run_done: true })),
     ).toEqual([t("notifications.run-done")]);
     expect(
-      say(entry({ kind: "run_ended", issue: null, by: null, run: "r", run_done: false })),
+      say(entry({ kind: "run-ended", issue: null, by: null, run: "r", run_done: false })),
     ).toEqual([t("notifications.run-failed")]);
   });
 });
@@ -142,7 +142,7 @@ describe("ntf_01 a row says in a sentence what happened", () => {
 const failed = (issueIdsFailed: NonNullable<NotificationItem["issue_ids_failed"]>) =>
   failedRenewalProjectOf(
     rowOfItems(
-      entry({ kind: "run_ended", issue: null, by: null, issue_ids_failed: issueIdsFailed }),
+      entry({ kind: "run-ended", issue: null, by: null, issue_ids_failed: issueIdsFailed }),
     ),
   );
 
@@ -151,7 +151,7 @@ describe("ntf_02 a renewal of issue IDs that gave up names the project", () => {
     expect(
       say(
         entry({
-          kind: "run_ended",
+          kind: "run-ended",
           issue: null,
           by: null,
           issue_ids_failed: { shown: "visible", id: "p", name: "Website" },
@@ -161,7 +161,7 @@ describe("ntf_02 a renewal of issue IDs that gave up names the project", () => {
     expect(
       say(
         entry({
-          kind: "run_ended",
+          kind: "run-ended",
           issue: null,
           by: null,
           issue_ids_failed: { shown: "hidden" },
@@ -177,9 +177,9 @@ describe("ntf_02 a renewal of issue IDs that gave up names the project", () => {
 
   it("says who added a file, with its name when the file is still there", () => {
     expect(
-      say(entry({ kind: "followed_activity", file_event: "added", file_name: "jam.txt" })),
+      say(entry({ kind: "followed-activity", file_event: "added", file_name: "jam.txt" })),
     ).toEqual([t("history.file-added", { who: "Ben", name: "jam.txt" })]);
-    expect(say(entry({ kind: "followed_activity", file_event: "added" }))).toEqual([
+    expect(say(entry({ kind: "followed-activity", file_event: "added" }))).toEqual([
       t("history.file-added-unnamed", { who: "Ben" }),
     ]);
   });

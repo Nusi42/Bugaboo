@@ -94,7 +94,7 @@ pub(super) async fn issue_of_type(
             .map(str::to_owned)
             .ok_or_else(|| format!("no {name}").into())
     };
-    Ok((text("key")?, text("id")?))
+    Ok((text("readable_id")?, text("id")?))
 }
 
 /// The lock on the description of an issue, by the person: the answer.
@@ -229,7 +229,7 @@ async fn sec_06_a_related_issue_is_shown_by_the_levels_of_its_own_type() -> Test
             .collect();
         assert_eq!(lines.len(), 2);
         for line in lines {
-            let is_task = line["key"] == hidden;
+            let is_task = line["readable_id"] == hidden;
             assert_eq!(line.get("title").is_none(), is_task, "{line}");
             assert_eq!(line.get("status").is_none(), is_task, "{line}");
         }
@@ -237,13 +237,13 @@ async fn sec_06_a_related_issue_is_shown_by_the_levels_of_its_own_type() -> Test
             .send("GET", &format!("{ISSUES}/{bug}/sub-issues"), None)
             .await?;
         let sub = &ok(&below)?["items"][0];
-        assert_eq!(sub["key"], hidden);
+        assert_eq!(sub["readable_id"], hidden);
         assert!(sub.get("title").is_none() && sub.get("status").is_none());
         let child = rea
             .send("GET", &format!("{ISSUES}/{hidden}/relations"), None)
             .await?;
         let parent_line = &ok(&child)?["part_of"];
-        assert_eq!(parent_line["key"], bug);
+        assert_eq!(parent_line["readable_id"], bug);
         assert!(parent_line.get("title").is_some(), "the bug's own levels");
         // A bug under the task: its parent line is the task's, without title and status.
         let seen = ada.send("GET", &format!("{ISSUES}/{shown}"), None).await?;
@@ -259,7 +259,7 @@ async fn sec_06_a_related_issue_is_shown_by_the_levels_of_its_own_type() -> Test
             .send("GET", &format!("{ISSUES}/{shown}/relations"), None)
             .await?;
         let parent_line = &ok(&under)?["part_of"];
-        assert_eq!(parent_line["key"], hidden);
+        assert_eq!(parent_line["readable_id"], hidden);
         assert!(parent_line.get("title").is_none() && parent_line.get("status").is_none());
         Ok(())
     })

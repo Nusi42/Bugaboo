@@ -172,7 +172,7 @@ export class EditLockSession {
     if (generation !== this.current || this.held !== token) {
       return;
     }
-    const asked = answer.notices.find((notice) => notice.kind === "finish_asked");
+    const asked = answer.notices.find((notice) => notice.kind === "finish-asked");
     if (asked !== undefined) {
       this.options.onAsked?.(asked.from);
     }
@@ -244,7 +244,7 @@ export class EditLockSession {
         return { reason };
       }
       const answer = await this.deps.heartbeat(token);
-      const from = answer.notices.find((notice) => notice.kind === "finish_asked")?.from;
+      const from = answer.notices.find((notice) => notice.kind === "finish-asked")?.from;
       if (from !== undefined) {
         this.options.onAsked?.(from);
       }

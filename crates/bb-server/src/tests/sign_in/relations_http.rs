@@ -25,7 +25,7 @@ fn keys(list: &Reply) -> Vec<String> {
         .map(|items| {
             items
                 .iter()
-                .filter_map(|item| item["key"].as_str().map(str::to_owned))
+                .filter_map(|item| item["readable_id"].as_str().map(str::to_owned))
                 .collect()
         })
         .unwrap_or_default()
@@ -76,9 +76,9 @@ async fn iss_03_a_parent_cannot_become_its_own_sub_issue() -> TestResult {
         );
         // B under A, C under B: a chain.
         let first = put_under(&mut ada, &b, 1, Some(&a)).await?;
-        assert_eq!(ok(&first)?["part_of"]["key"], a);
+        assert_eq!(ok(&first)?["part_of"]["readable_id"], a);
         let second = put_under(&mut ada, &c, 1, Some(&b)).await?;
-        assert_eq!(ok(&second)?["part_of"]["key"], b);
+        assert_eq!(ok(&second)?["part_of"]["readable_id"], b);
         // A under B or under C would close the circle, however deep.
         for parent in [&b, &c] {
             let circle = put_under(&mut ada, &a, 1, Some(parent)).await?;
@@ -144,7 +144,7 @@ async fn iss_03_progress_counts_only_the_sub_issues_you_see() -> TestResult {
         let own = gus
             .send("GET", &format!("{ISSUES}/{mine}/relations"), None)
             .await?;
-        assert_eq!(ok(&own)?["part_of"]["key"], goal);
+        assert_eq!(ok(&own)?["part_of"]["readable_id"], goal);
         let hidden = gus
             .send("GET", &format!("{ISSUES}/{first}/relations"), None)
             .await?;
@@ -170,7 +170,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             )
             .await?;
         assert_eq!(ok(&added)?["name"], "blocks");
-        assert_eq!(added.body["issue"]["key"], victim);
+        assert_eq!(added.body["issue"]["readable_id"], victim);
         // The same relation again is refused.
         let again = ada
             .send(
@@ -185,12 +185,12 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send("GET", &format!("{ISSUES}/{blocker}/related-issues"), None)
             .await?;
         assert_eq!(from.body["items"][0]["name"], "blocks");
-        assert_eq!(from.body["items"][0]["issue"]["key"], victim);
+        assert_eq!(from.body["items"][0]["issue"]["readable_id"], victim);
         let to = ada
             .send("GET", &format!("{ISSUES}/{victim}/related-issues"), None)
             .await?;
         assert_eq!(to.body["items"][0]["name"], "is blocked by");
-        assert_eq!(to.body["items"][0]["issue"]["key"], blocker);
+        assert_eq!(to.body["items"][0]["issue"]["readable_id"], blocker);
         assert_eq!(to.body["items"][0]["direction"], "backward");
         // Started from the other end, the same words come out the same way round.
         let backward = ada
@@ -313,7 +313,7 @@ async fn iss_04_adding_and_removing_is_in_both_histories() -> TestResult {
                     (
                         item["relation"].as_str().unwrap_or_default(),
                         item["field"].as_str().unwrap_or_default(),
-                        item["issue"]["key"].as_str().unwrap_or_default(),
+                        item["issue"]["readable_id"].as_str().unwrap_or_default(),
                     )
                 })
                 .collect();

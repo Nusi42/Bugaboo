@@ -124,7 +124,7 @@ describe("iss_06 relations and the items of one event", () => {
           field: "blocks",
           issue: {
             id: "i2",
-            key: "WEB-147",
+            readable_id: "WEB-147",
             project: { id: "p", short_name: "WEB", name: "Website" },
             issue_type: { id: "t", name: "Bug", icon: "bug", retired: false },
           },

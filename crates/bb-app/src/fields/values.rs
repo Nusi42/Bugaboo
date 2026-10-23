@@ -446,7 +446,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 };
                 Ok(key.map_or(
                     Value::Null,
-                    |key| serde_json::json!({ "id": id, "key": key }),
+                    |key| serde_json::json!({ "id": id, "readable_id": key }),
                 ))
             }
             _ => Ok(json),

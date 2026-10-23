@@ -73,7 +73,7 @@ describe("cf_04 a value is shown in the look of its field", () => {
       shown(field({ kind: "group", look: "plain-text" }), { id: "g", name: "Core" }),
     ).toContain("Core");
     expect(
-      shown(field({ kind: "issue", look: "plain-text" }), { id: "i", key: "WEB-1" }),
+      shown(field({ kind: "issue", look: "plain-text" }), { id: "i", readable_id: "WEB-1" }),
     ).toContain("WEB-1");
     expect(shown(field({ kind: "issue", look: "plain-text" }), 7)).toContain(
       t("fields.hidden-reference"),

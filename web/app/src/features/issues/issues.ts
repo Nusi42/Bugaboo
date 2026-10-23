@@ -13,7 +13,7 @@ export type ListedIssue = Schema<"IssueItem">;
 /** The fields of an issue in a list that the screens need (PERF-02). */
 const LIST_FIELDS = fieldList<ListedIssue>([
   "id",
-  "key",
+  "readable_id",
   "issue_type",
   "title",
   "status",
@@ -42,7 +42,7 @@ export interface IssueLine {
 
 /** The line of an issue, or nothing for an item that came without what it needs. */
 export function lineOf(item: ListedIssue): IssueLine | undefined {
-  const [id, key, title] = [known(item.id), known(item.key), known(item.title)];
+  const [id, key, title] = [known(item.id), known(item.readable_id), known(item.title)];
   const [status, priority, issueType] = [
     known(item.status),
     known(item.priority),

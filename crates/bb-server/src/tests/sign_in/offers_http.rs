@@ -328,11 +328,11 @@ async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below() -> TestR
             .await?;
         ok(&label)?;
         // An issue of ACME takes the label, an issue of WEB does not.
-        let acme_issue = ok(&site.create(&mut ada, "In ACME").await?)?["key"]
+        let acme_issue = ok(&site.create(&mut ada, "In ACME").await?)?["readable_id"]
             .as_str()
             .ok_or("no key")?
             .to_owned();
-        let web_issue = ok(&create_in(&mut ada, "WEB", &site.kind).await?)?["key"]
+        let web_issue = ok(&create_in(&mut ada, "WEB", &site.kind).await?)?["readable_id"]
             .as_str()
             .ok_or("no key")?
             .to_owned();

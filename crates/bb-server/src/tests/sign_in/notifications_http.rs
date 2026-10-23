@@ -57,11 +57,11 @@ async fn ntf_01_a_follower_hears_over_http_and_marks_what_was_read() -> TestResu
         let entries = items(&listed);
         assert_eq!(entries.len(), 1, "{}", listed.body);
         let entry = &entries[0];
-        assert_eq!(entry["kind"], "followed_activity");
+        assert_eq!(entry["kind"], "followed-activity");
         assert_eq!(entry["read"], false);
         assert_eq!(entry["field"], "status");
         assert_eq!(entry["after_text"], "done");
-        assert_eq!(entry["issue"]["key"], issue.as_str());
+        assert_eq!(entry["issue"]["readable_id"], issue.as_str());
         assert_eq!(entry["by"]["name"], "Bob Baker");
         assert!(
             listed.headers.get("etag").is_none(),

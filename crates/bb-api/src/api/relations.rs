@@ -37,7 +37,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 /// names none.
 const ISSUE_REF_FIELDS: [FieldSpec; 7] = [
     FieldSpec::by_default("id"),
-    FieldSpec::by_default("key"),
+    FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
     FieldSpec::by_default("issue_type"),
     FieldSpec::by_default("title"),
@@ -73,7 +73,7 @@ pub(crate) struct IssueRef {
     /// The internal ID of the issue.
     pub(crate) id: String,
     /// The readable ID now (`WEB-142`).
-    pub(crate) key: String,
+    pub(crate) readable_id: String,
     /// The project it is in.
     pub(crate) project: ProjectRef,
     /// Its issue type.
@@ -97,7 +97,7 @@ impl From<&IssueLine> for IssueRef {
     fn from(line: &IssueLine) -> Self {
         Self {
             id: line.id.to_string(),
-            key: line.key.clone(),
+            readable_id: line.key.clone(),
             project: ProjectRef::from(&line.project),
             issue_type: IssueTypeRef::from(&line.issue_type),
             title: line.title.clone(),
@@ -628,7 +628,7 @@ mod tests {
     fn perf_02_the_field_tables_name_exactly_the_fields_of_the_items() {
         let line = IssueRef {
             id: String::new(),
-            key: String::new(),
+            readable_id: String::new(),
             project: ProjectRef {
                 id: String::new(),
                 short_name: String::new(),

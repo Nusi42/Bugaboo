@@ -130,7 +130,7 @@ describe("iss_17 what the heartbeat brings back", () => {
       heartbeat: () =>
         Promise.resolve({
           ...stillHeld,
-          notices: [{ kind: "finish_asked", from: ben, at: "2026-10-10T10:00:00Z" }],
+          notices: [{ kind: "finish-asked", from: ben, at: "2026-10-10T10:00:00Z" }],
         }),
     });
     w.editor.open();

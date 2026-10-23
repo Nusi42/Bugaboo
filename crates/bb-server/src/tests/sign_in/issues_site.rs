@@ -231,7 +231,7 @@ pub(super) fn text_in(answer: &Value, member: &str) -> Result<String, Failure> {
 
 /// The readable ID (`ACME-142`) in an answer that is about an issue.
 pub(super) fn key_in(answer: &Value) -> Result<String, Failure> {
-    text_in(answer, "key")
+    text_in(answer, "readable_id")
 }
 
 /// The ID in an answer.
