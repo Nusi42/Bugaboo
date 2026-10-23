@@ -263,6 +263,11 @@ impl<V> Listed<V> {
     /// items after the position `after` of the cursor, at most `limit` of them, and the position of
     /// the last one when there are more. A position is the number of the item in the list, so a list
     /// that changed between two requests is cut at the same place, never fails.
+    ///
+    /// The cursor is **positional**: it is the number of the last item, not the item. It is not
+    /// stable across changes: an item added or taken away before the position moves the next page by
+    /// one (an item may be seen twice or missed). The browser reads such a list to its end and drops
+    /// a repeated ID. The store gives a stable cursor in M4-F171.
     pub(crate) fn cut(all: Vec<V>, after: Option<&str>, limit: usize) -> Self {
         let start = after
             .and_then(|position| position.parse::<usize>().ok())

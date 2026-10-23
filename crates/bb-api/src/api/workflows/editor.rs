@@ -92,7 +92,9 @@ pub(crate) struct TryParams {
 }
 
 /// The workflows there are, by name, for choosing one for a place. Needs the permission *Manage
-/// workflows* at the place.
+/// workflows* at the place. A page holds at most 200 workflows of a list that stops there: a 201st
+/// workflow is not listed (the cap is `WORKFLOWS_LISTED_MAX` in the program; an organization has a
+/// handful).
 #[utoipa::path(
     get,
     path = "/api/v1/workflows",
@@ -396,4 +398,21 @@ where
         .routes(routes!(publish_workflow, delete_workflow))
         .routes(routes!(preview_publish_workflow))
         .routes(routes!(try_workflow))
+}
+
+#[cfg(test)]
+mod cap_tests {
+    #[test]
+    fn the_list_of_workflows_says_its_cap() {
+        let document = serde_json::to_value(crate::openapi::document()).unwrap();
+        let route = &document["paths"]["/api/v1/workflows"]["get"];
+        let said = format!("{} {}", route["summary"], route["description"]);
+        assert!(
+            said.contains(&format!(
+                "at most {} workflows",
+                bb_app::workflows::WORKFLOWS_LISTED_MAX
+            )),
+            "{said}"
+        );
+    }
 }

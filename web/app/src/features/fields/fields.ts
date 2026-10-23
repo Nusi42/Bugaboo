@@ -94,10 +94,14 @@ async function readFieldPages(
       },
     }),
   );
-  const fields = [...before, ...linesFrom([page], fieldOf)];
-  return page.next_cursor === undefined || page.next_cursor === null
+  // A cursor is a position and a list may change between two requests: a field seen twice is kept
+  // once, and a cursor that comes back ends the reading.
+  const seen = new Set(before.map((each) => each.id));
+  const fields = [...before, ...linesFrom([page], fieldOf).filter((each) => !seen.has(each.id))];
+  const next = page.next_cursor;
+  return next === undefined || next === null || next === cursor
     ? fields
-    : readFieldPages(query, page.next_cursor, fields);
+    : readFieldPages(query, next, fields);
 }
 
 /** A field of the list, or nothing for an item that came without what a field needs. */
