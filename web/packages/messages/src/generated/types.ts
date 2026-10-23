@@ -196,6 +196,7 @@ export interface MessageArguments {
   "handle.changed": { handle: string | number };
   "handle.rule-characters": { max: string | number };
   "handle.rule-weekly": { days: number };
+  "history.assigned": { after: string | number; who: string | number };
   "history.by": { when: string | number; who: string | number };
   "history.changed": {
     after: string | number;
