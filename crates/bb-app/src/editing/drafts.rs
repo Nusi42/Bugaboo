@@ -54,7 +54,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Keeps the text as the draft of `author` for the target, in place of an older one.
     ///
     /// # Errors
-    /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters. A person keeps
+    /// `request.too-large` for a text over [`DRAFT_TEXT_MAX`] characters. A person keeps
     /// [`DRAFTS_PER_AUTHOR_MAX`] drafts at most: past that their oldest draft goes, and a save is
     /// never refused for it (ADR-0019).
     pub(crate) async fn keep_draft(
@@ -85,8 +85,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// Keeps a text as the draft of the person.
 ///
 /// # Errors
-/// `resource.not_found` for a record or project the person may not know about, `access.forbidden`
-/// when they may not change it, `request.too_large` for a text over the limit.
+/// `resource.not-found` for a record or project the person may not know about, `access.forbidden`
+/// when they may not change it, `request.too-large` for a text over the limit.
 pub async fn save_draft<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SaveDraftQuery,
@@ -109,7 +109,7 @@ pub async fn save_draft<S: AuthStore>(
 /// period is as good as deleted, whenever the job that deletes it runs.
 ///
 /// # Errors
-/// `resource.not_found` for a record or project the person may not know about, `access.forbidden`
+/// `resource.not-found` for a record or project the person may not know about, `access.forbidden`
 /// when they may not change it.
 pub async fn read_draft<S: AuthStore>(
     ctx: &Ctx<'_, S>,

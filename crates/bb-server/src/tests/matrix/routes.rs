@@ -7,8 +7,8 @@
 //! the documents; the answer of the server is compared with it:
 //!
 //! - *allowed*: the request is let in (what comes then is the business of the route);
-//! - *refused*: nobody signed in is `auth.not_signed_in`; a person who lacks the permission is
-//!   `access.forbidden`, but where they cannot know the project exists, `resource.not_found`, the
+//! - *refused*: nobody signed in is `auth.not-signed-in`; a person who lacks the permission is
+//!   `access.forbidden`, but where they cannot know the project exists, `resource.not-found`, the
 //!   very answer of a project that does not exist.
 //!
 //! The record of what ran (`tools/checks/sec-matrix-record.txt`) is compared with the file in the
@@ -48,13 +48,13 @@ use crate::sign_in_tests::status::app_with_probe;
 pub(super) enum Expect {
     /// The request is let in.
     Allowed,
-    /// Nobody is signed in: `auth.not_signed_in`.
+    /// Nobody is signed in: `auth.not-signed-in`.
     NotSignedIn,
     /// The actor knows the place and lacks the permission: `access.forbidden`.
     Forbidden,
-    /// The actor may not know about the project: `resource.not_found`.
+    /// The actor may not know about the project: `resource.not-found`.
     NotFound,
-    /// An access key at a route of the owner's own sign-in data: `auth.access_key_not_allowed`.
+    /// An access key at a route of the owner's own sign-in data: `auth.access-key-not-allowed`.
     NotForKeys,
 }
 
@@ -174,18 +174,18 @@ fn reads_issues_of_the_target(actor: Actor) -> bool {
 
 /// The refusals the matrix knows how to expect.
 const KNOWN_REFUSALS: [&str; 3] = [
-    "auth.not_signed_in",
+    "auth.not-signed-in",
     "access.forbidden",
-    "auth.access_key_not_allowed",
+    "auth.access-key-not-allowed",
 ];
 
 /// What a reply is, for the comparison.
 fn seen(reply: &Reply) -> Expect {
     match reply.code() {
-        "auth.not_signed_in" => Expect::NotSignedIn,
+        "auth.not-signed-in" => Expect::NotSignedIn,
         "access.forbidden" => Expect::Forbidden,
-        "resource.not_found" => Expect::NotFound,
-        "auth.access_key_not_allowed" => Expect::NotForKeys,
+        "resource.not-found" => Expect::NotFound,
+        "auth.access-key-not-allowed" => Expect::NotForKeys,
         _ => Expect::Allowed,
     }
 }

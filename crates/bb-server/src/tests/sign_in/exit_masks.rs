@@ -298,7 +298,7 @@ async fn sec_06_a_conflict_names_no_field_the_type_of_the_issue_hides() -> TestR
                 Some(json!({"version": 1, "title": "Renamed"})),
             )
             .await?;
-        assert_eq!(stale.code(), "edit.version_changed", "{}", stale.body);
+        assert_eq!(stale.code(), "edit.version-changed", "{}", stale.body);
         let conflict = &stale.body["conflict"];
         assert!(
             conflict["fields"]

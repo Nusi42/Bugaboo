@@ -20,7 +20,7 @@ const ASKS_FOR = "assigned-to";
 /** The refusal of a file for an issue that holds as many files as it may. */
 const ISSUE_IS_FULL = "limit.reached";
 /** Why a status change is no longer there when somebody else moved the issue first. */
-const SOMEBODY_WAS_FIRST = new Set(["edit.version_changed", "workflow.no_such_change"]);
+const SOMEBODY_WAS_FIRST = new Set(["edit.version-changed", "workflow.no-such-change"]);
 /** The refusal of a change that asks for something the request did not carry. */
 const MUST_BE_FILLED_IN = "field.required";
 

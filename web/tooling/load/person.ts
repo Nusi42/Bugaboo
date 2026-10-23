@@ -141,7 +141,7 @@ async function save(context: Context, work: Work, token: string, version: number
       throw error;
     }
     await keptAsDraft(context, work, text);
-    if (code === "edit.version_changed") {
+    if (code === "edit.version-changed") {
       // The lock is still the person's: the page lets it go, as the browser does.
       await releaseEditLock(context.client, whatOf(work), token);
     }

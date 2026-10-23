@@ -32,7 +32,7 @@ export function AccountStep({ code, onCreated, onWrongCode }: AccountStepProps) 
       onCreated();
     },
     onError: (error: unknown) => {
-      if (codeOf(error) === "auth.wrong_setup_code") {
+      if (codeOf(error) === "auth.wrong-setup-code") {
         onWrongCode(messageOf(error));
       }
     },

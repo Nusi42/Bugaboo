@@ -173,7 +173,7 @@ async fn wf_03_a_change_of_type_that_puts_the_status_back_needs_the_level_of_the
             .await?;
         assert_eq!(
             (reset.status, reset.code()),
-            (StatusCode::FORBIDDEN, "workflow.not_for_you")
+            (StatusCode::FORBIDDEN, "workflow.not-for-you")
         );
         Ok(())
     })

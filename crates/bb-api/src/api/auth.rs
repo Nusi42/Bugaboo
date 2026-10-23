@@ -338,17 +338,17 @@ pub(crate) use problem_answers;
 
 problem_answers! {
     /// The request is not valid.
-    InvalidAnswer => ("400", "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected)."),
+    InvalidAnswer => ("400", "The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected)."),
     /// Not signed in.
-    NotSignedInAnswer => ("401", "Not signed in (auth.not_signed_in)."),
+    NotSignedInAnswer => ("401", "Not signed in (auth.not-signed-in)."),
     /// A change without the right token, or not allowed.
-    ForbiddenAnswer => ("403", "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed)."),
+    ForbiddenAnswer => ("403", "Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed)."),
     /// Unknown.
-    NotFoundAnswer => ("404", "There is no such thing (resource.not_found)."),
+    NotFoundAnswer => ("404", "There is no such thing (resource.not-found)."),
     /// Something stands in the way of a change.
-    ConflictAnswer => ("409", "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed)."),
+    ConflictAnswer => ("409", "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed)."),
     /// Too soon after the last try.
-    TooSoonAnswer => ("429", "Too soon after the last time (rate_limit.exceeded, handle.changed_lately)."),
+    TooSoonAnswer => ("429", "Too soon after the last time (rate-limit.exceeded, handle.changed-lately)."),
 }
 
 /// The routes of the sign-in family, with the small per-network limit of SEC-14 on those that

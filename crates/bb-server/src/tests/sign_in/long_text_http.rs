@@ -159,7 +159,7 @@ async fn adr_0019_a_stale_long_text_gets_the_structured_answer_and_the_text_is_k
                 "{text:?}: {}",
                 stale.body
             );
-            assert_eq!(stale.code(), "edit.version_changed", "{text:?}");
+            assert_eq!(stale.code(), "edit.version-changed", "{text:?}");
             let conflict = &stale.body["conflict"];
             assert_eq!(conflict["version"], 2, "{text:?}: {}", stale.body);
             assert_eq!(conflict["fields"], json!([target.member]), "{text:?}");

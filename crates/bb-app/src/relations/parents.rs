@@ -89,9 +89,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// issue as it is.
 ///
 /// # Errors
-/// `resource.not_found` for an issue or a parent that does not exist or that the person may not
-/// see, `access.forbidden` without the right to change both, `issue.parent_circle` for a parent
-/// that would make a circle or a chain that is too long, `edit.version_changed` when somebody
+/// `resource.not-found` for an issue or a parent that does not exist or that the person may not
+/// see, `access.forbidden` without the right to change both, `issue.parent-circle` for a parent
+/// that would make a circle or a chain that is too long, `edit.version-changed` when somebody
 /// changed the sub-issue since it was looked at.
 pub async fn set_parent<S: AuthStore>(
     ctx: &Ctx<'_, S>,

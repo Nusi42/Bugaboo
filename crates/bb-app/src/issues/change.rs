@@ -362,11 +362,11 @@ fn assigned_rows(issue: IssueId, people: &[UserId], added_at: Timestamp) -> Vec<
 /// writes nothing and answers with the issue as it is.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see, `access.forbidden` without *Change issues* (or *Change own issues* on an issue they
 /// reported) or for a field they may not change, `request.invalid` for nothing asked or a text or
-/// person that cannot be one, `issue.type_retired` for a retired issue type,
-/// `edit.version_changed` when somebody changed the issue since it was looked at.
+/// person that cannot be one, `issue.type-retired` for a retired issue type,
+/// `edit.version-changed` when somebody changed the issue since it was looked at.
 pub async fn change_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangeIssue,

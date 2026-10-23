@@ -33,7 +33,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The facts of the record, when the part is one the person may use as they want to.
     ///
     /// # Errors
-    /// `resource.not_found` for a record the person may not know about and for a part that does not
+    /// `resource.not-found` for a record the person may not know about and for a part that does not
     /// exist or that they may not see; `access.forbidden` for a part they see and may not change.
     pub(crate) async fn facts_for_part(
         &self,

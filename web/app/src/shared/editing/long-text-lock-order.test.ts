@@ -19,11 +19,11 @@ function overServer(refusals: number) {
       texts.push(text);
       if (refused > 0) {
         refused -= 1;
-        return Promise.reject(refusal("edit.version_changed"));
+        return Promise.reject(refusal("edit.version-changed"));
       }
       return server.held === lockToken
         ? Promise.resolve()
-        : Promise.reject(refusal("edit.lock_lost"));
+        : Promise.reject(refusal("edit.lock-lost"));
     },
   });
   return { server, texts, w };

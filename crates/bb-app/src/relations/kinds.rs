@@ -178,9 +178,9 @@ fn differences(
 /// Changes the names or the retired state of a kind: what is `Some` is changed.
 ///
 /// # Errors
-/// `access.forbidden` without the permission, `resource.not_found` for a kind that is not there,
+/// `access.forbidden` without the permission, `resource.not-found` for a kind that is not there,
 /// `request.invalid` for a name that cannot be one or when nothing is asked, `name.taken` for a
-/// name another kind has, `edit.version_changed` when somebody changed the kind since it was
+/// name another kind has, `edit.version-changed` when somebody changed the kind since it was
 /// looked at.
 pub async fn change_relation_kind<S: AuthStore>(
     ctx: &Ctx<'_, S>,

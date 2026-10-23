@@ -69,7 +69,7 @@ impl Subject {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The subject, or `resource.not_found` for one that is not there or that the person may not
+    /// The subject, or `resource.not-found` for one that is not there or that the person may not
     /// know (`known.rs`).
     pub(crate) async fn offer_subject(
         &self,

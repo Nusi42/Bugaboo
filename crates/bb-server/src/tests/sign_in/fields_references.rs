@@ -120,7 +120,7 @@ async fn cf_01_a_person_in_a_field_is_judged_like_assigned_to_and_the_list_offer
                 set_on_issue(&mut filler, issue, version, json!({ &tester: person })).await?;
             assert_eq!(
                 outcome(&refused),
-                (StatusCode::BAD_REQUEST, "field.unknown_reference"),
+                (StatusCode::BAD_REQUEST, "field.unknown-reference"),
                 "{}",
                 refused.body
             );
@@ -155,7 +155,7 @@ async fn cf_08_a_person_in_a_field_of_a_project_has_to_see_the_project() -> Test
             .await?;
         assert_eq!(
             outcome(&refused),
-            (StatusCode::BAD_REQUEST, "field.unknown_reference"),
+            (StatusCode::BAD_REQUEST, "field.unknown-reference"),
             "{}",
             refused.body
         );
@@ -226,7 +226,7 @@ async fn cf_01_an_issue_in_a_field_has_to_be_one_the_setter_may_see() -> TestRes
             .await?;
             assert_eq!(
                 outcome(&refused),
-                (StatusCode::BAD_REQUEST, "field.unknown_reference"),
+                (StatusCode::BAD_REQUEST, "field.unknown-reference"),
                 "{}",
                 refused.body
             );
@@ -327,7 +327,7 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
         let late = set_on_issue(&mut ada, &made, version, json!({ &key: &minor })).await?;
         assert_eq!(
             outcome(&late),
-            (StatusCode::BAD_REQUEST, "field.unknown_choice"),
+            (StatusCode::BAD_REQUEST, "field.unknown-choice"),
             "{}",
             late.body
         );
@@ -340,7 +340,7 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
         .await?;
         assert_eq!(
             outcome(&late),
-            (StatusCode::BAD_REQUEST, "field.unknown_reference"),
+            (StatusCode::BAD_REQUEST, "field.unknown-reference"),
             "{}",
             late.body
         );

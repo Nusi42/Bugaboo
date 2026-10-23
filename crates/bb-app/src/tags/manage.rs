@@ -166,7 +166,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
-    /// A tag the person may know of, or `resource.not_found`.
+    /// A tag the person may know of, or `resource.not-found`.
     async fn known_tag<'a>(
         &self,
         catalogue: &'a Catalogue,
@@ -214,7 +214,7 @@ pub async fn tags<S: AuthStore>(
 /// What renaming a tag, or combining it with another, would do to the issues the person sees.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage labels and tags*, `resource.not_found` for a tag that is not
+/// `access.forbidden` without *Manage labels and tags*, `resource.not-found` for a tag that is not
 /// there, `request.invalid` for a name that cannot be one or for nothing asked, `name.taken` for
 /// a name another tag has.
 pub async fn tag_change_preview<S: AuthStore>(
@@ -300,9 +300,9 @@ fn differences(
 /// projects it is limited to. What is left out stays as it is.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage labels and tags*, `resource.not_found` for a tag that is not
+/// `access.forbidden` without *Manage labels and tags*, `resource.not-found` for a tag that is not
 /// there or a project that is not, `request.invalid` for a name that cannot be one or nothing
-/// asked, `name.taken` for a name another tag has, `edit.version_changed` when somebody changed
+/// asked, `name.taken` for a name another tag has, `edit.version-changed` when somebody changed
 /// the tag since it was looked at.
 pub async fn change_tag<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -410,8 +410,8 @@ pub async fn change_tag<S: AuthStore>(
 /// is limited to the projects of both, or to none when either was for every project.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage labels and tags*, `resource.not_found` for a tag that is not
-/// there, `request.invalid` for the same tag twice, `edit.version_changed` when somebody changed
+/// `access.forbidden` without *Manage labels and tags*, `resource.not-found` for a tag that is not
+/// there, `request.invalid` for the same tag twice, `edit.version-changed` when somebody changed
 /// one of the tags since it was looked at.
 pub async fn combine_tags<S: AuthStore>(
     ctx: &Ctx<'_, S>,

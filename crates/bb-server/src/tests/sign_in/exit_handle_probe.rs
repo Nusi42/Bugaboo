@@ -35,7 +35,7 @@ async fn sec_m2_a_person_who_changed_lately_gets_the_same_answer_for_every_handl
                 .await?;
             assert_eq!(
                 (reply.status, reply.code()),
-                (StatusCode::TOO_MANY_REQUESTS, "handle.changed_lately"),
+                (StatusCode::TOO_MANY_REQUESTS, "handle.changed-lately"),
                 "{guess}"
             );
         }
@@ -68,12 +68,12 @@ async fn sec_m2_a_person_who_keeps_asking_for_taken_handles_has_to_wait() -> Tes
             .send("PUT", HANDLE, Some(json!({"handle": "bob.baker"})))
             .await?;
         assert_eq!(over.status, StatusCode::TOO_MANY_REQUESTS);
-        assert_eq!(over.code(), "rate_limit.exceeded");
+        assert_eq!(over.code(), "rate-limit.exceeded");
         // Whatever she asks for now waits, a free handle too; another person is not held up.
         let free = eve
             .send("PUT", HANDLE, Some(json!({"handle": "eve.free"})))
             .await?;
-        assert_eq!(free.code(), "rate_limit.exceeded");
+        assert_eq!(free.code(), "rate-limit.exceeded");
         let mut bob = Browser::signed_in_as(&app, "bob@example.test").await?;
         let own = bob
             .send("PUT", HANDLE, Some(json!({"handle": "bobby"})))
@@ -113,7 +113,7 @@ async fn sec_m2_the_answers_taken_run_out_for_the_day_and_then_every_handle_gets
                 .await?;
             assert_eq!(
                 (reply.status, reply.code()),
-                (StatusCode::TOO_MANY_REQUESTS, "rate_limit.exceeded"),
+                (StatusCode::TOO_MANY_REQUESTS, "rate-limit.exceeded"),
                 "{guess}"
             );
         }

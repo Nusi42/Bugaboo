@@ -1,6 +1,6 @@
 //! The places that take a label or a type by what a person asked for apply the one rule of what
 //! they may know (`offers/known.rs`, SEC-03): a label of a label group that a person may not know
-//! is `resource.not_found` when they put it on an issue or name it in *Change many issues*, and
+//! is `resource.not-found` when they put it on an issue or name it in *Change many issues*, and
 //! the statuses of a project name only what reaches that project.
 
 use bb_core::ErrorCode;

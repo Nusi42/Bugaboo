@@ -180,7 +180,7 @@ async fn sec_08_a_role_is_changed_and_deleted_over_http() -> TestResult {
             .ada
             .send("GET", &format!("/api/v1/roles/{reviewer}"), None)
             .await?;
-        assert_eq!(gone.code(), "resource.not_found");
+        assert_eq!(gone.code(), "resource.not-found");
         // A role made from nothing.
         let made = org
             .ada
@@ -284,7 +284,7 @@ async fn sec_08_a_role_in_use_is_deleted_only_with_a_replacement() -> TestResult
             .ada
             .send("DELETE", &format!("/api/v1/roles/{used}"), None)
             .await?;
-        assert_eq!((asked.status, asked.code()), (StatusCode::CONFLICT, "role.in_use"));
+        assert_eq!((asked.status, asked.code()), (StatusCode::CONFLICT, "role.in-use"));
         let itself = org
             .ada
             .send("DELETE", &format!("/api/v1/roles/{used}?replacement={used}"), None)
@@ -298,7 +298,7 @@ async fn sec_08_a_role_in_use_is_deleted_only_with_a_replacement() -> TestResult
                 None,
             )
             .await?;
-        assert_eq!(nothing.code(), "resource.not_found");
+        assert_eq!(nothing.code(), "resource.not-found");
         let page = org
             .ada
             .send("GET", &format!("/api/v1/roles/{used}"), None)
@@ -350,7 +350,7 @@ async fn sec_08_a_role_in_use_is_deleted_only_with_a_replacement() -> TestResult
             .await?;
         assert_eq!(
             (lock_out.status, lock_out.code()),
-            (StatusCode::CONFLICT, "access.would_lock_out")
+            (StatusCode::CONFLICT, "access.would-lock-out")
         );
         Ok(())
     })
@@ -402,7 +402,7 @@ async fn sec_08_nobody_gives_a_replacement_with_more_than_they_hold() -> TestRes
             .await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::FORBIDDEN, "access.too_much")
+            (StatusCode::FORBIDDEN, "access.too-much")
         );
         let still = org.ada.send("GET", &format!("/api/v1/roles/{weak}"), None).await?;
         assert_eq!(still.status, StatusCode::OK, "nothing was deleted");

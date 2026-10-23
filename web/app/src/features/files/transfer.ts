@@ -43,7 +43,7 @@ const SERVER_FAILED = 500;
 
 /** The answer that says the disk of the server is full: the person is told, it is not retried. */
 function hasNoRoom(error: Readonly<ApiError>): boolean {
-  return error.problem?.code === "file.no_room";
+  return error.problem?.code === "file.no-room";
 }
 
 /**
@@ -61,7 +61,7 @@ export function isTemporary(error: unknown): boolean {
 
 /** The refusal that says a part did not start where the server's copy ends. */
 function isOutOfOrder(error: unknown): boolean {
-  return error instanceof ApiError && error.problem?.code === "file.wrong_part";
+  return error instanceof ApiError && error.problem?.code === "file.wrong-part";
 }
 
 /** What a transfer needs besides the server: a way to wait, and to tell how far it is. */

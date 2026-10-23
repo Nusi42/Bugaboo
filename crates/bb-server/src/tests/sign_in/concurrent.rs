@@ -128,7 +128,7 @@ impl Person {
                 });
                 return Ok(());
             }
-            if reply.code() != "edit.version_changed" {
+            if reply.code() != "edit.version-changed" {
                 return Err(format!("{}: {}", reply.status, reply.body).into());
             }
             version = reply.body["conflict"]["version"]

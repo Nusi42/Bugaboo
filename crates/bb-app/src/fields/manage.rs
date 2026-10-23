@@ -486,9 +486,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// change.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage fields*, `resource.not_found` for a field that is not
+/// `access.forbidden` without *Manage fields*, `resource.not-found` for a field that is not
 /// there, `request.invalid` for nothing asked or something that cannot be, `name.taken` for a name
-/// another field has, `edit.version_changed` when somebody changed the field since it was looked
+/// another field has, `edit.version-changed` when somebody changed the field since it was looked
 /// at.
 pub async fn change_field<S: AuthStore>(
     ctx: &Ctx<'_, S>,

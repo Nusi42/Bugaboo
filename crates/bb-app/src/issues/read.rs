@@ -1,7 +1,7 @@
 //! Seeing issues (ISS-01): one issue by its readable or internal ID, and the issues of a project a
 //! page at a time.
 //!
-//! An issue the person may not see answers `resource.not_found`, exactly like one that does not
+//! An issue the person may not see answers `resource.not-found`, exactly like one that does not
 //! exist: the two take the same reads and the same evaluation before either is answered. Without
 //! *See issues* a person sees the issues they reported. No answer holds a count (PRIV-13): a page
 //! has a cursor, never a total.
@@ -58,7 +58,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// One issue, with what the person may do with it.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash, or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash, or that the person may
 /// not see: the three cannot be told apart.
 pub async fn issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -126,7 +126,7 @@ fn write_cursor(last: &bb_core::issue::Issue) -> String {
 /// the person sees the issues they reported.
 ///
 /// # Errors
-/// `resource.not_found` for a project that does not exist or that the person may not see,
+/// `resource.not-found` for a project that does not exist or that the person may not see,
 /// `request.invalid` for a cursor that is not one.
 pub async fn issues<S: AuthStore>(
     ctx: &Ctx<'_, S>,

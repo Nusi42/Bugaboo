@@ -5,7 +5,7 @@
 //!
 //! Both routes need *Decide what roles see* in the place (a project is given as `?project=`, and
 //! one the person may not know about is not found). A level above the person's own is refused
-//! (`access.too_much`). The use cases are in `bb-app`, behind
+//! (`access.too-much`). The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).
 
 use axum::extract::State;

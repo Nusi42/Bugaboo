@@ -6,7 +6,7 @@
 //! request in the [`Ctx`], and gives the use cases three things: who is asking ([`Actor`]), the
 //! evaluation at a place ([`Ctx::evaluate`]) and the check that stops a request that may not do
 //! what it asks ([`Ctx::require`]). A project that a person may not know about answers
-//! `resource.not_found`, exactly like one that does not exist.
+//! `resource.not-found`, exactly like one that does not exist.
 
 mod candidates;
 mod changers;
@@ -162,7 +162,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// here or [`Self::require`], never through [`Self::evaluate`] with their ID.
     ///
     /// # Errors
-    /// `resource.not_found` when the place is a project that does not exist.
+    /// `resource.not-found` when the place is a project that does not exist.
     pub(crate) async fn evaluation_of(
         &self,
         actor: &Actor,
@@ -194,7 +194,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// of the request, so asking again costs nothing; the next request asks again.
     ///
     /// # Errors
-    /// `resource.not_found` when the place is a project that does not exist.
+    /// `resource.not-found` when the place is a project that does not exist.
     pub(crate) async fn evaluate(
         &self,
         person: UserId,
@@ -227,7 +227,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The evaluation of the actor at `place`, when they hold `permission` there.
     ///
     /// # Errors
-    /// `resource.not_found` for a project the person may not know about (or that does not exist),
+    /// `resource.not-found` for a project the person may not know about (or that does not exist),
     /// `access.forbidden` when they know the place but lack the permission.
     pub(crate) async fn require(
         &self,

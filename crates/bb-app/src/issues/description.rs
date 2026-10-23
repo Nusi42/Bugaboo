@@ -23,10 +23,10 @@ use crate::input::clean_long_text;
 /// from.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see; `access.forbidden` without the right to change the issue or its description;
-/// `request.invalid` for a text that is too long; `edit.lock_lost`, `edit.taken_over` and
-/// `edit.version_changed` for a lock that is gone, was taken over, or an issue that changed since
+/// `request.invalid` for a text that is too long; `edit.lock-lost`, `edit.taken-over` and
+/// `edit.version-changed` for a lock that is gone, was taken over, or an issue that changed since
 /// (the text is kept as the draft of the person in all three).
 pub async fn save_description<S: AuthStore>(
     ctx: &Ctx<'_, S>,

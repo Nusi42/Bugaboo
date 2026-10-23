@@ -34,17 +34,17 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
         );
         refused(
             &create_with(&mut ada, &site.kind, json!({ &key: "Customer" })).await?,
-            "field.too_long",
+            "field.too-long",
             &key,
         );
         refused(
             &create_with(&mut ada, &site.kind, json!({ &key: "Ab1" })).await?,
-            "field.no_match",
+            "field.no-match",
             &key,
         );
         refused(
             &create_with(&mut ada, &site.kind, json!({ &key: 7 })).await?,
-            "field.wrong_value",
+            "field.wrong-value",
             &key,
         );
         let made = create_with(&mut ada, &site.kind, json!({ &key: "Acme" })).await?;
@@ -60,7 +60,7 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
                 Some(json!({"version": version, "fields": { &key: "Acmeee" }})),
             )
             .await?,
-            "field.too_long",
+            "field.too-long",
             &key,
         );
         refused(
@@ -86,7 +86,7 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
                 })),
             )
             .await?,
-            "field.unknown_choice",
+            "field.unknown-choice",
             &level_key,
         );
         Ok(())
@@ -133,7 +133,7 @@ async fn cf_03_a_field_for_one_project_is_not_offered_elsewhere() -> TestResult 
             .await?;
         assert_eq!(
             (there.status, there.code()),
-            (StatusCode::BAD_REQUEST, "field.not_here"),
+            (StatusCode::BAD_REQUEST, "field.not-here"),
             "{}",
             there.body
         );

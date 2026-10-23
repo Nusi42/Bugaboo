@@ -142,7 +142,7 @@ mod api {
         let id = header_of(&missing, "x-request-id").to_owned();
         let body = json(missing).await;
         assert_eq!(body["request_id"], id.as_str());
-        assert_eq!(body["code"], "resource.not_found");
+        assert_eq!(body["code"], "resource.not-found");
         assert_eq!(body["message_key"], "error.resource.not-found");
 
         let wrong_method = app
@@ -152,7 +152,7 @@ mod api {
         assert_eq!(wrong_method.status(), StatusCode::METHOD_NOT_ALLOWED);
         assert!(wrong_method.headers().contains_key(header::ALLOW));
         let body = json(wrong_method).await;
-        assert_eq!(body["code"], "request.method_not_allowed");
+        assert_eq!(body["code"], "request.method-not-allowed");
         assert!(body["request_id"].is_string());
     }
 
@@ -174,7 +174,7 @@ mod api {
             "application/problem+json"
         );
         let body = json(response).await;
-        assert_eq!(body["code"], "request.wrong_origin");
+        assert_eq!(body["code"], "request.wrong-origin");
         assert!(body["request_id"].is_string());
     }
 
@@ -207,7 +207,7 @@ mod api {
             "application/problem+json"
         );
         let body = json(refused).await;
-        assert_eq!(body["code"], "rate_limit.exceeded");
+        assert_eq!(body["code"], "rate-limit.exceeded");
         assert_eq!(body["message_key"], "error.rate-limit.exceeded");
 
         // Another client is not affected; unknown API addresses count too; pages do not.

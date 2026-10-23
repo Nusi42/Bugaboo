@@ -5,7 +5,7 @@
 //! client; [`open`] gives the position back. The text carries a tag made under the key of this
 //! server run (`crate::seal`) and the *purpose* of the list it was made for, so a cursor that was
 //! changed, cut, made up, left over from before a restart or taken from another list is refused
-//! with `request.bad_cursor` before the position is used.
+//! with `request.bad-cursor` before the position is used.
 //!
 //! A cursor holds only a position. Every filter and every permission comes from the request, every
 //! time, so a cursor can never widen what a person sees.
@@ -39,7 +39,7 @@ pub(crate) fn seal(list: &str, position: &str) -> Result<String, ApiError> {
 /// The position inside a cursor of `list`.
 ///
 /// # Errors
-/// `request.bad_cursor` when the text is not a cursor this server made for this list.
+/// `request.bad-cursor` when the text is not a cursor this server made for this list.
 pub(crate) fn open(list: &str, cursor: &str) -> Result<String, ApiError> {
     let bad = || ApiError::new(ErrorCode::BadCursor);
     let bytes = Base64UrlUnpadded::decode_vec(cursor).map_err(|_| bad())?;

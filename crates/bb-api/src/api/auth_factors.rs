@@ -181,7 +181,7 @@ async fn start_code_app(
     responses(
         (status = 200, description = "Set up; the backup codes are shown once.", body = BackupCodesBody),
         InvalidAnswer,
-        (status = 401, description = "The code is wrong (auth.wrong_second_step_code, auth.not_signed_in).", body = bb_core::Problem),
+        (status = 401, description = "The code is wrong (auth.wrong-second-step-code, auth.not-signed-in).", body = bb_core::Problem),
         ForbiddenAnswer
     )
 )]
@@ -214,7 +214,7 @@ async fn confirm_code_app(
     request_body = PasswordOnlyBody,
     responses(
         (status = 204, description = "Switched off."),
-        (status = 401, description = "The password is wrong (auth.wrong_credentials, auth.not_signed_in).", body = bb_core::Problem),
+        (status = 401, description = "The password is wrong (auth.wrong-credentials, auth.not-signed-in).", body = bb_core::Problem),
         ForbiddenAnswer
     )
 )]
@@ -246,7 +246,7 @@ async fn remove_code_app(
     responses(
         (status = 200, description = "The new codes, shown once.", body = BackupCodesBody),
         InvalidAnswer,
-        (status = 401, description = "The password is wrong (auth.wrong_credentials, auth.not_signed_in).", body = bb_core::Problem),
+        (status = 401, description = "The password is wrong (auth.wrong-credentials, auth.not-signed-in).", body = bb_core::Problem),
         ForbiddenAnswer
     )
 )]
@@ -344,7 +344,7 @@ async fn add_passkey(
     request_body = PasswordOnlyBody,
     responses(
         (status = 204, description = "Removed."),
-        (status = 401, description = "The password is wrong (auth.wrong_credentials, auth.not_signed_in).", body = bb_core::Problem),
+        (status = 401, description = "The password is wrong (auth.wrong-credentials, auth.not-signed-in).", body = bb_core::Problem),
         ForbiddenAnswer,
         NotFoundAnswer
     )

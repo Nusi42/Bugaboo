@@ -29,7 +29,7 @@ describe("iss_17 every refusal that keeps a draft has a reason", () => {
     for (const code of draftKeptCodes) {
       expect(lostReasonOf(code)).toBeDefined();
     }
-    expect(lostReasonOf("resource.not_found")).toBeUndefined();
+    expect(lostReasonOf("resource.not-found")).toBeUndefined();
   });
 });
 
@@ -38,7 +38,7 @@ describe("iss_17 a refused save tells why the lock is gone", () => {
     // Ben used *Edit anyway* and saved: the lock is gone, and only the note for this person is left.
     const tookOver = { ...stillHeld, lock: { status: "taken_over", by: ben } } as const;
     const w = world({
-      save: () => Promise.reject(refusal("edit.lock_lost")),
+      save: () => Promise.reject(refusal("edit.lock-lost")),
       heartbeat: () => Promise.resolve(tookOver),
     });
     w.editor.open();
@@ -51,7 +51,7 @@ describe("iss_17 a refused save tells why the lock is gone", () => {
 
   it("names who took over from the refusal itself, with no heartbeat (M3-F176, F180)", async () => {
     const w = world({
-      save: () => Promise.reject(refusal("edit.taken_over", { taken_over_by: ben })),
+      save: () => Promise.reject(refusal("edit.taken-over", { taken_over_by: ben })),
       heartbeat: () => Promise.reject(new Error("no heartbeat is needed")),
     });
     w.editor.open();
@@ -64,19 +64,19 @@ describe("iss_17 a refused save tells why the lock is gone", () => {
 
 describe("iss_17 nothing is lost when the save is refused", () => {
   it("says the editing time ran out and keeps the text", async () => {
-    const w = await refusedWith("edit.lock_lost");
+    const w = await refusedWith("edit.lock-lost");
     expect(w.editor.snapshot().phase).toEqual({ kind: "lost", reason: "ran-out" });
     expect(w.editor.snapshot().text).toBe("My words");
     expect(w.log).toContain("stop-beats");
   });
 
   it("says somebody took the editing over", async () => {
-    const w = await refusedWith("edit.taken_over");
+    const w = await refusedWith("edit.taken-over");
     expect(w.editor.snapshot().phase).toEqual({ kind: "lost", reason: "taken-over" });
   });
 
   it("says the text changed since and reads the record again for Compare and save", async () => {
-    const w = await refusedWith("edit.version_changed");
+    const w = await refusedWith("edit.version-changed");
     expect(w.editor.snapshot().phase).toEqual({ kind: "lost", reason: "version-changed" });
     expect(w.log).toContain("refresh");
   });
@@ -93,7 +93,7 @@ describe("iss_17 nothing is lost when the save is refused", () => {
 
   it("saves the chosen text on the newest version after Compare and save", async () => {
     const w = world({
-      save: refusedOnce("edit.version_changed", (input) => {
+      save: refusedOnce("edit.version-changed", (input) => {
         w.saves.push(input);
       }),
     });
@@ -115,11 +115,11 @@ async function logAfter(code: ErrorCode): Promise<readonly string[]> {
 
 describe("iss_17 a refused save lets go of the lock only when the lock is still the person's", () => {
   it("lets go when the text changed since, so nobody waits for the lease to run out", async () => {
-    expect(await logAfter("edit.version_changed")).toContain("release t1");
+    expect(await logAfter("edit.version-changed")).toContain("release t1");
   });
 
   it("does not let go of a lock that ran out or was taken over: it is not the person's any more", async () => {
-    const log = [...(await logAfter("edit.lock_lost")), ...(await logAfter("edit.taken_over"))];
+    const log = [...(await logAfter("edit.lock-lost")), ...(await logAfter("edit.taken-over"))];
     expect(log.some((line) => line.startsWith("release"))).toBe(false);
   });
 });

@@ -6,7 +6,7 @@
 //! [`ProjectStore`] (`store.rs`) and on the policy engine for every decision.
 //!
 //! Three rules run through all of them:
-//! - **A project that a person may not see answers `resource.not_found`**, exactly like one that
+//! - **A project that a person may not see answers `resource.not-found`**, exactly like one that
 //!   does not exist; a visible sub-project of a hidden project is shown at the top and names no
 //!   parent (`shown.rs`).
 //! - **No answer holds a count** of projects or of anything that could include hidden things.

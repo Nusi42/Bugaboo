@@ -43,7 +43,7 @@ async fn person_refusals(
         .await?;
     assert_eq!(
         wrong_kind.code(),
-        "field.wrong_value",
+        "field.wrong-value",
         "{}",
         wrong_kind.body
     );
@@ -59,7 +59,7 @@ async fn person_refusals(
             Some(json!({"version": version, "fields": { tester: gone }})),
         )
         .await?;
-    assert_eq!(nobody.code(), "field.unknown_reference", "{}", nobody.body);
+    assert_eq!(nobody.code(), "field.unknown-reference", "{}", nobody.body);
     // A person who has no role anywhere cannot see the issue, so they cannot be named in it.
     let outsider = rig
         .person(&site.org.admin.session, "otto@example.test")
@@ -74,7 +74,7 @@ async fn person_refusals(
             Some(json!({"version": version, "fields": { tester: outsider }})),
         )
         .await?;
-    assert_eq!(unseen.code(), "field.unknown_reference", "{}", unseen.body);
+    assert_eq!(unseen.code(), "field.unknown-reference", "{}", unseen.body);
     Ok(())
 }
 

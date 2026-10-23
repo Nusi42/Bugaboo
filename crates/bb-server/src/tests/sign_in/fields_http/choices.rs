@@ -124,7 +124,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
             .await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::BAD_REQUEST, "field.unknown_choice"),
+            (StatusCode::BAD_REQUEST, "field.unknown-choice"),
             "{}",
             refused.body
         );

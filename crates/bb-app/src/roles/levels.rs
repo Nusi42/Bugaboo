@@ -93,9 +93,9 @@ fn level_member<K: LevelSubject>(subject: K, issue_type: Option<IssueTypeId>) ->
 /// so that level is held to the same rule.
 ///
 /// # Errors
-/// `access.forbidden` without *Decide what roles see* there, `resource.not_found` for an unknown
+/// `access.forbidden` without *Decide what roles see* there, `resource.not-found` for an unknown
 /// role or a project the person may not know about, `request.invalid` for taking away a role's
-/// own level, `access.too_much` for a level above the person's own.
+/// own level, `access.too-much` for a level above the person's own.
 pub async fn set_level<S: AuthStore, R: LevelRequest>(
     ctx: &Ctx<'_, S>,
     request: R,
@@ -177,7 +177,7 @@ pub async fn set_level<S: AuthStore, R: LevelRequest>(
 /// The levels a role has set in one place: for a project, or its own.
 ///
 /// # Errors
-/// `access.forbidden` without *Decide what roles see* there, `resource.not_found` for an unknown
+/// `access.forbidden` without *Decide what roles see* there, `resource.not-found` for an unknown
 /// role or a project the person may not know about.
 pub async fn role_levels<S: AuthStore>(
     ctx: &Ctx<'_, S>,

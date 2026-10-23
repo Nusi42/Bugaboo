@@ -12,7 +12,7 @@ use super::status::app_with_probe;
 /// The answer clears both cookies and tells the browser to forget what it cached.
 fn assert_cleared(reply: &super::http::Reply, what: &str) {
     assert_eq!(reply.status, StatusCode::UNAUTHORIZED, "{what}");
-    assert_eq!(reply.code(), "auth.not_signed_in", "{what}");
+    assert_eq!(reply.code(), "auth.not-signed-in", "{what}");
     let cookies = reply.cookies();
     for name in [SESSION, CSRF] {
         assert!(

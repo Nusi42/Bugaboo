@@ -276,7 +276,7 @@ async fn counted_after_take_off<S: AuthStore>(
 /// Shows the tags and labels of an issue and what the person may do with them.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see.
 pub async fn issue_labels_and_tags<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -292,9 +292,9 @@ pub async fn issue_labels_and_tags<S: AuthStore>(
 /// turn.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist or that the person may not see,
+/// `resource.not-found` for an issue that does not exist or that the person may not see,
 /// `access.forbidden` without the right to change the issue or its field *Tags*, `request.invalid`
-/// for a name that cannot be one, `tag.not_here` for a tag limited to other projects,
+/// for a name that cannot be one, `tag.not-here` for a tag limited to other projects,
 /// `limit.reached` for an issue that has as many tags as it may.
 pub async fn add_tag<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -380,7 +380,7 @@ pub async fn add_tag<S: AuthStore>(
 /// Takes a tag off an issue. A tag that is on no issue any more is not offered again.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist or that the person may not see, or a tag
+/// `resource.not-found` for an issue that does not exist or that the person may not see, or a tag
 /// the issue does not have, `access.forbidden` without the right to change the issue or its field
 /// *Tags*.
 pub async fn remove_tag<S: AuthStore>(
@@ -432,7 +432,7 @@ pub async fn remove_tag<S: AuthStore>(
 /// has from that group. An issue that has the label already is left as it is.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist or that the person may not see, or a
+/// `resource.not-found` for an issue that does not exist or that the person may not see, or a
 /// label that is not there, `access.forbidden` without the right to change the issue or its field
 /// *Labels*, `request.invalid` for a retired label, `limit.reached` for an issue that has as many
 /// labels as it may.
@@ -501,7 +501,7 @@ pub async fn add_label<S: AuthStore>(
 /// Takes a label off an issue.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist or that the person may not see, or a
+/// `resource.not-found` for an issue that does not exist or that the person may not see, or a
 /// label the issue does not have, `access.forbidden` without the right to change the issue or its
 /// field *Labels*.
 pub async fn remove_label<S: AuthStore>(

@@ -208,7 +208,7 @@ async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people(
             let refused = people_for(&mut ada, &site, &format!("field={field}")).await?;
             assert_eq!(
                 outcome(&refused),
-                (StatusCode::BAD_REQUEST, "field.not_here"),
+                (StatusCode::BAD_REQUEST, "field.not-here"),
                 "{what}: {}",
                 refused.body
             );
@@ -313,7 +313,7 @@ async fn cf_07_undo_does_not_put_back_a_group_or_an_issue_that_is_gone() -> Test
             let undone = set(&mut ada, &made, values).await?;
             assert_eq!(
                 outcome(&undone),
-                (StatusCode::BAD_REQUEST, "field.unknown_reference"),
+                (StatusCode::BAD_REQUEST, "field.unknown-reference"),
                 "{name}: {}",
                 undone.body
             );

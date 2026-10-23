@@ -323,7 +323,7 @@ async fn att_01_an_interrupted_upload_goes_on_from_the_last_part() -> TestResult
         let again = send_part(&mut ada, &upload, 0, &bytes[..10]).await?;
         assert_eq!(
             (again.status, again.code()),
-            (StatusCode::CONFLICT, "file.wrong_part")
+            (StatusCode::CONFLICT, "file.wrong-part")
         );
         // The file is not complete, so it cannot be finished yet.
         let early = ada
@@ -389,7 +389,7 @@ async fn att_01_an_unfinished_upload_is_deleted_after_a_day_and_only_a_part_has_
         let too_big = send_part(&mut ada, &big_upload, 0, &vec![1; PART_BYTES + 1]).await?;
         assert_eq!(
             (too_big.status, too_big.code()),
-            (StatusCode::PAYLOAD_TOO_LARGE, "request.too_large")
+            (StatusCode::PAYLOAD_TOO_LARGE, "request.too-large")
         );
         let fits = send_part(&mut ada, &big_upload, 0, &vec![1; PART_BYTES]).await?;
         assert_eq!(ok(&fits)?["offset"], PART_BYTES);
@@ -400,7 +400,7 @@ async fn att_01_an_unfinished_upload_is_deleted_after_a_day_and_only_a_part_has_
             .await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::PAYLOAD_TOO_LARGE, "request.too_large")
+            (StatusCode::PAYLOAD_TOO_LARGE, "request.too-large")
         );
         Ok(())
     })
@@ -449,7 +449,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> TestRe
         let over = start(&mut ada, &issue, "big.bin", megabytes(25) + 1, None).await?;
         assert_eq!(
             (over.status, over.code()),
-            (StatusCode::PAYLOAD_TOO_LARGE, "file.too_big")
+            (StatusCode::PAYLOAD_TOO_LARGE, "file.too-big")
         );
         assert_eq!(
             start(&mut ada, &issue, "fits.bin", megabytes(25), None)
@@ -471,7 +471,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> TestRe
             None,
         )
         .await?;
-        assert_eq!(beyond.code(), "file.too_big");
+        assert_eq!(beyond.code(), "file.too-big");
 
         // A project may set less than the organization.
         let project = ada
@@ -487,7 +487,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> TestRe
             .await?;
         assert_eq!(project.status, StatusCode::OK, "{}", project.body);
         let small = start(&mut ada, &issue, "big.bin", megabytes(3), None).await?;
-        assert_eq!(small.code(), "file.too_big");
+        assert_eq!(small.code(), "file.too-big");
         let rules = ada
             .send("GET", &format!("{ISSUES}/{issue}/file-rules"), None)
             .await?;
@@ -516,14 +516,14 @@ async fn att_03_a_blocked_type_is_refused() -> TestResult {
         let named = start(&mut ada, &issue, "Setup.EXE", 10, None).await?;
         assert_eq!(
             (named.status, named.code()),
-            (StatusCode::UNSUPPORTED_MEDIA_TYPE, "file.type_blocked")
+            (StatusCode::UNSUPPORTED_MEDIA_TYPE, "file.type-blocked")
         );
         // By its content, as soon as the first part shows it, whatever the name says.
         let program = a_program();
         let hidden = upload_in_parts(&mut ada, &issue, "holiday.png", &program, 100, None).await?;
         assert_eq!(
             (hidden.status, hidden.code()),
-            (StatusCode::UNSUPPORTED_MEDIA_TYPE, "file.type_blocked")
+            (StatusCode::UNSUPPORTED_MEDIA_TYPE, "file.type-blocked")
         );
         assert!(
             on_disk(&rig, "uploads").is_empty(),
@@ -788,7 +788,7 @@ async fn sec_06_a_guest_adds_files_only_on_issues_they_reported_and_a_viewer_add
         let hidden = start(&mut guest, &adas, "shot.png", 10, None).await?;
         assert_eq!(
             (hidden.status, hidden.code()),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
         // A Viewer sees and adds nothing.
         let refused = start(&mut viewer, &adas, "shot.png", 10, None).await?;
@@ -1061,7 +1061,7 @@ async fn sec_06_the_upload_of_somebody_else_cannot_be_reached() -> TestResult {
                 .await?;
             assert_eq!(
                 (state.status, state.code()),
-                (StatusCode::NOT_FOUND, "resource.not_found")
+                (StatusCode::NOT_FOUND, "resource.not-found")
             );
             let part = send_part(who, &upload, 5, b"hijack").await?;
             assert_eq!(part.status, StatusCode::NOT_FOUND);
@@ -1114,7 +1114,7 @@ async fn sec_06_an_upload_ends_when_the_person_loses_access_in_the_middle_of_it(
         let refused = send_part(&mut bob, &upload, 5, b"end").await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
         assert!(on_disk(&rig, "uploads").is_empty());
         bob.take_the_role(&site, StartingRole::TeamMember).await?;

@@ -2,7 +2,7 @@
 //! tree or a search, one project by its address, making projects, and changing the name and the
 //! short name. Moving a project, with its preview, is in `projects_move.rs`.
 //!
-//! A project the person may not see answers `resource.not_found`, exactly like one that does not
+//! A project the person may not see answers `resource.not-found`, exactly like one that does not
 //! exist, and no answer holds a count of projects. The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).
 

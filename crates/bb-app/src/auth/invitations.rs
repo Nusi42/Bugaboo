@@ -100,7 +100,7 @@ pub async fn create_invitation<S: AuthStore>(
 /// Takes an invitation back.
 ///
 /// # Errors
-/// `access.forbidden` without *Invite people*, `resource.not_found` for an unknown invitation.
+/// `access.forbidden` without *Invite people*, `resource.not-found` for an unknown invitation.
 pub async fn revoke_invitation<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RevokeInvitation,
@@ -167,7 +167,7 @@ pub async fn invitations<S: AuthStore>(
 /// Which address an invitation link is for, so the page can show it.
 ///
 /// # Errors
-/// `auth.invitation_invalid` for a link that does not work (it does not say why).
+/// `auth.invitation-invalid` for a link that does not work (it does not say why).
 pub async fn invitation_lookup<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: InvitationLookupQuery,

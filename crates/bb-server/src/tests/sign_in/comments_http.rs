@@ -111,7 +111,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
                 Some(json!({"version": 1, "lock_token": fresh, "text": "Stale."})),
             )
             .await?;
-        assert_eq!(stale.code(), "edit.version_changed");
+        assert_eq!(stale.code(), "edit.version-changed");
         assert_eq!(stale.body["conflict"]["version"], 2);
         // Only the author changes a text: another person cannot even take the lock.
         let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
@@ -125,7 +125,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
                 })),
             )
             .await?;
-        assert_eq!(refused.code(), "resource.not_found");
+        assert_eq!(refused.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -369,7 +369,7 @@ async fn iss_06_history_leaves_out_changes_to_fields_the_reader_cannot_see() -> 
                 None,
             )
             .await?;
-        assert_eq!(asked.code(), "request.unknown_field");
+        assert_eq!(asked.code(), "request.unknown-field");
         // Their view of the author is as their level for the kind says, not Ada's name.
         let by = &seen.body["items"][0]["by"];
         assert_eq!(by["shown"], "someone", "{by}");

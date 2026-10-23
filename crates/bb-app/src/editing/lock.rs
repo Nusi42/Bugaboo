@@ -98,7 +98,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .filter(|lock| !lock.has_expired(now)))
     }
 
-    /// The refusal of a save that found the lock in other hands: `edit.taken_over` with who holds it
+    /// The refusal of a save that found the lock in other hands: `edit.taken-over` with who holds it
     /// now, as `person` may see them, so the browser needs no heartbeat to learn it (M3-F176). When
     /// the holder cannot be found (the lock ran out meanwhile) or shown, the plain refusal stands.
     pub(super) async fn taken_over_by(
@@ -159,7 +159,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// *take the lock*: the person must be allowed to change the record.
 ///
 /// # Errors
-/// `resource.not_found` for a record the person may not know about, `access.forbidden` when they
+/// `resource.not-found` for a record the person may not know about, `access.forbidden` when they
 /// may not change it.
 pub async fn read_lock<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -178,7 +178,7 @@ pub async fn read_lock<S: AuthStore>(
 /// Takes the lock on a thing, on the first keystroke, or says who is editing.
 ///
 /// # Errors
-/// `resource.not_found` for a record the person may not know about, `access.forbidden` when they
+/// `resource.not-found` for a record the person may not know about, `access.forbidden` when they
 /// may not change it.
 pub async fn take_lock<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -207,8 +207,8 @@ pub async fn take_lock<S: AuthStore>(
 /// somebody whose lock ran out or was taken over is never dropped.
 ///
 /// # Errors
-/// `resource.not_found` for a record the person may not know about, `access.forbidden` when they
-/// may not change it, `request.too_large` for a draft over `bb_core::edit::DRAFT_TEXT_MAX`.
+/// `resource.not-found` for a record the person may not know about, `access.forbidden` when they
+/// may not change it, `request.too-large` for a draft over `bb_core::edit::DRAFT_TEXT_MAX`.
 pub async fn heartbeat<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: HeartbeatQuery,
@@ -317,7 +317,7 @@ pub async fn release_lock<S: AuthStore>(
 /// Asks the person who is editing to finish. They read it at their next heartbeat.
 ///
 /// # Errors
-/// `resource.not_found` for a record the person may not know about or when nobody is editing,
+/// `resource.not-found` for a record the person may not know about or when nobody is editing,
 /// `access.forbidden` when they may not change the record, `request.invalid` when they are the
 /// one editing.
 pub async fn ask_to_finish<S: AuthStore>(
@@ -373,7 +373,7 @@ const TAKE_OVER_ATTEMPTS: usize = 5;
 /// draft and reads at their next heartbeat that the editing was taken over.
 ///
 /// # Errors
-/// `resource.not_found` for a record the person may not know about, `access.forbidden` without
+/// `resource.not-found` for a record the person may not know about, `access.forbidden` without
 /// *Edit anyway*.
 pub async fn edit_anyway<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -458,7 +458,7 @@ pub async fn edit_anyway<S: AuthStore>(
 /// administrator ends somebody else's editing.
 ///
 /// # Errors
-/// `resource.not_found` for a record the person may not know about or a thing nobody is editing,
+/// `resource.not-found` for a record the person may not know about or a thing nobody is editing,
 /// `access.forbidden` without *Edit anyway*.
 pub async fn release_stuck_lock<S: AuthStore>(
     ctx: &Ctx<'_, S>,

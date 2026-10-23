@@ -180,7 +180,7 @@ impl Person {
         let moved_since = reply.code() == "field.required"
             && version_in(&self.browser.send("GET", &path, None).await?.body)? != version;
         match reply.code() {
-            "edit.version_changed" | "workflow.no_such_change" => Ok(()),
+            "edit.version-changed" | "workflow.no-such-change" => Ok(()),
             _ if moved_since => Ok(()),
             _ => Err(format!("{}: {}", reply.status, reply.body).into()),
         }

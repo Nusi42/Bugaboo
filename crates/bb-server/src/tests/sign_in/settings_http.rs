@@ -27,7 +27,7 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
         // Not signed in: nothing, and no secret of the answer is stored.
         let refused = nobody.send("GET", "/api/v1/me/settings", None).await?;
         assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
-        assert_eq!(refused.code(), "auth.not_signed_in");
+        assert_eq!(refused.code(), "auth.not-signed-in");
 
         let mut ada = Browser::signed_in(&app, &rig).await?;
         // The settings of a topic, with what a form needs to draw them.
@@ -119,7 +119,7 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
             )
             .await?;
         assert_eq!(unknown.status, StatusCode::NOT_FOUND);
-        assert_eq!(unknown.code(), "resource.not_found");
+        assert_eq!(unknown.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -265,7 +265,7 @@ async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> Test
             .await?;
         assert_eq!(
             (hidden.status, hidden.code()),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
         assert_eq!(
             (missing.status, missing.code()),

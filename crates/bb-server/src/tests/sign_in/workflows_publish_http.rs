@@ -159,7 +159,7 @@ async fn refused_for_an_issue(db: &TestDatabase, unseen: bool) -> Result<(), Fai
     let refused = lead.send("PUT", &path, Some(body.clone())).await?;
     assert_eq!(
         (refused.status, refused.code()),
-        (StatusCode::CONFLICT, "workflow.status_in_use"),
+        (StatusCode::CONFLICT, "workflow.status-in-use"),
         "{}",
         refused.body
     );

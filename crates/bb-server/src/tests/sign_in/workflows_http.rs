@@ -82,7 +82,7 @@ async fn wf_06_a_new_organization_offers_the_three_starter_workflows_over_http()
         let straight = go(&mut ada, &issue, "done").await?;
         assert_eq!(
             (straight.status, straight.code()),
-            (StatusCode::CONFLICT, "workflow.no_such_change")
+            (StatusCode::CONFLICT, "workflow.no-such-change")
         );
         let offered: Vec<String> = ok(&ada
             .send("GET", &format!("{ISSUES}/{issue}"), None)
@@ -135,7 +135,7 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
         let refused = ada.send("PUT", &path, Some(publish(json!([])))).await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::CONFLICT, "workflow.status_in_use")
+            (StatusCode::CONFLICT, "workflow.status-in-use")
         );
         ok(&ada
             .send(

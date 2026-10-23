@@ -1,6 +1,6 @@
 //! The one way to find an issue a person may see by its ID. An issue that does not exist, is in the
 //! trash (or, when asked for the trash, is not in it) or that the person may not see answers
-//! `resource.not_found`: the three cannot be told apart.
+//! `resource.not-found`: the three cannot be told apart.
 
 use std::sync::Arc;
 
@@ -15,7 +15,7 @@ use crate::auth::{AppError, AuthStore, Ctx, internal};
 impl<S: AuthStore> Ctx<'_, S> {
     /// An issue the actor may see, by its readable or internal ID, with what they may do in its
     /// project. An issue that does not exist, is in the trash or that they may not see answers
-    /// `resource.not_found`.
+    /// `resource.not-found`.
     pub(crate) async fn visible_issue(
         &self,
         actor: &Actor,

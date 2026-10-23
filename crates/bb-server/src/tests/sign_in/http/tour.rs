@@ -165,7 +165,7 @@ async fn sign_up(tour: &mut Tour) -> TestResult {
             Some(json!({"email": "x@evil.test"})),
         )
         .await?;
-    assert_eq!(reply.code(), "auth.sign_up_refused");
+    assert_eq!(reply.code(), "auth.sign-up-refused");
     Ok(())
 }
 

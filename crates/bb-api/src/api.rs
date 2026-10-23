@@ -400,7 +400,7 @@ mod tests {
         for request in refused {
             let response = app().oneshot(request).await.unwrap();
             assert_eq!(response.status(), StatusCode::FORBIDDEN);
-            assert_eq!(code_of(response).await, "request.wrong_origin");
+            assert_eq!(code_of(response).await, "request.wrong-origin");
         }
     }
 
@@ -511,7 +511,7 @@ mod tests {
             refused.headers()[header::CONTENT_TYPE],
             "application/problem+json"
         );
-        assert_eq!(code_of(refused).await, "request.too_large");
+        assert_eq!(code_of(refused).await, "request.too-large");
     }
 
     #[tokio::test(start_paused = true)]
@@ -519,7 +519,7 @@ mod tests {
         let slow = Request::get("/api/v1/slow").body(Body::empty()).unwrap();
         let stopped = app().oneshot(slow).await.unwrap();
         assert_eq!(stopped.status(), StatusCode::REQUEST_TIMEOUT);
-        assert_eq!(code_of(stopped).await, "request.timed_out");
+        assert_eq!(code_of(stopped).await, "request.timed-out");
 
         // Not an API address: no time limit of the API applies (the hour passes in paused time).
         let page = Request::get("/slow-page").body(Body::empty()).unwrap();

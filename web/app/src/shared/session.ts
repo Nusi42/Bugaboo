@@ -45,7 +45,7 @@ export async function currentPerson(): Promise<Person | null> {
     queryClient.setQueryData(meOptions().queryKey, data);
     return data;
   } catch (error) {
-    if (codeOf(error) === "auth.not_signed_in") {
+    if (codeOf(error) === "auth.not-signed-in") {
       // Nobody is signed in: what the last person chose is not kept for the next one (M2-F13).
       forgetPersonalChoices();
       return null;

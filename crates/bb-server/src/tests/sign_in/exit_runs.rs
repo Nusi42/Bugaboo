@@ -76,7 +76,7 @@ async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nob
         let first = start(&mut bob, &targets).await?;
         // Somebody else, who is no administrator, does not find the run.
         let hidden = cat.send("POST", &stop(&first), None).await?;
-        assert_eq!(hidden.code(), "resource.not_found", "{}", hidden.body);
+        assert_eq!(hidden.code(), "resource.not-found", "{}", hidden.body);
         assert_eq!(read(&mut bob, &first).await?["status"], "queued");
         // An administrator, who manages people, stops it.
         let stopped = ada.send("POST", &stop(&first), None).await?;
@@ -112,7 +112,7 @@ async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nob
         .await?;
         let third = start(&mut bob, &targets).await?;
         let no = ron.send("POST", &stop(&third), None).await?;
-        assert_eq!(no.code(), "resource.not_found", "{}", no.body);
+        assert_eq!(no.code(), "resource.not-found", "{}", no.body);
         let yes = ted.send("POST", &stop(&third), None).await?;
         assert_eq!(yes.status, StatusCode::OK, "{}", yes.body);
         assert_eq!(yes.body["status"], "stopped");

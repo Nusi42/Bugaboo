@@ -360,7 +360,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// is as good as not there.
     ///
     /// # Errors
-    /// `resource.not_found` for a person who is not there or whom the checker may not check.
+    /// `resource.not-found` for a person who is not there or whom the checker may not check.
     pub(crate) async fn person_to_check(
         &self,
         checker: &Evaluation,
@@ -384,8 +384,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// people levels they have, and why.
 ///
 /// # Errors
-/// `access.forbidden` without *Check access* there (`resource.not_found` for a project the person
-/// may not know about), `resource.not_found` for an unknown person to check, and for a person
+/// `access.forbidden` without *Check access* there (`resource.not-found` for a project the person
+/// may not know about), `resource.not-found` for an unknown person to check, and for a person
 /// without a role there when the checker does not manage people or roles.
 pub async fn check_access<S: AuthStore>(
     ctx: &Ctx<'_, S>,

@@ -334,9 +334,9 @@ fn project_change(project: ProjectRef, change: &Change, known: &KnownFields) -> 
 /// would be refused. The answer holds the *version* of the preview, which the move asks for.
 ///
 /// # Errors
-/// `resource.not_found` for a project or a new parent the person may not know about,
+/// `resource.not-found` for a project or a new parent the person may not know about,
 /// `access.forbidden` without *Move projects* in the old and the new parent,
-/// `project.move_into_itself` for a move below itself, `project.too_deep` for a move that pushes
+/// `project.move-into-itself` for a move below itself, `project.too-deep` for a move that pushes
 /// what is inside past the depth of a tree, `request.invalid` for a move to where the
 /// project is.
 pub async fn preview_move<S: AuthStore>(
@@ -364,9 +364,9 @@ pub async fn preview_move<S: AuthStore>(
 /// could take away a *No access* that applies to them, and could not before, is refused.
 ///
 /// # Errors
-/// What [`preview_move`] answers, `project.preview_changed` when the projects, who has which role
-/// or the levels of the roles changed since the preview, `project.move_lifts_no_access` for a
-/// move that lifts a *No access*, `edit.version_changed` when somebody changed the project first.
+/// What [`preview_move`] answers, `project.preview-changed` when the projects, who has which role
+/// or the levels of the roles changed since the preview, `project.move-lifts-no-access` for a
+/// move that lifts a *No access*, `edit.version-changed` when somebody changed the project first.
 pub async fn move_project<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: MoveProject,

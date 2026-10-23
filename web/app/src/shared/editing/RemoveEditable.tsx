@@ -32,7 +32,7 @@ export interface RemoveEditableProps {
  * the person may see them). The words are the caller's: each kind says what it does in its own way.
  */
 export function RemoveEditable({ what, words, onConfirm, error }: RemoveEditableProps) {
-  const busy = codeOf(error) === "edit.in_progress";
+  const busy = codeOf(error) === "edit.in-progress";
   const editing = useEditingNow(what, busy);
   return (
     <>

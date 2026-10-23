@@ -101,10 +101,10 @@ pub async fn create_label_group<S: AuthStore>(
 ///
 /// # Errors
 /// `access.forbidden` without *Manage labels and tags* where the group was made,
-/// `resource.not_found` for a group that is not there, `request.invalid` for nothing asked or a
+/// `resource.not-found` for a group that is not there, `request.invalid` for nothing asked or a
 /// name that cannot be one, `name.taken`,
-/// `label.pick_one_conflict` when some issue has two labels of the group, and the group is to be
-/// a *Pick one* group, `edit.version_changed` when somebody changed the group since it was looked
+/// `label.pick-one-conflict` when some issue has two labels of the group, and the group is to be
+/// a *Pick one* group, `edit.version-changed` when somebody changed the group since it was looked
 /// at.
 pub async fn change_label_group<S: AuthStore>(
     ctx: &Ctx<'_, S>,

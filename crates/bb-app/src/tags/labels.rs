@@ -248,7 +248,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         ))
     }
 
-    /// Refuses (`resource.not_found`) a label that is not there or that is in a label group
+    /// Refuses (`resource.not-found`) a label that is not there or that is in a label group
     /// the person may not know (`offers/known.rs`).
     pub(crate) async fn label_known(&self, actor: &Actor, label: LabelId) -> Result<(), AppError> {
         let catalogue = self.label_catalogue().await?;
@@ -348,7 +348,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// and sees the groups they may know.
 ///
 /// # Errors
-/// `request.invalid` for a cursor that is not one, `resource.not_found` for a project the person
+/// `request.invalid` for a cursor that is not one, `resource.not-found` for a project the person
 /// may not see.
 pub async fn label_groups<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -381,7 +381,7 @@ pub async fn label_groups<S: AuthStore>(
 /// and those in no group. Anybody who is signed in may.
 ///
 /// # Errors
-/// `request.invalid` for a cursor that is not one, `resource.not_found` for a project the person
+/// `request.invalid` for a cursor that is not one, `resource.not-found` for a project the person
 /// may not see.
 pub async fn labels<S: AuthStore>(
     ctx: &Ctx<'_, S>,

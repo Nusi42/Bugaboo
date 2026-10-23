@@ -190,7 +190,7 @@ pub(super) fn starting_name() -> String {
 /// with the roles, groups and fields its rules can name. Needs *Manage workflows* at the place.
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about, `access.forbidden` without
+/// `resource.not-found` for a project the person may not know about, `access.forbidden` without
 /// the permission.
 pub async fn workflow_editor<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -212,7 +212,7 @@ pub async fn workflow_editor<S: AuthStore>(
 /// place.
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about, `access.forbidden` without
+/// `resource.not-found` for a project the person may not know about, `access.forbidden` without
 /// the permission.
 pub async fn workflows<S: AuthStore>(
     ctx: &Ctx<'_, S>,

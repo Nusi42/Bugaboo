@@ -267,7 +267,7 @@ async fn m3_f70_of_two_changes_of_a_handle_at_the_same_moment_one_is_kept_on_bot
                 .count();
             assert_eq!(made, 1, "round {round}: {codes:?}");
             assert!(
-                codes.contains(&"handle.changed_lately".to_owned()),
+                codes.contains(&"handle.changed-lately".to_owned()),
                 "round {round}: {codes:?}"
             );
             rig.clock
@@ -514,7 +514,7 @@ async fn auth_a_signed_up_account_works_only_after_the_link_when_mail_is_on() ->
         assert!(asked.headers.get("set-cookie").is_none(), "no session");
         // Nothing is made yet: no password, no person.
         let refused = eve.sign_in(EVE, super::rig::PASSWORD).await?;
-        assert_eq!(refused.code(), "auth.wrong_credentials");
+        assert_eq!(refused.code(), "auth.wrong-credentials");
         assert!(rig.account_by_email(EVE).await?.is_none());
         rig.run_jobs().await?;
         let secret = secret_of_the_last_e_mail(&rig)?;
@@ -524,7 +524,7 @@ async fn auth_a_signed_up_account_works_only_after_the_link_when_mail_is_on() ->
         assert_eq!(made.status, StatusCode::OK, "{}", made.body);
         assert!(rig.account_by_email(EVE).await?.is_some());
         let again = eve.send("POST", ACCEPT, Some(accept_body(&secret))).await?;
-        assert_eq!(again.code(), "auth.invitation_invalid", "once");
+        assert_eq!(again.code(), "auth.invitation-invalid", "once");
         Ok(())
     })
     .await
@@ -604,10 +604,10 @@ async fn sec_14_signing_up_has_a_small_limit_per_network_of_its_own() -> TestRes
             .send("POST", SIGN_UP, Some(sign_up_body("late@example.test")))
             .await?;
         assert_eq!(over.status, StatusCode::TOO_MANY_REQUESTS);
-        assert_eq!(over.code(), "rate_limit.exceeded");
+        assert_eq!(over.code(), "rate-limit.exceeded");
         // The sign-in family keeps its own, larger cap.
         let refused = visitor.sign_in(EVE, super::rig::PASSWORD).await?;
-        assert_eq!(refused.code(), "auth.wrong_credentials");
+        assert_eq!(refused.code(), "auth.wrong-credentials");
         Ok(())
     })
     .await
@@ -625,7 +625,7 @@ async fn auth_the_link_runs_out_after_24_hours() -> TestResult {
         let secret = secret_of_the_last_e_mail(&rig)?;
         rig.clock.advance(24 * 3600 + 1);
         let late = eve.send("POST", ACCEPT, Some(accept_body(&secret))).await?;
-        assert_eq!(late.code(), "auth.invitation_invalid");
+        assert_eq!(late.code(), "auth.invitation-invalid");
         assert!(rig.account_by_email(EVE).await?.is_none());
         // The job that clears sessions removes the link, and signing up again sends a new one.
         rig.services

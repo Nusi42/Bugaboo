@@ -111,7 +111,7 @@ async fn prj_02_projects_are_listed_as_a_tree_a_search_and_pages_over_http() -> 
         let bad_cursor = ada
             .send("GET", &format!("{PROJECTS}?cursor=nonsense"), None)
             .await?;
-        assert_eq!(bad_cursor.code(), "request.bad_cursor");
+        assert_eq!(bad_cursor.code(), "request.bad-cursor");
         Ok(())
     })
     .await
@@ -155,7 +155,7 @@ async fn prj_01_a_project_is_shown_by_its_address_and_changed_over_http() -> Tes
             .await?;
         assert_eq!(
             (stale.status, stale.code()),
-            (StatusCode::CONFLICT, "edit.version_changed")
+            (StatusCode::CONFLICT, "edit.version-changed")
         );
         Ok(())
     })
@@ -176,7 +176,7 @@ async fn prj_01_a_person_without_a_role_sees_no_project_and_is_told_nothing() ->
         let hidden = bob.send("GET", &format!("{PROJECTS}/ACME"), None).await?;
         let missing = bob.send("GET", &format!("{PROJECTS}/NOSUCH"), None).await?;
         assert_eq!(hidden.status, StatusCode::NOT_FOUND);
-        assert_eq!(hidden.body["code"], "resource.not_found");
+        assert_eq!(hidden.body["code"], "resource.not-found");
         assert_eq!(hidden.body["message_key"], missing.body["message_key"]);
         assert_eq!(hidden.body["title"], missing.body["title"]);
         let denied = create(&mut bob, None, "MINE", "Mine").await?;
@@ -189,7 +189,7 @@ async fn prj_01_a_person_without_a_role_sees_no_project_and_is_told_nothing() ->
         let nobody = stranger.send("GET", PROJECTS, None).await?;
         assert_eq!(
             (nobody.status, nobody.code()),
-            (StatusCode::UNAUTHORIZED, "auth.not_signed_in")
+            (StatusCode::UNAUTHORIZED, "auth.not-signed-in")
         );
         Ok(())
     })
@@ -237,7 +237,7 @@ async fn prj_03_a_move_is_previewed_and_done_over_http() -> TestResult {
             .await?;
         assert_eq!(
             (wrong.status, wrong.code()),
-            (StatusCode::CONFLICT, "project.preview_changed")
+            (StatusCode::CONFLICT, "project.preview-changed")
         );
         // The project cannot go inside itself, and a text that is no ID is a project not found.
         let below = ada
@@ -249,7 +249,7 @@ async fn prj_03_a_move_is_previewed_and_done_over_http() -> TestResult {
             .await?;
         assert_eq!(
             (below.status, below.code()),
-            (StatusCode::CONFLICT, "project.move_into_itself")
+            (StatusCode::CONFLICT, "project.move-into-itself")
         );
         let nowhere = ada
             .send(
@@ -260,7 +260,7 @@ async fn prj_03_a_move_is_previewed_and_done_over_http() -> TestResult {
             .await?;
         assert_eq!(
             (nowhere.status, nowhere.code()),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
 
         let moved = ada

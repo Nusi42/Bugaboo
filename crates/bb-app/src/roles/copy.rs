@@ -33,9 +33,9 @@ pub struct CopyRole {
 /// so the copy holds no permission and no level above the person who makes it.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage roles*, `resource.not_found` for an unknown role,
+/// `access.forbidden` without *Manage roles*, `resource.not-found` for an unknown role,
 /// `request.invalid` for a name that cannot be one, `name.taken` when another role has the name,
-/// `access.too_much` when the role holds a permission or a level the person who copies does not
+/// `access.too-much` when the role holds a permission or a level the person who copies does not
 /// hold.
 pub async fn copy_role<S: AuthStore>(
     ctx: &Ctx<'_, S>,

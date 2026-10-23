@@ -165,7 +165,7 @@ export interface KeyClient {
 /** What the server said to a script. */
 export interface KeyAnswer {
   readonly status: number;
-  /** The code of the error (`auth.not_signed_in`), when the answer is one. */
+  /** The code of the error (`auth.not-signed-in`), when the answer is one. */
   readonly code: string | undefined;
 }
 

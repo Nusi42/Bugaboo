@@ -13,7 +13,7 @@ export function CodeForm() {
   const finish = api.query.useMutation("post", "/api/v1/auth/second-step", {
     onSuccess: afterSignIn,
   });
-  const wrongCode = codeOf(finish.error) === "auth.wrong_second_step_code";
+  const wrongCode = codeOf(finish.error) === "auth.wrong-second-step-code";
   return (
     <Form
       onSubmit={() => {

@@ -64,7 +64,7 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> TestResult
         let mut stranger = Browser::new(&app, &used);
         let reply = stranger.send("GET", STATUS, None).await?;
         assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
-        assert_eq!(reply.code(), "auth.not_signed_in");
+        assert_eq!(reply.code(), "auth.not-signed-in");
 
         // A person who is not an administrator: forbidden.
         let mut ada = Browser::new(&app, &used);

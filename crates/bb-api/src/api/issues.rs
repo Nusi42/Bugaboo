@@ -3,7 +3,7 @@
 //! readable ID (`WEB-142`, `WEB-K7Q2X`; an old one too, the answer holds the current one) or its
 //! internal ID.
 //!
-//! An issue the person may not see answers `resource.not_found`, exactly like one that does not
+//! An issue the person may not see answers `resource.not-found`, exactly like one that does not
 //! exist or is in the trash, and no answer holds a count (PRIV-13). Every change names the
 //! `version` it looked at. The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).

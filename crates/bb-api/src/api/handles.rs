@@ -64,7 +64,7 @@ async fn get_my_handle(
     answer_authorized(&found.map(HandleBody::from))
 }
 
-/// Changes the handle of the person who asks, once in a while (`handle.changed_lately` otherwise).
+/// Changes the handle of the person who asks, once in a while (`handle.changed-lately` otherwise).
 /// The one they had stays theirs: nobody else can take it, and the texts written before still name
 /// them, but a new text that uses it names nobody.
 #[utoipa::path(

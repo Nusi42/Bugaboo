@@ -1,4 +1,4 @@
-//! The structured answer to a stale version (`edit.version_changed`, ADR-0019 amendment M3): who
+//! The structured answer to a stale version (`edit.version-changed`, ADR-0019 amendment M3): who
 //! changed the record, when, which fields, and the values the reader may see now.
 //!
 //! One place makes it for every route. A use case that finds that the version a person sent is not
@@ -354,7 +354,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Makes the conflict out of a stale record. If anything fails on the way, the person still gets
-    /// the plain `edit.version_changed`: a conflict is never turned into another error.
+    /// the plain `edit.version-changed`: a conflict is never turned into another error.
     pub(crate) async fn conflict_of(&self, stale: &Stale) -> AppError {
         match self.try_conflict(stale).await {
             Ok(conflict) => AppError::Conflict(Box::new(conflict)),

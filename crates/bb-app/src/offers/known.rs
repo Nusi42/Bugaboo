@@ -5,7 +5,7 @@
 //! organization, or when the person may know the project it was created in (the policy's
 //! `knows_project`) or works in a project inside it, or when it is used on an issue they read (for
 //! a group of labels: on an issue whose labels they may see; as for a tag). Anything else is as
-//! good as not there (`resource.not_found`), so the name of a type created in a project nobody
+//! good as not there (`resource.not-found`), so the name of a type created in a project nobody
 //! told the person about is not leaked (ADR-0025 decision 13).
 
 use std::sync::Arc;
@@ -139,7 +139,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
-    /// Refuses (`resource.not_found`) a label that is in a label group the person may not
+    /// Refuses (`resource.not-found`) a label that is in a label group the person may not
     /// know: a label of a group nobody told them about is as good as not there.
     pub(crate) async fn ensure_label_known(
         &self,
@@ -183,7 +183,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
-    /// The issue type, or `resource.not_found` for one that is not there or that the person may
+    /// The issue type, or `resource.not-found` for one that is not there or that the person may
     /// not know. A type of the organization is known to everybody, so only one created in a project
     /// costs a look at what the person knows.
     pub(crate) async fn known_type(
@@ -207,7 +207,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
 
-    /// Refuses (`resource.not_found`) an issue type a request names that the person may not know:
+    /// Refuses (`resource.not-found`) an issue type a request names that the person may not know:
     /// a screen that is for one issue type does not open as if it were for all of them.
     pub(crate) async fn ensure_type_known(
         &self,
@@ -220,7 +220,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// The group of labels, or `resource.not_found` for one that is not there or that the person
+    /// The group of labels, or `resource.not-found` for one that is not there or that the person
     /// may not know.
     pub(crate) async fn known_group(
         &self,

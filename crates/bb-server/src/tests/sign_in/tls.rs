@@ -243,14 +243,14 @@ async fn changes_need_origin_and_token(client: &mut Client, own: &str) -> TestRe
         .call("POST", sign_out, None, Some("https://evil.test"), None)
         .await?;
     assert_eq!(elsewhere.status, StatusCode::FORBIDDEN);
-    assert_eq!(elsewhere.body["code"], "request.wrong_origin");
+    assert_eq!(elsewhere.body["code"], "request.wrong-origin");
     let no_origin = client.call("POST", sign_out, None, None, None).await?;
-    assert_eq!(no_origin.body["code"], "request.wrong_origin");
+    assert_eq!(no_origin.body["code"], "request.wrong-origin");
     let forged = client
         .call("POST", sign_out, None, Some(own), Some("forged"))
         .await?;
     assert_eq!(forged.status, StatusCode::FORBIDDEN);
-    assert_eq!(forged.body["code"], "request.wrong_token");
+    assert_eq!(forged.body["code"], "request.wrong-token");
     let own_token = client.token.clone().ok_or("no token")?;
     let out = client
         .call("POST", sign_out, None, Some(own), Some(&own_token))

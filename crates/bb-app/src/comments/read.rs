@@ -32,7 +32,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// earlier texts.
 ///
 /// # Errors
-/// `resource.not_found` for a comment that does not exist, is in the trash or whose issue the
+/// `resource.not-found` for a comment that does not exist, is in the trash or whose issue the
 /// person may not see.
 pub async fn comment_versions<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -67,7 +67,7 @@ pub async fn comment_versions<S: AuthStore>(
 /// the text could not tell them apart.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see.
 pub async fn mention_choices<S: AuthStore>(
     ctx: &Ctx<'_, S>,

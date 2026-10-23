@@ -130,7 +130,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// sub-issues.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see.
 pub async fn issue_relations<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -145,7 +145,7 @@ pub async fn issue_relations<S: AuthStore>(
 /// The sub-issues of an issue that the person may see, a page at a time.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see, `request.invalid` for a cursor that is not one.
 pub async fn sub_issues<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -169,7 +169,7 @@ pub async fn sub_issues<S: AuthStore>(
 /// The issues related to an issue whose other end the person may see, a page at a time.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see, `request.invalid` for a cursor that is not one.
 pub async fn related_issues<S: AuthStore>(
     ctx: &Ctx<'_, S>,

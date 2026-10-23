@@ -218,10 +218,10 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// ones they may change (the title always).
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about (or that does not exist) or an
+/// `resource.not-found` for a project the person may not know about (or that does not exist) or an
 /// issue type that does not exist, `access.forbidden` without the permission or for a field the
 /// person may not change, `request.invalid` for a title, description or person that cannot be
-/// one, `issue.type_retired` for a retired issue type.
+/// one, `issue.type-retired` for a retired issue type.
 pub async fn create_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CreateIssue,

@@ -26,7 +26,7 @@ describe("att_01 an upload that resumes", () => {
   });
 
   it("asks where the server stands after a part out of order, without waiting", async () => {
-    const wrong = new ApiError(409, problem("file.wrong_part", 409));
+    const wrong = new ApiError(409, problem("file.wrong-part", 409));
     const { transport, sent } = fakeUploads([wrong]);
     const c = course();
     await sendFile(transport, delivery, content(), c);
@@ -57,7 +57,7 @@ describe("att_01 an upload that gives up", () => {
   });
 
   it("tells the person at once when the disk of the server is full", async () => {
-    const full = new ApiError(507, problem("file.no_room", 507));
+    const full = new ApiError(507, problem("file.no-room", 507));
     const { transport } = fakeUploads([full]);
     const c = course();
     await expect(sendFile(transport, delivery, content(), c)).rejects.toBe(full);
@@ -65,7 +65,7 @@ describe("att_01 an upload that gives up", () => {
   });
 
   it("does not ask again after a refusal", async () => {
-    const refusal = new ApiError(413, problem("file.too_big", 413));
+    const refusal = new ApiError(413, problem("file.too-big", 413));
     const { transport } = fakeUploads([refusal]);
     const c = course();
     await expect(sendFile(transport, delivery, content(), c)).rejects.toBe(refusal);

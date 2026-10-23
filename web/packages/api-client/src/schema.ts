@@ -2213,7 +2213,7 @@ export interface paths {
     /** The handle of the person who asks. */
     get: operations["getMyHandle"];
     /**
-     * Changes the handle of the person who asks, once in a while (`handle.changed_lately` otherwise).
+     * Changes the handle of the person who asks, once in a while (`handle.changed-lately` otherwise).
      *     The one they had stays theirs: nobody else can take it, and the texts written before still name
      *     them, but a new text that uses it names nobody.
      */
@@ -2612,7 +2612,7 @@ export interface paths {
     /**
      * Moves a project, with everything in it, into another project or to the top level. It works
      *     only with the `preview` of a preview that is still true: when the projects, who has which
-     *     role or the levels of the roles changed since, it answers `project.preview_changed`. A move
+     *     role or the levels of the roles changed since, it answers `project.preview-changed`. A move
      *     after which somebody could take away a *No access* that applies to them is refused. Needs the
      *     permission *Move sub-projects into or out of the project* in the old and the new parent.
      */
@@ -3919,7 +3919,7 @@ export interface components {
     };
     /**
      * @description The answer to a change that found the record at another version, or to any other refused
-     *     change: the usual problem, and for `edit.version_changed` the `conflict` member.
+     *     change: the usual problem, and for `edit.version-changed` the `conflict` member.
      */
     ConflictProblem: components["schemas"]["Problem"] & {
       conflict?: components["schemas"]["ConflictBody"] | null;
@@ -4133,79 +4133,79 @@ export interface components {
      * @enum {string}
      */
     ErrorCode:
-      | "auth.wrong_credentials"
-      | "auth.wrong_second_step_code"
-      | "auth.wrong_setup_code"
-      | "auth.password_too_short"
-      | "auth.password_breached"
-      | "auth.invitation_invalid"
-      | "auth.sign_up_refused"
-      | "auth.passkey_rejected"
-      | "auth.second_step_required"
-      | "auth.access_key_not_allowed"
-      | "auth.not_signed_in"
+      | "auth.wrong-credentials"
+      | "auth.wrong-second-step-code"
+      | "auth.wrong-setup-code"
+      | "auth.password-too-short"
+      | "auth.password-breached"
+      | "auth.invitation-invalid"
+      | "auth.sign-up-refused"
+      | "auth.passkey-rejected"
+      | "auth.second-step-required"
+      | "auth.access-key-not-allowed"
+      | "auth.not-signed-in"
       | "access.forbidden"
-      | "access.cannot_lift"
-      | "access.would_lock_out"
-      | "access.too_much"
-      | "role.in_use"
+      | "access.cannot-lift"
+      | "access.would-lock-out"
+      | "access.too-much"
+      | "role.in-use"
       | "assignment.conflict"
       | "setting.locked"
-      | "setting.hosts_not_bare"
-      | "project.move_lifts_no_access"
-      | "project.move_into_itself"
-      | "project.too_deep"
-      | "project.preview_changed"
-      | "issue.type_retired"
-      | "issue.type_not_offered"
-      | "label.not_offered"
-      | "workflow.no_such_change"
-      | "workflow.not_for_you"
-      | "workflow.not_named"
-      | "workflow.only_if"
-      | "workflow.cannot_fill"
-      | "workflow.status_in_use"
+      | "setting.hosts-not-bare"
+      | "project.move-lifts-no-access"
+      | "project.move-into-itself"
+      | "project.too-deep"
+      | "project.preview-changed"
+      | "issue.type-retired"
+      | "issue.type-not-offered"
+      | "label.not-offered"
+      | "workflow.no-such-change"
+      | "workflow.not-for-you"
+      | "workflow.not-named"
+      | "workflow.only-if"
+      | "workflow.cannot-fill"
+      | "workflow.status-in-use"
       | "workflow.invalid"
-      | "issue.parent_circle"
+      | "issue.parent-circle"
       | "relation.exists"
       | "limit.reached"
-      | "tag.not_here"
-      | "label.pick_one_conflict"
+      | "tag.not-here"
+      | "label.pick-one-conflict"
       | "field.required"
-      | "field.too_short"
-      | "field.too_long"
-      | "field.too_small"
-      | "field.too_big"
-      | "field.no_match"
-      | "field.wrong_value"
-      | "field.unknown_choice"
-      | "field.unknown_reference"
-      | "field.not_here"
-      | "file.too_big"
-      | "file.type_blocked"
-      | "file.wrong_part"
+      | "field.too-short"
+      | "field.too-long"
+      | "field.too-small"
+      | "field.too-big"
+      | "field.no-match"
+      | "field.wrong-value"
+      | "field.unknown-choice"
+      | "field.unknown-reference"
+      | "field.not-here"
+      | "file.too-big"
+      | "file.type-blocked"
+      | "file.wrong-part"
       | "file.incomplete"
-      | "file.no_room"
+      | "file.no-room"
       | "name.taken"
-      | "resource.not_found"
+      | "resource.not-found"
       | "request.invalid"
-      | "request.unknown_field"
-      | "request.bad_cursor"
+      | "request.unknown-field"
+      | "request.bad-cursor"
       | "mail.rejected"
       | "mail.unavailable"
       | "mail.off"
       | "mail.insecure"
-      | "handle.changed_lately"
-      | "request.wrong_origin"
-      | "request.wrong_token"
-      | "request.method_not_allowed"
-      | "request.timed_out"
-      | "request.too_large"
-      | "edit.version_changed"
-      | "edit.lock_lost"
-      | "edit.taken_over"
-      | "edit.in_progress"
-      | "rate_limit.exceeded"
+      | "handle.changed-lately"
+      | "request.wrong-origin"
+      | "request.wrong-token"
+      | "request.method-not-allowed"
+      | "request.timed-out"
+      | "request.too-large"
+      | "edit.version-changed"
+      | "edit.lock-lost"
+      | "edit.taken-over"
+      | "edit.in-progress"
+      | "rate-limit.exceeded"
       | "server.unavailable"
       | "server.internal";
     /**
@@ -8223,7 +8223,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8232,7 +8232,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8241,7 +8241,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8294,7 +8294,7 @@ export interface operations {
           "application/json": components["schemas"]["CreatedAccessKeyBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -8303,7 +8303,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8312,7 +8312,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8321,7 +8321,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -8330,7 +8330,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8397,7 +8397,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8406,7 +8406,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8415,7 +8415,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8475,7 +8475,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8484,7 +8484,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8493,7 +8493,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8543,7 +8543,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8552,7 +8552,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8561,7 +8561,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -8570,7 +8570,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8630,7 +8630,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8639,7 +8639,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8648,7 +8648,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8719,7 +8719,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8728,7 +8728,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8737,7 +8737,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8804,7 +8804,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8813,7 +8813,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8822,7 +8822,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8875,7 +8875,7 @@ export interface operations {
           "application/json": components["schemas"]["AssignmentItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -8884,7 +8884,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8893,7 +8893,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8902,7 +8902,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -8911,7 +8911,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -8920,7 +8920,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -8970,7 +8970,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -8979,7 +8979,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -8988,7 +8988,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -8997,7 +8997,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -9006,7 +9006,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9056,7 +9056,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9065,7 +9065,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -9074,7 +9074,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -9083,7 +9083,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9135,7 +9135,7 @@ export interface operations {
           "application/json": components["schemas"]["AttachmentItem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9144,7 +9144,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -9153,7 +9153,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -9162,7 +9162,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9215,7 +9215,7 @@ export interface operations {
           "application/json": components["schemas"]["SignedInBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -9224,7 +9224,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9277,7 +9277,7 @@ export interface operations {
           "application/json": components["schemas"]["InvitationLookupBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -9286,7 +9286,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9353,7 +9353,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9362,7 +9362,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -9371,7 +9371,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9424,7 +9424,7 @@ export interface operations {
           "application/json": components["schemas"]["CreatedInvitationBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -9433,7 +9433,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9442,7 +9442,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -9451,7 +9451,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9501,7 +9501,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9510,7 +9510,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -9519,7 +9519,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -9528,7 +9528,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9588,7 +9588,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9597,7 +9597,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9650,7 +9650,7 @@ export interface operations {
           "application/json": components["schemas"]["SignedInBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -9659,7 +9659,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9708,7 +9708,7 @@ export interface operations {
           "application/json": components["schemas"]["ChallengeBody"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9761,7 +9761,7 @@ export interface operations {
           "application/json": components["schemas"]["PasskeyBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -9770,7 +9770,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9779,7 +9779,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -9788,7 +9788,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9841,7 +9841,7 @@ export interface operations {
           "application/json": components["schemas"]["ChallengeBody"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9850,7 +9850,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -9859,7 +9859,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9913,7 +9913,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The password is wrong (auth.wrong_credentials, auth.not_signed_in). */
+      /** @description The password is wrong (auth.wrong-credentials, auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -9922,7 +9922,7 @@ export interface operations {
           "application/json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -9931,7 +9931,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -9940,7 +9940,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -9993,7 +9993,7 @@ export interface operations {
           "application/json": components["schemas"]["SignedInBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -10002,7 +10002,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10011,7 +10011,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10020,7 +10020,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10073,7 +10073,7 @@ export interface operations {
           "application/json": components["schemas"]["SignedInBody"];
         };
       };
-      /** @description The code is wrong or was used already, or there is no half finished sign-in (auth.wrong_second_step_code, auth.not_signed_in). */
+      /** @description The code is wrong or was used already, or there is no half finished sign-in (auth.wrong-second-step-code, auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10082,7 +10082,7 @@ export interface operations {
           "application/json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10091,7 +10091,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10144,7 +10144,7 @@ export interface operations {
           "application/json": components["schemas"]["SignedInBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -10153,7 +10153,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10162,7 +10162,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10171,7 +10171,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10220,7 +10220,7 @@ export interface operations {
           "application/json": components["schemas"]["ChallengeBody"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10229,7 +10229,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10238,7 +10238,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10298,7 +10298,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10307,7 +10307,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10354,7 +10354,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10363,7 +10363,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10372,7 +10372,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10422,7 +10422,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10431,7 +10431,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10440,7 +10440,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -10449,7 +10449,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10502,7 +10502,7 @@ export interface operations {
           "application/json": components["schemas"]["SignedInBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -10511,7 +10511,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The setup code is wrong, or setup is over (auth.wrong_setup_code). */
+      /** @description The setup code is wrong, or setup is over (auth.wrong-setup-code). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10520,7 +10520,7 @@ export interface operations {
           "application/json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10573,7 +10573,7 @@ export interface operations {
           "application/json": components["schemas"]["SignedInBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -10582,7 +10582,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The e-mail address or the password is wrong (auth.wrong_credentials). */
+      /** @description The e-mail address or the password is wrong (auth.wrong-credentials). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10591,7 +10591,7 @@ export interface operations {
           "application/json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10638,7 +10638,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10647,7 +10647,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10656,7 +10656,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10709,7 +10709,7 @@ export interface operations {
           "application/json": components["schemas"]["SignUpAnswer"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -10718,7 +10718,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Signing up is not possible here (auth.sign_up_refused): it is off, the domain is not listed, or e-mail is off. */
+      /** @description Signing up is not possible here (auth.sign-up-refused): it is off, the domain is not listed, or e-mail is off. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10727,7 +10727,7 @@ export interface operations {
           "application/json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10787,7 +10787,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10796,7 +10796,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10805,7 +10805,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10858,7 +10858,7 @@ export interface operations {
           "application/json": components["schemas"]["SignUpPolicyBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -10867,7 +10867,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -10876,7 +10876,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10885,7 +10885,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -10894,7 +10894,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -10954,7 +10954,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11014,7 +11014,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11023,7 +11023,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11076,7 +11076,7 @@ export interface operations {
           "application/json": components["schemas"]["BackupCodesBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -11085,7 +11085,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The password is wrong (auth.wrong_credentials, auth.not_signed_in). */
+      /** @description The password is wrong (auth.wrong-credentials, auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11094,7 +11094,7 @@ export interface operations {
           "application/json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11103,7 +11103,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11156,7 +11156,7 @@ export interface operations {
           "application/json": components["schemas"]["CodeAppBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -11165,7 +11165,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11174,7 +11174,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11183,7 +11183,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11236,7 +11236,7 @@ export interface operations {
           "application/json": components["schemas"]["BackupCodesBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -11245,7 +11245,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The code is wrong (auth.wrong_second_step_code, auth.not_signed_in). */
+      /** @description The code is wrong (auth.wrong-second-step-code, auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11254,7 +11254,7 @@ export interface operations {
           "application/json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11263,7 +11263,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11314,7 +11314,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The password is wrong (auth.wrong_credentials, auth.not_signed_in). */
+      /** @description The password is wrong (auth.wrong-credentials, auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11323,7 +11323,7 @@ export interface operations {
           "application/json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11332,7 +11332,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11406,7 +11406,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11415,7 +11415,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11424,7 +11424,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -11433,7 +11433,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11507,7 +11507,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11516,7 +11516,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11525,7 +11525,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -11534,7 +11534,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11584,7 +11584,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11593,7 +11593,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11602,7 +11602,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -11611,7 +11611,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11667,7 +11667,7 @@ export interface operations {
           "application/json": components["schemas"]["CommentItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -11676,7 +11676,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11685,7 +11685,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11694,7 +11694,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -11703,7 +11703,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -11712,7 +11712,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11764,7 +11764,7 @@ export interface operations {
           "application/json": components["schemas"]["CommentItem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11773,7 +11773,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -11782,7 +11782,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -11791,7 +11791,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11861,7 +11861,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11870,7 +11870,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -11879,7 +11879,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -11939,7 +11939,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11948,7 +11948,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12017,7 +12017,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12026,7 +12026,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12035,7 +12035,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12044,7 +12044,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12053,7 +12053,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12106,7 +12106,7 @@ export interface operations {
           "application/json": components["schemas"]["DraftBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12115,7 +12115,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12124,7 +12124,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12133,7 +12133,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12142,7 +12142,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12193,7 +12193,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12202,7 +12202,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12211,7 +12211,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12278,7 +12278,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12287,7 +12287,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12296,7 +12296,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12305,7 +12305,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12314,7 +12314,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12367,7 +12367,7 @@ export interface operations {
           "application/json": components["schemas"]["LockOutcomeBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12376,7 +12376,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12385,7 +12385,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12394,7 +12394,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12403,7 +12403,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12454,7 +12454,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12463,7 +12463,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12472,7 +12472,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12481,7 +12481,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12490,7 +12490,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12543,7 +12543,7 @@ export interface operations {
           "application/json": components["schemas"]["LockOutcomeBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12552,7 +12552,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12561,7 +12561,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12570,7 +12570,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12579,7 +12579,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12632,7 +12632,7 @@ export interface operations {
           "application/json": components["schemas"]["HeartbeatAnswerBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12641,7 +12641,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12650,7 +12650,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12659,7 +12659,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12668,7 +12668,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12719,7 +12719,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12728,7 +12728,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12737,7 +12737,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12788,7 +12788,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12797,7 +12797,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12806,7 +12806,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12815,7 +12815,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12824,7 +12824,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12895,7 +12895,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -12904,7 +12904,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12913,7 +12913,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -12922,7 +12922,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -12989,7 +12989,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -12998,7 +12998,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13007,7 +13007,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13016,7 +13016,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13025,7 +13025,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13085,7 +13085,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13094,7 +13094,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13161,7 +13161,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13170,7 +13170,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13179,7 +13179,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13232,7 +13232,7 @@ export interface operations {
           "application/json": components["schemas"]["FieldBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -13241,7 +13241,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13250,7 +13250,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13259,7 +13259,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -13268,7 +13268,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13331,7 +13331,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13340,7 +13340,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13349,7 +13349,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13405,7 +13405,7 @@ export interface operations {
           "application/json": components["schemas"]["FieldBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -13414,7 +13414,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13423,7 +13423,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13432,7 +13432,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13441,7 +13441,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -13450,7 +13450,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13506,7 +13506,7 @@ export interface operations {
           "application/json": components["schemas"]["FieldBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -13515,7 +13515,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13524,7 +13524,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13533,7 +13533,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13542,7 +13542,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -13551,7 +13551,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13607,7 +13607,7 @@ export interface operations {
           "application/json": components["schemas"]["FieldBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -13616,7 +13616,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13625,7 +13625,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13634,7 +13634,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13643,7 +13643,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -13652,7 +13652,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13710,7 +13710,7 @@ export interface operations {
           "application/json": components["schemas"]["FieldBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -13719,7 +13719,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13728,7 +13728,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13737,7 +13737,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13746,7 +13746,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -13755,7 +13755,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13813,7 +13813,7 @@ export interface operations {
           "application/json": components["schemas"]["FieldBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -13822,7 +13822,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13831,7 +13831,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13840,7 +13840,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13849,7 +13849,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -13858,7 +13858,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -13921,7 +13921,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -13930,7 +13930,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13939,7 +13939,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -13948,7 +13948,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14011,7 +14011,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14020,7 +14020,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14029,7 +14029,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14096,7 +14096,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14105,7 +14105,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14114,7 +14114,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14167,7 +14167,7 @@ export interface operations {
           "application/json": components["schemas"]["GroupBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -14176,7 +14176,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14185,7 +14185,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14194,7 +14194,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -14203,7 +14203,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14266,7 +14266,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14275,7 +14275,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14284,7 +14284,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14293,7 +14293,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14343,7 +14343,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14352,7 +14352,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14361,7 +14361,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14370,7 +14370,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -14379,7 +14379,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14435,7 +14435,7 @@ export interface operations {
           "application/json": components["schemas"]["GroupBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -14444,7 +14444,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14453,7 +14453,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14462,7 +14462,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14471,7 +14471,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -14480,7 +14480,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14552,7 +14552,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14561,7 +14561,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14570,7 +14570,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14579,7 +14579,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14649,7 +14649,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14658,7 +14658,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14667,7 +14667,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14676,7 +14676,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14728,7 +14728,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14737,7 +14737,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14746,7 +14746,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14755,7 +14755,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14807,7 +14807,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14816,7 +14816,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -14825,7 +14825,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14834,7 +14834,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -14843,7 +14843,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14912,7 +14912,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -14921,7 +14921,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -14930,7 +14930,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -14983,7 +14983,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueTypeItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -14992,7 +14992,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15001,7 +15001,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -15010,7 +15010,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -15019,7 +15019,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15075,7 +15075,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueTypeItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15084,7 +15084,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15093,7 +15093,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -15102,7 +15102,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15111,7 +15111,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -15120,7 +15120,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15190,7 +15190,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15199,7 +15199,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15208,7 +15208,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15264,7 +15264,7 @@ export interface operations {
           "application/json": components["schemas"]["OffersBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15273,7 +15273,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15282,7 +15282,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -15291,7 +15291,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15300,7 +15300,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -15309,7 +15309,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15372,7 +15372,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15381,7 +15381,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15390,7 +15390,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15440,7 +15440,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15449,7 +15449,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -15458,7 +15458,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15467,7 +15467,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15523,7 +15523,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15532,7 +15532,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15541,7 +15541,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -15550,7 +15550,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15559,7 +15559,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -15568,7 +15568,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15624,7 +15624,7 @@ export interface operations {
           "application/json": components["schemas"]["CommentItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15633,7 +15633,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15642,7 +15642,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -15651,7 +15651,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15660,7 +15660,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15716,7 +15716,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15725,7 +15725,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15734,7 +15734,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -15743,7 +15743,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15752,7 +15752,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -15761,7 +15761,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15819,7 +15819,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15828,7 +15828,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15837,7 +15837,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -15846,7 +15846,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15855,7 +15855,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -15864,7 +15864,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -15927,7 +15927,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -15936,7 +15936,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15945,7 +15945,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16015,7 +16015,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16024,7 +16024,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16033,7 +16033,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16096,7 +16096,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16105,7 +16105,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16114,7 +16114,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16164,7 +16164,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16173,7 +16173,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16182,7 +16182,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16232,7 +16232,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16241,7 +16241,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16250,7 +16250,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16320,7 +16320,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16329,7 +16329,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16338,7 +16338,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16410,7 +16410,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16419,7 +16419,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16428,7 +16428,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16484,7 +16484,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -16493,7 +16493,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16502,7 +16502,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -16511,7 +16511,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16520,7 +16520,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -16529,7 +16529,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16592,7 +16592,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16601,7 +16601,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16610,7 +16610,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16664,7 +16664,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16673,7 +16673,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -16682,7 +16682,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16691,7 +16691,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16763,7 +16763,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16772,7 +16772,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -16781,7 +16781,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16790,7 +16790,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16846,7 +16846,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -16855,7 +16855,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16864,7 +16864,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -16873,7 +16873,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16882,7 +16882,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -16891,7 +16891,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -16947,7 +16947,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueRelationsBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -16956,7 +16956,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -16965,7 +16965,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -16974,7 +16974,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16983,7 +16983,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -16992,7 +16992,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17062,7 +17062,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17071,7 +17071,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17080,7 +17080,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17143,7 +17143,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17152,7 +17152,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17161,7 +17161,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17217,7 +17217,7 @@ export interface operations {
           "application/json": components["schemas"]["RelatedIssueItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17226,7 +17226,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17235,7 +17235,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -17244,7 +17244,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17253,7 +17253,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -17262,7 +17262,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17314,7 +17314,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueItem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17323,7 +17323,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -17332,7 +17332,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17341,7 +17341,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17407,7 +17407,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17416,7 +17416,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17425,7 +17425,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -17434,7 +17434,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17443,7 +17443,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17513,7 +17513,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17522,7 +17522,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17531,7 +17531,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17587,7 +17587,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17596,7 +17596,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17605,7 +17605,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -17614,7 +17614,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17623,7 +17623,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -17632,7 +17632,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17686,7 +17686,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17695,7 +17695,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -17704,7 +17704,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17713,7 +17713,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17769,7 +17769,7 @@ export interface operations {
           "application/json": components["schemas"]["UploadItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17778,7 +17778,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17787,7 +17787,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -17796,7 +17796,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17805,7 +17805,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The part does not start where the file stands, or the upload is not complete yet (file.wrong_part, file.incomplete). */
+      /** @description The part does not start where the file stands, or the upload is not complete yet (file.wrong-part, file.incomplete). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -17814,7 +17814,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The file is bigger than the project allows, or the part is bigger than a part may be (file.too_big, request.too_large). */
+      /** @description The file is bigger than the project allows, or the part is bigger than a part may be (file.too-big, request.too-large). */
       413: {
         headers: {
           [name: string]: unknown;
@@ -17823,7 +17823,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The organization does not accept this type of file (file.type_blocked). */
+      /** @description The organization does not accept this type of file (file.type-blocked). */
       415: {
         headers: {
           [name: string]: unknown;
@@ -17832,7 +17832,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17901,7 +17901,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17910,7 +17910,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -17919,7 +17919,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -17972,7 +17972,7 @@ export interface operations {
           "application/json": components["schemas"]["LabelGroupBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17981,7 +17981,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -17990,7 +17990,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -17999,7 +17999,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18008,7 +18008,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18064,7 +18064,7 @@ export interface operations {
           "application/json": components["schemas"]["LabelGroupBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18073,7 +18073,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18082,7 +18082,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -18091,7 +18091,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18100,7 +18100,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18109,7 +18109,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18179,7 +18179,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18188,7 +18188,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18197,7 +18197,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18253,7 +18253,7 @@ export interface operations {
           "application/json": components["schemas"]["OffersBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18262,7 +18262,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18271,7 +18271,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -18280,7 +18280,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18289,7 +18289,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18298,7 +18298,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18367,7 +18367,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18376,7 +18376,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18385,7 +18385,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18438,7 +18438,7 @@ export interface operations {
           "application/json": components["schemas"]["LabelBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18447,7 +18447,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18456,7 +18456,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -18465,7 +18465,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18474,7 +18474,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18483,7 +18483,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18539,7 +18539,7 @@ export interface operations {
           "application/json": components["schemas"]["LabelBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18548,7 +18548,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18557,7 +18557,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -18566,7 +18566,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18575,7 +18575,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18584,7 +18584,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18640,7 +18640,7 @@ export interface operations {
           "application/json": components["schemas"]["LabelBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18649,7 +18649,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18658,7 +18658,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -18667,7 +18667,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18676,7 +18676,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18685,7 +18685,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18741,7 +18741,7 @@ export interface operations {
           "application/json": components["schemas"]["ChangePreviewBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18750,7 +18750,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18759,7 +18759,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -18768,7 +18768,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18777,7 +18777,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18786,7 +18786,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18839,7 +18839,7 @@ export interface operations {
           "application/json": components["schemas"]["LayoutEditorBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18848,7 +18848,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18857,7 +18857,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -18866,7 +18866,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18875,7 +18875,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18884,7 +18884,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -18951,7 +18951,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18960,7 +18960,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -18969,7 +18969,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -18978,7 +18978,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -18987,7 +18987,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19054,7 +19054,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19063,7 +19063,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -19072,7 +19072,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19128,7 +19128,7 @@ export interface operations {
           "application/json": components["schemas"]["LayoutEditorBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -19137,7 +19137,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19146,7 +19146,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -19155,7 +19155,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -19164,7 +19164,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -19173,7 +19173,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19226,7 +19226,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19235,7 +19235,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -19244,7 +19244,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -19253,7 +19253,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -19262,7 +19262,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19322,7 +19322,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19331,7 +19331,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19382,7 +19382,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -19391,7 +19391,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19400,7 +19400,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19447,7 +19447,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19456,7 +19456,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Too soon after the last time (rate_limit.exceeded, handle.changed_lately). */
+      /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
       429: {
         headers: {
           [name: string]: unknown;
@@ -19507,7 +19507,7 @@ export interface operations {
           "application/json": components["schemas"]["ManyChangeResultBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -19516,7 +19516,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19525,7 +19525,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -19534,7 +19534,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -19543,7 +19543,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -19552,7 +19552,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19605,7 +19605,7 @@ export interface operations {
           "application/json": components["schemas"]["ManyChangePreviewBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -19614,7 +19614,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19623,7 +19623,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -19632,7 +19632,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19695,7 +19695,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19704,7 +19704,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -19713,7 +19713,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19765,7 +19765,7 @@ export interface operations {
           "application/json": components["schemas"]["ManyChangeRunStatusBody"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19774,7 +19774,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -19783,7 +19783,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19843,7 +19843,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19852,7 +19852,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -19905,7 +19905,7 @@ export interface operations {
           "application/json": components["schemas"]["HandleBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -19914,7 +19914,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -19923,7 +19923,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -19932,7 +19932,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Too soon after the last time (rate_limit.exceeded, handle.changed_lately). */
+      /** @description Too soon after the last time (rate-limit.exceeded, handle.changed-lately). */
       429: {
         headers: {
           [name: string]: unknown;
@@ -20001,7 +20001,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20010,7 +20010,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20019,7 +20019,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20075,7 +20075,7 @@ export interface operations {
           "application/json": components["schemas"]["SettingBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20084,7 +20084,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20093,7 +20093,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20102,7 +20102,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20120,7 +20120,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20172,7 +20172,7 @@ export interface operations {
           "application/json": components["schemas"]["SettingBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20181,7 +20181,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20190,7 +20190,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20199,7 +20199,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20208,7 +20208,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20277,7 +20277,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20286,7 +20286,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20295,7 +20295,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20346,7 +20346,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20355,7 +20355,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20364,7 +20364,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20424,7 +20424,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20433,7 +20433,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20493,7 +20493,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20546,7 +20546,7 @@ export interface operations {
           "application/json": components["schemas"]["OwnLossBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20555,7 +20555,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20564,7 +20564,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20636,7 +20636,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20645,7 +20645,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20654,7 +20654,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20720,7 +20720,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20729,7 +20729,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20738,7 +20738,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20747,7 +20747,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20809,7 +20809,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20818,7 +20818,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20827,7 +20827,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20836,7 +20836,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20845,7 +20845,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20908,7 +20908,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -20917,7 +20917,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20926,7 +20926,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20935,7 +20935,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -20995,7 +20995,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21004,7 +21004,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21013,7 +21013,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21098,7 +21098,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21107,7 +21107,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21116,7 +21116,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21169,7 +21169,7 @@ export interface operations {
           "application/json": components["schemas"]["ProjectBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21178,7 +21178,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21187,7 +21187,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21196,7 +21196,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -21205,7 +21205,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21268,7 +21268,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21277,7 +21277,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21286,7 +21286,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21342,7 +21342,7 @@ export interface operations {
           "application/json": components["schemas"]["ProjectBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21351,7 +21351,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21360,7 +21360,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21369,7 +21369,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21378,7 +21378,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -21387,7 +21387,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21472,7 +21472,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21481,7 +21481,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21490,7 +21490,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21499,7 +21499,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21573,7 +21573,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21582,7 +21582,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21591,7 +21591,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21600,7 +21600,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21670,7 +21670,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21679,7 +21679,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21688,7 +21688,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21697,7 +21697,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21753,7 +21753,7 @@ export interface operations {
           "application/json": components["schemas"]["AssignmentItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21762,7 +21762,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21771,7 +21771,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21780,7 +21780,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21789,7 +21789,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -21798,7 +21798,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21868,7 +21868,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21877,7 +21877,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21886,7 +21886,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -21942,7 +21942,7 @@ export interface operations {
           "application/json": components["schemas"]["IssueItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21951,7 +21951,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -21960,7 +21960,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21969,7 +21969,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21978,7 +21978,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -21987,7 +21987,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22043,7 +22043,7 @@ export interface operations {
           "application/json": components["schemas"]["ProjectBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -22052,7 +22052,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22061,7 +22061,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22070,7 +22070,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22079,7 +22079,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -22088,7 +22088,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22144,7 +22144,7 @@ export interface operations {
           "application/json": components["schemas"]["MovePreviewBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -22153,7 +22153,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22162,7 +22162,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22171,7 +22171,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22180,7 +22180,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -22189,7 +22189,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22260,7 +22260,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22269,7 +22269,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22278,7 +22278,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22287,7 +22287,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22345,7 +22345,7 @@ export interface operations {
           "application/json": components["schemas"]["SettingBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -22354,7 +22354,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22363,7 +22363,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22372,7 +22372,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22390,7 +22390,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22444,7 +22444,7 @@ export interface operations {
           "application/json": components["schemas"]["SettingBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -22453,7 +22453,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22462,7 +22462,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22471,7 +22471,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22480,7 +22480,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22543,7 +22543,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22552,7 +22552,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22561,7 +22561,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22617,7 +22617,7 @@ export interface operations {
           "application/json": components["schemas"]["ProjectBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -22626,7 +22626,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22635,7 +22635,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22644,7 +22644,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22653,7 +22653,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -22662,7 +22662,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22730,7 +22730,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22739,7 +22739,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22748,7 +22748,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22816,7 +22816,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22825,7 +22825,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -22834,7 +22834,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22901,7 +22901,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22910,7 +22910,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -22963,7 +22963,7 @@ export interface operations {
           "application/json": components["schemas"]["RelationKindItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -22972,7 +22972,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -22981,7 +22981,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22990,7 +22990,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -22999,7 +22999,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23055,7 +23055,7 @@ export interface operations {
           "application/json": components["schemas"]["RelationKindItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23064,7 +23064,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23073,7 +23073,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23082,7 +23082,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23091,7 +23091,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23100,7 +23100,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23150,7 +23150,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23159,7 +23159,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23168,7 +23168,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23177,7 +23177,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23246,7 +23246,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23255,7 +23255,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23264,7 +23264,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23317,7 +23317,7 @@ export interface operations {
           "application/json": components["schemas"]["RoleBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23326,7 +23326,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23335,7 +23335,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23344,7 +23344,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23353,7 +23353,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23416,7 +23416,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23425,7 +23425,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23434,7 +23434,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23443,7 +23443,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23499,7 +23499,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23508,7 +23508,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23517,7 +23517,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23526,7 +23526,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23535,7 +23535,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23544,7 +23544,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23600,7 +23600,7 @@ export interface operations {
           "application/json": components["schemas"]["RoleBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23609,7 +23609,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23618,7 +23618,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23627,7 +23627,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23636,7 +23636,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23645,7 +23645,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23701,7 +23701,7 @@ export interface operations {
           "application/json": components["schemas"]["RoleBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23710,7 +23710,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23719,7 +23719,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23728,7 +23728,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23737,7 +23737,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23746,7 +23746,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23802,7 +23802,7 @@ export interface operations {
           "application/json": components["schemas"]["RoleBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23811,7 +23811,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23820,7 +23820,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23829,7 +23829,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23838,7 +23838,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23847,7 +23847,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -23910,7 +23910,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -23919,7 +23919,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23928,7 +23928,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23937,7 +23937,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24005,7 +24005,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24014,7 +24014,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24023,7 +24023,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24079,7 +24079,7 @@ export interface operations {
           "application/json": components["schemas"]["SettingBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24088,7 +24088,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24097,7 +24097,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24106,7 +24106,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24115,7 +24115,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24167,7 +24167,7 @@ export interface operations {
           "application/json": components["schemas"]["SettingBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24176,7 +24176,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24185,7 +24185,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24194,7 +24194,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24203,7 +24203,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24255,7 +24255,7 @@ export interface operations {
           "application/json": components["schemas"]["SettingBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24264,7 +24264,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24273,7 +24273,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24282,7 +24282,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24291,7 +24291,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24343,7 +24343,7 @@ export interface operations {
           "application/json": components["schemas"]["SettingBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24352,7 +24352,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24361,7 +24361,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24370,7 +24370,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24379,7 +24379,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24439,7 +24439,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24506,7 +24506,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24515,7 +24515,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24524,7 +24524,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24580,7 +24580,7 @@ export interface operations {
           "application/json": components["schemas"]["TagItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24589,7 +24589,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24598,7 +24598,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24607,7 +24607,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24616,7 +24616,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -24625,7 +24625,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24681,7 +24681,7 @@ export interface operations {
           "application/json": components["schemas"]["TagItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24690,7 +24690,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24699,7 +24699,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24708,7 +24708,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24717,7 +24717,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -24726,7 +24726,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24782,7 +24782,7 @@ export interface operations {
           "application/json": components["schemas"]["ChangePreviewBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24791,7 +24791,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24800,7 +24800,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24809,7 +24809,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24818,7 +24818,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -24827,7 +24827,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24890,7 +24890,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24899,7 +24899,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24908,7 +24908,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24917,7 +24917,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -24976,7 +24976,7 @@ export interface operations {
           "application/json": components["schemas"]["UploadItem"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24985,7 +24985,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -24994,7 +24994,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25003,7 +25003,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25012,7 +25012,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The part does not start where the file stands, or the upload is not complete yet (file.wrong_part, file.incomplete). */
+      /** @description The part does not start where the file stands, or the upload is not complete yet (file.wrong-part, file.incomplete). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -25021,7 +25021,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The file is bigger than the project allows, or the part is bigger than a part may be (file.too_big, request.too_large). */
+      /** @description The file is bigger than the project allows, or the part is bigger than a part may be (file.too-big, request.too-large). */
       413: {
         headers: {
           [name: string]: unknown;
@@ -25030,7 +25030,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The organization does not accept this type of file (file.type_blocked). */
+      /** @description The organization does not accept this type of file (file.type-blocked). */
       415: {
         headers: {
           [name: string]: unknown;
@@ -25039,7 +25039,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25068,7 +25068,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The disk of the server has no room for the part (file.no_room); trying later can work. */
+      /** @description The disk of the server has no room for the part (file.no-room); trying later can work. */
       507: {
         headers: {
           [name: string]: unknown;
@@ -25098,7 +25098,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25107,7 +25107,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25116,7 +25116,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25168,7 +25168,7 @@ export interface operations {
           "application/json": components["schemas"]["AttachmentItem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25177,7 +25177,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25186,7 +25186,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25195,7 +25195,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The part does not start where the file stands, or the upload is not complete yet (file.wrong_part, file.incomplete). */
+      /** @description The part does not start where the file stands, or the upload is not complete yet (file.wrong-part, file.incomplete). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -25204,7 +25204,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The file is bigger than the project allows, or the part is bigger than a part may be (file.too_big, request.too_large). */
+      /** @description The file is bigger than the project allows, or the part is bigger than a part may be (file.too-big, request.too-large). */
       413: {
         headers: {
           [name: string]: unknown;
@@ -25213,7 +25213,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The organization does not accept this type of file (file.type_blocked). */
+      /** @description The organization does not accept this type of file (file.type-blocked). */
       415: {
         headers: {
           [name: string]: unknown;
@@ -25222,7 +25222,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25275,7 +25275,7 @@ export interface operations {
           "application/json": components["schemas"]["VersionsBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -25284,7 +25284,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25293,7 +25293,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -25302,7 +25302,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25365,7 +25365,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25374,7 +25374,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25383,7 +25383,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25392,7 +25392,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25445,7 +25445,7 @@ export interface operations {
           "application/json": components["schemas"]["WorkflowEditorBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -25454,7 +25454,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25463,7 +25463,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25472,7 +25472,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25481,7 +25481,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -25490,7 +25490,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25555,7 +25555,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -25564,7 +25564,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25573,7 +25573,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25582,7 +25582,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25591,7 +25591,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25644,7 +25644,7 @@ export interface operations {
           "application/json": components["schemas"]["WorkflowEditorBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -25653,7 +25653,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25662,7 +25662,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25671,7 +25671,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25680,7 +25680,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25736,7 +25736,7 @@ export interface operations {
           "application/json": components["schemas"]["PublishedBody"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -25745,7 +25745,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25754,7 +25754,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25763,7 +25763,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25772,7 +25772,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -25781,7 +25781,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25834,7 +25834,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25843,7 +25843,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25852,7 +25852,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25861,7 +25861,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -25870,7 +25870,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */
@@ -25926,7 +25926,7 @@ export interface operations {
           "application/json": components["schemas"]["PublishPreviewAnswer"];
         };
       };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -25935,7 +25935,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not signed in (auth.not_signed_in). */
+      /** @description Not signed in (auth.not-signed-in). */
       401: {
         headers: {
           [name: string]: unknown;
@@ -25944,7 +25944,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25953,7 +25953,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description There is no such thing (resource.not_found). */
+      /** @description There is no such thing (resource.not-found). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25962,7 +25962,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description error.rate-limit.exceeded (rate-limit.exceeded) */
       429: {
         headers: {
           /** @description Seconds to wait before trying again. */

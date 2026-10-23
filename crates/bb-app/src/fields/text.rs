@@ -130,11 +130,11 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// Saves the long text of an own field of an issue, under the lock the person holds for it.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that is not there or that the person may not see,
-/// `access.forbidden` without the right to change the issue or the field, `field.not_here` for a
+/// `resource.not-found` for an issue that is not there or that the person may not see,
+/// `access.forbidden` without the right to change the issue or the field, `field.not-here` for a
 /// field that is retired or not used for the issue, `request.invalid` for a field that holds no
-/// long text or a text that cannot be one, the code of the rule a text breaks, `edit.lock_lost`,
-/// `edit.taken_over` and `edit.version_changed` (the text is kept as the draft of the person).
+/// long text or a text that cannot be one, the code of the rule a text breaks, `edit.lock-lost`,
+/// `edit.taken-over` and `edit.version-changed` (the text is kept as the draft of the person).
 pub async fn save_field_text<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SaveFieldText,

@@ -114,7 +114,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// issue and a change to many issues (the whole selection) make.
     ///
     /// # Errors
-    /// `resource.not_found` for a project that is not there for the person.
+    /// `resource.not-found` for a project that is not there for the person.
     pub(crate) async fn move_target(
         &self,
         actor: &Actor,
@@ -199,10 +199,10 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// project it is in changes nothing and writes nothing.
 ///
 /// # Errors
-/// `resource.not_found` for an issue or a project that is not there for the person,
-/// `access.forbidden` without *Move issues* in either project, `field.not_here` when it does not use a field the
-/// issue has a value in, `tag.not_here` for a tag the project does not allow,
-/// `edit.version_changed` when somebody changed the issue since it was looked at.
+/// `resource.not-found` for an issue or a project that is not there for the person,
+/// `access.forbidden` without *Move issues* in either project, `field.not-here` when it does not use a field the
+/// issue has a value in, `tag.not-here` for a tag the project does not allow,
+/// `edit.version-changed` when somebody changed the issue since it was looked at.
 pub async fn move_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: MoveIssue,

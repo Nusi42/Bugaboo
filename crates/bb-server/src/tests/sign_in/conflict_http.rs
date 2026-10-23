@@ -1,5 +1,5 @@
 //! The structured answer to a stale save on every route that takes a version (ADR-0019 amendment
-//! M3, ISS-17): `edit.version_changed` with the `conflict.version` the record has now, whatever
+//! M3, ISS-17): `edit.version-changed` with the `conflict.version` the record has now, whatever
 //! the kind of record. One table, one row for each such route of the API description; a route that
 //! is added without a row fails the second test. Every row runs on SQLite and PostgreSQL.
 
@@ -544,7 +544,7 @@ async fn iss_17_every_route_with_a_version_answers_a_stale_save_with_the_current
             let body = (!save.in_query).then_some(body);
             let stale = ada.send(save.method, &path, body).await?;
             assert_eq!(stale.status, StatusCode::CONFLICT, "{id}: {}", stale.body);
-            assert_eq!(stale.code(), "edit.version_changed", "{id}: {}", stale.body);
+            assert_eq!(stale.code(), "edit.version-changed", "{id}: {}", stale.body);
             assert_eq!(
                 stale.body["conflict"]["version"],
                 json!(save.version),
@@ -585,7 +585,7 @@ async fn iss_17_a_combine_with_only_a_stale_into_version_names_the_record_combin
             body["version"] = json!(save.version);
             body["into_version"] = json!(into_version + AHEAD);
             let stale = ada.send(save.method, &save.path, Some(body)).await?;
-            assert_eq!(stale.code(), "edit.version_changed", "{id}: {}", stale.body);
+            assert_eq!(stale.code(), "edit.version-changed", "{id}: {}", stale.body);
             assert_eq!(
                 stale.body["conflict"]["version"],
                 json!(into_version),

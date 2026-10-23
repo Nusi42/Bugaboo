@@ -74,9 +74,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// always covers the project and its sub-projects.
 ///
 /// # Errors
-/// `access.forbidden` without *Decide who has which role* there (`resource.not_found` for a
+/// `access.forbidden` without *Decide who has which role* there (`resource.not-found` for a
 /// project the person may not know about), `request.invalid` for a row that cannot exist,
-/// `resource.not_found` for an unknown person, group or role, `access.too_much` for a role with
+/// `resource.not-found` for an unknown person, group or role, `access.too-much` for a role with
 /// more than the person who asks holds there, `assignment.conflict` for a role and *No access*
 /// on one project for the same person or group, or the same row twice.
 pub async fn assign_role<S: AuthStore>(
@@ -182,8 +182,8 @@ pub async fn assign_role<S: AuthStore>(
 /// Takes a row of *Who has which role* away.
 ///
 /// # Errors
-/// `resource.not_found` for an unknown row, `access.forbidden` without *Decide who has which
-/// role* where the row is, `access.would_lock_out` when it would leave nobody who can manage
+/// `resource.not-found` for an unknown row, `access.forbidden` without *Decide who has which
+/// role* where the row is, `access.would-lock-out` when it would leave nobody who can manage
 /// roles.
 pub async fn remove_assignment<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -244,7 +244,7 @@ pub async fn remove_assignment<S: AuthStore>(
 /// then the rows from above that reach it, a page at a time. People are shown by name (M2-Q3).
 ///
 /// # Errors
-/// `access.forbidden` without *Decide who has which role* there, `resource.not_found` for a
+/// `access.forbidden` without *Decide who has which role* there, `resource.not-found` for a
 /// project the person may not know about, `request.invalid` for a cursor that is not one.
 pub async fn assignments<S: AuthStore>(
     ctx: &Ctx<'_, S>,

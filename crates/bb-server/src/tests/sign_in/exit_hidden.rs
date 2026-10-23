@@ -176,8 +176,8 @@ async fn sec_06_whoever_cannot_restore_a_comment_is_not_told_it_is_in_the_trash(
                 None,
             )
             .await?;
-        assert_eq!(in_trash.code(), "resource.not_found", "{}", in_trash.body);
-        assert_eq!(missing.code(), "resource.not_found", "{}", missing.body);
+        assert_eq!(in_trash.code(), "resource.not-found", "{}", in_trash.body);
+        assert_eq!(missing.code(), "resource.not-found", "{}", missing.body);
         Ok(())
     })
     .await

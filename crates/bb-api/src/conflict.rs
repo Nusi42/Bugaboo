@@ -1,4 +1,4 @@
-//! The structured answer to a stale version (`edit.version_changed`, ADR-0019 amendment M3) as the
+//! The structured answer to a stale version (`edit.version-changed`, ADR-0019 amendment M3) as the
 //! API writes it: the usual problem answer plus a `conflict` member with who changed the record,
 //! when, which fields, and the values now.
 //!
@@ -44,16 +44,16 @@ impl From<&Conflict> for ConflictBody {
 }
 
 /// The answer to a change that found the record at another version, or to any other refused
-/// change: the usual problem, and for `edit.version_changed` the `conflict` member.
+/// change: the usual problem, and for `edit.version-changed` the `conflict` member.
 #[derive(Clone, Debug, Serialize, ToSchema)]
 pub(crate) struct ConflictProblem {
     #[serde(flatten)]
     problem: Problem,
-    /// What changed the record; only for `edit.version_changed`.
+    /// What changed the record; only for `edit.version-changed`.
     #[serde(skip_serializing_if = "Option::is_none")]
     conflict: Option<ConflictBody>,
     /// Who took the editing over, as the person who saved may see them; only for
-    /// `edit.taken_over`, so the browser needs no further request to name them (M3-F176).
+    /// `edit.taken-over`, so the browser needs no further request to name them (M3-F176).
     #[serde(skip_serializing_if = "Option::is_none")]
     taken_over_by: Option<PersonRef>,
 }

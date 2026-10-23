@@ -279,16 +279,16 @@ async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_th
             .await?;
         assert_eq!(
             (elsewhere.status, elsewhere.code()),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
         let table = lea_browser
             .send("GET", &format!("{PEOPLE}{}", at(other)), None)
             .await?;
-        assert_eq!(table.code(), "resource.not_found");
+        assert_eq!(table.code(), "resource.not-found");
         // Nobody who is not signed in reads or sets anything.
         let mut nobody = Browser::new(&app, &called());
         let unknown = nobody.send("GET", FIELDS, None).await?;
-        assert_eq!(unknown.code(), "auth.not_signed_in");
+        assert_eq!(unknown.code(), "auth.not-signed-in");
 
         Ok(())
     })
@@ -342,7 +342,7 @@ async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> TestResult {
             .await?;
         assert_eq!(
             (too_much.status, too_much.code()),
-            (StatusCode::FORBIDDEN, "access.too_much")
+            (StatusCode::FORBIDDEN, "access.too-much")
         );
         // A level that is no level, a field that does not exist and a role that does not exist.
         let wrong = dee_browser
@@ -368,7 +368,7 @@ async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> TestResult {
                 Some(json!({"level": "hidden"})),
             )
             .await?;
-        assert_eq!(no_role.code(), "resource.not_found");
+        assert_eq!(no_role.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -607,7 +607,7 @@ async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_ask
             )
             .await?;
         assert_eq!(hidden.status, StatusCode::BAD_REQUEST);
-        assert_eq!(hidden.code(), "request.unknown_field");
+        assert_eq!(hidden.code(), "request.unknown-field");
         // The two answers are the same but for the ID of the request.
         assert_eq!(hidden.status, unknown.status);
         for member in ["type", "title", "status", "code", "message_key"] {
@@ -702,7 +702,7 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
                 None,
             )
             .await?;
-        assert_eq!(nobody.code(), "resource.not_found");
+        assert_eq!(nobody.code(), "resource.not-found");
         let no_project = lea_browser
             .send(
                 "GET",
@@ -710,7 +710,7 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
                 None,
             )
             .await?;
-        assert_eq!(no_project.code(), "resource.not_found");
+        assert_eq!(no_project.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -760,11 +760,11 @@ async fn sec_03_the_people_to_check_are_listed_by_name_a_page_at_a_time_and_foun
         let bad = ada
             .send("GET", &format!("{CHECK}?cursor=nonsense"), None)
             .await?;
-        assert_eq!(bad.code(), "request.bad_cursor");
+        assert_eq!(bad.code(), "request.bad-cursor");
         let unknown = ada
             .send("GET", &format!("{CHECK}?fields=email"), None)
             .await?;
-        assert_eq!(unknown.code(), "request.unknown_field");
+        assert_eq!(unknown.code(), "request.unknown-field");
         Ok(())
     })
     .await

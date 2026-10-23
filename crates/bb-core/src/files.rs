@@ -42,7 +42,7 @@ pub const OPEN_UPLOADS_MAX: usize = 20;
 pub const OPEN_UPLOADS_BYTES_MAX: u64 = 4 * BIGGEST_FILE_BYTES;
 
 /// How much room the disk of the server keeps free: a part of an upload is refused
-/// (`file.no_room`) when less than this would be left after it, so a full disk never takes the
+/// (`file.no-room`) when less than this would be left after it, so a full disk never takes the
 /// database and the logs down with it.
 pub const DISK_KEPT_FREE_BYTES: u64 = 1024 * MEGABYTE;
 

@@ -159,7 +159,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// step, so parallel requests cannot all pass the last answer.
     ///
     /// # Errors
-    /// `rate_limit.exceeded` with the wait, when the allowance of the day is used up.
+    /// `rate-limit.exceeded` with the wait, when the allowance of the day is used up.
     pub(crate) fn reserve_daily_answer(
         &self,
         purpose: &str,

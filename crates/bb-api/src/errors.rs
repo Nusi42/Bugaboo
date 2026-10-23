@@ -35,11 +35,11 @@ pub struct ApiError {
     /// The session of the request has ended: the answer also makes the browser forget the
     /// session cookie and what it kept (M2-F06).
     ends_session: bool,
-    /// What changed the record, for `edit.version_changed` (ADR-0019 amendment M3).
+    /// What changed the record, for `edit.version-changed` (ADR-0019 amendment M3).
     conflict: Option<Arc<ConflictBody>>,
     /// The field a `field.*` refusal is about.
     field: Option<String>,
-    /// Who took the editing over, for `edit.taken_over` (M3-F176).
+    /// Who took the editing over, for `edit.taken-over` (M3-F176).
     taken_over_by: Option<Arc<PersonRef>>,
 }
 
@@ -68,7 +68,7 @@ impl ApiError {
         }
     }
 
-    /// Names who took the editing over, on an `edit.taken_over` answer.
+    /// Names who took the editing over, on an `edit.taken-over` answer.
     #[must_use]
     pub(crate) fn with_taken_over_by(mut self, by: PersonRef) -> Self {
         self.taken_over_by = Some(Arc::new(by));
@@ -89,7 +89,7 @@ impl ApiError {
         self
     }
 
-    /// Adds what changed the record to an `edit.version_changed` answer.
+    /// Adds what changed the record to an `edit.version-changed` answer.
     #[must_use]
     pub(crate) fn with_conflict(mut self, conflict: ConflictBody) -> Self {
         self.conflict = Some(Arc::new(conflict));
@@ -393,7 +393,7 @@ mod tests {
         );
         let body = body_json(response).await;
         assert_eq!(body["request_id"], "abc123");
-        assert_eq!(body["code"], "rate_limit.exceeded");
+        assert_eq!(body["code"], "rate-limit.exceeded");
     }
 
     #[tokio::test]
@@ -479,7 +479,7 @@ mod tests {
         let bad = app().oneshot(get("/q?limit=many")).await.unwrap();
         assert_eq!(body_json(bad).await["code"], "request.invalid");
         let missing = app().oneshot(get("/p/abc")).await.unwrap();
-        assert_eq!(body_json(missing).await["code"], "resource.not_found");
+        assert_eq!(body_json(missing).await["code"], "resource.not-found");
         let fine = app().oneshot(get("/p/7")).await.unwrap();
         assert_eq!(fine.status(), StatusCode::OK);
     }

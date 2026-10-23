@@ -133,7 +133,7 @@ pub(crate) async fn give_handle<S: AuthStore>(
 /// The handle of the person who asks.
 ///
 /// # Errors
-/// `resource.not_found` for a person who has none (every person has one from the first start on).
+/// `resource.not-found` for a person who has none (every person has one from the first start on).
 pub async fn my_handle<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: MyHandleQuery,
@@ -156,8 +156,8 @@ pub async fn my_handle<S: AuthStore>(
 /// # Errors
 /// `request.invalid` for a text that is no handle (it has a capital, a space, an `@`, a letter
 /// that is not ASCII, or is too long), `name.taken` when somebody has it or had it, or when it is
-/// the handle of a group or a role, `handle.changed_lately` when the person changed it a short
-/// time ago, `rate_limit.exceeded` for somebody who keeps asking for handles that are taken.
+/// the handle of a group or a role, `handle.changed-lately` when the person changed it a short
+/// time ago, `rate-limit.exceeded` for somebody who keeps asking for handles that are taken.
 ///
 /// What is said about a handle is judged in this order: the days first (a person who has to wait
 /// learns nothing), then the tries (a person has a few refused tries and then waits), then whether

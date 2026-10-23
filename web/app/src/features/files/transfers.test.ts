@@ -95,7 +95,7 @@ describe("att_01 a transfer that was lost", () => {
 
 describe("att_01 a transfer that was refused", () => {
   it("throws its upload away at once when the refusal leaves it open", async () => {
-    const full = new ApiError(507, problem("file.no_room", 507));
+    const full = new ApiError(507, problem("file.no-room", 507));
     const { transfers, server } = setUp([full]);
     transfers.add(target, [file()]);
     await vi.waitFor(isRefused(transfers));

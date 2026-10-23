@@ -118,7 +118,7 @@ test("iss_05 a comment whose editing was taken over keeps the typed text and can
   // The server says the editing was taken over (the answer of the first save only; the server's
   // own part of this is tested in Rust). Saving is refused, and the way out is on the screen:
   // Try again takes the lock again and saves the text that was typed.
-  await refuseNextSave(page, "edit.taken_over", "error.edit.taken-over");
+  await refuseNextSave(page, "edit.taken-over", "error.edit.taken-over");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(page.getByText(t("editing.lost-taken-over", { name: "someone" }))).toBeVisible();
   await page.getByRole("button", { name: t("common.try-again"), exact: true }).click();

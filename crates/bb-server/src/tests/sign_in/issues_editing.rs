@@ -85,7 +85,7 @@ async fn iss_17_the_description_is_saved_under_the_lock_and_rendered_by_the_serv
             )
             .await?;
         assert_eq!(again.status, StatusCode::CONFLICT);
-        assert_eq!(again.code(), "edit.lock_lost");
+        assert_eq!(again.code(), "edit.lock-lost");
         let draft = ada
             .send(
                 "GET",

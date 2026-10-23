@@ -72,7 +72,7 @@ async fn iss_03_a_parent_cannot_become_its_own_sub_issue() -> TestResult {
         let itself = put_under(&mut ada, &a, 1, Some(&a)).await?;
         assert_eq!(
             (itself.status, itself.code()),
-            (StatusCode::CONFLICT, "issue.parent_circle")
+            (StatusCode::CONFLICT, "issue.parent-circle")
         );
         // B under A, C under B: a chain.
         let first = put_under(&mut ada, &b, 1, Some(&a)).await?;
@@ -82,11 +82,11 @@ async fn iss_03_a_parent_cannot_become_its_own_sub_issue() -> TestResult {
         // A under B or under C would close the circle, however deep.
         for parent in [&b, &c] {
             let circle = put_under(&mut ada, &a, 1, Some(parent)).await?;
-            assert_eq!(circle.code(), "issue.parent_circle", "{parent}");
+            assert_eq!(circle.code(), "issue.parent-circle", "{parent}");
         }
         // The same version twice is stale (B's version counted up with its parent).
         let stale = put_under(&mut ada, &b, 1, None).await?;
-        assert_eq!(stale.code(), "edit.version_changed");
+        assert_eq!(stale.code(), "edit.version-changed");
         // Taking B out from under A works and is in the sub-issues of nobody.
         let seen = ada.send("GET", &format!("{ISSUES}/{b}"), None).await?;
         let version = ok(&seen)?["issue"]["version"]
@@ -148,7 +148,7 @@ async fn iss_03_progress_counts_only_the_sub_issues_you_see() -> TestResult {
         let hidden = gus
             .send("GET", &format!("{ISSUES}/{first}/relations"), None)
             .await?;
-        assert_eq!(hidden.code(), "resource.not_found");
+        assert_eq!(hidden.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -259,7 +259,7 @@ async fn iss_04_a_relation_to_a_hidden_issue_is_not_shown() -> TestResult {
                 Some(json!({"other": secret, "kind": related_to, "direction": "forward"})),
             )
             .await?;
-        assert_eq!(refused.code(), "resource.not_found");
+        assert_eq!(refused.code(), "resource.not-found");
         let relation = ada_list.body["items"][0]["id"]
             .as_str()
             .ok_or("no relation ID")?
@@ -267,7 +267,7 @@ async fn iss_04_a_relation_to_a_hidden_issue_is_not_shown() -> TestResult {
         let removal = gus
             .send("DELETE", &format!("/api/v1/relations/{relation}"), None)
             .await?;
-        assert_eq!(removal.code(), "resource.not_found");
+        assert_eq!(removal.code(), "resource.not-found");
         Ok(())
     })
     .await

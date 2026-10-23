@@ -40,7 +40,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// the issue.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash already or that the
+/// `resource.not-found` for an issue that does not exist, is in the trash already or that the
 /// person may not see, `access.forbidden` without *Delete issues*.
 pub async fn delete_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -83,7 +83,7 @@ pub async fn delete_issue<S: AuthStore>(
 /// for putting it there, and has to see the issue.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is not in the trash, that the person
+/// `resource.not-found` for an issue that does not exist, is not in the trash, that the person
 /// may not see or that they may not take out: whoever lacks *Delete issues* is not told that an
 /// issue is in the trash (SEC-06).
 pub async fn restore_issue<S: AuthStore>(

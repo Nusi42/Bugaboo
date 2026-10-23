@@ -64,7 +64,7 @@ impl Masked for PermissionCatalogue {}
 /// One role with its permissions and what it is used for.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage roles*, `resource.not_found` for an unknown role.
+/// `access.forbidden` without *Manage roles*, `resource.not-found` for an unknown role.
 pub async fn role<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RoleQuery,
@@ -119,7 +119,7 @@ pub async fn permissions<S: AuthStore>(
 /// for those who decide who has which role at the place, who see names there (M2-Q3).
 ///
 /// # Errors
-/// `access.forbidden` without *Decide who has which role* there (`resource.not_found` for a
+/// `access.forbidden` without *Decide who has which role* there (`resource.not-found` for a
 /// project the person may not know about), `request.invalid` for a cursor that is not one.
 pub async fn assignment_choices<S: AuthStore>(
     ctx: &Ctx<'_, S>,

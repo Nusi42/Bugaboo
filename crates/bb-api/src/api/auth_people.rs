@@ -180,7 +180,7 @@ impl Masked for SignUpPolicyBody {}
     responses(
         (status = 200, description = "The administrator was made and is signed in.", body = SignedInBody),
         InvalidAnswer,
-        (status = 401, description = "The setup code is wrong, or setup is over (auth.wrong_setup_code).", body = bb_core::Problem)
+        (status = 401, description = "The setup code is wrong, or setup is over (auth.wrong-setup-code).", body = bb_core::Problem)
     )
 )]
 async fn complete_setup(
@@ -226,7 +226,7 @@ pub(crate) struct SignUpAnswer {
     responses(
         (status = 202, description = "An e-mail goes to the address, the same answer for every address.", body = SignUpAnswer),
         InvalidAnswer,
-        (status = 403, description = "Signing up is not possible here (auth.sign_up_refused): it is off, the domain is not listed, or e-mail is off.", body = bb_core::Problem)
+        (status = 403, description = "Signing up is not possible here (auth.sign-up-refused): it is off, the domain is not listed, or e-mail is off.", body = bb_core::Problem)
     )
 )]
 async fn sign_up(

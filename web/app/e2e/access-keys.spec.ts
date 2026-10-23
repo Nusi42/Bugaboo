@@ -140,7 +140,7 @@ test("auth_07 a person makes a key, copies it, uses it from a script, deletes it
   expect(await script.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });
   await expectNotShownAgain(page, key);
   await deleteTheKey(page);
-  expect(await script.get(STATUS)).toEqual({ status: 401, code: "auth.not_signed_in" });
+  expect(await script.get(STATUS)).toEqual({ status: 401, code: "auth.not-signed-in" });
   await signOut(page);
 });
 
@@ -178,7 +178,7 @@ test("auth_07 a key that may only see is refused what needs more, and single per
 
   // A key can do nothing about the way its owner signs in.
   const own = await lookingScript.get("/api/v1/auth/sessions");
-  expect(own).toEqual({ status: 403, code: "auth.access_key_not_allowed" });
+  expect(own).toEqual({ status: 403, code: "auth.access-key-not-allowed" });
   await signOut(page);
 });
 

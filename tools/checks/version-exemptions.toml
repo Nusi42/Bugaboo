@@ -74,11 +74,11 @@ routes = [
   "PUT /api/v1/groups/{group_id}/members/{person_id}",
   "DELETE /api/v1/groups/{group_id}/members/{person_id}",
 ]
-reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not_found, and a row that is there already is there. An issue or a comment goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite. A relation is one fact between two issues, and following an issue is a mark of one person: neither has text to lose."
+reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not-found, and a row that is there already is there. An issue or a comment goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite. A relation is one fact between two issues, and following an issue is a mark of one person: neither has text to lose."
 
 [[exempt]]
 routes = ["POST /api/v1/projects/{project}/move"]
-reason = "A move carries the version of its preview, which names the project, both parents and who has which role (ADR-0025 decision 13); it is refused as project.preview_changed, or edit.version_changed when the project changed first."
+reason = "A move carries the version of its preview, which names the project, both parents and who has which role (ADR-0025 decision 13); it is refused as project.preview-changed, or edit.version-changed when the project changed first."
 
 [[exempt]]
 routes = [
@@ -146,7 +146,7 @@ reason = "Makes the layout of a place as a copy of the one in force (a new recor
 
 [[exempt]]
 routes = ["DELETE /api/v1/layouts/{layout}"]
-reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a layout that changed since is refused with edit.version_changed."
+reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a layout that changed since is refused with edit.version-changed."
 
 [[exempt]]
 routes = [
@@ -155,14 +155,14 @@ routes = [
   "DELETE /api/v1/uploads/{upload}",
   "POST /api/v1/uploads/{upload}/finish",
 ]
-reason = "An upload is a new record that only its own person writes: starting one has nothing earlier to be stale, a part names the offset it starts at and is refused as file.wrong_part when the server's copy ends elsewhere (that offset is its version, ADR-0032), and finishing or discarding it is the same however often it is asked. (M4 WP-05)"
+reason = "An upload is a new record that only its own person writes: starting one has nothing earlier to be stale, a part names the offset it starts at and is refused as file.wrong-part when the server's copy ends elsewhere (that offset is its version, ADR-0032), and finishing or discarding it is the same however often it is asked. (M4 WP-05)"
 
 [[exempt]]
 routes = [
   "DELETE /api/v1/attachments/{attachment}",
   "POST /api/v1/attachments/{attachment}/restore",
 ]
-reason = "A file goes to the trash and comes back whole, like a comment: the trash and its undo hold no text to overwrite, and a second deletion answers resource.not_found. (M4 WP-05)"
+reason = "A file goes to the trash and comes back whole, like a comment: the trash and its undo hold no text to overwrite, and a second deletion answers resource.not-found. (M4 WP-05)"
 
 [[exempt]]
 routes = ["POST /api/v1/workflows"]
@@ -174,7 +174,7 @@ reason = "The last choice wins: the use of a place is one row replaced as a whol
 
 [[exempt]]
 routes = ["DELETE /api/v1/workflows/{workflow}"]
-reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a workflow that changed since is refused with edit.version_changed."
+reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a workflow that changed since is refused with edit.version-changed."
 
 [[exempt]]
 routes = ["PUT /api/v1/mail/password"]

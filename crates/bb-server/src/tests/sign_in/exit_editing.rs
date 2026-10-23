@@ -74,9 +74,9 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
         // A part that does not exist is refused like a record that is not there.
         for nonsense in ["nonsense", "field-nonsense", "layout"] {
             let taken = take(&mut ada, &id, nonsense).await?;
-            assert_eq!(taken.code(), "resource.not_found", "{nonsense}");
+            assert_eq!(taken.code(), "resource.not-found", "{nonsense}");
             let kept = draft(&mut ada, &id, nonsense).await?;
-            assert_eq!(kept.code(), "resource.not_found", "{nonsense}");
+            assert_eq!(kept.code(), "resource.not-found", "{nonsense}");
         }
         // The two parts of an issue work.
         assert_eq!(
@@ -130,15 +130,15 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
         // Eve does not see it: no sign that somebody is editing, nothing to lock or draft.
         assert_eq!(
             eve.send("GET", &read(&part), None).await?.code(),
-            "resource.not_found"
+            "resource.not-found"
         );
         assert_eq!(
             take(&mut eve, &id, &part).await?.code(),
-            "resource.not_found"
+            "resource.not-found"
         );
         assert_eq!(
             draft(&mut eve, &id, &part).await?.code(),
-            "resource.not_found"
+            "resource.not-found"
         );
         // Both change the description.
         assert_eq!(
@@ -173,7 +173,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
         let read = |id: &str| format!("{DRAFTS}?kind=issue&id={id}&part=description");
         assert!(ada.send("GET", &read(&first), None).await?.body["draft"].is_null());
         assert!(ada.send("GET", &read(&one_more), None).await?.body["draft"].is_object());
-        // A save with a lock nobody holds is refused as before (`edit.lock_lost`), and the text is kept as
+        // A save with a lock nobody holds is refused as before (`edit.lock-lost`), and the text is kept as
         // the draft, though the person is at the cap.
         rig.clock.advance(1);
         let (other, other_id) = issue_of_type(&site, &mut ada, &site.kind, "Another").await?;
@@ -188,7 +188,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
                 })),
             )
             .await?;
-        assert_eq!(lost.code(), "edit.lock_lost", "{}", lost.body);
+        assert_eq!(lost.code(), "edit.lock-lost", "{}", lost.body);
         let kept = ada.send("GET", &read(&other_id), None).await?;
         assert_eq!(kept.body["draft"]["text"], "Typed", "{}", kept.body);
         // The heartbeat of a lock keeps renewing and keeping the text.
@@ -296,8 +296,8 @@ async fn sec_06_a_layout_is_not_known_to_who_cannot_edit_layouts() -> TestResult
                 Some(ask("01890a5d-ac96-774b-bcce-b302099a8057")),
             )
             .await?;
-        assert_eq!(there.code(), "resource.not_found", "{}", there.body);
-        assert_eq!(nowhere.code(), "resource.not_found", "{}", nowhere.body);
+        assert_eq!(there.code(), "resource.not-found", "{}", there.body);
+        assert_eq!(nowhere.code(), "resource.not-found", "{}", nowhere.body);
         // Whoever edits layouts takes the lock.
         let taken = ada.send("POST", LOCKS, Some(ask(layout))).await?;
         assert_eq!(ok(&taken)?["status"], "taken");
@@ -335,7 +335,7 @@ async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
                 })
             };
             let wrong = ada.send("POST", LOCKS, Some(body(bad))).await?;
-            assert_eq!(wrong.code(), "resource.not_found", "{kind}: {}", wrong.body);
+            assert_eq!(wrong.code(), "resource.not-found", "{kind}: {}", wrong.body);
             let draft_bad = ada
                 .send(
                     "PUT",
@@ -346,7 +346,7 @@ async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
                     })),
                 )
                 .await?;
-            assert_eq!(draft_bad.code(), "resource.not_found", "{kind}");
+            assert_eq!(draft_bad.code(), "resource.not-found", "{kind}");
             let right = ada.send("POST", LOCKS, Some(body(good))).await?;
             assert_eq!(ok(&right)?["status"], "taken", "{kind}");
         }

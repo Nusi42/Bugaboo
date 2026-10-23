@@ -89,7 +89,7 @@ async fn cf_06_an_own_field_follows_its_level_per_role_and_per_issue_type() -> T
         let list = nobody.send("GET", FIELDS, None).await?;
         assert_eq!(ok(&list)?["fields"].as_array().map(Vec::len), Some(0));
         let one = nobody.send("GET", &format!("{FIELDS}/{key}"), None).await?;
-        assert_eq!(one.code(), "resource.not_found");
+        assert_eq!(one.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -124,7 +124,7 @@ async fn reads_nothing_of(
     assert!(!list.body.to_string().contains(major), "{}", list.body);
     // The definition of the field is not there for them, and the list does not hold it.
     let one = writer.send("GET", &format!("{FIELDS}/{key}"), None).await?;
-    assert_eq!(one.code(), "resource.not_found", "{}", one.body);
+    assert_eq!(one.code(), "resource.not-found", "{}", one.body);
     let all = writer.send("GET", FIELDS, None).await?;
     assert!(!all.body.to_string().contains(key), "{}", all.body);
     let for_ada = ada.send("GET", &format!("{FIELDS}/{key}"), None).await?;
@@ -325,13 +325,13 @@ async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_row
         let hidden = lead
             .send("GET", &format!("{FIELDS}/{salary_id}"), None)
             .await?;
-        assert_eq!(hidden.code(), "resource.not_found", "{}", hidden.body);
+        assert_eq!(hidden.code(), "resource.not-found", "{}", hidden.body);
         let hidden_used = lead
             .send("GET", &format!("{FIELDS}/{salary_id}/used-by"), None)
             .await?;
         assert!(matches!(
             hidden_used.code(),
-            "resource.not_found" | "access.forbidden"
+            "resource.not-found" | "access.forbidden"
         ));
         let shown = lead
             .send("GET", &format!("{FIELDS}/{beta_id}"), None)

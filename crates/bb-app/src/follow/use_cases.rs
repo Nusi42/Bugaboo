@@ -35,7 +35,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// and writes no event.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see.
 pub async fn follow_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -82,7 +82,7 @@ pub async fn follow_issue<S: AuthStore>(
 /// no event.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see.
 pub async fn unfollow_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -122,7 +122,7 @@ pub async fn unfollow_issue<S: AuthStore>(
 /// reaches it (an access key is turned away, ADR-0025, decision 8).
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see.
 pub async fn following<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -141,7 +141,7 @@ pub async fn following<S: AuthStore>(
 /// the kind is hidden for the viewer the list is left out with its length: no items, no cursor.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see, `request.invalid` for a cursor that is not one.
 pub async fn followers<S: AuthStore>(
     ctx: &Ctx<'_, S>,

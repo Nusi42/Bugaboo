@@ -103,7 +103,7 @@ async fn check_reader(
             .await?;
         assert_eq!(
             (asked.status, asked.code()),
-            (StatusCode::BAD_REQUEST, "request.unknown_field"),
+            (StatusCode::BAD_REQUEST, "request.unknown-field"),
             "{name}: `{member}` can be asked for"
         );
         assert_eq!(asked.body["code"], unknown.body["code"]);

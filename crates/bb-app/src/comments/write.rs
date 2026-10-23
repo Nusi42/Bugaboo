@@ -69,7 +69,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The comment and its issue for an actor who may see them, with what they may do there. A
     /// comment that does not exist, is in the trash (`trashed` says whether that is what is
-    /// wanted) or whose issue the actor may not see answers `resource.not_found`.
+    /// wanted) or whose issue the actor may not see answers `resource.not-found`.
     pub(crate) async fn visible_comment(
         &self,
         actor: &Actor,
@@ -104,7 +104,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// Writes a comment under an issue.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see, `access.forbidden` without the permission *Comment*, `request.invalid` for a text that
 /// is empty, too long or holds control characters.
 pub async fn add_comment<S: AuthStore>(
@@ -164,10 +164,10 @@ pub async fn add_comment<S: AuthStore>(
 /// `version`; the earlier text is kept as a version of the comment.
 ///
 /// # Errors
-/// `resource.not_found` for a comment that does not exist, is in the trash or whose issue the
+/// `resource.not-found` for a comment that does not exist, is in the trash or whose issue the
 /// person may not see, `access.forbidden` for a comment someone else wrote or without the
 /// permission *Comment*, `request.invalid` for a text that is empty, too long or holds control
-/// characters, `edit.lock_lost`, `edit.taken_over` and `edit.version_changed` as `Ctx::save_text`
+/// characters, `edit.lock-lost`, `edit.taken-over` and `edit.version-changed` as `Ctx::save_text`
 /// says; in all three the text stays as the person's draft.
 pub async fn save_comment<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -322,7 +322,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// Puts a comment into the trash. The author may, and whoever may change issues.
 ///
 /// # Errors
-/// `resource.not_found` for a comment that does not exist, is in the trash already or whose issue
+/// `resource.not-found` for a comment that does not exist, is in the trash already or whose issue
 /// the person may not see, `access.forbidden` for a comment of someone else without the right to
 /// change issues.
 pub async fn delete_comment<S: AuthStore>(
@@ -352,7 +352,7 @@ pub async fn delete_comment<S: AuthStore>(
 /// Takes a comment out of the trash (*Undo*).
 ///
 /// # Errors
-/// `resource.not_found` for a comment that is not in the trash or whose issue the person may not
+/// `resource.not-found` for a comment that is not in the trash or whose issue the person may not
 /// see, `access.forbidden` as for deleting.
 pub async fn restore_comment<S: AuthStore>(
     ctx: &Ctx<'_, S>,

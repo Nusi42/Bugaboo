@@ -136,7 +136,7 @@ pub const fn key_text(bytes: &'static [u8]) -> &'static str {
     }
 }
 
-/// The key of the message that belongs to a word: `derived_key!("error.", "auth.wrong_credentials")`
+/// The key of the message that belongs to a word: `derived_key!("error.", "auth.wrong-credentials")`
 /// is `error.auth.wrong-credentials`. It is made when the program is built, from the word that is
 /// written once next to the variant, so no table pairs a word with a key by hand. The key has to be
 /// in the catalog: when it is not, the program does not compile (`tests/message_keys.rs`).
@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn a_derived_key_is_the_prefix_and_the_word_with_hyphens() {
-        let key = crate::derived_key!("error.", "auth.wrong_credentials");
+        let key = crate::derived_key!("error.", "auth.wrong-credentials");
         assert_eq!(key, ERROR_AUTH_WRONG_CREDENTIALS);
         assert_eq!(key.as_str(), "error.auth.wrong-credentials");
         assert_eq!(

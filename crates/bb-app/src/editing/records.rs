@@ -32,7 +32,7 @@ pub struct RecordFacts {
 }
 
 /// How a change of a record is shown to somebody who was told that the record changed
-/// meanwhile (`edit.version_changed`, ADR-0019 amendment M3).
+/// meanwhile (`edit.version-changed`, ADR-0019 amendment M3).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Shown {
     /// Not at all: a field nobody has said how to show stays out, so a new field never leaks
@@ -144,7 +144,7 @@ impl EditableRecords for NoRecords {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// What the actor may know about the record: its place, version and the permission that
-    /// changes it. A record the actor may not know about is `resource.not_found`, exactly like
+    /// changes it. A record the actor may not know about is `resource.not-found`, exactly like
     /// one that does not exist.
     pub(crate) async fn facts_of(
         &self,

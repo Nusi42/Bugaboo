@@ -248,7 +248,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// that reaches the place.
 ///
 /// # Errors
-/// `access.forbidden` without *Check access* there (`resource.not_found` for a project the
+/// `access.forbidden` without *Check access* there (`resource.not-found` for a project the
 /// person may not know about), `request.invalid` for a cursor that is not one.
 pub async fn people_to_check<S: AuthStore>(
     ctx: &Ctx<'_, S>,

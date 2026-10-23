@@ -41,7 +41,7 @@ impl Masked for ProjectStatuses {}
 /// The statuses the issues of a project can have.
 ///
 /// # Errors
-/// `resource.not_found` for a project that does not exist or that the person may not see.
+/// `resource.not-found` for a project that does not exist or that the person may not see.
 pub async fn project_statuses<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ProjectStatusesQuery,

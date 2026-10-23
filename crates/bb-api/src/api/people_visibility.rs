@@ -3,7 +3,7 @@
 //! changing one level. The table is the one of the field permissions (`field_permissions.rs`).
 //!
 //! Both routes need *Decide what roles see* in the place; a level above the person's own is
-//! refused (`access.too_much`).
+//! refused (`access.too-much`).
 
 use axum::extract::State;
 use axum::response::Response;

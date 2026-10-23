@@ -8,7 +8,7 @@
 //! is the mask of their roles.
 //!
 //! Three rules run through all of them:
-//! - **An issue that a person may not see answers `resource.not_found`**, exactly like one that
+//! - **An issue that a person may not see answers `resource.not-found`**, exactly like one that
 //!   does not exist (or is in the trash).
 //! - **No answer holds a count** of issues (PRIV-13): lists have a cursor and no total.
 //! - **Every change is made on the version that was looked at**, and the readable ID of an issue

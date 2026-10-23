@@ -97,7 +97,7 @@ async fn cfg_01_a_lead_who_may_not_know_a_field_never_reads_its_id_and_keeps_it_
             json!([{"tab": "", "title": "Mine", "fields": [{"field": "description", "roles": []}]}]),
         )
         .await?;
-        assert_eq!(stale.code(), "edit.version_changed", "{}", stale.body);
+        assert_eq!(stale.code(), "edit.version-changed", "{}", stale.body);
         let draft = draft_of(&mut lena, &layout).await?.ok_or("no draft")?;
         assert!(draft.contains("Mine"), "{draft}");
         assert!(!draft.contains(&salary), "{draft}");
@@ -135,7 +135,7 @@ async fn iss_17_a_layout_is_not_taken_away_while_somebody_else_edits_it() -> Tes
         assert_eq!(held["status"], "taken");
         let refused = ada.send("DELETE", &delete, None).await?;
         assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.body);
-        assert_eq!(refused.code(), "edit.in_progress");
+        assert_eq!(refused.code(), "edit.in-progress");
         assert!(!editor_of(&mut ada, "ACME").await?["layout"].is_null());
         // Ada's reading of the lock names Lena, as the reader may know her.
         let asked = take_lock(&mut ada, &layout, AN_EDITOR).await?;

@@ -117,7 +117,7 @@ impl Edit {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The role as the engine needs it, or `resource.not_found`.
+    /// The role as the engine needs it, or `resource.not-found`.
     async fn role_data(&self, role: RoleId) -> Result<RoleData, AppError> {
         let record = self
             .store()

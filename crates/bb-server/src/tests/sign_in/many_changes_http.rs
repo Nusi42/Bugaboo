@@ -333,7 +333,7 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> TestResult {
         // Nobody else reads the run.
         let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
         let hidden = bob.send("GET", &format!("{RUNS}/{id}"), None).await?;
-        assert_eq!(hidden.code(), "resource.not_found");
+        assert_eq!(hidden.code(), "resource.not-found");
         Ok(())
     })
     .await

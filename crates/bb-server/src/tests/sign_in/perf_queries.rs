@@ -389,8 +389,8 @@ async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_run_the_same_stat
         ] {
             let hidden = count(hidden).await?;
             let missing = count(missing).await?;
-            assert_eq!(hidden.0, "resource.not_found");
-            assert_eq!(missing.0, "resource.not_found");
+            assert_eq!(hidden.0, "resource.not-found");
+            assert_eq!(missing.0, "resource.not-found");
             assert!(hidden.1 > 0, "the counter sees nothing");
             assert_eq!(hidden.1, missing.1, "the same statements");
         }

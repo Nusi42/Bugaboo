@@ -91,7 +91,7 @@ async fn iss_02_a_project_offers_only_its_issue_types() -> TestResult {
         // A Bug is not made in ACME any more, and the answer says why.
         assert_eq!(
             code(&create_in(&mut ada, "ACME", &bug).await?),
-            (StatusCode::CONFLICT, "issue.type_not_offered")
+            (StatusCode::CONFLICT, "issue.type-not-offered")
         );
         ok(&create_in(&mut ada, "ACME", &task).await?)?;
         // Any other project still offers both.
@@ -140,7 +140,7 @@ async fn iss_02_a_project_offers_only_its_issue_types() -> TestResult {
             .await?;
         assert_eq!(
             code(&nowhere),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
         Ok(())
     })
@@ -181,7 +181,7 @@ async fn sec_03_a_project_lead_manages_the_types_of_their_project_only() -> Test
             .await?;
         assert_eq!(
             code(&elsewhere),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
         // In ACME the lead makes a type and looks after it.
         let made = lena
@@ -228,13 +228,13 @@ async fn sec_03_a_project_lead_manages_the_types_of_their_project_only() -> Test
         .await?;
         assert_eq!(
             code(&for_web),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
         // The lead's type is offered in ACME and not in WEB.
         ok(&create_in(&mut ada, "ACME", &id).await?)?;
         assert_eq!(
             code(&create_in(&mut ada, "WEB", &id).await?),
-            (StatusCode::CONFLICT, "issue.type_not_offered")
+            (StatusCode::CONFLICT, "issue.type-not-offered")
         );
         Ok(())
     })
@@ -344,7 +344,7 @@ async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below() -> TestR
         let refused = ada
             .send("POST", &put(web_issue), Some(json!({"label": label_id})))
             .await?;
-        assert_eq!(code(&refused), (StatusCode::CONFLICT, "label.not_offered"));
+        assert_eq!(code(&refused), (StatusCode::CONFLICT, "label.not-offered"));
         Ok(())
     })
     .await
@@ -432,7 +432,7 @@ async fn sec_03_a_subject_created_in_a_project_is_not_there_for_a_guest_a_siblin
                     "{label}: {method} {path}: {listed}"
                 );
                 if path.contains("/offers") {
-                    assert_eq!(code(&reply), (StatusCode::NOT_FOUND, "resource.not_found"));
+                    assert_eq!(code(&reply), (StatusCode::NOT_FOUND, "resource.not-found"));
                 }
             }
         }
@@ -483,7 +483,7 @@ async fn sec_03_no_screen_names_a_type_of_a_project_the_reader_does_not_know() -
                 );
                 // A screen that is for one issue type does not open as if it were for all of them.
                 if path.contains("issue_type=") && path.contains("/editor") {
-                    assert_eq!(code(&reply), (StatusCode::NOT_FOUND, "resource.not_found"));
+                    assert_eq!(code(&reply), (StatusCode::NOT_FOUND, "resource.not-found"));
                 }
             }
         }

@@ -7,7 +7,7 @@
 //! `paging.rs` and `seal.rs` do the rest. ARCH-LEAN checks the API description of every list.
 //!
 //! A person may only ask for fields they may read. A field that is hidden from them is refused
-//! exactly like one that does not exist (`request.unknown_field`, SEC-06), so the answer never
+//! exactly like one that does not exist (`request.unknown-field`, SEC-06), so the answer never
 //! tells which fields exist behind a mask. The policy engine (`Authorized<T>`, M2 WP-05) plugs in
 //! by passing only the fields the person may read.
 
@@ -106,7 +106,7 @@ impl ListParams {
     /// fails exactly like asking for a field that does not exist (SEC-06).
     ///
     /// # Errors
-    /// `request.unknown_field` for a name that is not in `fields`, or is hidden.
+    /// `request.unknown-field` for a name that is not in `fields`, or is hidden.
     pub(crate) fn fields_readable(
         &self,
         fields: &[FieldSpec],
@@ -136,7 +136,7 @@ impl ListParams {
     /// of another list is refused.
     ///
     /// # Errors
-    /// `request.bad_cursor` for a cursor that was changed or is not one of this list.
+    /// `request.bad-cursor` for a cursor that was changed or is not one of this list.
     pub(crate) fn position(&self, list: &str) -> Result<Option<String>, ApiError> {
         self.cursor
             .as_deref()
@@ -147,7 +147,7 @@ impl ListParams {
     /// What a list route hands the use case and what it answers afterwards: the position to start
     /// at, and the verdict on the cursor. A cursor that is not ours does not make the use case
     /// skip its own judgement: it gets a position that no item has, judges who may list (a person
-    /// who may not is refused as such) and the route answers `request.bad_cursor` after it
+    /// who may not is refused as such) and the route answers `request.bad-cursor` after it
     /// (`bad_cursor?;`).
     pub(crate) fn start(&self, list: &str) -> (Option<String>, Result<(), ApiError>) {
         match self.position(list) {
@@ -173,7 +173,7 @@ impl Fields {
     /// when the request said nothing.
     ///
     /// # Errors
-    /// `request.unknown_field` for a name that is not in `fields`, whether it does not exist or
+    /// `request.unknown-field` for a name that is not in `fields`, whether it does not exist or
     /// the person may not read it.
     pub(crate) fn choose(asked: Option<&str>, fields: &[FieldSpec]) -> Result<Self, ApiError> {
         let Some(asked) = asked else {
@@ -463,7 +463,7 @@ mod tests {
             ask(app(Some(Field::CostCenter)), "fields=id,cost_center").await;
         assert_eq!(unknown_status, StatusCode::BAD_REQUEST);
         assert_eq!(hidden_status, unknown_status);
-        assert_eq!(unknown["code"], "request.unknown_field");
+        assert_eq!(unknown["code"], "request.unknown-field");
         // Same code, same message, same everything: nothing tells the two apart.
         assert_eq!(hidden, unknown);
         // Left out, a hidden default is simply not there.
@@ -481,7 +481,7 @@ mod tests {
         ] {
             let (status, body) = ask(app(None), query).await;
             assert_eq!(status, StatusCode::BAD_REQUEST, "{query}");
-            assert_eq!(body["code"], "request.unknown_field", "{query}");
+            assert_eq!(body["code"], "request.unknown-field", "{query}");
         }
     }
 
@@ -508,7 +508,7 @@ mod tests {
         for cursor in ["nonsense".to_owned(), changed, foreign] {
             let (status, body) = ask(app(None), &format!("cursor={cursor}")).await;
             assert_eq!(status, StatusCode::BAD_REQUEST, "{cursor}");
-            assert_eq!(body["code"], "request.bad_cursor", "{cursor}");
+            assert_eq!(body["code"], "request.bad-cursor", "{cursor}");
         }
     }
 

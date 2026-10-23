@@ -74,7 +74,7 @@ const fn member_of(record: RecordKind) -> &'static str {
 /// out.
 ///
 /// # Errors
-/// `resource.not_found` for a subject that is not there or that the person may not know,
+/// `resource.not-found` for a subject that is not there or that the person may not know,
 /// `request.invalid` for a cursor that is not one.
 pub async fn offers<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -99,9 +99,9 @@ type Places = Vec<(Option<ProjectId>, Option<bool>)>;
 /// Changes where a subject is offered.
 ///
 /// # Errors
-/// `resource.not_found` for a subject or a project that is not there for the person,
+/// `resource.not-found` for a subject or a project that is not there for the person,
 /// `access.forbidden` without the permission at one of the places, `request.invalid` for a place the
-/// subject does not reach, a place named twice or nothing asked, `edit.version_changed` when
+/// subject does not reach, a place named twice or nothing asked, `edit.version-changed` when
 /// somebody changed the subject since it was looked at.
 pub async fn change_offers<S: AuthStore>(
     ctx: &Ctx<'_, S>,

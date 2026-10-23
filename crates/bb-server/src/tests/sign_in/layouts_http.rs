@@ -401,7 +401,7 @@ async fn iss_17_two_people_cannot_change_one_layout_at_once() -> TestResult {
         )
         .await?;
         assert_eq!(wrong.status, StatusCode::CONFLICT, "{}", wrong.body);
-        assert_eq!(wrong.code(), "edit.taken_over");
+        assert_eq!(wrong.code(), "edit.taken-over");
         assert_eq!(
             editor_of(&mut ada, "ACME").await?["layout"]["version"],
             version
@@ -427,7 +427,7 @@ async fn iss_17_two_people_cannot_change_one_layout_at_once() -> TestResult {
         )
         .await?;
         assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.body);
-        assert_eq!(stale.code(), "edit.version_changed");
+        assert_eq!(stale.code(), "edit.version-changed");
         Ok(())
     })
     .await
