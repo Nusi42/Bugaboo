@@ -113,7 +113,7 @@ words! {
 }
 
 words_in_api!(
-    NotificationFilter,
+    NotificationFilter as "NotificationTab",
     "Which notifications a list shows: all, the unread ones, or the ones that mention the person."
 );
 

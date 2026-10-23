@@ -10,14 +10,14 @@ import { rowsOf } from "./notifications.ts";
  * like every key `api.query` makes, so reading notifications again finds it.
  */
 export function useNotificationList(
-  filter: Schema<"NotificationFilter">,
+  filter: Schema<"NotificationTab">,
   size: number = pageSize.short,
 ) {
   return usePaged({
     queryKey: queryKeys.notifications.list(filter, size),
     read: (after) =>
       api.client.GET("/api/v1/notifications", {
-        params: { query: { filter, limit: size, ...after } },
+        params: { query: { tab: filter, limit: size, ...after } },
       }),
   });
 }

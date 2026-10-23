@@ -190,9 +190,9 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
 /// Which notifications to list.
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
-pub(crate) struct FilterParams {
+pub(crate) struct NotificationTabParams {
     /// All of them (the default), the unread ones, or the ones that mention the person.
-    filter: Option<NotificationFilter>,
+    tab: Option<NotificationFilter>,
 }
 
 /// How many notifications the person has not read.
@@ -245,7 +245,7 @@ impl Masked for MailServerStatusBody {}
     path = "/api/v1/notifications",
     operation_id = "listNotifications",
     tag = "notifications",
-    params(ListParams, FilterParams),
+    params(ListParams, NotificationTabParams),
     responses((status = 200, description = "The notifications.", body = Page<NotificationEntry>), InvalidAnswer, NotSignedInAnswer)
 )]
 async fn list_notifications(
@@ -253,7 +253,7 @@ async fn list_notifications(
     Info(info): Info,
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
-    ApiQuery(which): ApiQuery<FilterParams>,
+    ApiQuery(which): ApiQuery<NotificationTabParams>,
 ) -> Result<Response, ApiError> {
     let (cursor, bad_cursor) = params.start(NOTIFICATIONS_LIST);
     let page = auth
@@ -262,7 +262,7 @@ async fn list_notifications(
             info,
             NotificationsQuery {
                 session_token,
-                filter: which.filter.unwrap_or(NotificationFilter::All),
+                filter: which.tab.unwrap_or(NotificationFilter::All),
                 cursor,
                 limit: params.limit(),
             },

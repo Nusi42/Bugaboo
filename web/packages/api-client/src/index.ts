@@ -82,7 +82,7 @@ export {
   layoutKindWords,
   lookWords,
   newIssuePriority,
-  notificationFilterWords,
+  notificationTabWords,
   notificationKindWords,
   priorityWords,
   statusGroupWords,

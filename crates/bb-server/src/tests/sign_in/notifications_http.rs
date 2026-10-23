@@ -85,7 +85,7 @@ async fn ntf_01_a_follower_hears_over_http_and_marks_what_was_read() -> TestResu
             .await?;
         assert_eq!(unread.body["unread"], 0);
         let unread_only = ada
-            .send("GET", &format!("{NOTIFICATIONS}?filter=unread"), None)
+            .send("GET", &format!("{NOTIFICATIONS}?tab=unread"), None)
             .await?;
         assert!(items(&unread_only).is_empty());
         Ok(())

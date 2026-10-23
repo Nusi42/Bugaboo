@@ -5830,11 +5830,6 @@ export interface components {
       text?: string | null;
     };
     /**
-     * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
-     * @enum {string}
-     */
-    NotificationFilter: "all" | "unread" | "mentions";
-    /**
      * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing.
      * @enum {string}
      */
@@ -5845,6 +5840,11 @@ export interface components {
       | "followed-fields"
       | "run-ended"
       | "edit-notice";
+    /**
+     * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
+     * @enum {string}
+     */
+    NotificationTab: "all" | "unread" | "mentions";
     /** @description One place to change. */
     OfferChangeBody: {
       /**
@@ -12441,7 +12441,7 @@ export interface operations {
         /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: components["parameters"]["Limit"];
         /** @description All of them (the default), the unread ones, or the ones that mention the person. */
-        filter?: components["schemas"]["NotificationFilter"];
+        tab?: components["schemas"]["NotificationTab"];
       };
       header?: never;
       path?: never;

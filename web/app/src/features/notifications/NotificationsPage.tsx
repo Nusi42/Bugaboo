@@ -1,4 +1,4 @@
-import { notificationFilterWords, type Schema } from "@bugaboo/api-client";
+import { notificationTabWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 import { Button, buttonLook, Card, Tabs, useLayout } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
@@ -15,7 +15,7 @@ const filterName = {
   all: "notifications.filter.all",
   unread: "notifications.filter.unread",
   mentions: "notifications.filter.mentions",
-} as const satisfies Record<Schema<"NotificationFilter">, MessageKey>;
+} as const satisfies Record<Schema<"NotificationTab">, MessageKey>;
 
 /**
  * *Notifications* (UX §4.11, NTF-01): what happened on the issues the person follows and where they
@@ -27,7 +27,7 @@ export function NotificationsPage() {
   const navigate = useNavigate();
   // The top bar of a phone says it already.
   const phone = useLayout() === "phone";
-  const [filter, setFilter] = useState<Schema<"NotificationFilter">>("all");
+  const [filter, setFilter] = useState<Schema<"NotificationTab">>("all");
   const unread = useUnreadNotifications() ?? 0;
   const readAll = useReadNotifications();
   // *Mark all as read* goes up to the newest one on the screen: a later one stays unread.
@@ -63,7 +63,7 @@ export function NotificationsPage() {
     >
       <Tabs
         label={t("notifications.filters")}
-        tabs={notificationFilterWords.map((each) => ({ id: each, label: t(filterName[each]) }))}
+        tabs={notificationTabWords.map((each) => ({ id: each, label: t(filterName[each]) }))}
         selected={filter}
         onSelect={setFilter}
       >

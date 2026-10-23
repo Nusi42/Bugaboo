@@ -189,7 +189,7 @@ const WORD_LISTS: [&str; 13] = [
     "LayoutKind",
     "HistoryTab",
     "NotificationKind",
-    "NotificationFilter",
+    "NotificationTab",
     "OnlyIfTest",
 ];
 

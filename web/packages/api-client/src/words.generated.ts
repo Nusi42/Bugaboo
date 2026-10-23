@@ -103,8 +103,8 @@ export const notificationKindWords = [
   "edit-notice",
 ] as const;
 
-/** Every word of `NotificationFilter`, in the order the server lists them. */
-export const notificationFilterWords = ["all", "unread", "mentions"] as const;
+/** Every word of `NotificationTab`, in the order the server lists them. */
+export const notificationTabWords = ["all", "unread", "mentions"] as const;
 
 /** Every word of `OnlyIfTest`, in the order the server lists them. */
 export const onlyIfTestWords = ["filled", "empty"] as const;

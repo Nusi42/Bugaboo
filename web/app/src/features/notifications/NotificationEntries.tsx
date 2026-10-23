@@ -16,7 +16,7 @@ const nothingMessage = {
 } as const;
 
 export interface NotificationEntriesProps {
-  readonly filter: Schema<"NotificationFilter">;
+  readonly filter: Schema<"NotificationTab">;
   /** Only the newest this many, without *Show earlier* (the start page); every page of them without it. */
   readonly newest?: number;
   /** What to say when there are none, where the filter's own words do not fit. */
