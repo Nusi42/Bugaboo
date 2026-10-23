@@ -3289,7 +3289,7 @@ export interface components {
     /** @description Somebody who makes an account from an invitation. */
     AcceptBody: {
       /** @description The name others see. */
-      display_name: string;
+      name: string;
       /** @description The password. */
       password: string;
       /** @description The secret from the invitation link (the part after the `#`). */
@@ -5465,12 +5465,12 @@ export interface components {
      *     follow it; the server decides again at every request).
      */
     MeBody: {
-      /** @description The name others see. */
-      display_name: string;
       /** @description The e-mail address used to sign in. */
       email: string;
       /** @description The ID of the person. */
       id: string;
+      /** @description The name others see. */
+      name: string;
       /**
        * @description What the person may do for the whole organization. Nothing while the person still has to
        *     set up a second step.
@@ -6289,12 +6289,12 @@ export interface components {
     };
     /** @description Who a person is, as the browser app shows them. */
     PersonBody: {
-      /** @description The name others see. */
-      display_name: string;
       /** @description The e-mail address used to sign in. */
       email: string;
       /** @description The ID of the person. */
       id: string;
+      /** @description The name others see. */
+      name: string;
     };
     /** @description What a move changes for one person. */
     PersonChangeBody: {
@@ -7242,10 +7242,10 @@ export interface components {
     SetupBody: {
       /** @description The setup code the server printed. */
       code: string;
-      /** @description The name of the administrator. */
-      display_name: string;
       /** @description The e-mail address of the administrator. */
       email: string;
+      /** @description The name of the administrator. */
+      name: string;
       /** @description The password of the administrator. */
       password: string;
     };

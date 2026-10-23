@@ -40,7 +40,7 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
             "POST",
             "/api/v1/auth/setup".into(),
             Some(
-                json!({"code": "not the code", "display_name": "Eve", "email": "eve@example.test", "password": PASSWORD}),
+                json!({"code": "not the code", "name": "Eve", "email": "eve@example.test", "password": PASSWORD}),
             ),
         ),
         "signIn" => (
@@ -67,7 +67,7 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
         "acceptInvitation" => (
             "POST",
             "/api/v1/auth/invitations/accept".into(),
-            Some(json!({"secret": "not a secret", "display_name": "Bob", "password": PASSWORD})),
+            Some(json!({"secret": "not a secret", "name": "Bob", "password": PASSWORD})),
         ),
         // Whoever is signed in, and the choices a person makes for themselves.
         "listMySettings" => ("GET", "/api/v1/me/settings".into(), None),

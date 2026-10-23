@@ -37,7 +37,7 @@ export async function createAdmin(server: Instance, person: Person = ada): Promi
   await session.client.POST("/api/v1/auth/setup", {
     body: {
       code: server.setupCode(),
-      display_name: person.name,
+      name: person.name,
       email: person.email,
       password: person.password,
     },
@@ -109,7 +109,7 @@ export async function createPerson(
   const link = await invite(admin, person.email);
   const session = openSession(server.url);
   await session.client.POST("/api/v1/auth/invitations/accept", {
-    body: { secret: secretOf(link), display_name: person.name, password: person.password },
+    body: { secret: secretOf(link), name: person.name, password: person.password },
   });
   return session;
 }

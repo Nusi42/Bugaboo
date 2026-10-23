@@ -351,7 +351,7 @@ async fn get_me(
     let permissions = me.access.permissions().iter().copied().collect();
     answer_authorized(&me.access.authorize(MeBody {
         id: me.person.id.to_string(),
-        display_name: me.person.display_name.clone(),
+        name: me.person.display_name.clone(),
         email: me.person.email.clone(),
         permissions,
         second_step_setup_required: me.second_step_setup_required,

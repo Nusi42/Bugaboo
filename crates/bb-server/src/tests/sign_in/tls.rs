@@ -198,7 +198,7 @@ async fn first_start(client: &mut Client, rig: &Rig, own: &str) -> TestResult {
     assert!(status.headers.contains_key("content-security-policy"));
     let setup = json!({
         "code": rig.setup_code,
-        "display_name": "Ada Admin",
+        "name": "Ada Admin",
         "email": ADA_EMAIL,
         "password": PASSWORD,
     });

@@ -166,7 +166,7 @@ pub(crate) struct PersonBody {
     /// The ID of the person.
     id: String,
     /// The name others see.
-    display_name: String,
+    name: String,
     /// The e-mail address used to sign in.
     email: String,
 }
@@ -175,7 +175,7 @@ impl From<&bb_app::auth::PersonView> for PersonBody {
     fn from(person: &bb_app::auth::PersonView) -> Self {
         Self {
             id: person.id.to_string(),
-            display_name: person.display_name.clone(),
+            name: person.display_name.clone(),
             email: person.email.clone(),
         }
     }
@@ -188,7 +188,7 @@ pub(crate) struct MeBody {
     /// The ID of the person.
     pub(crate) id: String,
     /// The name others see.
-    pub(crate) display_name: String,
+    pub(crate) name: String,
     /// The e-mail address used to sign in.
     pub(crate) email: String,
     /// What the person may do for the whole organization. Nothing while the person still has to

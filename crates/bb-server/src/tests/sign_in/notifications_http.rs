@@ -500,7 +500,7 @@ fn secret_of_the_last_e_mail(rig: &Rig) -> Result<String, Failure> {
 }
 
 fn accept_body(secret: &str) -> Value {
-    json!({"secret": secret, "display_name": "Eve Evans", "password": super::rig::PASSWORD})
+    json!({"secret": secret, "name": "Eve Evans", "password": super::rig::PASSWORD})
 }
 
 #[tokio::test]

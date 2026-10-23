@@ -32,7 +32,7 @@ pub(crate) struct SetupBody {
     /// The setup code the server printed.
     code: String,
     /// The name of the administrator.
-    display_name: String,
+    name: String,
     /// The e-mail address of the administrator.
     email: String,
     /// The password of the administrator.
@@ -45,7 +45,7 @@ pub(crate) struct AcceptBody {
     /// The secret from the invitation link (the part after the `#`).
     secret: String,
     /// The name others see.
-    display_name: String,
+    name: String,
     /// The password.
     password: String,
 }
@@ -175,7 +175,7 @@ async fn complete_setup(
             info,
             CompleteSetup {
                 code: body.code,
-                display_name: body.display_name,
+                display_name: body.name,
                 email: body.email,
                 password: body.password,
                 previous_session,
@@ -277,7 +277,7 @@ async fn accept_invitation(
             info,
             AcceptInvitation {
                 secret: body.secret,
-                display_name: body.display_name,
+                display_name: body.name,
                 password: body.password,
                 previous_session,
             },

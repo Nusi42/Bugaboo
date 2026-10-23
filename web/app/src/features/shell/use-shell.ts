@@ -56,7 +56,7 @@ export function useShell(): {
   return {
     person: {
       organizationSettings: mayOpen(paths.organizationSettings, me?.permissions ?? []),
-      name: me?.display_name,
+      name: me?.name,
       onSignOut: signOut.signOut,
       signingOut: signOut.isPending,
     },

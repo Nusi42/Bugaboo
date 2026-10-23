@@ -5,18 +5,8 @@
 
 [[exempt]]
 type = "PersonBody"
-field = "display_name"
-reason = "The person who signed in sees their own name: the answer of signing in is about their own account."
-
-[[exempt]]
-type = "PersonBody"
 field = "email"
 reason = "The person who signed in sees their own address: the answer of signing in is about their own account."
-
-[[exempt]]
-type = "MeBody"
-field = "display_name"
-reason = "Who is signed in is the person's own account; a person always sees their own name."
 
 [[exempt]]
 type = "MeBody"

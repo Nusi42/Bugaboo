@@ -30,7 +30,7 @@ export function AcceptForm({ secret, email }: AcceptFormProps) {
   return (
     <Form
       onSubmit={() => {
-        accept.mutate({ body: { secret, display_name: name.trim(), password } });
+        accept.mutate({ body: { secret, name: name.trim(), password } });
       }}
     >
       <p>{t("invitation.intro", { email })}</p>

@@ -11929,9 +11929,9 @@
       "AcceptBody": {
         "type": "object",
         "description": "Somebody who makes an account from an invitation.",
-        "required": ["secret", "display_name", "password"],
+        "required": ["secret", "name", "password"],
         "properties": {
-          "display_name": {
+          "name": {
             "type": "string",
             "description": "The name others see."
           },
@@ -16396,12 +16396,8 @@
       "MeBody": {
         "type": "object",
         "description": "Who is signed in, and what they may do for the whole organization (the menus of the browser app\nfollow it; the server decides again at every request).",
-        "required": ["id", "display_name", "email", "permissions", "second_step_setup_required"],
+        "required": ["id", "name", "email", "permissions", "second_step_setup_required"],
         "properties": {
-          "display_name": {
-            "type": "string",
-            "description": "The name others see."
-          },
           "email": {
             "type": "string",
             "description": "The e-mail address used to sign in."
@@ -16409,6 +16405,10 @@
           "id": {
             "type": "string",
             "description": "The ID of the person."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name others see."
           },
           "permissions": {
             "type": "array",
@@ -18163,12 +18163,8 @@
       "PersonBody": {
         "type": "object",
         "description": "Who a person is, as the browser app shows them.",
-        "required": ["id", "display_name", "email"],
+        "required": ["id", "name", "email"],
         "properties": {
-          "display_name": {
-            "type": "string",
-            "description": "The name others see."
-          },
           "email": {
             "type": "string",
             "description": "The e-mail address used to sign in."
@@ -18176,6 +18172,10 @@
           "id": {
             "type": "string",
             "description": "The ID of the person."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name others see."
           }
         }
       },
@@ -19960,19 +19960,19 @@
       "SetupBody": {
         "type": "object",
         "description": "The first administrator, with the setup code.",
-        "required": ["code", "display_name", "email", "password"],
+        "required": ["code", "name", "email", "password"],
         "properties": {
           "code": {
             "type": "string",
             "description": "The setup code the server printed."
           },
-          "display_name": {
-            "type": "string",
-            "description": "The name of the administrator."
-          },
           "email": {
             "type": "string",
             "description": "The e-mail address of the administrator."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the administrator."
           },
           "password": {
             "type": "string",

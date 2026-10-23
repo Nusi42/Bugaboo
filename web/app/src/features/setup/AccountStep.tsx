@@ -44,7 +44,7 @@ export function AccountStep({ code, onCreated, onWrongCode }: AccountStepProps) 
       <Form
         onSubmit={() => {
           setup.mutate({
-            body: { code: code.trim(), display_name: name.trim(), email: email.trim(), password },
+            body: { code: code.trim(), name: name.trim(), email: email.trim(), password },
           });
         }}
       >

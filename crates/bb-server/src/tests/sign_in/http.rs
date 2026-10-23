@@ -197,7 +197,7 @@ impl Browser {
             .send(
                 "POST",
                 "/api/v1/auth/invitations/accept",
-                Some(json!({"secret": secret, "display_name": display_name, "password": PASSWORD})),
+                Some(json!({"secret": secret, "name": display_name, "password": PASSWORD})),
             )
             .await?;
         assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.body);
@@ -517,7 +517,7 @@ pub(crate) const ADA_EMAIL: &str = "ada@example.test";
 pub(crate) fn setup_body(code: &str) -> Value {
     json!({
         "code": code,
-        "display_name": "Ada Admin",
+        "name": "Ada Admin",
         "email": ADA_EMAIL,
         "password": PASSWORD,
     })

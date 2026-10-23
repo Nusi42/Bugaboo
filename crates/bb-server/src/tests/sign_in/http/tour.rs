@@ -40,7 +40,7 @@ async fn first_start(tour: &mut Tour) -> TestResult {
     let reply = ada
         .route("GET", "/api/v1/auth/me", &format!("{api}/me"), None)
         .await?;
-    assert_eq!(reply.body["display_name"], "Ada Admin");
+    assert_eq!(reply.body["name"], "Ada Admin");
 
     Ok(())
 }
@@ -89,7 +89,7 @@ async fn invitations(tour: &mut Tour) -> TestResult {
             "POST",
             "/api/v1/auth/invitations/accept",
             &format!("{api}/invitations/accept"),
-            Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
+            Some(json!({"secret": secret, "name": "Bob", "password": PASSWORD})),
         )
         .await?;
     assert!(ok(&reply));
