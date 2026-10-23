@@ -388,7 +388,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             let label = made(
                 ada,
                 "/api/v1/labels",
-                json!({"name": format!("ui for {id}"), "group": null}),
+                json!({"name": format!("ui for {id}"), "label_group": null}),
             )
             .await?;
             let path = format!("/api/v1/labels/{}", text_in(&label, "id")?);
@@ -398,7 +398,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             let other = made(
                 ada,
                 "/api/v1/labels",
-                json!({"name": format!("web for {id}"), "group": null}),
+                json!({"name": format!("web for {id}"), "label_group": null}),
             )
             .await?;
             Save::new(
@@ -504,7 +504,7 @@ async fn prepare_workflow(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
             path,
             json!({
                 "name": "Simple",
-                "statuses": [{"key": "open", "name": "Open", "group": "not-started"}],
+                "statuses": [{"key": "open", "name": "Open", "status_group": "not-started"}],
                 "changes": [],
             }),
             version,

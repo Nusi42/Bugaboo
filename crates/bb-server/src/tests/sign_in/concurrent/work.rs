@@ -72,7 +72,7 @@ pub(super) async fn workflow_that_asks(
         .as_array()
         .ok_or("no statuses")?
         .iter()
-        .map(|status| json!({"key": status["key"], "name": status["name"], "group": status["group"]}))
+        .map(|status| json!({"key": status["key"], "name": status["name"], "status_group": status["status_group"]}))
         .collect();
     let published = admin
         .send(

@@ -24078,7 +24078,7 @@
               }
             ]
           },
-          "group": {
+          "label_group": {
             "type": ["string", "null"],
             "description": "The ID of a new group; `null` takes the label out of its group."
           },
@@ -26682,13 +26682,13 @@
             "$ref": "#/components/schemas/ChoiceColor",
             "description": "Its color, as a category token of the theme."
           },
-          "group": {
-            "type": ["string", "null"],
-            "description": "The group it is in, if any."
-          },
           "id": {
             "type": "string",
             "description": "The ID of the label."
+          },
+          "label_group": {
+            "type": ["string", "null"],
+            "description": "The group it is in, if any."
           },
           "name": {
             "type": "string",
@@ -26822,13 +26822,13 @@
               }
             ]
           },
-          "group": {
-            "type": ["string", "null"],
-            "description": "The group it is in, if any."
-          },
           "id": {
             "type": ["string", "null"],
             "description": "The ID of the label."
+          },
+          "label_group": {
+            "type": ["string", "null"],
+            "description": "The group it is in, if any."
           },
           "name": {
             "type": ["string", "null"],
@@ -26854,13 +26854,13 @@
             "$ref": "#/components/schemas/ChoiceColor",
             "description": "Its color, as a category token of the theme."
           },
-          "group": {
-            "type": ["string", "null"],
-            "description": "The group it is in, if any."
-          },
           "id": {
             "type": "string",
             "description": "The ID of the label."
+          },
+          "label_group": {
+            "type": ["string", "null"],
+            "description": "The group it is in, if any."
           },
           "name": {
             "type": "string",
@@ -28444,7 +28444,7 @@
               }
             ]
           },
-          "group": {
+          "label_group": {
             "type": ["string", "null"],
             "description": "The ID of the group it goes into."
           },
@@ -30106,13 +30106,13 @@
                     }
                   ]
                 },
-                "group": {
-                  "type": ["string", "null"],
-                  "description": "The group it is in, if any."
-                },
                 "id": {
                   "type": ["string", "null"],
                   "description": "The ID of the label."
+                },
+                "label_group": {
+                  "type": ["string", "null"],
+                  "description": "The group it is in, if any."
                 },
                 "name": {
                   "type": ["string", "null"],
@@ -33135,12 +33135,8 @@
       "StatusDraftBody": {
         "type": "object",
         "description": "A status as the editor sends it.",
-        "required": ["name", "group"],
+        "required": ["name", "status_group"],
         "properties": {
-          "group": {
-            "$ref": "#/components/schemas/StatusGroup",
-            "description": "The status group it belongs to."
-          },
           "key": {
             "type": ["string", "null"],
             "description": "The key of a status the workflow has. Left out for a new status, which gets a key made from\nits name; a status change names a new status by its name."
@@ -33148,6 +33144,10 @@
           "name": {
             "type": "string",
             "description": "What it is called."
+          },
+          "status_group": {
+            "$ref": "#/components/schemas/StatusGroup",
+            "description": "The status group it belongs to."
           }
         }
       },
@@ -33174,12 +33174,8 @@
       "StatusRef": {
         "type": "object",
         "description": "A status as it is shown: the browser keeps no list of statuses, it shows what the server sends.",
-        "required": ["key", "name", "group"],
+        "required": ["key", "name", "status_group"],
         "properties": {
-          "group": {
-            "$ref": "#/components/schemas/StatusGroup",
-            "description": "The status group it belongs to."
-          },
           "key": {
             "type": "string",
             "description": "The key, which never changes: it is what a request names a status by."
@@ -33187,6 +33183,10 @@
           "name": {
             "type": "string",
             "description": "What it is called."
+          },
+          "status_group": {
+            "$ref": "#/components/schemas/StatusGroup",
+            "description": "The status group it belongs to."
           }
         }
       },

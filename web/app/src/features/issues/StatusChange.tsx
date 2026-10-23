@@ -41,7 +41,7 @@ export function StatusChange({ blocks, changes }: StatusChangeProps) {
   if (status === undefined || status === null || !form.shows("status")) {
     return null;
   }
-  const { name: word, group } = status;
+  const { name: word, status_group: group } = status;
   if (!canChange) {
     return <StatusLocked group={group} label={word} />;
   }

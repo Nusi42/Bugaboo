@@ -198,7 +198,7 @@ pub(super) async fn create_label(
     ApiJson(body): ApiJson<NewLabelBody>,
 ) -> Result<Response, ApiError> {
     let group = body
-        .group
+        .label_group
         .as_deref()
         .map(body_id::<LabelGroupId>)
         .transpose()?;
@@ -282,7 +282,7 @@ pub(super) async fn change_label(
     ApiPath(label): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeLabelBody>,
 ) -> Result<Response, ApiError> {
-    let group = match body.group {
+    let group = match body.label_group {
         Edit::Keep => Edit::Keep,
         Edit::Clear => Edit::Clear,
         Edit::Set(text) => Edit::Set(body_id::<LabelGroupId>(&text)?),

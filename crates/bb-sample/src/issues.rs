@@ -216,7 +216,7 @@ impl MadeIssue {
         Ok(Self {
             id: id_in(answer, "id")?,
             version: answer["version"].as_i64().unwrap_or(1),
-            group: text(&answer["status"]["group"]),
+            group: text(&answer["status"]["status_group"]),
             assigned: answer["assigned_to"]
                 .as_array()
                 .map_or(&[][..], Vec::as_slice)
@@ -230,7 +230,7 @@ impl MadeIssue {
                         .iter()
                         .map(|each| StatusOption {
                             key: text(&each["to"]["key"]),
-                            group: text(&each["to"]["group"]),
+                            group: text(&each["to"]["status_group"]),
                             needs: each["needs"]
                                 .as_array()
                                 .map_or(&[][..], Vec::as_slice)

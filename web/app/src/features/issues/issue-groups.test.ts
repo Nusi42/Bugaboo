@@ -5,9 +5,9 @@ import type { IssueLine } from "./issues.ts";
 
 /** The status each group has in the starting workflow, as the server sends it. */
 const statusOf = {
-  "not-started": { key: "open", name: "Open", group: "not-started" },
-  "in-progress": { key: "in-progress", name: "In progress", group: "in-progress" },
-  done: { key: "done", name: "Done", group: "done" },
+  "not-started": { key: "open", name: "Open", status_group: "not-started" },
+  "in-progress": { key: "in-progress", name: "In progress", status_group: "in-progress" },
+  done: { key: "done", name: "Done", status_group: "done" },
 } as const;
 
 /** A line of a list with only what grouping reads; the rest is the same for all. */

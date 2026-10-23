@@ -162,7 +162,7 @@ pub(crate) struct StatusDraftBody {
     /// What it is called.
     name: String,
     /// The status group it belongs to.
-    group: StatusGroup,
+    status_group: StatusGroup,
 }
 
 impl StatusDraftBody {
@@ -170,7 +170,7 @@ impl StatusDraftBody {
         Ok(StatusDraft {
             key: status_in(self.key.as_deref())?,
             name: self.name.clone(),
-            group: self.group,
+            group: self.status_group,
         })
     }
 }

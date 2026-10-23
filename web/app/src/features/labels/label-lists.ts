@@ -112,7 +112,9 @@ export function labelOf(item: Schema<"LabelItem">): Label | undefined {
     ? undefined
     : {
         id,
-        ...(item.group === undefined || item.group === null ? {} : { group: item.group }),
+        ...(item.label_group === undefined || item.label_group === null
+          ? {}
+          : { group: item.label_group }),
         name,
         color,
         retired,

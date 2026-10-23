@@ -38,7 +38,7 @@ pub(crate) struct LabelRefBody {
     pub(super) color: ChoiceColor,
     /// The group it is in, if any.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) group: Option<String>,
+    pub(super) label_group: Option<String>,
 }
 
 impl From<&LabelRef> for LabelRefBody {
@@ -47,7 +47,7 @@ impl From<&LabelRef> for LabelRefBody {
             id: label.id.to_string(),
             name: label.name.clone(),
             color: label.color,
-            group: label.group.map(|group| group.to_string()),
+            label_group: label.group.map(|group| group.to_string()),
         }
     }
 }
@@ -249,7 +249,7 @@ pub(crate) struct LabelBody {
     pub(super) id: String,
     /// The group it is in, if any.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) group: Option<String>,
+    pub(super) label_group: Option<String>,
     /// What it is called.
     pub(super) name: String,
     /// Its color, as a category token of the theme.
@@ -266,7 +266,7 @@ impl From<&LabelView> for LabelBody {
     fn from(label: &LabelView) -> Self {
         Self {
             id: label.id.to_string(),
-            group: label.group.map(|group| group.to_string()),
+            label_group: label.group.map(|group| group.to_string()),
             name: label.name.clone(),
             color: label.color,
             retired: label.retired,
@@ -283,7 +283,7 @@ pub(crate) struct LabelItem {
     pub(super) id: Option<String>,
     /// The group it is in, if any.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) group: Option<String>,
+    pub(super) label_group: Option<String>,
     /// What it is called.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) name: Option<String>,
@@ -304,7 +304,7 @@ impl From<&LabelView> for LabelItem {
     fn from(label: &LabelView) -> Self {
         Self {
             id: Some(label.id.to_string()),
-            group: label.group.map(|group| group.to_string()),
+            label_group: label.group.map(|group| group.to_string()),
             name: Some(label.name.clone()),
             color: Some(label.color),
             retired: Some(label.retired),
@@ -450,7 +450,7 @@ pub(crate) struct NewLabelBody {
     /// Its color; the next in turn when left out.
     pub(super) color: Option<ChoiceColor>,
     /// The ID of the group it goes into.
-    pub(super) group: Option<String>,
+    pub(super) label_group: Option<String>,
 }
 
 /// What to change about a label: what is left out stays as it is.
@@ -465,7 +465,7 @@ pub(crate) struct ChangeLabelBody {
     /// The ID of a new group; `null` takes the label out of its group.
     #[serde(default, deserialize_with = "crate::api::null_or_value")]
     #[schema(value_type = Option<String>)]
-    pub(super) group: Edit<String>,
+    pub(super) label_group: Edit<String>,
     /// `true` retires the label, `false` offers it again.
     pub(super) retired: Option<bool>,
 }

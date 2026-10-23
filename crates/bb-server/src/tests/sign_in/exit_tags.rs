@@ -109,7 +109,7 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
             .send(
                 "POST",
                 "/api/v1/labels",
-                Some(json!({"name": "urgent", "group": null})),
+                Some(json!({"name": "urgent", "label_group": null})),
             )
             .await?)?["id"]
             .as_str()
@@ -305,7 +305,7 @@ async fn sec_06_a_name_with_an_invisible_character_and_a_long_search_are_refused
                 .send(
                     "POST",
                     "/api/v1/labels",
-                    Some(json!({"name": name, "group": null})),
+                    Some(json!({"name": name, "label_group": null})),
                 )
                 .await?;
             assert_eq!(label.code(), "request.invalid", "{name:?}: {}", label.body);
@@ -353,7 +353,7 @@ async fn sec_06_the_answer_of_adding_a_label_leaves_out_tags_the_type_hides() ->
             .send(
                 "POST",
                 "/api/v1/labels",
-                Some(json!({"name": "urgent", "group": null})),
+                Some(json!({"name": "urgent", "label_group": null})),
             )
             .await?)?["id"]
             .as_str()

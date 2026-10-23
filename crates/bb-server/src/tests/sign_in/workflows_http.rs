@@ -120,8 +120,8 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
                 "lock_token": lock,
                 "name": "Open or done",
                 "statuses": [
-                    {"key": "open", "name": "Open", "group": "not-started"},
-                    {"key": "done", "name": "Done", "group": "done"},
+                    {"key": "open", "name": "Open", "status_group": "not-started"},
+                    {"key": "done", "name": "Done", "status_group": "done"},
                 ],
                 "changes": [
                     {"from": "open", "to": "done", "button": "Finish"},
@@ -237,8 +237,8 @@ async fn wf_02_publishing_and_writing_an_issue_at_once_never_strand_an_issue() -
                 "lock_token": lock,
                 "name": "Open or done",
                 "statuses": [
-                    {"key": "open", "name": "Open", "group": "not-started"},
-                    {"key": "done", "name": "Done", "group": "done"},
+                    {"key": "open", "name": "Open", "status_group": "not-started"},
+                    {"key": "done", "name": "Done", "status_group": "done"},
                 ],
                 "changes": [
                     {"from": "open", "to": "done", "button": "Finish"},

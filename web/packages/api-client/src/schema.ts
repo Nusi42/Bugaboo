@@ -3593,7 +3593,7 @@ export interface components {
     ChangeLabelBody: {
       color?: components["schemas"]["ChoiceColor"] | null;
       /** @description The ID of a new group; `null` takes the label out of its group. */
-      group?: string | null;
+      label_group?: string | null;
       /** @description A new name. Every issue that has the label records it. */
       name?: string | null;
       /** @description `true` retires the label, `false` offers it again. */
@@ -4867,10 +4867,10 @@ export interface components {
     LabelBody: {
       /** @description Its color, as a category token of the theme. */
       color: components["schemas"]["ChoiceColor"];
-      /** @description The group it is in, if any. */
-      group?: string | null;
       /** @description The ID of the label. */
       id: string;
+      /** @description The group it is in, if any. */
+      label_group?: string | null;
       /** @description What it is called. */
       name: string;
       /** @description Whether it is retired: old issues keep it, new ones are not offered it. */
@@ -4950,10 +4950,10 @@ export interface components {
     /** @description A label in a list: the fields that can be asked for. */
     LabelItem: {
       color?: components["schemas"]["ChoiceColor"] | null;
-      /** @description The group it is in, if any. */
-      group?: string | null;
       /** @description The ID of the label. */
       id?: string | null;
+      /** @description The group it is in, if any. */
+      label_group?: string | null;
       /** @description What it is called. */
       name?: string | null;
       /** @description Whether it is retired: old issues keep it, new ones are not offered it. */
@@ -4968,10 +4968,10 @@ export interface components {
     LabelRefBody: {
       /** @description Its color, as a category token of the theme. */
       color: components["schemas"]["ChoiceColor"];
-      /** @description The group it is in, if any. */
-      group?: string | null;
       /** @description The ID of the label. */
       id: string;
+      /** @description The group it is in, if any. */
+      label_group?: string | null;
       /** @description What it is called. */
       name: string;
     };
@@ -5671,7 +5671,7 @@ export interface components {
     NewLabelBody: {
       color?: components["schemas"]["ChoiceColor"] | null;
       /** @description The ID of the group it goes into. */
-      group?: string | null;
+      label_group?: string | null;
       /** @description What it is called. */
       name: string;
     };
@@ -6372,10 +6372,10 @@ export interface components {
       /** @description The items of this page. */
       items: {
         color?: components["schemas"]["ChoiceColor"] | null;
-        /** @description The group it is in, if any. */
-        group?: string | null;
         /** @description The ID of the label. */
         id?: string | null;
+        /** @description The group it is in, if any. */
+        label_group?: string | null;
         /** @description What it is called. */
         name?: string | null;
         /** @description Whether it is retired: old issues keep it, new ones are not offered it. */
@@ -7875,8 +7875,6 @@ export interface components {
     };
     /** @description A status as the editor sends it. */
     StatusDraftBody: {
-      /** @description The status group it belongs to. */
-      group: components["schemas"]["StatusGroup"];
       /**
        * @description The key of a status the workflow has. Left out for a new status, which gets a key made from
        *     its name; a status change names a new status by its name.
@@ -7884,6 +7882,8 @@ export interface components {
       key?: string | null;
       /** @description What it is called. */
       name: string;
+      /** @description The status group it belongs to. */
+      status_group: components["schemas"]["StatusGroup"];
     };
     /**
      * @description The group of a status.
@@ -7899,12 +7899,12 @@ export interface components {
     };
     /** @description A status as it is shown: the browser keeps no list of statuses, it shows what the server sends. */
     StatusRef: {
-      /** @description The status group it belongs to. */
-      group: components["schemas"]["StatusGroup"];
       /** @description The key, which never changes: it is what a request names a status by. */
       key: string;
       /** @description What it is called. */
       name: string;
+      /** @description The status group it belongs to. */
+      status_group: components["schemas"]["StatusGroup"];
     };
     /** @description The rules of a status change. */
     StatusRulesBody: {

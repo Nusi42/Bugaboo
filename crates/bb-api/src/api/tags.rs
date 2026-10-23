@@ -76,7 +76,7 @@ const TAGS_LIST: &str = "tags";
 /// The fields of a label in a list that can be asked for: all of them are by default.
 const LABEL_FIELDS: [FieldSpec; 6] = [
     FieldSpec::by_default("id"),
-    FieldSpec::by_default("group"),
+    FieldSpec::by_default("label_group"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("color"),
     FieldSpec::by_default("retired"),

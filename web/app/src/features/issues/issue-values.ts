@@ -162,13 +162,13 @@ function statusOf(value: unknown): Schema<"StatusRef"> | undefined {
     value === null ||
     !("key" in value) ||
     !("name" in value) ||
-    !("group" in value)
+    !("status_group" in value)
   ) {
     return undefined;
   }
-  const group = statusGroupWords.find((word) => word === value.group);
+  const group = statusGroupWords.find((word) => word === value.status_group);
   return typeof value.key === "string" && typeof value.name === "string" && group !== undefined
-    ? { key: value.key, name: value.name, group }
+    ? { key: value.key, name: value.name, status_group: group }
     : undefined;
 }
 

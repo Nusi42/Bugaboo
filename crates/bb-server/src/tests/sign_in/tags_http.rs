@@ -32,7 +32,11 @@ fn names(labels_and_tags: &Value, member: &str) -> Vec<String> {
 /// A label made as `ada`: its ID.
 async fn a_label(ada: &mut Browser, name: &str, group: Option<&str>) -> Result<String, Failure> {
     let made = ada
-        .send("POST", LABELS, Some(json!({"name": name, "group": group})))
+        .send(
+            "POST",
+            LABELS,
+            Some(json!({"name": name, "label_group": group})),
+        )
         .await?;
     id_of(&made)
 }

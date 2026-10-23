@@ -99,7 +99,7 @@ async function publishChanged(
         statuses: changed.statuses.map((each) => ({
           key: each.key,
           name: each.name,
-          group: each.group,
+          status_group: each.status_group,
         })),
         changes: changed.changes.map((each) => ({
           from: each.from,

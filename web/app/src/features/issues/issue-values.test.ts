@@ -5,8 +5,12 @@ import type { IssueDetail } from "./slots.ts";
 
 const ana = { shown: "name", id: "u1", name: "Ana" } as const;
 
-const open = { key: "open", name: "Open", group: "not-started" } as const;
-const inProgress = { key: "in-progress", name: "In progress", group: "in-progress" } as const;
+const open = { key: "open", name: "Open", status_group: "not-started" } as const;
+const inProgress = {
+  key: "in-progress",
+  name: "In progress",
+  status_group: "in-progress",
+} as const;
 
 const detail: IssueDetail = {
   issue: {

@@ -60,7 +60,7 @@ export function lineOf(item: ListedIssue): IssueLine | undefined {
         key,
         title,
         status,
-        group: status.group,
+        group: status.status_group,
         priority,
         issueType,
         assignedTo: item.assigned_to ?? [],

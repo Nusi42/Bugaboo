@@ -26,9 +26,9 @@ const rules: Schema<"StatusRulesBody"> = {
 const editor: Schema<"WorkflowEditorBody"> = {
   name: "Simple",
   statuses: [
-    { key: "open", name: "Open", group: "not-started" },
-    { key: "in-progress", name: "In progress", group: "in-progress" },
-    { key: "done", name: "Done", group: "done" },
+    { key: "open", name: "Open", status_group: "not-started" },
+    { key: "in-progress", name: "In progress", status_group: "in-progress" },
+    { key: "done", name: "Done", status_group: "done" },
   ],
   changes: [
     { from: "open", to: "in-progress", button: "Start working", rules },
@@ -89,7 +89,11 @@ describe("wf_02 the draft of a workflow is what the editor showed until it is ch
 
   it("keeps the key of a status that is renamed", () => {
     const draft = renameStatus(draftOf(editor), "open", "To do");
-    expect(bodyOf(draft).statuses[0]).toEqual({ key: "open", name: "To do", group: "not-started" });
+    expect(bodyOf(draft).statuses[0]).toEqual({
+      key: "open",
+      name: "To do",
+      status_group: "not-started",
+    });
     expect(sameDraft(draft, draftOf(editor))).toBe(false);
   });
 
@@ -110,7 +114,7 @@ describe("wf_02 a status is added, moved and removed in plain steps", () => {
     );
     const body = bodyOf(draft);
     expect(named(draft, "Testing").key).toBeNull();
-    expect(body.statuses.at(-1)).toEqual({ name: "Testing", group: "in-progress" });
+    expect(body.statuses.at(-1)).toEqual({ name: "Testing", status_group: "in-progress" });
     expect(body.changes.at(-1)).toMatchObject({ from: "in-progress", to: "Testing" });
   });
 

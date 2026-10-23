@@ -9,5 +9,5 @@ export function statusWordsOf(issue: ShownIssue): string | undefined {
 
 /** The status group of an issue where the viewer may see its status. */
 export function statusGroupOf(issue: ShownIssue): Schema<"StatusGroup"> | undefined {
-  return issue.status?.group;
+  return issue.status?.status_group;
 }

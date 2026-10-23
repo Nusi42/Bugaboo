@@ -323,7 +323,7 @@ async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below() -> TestR
             .send(
                 "POST",
                 "/api/v1/labels",
-                Some(json!({"name": "login", "group": group["id"]})),
+                Some(json!({"name": "login", "label_group": group["id"]})),
             )
             .await?;
         ok(&label)?;
