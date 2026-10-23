@@ -110,7 +110,11 @@ tokens {
     size "size-name" "112px" phone="120px"
     // The columns of a list row (UX §4.2): the icon columns, the ID, the priority, the person.
     size "size-col-icon" "24px"
+    // The two columns of buttons at the end of a status change in the workflow editor: the same width in every row.
+    size "size-col-rules" "64px"
+    size "size-col-remove" "80px"
     size "size-col-key" "96px"
+    size "size-col-short" "64px"
     size "size-col-priority" "96px"
     size "size-col-person" "144px"
     size "size-col-labels" "160px"
@@ -149,7 +153,7 @@ tokens {
     size "size-icon" "20px"
     size "size-icon-small" "16px"
     size "size-list" "300px"
-    size "size-details" "300px"
+    size "size-details" "340px"
     size "size-reading" "75ch"
     size "size-main" "780px"
     size "size-sheet-share" "85%"
@@ -772,11 +776,13 @@ part "button[disabled]" {
 }
 
 // A main button that cannot be pressed yet is not a pale copy of the filled one, whose white words
-// are hard to read: it is a plain box with muted words (the review of M4, A14).
+// are hard to read: it is an empty box with a dashed edge and muted words, which no secondary button
+// has (the review of M4, A14, and the last check: in Midnight it read as a secondary button).
 part "button[variant=primary][disabled]" {
     opacity 1
-    border-color "$border"
-    background "$bg-sunken"
+    border-style dashed
+    border-color "$border-control"
+    background transparent
     color "$fg-muted"
 }
 
@@ -1764,17 +1770,20 @@ part "timeline-bar" {
 
 // ───────────── Name and value (Details, UX §4.4) ─────────────
 
+// The rows of the Details share two columns: the names, as wide as the longest name (never wider than
+// `size-name`), and the values, which have all the rest (the review of M4: the values had 142 px).
 part "name-values" {
-    display flex
-    flex-direction column
+    display grid
+    grid-template-columns "fit-content($size-name) minmax(0, 1fr)"
+    column-gap "$space-3"
     margin 0
 }
 
 part "name-value" {
     display grid
-    grid-template-columns "$size-name minmax(0, 1fr)"
+    grid-column "1 / -1"
+    grid-template-columns subgrid
     align-items start
-    gap "$space-3"
     min-height "$size-control"
     padding "$space-1 0"
 }
@@ -1808,6 +1817,15 @@ part "name-value.value > muted" {
     padding "calc(($size-control - $fs-base * $lh-body) / 2) 0"
 }
 
+// "2 followers · You follow it" stays on one line, so the dot never starts a line; the button for
+// turning it round goes under it when there is no room beside it.
+part "followers-state" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+    white-space nowrap
+}
+
 // *Website · Offered* with its sign: the sign stays beside the first line of the words, whatever
 // the words do.
 part "offer-state" {
@@ -1818,9 +1836,17 @@ part "offer-state" {
 }
 
 // Why a value cannot be changed, with its lock.
+// A priority is as high as a control, so it is level with the name of its row like the other values.
+part "name-value.value > priority" {
+    min-height "$size-control"
+}
+
+// Why a value cannot be changed stands under the value, on its own line, so the value itself stays
+// level with its name whatever length the reason has (the review of M4, demo 07).
 part "name-value.reason" {
     display inline-flex
-    align-items center
+    flex-basis "100%"
+    align-items flex-start
     gap "$space-1"
     use "quiet-text"
 }
@@ -2854,10 +2880,10 @@ part "roles.note" {
 // ───────────── Projects ─────────────
 
 part "projects.details" {
-    display flex
-    flex-wrap wrap
+    display grid
+    grid-template-columns "minmax(0, $size-col-short) minmax(0, 1fr)"
     align-items center
-    gap "$space-2 $space-4"
+    gap "$space-2 $space-3"
     min-width 0
     font-weight "$weight-bold"
     overflow-wrap anywhere
@@ -4100,9 +4126,9 @@ part "list-editor.list" {
 // clickable and is not underlined; R4: the open one is marked).
 part "list-editor.open" {
     use "surface-box"
-    display flex
+    display grid
+    grid-template-columns "minmax(0, 1fr) minmax(0, 1.5fr)"
     align-items center
-    justify-content space-between
     gap "$space-3"
     box-sizing border-box
     width "100%"
@@ -4115,10 +4141,12 @@ part "list-editor.open" {
     cursor pointer
 }
 
+// The name breaks only between its words, and inside a word only when the word alone is wider than its
+// column (the review of M4: "Web-site" cut in two). The same two columns in every row line the details up.
 part "list-editor.name" {
     min-width 0
     font-weight "$weight-bold"
-    overflow-wrap anywhere
+    overflow-wrap break-word
 }
 
 part "list-editor.details" {
@@ -11549,6 +11577,7 @@ part "workflow-status.head" {
     grid-template-columns "repeat(auto-fit, minmax(min($size-name, 100%), 1fr))"
     align-items end
     gap "$space-3"
+    padding-bottom "$space-5"
 }
 
 // What moves or takes away a status: buttons with words, as wide as a finger on a phone.
@@ -11569,7 +11598,7 @@ part "workflow-changes" {
 // The columns are the same in every row, so *Rules* and *Remove* stand in a line down the list.
 part "workflow-change" {
     display grid
-    grid-template-columns "minmax(0, 1fr) minmax(0, 2fr) auto auto"
+    grid-template-columns "minmax(0, 1fr) minmax(0, 2fr) $size-col-rules $size-col-remove"
     align-items end
     gap "$space-2" "$space-3"
     padding "$space-3 0"
@@ -11634,6 +11663,20 @@ part "workflow-add" {
     flex-wrap wrap
     align-items flex-end
     gap "$space-3"
+    padding-bottom "$space-5"
+}
+
+// The message under a field of these rows stands in the room kept for it, so it never moves the other
+// fields of the row (the review of M4: the group and the button dropped 22 px).
+part "workflow-add field" "workflow-status.head field" {
+    position relative
+}
+
+part "workflow-add field.error" "workflow-status.head field.error" {
+    position absolute
+    top "100%"
+    inset-inline-start 0
+    width "100%"
 }
 
 part "workflow-rules" {
