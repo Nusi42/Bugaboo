@@ -1,4 +1,10 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["node_modules", "dist", "target", "package-lock.json"]
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "target",
+    "package-lock.json",
+    "tools/checks/api-frozen.json"
+  ]
 }

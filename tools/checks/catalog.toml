@@ -340,10 +340,23 @@ status = "active"
 id = "ARCH-API-FREEZE"
 title = "Nothing in /api/v1 is renamed or removed after the API freeze"
 rule = "ADR-0008"
-tool = "xtask (compares the generated OpenAPI document with the frozen copy stored at m4-done: a path, operation, schema, property, parameter, enum value or error code that is gone fails; additions pass)"
+tool = "xtask (compares the generated OpenAPI document with the frozen copy tools/checks/api-frozen.json, stored by `cargo xtask freeze` at m4-done: a path, operation, parameter, answer, schema, property, enum value or error code that is gone fails; additions pass; the members of oneOf, anyOf and allOf count as the schema that holds them)"
 when = ["push", "ci"]
-files = ["crates/bb-api/**", "web/packages/api-client/openapi.json"]
-status = "planned"
+files = ["crates/bb-api/**", "web/packages/api-client/openapi.json", "tools/checks/api-frozen.json"]
+status = "active"
+
+[[check]]
+id = "ARCH-API-LINT"
+title = "The API description has one casing for enum values, no duplicate or orphan schema and no _id in a path parameter"
+rule = "ADR-0008"
+tool = "xtask (reads the generated OpenAPI document: every enum value and constant is kebab-case, with a dot between the parts of a code; two schemas with the same members, types and values are refused; a schema that no route reaches, through answers, parameters, bodies and the schemas they name, is refused unless tools/checks/api-lint-exemptions.toml names it with a reason that names a follow-up; a path parameter does not end in _id; the glossary words in schema, property, parameter and operation names are TXT-TERMS, which reads the same document)"
+when = ["push", "ci"]
+files = [
+  "crates/bb-api/**",
+  "web/packages/api-client/openapi.json",
+  "tools/checks/api-lint-exemptions.toml",
+]
+status = "active"
 
 [[check]]
 id = "ARCH-LEAN"
