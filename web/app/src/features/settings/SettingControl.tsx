@@ -3,7 +3,7 @@ import { ChoiceGroup, Form, SelectField, SubmitButton, Switch, TextField } from 
 import { useState } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
-import { numberIn } from "../../shared/number.ts";
+import { wholeNumberIn } from "../../shared/number.ts";
 import { hasNoGenericControl, wordsOf } from "./texts.ts";
 
 /** What a control needs: the setting, and what to do with a new value. */
@@ -45,7 +45,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
       return;
     }
     // A number that is none, or outside the bounds, is not sent: the server would only refuse it.
-    const value = numberIn(draft, bounds);
+    const value = wholeNumberIn(draft, bounds);
     if (value === null) {
       setProblem(between ?? t("setting.ui.whole-number"));
       return;

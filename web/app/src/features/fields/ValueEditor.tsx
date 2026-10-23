@@ -12,9 +12,9 @@ import {
   durationSeconds,
   isDecimalText,
   isUnchanged,
-  isWholeNumberText,
   textOf,
   type Kept,
+  wholeNumberIn,
 } from "./value-text.ts";
 
 export type { Sent } from "./fields.ts";
@@ -61,9 +61,8 @@ function sentFrom(
     return { value: null };
   }
   if (field.kind === "whole-number") {
-    return isWholeNumberText(trimmed)
-      ? { value: Number(trimmed) }
-      : { problem: t("fields.not-a-whole-number") };
+    const whole = wholeNumberIn(trimmed);
+    return whole === null ? { problem: t("fields.not-a-whole-number") } : { value: whole };
   }
   if (field.kind === "decimal") {
     return isDecimalText(trimmed) ? { value: trimmed } : { problem: t("fields.not-a-decimal") };

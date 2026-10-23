@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { wholeNumberIn } from "../../shared/number.ts";
 import { formatNumber } from "../../shared/format.ts";
 import { durationText, ownValueText } from "../../shared/own-value-text.ts";
 import {
   durationSeconds,
   isDecimalText,
   decimalToMillionths,
-  isWholeNumberText,
   millionthsToDecimal,
   wordsOfLines,
 } from "./value-text.ts";
@@ -25,8 +25,8 @@ describe("value-text", () => {
   });
 
   it("cf_01_numbers_are_checked_before_they_are_sent", () => {
-    expect(isWholeNumberText("-12")).toBe(true);
-    expect(isWholeNumberText("1.5")).toBe(false);
+    expect(wholeNumberIn("-12")).toBe(-12);
+    expect(wholeNumberIn("1.5")).toBeNull();
     expect(isDecimalText("1.5")).toBe(true);
     expect(isDecimalText("1.1234567")).toBe(false);
     expect(isDecimalText("12")).toBe(true);

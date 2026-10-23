@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import { wholeNumberIn } from "../../shared/number.ts";
 import { Alert, alertTone, Card, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
@@ -7,12 +8,7 @@ import { durationText } from "../../shared/own-value-text.ts";
 import { QueryGate } from "../shell/index.ts";
 import { useFieldTypes, type OwnField } from "./fields.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
-import {
-  decimalToMillionths,
-  durationSeconds,
-  isWholeNumberText,
-  millionthsToDecimal,
-} from "./value-text.ts";
+import { decimalToMillionths, durationSeconds, millionthsToDecimal } from "./value-text.ts";
 
 /** The lowest or highest value in a box, as people write it for this kind. */
 function boxOf(field: OwnField, stored: number | null | undefined): string {
@@ -37,7 +33,7 @@ function storedOf(field: OwnField, text: string): number | null | undefined {
   if (field.kind === "duration") {
     return durationSeconds(trimmed);
   }
-  return isWholeNumberText(trimmed) ? Number(trimmed) : undefined;
+  return wholeNumberIn(trimmed) ?? undefined;
 }
 
 /** A count of characters or values in a box: a whole number, or nothing. */
