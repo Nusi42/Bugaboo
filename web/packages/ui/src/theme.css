@@ -5467,6 +5467,11 @@ body {
   align-items: center;
 }
 
+[data-part="app-layout"][data-variant~="phone"] [data-part="workflow-change"]:last-child {
+  padding-bottom: 0;
+  margin-bottom: calc(-1 * var(--space-2));
+}
+
 [data-part="workflow-change.to"] {
   min-width: 0;
   padding-bottom: var(--space-2);

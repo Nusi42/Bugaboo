@@ -11645,6 +11645,13 @@ part "app-layout[variant=phone] workflow-change" {
     align-items center
 }
 
+// The last row of a card has no padding below it, and its button (as high as a finger) hangs a little
+// below the words: the space under *Rules* is the space above the card's head (the review of M4).
+part "app-layout[variant=phone] workflow-change:last-child" {
+    padding-bottom 0
+    margin-bottom "calc(-1 * $space-2)"
+}
+
 part "workflow-change.to" {
     min-width 0
     padding-bottom "$space-2"
