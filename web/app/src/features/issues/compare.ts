@@ -1,3 +1,5 @@
+import { isGap, wordsAndGaps } from "@bugaboo/ui";
+
 /** Which of the two texts a paragraph is taken from. */
 export type Side = "mine" | "theirs";
 
@@ -86,28 +88,18 @@ function unmatchedWords(words: readonly string[], other: readonly string[]): rea
   return unmatched;
 }
 
-/** Whether a token is white space. */
-function isSpace(token: string): boolean {
-  return /^\s/u.test(token);
-}
-
-/** The words of a text and the white space between them, in order. */
-function tokensOf(text: string): readonly string[] {
-  return text.split(/(\s+)/u).filter((token) => token !== "");
-}
-
 /**
  * For each token of a text, whether it is a word the other text does not have, or null for white
  * space.
  */
 function changedTokens(tokens: readonly string[], other: string): readonly (boolean | null)[] {
   const unmatched = unmatchedWords(
-    tokens.filter((token) => !isSpace(token)),
-    tokensOf(other).filter((token) => !isSpace(token)),
+    tokens.filter((token) => !isGap(token)),
+    wordsAndGaps(other).filter((token) => !isGap(token)),
   );
   let word = -1;
   return tokens.map((token) => {
-    if (isSpace(token)) {
+    if (isGap(token)) {
       return null;
     }
     word += 1;
@@ -121,7 +113,7 @@ function changedTokens(tokens: readonly string[], other: string): readonly (bool
  * changed phrase is one stretch; the stretches put together are the paragraph.
  */
 export function wordParts(text: string, other: string): readonly WordPart[] {
-  const tokens = tokensOf(text);
+  const tokens = wordsAndGaps(text);
   const changedAt = changedTokens(tokens, other);
   const parts: WordPart[] = [];
   tokens.forEach((token, place) => {

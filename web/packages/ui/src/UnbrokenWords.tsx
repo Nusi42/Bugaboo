@@ -2,8 +2,7 @@ import { Fragment, type ReactNode } from "react";
 
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
-
-const gaps = /(\s+)/u;
+import { isGap, wordsAndGaps } from "./words.ts";
 
 interface Piece {
   /** Where the piece starts in the text: no two pieces start at the same place, so it is the key. */
@@ -14,15 +13,12 @@ interface Piece {
 
 /** The words of a text and the gaps between them, each with where it starts. */
 function piecesOf(text: string): readonly Piece[] {
-  const pieces: Piece[] = [];
   let start = 0;
-  for (const piece of text.split(gaps)) {
-    if (piece !== "") {
-      pieces.push({ start, piece, isWord: !gaps.test(piece) });
-      start += piece.length;
-    }
-  }
-  return pieces;
+  return wordsAndGaps(text).map((piece) => {
+    const placed = { start, piece, isWord: !isGap(piece) };
+    start += piece.length;
+    return placed;
+  });
 }
 
 /**
