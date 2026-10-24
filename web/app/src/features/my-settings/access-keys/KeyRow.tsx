@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 
-import { formatDate, formatDateTime } from "../../../shared/format.ts";
+import { formatDateTime, formatDay } from "../../../shared/format.ts";
 import { listText } from "../../../shared/list-text.ts";
 import type { AccessKey } from "./access-keys.ts";
 import { choiceName } from "./choice.ts";
@@ -46,7 +46,8 @@ function RunsOut({ item }: { readonly item: AccessKey }) {
   if (day === undefined || day === null) {
     return null;
   }
-  const when = formatDate(day);
+  // The day the person picked on this device's calendar, like the box of the form.
+  const when = formatDay(new Date(day).getTime());
   return item.expired === true ? (
     <span {...partOf(part.accessKeysExpired)}>{t("access-keys.row.expired", { when })}</span>
   ) : (

@@ -22,7 +22,7 @@ interface FieldsProps extends CreateKeyFormProps {
 
 /** *Create an access key*: a name, what it may do, when it runs out, and the password again. */
 function Fields({ rules, onMade, onCancel }: FieldsProps) {
-  const draft = useDraft();
+  const draft = useDraft(rules);
   const [needOne, setNeedOne] = useState(false);
   const create = useCreateKey(onMade);
   return (

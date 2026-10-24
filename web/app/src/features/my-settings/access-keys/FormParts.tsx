@@ -16,24 +16,7 @@ import {
 import { formatDay } from "../../../shared/format.ts";
 import { choiceHelp, choiceName, plainChoices } from "./choice.ts";
 import type { Draft } from "./draft.ts";
-
-const DIGITS_OF_YEAR = 4;
-const DIGITS_OF_PART = 2;
-
-/** The day `days` after today (as milliseconds since 1970), by the calendar of the person's own clock, not by UTC. */
-function localDay(days: number): number {
-  const today = new Date();
-  return new Date(today.getFullYear(), today.getMonth(), today.getDate() + days).getTime();
-}
-
-/** A day as the date field writes it (`2027-03-01`). */
-function dayText(moment: number): string {
-  const day = new Date(moment);
-  const year = String(day.getFullYear()).padStart(DIGITS_OF_YEAR, "0");
-  const month = String(day.getMonth() + 1).padStart(DIGITS_OF_PART, "0");
-  const date = String(day.getDate()).padStart(DIGITS_OF_PART, "0");
-  return `${year}-${month}-${date}`;
-}
+import { earliestDay, latestAt, latestDay, localDay } from "./expiry-day.ts";
 
 export interface PartProps {
   readonly draft: Draft;
@@ -70,21 +53,16 @@ export interface ExpiryProps extends PartProps {
 
 /** The day the key runs out: the default, or a day of the person's own, up to the longest time. */
 export function Expiry({ draft, rules }: ExpiryProps) {
-  // The latest day is at least tomorrow, and the day filled in is never later than it, even when
-  // the organization's default is as long as its longest time.
-  const latestAt = Math.max(rules.longest_days - 1, 1);
-  const presetAt = Math.min(Math.max(rules.default_days, 1), latestAt);
-  const latest = dayText(localDay(latestAt));
   return (
     <TextField
       label={t("access-keys.expires")}
       description={t("access-keys.expires-help", {
         days: rules.default_days,
-        latest: formatDay(localDay(latestAt)),
+        latest: formatDay(localDay(latestAt(rules))),
       })}
       requiredMessage={t("error.field.required")}
-      date={{ min: dayText(localDay(1)), max: latest }}
-      value={draft.day ?? dayText(localDay(presetAt))}
+      date={{ min: earliestDay(), max: latestDay(rules) }}
+      value={draft.day}
       onChange={draft.setDay}
     />
   );
