@@ -689,3 +689,45 @@ fn bad_example_a_schema_no_operation_reaches_keeps_its_values() {
     grown["components"]["schemas"]["Field"]["enum"] = json!(["a", "b", "c"]);
     passes(&old, &grown);
 }
+
+#[test]
+fn bad_example_a_plain_object_becomes_a_union_or_the_other_way_round() {
+    let plain = || {
+        object(
+            json!({"to": {"type": "string"}, "button": {"type": "string"}}),
+            &["to", "button"],
+        )
+    };
+    let union = |with_button: bool| {
+        let mut node = object(json!({"to": {"type": "string"}}), &["to"]);
+        if with_button {
+            node["properties"]["button"] = json!({"type": "string"});
+            node["required"] = json!(["to", "button"]);
+        }
+        node["oneOf"] = json!([
+            object(
+                json!({"verdict": {"type": "string", "enum": ["allowed"]}}),
+                &["verdict"]
+            ),
+            object(
+                json!({"verdict": {"type": "string", "enum": ["refused"]}}),
+                &["verdict"]
+            )
+        ]);
+        node
+    };
+    // A plain object becomes a union, and `button` vanishes in the same change.
+    broken_by(
+        &ans(plain()),
+        &ans(union(false)),
+        "> button: the member is gone",
+    );
+    // A union becomes a plain object, and `button` vanishes in the same change.
+    broken_by(
+        &ans(union(true)),
+        &ans(object(json!({"to": {"type": "string"}}), &["to"])),
+        "> button: the member is gone",
+    );
+    // For a request a plain object that turns into a union is a narrowing in itself.
+    broken_by(&req(plain()), &req(union(true)), "one of several shapes");
+}

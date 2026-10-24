@@ -538,6 +538,16 @@ impl Walk<'_> {
         if !was.members.is_empty() && !now.members.is_empty() {
             // What `allOf` merged into a node with alternatives (members, `required`) is its own.
             self.body(path, &was.body, &now.body, side);
+        } else {
+            // A plain object turns into a union or the other way round: its own members must
+            // still be somewhere, in the node or in one of the alternatives.
+            self.kept_in_union(path, &was, &now);
+            if side == Side::Request && was.members.is_empty() {
+                self.say(
+                    path,
+                    "the request is now one of several shapes (oneOf or anyOf)",
+                );
+            }
         }
         let (before, after) = (branches(self.old, &was), branches(self.new, &now));
         for (label, node) in &before {
@@ -546,6 +556,22 @@ impl Walk<'_> {
                 Some((_, replacement)) => self.compare(&here, node, replacement, side),
                 None => self.say(&here, "the variant is gone"),
             }
+        }
+    }
+
+    /// The members of the plain side's body, each of which must be in the other side's body or in
+    /// one of its alternatives.
+    fn kept_in_union(&mut self, path: &str, was: &Shape, now: &Shape) {
+        let holds = |spec: &Value, shape: &Shape| {
+            let mut names: BTreeSet<String> = properties(&shape.body).keys().cloned().collect();
+            for member in &shape.members {
+                names.extend(properties(&self::shape(spec, member).body).keys().cloned());
+            }
+            names
+        };
+        let (before, after) = (holds(self.old, was), holds(self.new, now));
+        for name in before.difference(&after) {
+            self.say(&format!("{path} > {name}"), "the member is gone");
         }
     }
 
