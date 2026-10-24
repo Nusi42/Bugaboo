@@ -3243,6 +3243,12 @@ part "shell.section-heading" {
     font-weight "$weight-bold"
 }
 
+// In the sheet *More* the heading starts where the line *Signed in as* above it starts: the sheet has
+// its own padding, and the heading needs none of the one that lines it up with the items of the menu.
+part "shell.sheet shell.section-heading" {
+    padding-inline 0
+}
+
 part "shell.fill" {
     flex 1
     min-width 0

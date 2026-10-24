@@ -3412,6 +3412,10 @@ body {
   font-weight: var(--weight-bold);
 }
 
+[data-part="shell.sheet"] [data-part="shell.section-heading"] {
+  padding-inline: 0;
+}
+
 [data-part="shell.fill"] {
   flex: 1;
   min-width: 0;
