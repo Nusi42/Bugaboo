@@ -55,15 +55,19 @@ export function SentenceWithValue({
   readonly children: (value: string) => ReactNode;
 }) {
   const at = value === null || value === undefined ? -1 : sentence.indexOf(value);
-  if (at < 0 || value === null || value === undefined) {
-    return sentence;
-  }
-  // One element, so that a list item that lays out its children (a flex box) keeps it in one line of words.
+  // One element from both ways, so that a list item that lays out its children (a flex box) keeps
+  // the sentence in one line of words.
   return (
     <span>
-      {sentence.slice(0, at)}
-      {children(value)}
-      {sentence.slice(at + value.length)}
+      {at < 0 || value === null || value === undefined ? (
+        sentence
+      ) : (
+        <>
+          {sentence.slice(0, at)}
+          {children(value)}
+          {sentence.slice(at + value.length)}
+        </>
+      )}
     </span>
   );
 }
