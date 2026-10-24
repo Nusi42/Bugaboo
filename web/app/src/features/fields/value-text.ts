@@ -6,8 +6,16 @@
 import { decimalDigits, decimalParts, secondsPerHour, secondsPerMinute } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
+import { wholeNumberIn } from "../../shared/number.ts";
 import { durationText } from "../../shared/own-value-text.ts";
-import type { OwnField } from "./fields.ts";
+import type { OwnField, Sent } from "./fields.ts";
+
+/**
+ * The most digits of a number a person types in a length of time or a decimal. With nine digits
+ * the seconds of a length of time (9 digits of hours) and the millionths of a decimal stay far
+ * under the largest whole number a JavaScript number holds, so nothing is rounded on its way.
+ */
+const MOST_DIGITS = 9;
 
 /** A unit as it is written in a pattern. */
 function escaped(unit: string): string {
@@ -17,7 +25,11 @@ function escaped(unit: string): string {
 /** The pattern of a length of time typed with the units of the person's language. */
 function durationPattern(): RegExp {
   const [hour, minute] = [escaped(t("fields.unit-hour")), escaped(t("fields.unit-minute"))];
-  return new RegExp(String.raw`^\s*(?:(\d+)\s*${hour})?\s*(?:(\d+)\s*${minute})?\s*$`, "iu");
+  const digits = String.raw`(\d{1,${MOST_DIGITS}})`;
+  return new RegExp(
+    String.raw`^\s*(?:${digits}\s*${hour})?\s*(?:${digits}\s*${minute})?\s*$`,
+    "iu",
+  );
 }
 
 /**
@@ -26,7 +38,7 @@ function durationPattern(): RegExp {
  */
 export function durationSeconds(text: string): number | undefined {
   const trimmed = text.trim();
-  if (/^\d+$/u.test(trimmed)) {
+  if (new RegExp(String.raw`^\d{1,${MOST_DIGITS}}$`, "u").test(trimmed)) {
     return Number(trimmed) * secondsPerMinute;
   }
   const found = durationPattern().exec(trimmed);
@@ -39,11 +51,33 @@ export function durationSeconds(text: string): number | undefined {
 
 /** Whether the text is a decimal number as the API takes it: digits, an optional sign and point. */
 export function isDecimalText(text: string): boolean {
-  return new RegExp(String.raw`^[-+]?\d+(?:\.\d{1,${decimalDigits}})?$`, "u").test(text.trim());
+  return new RegExp(String.raw`^[-+]?\d{1,${MOST_DIGITS}}(?:\.\d{1,${decimalDigits}})?$`, "u").test(
+    text.trim(),
+  );
 }
 
-/** The whole number a person typed, as the one reader of whole numbers reads it. */
-export { wholeNumberIn } from "../../shared/number.ts";
+/** What the text of a box means for the API, or a sentence that says why it cannot be sent. */
+export function sentFrom(
+  field: OwnField,
+  text: string,
+): { readonly value: Sent } | { readonly problem: string } {
+  const trimmed = text.trim();
+  if (trimmed === "") {
+    return { value: null };
+  }
+  if (field.kind === "whole-number") {
+    const whole = wholeNumberIn(trimmed);
+    return whole === null ? { problem: t("fields.not-a-whole-number") } : { value: whole };
+  }
+  if (field.kind === "decimal") {
+    return isDecimalText(trimmed) ? { value: trimmed } : { problem: t("fields.not-a-decimal") };
+  }
+  if (field.kind === "duration") {
+    const seconds = durationSeconds(trimmed);
+    return seconds === undefined ? { problem: t("fields.not-a-duration") } : { value: seconds };
+  }
+  return { value: trimmed };
+}
 
 /** The non-empty lines of a text, trimmed: one choice on each line. */
 export function wordsOfLines(text: string): string[] {
