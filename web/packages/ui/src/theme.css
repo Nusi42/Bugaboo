@@ -4355,9 +4355,9 @@ body {
 
 [data-part="keys"] {
   display: inline-flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
+  white-space: nowrap;
 }
 
 [data-part="keys.chord"] {
@@ -4539,9 +4539,11 @@ body {
 
 [data-part="shortcuts-page.keys"] {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex: none;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
+  white-space: nowrap;
 }
 
 [data-part="markdown"] {

@@ -4100,11 +4100,12 @@ part "key-capture-field.box:focus" {
     use "ring"
 }
 
+// The keys of one shortcut never break inside their combination: "G then H" is one thing.
 part "keys" {
     display inline-flex
-    flex-wrap wrap
     align-items center
     gap "$space-1"
+    white-space nowrap
 }
 
 part "keys.chord" {
@@ -4281,9 +4282,11 @@ part "shortcuts-page.intro" {
 
 part "shortcuts-page.keys" {
     display inline-flex
-    flex-wrap wrap
+    flex none
     align-items center
+    justify-content flex-end
     gap "$space-2"
+    white-space nowrap
 }
 
 
