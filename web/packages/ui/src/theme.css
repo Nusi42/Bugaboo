@@ -2003,11 +2003,6 @@ body {
   min-width: 0;
 }
 
-[data-part="name-value.value"] > [data-part="field"] {
-  flex: 1 1 100%;
-  min-width: 0;
-}
-
 [data-part="name-value.value"] > [data-part="priority"] {
   min-height: var(--size-control);
 }
@@ -5682,4 +5677,17 @@ body {
 
 [data-part="drawing-head"] {
   fill: var(--fg-muted);
+}
+
+[data-part="name-value.value"] > [data-part="field"],
+[data-part="name-value.value"] > [data-part="value-frame"],
+[data-part="name-value.value"] > [data-part="stack"],
+[data-part="name-value.value"] > [data-part="row"] {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+[data-part="name-value.value"] > [data-part="row"] > [data-part="field"] {
+  flex: 1 1 auto;
+  min-width: 0;
 }

@@ -1841,13 +1841,6 @@ part "offer-state" {
     min-width 0
 }
 
-// A box for a value of one line (a text, a choice) fills the column of the value (the review of M4: "Alder
-// Street Baker|y" ended under the edge of a box of its own width).
-part "name-value.value > field" {
-    flex "1 1 100%"
-    min-width 0
-}
-
 // A priority is as high as a control, so it is level with the name of its row like the other values.
 part "name-value.value > priority" {
     min-height "$size-control"
@@ -11842,4 +11835,21 @@ part "drawing-line" {
 
 part "drawing-head" {
     fill "$fg-muted"
+}
+
+// ───────────── Boxes in the Details ─────────────
+//
+// At the end of the file, after the parts they reach into.
+
+// A box for a value of one line (a text, a choice) fills the column of the value (the review of M4: "Alder
+// Street Baker|y" ended under the edge of a box of its own width).
+part "name-value.value > field" "name-value.value > value-frame" "name-value.value > stack" "name-value.value > row" {
+    flex "1 1 100%"
+    min-width 0
+}
+
+// A box beside an icon (the priority) takes what the icon leaves, so every box ends at the same edge.
+part "name-value.value > row > field" {
+    flex "1 1 auto"
+    min-width 0
 }

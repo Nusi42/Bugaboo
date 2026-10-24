@@ -59,7 +59,7 @@ export function SaveForm({
   }
   if (inRow) {
     return (
-      <section ref={frame} aria-label={t("fields.value-of", { name })}>
+      <section ref={frame} aria-label={t("fields.value-of", { name })} {...partOf(part.valueFrame)}>
         <Form onSubmit={onSubmit}>{children}</Form>
       </section>
     );

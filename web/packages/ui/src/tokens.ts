@@ -652,6 +652,7 @@ export const part = {
   drawingArrows: "drawing-arrows",
   drawingLine: "drawing-line",
   drawingHead: "drawing-head",
+  valueFrame: "value-frame",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -1122,4 +1123,5 @@ export const partWords = {
   "drawing-arrows": { variant: [], state: [] },
   "drawing-line": { variant: [], state: [] },
   "drawing-head": { variant: [], state: [] },
+  "value-frame": { variant: [], state: [] },
 } as const;
