@@ -158,7 +158,8 @@ tokens {
     size "size-reading" "75ch"
     size "size-main" "780px"
     size "size-sheet-share" "85%"
-    size "size-matrix-cell" "calc($size-control * 3)"
+    // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
+    size "size-matrix-cell" "calc($size-control * 4)"
     size "size-list-tall" "calc($size-list * 2)"
     // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
     size "size-line-medium" "80%"

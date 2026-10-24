@@ -152,6 +152,9 @@ pub const ACCESS_ROLE_CHOOSER: MessageKey = MessageKey::new("access.role-chooser
 /// The message `access.roles-cut`.
 pub const ACCESS_ROLES_CUT: MessageKey = MessageKey::new("access.roles-cut");
 
+/// The message `access.scrolls`.
+pub const ACCESS_SCROLLS: MessageKey = MessageKey::new("access.scrolls");
+
 /// The message `app.name`.
 pub const APP_NAME: MessageKey = MessageKey::new("app.name");
 
@@ -9669,6 +9672,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "access.roles-cut",
         "There are more roles than fit in this table. The first ones are shown.",
+    ),
+    (
+        "access.scrolls",
+        "There are more roles to the right. Scroll sideways to see them.",
     ),
     ("app.name", "Bugaboo"),
     ("appearance.dark", "Theme when my device is dark"),
