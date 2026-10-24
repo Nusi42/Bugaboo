@@ -8,24 +8,25 @@
 //! description does not have fails; what the new description adds passes. A change that
 //! must stand needs a decision record and a new version, and then a new frozen copy.
 //!
-//! The comparison is made on *facts*: one line of text for each name, type, answer, header, media
-//! type and rule that a client can depend on. An answer member stays always there, a request member
-//! stays optional, and a request is never tightened: no new required member, parameter or body, no
-//! lower limit, no new `pattern`, `enum`, `format` or `additionalProperties: false` on what was
-//! free. The members of `oneOf`, `anyOf` and `allOf` count as the schema that holds them, so a new
-//! variant is an addition and a property that moves between variants is not seen.
+//! The comparison is one recursive walk over the frozen and the new description (`compare.rs`):
+//! every operation, parameter, request body and answer, and through each `$ref` every property,
+//! item, map value and `oneOf`, `anyOf` and `allOf` branch. Each node is named by its path and
+//! compared by its side: a request may only loosen (nothing becomes required, nothing is added to
+//! or tightened in a type, format, `enum`, `pattern`, `default`, limit or `additionalProperties`,
+//! no variant goes), an answer may only grow (no member, variant, value, header or media type goes,
+//! nothing stops being always there, no `null` or wider type, no other format). What is new has no
+//! frozen node, so a new optional member brings its own rules.
 //!
 //! The frozen file itself is held too, and the check fails closed: `run` compares it with the copy
 //! at the tag `m4-done` once the tag exists, and before that with the copy at the merge base with
 //! `main` when `main` has one. A tag whose copy cannot be read, or a git that fails, is a finding,
 //! never a skip. `cargo xtask freeze` makes the same comparison before it writes.
 
-use std::collections::{BTreeMap, BTreeSet};
-
 use anyhow::Context as _;
 use serde_json::Value;
 
-use super::api_spec::{self, resolve};
+use self::compare::broken;
+use super::api_spec;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
 use crate::repo::Repo;
@@ -164,435 +165,6 @@ pub(crate) fn write_frozen(repo: &Repo) -> anyhow::Result<()> {
         .with_context(|| format!("could not write {FROZEN_PATH}"))
 }
 
-/// A limit, with the fact it belongs to (a limit on something new is no tightening).
-type Limits = BTreeMap<String, (f64, String)>;
-
-/// What a client can depend on in the description.
-///
-/// `names` holds one line of text for each fact that must stay (a frozen fact that the new
-/// description lacks is a break). `upper` and `lower` hold the limits of what a request may hold: a
-/// limit may be loosened and never tightened. `required` holds what a request must have: a thing
-/// that is required now and was not in the frozen copy is new input, a break when its owner existed.
-#[derive(Default)]
-struct Facts {
-    names: BTreeSet<String>,
-    upper: Limits,
-    lower: Limits,
-    /// What is required of a request, with the fact it belongs to.
-    required: BTreeMap<String, String>,
-}
-
-/// The upper and lower limits of validation.
-const UPPER: [&str; 3] = ["maximum", "maxLength", "maxItems"];
-const LOWER: [&str; 3] = ["minimum", "minLength", "minItems"];
-
-/// Which side of the API reaches a schema: what a client sends, and what it reads.
-#[derive(Clone, Copy, Default)]
-struct Side {
-    request: bool,
-    answer: bool,
-    /// Below a `oneOf` or `anyOf`: a client sends one variant, so what one variant requires is no
-    /// input of the others.
-    variant: bool,
-}
-
-/// The name of the schema a `$ref` points to.
-fn ref_name(reference: &str) -> &str {
-    reference.rsplit('/').next().unwrap_or(reference)
-}
-
-/// What a schema is made of, as words: the schemas it refers to, the types it has (`null`
-/// included), its `format`, `oneOf`, `anyOf` and `allOf` seen through, an array as `[]` and what its
-/// items are.
-fn tokens(schema: &Value) -> BTreeSet<String> {
-    let mut found = BTreeSet::new();
-    if let Some(reference) = schema.get("$ref").and_then(Value::as_str) {
-        found.insert(ref_name(reference).to_owned());
-    }
-    match schema.get("type") {
-        Some(Value::String(kind)) => {
-            found.insert(kind.clone());
-        }
-        Some(Value::Array(kinds)) => {
-            found.extend(kinds.iter().filter_map(Value::as_str).map(str::to_owned));
-        }
-        _ => {}
-    }
-    if let Some(format) = schema.get("format").and_then(Value::as_str) {
-        found.insert(format!("format:{format}"));
-    }
-    for key in ["oneOf", "anyOf", "allOf"] {
-        for member in schema
-            .get(key)
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            found.extend(tokens(member));
-        }
-    }
-    if let Some(items) = schema.get("items") {
-        found.extend(tokens(items).into_iter().map(|token| format!("[]{token}")));
-    }
-    found
-}
-
-/// The names of the schemas that `roots` reach, `$ref` after `$ref`.
-fn reach(spec: &Value, roots: &[&Value]) -> BTreeSet<String> {
-    let mut seen = BTreeSet::new();
-    let mut pending: Vec<&Value> = roots.to_vec();
-    while let Some(value) = pending.pop() {
-        match value {
-            Value::Object(members) => {
-                if let Some(reference) = members.get("$ref").and_then(Value::as_str)
-                    && let Some(pointer) = reference.strip_prefix('#')
-                    && seen.insert(ref_name(reference).to_owned())
-                    && let Some(target) = spec.pointer(pointer)
-                {
-                    pending.push(target);
-                }
-                pending.extend(members.values());
-            }
-            Value::Array(items) => pending.extend(items.iter()),
-            _ => {}
-        }
-    }
-    seen
-}
-
-/// The schemas of the bodies of a request, and of its parameters.
-fn request_roots<'a>(spec: &'a Value, operation: &'a Value) -> Vec<&'a Value> {
-    let mut roots: Vec<&Value> = operation
-        .get("parameters")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .map(|parameter| resolve(spec, parameter))
-        .collect();
-    if let Some(body) = operation.get("requestBody") {
-        roots.push(resolve(spec, body));
-    }
-    roots
-}
-
-/// The answers of an operation, `$ref` followed.
-fn answers<'a>(spec: &'a Value, operation: &'a Value) -> Vec<(&'a str, &'a Value)> {
-    operation
-        .get("responses")
-        .and_then(Value::as_object)
-        .into_iter()
-        .flatten()
-        .map(|(status, answer)| (status.as_str(), resolve(spec, answer)))
-        .collect()
-}
-
-fn facts(spec: &Value) -> Facts {
-    let mut found = Facts::default();
-    let mut requested = Vec::new();
-    let mut answered = Vec::new();
-    for operation in api_spec::operations(spec).into_iter().flatten() {
-        requested.extend(request_roots(spec, operation.body));
-        answered.extend(answers(spec, operation.body).into_iter().map(|(_, a)| a));
-    }
-    path_facts(spec, &mut found);
-    let requests = reach(spec, &requested);
-    let replies = reach(spec, &answered);
-    for (name, schema) in api_spec::schemas(spec) {
-        found.names.insert(format!("schema {name}"));
-        let side = Side {
-            request: requests.contains(name),
-            answer: replies.contains(name),
-            variant: false,
-        };
-        schema_facts(schema, name, &format!("schema {name}"), side, &mut found);
-    }
-    found
-}
-
-fn limits(schema: &Value, at: &str, owner: &str, found: &mut Facts) {
-    for key in UPPER {
-        if let Some(value) = schema.get(key).and_then(Value::as_f64) {
-            found
-                .upper
-                .insert(format!("{at} {key}"), (value, owner.to_owned()));
-        }
-    }
-    for key in LOWER {
-        if let Some(value) = schema.get(key).and_then(Value::as_f64) {
-            found
-                .lower
-                .insert(format!("{at} {key}"), (value, owner.to_owned()));
-        }
-    }
-}
-
-/// Whether a request text has no rule of its own: no word list, no pattern, no format.
-fn is_free_text(schema: &Value) -> bool {
-    let is_text = tokens(schema).contains("string");
-    is_text
-        && ["enum", "const", "pattern", "format"]
-            .iter()
-            .all(|key| schema.get(key).is_none())
-}
-
-/// The rules that only tighten what a request may be: the pattern and the default are facts that
-/// must stay as they are, a free text is a fact that vanishes when a rule is put on it, and an
-/// object that takes more than it names is a fact that vanishes when it is closed.
-fn request_rules(schema: &Value, at: &str, found: &mut Facts) {
-    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str) {
-        found.names.insert(format!("pattern {at} {pattern}"));
-    }
-    if let Some(default) = schema.get("default") {
-        found.names.insert(format!("default {at} {default}"));
-    }
-    if is_free_text(schema) {
-        found.names.insert(format!("free-text {at}"));
-    }
-    if schema.get("type").and_then(Value::as_str) == Some("object")
-        && schema.get("additionalProperties") != Some(&Value::Bool(false))
-    {
-        found.names.insert(format!("open-object {at}"));
-    }
-}
-
-/// The parameters of an operation: their types, values, rules and whether they are required.
-fn parameter_facts(spec: &Value, operation: &Value, place: &str, owner: &str, found: &mut Facts) {
-    for parameter in operation
-        .get("parameters")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        let parameter = resolve(spec, parameter);
-        let kind = parameter
-            .get("in")
-            .and_then(Value::as_str)
-            .unwrap_or_default();
-        let name = parameter
-            .get("name")
-            .and_then(Value::as_str)
-            .unwrap_or_default();
-        let at = format!("{place} {kind} {name}");
-        found.names.insert(format!("parameter {at}"));
-        if parameter.get("required").and_then(Value::as_bool) == Some(true) {
-            found
-                .required
-                .insert(format!("required-parameter {at}"), owner.to_owned());
-        } else {
-            found.names.insert(format!("optional-parameter {at}"));
-        }
-        if let Some(schema) = parameter.get("schema") {
-            for token in tokens(schema) {
-                found.names.insert(format!("parameter-type {at} {token}"));
-            }
-            for value in schema
-                .get("enum")
-                .and_then(Value::as_array)
-                .into_iter()
-                .flatten()
-                .filter_map(Value::as_str)
-            {
-                found.names.insert(format!("parameter-value {at} {value}"));
-            }
-            request_rules(schema, &format!("parameter {at}"), found);
-            limits(schema, &format!("parameter {at}"), owner, found);
-        }
-    }
-}
-
-fn path_facts(spec: &Value, found: &mut Facts) {
-    let Some(paths) = spec.get("paths").and_then(Value::as_object) else {
-        return;
-    };
-    for path in paths.keys() {
-        found.names.insert(format!("path {path}"));
-    }
-    for operation in api_spec::operations(spec).into_iter().flatten() {
-        let place = operation.place();
-        let owner = format!(
-            "operation {place} {}",
-            operation.text("operationId").unwrap_or_default()
-        );
-        found.names.insert(owner.clone());
-        if let Some(body) = operation.body.get("requestBody") {
-            found.names.insert(format!("body {place}"));
-            let body = resolve(spec, body);
-            if body.get("required").and_then(Value::as_bool) == Some(true) {
-                found
-                    .required
-                    .insert(format!("required-body {place}"), owner.clone());
-            }
-            for (media, content) in body
-                .get("content")
-                .and_then(Value::as_object)
-                .into_iter()
-                .flatten()
-            {
-                found.names.insert(format!("request-media {place} {media}"));
-                if let Some(schema) = content.get("schema") {
-                    for token in tokens(schema) {
-                        found
-                            .names
-                            .insert(format!("request {place} {media} {token}"));
-                    }
-                }
-            }
-        }
-        parameter_facts(spec, operation.body, &place, &owner, found);
-        for (status, answer) in answers(spec, operation.body) {
-            found.names.insert(format!("answer {place} {status}"));
-            for header in answer
-                .get("headers")
-                .and_then(Value::as_object)
-                .into_iter()
-                .flat_map(serde_json::Map::keys)
-            {
-                found
-                    .names
-                    .insert(format!("header {place} {status} {header}"));
-            }
-            for (media, content) in answer
-                .get("content")
-                .and_then(Value::as_object)
-                .into_iter()
-                .flatten()
-            {
-                found
-                    .names
-                    .insert(format!("media {place} {status} {media}"));
-                if let Some(schema) = content.get("schema") {
-                    for token in tokens(schema) {
-                        found
-                            .names
-                            .insert(format!("answer-schema {place} {status} {media} {token}"));
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// The properties, types, requiredness, limits and enum values of a schema, below the name `at`;
-/// `owner` is the fact of the schema they belong to.
-fn schema_facts(schema: &Value, at: &str, owner: &str, side: Side, found: &mut Facts) {
-    let required: BTreeSet<&str> = schema
-        .get("required")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_str)
-        .collect();
-    if side.request {
-        request_rules(schema, at, found);
-    }
-    if let Some(properties) = schema.get("properties").and_then(Value::as_object) {
-        for (name, property) in properties {
-            let here = format!("{at}.{name}");
-            found.names.insert(format!("property {here}"));
-            let kinds = tokens(property);
-            for kind in &kinds {
-                found.names.insert(format!("type {here} {kind}"));
-            }
-            // What a reader can count on is always there; what a writer may leave out stays optional.
-            if side.answer && required.contains(name.as_str()) && !kinds.contains("null") {
-                found.names.insert(format!("always {here}"));
-            }
-            if side.request {
-                if required.contains(name.as_str()) {
-                    if !side.variant {
-                        found
-                            .required
-                            .insert(format!("required-member {here}"), owner.to_owned());
-                    }
-                } else {
-                    found.names.insert(format!("optional {here}"));
-                }
-            }
-            schema_facts(property, &here, owner, side, found);
-        }
-    }
-    if side.request {
-        limits(schema, at, owner, found);
-    }
-    for key in ["enum", "const"] {
-        let values: Vec<&Value> = match schema.get(key) {
-            Some(Value::Array(values)) => values.iter().collect(),
-            Some(value) => vec![value],
-            None => Vec::new(),
-        };
-        for value in values.into_iter().filter_map(Value::as_str) {
-            found.names.insert(format!("value {at} {value}"));
-        }
-    }
-    if let Some(items) = schema.get("items") {
-        schema_facts(items, &format!("{at}[]"), owner, side, found);
-    }
-    if let Some(extra) = schema.get("additionalProperties") {
-        schema_facts(extra, &format!("{at}{{}}"), owner, side, found);
-    }
-    for key in ["oneOf", "anyOf", "allOf"] {
-        let side = Side {
-            variant: side.variant || key != "allOf",
-            ..side
-        };
-        for member in schema
-            .get(key)
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            schema_facts(member, at, owner, side, found);
-        }
-    }
-}
-
-/// What the frozen description has and the current one lacks or tightened.
-fn broken(frozen: &Value, current: &Value) -> Vec<String> {
-    let (old, now) = (facts(frozen), facts(current));
-    let mut gone: Vec<String> = old
-        .names
-        .iter()
-        .filter(|fact| !now.names.contains(*fact))
-        .cloned()
-        .collect();
-    // A limit that is new, or lower (upper) or higher (lower), on something that was there.
-    for (key, (is, owner)) in &now.upper {
-        match old.upper.get(key) {
-            Some((was, _)) if is < was => {
-                gone.push(format!("limit {key} {was} (tightened to {is})"));
-            }
-            None if old.names.contains(owner) => {
-                gone.push(format!(
-                    "limit {key} (a new limit of {is} on what was free)"
-                ));
-            }
-            _ => {}
-        }
-    }
-    for (key, (is, owner)) in &now.lower {
-        match old.lower.get(key) {
-            Some((was, _)) if is > was => {
-                gone.push(format!("limit {key} {was} (tightened to {is})"));
-            }
-            None if old.names.contains(owner) => {
-                gone.push(format!(
-                    "limit {key} (a new limit of {is} on what was free)"
-                ));
-            }
-            _ => {}
-        }
-    }
-    // New input a request must have, on a route or a schema that was there.
-    for (what, owner) in &now.required {
-        if !old.required.contains_key(what) && old.names.contains(owner) {
-            gone.push(format!(
-                "{what} (required now, and a client of the frozen API does not send it)"
-            ));
-        }
-    }
-    gone
-}
-
 fn evaluate(frozen: &Value, current: &Value) -> Vec<Finding> {
     let gone = broken(frozen, current);
     let mut findings: Vec<Finding> = gone
@@ -602,7 +174,7 @@ fn evaluate(frozen: &Value, current: &Value) -> Vec<Finding> {
             Finding::at(
                 SPEC_PATH,
                 format!(
-                    "`{fact}` is in the frozen API and is gone or tightened. Renaming, removing or tightening anything of /api/v1 needs a decision record and a new version; adding is free (ADR-0008)."
+                    "{fact}. The frozen API has it otherwise: renaming, removing or tightening anything of /api/v1 needs a decision record and a new version; adding is free (ADR-0008)."
                 ),
             )
         })
@@ -615,6 +187,8 @@ fn evaluate(frozen: &Value, current: &Value) -> Vec<Finding> {
     }
     findings
 }
+
+mod compare;
 
 #[cfg(test)]
 mod copy_tests;
