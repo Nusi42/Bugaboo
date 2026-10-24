@@ -1,3 +1,4 @@
+import { decimalWholeDigits } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import { wholeNumberIn } from "../../shared/number.ts";
@@ -32,17 +33,6 @@ describe("value-text", () => {
     expect(isDecimalText("12")).toBe(true);
   });
 
-  it("cf_01_a_number_with_too_many_digits_is_none", () => {
-    expect(durationSeconds("999999999")).toBe(999_999_999 * 60);
-    expect(durationSeconds("1000000000")).toBeUndefined();
-    expect(durationSeconds("1000000000h")).toBeUndefined();
-    expect(durationSeconds("1h 1000000000m")).toBeUndefined();
-    expect(durationSeconds(`1${"0".repeat(400)}`)).toBeUndefined();
-    expect(decimalToMillionths("123456789.5")).toBe(123_456_789_500_000);
-    expect(decimalToMillionths("1234567890.5")).toBeUndefined();
-    expect(isDecimalText(`1${"0".repeat(400)}`)).toBe(false);
-  });
-
   it("cf_01_a_decimal_is_kept_in_millionths_and_comes_back_the_same", () => {
     expect(decimalToMillionths("12.5")).toBe(12_500_000);
     expect(decimalToMillionths("-0.25")).toBe(-250_000);
@@ -69,5 +59,26 @@ describe("ownValueText", () => {
     expect(ownValueText("date-time", "2026-10-10T08:00:00Z")).toMatch(/2026/u);
     expect(ownValueText("yes-no", "maybe")).toBeUndefined();
     expect(ownValueText("duration", null)).toBeUndefined();
+  });
+});
+
+describe("value-text digits", () => {
+  it("cf_01_a_number_with_too_many_digits_is_none", () => {
+    expect(durationSeconds("999999999")).toBe(999_999_999 * 60);
+    expect(durationSeconds("1000000000")).toBeUndefined();
+    expect(durationSeconds("1000000000h")).toBeUndefined();
+    expect(durationSeconds("1h 1000000000m")).toBeUndefined();
+    expect(durationSeconds(`1${"0".repeat(400)}`)).toBeUndefined();
+    expect(decimalToMillionths("123456789.5")).toBe(123_456_789_500_000);
+    // The server keeps a decimal in an i64 of millionths: 13 whole digits are its limit, and a
+    // stored 1,234,567,890.5 can be saved again.
+    expect(decimalWholeDigits).toBe(13);
+    expect(isDecimalText("1234567890.5")).toBe(true);
+    expect(decimalToMillionths("1234567890.5")).toBe(1_234_567_890_500_000);
+    expect(isDecimalText("9223372036854.775807")).toBe(true);
+    expect(isDecimalText("92233720368547")).toBe(false);
+    // Beyond the exact whole numbers of a JavaScript number the millionths are none, not rounded.
+    expect(decimalToMillionths("9223372036854.775807")).toBeUndefined();
+    expect(isDecimalText(`1${"0".repeat(400)}`)).toBe(false);
   });
 });

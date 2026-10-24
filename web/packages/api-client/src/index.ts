@@ -68,7 +68,12 @@ export {
 } from "./notifications.generated.ts";
 export { trustedTypesPolicyName } from "./browser.generated.ts";
 export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
-export { decimalDigits, decimalParts, ownFieldPartPrefix } from "./fields.generated.ts";
+export {
+  decimalDigits,
+  decimalParts,
+  decimalWholeDigits,
+  ownFieldPartPrefix,
+} from "./fields.generated.ts";
 export { megabyte, partBytes } from "./files.generated.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
 export { minutesPerHour, msPerSecond, secondsPerHour, secondsPerMinute } from "./time.ts";
