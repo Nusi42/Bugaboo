@@ -4,7 +4,7 @@ import { megabyte, partBytes } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page, type Request } from "@playwright/test";
 
-import { onThisLayout } from "./layout.ts";
+import { nothing, onThisLayout } from "./layout.ts";
 import { partIn } from "./parts.ts";
 import { boxOf, textStartOf } from "./windows.ts";
 
@@ -270,9 +270,6 @@ export async function holdSecondPart(page: Page): Promise<Hold> {
   });
   return { release };
 }
-
-/** The step of a layout where there is nothing to look at. */
-const nothing = () => Promise.resolve();
 
 /** The border of a quiet button, transparent: the text of every button that hangs back is this far in. */
 const QUIET_BORDER_PX = 1;

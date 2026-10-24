@@ -6,6 +6,7 @@ import { dropFile, filesBlock, report, rowOf } from "./support/files.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareLook } from "./support/list-look.ts";
+import { linesOf } from "./support/windows.ts";
 import { expectNameOnOneLine, expectSentenceOnOneLine } from "./support/name-lines.ts";
 
 // A file name never breaks at a hyphen (the final check of M4): in the row of the file and in the
@@ -28,4 +29,18 @@ test("ux_4_4 the name quarter-report.pdf stays on one line in its row and in the
     page,
     t("history.file-added", { who: ada.name, name: "quarter-report.pdf" }),
   );
+});
+
+test("ux_4_4 the count of lines sees a name that breaks at its hyphen", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-2"));
+  // A name in a box too narrow for it, without the part that keeps it whole: it must be two lines.
+  await page.evaluate(() => {
+    const box = document.createElement("div");
+    box.dataset["probe"] = "narrow-name";
+    box.style.width = "6ch";
+    box.textContent = "quarter-report.pdf";
+    document.body.append(box);
+  });
+  expect(await linesOf(page.locator('[data-probe="narrow-name"]'))).toBeGreaterThan(1);
 });

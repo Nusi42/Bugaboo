@@ -5,7 +5,7 @@ import { paths } from "../src/shared/paths.ts";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { onThisLayout } from "./support/layout.ts";
+import { nothing, onThisLayout } from "./support/layout.ts";
 import { textStartOf } from "./support/windows.ts";
 
 // The *More* sheet of a phone (the final check of M4): its heading *Projects* starts where
@@ -18,8 +18,6 @@ test.use({
     },
   },
 });
-
-const nothing = (): Promise<void> => Promise.resolve();
 
 async function headingsStartTogether(page: Page): Promise<void> {
   await page.goto(paths.home);
