@@ -2815,7 +2815,8 @@ part "access.reasons" {
     line-height "$lh-text"
 }
 
-part "access.topic" {
+// A heading inside a card, below its own heading (a topic of access, a form that makes something).
+part "access.topic" "card.topic" {
     margin 0
     font-size "$fs-md"
     font-weight "$weight-bold"

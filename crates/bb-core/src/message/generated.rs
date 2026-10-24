@@ -2184,6 +2184,9 @@ pub const LABELS_FIELD_PICK_ONE: MessageKey = MessageKey::new("labels.field-pick
 /// The message `labels.group-pick-one`.
 pub const LABELS_GROUP_PICK_ONE: MessageKey = MessageKey::new("labels.group-pick-one");
 
+/// The message `labels.groups-none-yet`.
+pub const LABELS_GROUPS_NONE_YET: MessageKey = MessageKey::new("labels.groups-none-yet");
+
 /// The message `labels.groups-nothing`.
 pub const LABELS_GROUPS_NOTHING: MessageKey = MessageKey::new("labels.groups-nothing");
 
@@ -2198,6 +2201,9 @@ pub const LABELS_INTRO: MessageKey = MessageKey::new("labels.intro");
 
 /// The message `labels.labels-heading`.
 pub const LABELS_LABELS_HEADING: MessageKey = MessageKey::new("labels.labels-heading");
+
+/// The message `labels.labels-none-yet`.
+pub const LABELS_LABELS_NONE_YET: MessageKey = MessageKey::new("labels.labels-none-yet");
 
 /// The message `labels.labels-nothing`.
 pub const LABELS_LABELS_NOTHING: MessageKey = MessageKey::new("labels.labels-nothing");
@@ -2288,6 +2294,9 @@ pub const LABELS_TAGS_HEADING: MessageKey = MessageKey::new("labels.tags-heading
 
 /// The message `labels.tags-more`.
 pub const LABELS_TAGS_MORE: MessageKey = MessageKey::new("labels.tags-more");
+
+/// The message `labels.tags-none-yet`.
+pub const LABELS_TAGS_NONE_YET: MessageKey = MessageKey::new("labels.tags-none-yet");
 
 /// The message `labels.tags-nothing`.
 pub const LABELS_TAGS_NOTHING: MessageKey = MessageKey::new("labels.tags-nothing");
@@ -11363,6 +11372,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("labels.group-created", "Created the label group {name}."),
     ("labels.group-pick-one", "Pick one"),
+    (
+        "labels.groups-none-yet",
+        "There are no label groups yet. Create the first one below.",
+    ),
     ("labels.groups-nothing", "No label group has that name."),
     ("labels.groups-search", "Search label groups"),
     ("labels.groups-title", "Label groups"),
@@ -11374,6 +11387,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.label-created", "Created the label {name}."),
     ("labels.label-taken-off", "The label {name} was taken off."),
     ("labels.labels-heading", "Labels"),
+    (
+        "labels.labels-none-yet",
+        "There are no labels yet. Create the first one below.",
+    ),
     ("labels.labels-nothing", "No label has that name."),
     ("labels.labels-search", "Search labels"),
     ("labels.labels-title", "Labels"),
@@ -11438,6 +11455,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.tag-taken-off", "The tag {name} was taken off."),
     ("labels.tags-heading", "Tags"),
     ("labels.tags-more", "Show more tags"),
+    (
+        "labels.tags-none-yet",
+        "There are no tags yet. A tag starts when you put it on an issue.",
+    ),
     ("labels.tags-nothing", "No tag has that name."),
     ("labels.tags-search", "Search tags"),
     ("labels.tags-title", "Tags"),

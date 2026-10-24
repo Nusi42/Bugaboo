@@ -32,6 +32,7 @@ export function TagsSection({ open, onOpen, onClose }: OpenProps) {
         rows={lines.map((tag) => rowOf(tag, lines))}
         searchLabel={t("labels.tags-search")}
         nothing={t("labels.tags-nothing")}
+        none={t("labels.tags-none-yet")}
         openKey={open}
         onOpen={onOpen}
         onClose={onClose}

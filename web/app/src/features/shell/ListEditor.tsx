@@ -29,6 +29,8 @@ export interface ListEditorProps {
   readonly onClose: () => void;
   /** The rows have columns of their own after the name: the details line up from row to row. */
   readonly columns?: boolean;
+  /** What to say when the list has no row at all (the first one is made below); the search is then not drawn. */
+  readonly none?: string;
 }
 
 interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen" | "columns"> {
@@ -84,6 +86,7 @@ export function ListEditor({
   onOpen,
   onClose,
   columns = false,
+  none,
 }: ListEditorProps) {
   const [query, setQuery] = useState("");
   const shown = rows.filter((row) => row.name.toLowerCase().includes(query.trim().toLowerCase()));
@@ -91,6 +94,9 @@ export function ListEditor({
   // A phone shows one thing at a time: the open item takes the screen, and Back closes it. The
   // list stays in the page, hidden, so the focus can go back to the row that was opened.
   const alone = useLayout() === "phone" && open !== undefined;
+  if (rows.length === 0 && none !== undefined) {
+    return <p {...partOf(part.muted)}>{none}</p>;
+  }
   return (
     <div {...partOf(part.listEditor)}>
       <div {...partOf(part.listEditorList, { states: [alone && "hidden"] })} hidden={alone}>

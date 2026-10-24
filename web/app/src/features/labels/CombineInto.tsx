@@ -61,7 +61,7 @@ export function CombineInto(props: CombineIntoProps) {
   const picked = others.find((each) => each.id === pickedId);
   return (
     <div {...partOf(part.stack)}>
-      <h3>{t("labels.combine-title")}</h3>
+      <h3 {...partOf(part.cardTopic)}>{t("labels.combine-title")}</h3>
       <p {...partOf(part.muted)}>{t("labels.combine-help")}</p>
       <SelectField
         label={t("labels.combine-into")}

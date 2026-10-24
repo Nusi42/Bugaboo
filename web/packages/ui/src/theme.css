@@ -2968,7 +2968,8 @@ body {
   line-height: var(--lh-text);
 }
 
-[data-part="access.topic"] {
+[data-part="access.topic"],
+[data-part="card.topic"] {
   margin: 0;
   font-size: var(--fs-md);
   font-weight: var(--weight-bold);

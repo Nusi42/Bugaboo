@@ -36,11 +36,12 @@ export function LabelsSection(props: LabelsSectionProps) {
         rows={props.labels.map((label) => rowOf(label, props))}
         searchLabel={t("labels.labels-search")}
         nothing={t("labels.labels-nothing")}
+        none={t("labels.labels-none-yet")}
         openKey={props.open}
         onOpen={props.onOpen}
         onClose={props.onClose}
       />
-      <h3>{t("labels.create-label-title")}</h3>
+      <h3 {...partOf(part.cardTopic)}>{t("labels.create-label-title")}</h3>
       <p {...partOf(part.text)}>{t("labels.create-label-intro")}</p>
       <CreateLabelForm groups={props.groups} />
     </Card>

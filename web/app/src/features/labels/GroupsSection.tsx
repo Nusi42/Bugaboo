@@ -33,11 +33,12 @@ export function GroupsSection({
         rows={groups.map((group) => rowOf(group))}
         searchLabel={t("labels.groups-search")}
         nothing={t("labels.groups-nothing")}
+        none={t("labels.groups-none-yet")}
         openKey={opening.open}
         onOpen={opening.onOpen}
         onClose={opening.onClose}
       />
-      <h3>{t("labels.create-label-group-title")}</h3>
+      <h3 {...partOf(part.cardTopic)}>{t("labels.create-label-group-title")}</h3>
       <p {...partOf(part.text)}>{t("labels.create-label-group-intro")}</p>
       <CreateLabelGroupForm />
     </Card>
