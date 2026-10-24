@@ -17,6 +17,11 @@
 //! nothing stops being always there, no `null` or wider type, no other format). What is new has no
 //! frozen node, so a new optional member brings its own rules.
 //!
+//! Not compared yet (follow-ups M4-F181 to M4-F183): the key that stops a schema from being
+//! compared twice when only one side has a `$ref`; keywords next to a `$ref` and a stricter keyword
+//! in a merged `allOf` part; `readOnly`, `writeOnly`, `discriminator`, the schemas of headers, and
+//! `style` and `explode`.
+//!
 //! The frozen file itself is held too, and the check fails closed: `run` compares it with the copy
 //! at the tag `m4-done` once the tag exists, and before that with the copy at the merge base with
 //! `main` when `main` has one. A tag whose copy cannot be read, or a git that fails, is a finding,

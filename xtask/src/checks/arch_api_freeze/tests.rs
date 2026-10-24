@@ -562,3 +562,130 @@ fn a_long_list_of_findings_is_cut() {
     assert_eq!(all.len(), MOST_FINDINGS + 1);
     assert!(all.last().unwrap().message.contains("And 20 more"));
 }
+
+// --- null judged for each use, merged allOf parts, names of variants, schemas no operation reaches ---
+
+fn nullable(reference: &str) -> Value {
+    json!({"oneOf": [{"$ref": reference}, {"type": "null"}]})
+}
+
+#[test]
+fn bad_example_null_is_judged_for_each_use_of_the_same_ref() {
+    let x = "#/components/schemas/X";
+    let with = |members: Value| {
+        let mut spec = ans(object(members, &[]));
+        spec["components"]["schemas"] = json!({"X": {"type": "string"}});
+        spec
+    };
+    // Two answer members use X; the second becomes nullable after the first was compared.
+    let old = with(json!({"a": {"$ref": x}, "b": {"$ref": x}}));
+    let now = with(json!({"a": {"$ref": x}, "b": nullable(x)}));
+    broken_by(&old, &now, "> b: null is now a value of the answer");
+    // Two request members take null; the first stops taking it.
+    let mut old = req(object(json!({"a": nullable(x), "b": nullable(x)}), &[]));
+    old["components"]["schemas"] = json!({"X": {"type": "string"}});
+    let mut now = req(object(json!({"a": {"$ref": x}, "b": nullable(x)}), &[]));
+    now["components"]["schemas"] = json!({"X": {"type": "string"}});
+    broken_by(&old, &now, "> a: null is no longer accepted");
+    passes(&old, &old);
+}
+
+fn tried(button: bool, to_required: bool) -> Value {
+    let mut spec = ans(json!({"$ref": "#/components/schemas/TriedChangeBody"}));
+    let mut properties = json!({"to": {"type": "string"}});
+    let mut required = vec![];
+    if to_required {
+        required.push("to");
+    }
+    if button {
+        properties["button"] = json!({"type": "string"});
+        required.push("button");
+    }
+    spec["components"]["schemas"] = json!({
+        "TriedVerdictBody": {"oneOf": [
+            object(json!({"verdict": {"type": "string", "enum": ["allowed"]}}), &["verdict"]),
+            object(json!({"verdict": {"type": "string", "enum": ["refused"]}}), &["verdict"])
+        ]},
+        "TriedChangeBody": {"allOf": [
+            {"$ref": "#/components/schemas/TriedVerdictBody"},
+            object(properties, &required)
+        ]}
+    });
+    spec
+}
+
+#[test]
+fn bad_example_what_an_all_of_merged_into_a_node_with_alternatives_is_compared() {
+    let old = tried(true, true);
+    broken_by(&old, &tried(false, true), "> button: the member is gone");
+    broken_by(
+        &old,
+        &tried(true, false),
+        "> to: the member is no longer always there",
+    );
+    passes(&old, &old);
+    // A new required member of the merged part is new input for a request.
+    let mut was = req(json!({"$ref": "#/components/schemas/TriedChangeBody"}));
+    was["components"]["schemas"] = tried(true, true)["components"]["schemas"].clone();
+    let mut now = was.clone();
+    now["components"]["schemas"]["TriedChangeBody"]["allOf"][1]["properties"]["extra"] =
+        json!({"type": "string"});
+    now["components"]["schemas"]["TriedChangeBody"]["allOf"][1]["required"] =
+        json!(["to", "button", "extra"]);
+    broken_by(&was, &now, "> extra: a new member is required");
+}
+
+fn person_ref_by_shown(extra_first: bool, with_role: bool) -> Value {
+    let variant = |shown: &str| {
+        object(
+            json!({"shown": {"type": "string", "enum": [shown]}, "id": {"type": "string"}}),
+            &["shown", "id"],
+        )
+    };
+    let mut variants = vec![variant("name")];
+    if with_role {
+        variants.push(variant("role"));
+    }
+    if extra_first {
+        variants.insert(0, variant("someone"));
+    }
+    ans(json!({"oneOf": variants}))
+}
+
+#[test]
+fn good_example_a_variant_named_by_its_shown_value_does_not_shift_when_one_is_inserted() {
+    passes(
+        &person_ref_by_shown(false, true),
+        &person_ref_by_shown(true, true),
+    );
+}
+
+#[test]
+fn bad_example_a_variant_named_by_its_shown_value_is_found_gone() {
+    broken_by(
+        &person_ref_by_shown(false, true),
+        &person_ref_by_shown(false, false),
+        "variant(shown=role): the variant is gone",
+    );
+    // The verdict of TriedVerdictBody names its variants the same way.
+    let old = tried(true, true);
+    let mut now = old.clone();
+    now["components"]["schemas"]["TriedVerdictBody"]["oneOf"] =
+        json!([old["components"]["schemas"]["TriedVerdictBody"]["oneOf"][0].clone()]);
+    broken_by(&old, &now, "variant(verdict=refused): the variant is gone");
+}
+
+#[test]
+fn bad_example_a_schema_no_operation_reaches_keeps_its_values() {
+    let old = api(
+        json!({}),
+        json!({}),
+        json!({"Field": {"type": "string", "enum": ["a", "b"]}}),
+    );
+    let mut now = old.clone();
+    now["components"]["schemas"]["Field"]["enum"] = json!(["a"]);
+    broken_by(&old, &now, "schema Field: the value \"b\" is gone");
+    let mut grown = old.clone();
+    grown["components"]["schemas"]["Field"]["enum"] = json!(["a", "b", "c"]);
+    passes(&old, &grown);
+}

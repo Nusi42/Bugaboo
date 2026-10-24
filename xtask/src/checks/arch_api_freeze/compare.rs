@@ -202,14 +202,28 @@ fn values(body: &Value) -> Option<Vec<Value>> {
     }
 }
 
-/// How a variant is named: by its `kind` value, else the schema it refers to, else its type.
+/// How a variant is named: by a property that has one value and that the variant requires (`kind`
+/// first, then `shown`, `verdict` and the like, by name), else the schema it refers to, else its
+/// type. A name from a value does not shift when a variant is inserted.
 fn label_of(reference: Option<&str>, body: &Value, index: usize) -> String {
-    if let Some(kind) = body
-        .pointer("/properties/kind")
-        .and_then(values)
-        .filter(|listed| listed.len() == 1)
-    {
-        return format!("kind={}", kind[0].as_str().unwrap_or("?"));
+    let single = |name: &str| {
+        body.pointer(&format!("/properties/{name}"))
+            .and_then(values)
+            .filter(|listed| listed.len() == 1)
+            .map(|listed| match &listed[0] {
+                Value::String(text) => text.clone(),
+                other => other.to_string(),
+            })
+    };
+    if let Some(value) = single("kind") {
+        return format!("kind={value}");
+    }
+    for name in properties(body).keys() {
+        if required(body).contains(name.as_str())
+            && let Some(value) = single(name)
+        {
+            return format!("{name}={value}");
+        }
     }
     if let Some(reference) = reference {
         return format!("ref {reference}");
@@ -495,6 +509,13 @@ impl Walk<'_> {
     /// Compares two nodes of one side.
     fn compare(&mut self, path: &str, old: &Value, new: &Value, side: Side) {
         let (was, now) = (shape(self.old, old), shape(self.new, new));
+        // `null` is judged for each use: a nullable `$ref` and a plain one are the same schema.
+        if side == Side::Answer && now.nullable && !was.nullable {
+            self.say(path, "null is now a value of the answer");
+        }
+        if side == Side::Request && was.nullable && !now.nullable {
+            self.say(path, "null is no longer accepted");
+        }
         if was.reference.is_some() || now.reference.is_some() {
             let key = (
                 was.reference.clone().unwrap_or_default(),
@@ -510,15 +531,13 @@ impl Walk<'_> {
                 self.reached.insert(name.clone());
             }
         }
-        if side == Side::Answer && now.nullable && !was.nullable {
-            self.say(path, "null is now a value of the answer");
-        }
-        if side == Side::Request && was.nullable && !now.nullable {
-            self.say(path, "null is no longer accepted");
-        }
         if was.members.is_empty() && now.members.is_empty() {
             self.body(path, &was.body, &now.body, side);
             return;
+        }
+        if !was.members.is_empty() && !now.members.is_empty() {
+            // What `allOf` merged into a node with alternatives (members, `required`) is its own.
+            self.body(path, &was.body, &now.body, side);
         }
         let (before, after) = (branches(self.old, &was), branches(self.new, &now));
         for (label, node) in &before {
@@ -532,7 +551,10 @@ impl Walk<'_> {
 
     /// Compares the keywords of two nodes that have no alternatives.
     fn body(&mut self, path: &str, old: &Value, new: &Value, side: Side) {
-        if side != Side::Neither {
+        if side == Side::Neither {
+            // What no operation reaches keeps its values as well as its members.
+            self.listed(path, old, new, side);
+        } else {
             self.rules(path, old, new, side);
         }
         self.members(path, old, new, side);
