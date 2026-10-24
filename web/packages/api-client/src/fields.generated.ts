@@ -8,3 +8,6 @@ export const decimalParts = 1000000;
 
 /** How many digits a decimal number of an own field has after the point. */
 export const decimalDigits = 6;
+
+/** The most digits the whole part of a decimal number of an own field has: the server keeps it in an i64 of parts. */
+export const decimalWholeDigits = 13;

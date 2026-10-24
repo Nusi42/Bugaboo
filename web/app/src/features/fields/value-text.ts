@@ -3,7 +3,13 @@
  * is seconds in the API and "1h 30m" on the screen; a decimal is text in both.
  */
 
-import { decimalDigits, decimalParts, secondsPerHour, secondsPerMinute } from "@bugaboo/api-client";
+import {
+  decimalDigits,
+  decimalParts,
+  decimalWholeDigits,
+  secondsPerHour,
+  secondsPerMinute,
+} from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { wholeNumberIn } from "../../shared/number.ts";
@@ -11,9 +17,9 @@ import { durationText } from "../../shared/own-value-text.ts";
 import type { OwnField, Sent } from "./fields.ts";
 
 /**
- * The most digits of a number a person types in a length of time or a decimal. With nine digits
- * the seconds of a length of time (9 digits of hours) and the millionths of a decimal stay far
- * under the largest whole number a JavaScript number holds, so nothing is rounded on its way.
+ * The most digits of a number a person types in a length of time. With nine digits the seconds
+ * (nine digits of hours) stay far under the largest whole number a JavaScript number holds, so
+ * nothing is rounded on its way. A decimal has its own limit, the server's (`decimalWholeDigits`).
  */
 const MOST_DIGITS = 9;
 
@@ -51,9 +57,10 @@ export function durationSeconds(text: string): number | undefined {
 
 /** Whether the text is a decimal number as the API takes it: digits, an optional sign and point. */
 export function isDecimalText(text: string): boolean {
-  return new RegExp(String.raw`^[-+]?\d{1,${MOST_DIGITS}}(?:\.\d{1,${decimalDigits}})?$`, "u").test(
-    text.trim(),
-  );
+  return new RegExp(
+    String.raw`^[-+]?\d{1,${decimalWholeDigits}}(?:\.\d{1,${decimalDigits}})?$`,
+    "u",
+  ).test(text.trim());
 }
 
 /** What the text of a box means for the API, or a sentence that says why it cannot be sent. */
@@ -99,6 +106,10 @@ export function decimalToMillionths(text: string): number | undefined {
   const digits = trimmed.replace(/^[-+]/u, "");
   const [whole = "0", parts = ""] = digits.split(".");
   const amount = Number(whole) * MILLIONTHS + Number(parts.padEnd(decimalDigits, "0"));
+  // A decimal the server takes can have more millionths than a JavaScript number holds exactly.
+  if (!Number.isSafeInteger(amount)) {
+    return undefined;
+  }
   return negative ? -amount : amount;
 }
 

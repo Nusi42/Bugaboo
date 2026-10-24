@@ -650,6 +650,12 @@ pub(super) fn fields(sources: &[Source]) -> anyhow::Result<String> {
     let file = syn::parse_file(text).with_context(|| format!("{FIELDS_SOURCE} is not Rust"))?;
     let parts = number_const(&file, FIELDS_SOURCE, "DECIMAL_PARTS")?;
     let digits = parts.len().saturating_sub(1);
+    // A decimal is kept in an `i64` of parts, so its whole part has as many digits as the largest
+    // `i64` divided by the parts.
+    let parts_number: i64 = parts
+        .parse()
+        .with_context(|| format!("DECIMAL_PARTS in {FIELDS_SOURCE} is not a number"))?;
+    let whole_digits = (i64::MAX / parts_number).to_string().len();
     let prefix = text_const(text, "EDIT_PART_PREFIX")
         .with_context(|| format!("{FIELDS_SOURCE} has no `const EDIT_PART_PREFIX` that is text"))?;
     Ok(format!(
@@ -661,6 +667,9 @@ export const decimalParts = {parts};
 
 /** How many digits a decimal number of an own field has after the point. */
 export const decimalDigits = {digits};
+
+/** The most digits the whole part of a decimal number of an own field has: the server keeps it in an i64 of parts. */
+export const decimalWholeDigits = {whole_digits};
 "
     ))
 }
