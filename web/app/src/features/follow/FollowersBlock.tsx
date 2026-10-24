@@ -84,7 +84,7 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
             </Button>
           ) : null}
           {mine.following ? (
-            <span {...partOf(part.muted)} title={mine.why}>
+            <span {...partOf(part.followersStateWords)} title={mine.why}>
               {t(counted ? "followers.following-after-count" : "followers.following")}
             </span>
           ) : null}

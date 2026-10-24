@@ -1828,8 +1828,15 @@ part "name-value.value > muted" {
 part "followers-state" {
     display inline-flex
     align-items center
-    gap "$space-2"
     white-space nowrap
+}
+
+// The words after the count are the size of the count, so the line reads as one sentence, and the
+// space before the dot is the space after it.
+part "followers-state.words" {
+    margin-inline-start "$space-1"
+    color "$fg-muted"
+    font-size "$fs-ui"
 }
 
 // *Website · Offered* with its sign: the sign stays beside the first line of the words, whatever
