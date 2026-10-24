@@ -11767,13 +11767,33 @@ part "workflow-tried" {
     gap "$space-2"
 }
 
+// One result of *Try it*: the sign at the start edge, and beside it the button with its status and,
+// under them, why. The sign is level with the first line, whatever the words do below.
 part "workflow-try" {
     use "sunken-box"
+    display grid
+    grid-template-columns "auto minmax(0, 1fr)"
+    align-items start
+    gap "$space-1" "$space-3"
+    padding "$space-3"
+}
+
+part "workflow-try.sign" {
+    display flex
+    align-items center
+    min-height "$size-control-small"
+}
+
+part "workflow-try.title" {
     display flex
     flex-wrap wrap
-    align-items baseline
-    gap "$space-2" "$space-4"
-    padding "$space-3"
+    align-items center
+    gap "$space-2" "$space-3"
+    min-height "$size-control-small"
+}
+
+part "workflow-try.reason" {
+    grid-column 2
 }
 
 // The drawing: a column for each status group, the boxes in them, and the arrows over them.
