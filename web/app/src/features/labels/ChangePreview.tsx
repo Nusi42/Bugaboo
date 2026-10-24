@@ -18,7 +18,6 @@ export function ChangePreviewView({ preview }: { readonly preview: Schema<"Chang
       <AppLongPreview
         summary={t("preview.summary", { changed: preview.summary.will_change, skipped: 0 })}
         label={t("preview.label")}
-        nothing={t("preview.nothing")}
         groups={preview.issues.map((each) => ({
           key: each.issue.id,
           heading: <strong>{each.issue.readable_id}</strong>,

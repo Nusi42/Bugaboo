@@ -36,8 +36,6 @@ export interface LongPreviewProps {
   readonly showAll: (count: number) => string;
   /** *Show fewer*: the button that closes them again. */
   readonly showFewer: string;
-  /** What a preview with nothing in it says. */
-  readonly nothing: string;
 }
 
 /** How many groups a long preview shows before *Show all*. */
@@ -60,7 +58,7 @@ function Group({ group }: { readonly group: LongPreviewGroup }) {
 }
 
 /**
- * One component for every long preview (M2C-F80, UX principle 6): a summary first, then the things
+ * One component for every long preview (M2C-F80, UX principle 6): a summary first (which also says when there is nothing to show), then the things
  * grouped by issue or by person, a few at a time with *Show all*. Moving a project, changing many
  * issues, and renaming or combining a tag or a label all use it, so they read alike.
  */
@@ -71,7 +69,6 @@ export function LongPreview({
   first = SHOWN_FIRST,
   showAll,
   showFewer,
-  nothing,
 }: LongPreviewProps) {
   const [open, setOpen] = useState(false);
   const listId = useId();
@@ -79,9 +76,7 @@ export function LongPreview({
   return (
     <section {...partOf(part.longPreview)}>
       <output {...partOf(part.longPreviewSummary)}>{summary}</output>
-      {groups.length === 0 ? (
-        <p {...partOf(part.muted)}>{nothing}</p>
-      ) : (
+      {groups.length === 0 ? null : (
         <ul id={listId} {...partOf(part.longPreviewGroups)} aria-label={label}>
           {shown.map((group) => (
             <Group key={group.key} group={group} />

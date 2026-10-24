@@ -3156,9 +3156,6 @@ pub const PERSON_SOMEONE_INSIDE: MessageKey = MessageKey::new("person.someone-in
 /// The message `preview.label`.
 pub const PREVIEW_LABEL: MessageKey = MessageKey::new("preview.label");
 
-/// The message `preview.nothing`.
-pub const PREVIEW_NOTHING: MessageKey = MessageKey::new("preview.nothing");
-
 /// The message `priority.critical`.
 pub const PRIORITY_CRITICAL: MessageKey = MessageKey::new("priority.critical");
 
@@ -3361,9 +3358,6 @@ pub const PROJECTS_PREVIEW_LIST: MessageKey = MessageKey::new("projects.preview-
 
 /// The message `projects.preview-loading`.
 pub const PROJECTS_PREVIEW_LOADING: MessageKey = MessageKey::new("projects.preview-loading");
-
-/// The message `projects.preview-nothing`.
-pub const PROJECTS_PREVIEW_NOTHING: MessageKey = MessageKey::new("projects.preview-nothing");
 
 /// The message `projects.preview-truncated`.
 pub const PROJECTS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("projects.preview-truncated");
@@ -12182,7 +12176,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.someone", "Someone"),
     ("person.someone-inside", "someone"),
     ("preview.label", "Issues in this change"),
-    ("preview.nothing", "None of the issues would change."),
     (
         "preview.summary",
         "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
@@ -12347,10 +12340,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("projects.preview-list", "Changes for people"),
     ("projects.preview-loading", "Working out what changes…"),
-    (
-        "projects.preview-nothing",
-        "Nobody gains or loses access, and nobody changes role.",
-    ),
     (
         "projects.preview-summary",
         "{changed, plural, =0 {Nobody} one {# person} other {# people}} will gain or lose access or change role in the projects you can see.",

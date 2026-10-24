@@ -395,7 +395,6 @@ export const messages = {
   "nav.field-permissions": "Field permissions",
   "nav.people-visibility": "Who sees people",
   "nav.check-access": "Check access",
-  "access.scrolls": "There are more roles to the right. Scroll sideways to see them.",
   "field-permissions.project-title": "Field permissions in {project}",
   "people-visibility.project-title": "Who sees people in {project}",
   "check-access.project-title": "Check access in {project}",
@@ -622,7 +621,6 @@ export const messages = {
   "preview.summary":
     "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
   "preview.label": "Issues in this change",
-  "preview.nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
   "workflows.nav": "Workflows",

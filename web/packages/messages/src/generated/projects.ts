@@ -55,7 +55,6 @@ export const messages = {
   "projects.picker-top": "Top level",
   "projects.preview-heading": "What changes",
   "projects.preview-loading": "Working out what changes…",
-  "projects.preview-nothing": "Nobody gains or loses access, and nobody changes role.",
   "projects.preview-hidden-note":
     "This list holds only the projects you can see. People may be affected in projects you cannot see.",
   "projects.preview-truncated": "There are more changes than this list shows.",

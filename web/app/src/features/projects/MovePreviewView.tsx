@@ -31,7 +31,6 @@ export function MovePreviewView({ preview }: { readonly preview: Preview }) {
       <AppLongPreview
         summary={t("projects.preview-summary", { changed: preview.summary.will_change })}
         label={t("projects.preview-list")}
-        nothing={t("projects.preview-nothing")}
         groups={groups.map((group) => ({
           key: group.key,
           heading: <strong>{group.person}</strong>,
