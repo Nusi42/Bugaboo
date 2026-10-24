@@ -411,6 +411,7 @@ export const messages = {
   "history.changed": "{who} changed {field} from {before} to {after}",
   "history.set": "{who} set {field}: {after}",
   "history.cleared": "{who} cleared {field}",
+  "history.assigned": "{who} assigned this issue to {after}",
   "history.changed-long-text": "{who} changed {field}",
   "history.file-added": "{who} added the file {name}",
   "history.file-added-unnamed": "{who} added a file",

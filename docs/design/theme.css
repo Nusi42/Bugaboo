@@ -42,7 +42,11 @@
   --size-edge: 4px;
   --size-name: 112px;
   --size-col-icon: 24px;
+  --size-col-rules: 64px;
+  --size-col-remove: 80px;
   --size-col-key: 96px;
+  --size-col-short: 64px;
+  --size-col-place: 112px;
   --size-col-priority: 96px;
   --size-col-person: 144px;
   --size-col-labels: 160px;
@@ -71,7 +75,7 @@
   --size-icon: 20px;
   --size-icon-small: 16px;
   --size-list: 300px;
-  --size-details: 300px;
+  --size-details: 340px;
   --size-reading: 75ch;
   --size-main: 780px;
   --size-sheet-share: 85%;

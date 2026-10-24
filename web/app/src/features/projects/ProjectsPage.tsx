@@ -16,8 +16,10 @@ function Details({ project }: { readonly project: ProjectLine }) {
       : t("projects.inside", { name: project.parent.name });
   return (
     <span {...partOf(part.projectsDetails)}>
-      <span>{project.shortName}</span>
-      <span {...partOf(part.muted)}>{place}</span>
+      <span {...partOf(part.projectsShort)}>{project.shortName}</span>
+      <span {...partOf(part.projectsPlace)}>
+        <span {...partOf(part.muted)}>{place}</span>
+      </span>
     </span>
   );
 }
@@ -52,6 +54,7 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
           <p {...partOf(part.muted)}>{t("projects.none-yet")}</p>
         ) : (
           <ListEditor
+            columns
             rows={rows}
             searchLabel={t("projects.search")}
             nothing={t("projects.nothing")}
