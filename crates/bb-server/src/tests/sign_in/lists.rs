@@ -18,7 +18,7 @@ async fn perf_02_a_list_judges_who_asks_before_it_judges_the_query() -> TestResu
             // Not signed in: 401, whatever is wrong with the query.
             let reply = stranger.send("GET", &format!("{list}?{bad}"), None).await?;
             assert_eq!(reply.status, StatusCode::UNAUTHORIZED, "{bad}");
-            assert_eq!(reply.code(), "auth.not_signed_in", "{bad}");
+            assert_eq!(reply.code(), "auth.not-signed-in", "{bad}");
         }
         for bad in ["fields=password", "cursor=nonsense"] {
             // Signed in but not an administrator: 403, not a hint about the query.
@@ -28,8 +28,8 @@ async fn perf_02_a_list_judges_who_asks_before_it_judges_the_query() -> TestResu
         }
         // Only for the person who may list, the query is judged.
         for (bad, code) in [
-            ("fields=password", "request.unknown_field"),
-            ("cursor=nonsense", "request.bad_cursor"),
+            ("fields=password", "request.unknown-field"),
+            ("cursor=nonsense", "request.bad-cursor"),
         ] {
             let reply = ada.send("GET", &format!("{list}?{bad}"), None).await?;
             assert_eq!(reply.status, StatusCode::BAD_REQUEST, "{bad}");

@@ -18,7 +18,7 @@ const NotificationsBlock = lazyRouteComponent(
 export function HomePage() {
   const me = useMe();
   const permissions = usePermissions();
-  const title = t("home.title", { name: me?.display_name ?? "" });
+  const title = t("home.title", { name: me?.name ?? "" });
   usePageTitle(title);
   return (
     <>

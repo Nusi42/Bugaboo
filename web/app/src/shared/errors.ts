@@ -27,13 +27,13 @@ export function messageOf(error: unknown): string {
 
 /** Whether the answer says that the person has to set up a second step before anything else. */
 export function isSecondStepRequired(error: unknown): boolean {
-  return codeOf(error) === "auth.second_step_required";
+  return codeOf(error) === "auth.second-step-required";
 }
 
 /** Whether a password was refused for what it is: too short, or one of the passwords that are tried first. */
 export function isPasswordProblem(error: unknown): boolean {
   const code = codeOf(error);
-  return code === "auth.password_too_short" || code === "auth.password_breached";
+  return code === "auth.password-too-short" || code === "auth.password-breached";
 }
 
 /** Whether the answer says that nobody is signed in, or that the sign-in belongs to another page. */
@@ -43,8 +43,8 @@ export function sessionLostReason(error: unknown): SessionLostReason | undefined
 }
 
 const lostReasons: Readonly<Partial<Record<ErrorCode, SessionLostReason>>> = {
-  "auth.not_signed_in": "session-ended",
-  "request.wrong_token": "wrong-token",
+  "auth.not-signed-in": "session-ended",
+  "request.wrong-token": "wrong-token",
 };
 
 /** Why the person is taken to the sign-in page: the sign-in ended, or does not fit the page. */

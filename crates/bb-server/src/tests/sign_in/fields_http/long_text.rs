@@ -9,12 +9,12 @@ async fn take_notes_lock(ada: &mut Browser, id: &str, field: &str) -> Result<Rep
             "POST",
             "/api/v1/edit-locks",
             Some(json!({
-                "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
+                "target": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
                 "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
             })),
         )
         .await?;
-    assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+    assert_eq!(taken.body["kind"], "taken", "{}", taken.body);
     Ok(taken)
 }
 
@@ -33,7 +33,7 @@ async fn locked_notes(
     let made = ok(&site.create(ada, "Has notes").await?)?.clone();
     let (id, key) = (
         id_in(&made)?,
-        made["key"].as_str().ok_or("no key")?.to_owned(),
+        made["readable_id"].as_str().ok_or("no key")?.to_owned(),
     );
     let taken = take_notes_lock(ada, &id, &field).await?;
     Ok((field, made, key, taken))

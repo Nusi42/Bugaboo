@@ -64,7 +64,7 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> TestResult
         let mut stranger = Browser::new(&app, &used);
         let reply = stranger.send("GET", STATUS, None).await?;
         assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
-        assert_eq!(reply.code(), "auth.not_signed_in");
+        assert_eq!(reply.code(), "auth.not-signed-in");
 
         // A person who is not an administrator: forbidden.
         let mut ada = Browser::new(&app, &used);
@@ -79,7 +79,7 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> TestResult
         assert_eq!(reply.status, StatusCode::OK);
         assert_eq!(reply.header("cache-control"), "no-store");
         assert_eq!(reply.body["version"], env!("CARGO_PKG_VERSION"));
-        assert_eq!(reply.body["database"]["kind"], "built_in");
+        assert_eq!(reply.body["database"]["kind"], "built-in");
         assert_eq!(reply.body["database"]["ok"], true);
         assert!(reply.body["started_at"].is_string());
         assert!(reply.body["uptime_seconds"].is_u64());

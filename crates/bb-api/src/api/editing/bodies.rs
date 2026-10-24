@@ -2,11 +2,60 @@
 
 use super::*;
 
+/// The kind of a record, written in words joined by hyphens (`issue`, `issue-type`). It is the kind
+/// that is stored, with the underscore of the stored word written as a hyphen like every word of the
+/// API.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct RecordKind(EntityKind);
+
+impl RecordKind {
+    /// The word of the API for a stored kind.
+    fn word(&self) -> String {
+        crate::api::api_word(self.0.as_str())
+    }
+
+    /// The kind with this word, if it is one of the kinds the use cases know.
+    fn parse(word: &str) -> Option<Self> {
+        let stored = crate::api::stored_word(word)?;
+        CoreRecordKind::from_code(&stored).map(|kind| Self(EntityKind::from(kind)))
+    }
+}
+
+impl Serialize for RecordKind {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&self.word())
+    }
+}
+
+impl<'de> Deserialize<'de> for RecordKind {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let word = <std::borrow::Cow<'de, str>>::deserialize(deserializer)?;
+        Self::parse(&word).ok_or_else(|| serde::de::Error::custom("not a kind of record"))
+    }
+}
+
+impl utoipa::PartialSchema for RecordKind {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        use utoipa::openapi::schema::{ObjectBuilder, Type};
+        ObjectBuilder::new()
+            .schema_type(Type::String)
+            .description(Some("The kind of a record, like `issue`."))
+            .enum_values(Some(
+                CoreRecordKind::ALL
+                    .iter()
+                    .map(|kind| crate::api::api_word(kind.code())),
+            ))
+            .into()
+    }
+}
+
+impl ToSchema for RecordKind {}
+
 /// A record, by its kind and ID.
 #[derive(Deserialize, Serialize, ToSchema)]
 pub(crate) struct RecordRefBody {
-    /// The kind of record, like `issue`.
-    pub(super) kind: String,
+    /// The kind of record.
+    pub(super) kind: RecordKind,
     /// The ID of the record.
     pub(super) id: String,
 }
@@ -14,7 +63,7 @@ pub(crate) struct RecordRefBody {
 impl RecordRefBody {
     pub(super) fn record(&self) -> Result<EntityRef, ApiError> {
         Ok(EntityRef {
-            kind: EntityKind::new(&self.kind).map_err(|_| ApiError::new(ErrorCode::NotFound))?,
+            kind: self.kind.0.clone(),
             id: EntityId::from_str(&self.id).map_err(|_| ApiError::new(ErrorCode::NotFound))?,
         })
     }
@@ -23,7 +72,7 @@ impl RecordRefBody {
 impl From<&EntityRef> for RecordRefBody {
     fn from(record: &EntityRef) -> Self {
         Self {
-            kind: record.kind.as_str().to_owned(),
+            kind: RecordKind(record.kind.clone()),
             id: record.id.to_string(),
         }
     }
@@ -31,15 +80,15 @@ impl From<&EntityRef> for RecordRefBody {
 
 /// One thing being edited: one part of one record.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct EditWhatBody {
+pub(crate) struct EditTargetBody {
     /// The record.
     pub(super) record: RecordRefBody,
     /// Which long text of the record, like `description`.
     pub(super) part: String,
 }
 
-impl EditWhatBody {
-    pub(super) fn what(&self) -> Result<EditWhat, ApiError> {
+impl EditTargetBody {
+    pub(super) fn target(&self) -> Result<EditWhat, ApiError> {
         Ok(EditWhat {
             record: self.record.record()?,
             part: TechnicalName::new(&self.part)
@@ -48,11 +97,32 @@ impl EditWhatBody {
     }
 }
 
+/// The layout or the workflow set at exactly the place that was asked about.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct SlotBody {
+    /// The ID of the layout or workflow, which the edit lock is about.
+    pub(crate) id: String,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    pub(crate) version: i64,
+}
+
+/// A long text to save under the edit lock the person holds: the description of an issue, a comment
+/// or the long text of an own field.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct SaveTextBody {
+    /// The version of the record the person started from.
+    pub(crate) version: i64,
+    /// The token the edit lock was taken with.
+    pub(crate) lock_token: String,
+    /// The new text, in Markdown.
+    pub(crate) text: String,
+}
+
 /// Which thing a person wants the lock on, and from which open editor.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct TakeLockBody {
     /// The thing that is going to be edited.
-    pub(super) what: EditWhatBody,
+    pub(super) target: EditTargetBody,
     /// The open editor (a tab): an ID the browser makes when the editor opens.
     pub(super) editor_id: String,
 }
@@ -95,15 +165,28 @@ impl From<&HeldLock> for HeldLockBody {
 }
 
 /// Which thing to ask about, in the address.
-#[derive(Deserialize, ToSchema, utoipa::IntoParams)]
+#[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
-pub(crate) struct EditWhatQuery {
-    /// The kind of record, like `issue`.
-    pub(super) kind: String,
+pub(crate) struct EditTargetQuery {
+    /// The kind of record.
+    pub(super) record_kind: RecordKind,
     /// The ID of the record.
-    pub(super) id: String,
+    pub(super) record_id: String,
     /// Which long text of the record, like `description`.
     pub(super) part: String,
+}
+
+impl EditTargetQuery {
+    pub(super) fn target(self) -> Result<EditWhat, ApiError> {
+        EditTargetBody {
+            record: RecordRefBody {
+                kind: self.record_kind,
+                id: self.record_id,
+            },
+            part: self.part,
+        }
+        .target()
+    }
 }
 
 /// Whether somebody is editing a thing now.
@@ -125,12 +208,12 @@ impl From<&LockHolder> for LockHolderBody {
 
 /// The answer to asking for a lock.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "status", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum LockOutcomeBody {
     /// The editor has the lock.
     Taken(TakenLockBody),
     /// Somebody else is editing.
-    Held(HeldLockBody),
+    HeldByOther(HeldLockBody),
 }
 
 impl Masked for LockOutcomeBody {}
@@ -149,7 +232,7 @@ impl From<&LockOutcome> for LockOutcomeBody {
                 lease_seconds: *lease_seconds,
                 heartbeat_seconds: *heartbeat_seconds,
             }),
-            LockOutcome::Held(held) => Self::Held(HeldLockBody::from(held)),
+            LockOutcome::Held(held) => Self::HeldByOther(HeldLockBody::from(held)),
         }
     }
 }
@@ -174,9 +257,9 @@ impl From<DraftTextBody> for DraftText {
 
 /// A heartbeat: the editor is still open.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct HeartbeatBody {
+pub(crate) struct RenewBody {
     /// The thing that is being edited.
-    pub(super) what: EditWhatBody,
+    pub(super) target: EditTargetBody,
     /// The lock token the lock was taken with.
     pub(super) lock_token: String,
     /// The text so far: kept as the draft of the person, also when the lock is gone.
@@ -185,10 +268,10 @@ pub(crate) struct HeartbeatBody {
 
 /// Whether the editor still has the lock, and if not, why.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "status", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum LockStatusBody {
     /// The lease is renewed.
-    Held {
+    Renewed {
         /// When it runs out now.
         expires_at: String,
     },
@@ -204,7 +287,7 @@ pub(crate) enum LockStatusBody {
 impl From<&LockStatus> for LockStatusBody {
     fn from(status: &LockStatus) -> Self {
         match status {
-            LockStatus::Held { expires_at } => Self::Held {
+            LockStatus::Held { expires_at } => Self::Renewed {
                 expires_at: expires_at.to_string(),
             },
             LockStatus::RanOut => Self::RanOut,
@@ -236,7 +319,7 @@ impl From<&NoticeView> for NoticeBody {
 
 /// The answer to a heartbeat.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct HeartbeatAnswerBody {
+pub(crate) struct RenewAnswerBody {
     /// Whether the editor still has the lock.
     pub(super) lock: LockStatusBody,
     /// What others did since the last heartbeat; each note is shown once.
@@ -245,9 +328,9 @@ pub(crate) struct HeartbeatAnswerBody {
     pub(super) draft_saved: bool,
 }
 
-impl Masked for HeartbeatAnswerBody {}
+impl Masked for RenewAnswerBody {}
 
-impl From<&HeartbeatAnswer> for HeartbeatAnswerBody {
+impl From<&HeartbeatAnswer> for RenewAnswerBody {
     fn from(heartbeat: &HeartbeatAnswer) -> Self {
         Self {
             lock: LockStatusBody::from(&heartbeat.lock),
@@ -259,61 +342,84 @@ impl From<&HeartbeatAnswer> for HeartbeatAnswerBody {
 
 /// Which lock to let go of, and the token it was taken with.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct ReleaseLockBody {
+pub(crate) struct LetGoBody {
     /// The thing that was edited.
-    pub(super) what: EditWhatBody,
+    pub(super) target: EditTargetBody,
     /// The lock token the lock was taken with.
     pub(super) lock_token: String,
 }
 
 /// Which thing somebody else is editing.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct EditWhatOnlyBody {
+pub(crate) struct EditTargetOnlyBody {
     /// The thing somebody else is editing.
-    pub(super) what: EditWhatBody,
+    pub(super) target: EditTargetBody,
 }
 
-/// Take the editing over from the person who is editing.
+/// The form that makes a new record of a kind in a project, as the target of a draft.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct EditAnywayBody {
-    /// The thing somebody else is editing.
-    pub(super) what: EditWhatBody,
-    /// The open editor (a tab) that takes over.
-    pub(super) editor_id: String,
+pub(crate) struct NewRecordTargetBody {
+    /// The kind of record the form makes.
+    pub(super) kind: RecordKind,
+    /// The project it is made in.
+    pub(super) project: String,
 }
 
-/// What a draft is for: a part of a record (`kind`, `id` and `part`), or the form that makes a new
-/// record of a kind in a project (`kind` and `project`).
-#[derive(Deserialize, ToSchema, utoipa::IntoParams)]
+/// What a draft is for: a part of a record, or the form that makes a new record in a project.
+#[derive(Deserialize, ToSchema)]
+#[serde(untagged)]
+pub(crate) enum DraftTargetBody {
+    /// A part of a record.
+    Part(EditTargetBody),
+    /// The form that makes a new record.
+    NewRecord(NewRecordTargetBody),
+}
+
+impl DraftTargetBody {
+    pub(super) fn target(&self) -> Result<DraftTarget, ApiError> {
+        match self {
+            Self::Part(part) => Ok(DraftTarget::Editing(part.target()?)),
+            Self::NewRecord(form) => Ok(DraftTarget::NewRecord {
+                project: body_id::<ProjectId>(&form.project)?,
+                kind: form.kind.0.clone(),
+            }),
+        }
+    }
+}
+
+/// What a draft is for, in the address: a part of a record (`record_kind`, `record_id` and
+/// `part`), or the form that makes a new record of a kind in a project (`record_kind` and
+/// `project`).
+#[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
-pub(crate) struct DraftTargetBody {
-    /// The kind of record, like `issue`.
-    pub(super) kind: String,
+pub(crate) struct DraftTargetQuery {
+    /// The kind of record.
+    pub(super) record_kind: RecordKind,
     /// The ID of the record, for a draft of a part of a record.
-    pub(super) id: Option<String>,
+    pub(super) record_id: Option<String>,
     /// Which long text of the record, for a draft of a part of a record.
     pub(super) part: Option<String>,
     /// The project, for a draft of a new record.
     pub(super) project: Option<String>,
 }
 
-impl DraftTargetBody {
-    pub(super) fn target(&self) -> Result<DraftTarget, ApiError> {
+impl DraftTargetQuery {
+    pub(super) fn target(self) -> Result<DraftTarget, ApiError> {
         let invalid = || ApiError::new(ErrorCode::InvalidRequest);
-        match (&self.id, &self.part, &self.project) {
+        match (self.record_id, self.part, self.project) {
             (Some(id), Some(part), None) => Ok(DraftTarget::Editing(
-                EditWhatBody {
+                EditTargetBody {
                     record: RecordRefBody {
-                        kind: self.kind.clone(),
-                        id: id.clone(),
+                        kind: self.record_kind,
+                        id,
                     },
-                    part: part.clone(),
+                    part,
                 }
-                .what()?,
+                .target()?,
             )),
             (None, None, Some(project)) => Ok(DraftTarget::NewRecord {
-                project: body_id::<ProjectId>(project)?,
-                kind: EntityKind::new(&self.kind).map_err(|_| invalid())?,
+                project: body_id::<ProjectId>(&project)?,
+                kind: self.record_kind.0,
             }),
             _ => Err(invalid()),
         }
@@ -406,6 +512,30 @@ impl From<&Versions> for VersionsBody {
                     version: item.version,
                 })
                 .collect(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod record_kind_tests {
+    use super::*;
+
+    #[test]
+    fn a_record_kind_round_trips_in_words_with_hyphens_and_refuses_the_rest() {
+        for kind in CoreRecordKind::ALL {
+            let word = crate::api::api_word(kind.code());
+            let parsed: RecordKind = serde_json::from_str(&format!("\"{word}\"")).unwrap();
+            assert_eq!(
+                serde_json::to_string(&parsed).unwrap(),
+                format!("\"{word}\"")
+            );
+        }
+        // The form with the underscore, a made-up kind and a capital are not words of the API.
+        for refused in ["issue_type", "label_group", "nothing", "Issue", ""] {
+            assert!(
+                serde_json::from_str::<RecordKind>(&format!("\"{refused}\"")).is_err(),
+                "{refused}"
+            );
         }
     }
 }

@@ -29,7 +29,7 @@ export function useSubIssues(issue: string) {
           query: {
             fields: fieldList<Schema<"IssueRef">>([
               "id",
-              "key",
+              "readable_id",
               "issue_type",
               "title",
               "status",
@@ -54,7 +54,7 @@ export function useRelatedIssues(issue: string) {
           query: {
             fields: fieldList<Schema<"RelatedIssueItem">>([
               "id",
-              "kind",
+              "relation_kind",
               "direction",
               "name",
               "issue",

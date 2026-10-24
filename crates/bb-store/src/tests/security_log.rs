@@ -113,7 +113,7 @@ async fn sec_15_an_entry_with_a_former_code_verifies_and_is_shown_with_the_new_o
         // The chain still verifies: no entry was rewritten.
         assert!(matches!(
             database.verify_security_log(&seal).await?,
-            Verification::Valid { entries: 7, .. }
+            Verification::Valid { entries: 8, .. }
         ));
         // It is read back with the new codes, and the other codes stay as they are.
         let shown: Vec<String> = database
@@ -139,7 +139,7 @@ async fn sec_15_an_entry_with_a_former_code_verifies_and_is_shown_with_the_new_o
         // Running the check again changes nothing.
         assert!(matches!(
             database.verify_security_log(&seal).await?,
-            Verification::Valid { entries: 7, .. }
+            Verification::Valid { entries: 8, .. }
         ));
         Ok(())
     })

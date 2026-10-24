@@ -1,4 +1,4 @@
-import { dataOf, workflowEditPart, type EditWhat, type Schema } from "@bugaboo/api-client";
+import { dataOf, workflowEditPart, type EditTarget, type Schema } from "@bugaboo/api-client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
@@ -129,6 +129,6 @@ export function useTried(asked: TryAsked | undefined) {
 }
 
 /** What the lock on a workflow is about: the workflow, edited as a whole. */
-export function whatOf(workflow: string): EditWhat {
+export function whatOf(workflow: string): EditTarget {
   return { record: { kind: "workflow", id: workflow }, part: workflowEditPart };
 }

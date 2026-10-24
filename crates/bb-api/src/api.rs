@@ -48,7 +48,6 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
-mod change_side;
 mod check_access;
 mod comments;
 mod editing;
@@ -301,6 +300,45 @@ pub(crate) fn not_found() -> Response {
     ApiError::new(ErrorCode::NotFound).into_response()
 }
 
+/// The word of the API for a word that is stored with underscores: the same word with hyphens.
+pub(crate) fn api_word(stored: &str) -> String {
+    stored.replace('_', "-")
+}
+
+/// The stored word for a word of the API, or nothing when the word is written with underscores:
+/// the API has one spelling, and `issue_type` is not a word of it.
+pub(crate) fn stored_word(word: &str) -> Option<String> {
+    (!word.contains('_')).then(|| word.replace('-', "_"))
+}
+
+#[cfg(test)]
+mod word_tests {
+    use super::{api_word, stored_word};
+
+    #[test]
+    fn a_word_goes_to_the_api_and_back_and_the_underscore_form_is_refused() {
+        assert_eq!(api_word("issue_type"), "issue-type");
+        assert_eq!(stored_word("issue-type").as_deref(), Some("issue_type"));
+        assert_eq!(stored_word("issue").as_deref(), Some("issue"));
+        assert_eq!(stored_word("issue_type"), None);
+    }
+}
+
+/// A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct NameBody {
+    /// The name.
+    pub(crate) name: String,
+}
+
+/// An e-mail address, in a request or an answer: where a sign-up link goes, whom to invite, whom an
+/// invitation is for.
+#[derive(Deserialize, Serialize, ToSchema)]
+pub(crate) struct EmailBody {
+    /// The e-mail address.
+    pub(crate) email: String,
+}
+
 /// The ID in an address of the API; a text that is no ID names nothing, so it is not found.
 pub(crate) fn path_id<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
     text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
@@ -400,7 +438,7 @@ mod tests {
         for request in refused {
             let response = app().oneshot(request).await.unwrap();
             assert_eq!(response.status(), StatusCode::FORBIDDEN);
-            assert_eq!(code_of(response).await, "request.wrong_origin");
+            assert_eq!(code_of(response).await, "request.wrong-origin");
         }
     }
 
@@ -511,7 +549,7 @@ mod tests {
             refused.headers()[header::CONTENT_TYPE],
             "application/problem+json"
         );
-        assert_eq!(code_of(refused).await, "request.too_large");
+        assert_eq!(code_of(refused).await, "request.too-large");
     }
 
     #[tokio::test(start_paused = true)]
@@ -519,7 +557,7 @@ mod tests {
         let slow = Request::get("/api/v1/slow").body(Body::empty()).unwrap();
         let stopped = app().oneshot(slow).await.unwrap();
         assert_eq!(stopped.status(), StatusCode::REQUEST_TIMEOUT);
-        assert_eq!(code_of(stopped).await, "request.timed_out");
+        assert_eq!(code_of(stopped).await, "request.timed-out");
 
         // Not an API address: no time limit of the API applies (the hour passes in paused time).
         let page = Request::get("/slow-page").body(Body::empty()).unwrap();

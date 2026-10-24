@@ -7,7 +7,7 @@
 //! - `drafts.rs`: the private draft of a person, kept 30 days.
 //! - `save.rs`: saving a long text with the lock token and the version, never dropping the text.
 //! - `versions.rs`: the versions of what is on the screen.
-//! - `conflict.rs`: the structured `edit.version_changed`.
+//! - `conflict.rs`: the structured `edit.version-changed`.
 //!
 //! The lease, the heartbeat and the draft are the state of an open editor and write no domain
 //! event; what other people can learn from is an event (see `types.rs`).

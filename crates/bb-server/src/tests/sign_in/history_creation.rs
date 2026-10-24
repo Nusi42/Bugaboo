@@ -14,7 +14,7 @@ fn fields_in(history: &Value) -> Vec<String> {
         .as_array()
         .into_iter()
         .flatten()
-        .filter_map(|item| item["field"].as_str().map(str::to_owned))
+        .filter_map(|item| item["change"]["field"].as_str().map(str::to_owned))
         .collect()
 }
 

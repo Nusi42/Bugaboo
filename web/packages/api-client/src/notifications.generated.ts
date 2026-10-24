@@ -4,16 +4,16 @@
 export const notificationSettings = {
   mentioned: { app: "notifications.mentioned-in-app", mail: "notifications.mentioned-by-mail" },
   assigned: { app: "notifications.assigned-in-app", mail: "notifications.assigned-by-mail" },
-  followed_activity: {
+  "followed-activity": {
     app: "notifications.followed-activity-in-app",
     mail: "notifications.followed-activity-by-mail",
   },
-  followed_fields: {
+  "followed-fields": {
     app: "notifications.followed-fields-in-app",
     mail: "notifications.followed-fields-by-mail",
   },
-  run_ended: { app: "notifications.run-ended-in-app", mail: "notifications.run-ended-by-mail" },
-  edit_notice: {
+  "run-ended": { app: "notifications.run-ended-in-app", mail: "notifications.run-ended-by-mail" },
+  "edit-notice": {
     app: "notifications.edit-notice-in-app",
     mail: "notifications.edit-notice-by-mail",
   },

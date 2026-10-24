@@ -390,7 +390,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// `access.forbidden` without *Change organization settings* (organization) or *Change project
-/// settings* (project); `resource.not_found` for a project the person may not know about.
+/// settings* (project); `resource.not-found` for a project the person may not know about.
 pub async fn settings<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SettingsQuery,
@@ -444,7 +444,7 @@ pub async fn settings<S: AuthStore>(
 /// Changes the value of a setting on one scope.
 ///
 /// # Errors
-/// `resource.not_found` for a key that does not exist (or a project the person may not know
+/// `resource.not-found` for a key that does not exist (or a project the person may not know
 /// about), `access.forbidden` without the right to change it there, `request.invalid` for a
 /// value the setting does not accept or a scope it cannot be set on, `setting.locked` while the
 /// organization's lock holds for a project or a person.
@@ -600,7 +600,7 @@ pub async fn reset_setting<S: AuthStore>(
 ///
 /// # Errors
 /// `access.forbidden` without *Change organization settings*, `request.invalid` for a setting
-/// that cannot be locked, `resource.not_found` for a key that does not exist.
+/// that cannot be locked, `resource.not-found` for a key that does not exist.
 pub async fn lock_setting<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: LockSetting,

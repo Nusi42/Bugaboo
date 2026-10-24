@@ -88,7 +88,7 @@ fn name_taken(
 /// person may, and sees the types they may know (`offers/known.rs`).
 ///
 /// # Errors
-/// `request.invalid` for a cursor that is not one, `resource.not_found` for a project the person
+/// `request.invalid` for a cursor that is not one, `resource.not-found` for a project the person
 /// may not see.
 pub async fn issue_types<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -124,7 +124,7 @@ pub async fn issue_types<S: AuthStore>(
 ///
 /// # Errors
 /// `access.forbidden` without *Manage issue types, kinds of relation and layouts* where it is
-/// created (`resource.not_found` for a project the person may not know), `request.invalid` for a
+/// created (`resource.not-found` for a project the person may not know), `request.invalid` for a
 /// name that cannot be one, `name.taken` for a name another type that can meet it has,
 /// `limit.reached` for as many types as the place may have.
 pub async fn create_issue_type<S: AuthStore>(
@@ -294,10 +294,10 @@ async fn write_in<S: AuthStore>(
 /// Changes the name, the icon or the retired state of an issue type: what is `Some` is changed.
 ///
 /// # Errors
-/// `access.forbidden` without the permission where the type was made, `resource.not_found` for a
+/// `access.forbidden` without the permission where the type was made, `resource.not-found` for a
 /// type that is not there,
 /// `request.invalid` for a name that cannot be one or when nothing is asked, `name.taken` for a
-/// name another type has, `edit.version_changed` when somebody changed the type since it was
+/// name another type has, `edit.version-changed` when somebody changed the type since it was
 /// looked at.
 pub async fn change_issue_type<S: AuthStore>(
     ctx: &Ctx<'_, S>,

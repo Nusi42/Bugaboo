@@ -84,7 +84,7 @@ impl WorkPlan {
         );
         judge.present(
             "notifications of followed issues",
-            number(&notifications["by_kind"]["followed_activity"]),
+            number(&notifications["by_kind"]["followed-activity"]),
         );
         judge.present(
             "notifications for Viewers",

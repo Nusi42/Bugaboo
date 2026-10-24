@@ -6,7 +6,7 @@ import { paths } from "../../shared/paths.ts";
 import { NotificationEntries } from "./NotificationEntries.tsx";
 
 /** What the block lists, and what it says when there is none. */
-const unread: Schema<"NotificationFilter"> = "unread";
+const unread: Schema<"NotificationTab"> = "unread";
 const none: MessageKey = "notifications.start-nothing";
 
 /** How many unread notifications the start page asks for: the newest few. */

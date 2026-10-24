@@ -212,7 +212,23 @@ macro_rules! words {
 /// type and the list of words is the one in the Rust enum (`words_in_api!(Field, "…")`).
 #[macro_export]
 macro_rules! words_in_api {
+    ($name:ident as $schema:literal, $description:literal) => {
+        $crate::words_in_api!(@schema $name, $description);
+
+        #[cfg(feature = "openapi")]
+        impl utoipa::ToSchema for $name {
+            fn name() -> std::borrow::Cow<'static, str> {
+                std::borrow::Cow::Borrowed($schema)
+            }
+        }
+    };
     ($name:ident, $description:literal) => {
+        $crate::words_in_api!(@schema $name, $description);
+
+        #[cfg(feature = "openapi")]
+        impl utoipa::ToSchema for $name {}
+    };
+    (@schema $name:ident, $description:literal) => {
         #[cfg(feature = "openapi")]
         impl utoipa::PartialSchema for $name {
             fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
@@ -224,9 +240,6 @@ macro_rules! words_in_api {
                     .into()
             }
         }
-
-        #[cfg(feature = "openapi")]
-        impl utoipa::ToSchema for $name {}
     };
 }
 

@@ -3,7 +3,7 @@
 //! A link is good for five minutes and for one person, and the use case judges access again every
 //! time it is used: the person must still see the issue and the comment, and the attachment must
 //! not be in the trash. A link that is passed on, that ran out, or that is kept after access ended
-//! opens nothing, and every one of those answers `resource.not_found`, the same as a file that is
+//! opens nothing, and every one of those answers `resource.not-found`, the same as a file that is
 //! not there.
 
 use bb_core::ErrorCode;
@@ -29,7 +29,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// and the comment, with the link only naming what is asked for.
 ///
 /// # Errors
-/// `resource.not_found` for a link that is not ours, ran out, is for another person, names an
+/// `resource.not-found` for a link that is not ours, ran out, is for another person, names an
 /// attachment that is gone or in the trash, or names an issue or a comment the person may not see
 /// any more; a preview that is not there is not found either.
 pub async fn download<S: AuthStore>(

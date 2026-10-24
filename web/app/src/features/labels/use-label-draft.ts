@@ -8,7 +8,7 @@ import { NO_GROUP, refreshLabels, type Label } from "./labels.ts";
 export function useLabelDraft(label: Label) {
   const [name, setName] = useState(label.name);
   const [color, setColor] = useState(label.color);
-  const [group, setGroup] = useState(label.group ?? NO_GROUP);
+  const [group, setGroup] = useState(label.label_group ?? NO_GROUP);
   const change = api.query.useMutation("patch", "/api/v1/labels/{label}", {
     onSuccess: refreshLabels,
   });
@@ -30,7 +30,7 @@ export function useLabelDraft(label: Label) {
           version: label.version,
           name: name.trim(),
           color,
-          group: group === NO_GROUP ? null : group,
+          label_group: group === NO_GROUP ? null : group,
         },
       });
     },

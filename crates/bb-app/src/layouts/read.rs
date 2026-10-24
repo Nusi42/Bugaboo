@@ -111,7 +111,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// the new-issue form read through the one hook of the browser.
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about.
+/// `resource.not-found` for a project the person may not know about.
 pub async fn form_layout<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: FormLayoutQuery,
@@ -386,7 +386,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// added. Needs *Manage issue types, kinds of relation and layouts* at the place.
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about, `access.forbidden` without
+/// `resource.not-found` for a project the person may not know about, `access.forbidden` without
 /// the permission.
 pub async fn layout_editor<S: AuthStore>(
     ctx: &Ctx<'_, S>,

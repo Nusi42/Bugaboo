@@ -25,10 +25,10 @@ type Kind = (typeof notificationKindWords)[number];
 const kindName = {
   mentioned: "notification.kind.mentioned",
   assigned: "notification.kind.assigned",
-  followed_activity: "notification.kind.followed-activity",
-  followed_fields: "notification.kind.followed-fields",
-  run_ended: "notification.kind.run-ended",
-  edit_notice: "notification.kind.edit-notice",
+  "followed-activity": "notification.kind.followed-activity",
+  "followed-fields": "notification.kind.followed-fields",
+  "run-ended": "notification.kind.run-ended",
+  "edit-notice": "notification.kind.edit-notice",
 } as const satisfies Record<Kind, MessageKey>;
 
 /** The two ways of hearing of an event, with the words the column of each has. */

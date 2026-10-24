@@ -13,7 +13,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_bodies::{GroupRef, RoleAtRef, cursor_error};
+use super::access_bodies::{NamedRef, RoleAtRef, cursor_error};
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer,
     answer_authorized,
@@ -45,7 +45,7 @@ pub(crate) struct PersonItem {
     email: Option<String>,
     /// The groups the person is in. Left out when the viewer may not see groups.
     #[serde(skip_serializing_if = "Option::is_none")]
-    groups: Option<Vec<GroupRef>>,
+    groups: Option<Vec<NamedRef>>,
     /// The roles the person has through rows of their own, in the places where the viewer
     /// decides who has which role.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -62,7 +62,7 @@ impl From<&PersonLine> for PersonItem {
             groups: line
                 .groups
                 .as_ref()
-                .map(|groups| groups.iter().map(GroupRef::from).collect()),
+                .map(|groups| groups.iter().map(NamedRef::from).collect()),
             roles: Some(line.roles.iter().map(RoleAtRef::from).collect()),
         }
     }
@@ -137,10 +137,10 @@ async fn list_people(
 /// e-mail address and correct their names*.
 #[utoipa::path(
     get,
-    path = "/api/v1/people/{person_id}",
+    path = "/api/v1/people/{person}",
     operation_id = "getPerson",
     tag = "people",
-    params(("person_id" = String, Path, description = "The ID of the person.")),
+    params(("person" = String, Path, description = "The ID of the person.")),
     responses((status = 200, description = "The person.", body = PersonDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_person(

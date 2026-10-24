@@ -54,7 +54,10 @@ function changeLines(
     return [
       {
         key: "relation",
-        content: t("many-changes.line-relation", { name: detail.name, issue: detail.issue.key }),
+        content: t("many-changes.line-relation", {
+          name: detail.name,
+          issue: detail.issue.readable_id,
+        }),
       },
     ];
   }
@@ -68,7 +71,7 @@ function groupOf(row: ManyChangeRow, plain: string, wording: Wording): LongPrevi
     key: row.address,
     heading: (
       <>
-        <strong>{row.issue?.key ?? t("many-changes.issue-unknown")}</strong>
+        <strong>{row.issue?.readable_id ?? t("many-changes.issue-unknown")}</strong>
         {skipped ? (
           <span {...partOf(part.row)}>
             <Icon name={iconName.close} />

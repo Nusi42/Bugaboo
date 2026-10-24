@@ -21,7 +21,7 @@ use bb_app::editing::{
 };
 use bb_core::ErrorCode;
 use bb_core::edit::{DraftTarget, EditWhat, NoticeKind};
-use bb_core::event::{EntityKind, EntityRef};
+use bb_core::event::{EntityKind, EntityRef, RecordKind as CoreRecordKind};
 use bb_core::id::{EditorId, EntityId, LockToken, ProjectId};
 use bb_core::technical::TechnicalName;
 use bb_policy::{Masked, PersonRef};

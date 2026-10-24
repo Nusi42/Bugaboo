@@ -71,10 +71,15 @@ export async function createIssue(
       },
     }),
   );
-  if (made.id === undefined || made.id === null || made.key === undefined || made.key === null) {
+  if (
+    made.id === undefined ||
+    made.id === null ||
+    made.readable_id === undefined ||
+    made.readable_id === null
+  ) {
     throw new TypeError("The server made an issue without an ID.");
   }
-  return { id: made.id, key: made.key };
+  return { id: made.id, key: made.readable_id };
 }
 
 /** Chooses where the person opens issues: in the focus view or in the side panel. */
@@ -98,12 +103,12 @@ export async function saveDescription(
   const taken = dataOf(
     await session.client.POST("/api/v1/edit-locks", {
       body: {
-        what: { record: { kind: "issue", id: issue.id }, part: descriptionEditPart },
+        target: { record: { kind: "issue", id: issue.id }, part: descriptionEditPart },
         editor_id: crypto.randomUUID(),
       },
     }),
   );
-  if (taken.status !== "taken") {
+  if (taken.kind !== "taken") {
     throw new TypeError("Somebody else is editing.");
   }
   await session.client.PUT("/api/v1/issues/{issue}/description", {
@@ -158,7 +163,7 @@ export async function assignTo(
 export async function holdDescription(session: ApiSession, issue: MadeIssue): Promise<void> {
   await session.client.POST("/api/v1/edit-locks", {
     body: {
-      what: { record: { kind: "issue", id: issue.id }, part: descriptionEditPart },
+      target: { record: { kind: "issue", id: issue.id }, part: descriptionEditPart },
       editor_id: crypto.randomUUID(),
     },
   });

@@ -148,7 +148,7 @@ async fn get_auth_status(
     responses(
         (status = 200, description = "Signed in, or the second step is still to do.", body = SignedInBody),
         InvalidAnswer,
-        (status = 401, description = "The e-mail address or the password is wrong (auth.wrong_credentials).", body = bb_core::Problem)
+        (status = 401, description = "The e-mail address or the password is wrong (auth.wrong-credentials).", body = bb_core::Problem, content_type = "application/problem+json")
     )
 )]
 async fn sign_in(
@@ -180,7 +180,7 @@ async fn sign_in(
     request_body = CodeBody,
     responses(
         (status = 200, description = "Signed in.", body = SignedInBody),
-        (status = 401, description = "The code is wrong or was used already, or there is no half finished sign-in (auth.wrong_second_step_code, auth.not_signed_in).", body = bb_core::Problem),
+        (status = 401, description = "The code is wrong or was used already, or there is no half finished sign-in (auth.wrong-second-step-code, auth.not-signed-in).", body = bb_core::Problem, content_type = "application/problem+json"),
         ForbiddenAnswer
     )
 )]
@@ -351,7 +351,7 @@ async fn get_me(
     let permissions = me.access.permissions().iter().copied().collect();
     answer_authorized(&me.access.authorize(MeBody {
         id: me.person.id.to_string(),
-        display_name: me.person.display_name.clone(),
+        name: me.person.display_name.clone(),
         email: me.person.email.clone(),
         permissions,
         second_step_setup_required: me.second_step_setup_required,
@@ -415,10 +415,10 @@ async fn sign_out_everywhere(
 /// Ends one session of the person.
 #[utoipa::path(
     delete,
-    path = "/api/v1/auth/sessions/{session_id}",
+    path = "/api/v1/auth/sessions/{session}",
     operation_id = "endSession",
     tag = "auth",
-    params(("session_id" = String, Path, description = "The ID of the session.")),
+    params(("session" = String, Path, description = "The ID of the session.")),
     responses((status = 204, description = "The session ended."), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn end_session(

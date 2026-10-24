@@ -69,7 +69,7 @@ pub trait SignUpStore: ChangeStore + 'static {
 /// Asks for an account with an address (nothing is made until the link is opened).
 ///
 /// # Errors
-/// `auth.sign_up_refused` when signing up is off, when the domain of the address is not on the
+/// `auth.sign-up-refused` when signing up is off, when the domain of the address is not on the
 /// list, and when e-mail is off (so no link can be sent); `request.invalid` for an address that
 /// cannot be one. Whether the address has an account is never told.
 pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<Done, AppError> {

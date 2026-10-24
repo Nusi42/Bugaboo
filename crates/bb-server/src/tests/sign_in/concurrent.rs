@@ -128,7 +128,7 @@ impl Person {
                 });
                 return Ok(());
             }
-            if reply.code() != "edit.version_changed" {
+            if reply.code() != "edit.version-changed" {
                 return Err(format!("{}: {}", reply.status, reply.body).into());
             }
             version = reply.body["conflict"]["version"]
@@ -156,9 +156,9 @@ impl Person {
     /// Asks for the lock; when somebody else holds it and this person may, takes it over.
     async fn lock(&mut self, work: &Work) -> Result<Option<String>, Failure> {
         let editor = format!("00000000-0000-4000-8000-{:012}", self.number);
-        let body = json!({"what": what_of(&work.id), "editor_id": editor});
+        let body = json!({"target": what_of(&work.id), "editor_id": editor});
         let taken = self.browser.send("POST", LOCKS, Some(body.clone())).await?;
-        if ok(&taken)?["status"] == "taken" {
+        if ok(&taken)?["kind"] == "taken" {
             return Ok(token_of(&taken.body));
         }
         if taken.body["can_edit_anyway"] != true {
@@ -209,11 +209,11 @@ impl Person {
         let text = format!("Text {}-{round} on {}", self.number, work.key);
         let version = self.read(work).await?;
         let started = self.clock.now().as_second();
-        let beat = json!({"what": what_of(&work.id), "lock_token": token,
+        let beat = json!({"target": what_of(&work.id), "lock_token": token,
             "draft": {"text": text, "base_version": version}});
         let beat = self
             .browser
-            .send("POST", &format!("{LOCKS}/heartbeat"), Some(beat))
+            .send("POST", &format!("{LOCKS}/renew"), Some(beat))
             .await?;
         ok(&beat)?;
         // Every fifth editor closes the laptop and never lets go: the lease has to end it.
@@ -261,7 +261,10 @@ impl Person {
             .browser
             .send(
                 "GET",
-                &format!("/api/v1/drafts?kind=issue&id={}&part=description", work.id),
+                &format!(
+                    "/api/v1/drafts?record_kind=issue&record_id={}&part=description",
+                    work.id
+                ),
                 None,
             )
             .await?;
@@ -330,7 +333,7 @@ async fn the_crowd(
         let body = ok(&made)?;
         issues.push(Work {
             id: body["id"].as_str().ok_or("no id")?.to_owned(),
-            key: body["key"].as_str().ok_or("no key")?.to_owned(),
+            key: body["readable_id"].as_str().ok_or("no key")?.to_owned(),
             reporter: None,
         });
     }

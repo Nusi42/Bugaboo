@@ -131,27 +131,28 @@ words! {
         ProjectShortNameChanged => "project.short_name_changed",
         /// A project was moved into another project or to the top level.
         ProjectMoved => "project.moved",
-        /// Somebody with *Edit anyway* released an edit lock that another person held.
-        EditLockReleased => "edit_lock.released",
+        /// Somebody with *Edit anyway* let go of an edit lock that another person held.
+        EditLockLetGo => "edit_lock.let_go",
         /// An administrator entered or removed the password of the mail server.
         MailPasswordChanged => "mail.password_changed",
     }
 }
 
-/// The codes that entries written before M4 hold, and the codes that stand for them now.
+/// The codes that entries written before the API freeze hold, and the codes that stand for them now.
 ///
 /// The security log is a hash chain: an entry is never rewritten, because every entry holds the
 /// hash of the one before it and a rewritten action would break the chain. So the entries of an
 /// older program keep their words in the database, and whoever shows the log (the API, the
 /// screen, an export) reads them through [`shown_code`]. This table is the only place the old
 /// words stand in the code; new entries are written with the new ones.
-pub const FORMER_CODES: [(&str, &str); 6] = [
+pub const FORMER_CODES: [(&str, &str); 7] = [
     ("role.made", "role.created"),
     ("group.made", "group.created"),
     ("assignment.made", "assignment.created"),
     ("project.made", "project.created"),
     ("starting_roles.made", "starting_roles.created"),
     ("access_key.made", "access_key.created"),
+    ("edit_lock.released", "edit_lock.let_go"),
 ];
 
 /// The code to show for a stored one: the new code for an old one, the code itself otherwise.

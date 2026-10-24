@@ -52,7 +52,7 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
         let issue = ok(&made)?;
         assert_eq!(
             issue["status"],
-            json!({"key": "open", "name": "Open", "group": "not-started"})
+            json!({"key": "open", "name": "Open", "status_group": "not-started"})
         );
         assert_eq!(issue["priority"], "normal");
         assert_eq!(issue["version"], 1);
@@ -92,7 +92,7 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
         let done = ada
             .send("PATCH", &path, Some(json!({"version": 2, "status": "done"})))
             .await?;
-        assert_eq!(ok(&done)?["status"]["group"], "done");
+        assert_eq!(ok(&done)?["status"]["status_group"], "done");
         assert!(done.body["closed_at"].is_string());
         let reopened = ada
             .send(
@@ -147,7 +147,7 @@ async fn iss_01_a_hidden_issue_answers_not_found_like_a_missing_one() -> TestRes
         let in_trash_now = ada
             .send("GET", &format!("{ISSUES}/{trashed}"), None)
             .await?;
-        assert_eq!(in_trash_now.code(), "resource.not_found", "trashed is gone");
+        assert_eq!(in_trash_now.code(), "resource.not-found", "trashed is gone");
         let missing = format!("{ISSUES}/ACME-ZZZZZ");
         let elsewhere = format!("{ISSUES}/NOPE-ZZZZZ");
         let no_such_id = format!("{ISSUES}/{}", "01900000-0000-7000-8000-000000000000");
@@ -173,7 +173,7 @@ async fn iss_01_a_hidden_issue_answers_not_found_like_a_missing_one() -> TestRes
                     let unknown_id = browser.send(method, &no_such_id, None).await?;
                     assert_eq!(
                         (hidden.status, hidden.code()),
-                        (StatusCode::NOT_FOUND, "resource.not_found"),
+                        (StatusCode::NOT_FOUND, "resource.not-found"),
                         "{method} {path}"
                     );
                     assert_eq!(without_request_id(&hidden), without_request_id(&gone));
@@ -183,7 +183,7 @@ async fn iss_01_a_hidden_issue_answers_not_found_like_a_missing_one() -> TestRes
                 let change = json!({"version": 1, "title": "Hello"});
                 let hidden = browser.send("PATCH", path, Some(change.clone())).await?;
                 let gone = browser.send("PATCH", &missing, Some(change)).await?;
-                assert_eq!(hidden.code(), "resource.not_found", "PATCH {path}");
+                assert_eq!(hidden.code(), "resource.not-found", "PATCH {path}");
                 assert_eq!(without_request_id(&hidden), without_request_id(&gone));
                 let restore = browser
                     .send("POST", &format!("{path}/restore"), None)
@@ -191,7 +191,7 @@ async fn iss_01_a_hidden_issue_answers_not_found_like_a_missing_one() -> TestRes
                 let none = browser
                     .send("POST", &format!("{missing}/restore"), None)
                     .await?;
-                assert_eq!(restore.code(), "resource.not_found", "restore {path}");
+                assert_eq!(restore.code(), "resource.not-found", "restore {path}");
                 assert_eq!(without_request_id(&restore), without_request_id(&none));
             }
         }
@@ -206,7 +206,7 @@ async fn iss_01_a_hidden_issue_answers_not_found_like_a_missing_one() -> TestRes
         let listed = nobody
             .send("GET", &format!("{PROJECTS}/ACME/issues"), None)
             .await?;
-        assert_eq!(listed.code(), "resource.not_found");
+        assert_eq!(listed.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -306,7 +306,7 @@ async fn iss_01_a_stale_version_is_refused() -> TestResult {
             )
             .await?;
         assert_eq!(ok(&first)?["version"], 2);
-        // Ada looked at version 1: the refusal is `edit.version_changed` with the structured
+        // Ada looked at version 1: the refusal is `edit.version-changed` with the structured
         // answer (ADR-0019): who changed it, which fields, and what they are now.
         let late = ada
             .send(
@@ -317,7 +317,7 @@ async fn iss_01_a_stale_version_is_refused() -> TestResult {
             .await?;
         assert_eq!(
             (late.status, late.code()),
-            (StatusCode::CONFLICT, "edit.version_changed")
+            (StatusCode::CONFLICT, "edit.version-changed")
         );
         let conflict = &late.body["conflict"];
         assert_eq!(conflict["version"], 2, "{conflict}");
@@ -351,28 +351,28 @@ async fn iss_01_an_issue_goes_to_the_trash_and_comes_back_with_undo() -> TestRes
         assert!(titles(&ada.send("GET", &list, None).await?).is_empty());
         assert_eq!(
             ada.send("GET", &path, None).await?.code(),
-            "resource.not_found"
+            "resource.not-found"
         );
         assert_eq!(
             ada.send("DELETE", &path, None).await?.code(),
-            "resource.not_found",
+            "resource.not-found",
             "it is in the trash already"
         );
         assert_eq!(
             cora.send("POST", &format!("{path}/restore"), None)
                 .await?
                 .code(),
-            "resource.not_found",
+            "resource.not-found",
             "whoever may not restore is not told that it is in the trash"
         );
         let back = ada.send("POST", &format!("{path}/restore"), None).await?;
-        assert_eq!(ok(&back)?["key"], key);
+        assert_eq!(ok(&back)?["readable_id"], key);
         assert_eq!(titles(&ada.send("GET", &list, None).await?), ["Mistake"]);
         assert_eq!(
             ada.send("POST", &format!("{path}/restore"), None)
                 .await?
                 .code(),
-            "resource.not_found",
+            "resource.not-found",
             "it is not in the trash"
         );
         Ok(())
@@ -414,7 +414,7 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
         let refused = site.create(&mut ada, "Another task").await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::CONFLICT, "issue.type_retired")
+            (StatusCode::CONFLICT, "issue.type-retired")
         );
         let kept = ada.send("GET", &path, None).await?;
         assert_eq!(ok(&kept)?["issue"]["issue_type"]["name"], "Task");
@@ -443,7 +443,7 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
                 Some(json!({"version": 3, "issue_type": site.kind})),
             )
             .await?;
-        assert_eq!(to_retired.code(), "issue.type_retired");
+        assert_eq!(to_retired.code(), "issue.type-retired");
         // Offered again, the type takes issues again.
         let again = ada
             .send(
@@ -502,7 +502,7 @@ async fn iss_02_only_people_who_manage_issue_types_create_and_change_them() -> T
                 Some(json!({"version": 1, "name": "Old"})),
             )
             .await?;
-        assert_eq!(stale.code(), "edit.version_changed");
+        assert_eq!(stale.code(), "edit.version-changed");
         let unknown = json!({"name": "Odd", "icon": "not-an-icon"});
         // An icon outside the fixed list is not a valid request.
         assert_eq!(
@@ -535,7 +535,7 @@ async fn iss_01_a_stale_change_after_undo_or_a_new_mode_names_who_counted_the_ve
                 Some(json!({"version": 1, "priority": "low"})),
             )
             .await?;
-        assert_eq!(late.code(), "edit.version_changed");
+        assert_eq!(late.code(), "edit.version-changed");
         let conflict = &late.body["conflict"];
         assert_eq!(conflict["version"], 3, "{conflict}");
         assert_eq!(conflict["fields"], json!([]), "{conflict}");
@@ -557,7 +557,7 @@ async fn iss_01_a_stale_change_after_undo_or_a_new_mode_names_who_counted_the_ve
                 Some(json!({"version": 3, "priority": "low"})),
             )
             .await?;
-        assert_eq!(late.code(), "edit.version_changed");
+        assert_eq!(late.code(), "edit.version-changed");
         let conflict = &late.body["conflict"];
         assert_eq!(conflict["version"], 4, "{conflict}");
         assert_eq!(conflict["fields"], json!([]), "{conflict}");
@@ -585,7 +585,7 @@ async fn iss_02_two_administrators_renaming_the_same_type_get_who_and_which_fiel
         let late = ben
             .send("PATCH", &path, Some(json!({"version": 1, "name": "Fault"})))
             .await?;
-        assert_eq!(late.code(), "edit.version_changed");
+        assert_eq!(late.code(), "edit.version-changed");
         let conflict = &late.body["conflict"];
         assert_eq!(conflict["version"], 2, "{conflict}");
         assert_eq!(conflict["fields"], json!(["name"]), "{conflict}");

@@ -132,13 +132,13 @@ async fn sec_02_the_people_list_names_people_and_gives_addresses_to_people_who_m
             .await?;
         assert_eq!(
             (bad.status, bad.code()),
-            (StatusCode::BAD_REQUEST, "request.bad_cursor")
+            (StatusCode::BAD_REQUEST, "request.bad-cursor")
         );
         let unknown = org
             .ada
             .send("GET", "/api/v1/people?fields=password", None)
             .await?;
-        assert_eq!(unknown.code(), "request.unknown_field");
+        assert_eq!(unknown.code(), "request.unknown-field");
 
         // Somebody without the permission is refused, and learns nothing.
         let refused = bob.send("GET", "/api/v1/people", None).await?;
@@ -242,9 +242,9 @@ async fn sec_02_the_page_of_a_person_lists_their_groups_and_the_roles_the_viewer
             .ada
             .send("GET", "/api/v1/people/5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f", None)
             .await?;
-        assert_eq!(unknown.code(), "resource.not_found");
+        assert_eq!(unknown.code(), "resource.not-found");
         let garbage = org.ada.send("GET", "/api/v1/people/not-an-id", None).await?;
-        assert_eq!(garbage.code(), "resource.not_found");
+        assert_eq!(garbage.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -365,7 +365,7 @@ async fn sec_02_the_people_of_a_group_are_listed_picked_and_taken_out_over_http(
             .await?;
         assert_eq!(
             again.code(),
-            "resource.not_found",
+            "resource.not-found",
             "Bob is not in it any more"
         );
 
@@ -378,7 +378,7 @@ async fn sec_02_the_people_of_a_group_are_listed_picked_and_taken_out_over_http(
             .ada
             .send("GET", &format!("/api/v1/groups/{group}"), None)
             .await?;
-        assert_eq!(gone.code(), "resource.not_found");
+        assert_eq!(gone.code(), "resource.not-found");
         Ok(())
     })
     .await

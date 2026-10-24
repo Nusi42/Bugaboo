@@ -57,11 +57,11 @@ async fn ntf_01_a_follower_hears_over_http_and_marks_what_was_read() -> TestResu
         let entries = items(&listed);
         assert_eq!(entries.len(), 1, "{}", listed.body);
         let entry = &entries[0];
-        assert_eq!(entry["kind"], "followed_activity");
+        assert_eq!(entry["kind"], "followed-activity");
         assert_eq!(entry["read"], false);
-        assert_eq!(entry["field"], "status");
-        assert_eq!(entry["after_text"], "done");
-        assert_eq!(entry["issue"]["key"], issue.as_str());
+        assert_eq!(entry["change"]["field"], "status");
+        assert_eq!(entry["change"]["after"]["text"], "done");
+        assert_eq!(entry["issue"]["readable_id"], issue.as_str());
         assert_eq!(entry["by"]["name"], "Bob Baker");
         assert!(
             listed.headers.get("etag").is_none(),
@@ -85,7 +85,7 @@ async fn ntf_01_a_follower_hears_over_http_and_marks_what_was_read() -> TestResu
             .await?;
         assert_eq!(unread.body["unread"], 0);
         let unread_only = ada
-            .send("GET", &format!("{NOTIFICATIONS}?filter=unread"), None)
+            .send("GET", &format!("{NOTIFICATIONS}?tab=unread"), None)
             .await?;
         assert!(items(&unread_only).is_empty());
         Ok(())
@@ -124,10 +124,12 @@ async fn ntf_01_the_people_of_a_change_stay_people_as_the_reader_may_see_them() 
         let heard = items(&gus.send("GET", NOTIFICATIONS, None).await?);
         let change = heard
             .iter()
-            .find(|item| item["field"] == "assigned-to")
+            .find(|item| item["change"]["field"] == "assigned-to")
             .ok_or("no change of the assignee")?;
-        assert!(change.get("after_text").is_none(), "{change}");
-        let people = change["after_people"].as_array().ok_or("no people")?;
+        assert!(change.pointer("/change/after/text").is_none(), "{change}");
+        let people = change["change"]["after"]["people"]
+            .as_array()
+            .ok_or("no people")?;
         assert_eq!(people.len(), 1);
         let shown = people[0].to_string();
         assert!(
@@ -198,7 +200,7 @@ async fn sec_06_a_notification_and_an_e_mail_leave_out_a_field_the_role_of_the_r
         let heard = items(&reader.send("GET", NOTIFICATIONS, None).await?);
         let fields: Vec<&str> = heard
             .iter()
-            .filter_map(|item| item["field"].as_str())
+            .filter_map(|item| item["change"]["field"].as_str())
             .collect();
         assert!(
             fields.contains(&"title") || fields.contains(&"status"),
@@ -267,7 +269,7 @@ async fn m3_f70_of_two_changes_of_a_handle_at_the_same_moment_one_is_kept_on_bot
                 .count();
             assert_eq!(made, 1, "round {round}: {codes:?}");
             assert!(
-                codes.contains(&"handle.changed_lately".to_owned()),
+                codes.contains(&"handle.changed-lately".to_owned()),
                 "round {round}: {codes:?}"
             );
             rig.clock
@@ -476,7 +478,7 @@ async fn mail_and_sign_up_on(rig: &Rig) -> Result<(), Failure> {
 
 const EVE: &str = "eve@example.test";
 const SIGN_UP: &str = "/api/v1/auth/sign-up";
-const ACCEPT: &str = "/api/v1/auth/invitation/accept";
+const ACCEPT: &str = "/api/v1/auth/invitations/accept";
 
 fn sign_up_body(address: &str) -> Value {
     json!({"email": address})
@@ -498,7 +500,7 @@ fn secret_of_the_last_e_mail(rig: &Rig) -> Result<String, Failure> {
 }
 
 fn accept_body(secret: &str) -> Value {
-    json!({"secret": secret, "display_name": "Eve Evans", "password": super::rig::PASSWORD})
+    json!({"secret": secret, "name": "Eve Evans", "password": super::rig::PASSWORD})
 }
 
 #[tokio::test]
@@ -514,7 +516,7 @@ async fn auth_a_signed_up_account_works_only_after_the_link_when_mail_is_on() ->
         assert!(asked.headers.get("set-cookie").is_none(), "no session");
         // Nothing is made yet: no password, no person.
         let refused = eve.sign_in(EVE, super::rig::PASSWORD).await?;
-        assert_eq!(refused.code(), "auth.wrong_credentials");
+        assert_eq!(refused.code(), "auth.wrong-credentials");
         assert!(rig.account_by_email(EVE).await?.is_none());
         rig.run_jobs().await?;
         let secret = secret_of_the_last_e_mail(&rig)?;
@@ -524,7 +526,7 @@ async fn auth_a_signed_up_account_works_only_after_the_link_when_mail_is_on() ->
         assert_eq!(made.status, StatusCode::OK, "{}", made.body);
         assert!(rig.account_by_email(EVE).await?.is_some());
         let again = eve.send("POST", ACCEPT, Some(accept_body(&secret))).await?;
-        assert_eq!(again.code(), "auth.invitation_invalid", "once");
+        assert_eq!(again.code(), "auth.invitation-invalid", "once");
         Ok(())
     })
     .await
@@ -604,10 +606,10 @@ async fn sec_14_signing_up_has_a_small_limit_per_network_of_its_own() -> TestRes
             .send("POST", SIGN_UP, Some(sign_up_body("late@example.test")))
             .await?;
         assert_eq!(over.status, StatusCode::TOO_MANY_REQUESTS);
-        assert_eq!(over.code(), "rate_limit.exceeded");
+        assert_eq!(over.code(), "rate-limit.exceeded");
         // The sign-in family keeps its own, larger cap.
         let refused = visitor.sign_in(EVE, super::rig::PASSWORD).await?;
-        assert_eq!(refused.code(), "auth.wrong_credentials");
+        assert_eq!(refused.code(), "auth.wrong-credentials");
         Ok(())
     })
     .await
@@ -625,7 +627,7 @@ async fn auth_the_link_runs_out_after_24_hours() -> TestResult {
         let secret = secret_of_the_last_e_mail(&rig)?;
         rig.clock.advance(24 * 3600 + 1);
         let late = eve.send("POST", ACCEPT, Some(accept_body(&secret))).await?;
-        assert_eq!(late.code(), "auth.invitation_invalid");
+        assert_eq!(late.code(), "auth.invitation-invalid");
         assert!(rig.account_by_email(EVE).await?.is_none());
         // The job that clears sessions removes the link, and signing up again sends a new one.
         rig.services

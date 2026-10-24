@@ -37,7 +37,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 /// names none.
 const ISSUE_REF_FIELDS: [FieldSpec; 7] = [
     FieldSpec::by_default("id"),
-    FieldSpec::by_default("key"),
+    FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
     FieldSpec::by_default("issue_type"),
     FieldSpec::by_default("title"),
@@ -49,7 +49,7 @@ const SUB_ISSUES_LIST: &str = "sub-issues";
 /// The fields of a related issue in a list.
 const RELATED_FIELDS: [FieldSpec; 5] = [
     FieldSpec::by_default("id"),
-    FieldSpec::by_default("kind"),
+    FieldSpec::by_default("relation_kind"),
     FieldSpec::by_default("direction"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("issue"),
@@ -73,7 +73,7 @@ pub(crate) struct IssueRef {
     /// The internal ID of the issue.
     pub(crate) id: String,
     /// The readable ID now (`WEB-142`).
-    pub(crate) key: String,
+    pub(crate) readable_id: String,
     /// The project it is in.
     pub(crate) project: ProjectRef,
     /// Its issue type.
@@ -97,7 +97,7 @@ impl From<&IssueLine> for IssueRef {
     fn from(line: &IssueLine) -> Self {
         Self {
             id: line.id.to_string(),
-            key: line.key.clone(),
+            readable_id: line.key.clone(),
             project: ProjectRef::from(&line.project),
             issue_type: IssueTypeRef::from(&line.issue_type),
             title: line.title.clone(),
@@ -157,7 +157,7 @@ pub(crate) struct RelatedIssueItem {
     /// The ID of the relation, to take it away again.
     id: String,
     /// What it means (the ID of its kind).
-    kind: String,
+    relation_kind: String,
     /// Which end the issue asked about is at.
     direction: Direction,
     /// What that end reads (*blocks*, *is blocked by*).
@@ -172,7 +172,7 @@ impl From<&RelationView> for RelatedIssueItem {
     fn from(view: &RelationView) -> Self {
         Self {
             id: view.id.to_string(),
-            kind: view.kind.to_string(),
+            relation_kind: view.kind.to_string(),
             direction: view.direction,
             name: view.name.clone(),
             issue: IssueRef::from(&view.issue),
@@ -243,7 +243,7 @@ pub(crate) struct NewRelationBody {
     /// The issue at the other end, by its readable or internal ID.
     other: String,
     /// What the relation means (the ID of its kind).
-    kind: String,
+    relation_kind: String,
     /// Which end the issue of the route is: *this issue blocks the other* is `forward`.
     direction: Direction,
 }
@@ -336,10 +336,10 @@ async fn create_relation_kind(
 /// permission *Manage issue types, kinds of relation and layouts*.
 #[utoipa::path(
     patch,
-    path = "/api/v1/relation-kinds/{kind}",
+    path = "/api/v1/relation-kinds/{relation_kind}",
     operation_id = "changeRelationKind",
     tag = "relations",
-    params(("kind" = String, Path, description = "The ID of the kind of relation.")),
+    params(("relation_kind" = String, Path, description = "The ID of the kind of relation.")),
     request_body = ChangeRelationKindBody,
     responses(
         (status = 200, description = "The kind of relation as it is now.", body = RelationKindItem),
@@ -561,7 +561,7 @@ async fn add_relation(
                 session_token,
                 issue,
                 other: body.other,
-                kind: body_id::<RelationKindId>(&body.kind)?,
+                kind: body_id::<RelationKindId>(&body.relation_kind)?,
                 direction: body.direction,
             },
         )
@@ -628,7 +628,7 @@ mod tests {
     fn perf_02_the_field_tables_name_exactly_the_fields_of_the_items() {
         let line = IssueRef {
             id: String::new(),
-            key: String::new(),
+            readable_id: String::new(),
             project: ProjectRef {
                 id: String::new(),
                 short_name: String::new(),
@@ -655,7 +655,7 @@ mod tests {
         crate::lean::assert_fields_are_the_keys_of(&KIND_FIELDS, &kind);
         let related = RelatedIssueItem {
             id: String::new(),
-            kind: String::new(),
+            relation_kind: String::new(),
             direction: Direction::Forward,
             name: String::new(),
             issue: line,

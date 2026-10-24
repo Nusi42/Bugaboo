@@ -10,20 +10,17 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat};
 use bb_core::history::{FileEvent, HistoryTab};
-use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::access_bodies::cursor_error;
 use super::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer};
-use super::change_side::sides_of;
 use super::comments::CommentItem;
-use super::projects::ProjectRef;
+use super::many_changes::FieldChangeBody;
 use super::relations::IssueRef;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -32,7 +29,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 31] = [
+const HISTORY_FIELDS: [FieldSpec; 18] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -44,31 +41,28 @@ const HISTORY_FIELDS: [FieldSpec; 31] = [
     FieldSpec::by_default("version"),
     FieldSpec::by_default("may_edit"),
     FieldSpec::by_default("may_delete"),
-    FieldSpec::by_default("field"),
-    FieldSpec::by_default("field_name"),
-    FieldSpec::by_default("field_kind"),
-    FieldSpec::by_default("before_text"),
-    FieldSpec::by_default("after_text"),
-    FieldSpec::by_default("before_value"),
-    FieldSpec::by_default("after_value"),
-    FieldSpec::by_default("before_names"),
-    FieldSpec::by_default("after_names"),
-    FieldSpec::by_default("before_people"),
-    FieldSpec::by_default("after_people"),
-    FieldSpec::by_default("before_issue"),
-    FieldSpec::by_default("after_issue"),
-    FieldSpec::by_default("before_project"),
-    FieldSpec::by_default("after_project"),
-    FieldSpec::by_default("relation"),
+    FieldSpec::by_default("change"),
+    FieldSpec::by_default("relation_event"),
+    FieldSpec::by_default("relation_name"),
     FieldSpec::by_default("direction"),
     FieldSpec::by_default("issue"),
     FieldSpec::by_default("file_event"),
     FieldSpec::by_default("file_name"),
 ];
 
+/// What happened to a relation.
+#[derive(Clone, Copy, Serialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum RelationEvent {
+    /// The relation was added.
+    Added,
+    /// The relation was taken away.
+    Removed,
+}
+
 /// What an item of the history is.
 #[derive(Clone, Copy, Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(crate) enum HistoryEntryKind {
     /// A comment.
     Comment,
@@ -113,56 +107,15 @@ pub(crate) struct HistoryEntryItem {
     /// A comment: whether the reader may put it into the trash.
     #[serde(skip_serializing_if = "Option::is_none")]
     may_delete: Option<bool>,
-    /// A change: the key of the field.
+    /// A change: the field that changed, with what it was and what it is now.
     #[serde(skip_serializing_if = "Option::is_none")]
-    field: Option<String>,
-    /// A change of an own field: its name.
+    change: Option<FieldChangeBody>,
+    /// A relation: whether it was added or taken away.
     #[serde(skip_serializing_if = "Option::is_none")]
-    field_name: Option<String>,
-    /// A change of an own field: its kind, which says how `before_value` and `after_value` are
-    /// worded.
+    relation_event: Option<RelationEvent>,
+    /// A relation: what the relation reads (*blocks*).
     #[serde(skip_serializing_if = "Option::is_none")]
-    field_kind: Option<FieldType>,
-    /// A change: what the field was, when it is a word or a name.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    before_text: Option<String>,
-    /// A change: what the field is now, when it is a word or a name.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    after_text: Option<String>,
-    /// A change of an own field that a screen words itself (yes or no, a length of time, a number,
-    /// a day): what the field was, as the JSON of its kind.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    before_value: Option<Value>,
-    /// The same for what the field is now.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    after_value: Option<Value>,
-    /// A change: the names of the choices the field held, in order.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    before_names: Option<Vec<String>>,
-    /// A change: the names of the choices the field holds now.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    after_names: Option<Vec<String>>,
-    /// A change: the people the field held, as the kind of the field says.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    before_people: Option<Vec<PersonRef>>,
-    /// A change: the people the field holds now.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    after_people: Option<Vec<PersonRef>>,
-    /// A change: the issue the field held (the parent), when the reader may see it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    before_issue: Option<IssueRef>,
-    /// A change: the issue the field holds now.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    after_issue: Option<IssueRef>,
-    /// A change of the project: the project the issue was in, when the reader may see it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    before_project: Option<ProjectRef>,
-    /// A change of the project: the project the issue is in now.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    after_project: Option<ProjectRef>,
-    /// A relation: `added` or `removed`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    relation: Option<String>,
+    relation_name: Option<String>,
     /// A relation: which end this issue is.
     #[serde(skip_serializing_if = "Option::is_none")]
     direction: Option<Direction>,
@@ -193,22 +146,9 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         version: None,
         may_edit: None,
         may_delete: None,
-        field: None,
-        field_name: None,
-        field_kind: None,
-        before_text: None,
-        after_text: None,
-        before_value: None,
-        after_value: None,
-        before_names: None,
-        after_names: None,
-        before_people: None,
-        after_people: None,
-        before_issue: None,
-        after_issue: None,
-        before_project: None,
-        after_project: None,
-        relation: None,
+        change: None,
+        relation_event: None,
+        relation_name: None,
         direction: None,
         issue: None,
         file_event: None,
@@ -236,18 +176,7 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
             .iter()
             .map(|change| {
                 let mut item = start(row, HistoryEntryKind::Change);
-                item.field = Some(change.field.clone());
-                item.field_name.clone_from(&change.name);
-                let (before, after) = sides_of(change);
-                item.field_kind = before.kind.or(after.kind);
-                (item.before_text, item.before_value) = (before.text, before.value);
-                (item.before_names, item.before_people) = (before.names, before.people);
-                item.before_issue = before.issue;
-                item.before_project = before.project;
-                (item.after_text, item.after_value) = (after.text, after.value);
-                (item.after_names, item.after_people) = (after.names, after.people);
-                item.after_issue = after.issue;
-                item.after_project = after.project;
+                item.change = Some(FieldChangeBody::from(change));
                 item
             })
             .collect(),
@@ -264,9 +193,13 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
             issue,
         } => {
             let mut item = start(row, HistoryEntryKind::Relation);
-            item.relation = Some(if *added { "added" } else { "removed" }.to_owned());
+            item.relation_event = Some(if *added {
+                RelationEvent::Added
+            } else {
+                RelationEvent::Removed
+            });
             item.direction = Some(*direction);
-            item.field = Some(name.clone());
+            item.relation_name = Some(name.clone());
             item.issue = Some(IssueRef::from(issue));
             vec![item]
         }
@@ -278,7 +211,6 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
 #[into_params(parameter_in = Query)]
 pub(crate) struct TabParams {
     /// Everything (the default), only the comments, or only the changes.
-    #[param(inline)]
     tab: Option<HistoryTab>,
 }
 
@@ -340,19 +272,19 @@ mod tests {
 
     use super::*;
     use crate::api::issues::IssueTypeRef;
+    use crate::api::projects::ProjectRef;
     use crate::api::workflows::StatusRef;
 
     #[test]
     fn perf_02_the_field_table_names_exactly_the_fields_of_an_item() {
-        let project = || ProjectRef {
-            id: String::new(),
-            short_name: String::new(),
-            name: String::new(),
-        };
         let line = || IssueRef {
             id: String::new(),
-            key: String::new(),
-            project: project(),
+            readable_id: String::new(),
+            project: ProjectRef {
+                id: String::new(),
+                short_name: String::new(),
+                name: String::new(),
+            },
             issue_type: IssueTypeRef {
                 id: String::new(),
                 name: String::new(),
@@ -375,22 +307,9 @@ mod tests {
             version: Some(1),
             may_edit: Some(true),
             may_delete: Some(true),
-            field: Some(String::new()),
-            field_name: Some(String::new()),
-            field_kind: Some(FieldType::YesNo),
-            before_text: Some(String::new()),
-            after_text: Some(String::new()),
-            before_value: Some(Value::Null),
-            after_value: Some(Value::Null),
-            before_names: Some(Vec::new()),
-            after_names: Some(Vec::new()),
-            before_people: Some(Vec::new()),
-            after_people: Some(Vec::new()),
-            before_issue: Some(line()),
-            after_issue: Some(line()),
-            before_project: Some(project()),
-            after_project: Some(project()),
-            relation: Some(String::new()),
+            change: Some(FieldChangeBody::blank()),
+            relation_event: Some(RelationEvent::Added),
+            relation_name: Some(String::new()),
             direction: Some(Direction::Forward),
             issue: Some(line()),
             file_event: Some(FileEvent::Added),

@@ -78,7 +78,7 @@ pub(super) async fn take_lock(
             "POST",
             LOCKS,
             Some(json!({
-                "what": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
+                "target": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
                 "editor_id": editor,
             })),
         )
@@ -387,9 +387,9 @@ async fn iss_17_two_people_cannot_change_one_layout_at_once() -> TestResult {
 
         // Ada is editing: Lena is told so, and cannot take the lock.
         let ada_lock = take_lock(&mut ada, &layout, AN_EDITOR).await?;
-        assert_eq!(ada_lock["status"], "taken");
+        assert_eq!(ada_lock["kind"], "taken");
         let lena_lock = take_lock(&mut lena, &layout, ANOTHER_EDITOR).await?;
-        assert_eq!(lena_lock["status"], "held");
+        assert_eq!(lena_lock["kind"], "held-by-other");
 
         // A save without the lock is refused and writes nothing, even with the right version.
         let wrong = save(
@@ -401,7 +401,7 @@ async fn iss_17_two_people_cannot_change_one_layout_at_once() -> TestResult {
         )
         .await?;
         assert_eq!(wrong.status, StatusCode::CONFLICT, "{}", wrong.body);
-        assert_eq!(wrong.code(), "edit.taken_over");
+        assert_eq!(wrong.code(), "edit.taken-over");
         assert_eq!(
             editor_of(&mut ada, "ACME").await?["layout"]["version"],
             version
@@ -416,7 +416,7 @@ async fn iss_17_two_people_cannot_change_one_layout_at_once() -> TestResult {
         let saved = save(&mut ada, &layout, &version, &token, sections).await?;
         assert_eq!(ok(&saved)?["sections"][0]["title"], "Mine");
         let lena_lock = take_lock(&mut lena, &layout, ANOTHER_EDITOR).await?;
-        assert_eq!(lena_lock["status"], "taken");
+        assert_eq!(lena_lock["kind"], "taken");
         // A save on the version Lena started from before Ada's is a conflict.
         let stale = save(
             &mut lena,
@@ -427,7 +427,7 @@ async fn iss_17_two_people_cannot_change_one_layout_at_once() -> TestResult {
         )
         .await?;
         assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.body);
-        assert_eq!(stale.code(), "edit.version_changed");
+        assert_eq!(stale.code(), "edit.version-changed");
         Ok(())
     })
     .await

@@ -43,7 +43,7 @@ export function picksOf(value: unknown): readonly Picked[] {
   return each.flatMap((one) => {
     const id = memberOf(one, "id");
     const name = memberOf(one, "name");
-    const key = memberOf(one, "key");
+    const key = memberOf(one, "readable_id");
     if (typeof id !== "string") {
       return [];
     }

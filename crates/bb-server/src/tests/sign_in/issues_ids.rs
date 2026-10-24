@@ -106,7 +106,7 @@ async fn iss_01a_counting_ids_count_per_project_without_gaps_under_ten_writers()
                 Some(site.new_issue("First in WEB")),
             )
             .await?;
-        assert_eq!(ok(&in_web)?["key"], "WEB-1");
+        assert_eq!(ok(&in_web)?["readable_id"], "WEB-1");
         Ok(())
     })
     .await
@@ -120,7 +120,12 @@ async fn iss_01a_an_old_id_redirects_after_the_mode_changes() -> TestResult {
         let mut first_keys = Vec::new();
         for title in ["One", "Two", "Three"] {
             let made = site.create(&mut ada, title).await?;
-            first_keys.push(ok(&made)?["key"].as_str().ok_or("no key")?.to_owned());
+            first_keys.push(
+                ok(&made)?["readable_id"]
+                    .as_str()
+                    .ok_or("no key")?
+                    .to_owned(),
+            );
         }
         // The organization starts as Random: the codes are letters and digits, not 1, 2, 3.
         for key in &first_keys {
@@ -134,7 +139,7 @@ async fn iss_01a_an_old_id_redirects_after_the_mode_changes() -> TestResult {
         for (key, title) in first_keys.iter().zip(["One", "Two", "Three"]) {
             let old = ada.send("GET", &format!("{ISSUES}/{key}"), None).await?;
             assert_eq!(ok(&old)?["issue"]["title"], title);
-            let now = old.body["issue"]["key"].as_str().ok_or("no key")?;
+            let now = old.body["issue"]["readable_id"].as_str().ok_or("no key")?;
             assert_ne!(now, key, "the answer holds the current ID");
             counted.insert(code_of(&json!(now))?);
             let by_number = ada.send("GET", &format!("{ISSUES}/{now}"), None).await?;
@@ -143,16 +148,16 @@ async fn iss_01a_an_old_id_redirects_after_the_mode_changes() -> TestResult {
         assert_eq!(counted, BTreeSet::from(["1", "2", "3"].map(str::to_owned)));
         // A new issue continues the count.
         let fourth = site.create(&mut ada, "Four").await?;
-        assert_eq!(ok(&fourth)?["key"], "ACME-4");
+        assert_eq!(ok(&fourth)?["readable_id"], "ACME-4");
         // Back to the default of the organization (Random): all the IDs of the past still work, and
         // the numbers 1 to 4 are not given to anybody else when the project counts again.
         mode(&mut ada, None).await?;
         let renamed = ada.send("GET", &format!("{ISSUES}/ACME-4"), None).await?;
         assert_eq!(ok(&renamed)?["issue"]["title"], "Four");
-        assert_ne!(renamed.body["issue"]["key"], "ACME-4");
+        assert_ne!(renamed.body["issue"]["readable_id"], "ACME-4");
         mode(&mut ada, Some("counting")).await?;
         let fifth = site.create(&mut ada, "Five").await?;
-        let code: u32 = code_of(&ok(&fifth)?["key"])?.parse()?;
+        let code: u32 = code_of(&ok(&fifth)?["readable_id"])?.parse()?;
         assert!(code > 4, "{code} was given out before");
         for key in &first_keys {
             let still = ada.send("GET", &format!("{ISSUES}/{key}"), None).await?;
@@ -174,7 +179,7 @@ async fn iss_01a_an_old_id_redirects_after_the_mode_changes() -> TestResult {
             .await?;
         assert_eq!(ok(&across)?["issue"]["title"], "One");
         assert!(
-            across.body["issue"]["key"]
+            across.body["issue"]["readable_id"]
                 .as_str()
                 .ok_or("no key")?
                 .starts_with("ACMEX-")
@@ -223,7 +228,7 @@ async fn iss_01a_an_old_id_keeps_working_after_the_issue_moves() -> TestResult {
         for old in [&first, &second, &third] {
             let found = ada.send("GET", &format!("{ISSUES}/{old}"), None).await?;
             assert_eq!(ok(&found)?["issue"]["title"], "Moves twice", "{old}");
-            assert_eq!(found.body["issue"]["key"], third.as_str(), "{old}");
+            assert_eq!(found.body["issue"]["readable_id"], third.as_str(), "{old}");
         }
         Ok(())
     })
@@ -238,7 +243,10 @@ async fn iss_01a_random_ids_made_in_a_project_never_repeat() -> TestResult {
         let mut keys = BTreeSet::new();
         for number in 0..60 {
             let made = site.create(&mut ada, &format!("Issue {number}")).await?;
-            assert!(keys.insert(ok(&made)?["key"].to_string()), "an ID twice");
+            assert!(
+                keys.insert(ok(&made)?["readable_id"].to_string()),
+                "an ID twice"
+            );
         }
         // A longer code is used when the organization asks for one.
         let length = ada
@@ -250,7 +258,10 @@ async fn iss_01a_random_ids_made_in_a_project_never_repeat() -> TestResult {
             .await?;
         assert_eq!(length.status, StatusCode::OK, "{}", length.body);
         let long = site.create(&mut ada, "A long one").await?;
-        let key = ok(&long)?["key"].as_str().ok_or("no key")?.to_owned();
+        let key = ok(&long)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         assert_eq!(key.len(), "ACME-".len() + 8, "{key}");
         let too_long = ada
             .send(
@@ -279,12 +290,12 @@ async fn iss_01a_a_trashed_issue_is_renewed_too_and_never_blocks_making_issues()
         mode(&mut ada, Some("counting")).await?;
         // The issue in the trash got a number as well, so no number it holds is given again.
         let fresh = site.create(&mut ada, "Fresh").await?;
-        assert_eq!(ok(&fresh)?["key"], "ACME-3");
+        assert_eq!(ok(&fresh)?["readable_id"], "ACME-3");
         // Taken out of the trash by the code it had, it comes back under its number.
         let back = ada
             .send("POST", &format!("{ISSUES}/{trashed}/restore"), None)
             .await?;
-        let number = code_of(&ok(&back)?["key"])?;
+        let number = code_of(&ok(&back)?["readable_id"])?;
         assert!(["1", "2"].contains(&number.as_str()), "{number}");
         assert_eq!(back.body["title"], "Trashed");
         let by_old = ada.send("GET", &format!("{ISSUES}/{kept}"), None).await?;
@@ -293,7 +304,7 @@ async fn iss_01a_a_trashed_issue_is_renewed_too_and_never_blocks_making_issues()
         // so it cannot meet a counting code of the past.
         mode(&mut ada, None).await?;
         let random = site.create(&mut ada, "Random again").await?;
-        let code = code_of(&ok(&random)?["key"])?;
+        let code = code_of(&ok(&random)?["readable_id"])?;
         assert!(code.parse::<u64>().is_err(), "{code}");
         Ok(())
     })
@@ -428,13 +439,17 @@ async fn iss_01a_makes_and_changes_at_the_moment_of_a_mode_change_finish_in_one_
         }
         // Every issue ends with a counting number, and no number twice.
         let list = ada
-            .send("GET", "/api/v1/projects/ACME/issues?fields=key", None)
+            .send(
+                "GET",
+                "/api/v1/projects/ACME/issues?fields=readable_id",
+                None,
+            )
             .await?;
         let items = ok(&list)?["items"].as_array().ok_or("no items")?;
         assert_eq!(items.len(), 8);
         let mut numbers = BTreeSet::new();
         for item in items {
-            let number: u32 = code_of(&item["key"])?.parse()?;
+            let number: u32 = code_of(&item["readable_id"])?.parse()?;
             assert!(numbers.insert(number), "{number} twice");
         }
         assert_eq!(numbers, (1..=8).collect::<BTreeSet<u32>>());
@@ -453,12 +468,12 @@ async fn iss_01a_a_second_switch_to_counting_continues_the_counter() -> TestResu
         let opened = ada.send("GET", &format!("{ISSUES}/ACME-1"), None).await?;
         assert_eq!(ok(&opened)?["issue"]["title"], "First");
         let second = site.create(&mut ada, "Second").await?;
-        assert_eq!(ok(&second)?["key"], "ACME-2");
+        assert_eq!(ok(&second)?["readable_id"], "ACME-2");
         mode(&mut ada, None).await?;
         mode(&mut ada, Some("counting")).await?;
         // The counter continues; the first issue keeps being found by every ID it ever had.
         let third = site.create(&mut ada, "Third").await?;
-        let number: u32 = code_of(&ok(&third)?["key"])?.parse()?;
+        let number: u32 = code_of(&ok(&third)?["readable_id"])?.parse()?;
         assert!(number >= 3, "{number}");
         for address in ["ACME-1", &first] {
             let found = ada
@@ -486,7 +501,7 @@ async fn counting_ids(ada: &mut Browser) -> Result<usize, Failure> {
             items
                 .iter()
                 .filter(|item| {
-                    item["key"]
+                    item["readable_id"]
                         .as_str()
                         .and_then(|key| key.split('-').nth(1))
                         .is_some_and(|code| code.bytes().all(|byte| byte.is_ascii_digit()))
@@ -510,7 +525,8 @@ async fn a_done_renewal_does_nothing(
     consumer: &TechnicalName,
 ) -> Result<(), Failure> {
     let key_now =
-        ok(&ada.send("GET", &format!("{ISSUES}/{old}"), None).await?)?["issue"]["key"].clone();
+        ok(&ada.send("GET", &format!("{ISSUES}/{old}"), None).await?)?["issue"]["readable_id"]
+            .clone();
     let events_before = rig.database.outbox_after(consumer, 1_000_000).await?.len();
     let now = rig.clock_now();
     let by = rig.person_id(ADA_EMAIL).await?.to_string();
@@ -536,7 +552,7 @@ async fn a_done_renewal_does_nothing(
         "no event for a renewal that is done"
     );
     let again = ada.send("GET", &format!("{ISSUES}/{old}"), None).await?;
-    assert_eq!(ok(&again)?["issue"]["key"], key_now);
+    assert_eq!(ok(&again)?["issue"]["readable_id"], key_now);
     Ok(())
 }
 

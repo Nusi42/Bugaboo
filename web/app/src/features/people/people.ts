@@ -16,7 +16,7 @@ const SHOWN_FIELDS = fieldList<ListItem>(["person", "email", "groups", "roles"])
 export interface PersonLine extends NamedPerson {
   readonly email: string;
   /** The groups the person is in, when the viewer may see groups. */
-  readonly groups: readonly Schema<"GroupRef">[] | null;
+  readonly groups: readonly Schema<"NamedRef">[] | null;
   readonly roles: readonly Schema<"RoleAtRef">[];
 }
 
@@ -63,8 +63,8 @@ export function usePerson(id: string) {
     queryKey: queryKeys.people.one(id),
     queryFn: async () =>
       dataOf(
-        await api.client.GET("/api/v1/people/{person_id}", {
-          params: { path: { person_id: id } },
+        await api.client.GET("/api/v1/people/{person}", {
+          params: { path: { person: id } },
         }),
       ),
   });

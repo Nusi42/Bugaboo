@@ -57,7 +57,7 @@ export function personNameAt(position: Position, person: Person): string {
     return roleName(position, person.role);
   }
   if (person.shown === "former") {
-    return t(formerMessage[position], { label: person.label });
+    return t(formerMessage[position], { label: person.code });
   }
   return someoneName(position);
 }

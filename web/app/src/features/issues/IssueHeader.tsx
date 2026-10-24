@@ -34,7 +34,7 @@ export interface IssueHeaderProps {
  */
 export function IssueHeader(props: IssueHeaderProps) {
   const { issue, show, canChangeTitle, actions, onTitle, onSwitch } = props;
-  const key = issue.key ?? "";
+  const key = issue.readable_id ?? "";
   const issueType = known(issue.issue_type);
   const Heading = show === "focus" ? "h1" : "h2";
   // A phone always shows the issue on a screen of its own, so there is no other view to open it in.

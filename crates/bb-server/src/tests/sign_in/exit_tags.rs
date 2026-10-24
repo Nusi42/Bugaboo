@@ -61,9 +61,15 @@ async fn sec_06_a_person_who_sees_only_their_own_issues_is_offered_only_their_ow
         )
         .await?;
         let theirs = site.create(&mut gus, "Gus's problem").await?;
-        let theirs = ok(&theirs)?["key"].as_str().ok_or("no key")?.to_owned();
+        let theirs = ok(&theirs)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         let others = site.create(&mut ada, "Ada's problem").await?;
-        let others = ok(&others)?["key"].as_str().ok_or("no key")?.to_owned();
+        let others = ok(&others)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         tag(&mut gus, &theirs, "plan-a").await?;
         tag(&mut ada, &others, "plan-b").await?;
         let path = format!("{PROJECTS}/ACME/tag-suggestions?text=plan");
@@ -103,7 +109,7 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
             .send(
                 "POST",
                 "/api/v1/labels",
-                Some(json!({"name": "urgent", "group": null})),
+                Some(json!({"name": "urgent", "label_group": null})),
             )
             .await?)?["id"]
             .as_str()
@@ -167,6 +173,25 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
     .await
 }
 
+/// An issue made in the project, by its readable ID.
+async fn issue_in(
+    site: &Site<'_>,
+    ada: &mut Browser,
+    project: &str,
+    title: &str,
+) -> Result<String, Failure> {
+    Ok(ok(&ada
+        .send(
+            "POST",
+            &format!("{PROJECTS}/{project}/issues"),
+            Some(site.new_issue(title)),
+        )
+        .await?)?["readable_id"]
+        .as_str()
+        .ok_or("no readable ID")?
+        .to_owned())
+}
+
 #[tokio::test]
 async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags() -> TestResult {
     each_database("sec_06_manager_list", async |db| {
@@ -182,18 +207,12 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
             .as_str()
             .ok_or("no project ID")?
             .to_owned();
-        let hidden = ok(&ada
-            .send(
-                "POST",
-                &format!("{PROJECTS}/{secret}/issues"),
-                Some(site.new_issue("A secret")),
-            )
-            .await?)?["key"]
+        let hidden = issue_in(&site, &mut ada, &secret, "A secret").await?;
+        let open = site.create(&mut ada, "Something open").await?;
+        let open = ok(&open)?["readable_id"]
             .as_str()
             .ok_or("no key")?
             .to_owned();
-        let open = site.create(&mut ada, "Something open").await?;
-        let open = ok(&open)?["key"].as_str().ok_or("no key")?.to_owned();
         tag(&mut ada, &hidden, "takeover-plan").await?;
         let made = tag(&mut ada, &open, "open-tag").await?;
         // A tag no issue has any more is still there to be cleaned up.
@@ -233,16 +252,7 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
         ok(&ada
             .send("DELETE", &format!("{ISSUES}/{open}/tags/{limited}"), None)
             .await?)?;
-        let other = ok(&ada
-            .send(
-                "POST",
-                &format!("{PROJECTS}/{secret}/issues"),
-                Some(site.new_issue("Another secret")),
-            )
-            .await?)?["key"]
-            .as_str()
-            .ok_or("no key")?
-            .to_owned();
+        let other = issue_in(&site, &mut ada, &secret, "Another secret").await?;
         tag(&mut ada, &other, "trashed-secret").await?;
         let gone = ada
             .send("DELETE", &format!("{ISSUES}/{other}"), None)
@@ -278,7 +288,10 @@ async fn sec_06_a_name_with_an_invisible_character_and_a_long_search_are_refused
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let issue = site.create(&mut ada, "Login fails").await?;
-        let issue = ok(&issue)?["key"].as_str().ok_or("no key")?.to_owned();
+        let issue = ok(&issue)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         // A zero-width space and an override of the direction make a name that looks like another.
         for name in ["login\u{200B}", "\u{202E}login", "lo\u{FEFF}gin"] {
             let put = ada
@@ -293,7 +306,7 @@ async fn sec_06_a_name_with_an_invisible_character_and_a_long_search_are_refused
                 .send(
                     "POST",
                     "/api/v1/labels",
-                    Some(json!({"name": name, "group": null})),
+                    Some(json!({"name": name, "label_group": null})),
                 )
                 .await?;
             assert_eq!(label.code(), "request.invalid", "{name:?}: {}", label.body);
@@ -341,7 +354,7 @@ async fn sec_06_the_answer_of_adding_a_label_leaves_out_tags_the_type_hides() ->
             .send(
                 "POST",
                 "/api/v1/labels",
-                Some(json!({"name": "urgent", "group": null})),
+                Some(json!({"name": "urgent", "label_group": null})),
             )
             .await?)?["id"]
             .as_str()

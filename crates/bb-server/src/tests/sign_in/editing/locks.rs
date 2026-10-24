@@ -161,7 +161,7 @@ async fn sec_17_releasing_a_stuck_lock_is_in_the_security_log() -> TestResult {
                 .security_log_entries(0, 10_000)
                 .await?
                 .into_iter()
-                .filter(|entry| entry.action.as_str() == SecurityAction::EditLockReleased.code())
+                .filter(|entry| entry.action.as_str() == SecurityAction::EditLockLetGo.code())
                 .collect())
         };
         let (token, _) = stage.lock(&stage.ben).await?;
@@ -235,7 +235,7 @@ async fn iss_17_the_person_whose_lock_was_released_is_told_who_released_it() -> 
         let beat = stage.heartbeat(&stage.ben, token, None).await?;
         assert_eq!(beat.lock, LockStatus::RanOut);
         assert_eq!(beat.notices.len(), 1);
-        assert_eq!(beat.notices[0].kind, NoticeKind::Released);
+        assert_eq!(beat.notices[0].kind, NoticeKind::LetGo);
         // Ben sees editors as *Someone*: the note is made with the people kind of editing.
         assert_eq!(beat.notices[0].from, PersonRef::Someone);
         // Each note is told once.

@@ -74,7 +74,7 @@ fn checked_hosts<'a>(items: impl Iterator<Item = &'a str>) -> Vec<String> {
 /// security policy of every page).
 ///
 /// # Errors
-/// `auth.not_signed_in` without a session.
+/// `auth.not-signed-in` without a session.
 pub async fn image_hosts<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ImageHostsQuery,

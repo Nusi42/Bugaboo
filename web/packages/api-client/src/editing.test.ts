@@ -6,15 +6,15 @@ import { heartbeatSeconds, leaseSeconds, versionsMax } from "./editing.generated
 import {
   inGroupsOfOneCheck,
   readDraft,
-  releaseEditLock,
+  letGoOfEditLock,
   sendHeartbeat,
   startHeartbeatsOn,
   versionsOf,
-  type EditWhat,
+  type EditTarget,
   type RecordRef,
 } from "./editing.ts";
 
-const what: EditWhat = { record: { kind: "issue", id: "i-1" }, part: "description" };
+const what: EditTarget = { record: { kind: "issue", id: "i-1" }, part: "description" };
 
 /** What the server was asked. */
 interface Sent {
@@ -59,24 +59,24 @@ describe("iss_17 the numbers of editing come from the server code", () => {
 describe("iss_05 the release of a lock", () => {
   it("goes out with keepalive, so a window that closes or reloads at once still lets go (M3-F105)", async () => {
     const { client, sent } = serving(() => ({}));
-    await releaseEditLock(client, what, "lock-1");
+    await letGoOfEditLock(client, what, "lock-1");
     expect(sent[0]?.keepalive).toBe(true);
-    expect(sent[0]?.body).toEqual({ what, lock_token: "lock-1" });
+    expect(sent[0]?.body).toEqual({ target: what, lock_token: "lock-1" });
   });
 });
 
 describe("iss_17 the heartbeat", () => {
   it("sends the lock token with the text so far, and nothing about the draft without one", async () => {
-    const beat = { status: "held", expires_at: "x" };
+    const beat = { kind: "renewed", expires_at: "x" };
     const { client, sent } = serving(() => ({ lock: beat, notices: [], draft_saved: true }));
     await sendHeartbeat(client, what, "lock-1", { text: "So far", base_version: 3 });
     await sendHeartbeat(client, what, "lock-1");
     expect(sent[0]?.body).toEqual({
-      what,
+      target: what,
       lock_token: "lock-1",
       draft: { text: "So far", base_version: 3 },
     });
-    expect(sent[1]?.body).toEqual({ what, lock_token: "lock-1" });
+    expect(sent[1]?.body).toEqual({ target: what, lock_token: "lock-1" });
   });
 
   it("runs every fifteen seconds, one beat at a time, until it is stopped", async () => {
@@ -114,9 +114,12 @@ describe("iss_17 the heartbeat", () => {
 describe("iss_11 the draft of a person", () => {
   it("is nothing when the server has none", async () => {
     const { client, sent } = serving(() => ({ draft: null }));
-    const found = await readDraft(client, { kind: "issue", id: "i-1", part: "description" });
+    const found = await readDraft(client, {
+      record: { kind: "issue", id: "i-1" },
+      part: "description",
+    });
     expect(found).toBeNull();
-    expect(sent[0]?.url).toContain("kind=issue");
+    expect(sent[0]?.url).toContain("record_kind=issue");
   });
 });
 

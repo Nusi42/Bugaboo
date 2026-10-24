@@ -103,7 +103,7 @@ async fn groups_request(
             format!("/api/v1/groups/{}", a_group(fixture).await?),
             None,
         ),
-        "renameGroup" => (
+        "changeGroup" => (
             "PATCH",
             format!("/api/v1/groups/{}", a_group(fixture).await?),
             Some(json!({"version": 1, "name": format!("Renamed {}", fixture.next_number())})),
@@ -210,7 +210,7 @@ async fn rows_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
     let target = fixture.project(Project::Target).to_string();
     Ok(Some(match operation {
         "listAssignments" => ("GET", "/api/v1/assignments".into(), None),
-        "assignRole" => (
+        "createAssignment" => (
             "POST",
             "/api/v1/assignments".into(),
             Some(json!({
@@ -223,7 +223,7 @@ async fn rows_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
             format!("/api/v1/projects/{target}/assignments"),
             None,
         ),
-        "assignProjectRole" => (
+        "createProjectAssignment" => (
             "POST",
             format!("/api/v1/projects/{target}/assignments"),
             Some(json!({

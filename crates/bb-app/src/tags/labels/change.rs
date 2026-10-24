@@ -25,7 +25,7 @@ use crate::projects::Why;
 ///
 /// # Errors
 /// `access.forbidden` without *Manage labels and tags* where the group was created,
-/// `resource.not_found` for a group that is not there, `request.invalid` for a name that cannot be
+/// `resource.not-found` for a group that is not there, `request.invalid` for a name that cannot be
 /// one or a retired group, `name.taken` for a name the group has, `limit.reached` for as many
 /// labels as the place of the group may have.
 pub async fn create_label<S: AuthStore>(
@@ -96,7 +96,7 @@ pub async fn create_label<S: AuthStore>(
 /// What renaming a label, or combining it with another, would do to the issues the person sees.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage labels and tags*, `resource.not_found` for a label that is
+/// `access.forbidden` without *Manage labels and tags*, `resource.not-found` for a label that is
 /// not there, `request.invalid` for a name that cannot be one or for nothing asked, `name.taken`
 /// for a name another label of the group has.
 pub async fn label_change_preview<S: AuthStore>(
@@ -152,10 +152,10 @@ pub async fn label_change_preview<S: AuthStore>(
 /// whether it is retired. What is left out stays as it is.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage labels and tags*, `resource.not_found` for a label or a group
+/// `access.forbidden` without *Manage labels and tags*, `resource.not-found` for a label or a group
 /// that is not there, `request.invalid` for nothing asked, a name that cannot be one or a retired
-/// group, `name.taken`, `label.pick_one_conflict` when joining a *Pick one* group would give some
-/// issue two of its labels, `edit.version_changed` when somebody changed the label since it was
+/// group, `name.taken`, `label.pick-one-conflict` when joining a *Pick one* group would give some
+/// issue two of its labels, `edit.version-changed` when somebody changed the label since it was
 /// looked at.
 pub async fn change_label<S: AuthStore>(
     ctx: &Ctx<'_, S>,

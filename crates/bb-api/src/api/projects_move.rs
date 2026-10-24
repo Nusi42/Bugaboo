@@ -308,7 +308,7 @@ async fn preview_project_move(
 
 /// Moves a project, with everything in it, into another project or to the top level. It works
 /// only with the `preview` of a preview that is still true: when the projects, who has which
-/// role or the levels of the roles changed since, it answers `project.preview_changed`. A move
+/// role or the levels of the roles changed since, it answers `project.preview-changed`. A move
 /// after which somebody could take away a *No access* that applies to them is refused. Needs the
 /// permission *Move sub-projects into or out of the project* in the old and the new parent.
 #[utoipa::path(

@@ -336,7 +336,7 @@ pub async fn people<S: AuthStore>(
 /// One person with their groups and roles.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage people*, `resource.not_found` for an unknown person.
+/// `access.forbidden` without *Manage people*, `resource.not-found` for an unknown person.
 pub async fn person<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: PersonQuery,
@@ -386,7 +386,7 @@ fn person_choice(
 /// The people (by name only) that can be put into a group; those who are in it already say so.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group,
+/// `access.forbidden` without *Manage groups*, `resource.not-found` for an unknown group,
 /// `request.invalid` for a cursor that is not one.
 pub async fn member_choices<S: AuthStore>(
     ctx: &Ctx<'_, S>,

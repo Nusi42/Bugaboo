@@ -2,9 +2,10 @@
 
 use super::{
     ApiError, ApiJson, ApiQuery, AuthHandle, CheckVersionsBody, CheckVersionsQuery, ConflictAnswer,
-    DraftBody, DraftSlotBody, DraftTargetBody, DraftText, ForbiddenAnswer, Info, InvalidAnswer,
-    NotFoundAnswer, NotSignedInAnswer, ReadDraftQuery, RecordRefBody, Response, SaveDraftBody,
-    SaveDraftQuery, Session, State, ThrowAwayDraftQuery, VersionsBody, answer_authorized, done,
+    DraftBody, DraftSlotBody, DraftTargetBody, DraftTargetQuery, DraftText, ForbiddenAnswer, Info,
+    InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, ReadDraftQuery, RecordRefBody, Response,
+    SaveDraftBody, SaveDraftQuery, Session, State, ThrowAwayDraftQuery, VersionsBody,
+    answer_authorized, done,
 };
 
 /// Keeps a text as the draft of the person, in place of the older one for the same target. Only the
@@ -47,9 +48,9 @@ pub(super) async fn save_draft(
 #[utoipa::path(
     get,
     path = "/api/v1/drafts",
-    operation_id = "readDraft",
+    operation_id = "getDraft",
     tag = "editing",
-    params(DraftTargetBody),
+    params(DraftTargetQuery),
     responses(
         (status = 200, description = "The draft, or nothing.", body = DraftSlotBody),
         InvalidAnswer,
@@ -62,7 +63,7 @@ pub(super) async fn read_draft(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiQuery(target): ApiQuery<DraftTargetBody>,
+    ApiQuery(target): ApiQuery<DraftTargetQuery>,
 ) -> Result<Response, ApiError> {
     let found = auth
         .api()?

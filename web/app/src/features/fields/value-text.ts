@@ -42,10 +42,8 @@ export function isDecimalText(text: string): boolean {
   return new RegExp(String.raw`^[-+]?\d+(?:\.\d{1,${decimalDigits}})?$`, "u").test(text.trim());
 }
 
-/** Whether the text is a whole number as the API takes it. */
-export function isWholeNumberText(text: string): boolean {
-  return /^[-+]?\d+$/u.test(text.trim());
-}
+/** The whole number a person typed, as the one reader of whole numbers reads it. */
+export { wholeNumberIn } from "../../shared/number.ts";
 
 /** The non-empty lines of a text, trimmed: one choice on each line. */
 export function wordsOfLines(text: string): string[] {

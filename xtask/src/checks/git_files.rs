@@ -19,8 +19,8 @@ const OPENAPI_MAX_BYTES: u64 = 2 * 1024 * 1024;
 ///
 /// - `web/packages/api-client/openapi.json`: the description of the API, written by `cargo xtask
 ///   gen api`. It is read for its diffs and it is the base of the API freeze (ARCH-API-FREEZE), so
-///   it stays in Git, and with the routes of M4 it passed 1 MiB. The follow-up M4-F53 looks at why
-///   it is this large (repeated schemas, long texts).
+///   it stays in Git. With the routes of M4 it passed 1 MiB; WP-16 wrote each answer, header and
+///   paging parameter once (M4-F53) and it is about 0.65 MiB now, so the ceiling is a reserve.
 const LARGE_ALLOWED: &[(&str, u64)] =
     &[("web/packages/api-client/openapi.json", OPENAPI_MAX_BYTES)];
 

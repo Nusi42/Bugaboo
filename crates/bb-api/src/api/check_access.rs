@@ -23,37 +23,28 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_bodies::cursor_error;
+use super::access_bodies::{NamedRef, cursor_error};
 use super::access_keys::ProjectLabelBody;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer,
     answer_authorized,
 };
-use super::field_permissions::{PlaceParams, RoleRefBody, TypeParams};
+use super::field_permissions::{PlaceParams, TypeParams};
 use super::issues::IssueTypeRef;
 use super::path_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
-/// A group named in a reason.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct GroupRefBody {
-    /// The ID of the group.
-    id: String,
-    /// What the group is called.
-    name: String,
-}
-
 /// Whom a row of *Who has which role* was for.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ReasonWhoBody {
     /// The person who is checked.
     Person,
     /// A group of theirs.
     Group {
         /// The group.
-        group: GroupRefBody,
+        group: NamedRef,
     },
 }
 
@@ -80,7 +71,7 @@ impl From<&ReasonRowView> for ReasonRowBody {
             who: match &row.who {
                 ReasonWho::Person => ReasonWhoBody::Person,
                 ReasonWho::Group { group } => ReasonWhoBody::Group {
-                    group: GroupRefBody {
+                    group: NamedRef {
                         id: group.id.to_string(),
                         name: group.name.clone(),
                     },
@@ -95,21 +86,21 @@ impl From<&ReasonRowView> for ReasonRowBody {
 
 /// Why a permission is given or not.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ReasonBody {
     /// The role of a row gives it.
     GivenByRole {
         /// The row.
         row: ReasonRowBody,
         /// The role.
-        role: RoleRefBody,
+        role: NamedRef,
     },
     /// *Decide who has which role* is kept from a row that *No access* removed.
     KeptFromRemovedRow {
         /// The row.
         row: ReasonRowBody,
         /// Its role.
-        role: RoleRefBody,
+        role: NamedRef,
         /// The *No access* that decided.
         no_access: ReasonRowBody,
     },
@@ -118,7 +109,7 @@ pub(crate) enum ReasonBody {
         /// The row.
         row: ReasonRowBody,
         /// Its role.
-        role: RoleRefBody,
+        role: NamedRef,
         /// The *No access* that decided.
         no_access: ReasonRowBody,
     },
@@ -127,7 +118,7 @@ pub(crate) enum ReasonBody {
         /// The row.
         row: ReasonRowBody,
         /// The role.
-        role: RoleRefBody,
+        role: NamedRef,
     },
     /// The access key does not keep it.
     NarrowedByKey,
@@ -201,7 +192,7 @@ impl From<&PermissionAnswer> for PermissionAnswerBody {
 
 /// Where the level a role says was set.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum LevelPlaceBody {
     /// For a project (the place or the nearest parent that set one).
     Project {
@@ -226,49 +217,73 @@ impl From<&LevelPlace> for LevelPlaceBody {
     }
 }
 
-/// What one role says about a field or a kind.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct RoleSaysBody<L> {
-    /// The role.
-    role: RoleRefBody,
-    /// Its level.
-    level: L,
-    /// Where it was set.
-    set: LevelPlaceBody,
+/// Writes the bodies of the answer about one kind of subject: what one role says, and the subject
+/// with its level. Each kind of subject has plain names (`FieldLevelAnswerBody`,
+/// `PeopleLevelAnswerBody`), not a generic one.
+macro_rules! level_answer_bodies {
+    ($says:ident, $answer:ident, $subject:ty, $level:ty) => {
+        /// What one role says about a field or a kind.
+        #[derive(Serialize, ToSchema)]
+        pub(crate) struct $says {
+            /// The role.
+            role: NamedRef,
+            /// Its level.
+            level: $level,
+            /// Where it was set.
+            set: LevelPlaceBody,
+        }
+
+        impl From<&RoleSays<$level>> for $says {
+            fn from(says: &RoleSays<$level>) -> Self {
+                Self {
+                    role: NamedRef::from(&says.role),
+                    level: says.level,
+                    set: LevelPlaceBody::from(&says.set),
+                }
+            }
+        }
+
+        /// A field or a kind with its level and what each role says.
+        #[derive(Serialize, ToSchema)]
+        pub(crate) struct $answer {
+            /// The field or the kind.
+            subject: $subject,
+            /// The name of an own field; none for a field of the catalogue or a kind.
+            name: Option<String>,
+            /// The level the person has.
+            level: $level,
+            /// What each role that counts says.
+            roles: Vec<$says>,
+            /// An access key lowered the level to *Can see*.
+            capped_by_key: bool,
+        }
+
+        impl From<&LevelAnswer<$subject, $level>> for $answer {
+            fn from(decision: &LevelAnswer<$subject, $level>) -> Self {
+                Self {
+                    subject: decision.subject,
+                    name: decision.name.clone(),
+                    level: decision.level,
+                    roles: decision.roles.iter().map($says::from).collect(),
+                    capped_by_key: decision.capped_by_key,
+                }
+            }
+        }
+    };
 }
 
-/// A field or a kind with its level and what each role says.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct LevelAnswerBody<K, L> {
-    /// The field or the kind.
-    subject: K,
-    /// The name of an own field; none for a field of the catalogue or a kind.
-    name: Option<String>,
-    /// The level the person has.
-    level: L,
-    /// What each role that counts says.
-    roles: Vec<RoleSaysBody<L>>,
-    /// An access key lowered the level to *Can see*.
-    capped_by_key: bool,
-}
-
-fn level_body<K: Copy, L: Copy>(decision: &LevelAnswer<K, L>) -> LevelAnswerBody<K, L> {
-    LevelAnswerBody {
-        subject: decision.subject,
-        name: decision.name.clone(),
-        level: decision.level,
-        roles: decision.roles.iter().map(says).collect(),
-        capped_by_key: decision.capped_by_key,
-    }
-}
-
-fn says<L: Copy>(says: &RoleSays<L>) -> RoleSaysBody<L> {
-    RoleSaysBody {
-        role: RoleRefBody::from(&says.role),
-        level: says.level,
-        set: LevelPlaceBody::from(&says.set),
-    }
-}
+level_answer_bodies!(
+    FieldRoleSaysBody,
+    FieldLevelAnswerBody,
+    FieldKey,
+    FieldLevel
+);
+level_answer_bodies!(
+    PeopleRoleSaysBody,
+    PeopleLevelAnswerBody,
+    PeopleKind,
+    PeopleLevel
+);
 
 /// What a person can do in a place, and why.
 #[derive(Serialize, ToSchema)]
@@ -280,9 +295,9 @@ pub(crate) struct CheckAccessBody {
     /// Every permission that counts here.
     permissions: Vec<PermissionAnswerBody>,
     /// Every field of the catalogue.
-    fields: Vec<LevelAnswerBody<FieldKey, FieldLevel>>,
+    fields: Vec<FieldLevelAnswerBody>,
     /// Every kind of people information.
-    kinds: Vec<LevelAnswerBody<PeopleKind, PeopleLevel>>,
+    kinds: Vec<PeopleLevelAnswerBody>,
     /// The issue type the field levels are for; left out for all types.
     #[serde(skip_serializing_if = "Option::is_none")]
     issue_type: Option<IssueTypeRef>,
@@ -303,8 +318,16 @@ impl From<AccessAnswer> for CheckAccessBody {
             person: checked.person,
             project: checked.place.as_ref().map(ProjectLabelBody::from),
             permissions: checked.permissions.iter().map(Into::into).collect(),
-            fields: checked.fields.iter().map(level_body).collect(),
-            kinds: checked.kinds.iter().map(level_body).collect(),
+            fields: checked
+                .fields
+                .iter()
+                .map(FieldLevelAnswerBody::from)
+                .collect(),
+            kinds: checked
+                .kinds
+                .iter()
+                .map(PeopleLevelAnswerBody::from)
+                .collect(),
             issue_type: checked.issue_type.as_ref().map(IssueTypeRef::from),
             differs_by_type: checked.differs_by_type,
             issue_types: checked.issue_types.iter().map(IssueTypeRef::from).collect(),

@@ -43,7 +43,7 @@ pub(super) struct TagAddition {
 /// Whether a tag may be put on an issue in a project with this chain of parents, and what it does.
 ///
 /// # Errors
-/// `tag.not_here` for a tag limited to other projects, `limit.reached` for an issue that has as
+/// `tag.not-here` for a tag limited to other projects, `limit.reached` for an issue that has as
 /// many tags as it may.
 pub(super) fn judge_tag(
     name: &str,
@@ -88,8 +88,8 @@ pub(super) struct LabelAddition {
 /// Whether a label may be put on an issue that has these labels, and what it does.
 ///
 /// # Errors
-/// `resource.not_found` for a label that is not there, `request.invalid` for a retired label or a
-/// label of a retired group, `label.not_offered` for a label of a group that the project of the
+/// `resource.not-found` for a label that is not there, `request.invalid` for a retired label or a
+/// label of a retired group, `label.not-offered` for a label of a group that the project of the
 /// issue does not offer, `limit.reached` for an issue that has as many labels as it may.
 pub(super) fn judge_label(
     wanted: LabelId,

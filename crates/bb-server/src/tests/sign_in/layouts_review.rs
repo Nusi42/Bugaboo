@@ -37,7 +37,7 @@ async fn draft_of(browser: &mut Browser, layout: &str) -> Result<Option<String>,
     let slot = browser
         .send(
             "GET",
-            &format!("/api/v1/drafts?kind=layout&id={layout}&part=layout"),
+            &format!("/api/v1/drafts?record_kind=layout&record_id={layout}&part=layout"),
             None,
         )
         .await?;
@@ -97,7 +97,7 @@ async fn cfg_01_a_lead_who_may_not_know_a_field_never_reads_its_id_and_keeps_it_
             json!([{"tab": "", "title": "Mine", "fields": [{"field": "description", "roles": []}]}]),
         )
         .await?;
-        assert_eq!(stale.code(), "edit.version_changed", "{}", stale.body);
+        assert_eq!(stale.code(), "edit.version-changed", "{}", stale.body);
         let draft = draft_of(&mut lena, &layout).await?.ok_or("no draft")?;
         assert!(draft.contains("Mine"), "{draft}");
         assert!(!draft.contains(&salary), "{draft}");
@@ -132,29 +132,29 @@ async fn iss_17_a_layout_is_not_taken_away_while_somebody_else_edits_it() -> Tes
 
         // Lena is editing: Ada is told so and the layout stays.
         let held = take_lock(&mut lena, &layout, ANOTHER_EDITOR).await?;
-        assert_eq!(held["status"], "taken");
+        assert_eq!(held["kind"], "taken");
         let refused = ada.send("DELETE", &delete, None).await?;
         assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.body);
-        assert_eq!(refused.code(), "edit.in_progress");
+        assert_eq!(refused.code(), "edit.in-progress");
         assert!(!editor_of(&mut ada, "ACME").await?["layout"].is_null());
         // Ada's reading of the lock names Lena, as the reader may know her.
         let asked = take_lock(&mut ada, &layout, AN_EDITOR).await?;
-        assert_eq!(asked["status"], "held");
+        assert_eq!(asked["kind"], "held-by-other");
 
         // Lena gives up her lock; Ada takes one of her own, and taking the layout away lets it go.
         let released = lena
             .send(
                 "POST",
-                &format!("{}/release", super::layouts_http::LOCKS),
+                &format!("{}/let-go", super::layouts_http::LOCKS),
                 Some(json!({
-                    "what": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
+                    "target": {"record": {"kind": "layout", "id": layout}, "part": "layout"},
                     "lock_token": token_of(&held)?,
                 })),
             )
             .await?;
         assert!(released.status.is_success(), "{}", released.body);
         let own = take_lock(&mut ada, &layout, AN_EDITOR).await?;
-        assert_eq!(own["status"], "taken");
+        assert_eq!(own["kind"], "taken");
         let gone = ada.send("DELETE", &delete, None).await?;
         assert_eq!(gone.status, StatusCode::NO_CONTENT, "{}", gone.body);
         assert!(editor_of(&mut ada, "ACME").await?["layout"].is_null());
@@ -162,7 +162,7 @@ async fn iss_17_a_layout_is_not_taken_away_while_somebody_else_edits_it() -> Tes
         let again = customize(&mut ada, "ACME").await?;
         let (second, _) = slot(&again)?;
         assert_eq!(
-            take_lock(&mut lena, &second, ANOTHER_EDITOR).await?["status"],
+            take_lock(&mut lena, &second, ANOTHER_EDITOR).await?["kind"],
             "taken"
         );
         Ok(())

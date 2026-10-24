@@ -1,9 +1,11 @@
 //! What the workflow routes take and give back (WF-01…WF-04, ADR-0031): the rules of a status
 //! change, the statuses and status changes an editor sends, and what the editor shows.
 
+use crate::api::editing::SlotBody;
+use crate::lean::FieldSpec;
 use bb_app::workflows::{
     EditorChange, EditorGroup, EditorRole, PublishPreview, RuleField, Tried, TriedChange,
-    TriedVerdict, WorkflowEditor, WorkflowList, WorkflowListItem, WorkflowSlot,
+    TriedVerdict, WorkflowEditor, WorkflowSlot,
 };
 use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
@@ -19,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use super::{StatusRef, status_in};
+use crate::api::access_bodies::NamedRef;
 use crate::api::issues::IssueTypeRef;
 use crate::api::layouts::InheritedFromBody;
 use crate::api::projects::ProjectRef;
@@ -162,7 +165,7 @@ pub(crate) struct StatusDraftBody {
     /// What it is called.
     name: String,
     /// The status group it belongs to.
-    group: StatusGroup,
+    status_group: StatusGroup,
 }
 
 impl StatusDraftBody {
@@ -170,7 +173,7 @@ impl StatusDraftBody {
         Ok(StatusDraft {
             key: status_in(self.key.as_deref())?,
             name: self.name.clone(),
-            group: self.group,
+            group: self.status_group,
         })
     }
 }
@@ -300,24 +303,6 @@ impl From<&PublishPreview> for PublishPreviewAnswer {
     }
 }
 
-/// The workflow set at exactly the place that was asked about.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct WorkflowSlotBody {
-    /// The ID of the workflow, which the edit lock is about.
-    id: String,
-    /// Counts up with every change. A change is made on the version that was looked at.
-    version: i64,
-}
-
-impl From<&WorkflowSlot> for WorkflowSlotBody {
-    fn from(slot: &WorkflowSlot) -> Self {
-        Self {
-            id: slot.id.to_string(),
-            version: slot.version,
-        }
-    }
-}
-
 /// A status change in the editor.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct EditorChangeBody {
@@ -342,16 +327,7 @@ impl From<&EditorChange> for EditorChangeBody {
     }
 }
 
-/// A role or a group a rule can name.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct NamedBody {
-    /// The ID.
-    id: String,
-    /// The name.
-    name: String,
-}
-
-impl From<&EditorRole> for NamedBody {
+impl From<&EditorRole> for NamedRef {
     fn from(role: &EditorRole) -> Self {
         Self {
             id: role.id.to_string(),
@@ -360,7 +336,7 @@ impl From<&EditorRole> for NamedBody {
     }
 }
 
-impl From<&EditorGroup> for NamedBody {
+impl From<&EditorGroup> for NamedRef {
     fn from(group: &EditorGroup) -> Self {
         Self {
             id: group.id.to_string(),
@@ -400,7 +376,7 @@ pub(crate) struct WorkflowEditorBody {
     issue_type: Option<IssueTypeRef>,
     /// The workflow set at this place. Without it the place uses the workflow it inherits (or the
     /// starting workflow), and *Create* makes one.
-    workflow: Option<WorkflowSlotBody>,
+    workflow: Option<SlotBody>,
     /// Where the workflow that counts is set, when it is another place.
     inherited_from: Option<InheritedFromBody>,
     /// What the workflow is called.
@@ -410,9 +386,9 @@ pub(crate) struct WorkflowEditorBody {
     /// Its status changes.
     changes: Vec<EditorChangeBody>,
     /// The roles *Who can do it* can name.
-    roles: Vec<NamedBody>,
+    roles: Vec<NamedRef>,
     /// The groups *Who can do it* can name.
-    groups: Vec<NamedBody>,
+    groups: Vec<NamedRef>,
     /// The fields the rules can name.
     fields: Vec<RuleFieldBody>,
 }
@@ -424,64 +400,33 @@ impl From<&WorkflowEditor> for WorkflowEditorBody {
         Self {
             project: editor.project.as_ref().map(ProjectRef::from),
             issue_type: editor.issue_type.as_ref().map(IssueTypeRef::from),
-            workflow: editor.workflow.as_ref().map(WorkflowSlotBody::from),
+            workflow: editor.workflow.as_ref().map(SlotBody::from),
             inherited_from: editor.inherited_from.as_ref().map(InheritedFromBody::from),
             name: editor.name.clone(),
             statuses: editor.statuses.iter().map(StatusRef::from).collect(),
             changes: editor.changes.iter().map(EditorChangeBody::from).collect(),
-            roles: editor.roles.iter().map(NamedBody::from).collect(),
-            groups: editor.groups.iter().map(NamedBody::from).collect(),
+            roles: editor.roles.iter().map(NamedRef::from).collect(),
+            groups: editor.groups.iter().map(NamedRef::from).collect(),
             fields: editor.fields.iter().map(RuleFieldBody::from).collect(),
         }
     }
 }
 
-/// A workflow in the list.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct WorkflowChoiceBody {
-    /// The ID of the workflow.
-    id: String,
-    /// What it is called.
-    name: String,
-    /// Counts up with every change.
-    version: i64,
-}
+/// The fields of a workflow in a list that can be asked for: all of them are by default.
+pub(super) const WORKFLOW_FIELDS: [FieldSpec; 3] = [
+    FieldSpec::by_default("id"),
+    FieldSpec::by_default("name"),
+    FieldSpec::by_default("version"),
+];
 
-/// The workflows there are.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct WorkflowListBody {
-    /// The workflows, by name.
-    workflows: Vec<WorkflowChoiceBody>,
-    /// The list was cut off at its cap.
-    truncated: bool,
-}
-
-impl Masked for WorkflowListBody {}
-
-impl From<&WorkflowList> for WorkflowListBody {
-    fn from(list: &WorkflowList) -> Self {
-        Self {
-            truncated: list.truncated,
-            workflows: list
-                .workflows
-                .iter()
-                .map(
-                    |WorkflowListItem { id, name, version }| WorkflowChoiceBody {
-                        id: id.to_string(),
-                        name: name.clone(),
-                        version: *version,
-                    },
-                )
-                .collect(),
-        }
-    }
-}
+/// The name of the list of workflows, so its cursors are its own.
+pub(super) const WORKFLOWS_LIST: &str = "workflows";
 
 /// What *Publish* did.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct PublishedBody {
     /// The workflow, with its new version.
-    workflow: WorkflowSlotBody,
+    workflow: SlotBody,
 }
 
 impl Masked for PublishedBody {}
@@ -489,14 +434,14 @@ impl Masked for PublishedBody {}
 impl From<&bb_app::workflows::Published> for PublishedBody {
     fn from(published: &bb_app::workflows::Published) -> Self {
         Self {
-            workflow: WorkflowSlotBody::from(&published.workflow),
+            workflow: SlotBody::from(&published.workflow),
         }
     }
 }
 
 /// What the judge says about one status change.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "verdict", rename_all = "snake_case")]
+#[serde(tag = "verdict", rename_all = "kebab-case")]
 pub(crate) enum TriedVerdictBody {
     /// The person may make it.
     Allowed,
@@ -574,4 +519,13 @@ impl From<&Tried> for TriedBody {
 /// The workflow in a path.
 pub(super) fn workflow_in_path(text: &str) -> Result<bb_core::id::WorkflowId, ApiError> {
     path_id(text)
+}
+
+impl From<&WorkflowSlot> for SlotBody {
+    fn from(slot: &WorkflowSlot) -> Self {
+        Self {
+            id: slot.id.to_string(),
+            version: slot.version,
+        }
+    }
 }

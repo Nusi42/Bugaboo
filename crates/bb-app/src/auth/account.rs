@@ -135,7 +135,7 @@ pub async fn issue_setup_code<S: AuthStore>(
 /// up in the same change, so it works once, and setup is closed for good afterwards.
 ///
 /// # Errors
-/// `auth.wrong_setup_code` for a wrong code and when setup is over (it does not say which),
+/// `auth.wrong-setup-code` for a wrong code and when setup is over (it does not say which),
 /// the password errors, 429 after too many wrong codes.
 pub async fn complete_setup<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -248,7 +248,7 @@ pub async fn complete_setup<S: AuthStore>(
 /// in the same change.
 ///
 /// # Errors
-/// `auth.invitation_invalid` for a link that is unknown, used, taken back or run out (it does not
+/// `auth.invitation-invalid` for a link that is unknown, used, taken back or run out (it does not
 /// say which), and the password errors.
 pub async fn accept_invitation<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -341,7 +341,7 @@ pub async fn accept_invitation<S: AuthStore>(
 /// session of the request gets a new secret.
 ///
 /// # Errors
-/// `auth.wrong_credentials` for a wrong current password, the password errors for the new one.
+/// `auth.wrong-credentials` for a wrong current password, the password errors for the new one.
 pub async fn change_password<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangePassword,

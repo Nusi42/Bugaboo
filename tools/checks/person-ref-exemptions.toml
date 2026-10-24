@@ -5,18 +5,8 @@
 
 [[exempt]]
 type = "PersonBody"
-field = "display_name"
-reason = "The person who signed in sees their own name: the answer of signing in is about their own account."
-
-[[exempt]]
-type = "PersonBody"
 field = "email"
 reason = "The person who signed in sees their own address: the answer of signing in is about their own account."
-
-[[exempt]]
-type = "MeBody"
-field = "display_name"
-reason = "Who is signed in is the person's own account; a person always sees their own name."
 
 [[exempt]]
 type = "MeBody"
@@ -34,9 +24,9 @@ field = "email"
 reason = "The address an invitation is for belongs to nobody yet, because there is no account. Only people who hold Invite people see it."
 
 [[exempt]]
-type = "InvitationLookupBody"
+type = "EmailBody"
 field = "email"
-reason = "The page of an invitation link shows the address the invitation is for to whoever holds the secret link, who is that person. There is no account yet."
+reason = "The page of an invitation link shows the address the invitation is for to whoever holds the secret link, who is that person. There is no account yet. The same body carries the address of a request to invite or to sign up, which only goes in."
 
 [[exempt]]
 type = "PersonLine"
@@ -52,3 +42,92 @@ reason = "E-mail addresses belong to Manage people (M2-Q3): the list and the pag
 type = "MailJob"
 field = "email"
 reason = "The payload of the job that answers a sign-up holds the address the person typed, because no account exists for it: it is only in the queue until the e-mail has gone (and with a dead job for its keep period), never in an answer, and the address is the recipient of the e-mail itself."
+
+# Files that read the name or the address of a person from a record (the second reading of
+# ARCH-PERSON-REF: any read of `.display_name` or `.email` in bb-api or bb-app). Each file says how
+# many reads it has; one more is a finding. The reason says why the read is right.
+
+[[read]]
+file = "crates/bb-api/src/api/auth.rs"
+reads = 2
+reason = "The bodies of the person's own account (PersonBody, MeBody) are made from the record of the person who asks: a person always sees their own name and address."
+
+[[read]]
+file = "crates/bb-api/src/api/auth_people.rs"
+reads = 6
+reason = "The invitation and the sign-up: the address an invitation is for belongs to nobody yet, and AcceptBody and SetupBody carry the name of the person who makes their own account."
+
+[[read]]
+file = "crates/bb-api/src/api/auth_sign_in.rs"
+reads = 3
+reason = "Signing in answers with the own account of the person who signs in (MeBody)."
+
+[[read]]
+file = "crates/bb-api/src/api/people.rs"
+reads = 1
+reason = "The list of People shows the address of a person to whoever holds the permission Manage people; the line is made by the use case only for them."
+
+[[read]]
+file = "crates/bb-app/src/access/candidates.rs"
+reads = 2
+reason = "The people to choose from for a role or an assignment are found by name and shown as the viewer may see people; the name is read to search and to build the PersonRef."
+
+[[read]]
+file = "crates/bb-app/src/access/mod.rs"
+reads = 1
+reason = "The resolution of a person into a PersonRef for the viewer reads the name that the level Names allows."
+
+[[read]]
+file = "crates/bb-app/src/auth/account.rs"
+reads = 4
+reason = "The use cases of the person's own account (password, second step, sessions) read the own name and address of the person who acts."
+
+[[read]]
+file = "crates/bb-app/src/auth/invitations.rs"
+reads = 5
+reason = "Making and reading an invitation: the address it is for, and the name of the person who invites in the mail they send."
+
+[[read]]
+file = "crates/bb-app/src/auth/request_session.rs"
+reads = 1
+reason = "The session of a request carries the own address of the person who signs in."
+
+[[read]]
+file = "crates/bb-app/src/auth/second_factor.rs"
+reads = 3
+reason = "The second step is set up for the own account of the person; the address and name go into the code app."
+
+[[read]]
+file = "crates/bb-app/src/auth/sign_up.rs"
+reads = 1
+reason = "Signing up on one's own reads the address that was typed for the link that goes there."
+
+[[read]]
+file = "crates/bb-app/src/auth/types/answers.rs"
+reads = 2
+reason = "The answer of signing in is the own account of the person (name and address)."
+
+[[read]]
+file = "crates/bb-app/src/comments/read.rs"
+reads = 1
+reason = "The name of the author of a comment is read to build the PersonRef the viewer may see; the use case masks it by Who sees people."
+
+[[read]]
+file = "crates/bb-app/src/notifications/handles.rs"
+reads = 1
+reason = "A handle is made from the name of the person, for the person themselves."
+
+[[read]]
+file = "crates/bb-app/src/notifications/mail.rs"
+reads = 1
+reason = "An e-mail goes to the own address of the person it is for."
+
+[[read]]
+file = "crates/bb-app/src/notifications/mail_settings.rs"
+reads = 1
+reason = "The test e-mail goes to the own address of the person who asks for it."
+
+[[read]]
+file = "crates/bb-app/src/people/list.rs"
+reads = 3
+reason = "The list of People for whoever holds Manage people shows the name and the address of a person; the name elsewhere is a PersonRef."

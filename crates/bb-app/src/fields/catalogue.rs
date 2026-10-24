@@ -2,7 +2,7 @@
 //! where a field is used.
 //!
 //! A field is shown to a person who may see it in some issue type, or who manages fields. A field
-//! that is hidden from them is not in any answer, and asking for it answers `resource.not_found`,
+//! that is hidden from them is not in any answer, and asking for it answers `resource.not-found`,
 //! exactly like a field that does not exist.
 
 use std::collections::HashMap;
@@ -204,7 +204,7 @@ pub(crate) fn may_know(held: &Evaluation, field: FieldId) -> bool {
 /// for one project: only the fields that are used there.
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about.
+/// `resource.not-found` for a project the person may not know about.
 pub async fn fields<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: FieldsQuery,
@@ -254,7 +254,7 @@ pub async fn fields<S: AuthStore>(
 /// The kinds of information a field can hold, for the screen that makes a field.
 ///
 /// # Errors
-/// `auth.not_signed_in` without a session.
+/// `auth.not-signed-in` without a session.
 pub async fn field_types<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: FieldTypesQuery,
@@ -273,7 +273,7 @@ pub async fn field_types<S: AuthStore>(
 /// One own field.
 ///
 /// # Errors
-/// `resource.not_found` for a field that does not exist or that the person may not see.
+/// `resource.not-found` for a field that does not exist or that the person may not see.
 pub async fn field<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: FieldQuery,
@@ -300,7 +300,7 @@ pub async fn field<S: AuthStore>(
 /// issue types.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage fields*, `resource.not_found` for a field that is not
+/// `access.forbidden` without *Manage fields*, `resource.not-found` for a field that is not
 /// there.
 pub async fn field_usage<S: AuthStore>(
     ctx: &Ctx<'_, S>,

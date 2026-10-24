@@ -36,7 +36,7 @@ export interface Transfers {
 
 /** Whether the server refused the file for its size. */
 function isTooBig(error: unknown): boolean {
-  return error instanceof ApiError && error.problem?.code === "file.too_big";
+  return error instanceof ApiError && error.problem?.code === "file.too-big";
 }
 
 /** Why a transfer ended in words: a lost connection, or the server's reason (a file that is too big is worded where it is shown). */

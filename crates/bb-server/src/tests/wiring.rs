@@ -91,7 +91,7 @@ async fn auth_09_every_start_makes_a_new_setup_code_until_an_administrator_exist
         )
         .await?;
         assert_eq!(status, StatusCode::UNAUTHORIZED);
-        assert_eq!(body["code"], "auth.wrong_setup_code");
+        assert_eq!(body["code"], "auth.wrong-setup-code");
         let (status, _) = call(
             &second_app,
             "POST",

@@ -10,14 +10,14 @@ import type { GroupLine } from "./groups.ts";
 /** *Rename*: the name of the group, saved with the button. */
 export function RenameGroup({ group }: { readonly group: GroupLine }) {
   const [name, setName] = useState(group.name);
-  const rename = api.query.useMutation("patch", "/api/v1/groups/{group_id}", {
+  const rename = api.query.useMutation("patch", "/api/v1/groups/{group}", {
     onSuccess: refreshAccess,
   });
   return (
     <Form
       onSubmit={() => {
         rename.mutate({
-          params: { path: { group_id: group.id } },
+          params: { path: { group: group.id } },
           body: { name: name.trim(), version: group.version },
         });
       }}

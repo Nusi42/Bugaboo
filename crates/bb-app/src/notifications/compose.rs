@@ -80,7 +80,7 @@ fn who(person: Option<&PersonRef>) -> String {
         Some(PersonRef::Name { name, .. }) => name.clone(),
         Some(PersonRef::Role { role }) => message::person_role(role).render(),
         Some(PersonRef::Someone) => Message::from(message::PERSON_SOMEONE).render(),
-        Some(PersonRef::Former { label }) => message::person_former(label).render(),
+        Some(PersonRef::Former { code }) => message::person_former(code).render(),
     }
 }
 
@@ -90,7 +90,7 @@ fn who_inside(person: &PersonRef) -> String {
         PersonRef::Name { name, .. } => name.clone(),
         PersonRef::Role { role } => message::person_role_inside(role).render(),
         PersonRef::Someone => Message::from(message::PERSON_SOMEONE_INSIDE).render(),
-        PersonRef::Former { label } => message::person_former_inside(label).render(),
+        PersonRef::Former { code } => message::person_former_inside(code).render(),
     }
 }
 

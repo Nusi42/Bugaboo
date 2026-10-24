@@ -212,7 +212,7 @@ fn refused_at(code: ErrorCode, field: FieldId) -> AppError {
     }
 }
 
-/// `field.not_here` unless the field is used for this kind of item, is not retired, and reaches an
+/// `field.not-here` unless the field is used for this kind of item, is not retired, and reaches an
 /// item in a project of this chain and of this issue type.
 fn ensure_here(
     definition: &Definition,
@@ -317,7 +317,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// What an own field of people is used for, when the viewer may choose its value in a project
     /// for an issue of this type (the list to choose from): `access.forbidden` for a field that
-    /// is not there or that they may not change, `field.not_here` for one that is not of people,
+    /// is not there or that they may not change, `field.not-here` for one that is not of people,
     /// is retired, or does not reach the project and the type. The same judgement as for setting
     /// a value (`plan_values`).
     pub(crate) async fn people_field_to_choose(
@@ -446,7 +446,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 };
                 Ok(key.map_or(
                     Value::Null,
-                    |key| serde_json::json!({ "id": id, "key": key }),
+                    |key| serde_json::json!({ "id": id, "readable_id": key }),
                 ))
             }
             _ => Ok(json),
@@ -607,7 +607,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ///
     /// # Errors
     /// `access.forbidden` for a field the person may not change (or that is not there),
-    /// `field.not_here` for a field that is retired or not used for this item, `request.invalid`
+    /// `field.not-here` for a field that is retired or not used for this item, `request.invalid`
     /// for a long text outside its lock, and the code of the rule a value breaks.
     pub(crate) async fn plan_values(
         &self,

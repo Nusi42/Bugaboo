@@ -14,7 +14,7 @@ use crate::auth::{AppError, AuthStore, Ctx};
 /// person may not know about, has no version: the two look the same.
 ///
 /// # Errors
-/// `request.too_large` for more than `bb_core::edit::VERSIONS_MAX` records.
+/// `request.too-large` for more than `bb_core::edit::VERSIONS_MAX` records.
 pub async fn check_versions<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CheckVersionsQuery,

@@ -19,7 +19,7 @@ describe("cf_01 things picked on the form of a new issue", () => {
     expect(picksOf({ id: "u1", name: "Ada Brandt", shown: "name" })).toEqual([
       { id: "u1", name: "Ada Brandt" },
     ]);
-    expect(picksOf([{ id: "i1", key: "WEB-12" }])).toEqual([{ id: "i1", name: "WEB-12" }]);
+    expect(picksOf([{ id: "i1", readable_id: "WEB-12" }])).toEqual([{ id: "i1", name: "WEB-12" }]);
     expect(picksOf(null)).toEqual([]);
     expect(picksOf("u1")).toEqual([]);
   });

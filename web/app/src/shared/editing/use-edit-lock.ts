@@ -2,11 +2,11 @@ import {
   askToFinish,
   editAnyway,
   newEditorId,
-  releaseEditLock,
+  letGoOfEditLock,
   sendHeartbeat,
   startHeartbeats,
   takeEditLock,
-  type EditWhat,
+  type EditTarget,
 } from "@bugaboo/api-client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
@@ -18,14 +18,14 @@ import { EditLockController, type LockState } from "./edit-lock-state.ts";
 import { lostReasonOf } from "./long-text-model.ts";
 
 /** The calls of the lock on one thing, with the real client behind them. */
-function depsOf(what: EditWhat): SessionDeps {
+function depsOf(what: EditTarget): SessionDeps {
   const client = api.client;
   return {
     take: (editor) => takeEditLock(client, what, editor),
     editAnyway: (editor) => editAnyway(client, what, editor),
     askToFinish: () => askToFinish(client, what),
     heartbeat: (token) => sendHeartbeat(client, what, token),
-    release: (token) => releaseEditLock(client, what, token),
+    release: (token) => letGoOfEditLock(client, what, token),
     startHeartbeats,
     newEditorId,
   };
@@ -48,7 +48,7 @@ export interface EditLock {
  * The edit lock on a layout or a workflow, held while its editor is open. `what` is the thing the
  * lock is about; it is read once, when the editor opens.
  */
-export function useEditLock(what: EditWhat): EditLock {
+export function useEditLock(what: EditTarget): EditLock {
   const [lock] = useState(() => new EditLockController(depsOf(what)));
   const state = useSyncExternalStore(lock.subscribe, lock.snapshot);
   useEffect(() => {

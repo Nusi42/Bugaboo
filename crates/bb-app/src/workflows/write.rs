@@ -72,8 +72,8 @@ pub(super) fn what_of(id: WorkflowId) -> Result<EditWhat, AppError> {
 /// change it (*Customize*). A place that has one is shown as it is.
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about, `access.forbidden` without
-/// *Manage workflows* at the place, `edit.version_changed` when somebody created the workflow at the
+/// `resource.not-found` for a project the person may not know about, `access.forbidden` without
+/// *Manage workflows* at the place, `edit.version-changed` when somebody created the workflow at the
 /// same moment.
 pub async fn create_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -146,7 +146,7 @@ pub async fn create_workflow<S: AuthStore>(
 /// Says which workflow a place uses, or that it follows its parent again (`workflow: None`).
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about or a workflow that is not
+/// `resource.not-found` for a project the person may not know about or a workflow that is not
 /// there, `access.forbidden` without *Manage workflows* at the place.
 pub async fn use_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -247,10 +247,10 @@ pub async fn use_workflow<S: AuthStore>(
 /// workflow that remains is where such issues are moved.
 ///
 /// # Errors
-/// `resource.not_found` for a workflow that is not there, `access.forbidden` without *Manage
-/// workflows* where it is used, `workflow.status_in_use` while an issue is in a status that the
-/// workflow that would count afterwards does not have, `edit.version_changed` when the workflow
-/// changed since the person looked at it, `edit.in_progress` while somebody else holds its edit
+/// `resource.not-found` for a workflow that is not there, `access.forbidden` without *Manage
+/// workflows* where it is used, `workflow.status-in-use` while an issue is in a status that the
+/// workflow that would count afterwards does not have, `edit.version-changed` when the workflow
+/// changed since the person looked at it, `edit.in-progress` while somebody else holds its edit
 /// lock. A lock of the person's own is let go in the same change.
 pub async fn delete_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,

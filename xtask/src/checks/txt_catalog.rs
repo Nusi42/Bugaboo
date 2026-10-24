@@ -603,7 +603,7 @@ mod tests {
     fn a_message_that_a_word_makes_counts_as_used_and_must_be_in_the_catalog() {
         let made = [Made {
             key: ErrorCode::NotFound.message(),
-            word: "the error code `resource.not_found`".to_owned(),
+            word: "the error code `resource.not-found`".to_owned(),
         }];
         let present = [locale(r#"{"error.resource.not-found": "Not here."}"#)];
         assert!(evaluate(&present, &[], &made).is_empty());

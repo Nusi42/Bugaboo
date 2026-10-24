@@ -65,7 +65,7 @@ export interface IssueGroup {
 export function groupsOf(rows: readonly NotificationRow[]): readonly IssueGroup[] {
   const byKey = new Map<string, readonly NotificationRow[]>();
   for (const row of rows) {
-    const key = row.issue?.key ?? row.id;
+    const key = row.issue?.readable_id ?? row.id;
     byKey.set(key, [...(byKey.get(key) ?? []), row]);
   }
   const groups: IssueGroup[] = [];
@@ -85,7 +85,7 @@ function commentOf(row: NotificationRow): string | undefined {
 
 /** Whether a row says that fields changed. */
 function isChange(row: NotificationRow): boolean {
-  return row.entries.some((entry) => entry.field !== undefined && entry.field !== null);
+  return row.entries.some((entry) => entry.change !== undefined && entry.change !== null);
 }
 
 /** Where *Open* goes on the issue page: the exact comment or change, if the row has one. */

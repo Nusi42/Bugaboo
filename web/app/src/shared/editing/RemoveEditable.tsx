@@ -1,4 +1,4 @@
-import type { EditWhat } from "@bugaboo/api-client";
+import type { EditTarget } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, buttonLook, ConfirmDialog } from "@bugaboo/ui";
 
@@ -18,7 +18,7 @@ export interface RemoveWords {
 
 export interface RemoveEditableProps {
   /** The thing that is taken away: what its edit lock is about. */
-  readonly what: EditWhat;
+  readonly what: EditTarget;
   readonly words: RemoveWords;
   /** Takes it away. */
   readonly onConfirm: () => void;
@@ -32,7 +32,7 @@ export interface RemoveEditableProps {
  * the person may see them). The words are the caller's: each kind says what it does in its own way.
  */
 export function RemoveEditable({ what, words, onConfirm, error }: RemoveEditableProps) {
-  const busy = codeOf(error) === "edit.in_progress";
+  const busy = codeOf(error) === "edit.in-progress";
   const editing = useEditingNow(what, busy);
   return (
     <>

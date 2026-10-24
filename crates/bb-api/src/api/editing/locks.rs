@@ -1,12 +1,12 @@
 //! The lock on a text: taking, reading, keeping alive, releasing, asking to finish and editing anyway.
 
 use super::{
-    ApiError, ApiJson, ApiQuery, AskToFinish, AuthHandle, DraftText, EditAnyway, EditAnywayBody,
-    EditWhatBody, EditWhatOnlyBody, EditWhatQuery, EditorId, ForbiddenAnswer, HeartbeatAnswerBody,
-    HeartbeatBody, HeartbeatQuery, Info, InvalidAnswer, LockHolderBody, LockOutcomeBody, LockToken,
-    NotFoundAnswer, NotSignedInAnswer, ReadLockQuery, RecordRefBody, ReleaseLockBody,
-    ReleaseLockQuery, ReleaseStuckLock, Response, Session, State, TakeLockBody, TakeLockQuery,
-    answer_authorized, body_id, done,
+    ApiError, ApiJson, ApiQuery, AskToFinish, AuthHandle, DraftText, EditAnyway,
+    EditTargetOnlyBody, EditTargetQuery, EditorId, ForbiddenAnswer, HeartbeatQuery, Info,
+    InvalidAnswer, LetGoBody, LockHolderBody, LockOutcomeBody, LockToken, NotFoundAnswer,
+    NotSignedInAnswer, ReadLockQuery, ReleaseLockQuery, ReleaseStuckLock, RenewAnswerBody,
+    RenewBody, Response, Session, State, TakeLockBody, TakeLockQuery, answer_authorized, body_id,
+    done,
 };
 
 /// Takes the lock on a long text, on the first keystroke, or says who is editing it. The lock is a
@@ -37,7 +37,7 @@ pub(super) async fn take_edit_lock(
             info,
             TakeLockQuery {
                 session_token,
-                what: body.what.what()?,
+                what: body.target.target()?,
                 editor: body_id::<EditorId>(&body.editor_id)?,
             },
         )
@@ -50,9 +50,9 @@ pub(super) async fn take_edit_lock(
 #[utoipa::path(
     get,
     path = "/api/v1/edit-locks",
-    operation_id = "readEditLock",
+    operation_id = "getEditLock",
     tag = "editing",
-    params(EditWhatQuery),
+    params(EditTargetQuery),
     responses(
         (status = 200, description = "Who is editing, or nothing.", body = LockHolderBody),
         InvalidAnswer,
@@ -65,16 +65,9 @@ pub(super) async fn read_edit_lock(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiQuery(query): ApiQuery<EditWhatQuery>,
+    ApiQuery(query): ApiQuery<EditTargetQuery>,
 ) -> Result<Response, ApiError> {
-    let what = EditWhatBody {
-        record: RecordRefBody {
-            kind: query.kind,
-            id: query.id,
-        },
-        part: query.part,
-    }
-    .what()?;
+    let what = query.target()?;
     let holder = auth
         .api()?
         .read_lock(
@@ -93,12 +86,12 @@ pub(super) async fn read_edit_lock(
 /// took the editing over.
 #[utoipa::path(
     post,
-    path = "/api/v1/edit-locks/heartbeat",
-    operation_id = "heartbeatEditLock",
+    path = "/api/v1/edit-locks/renew",
+    operation_id = "renewEditLock",
     tag = "editing",
-    request_body = HeartbeatBody,
+    request_body = RenewBody,
     responses(
-        (status = 200, description = "Whether the editor still has the lock, and the notes for it.", body = HeartbeatAnswerBody),
+        (status = 200, description = "Whether the editor still has the lock, and the notes for it.", body = RenewAnswerBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
@@ -109,7 +102,7 @@ pub(super) async fn heartbeat_edit_lock(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<HeartbeatBody>,
+    ApiJson(body): ApiJson<RenewBody>,
 ) -> Result<Response, ApiError> {
     let heartbeat = auth
         .api()?
@@ -117,36 +110,36 @@ pub(super) async fn heartbeat_edit_lock(
             info,
             HeartbeatQuery {
                 session_token,
-                what: body.what.what()?,
+                what: body.target.target()?,
                 token: body_id::<LockToken>(&body.lock_token)?,
                 draft: body.draft.map(DraftText::from),
             },
         )
         .await?;
-    answer_authorized(&heartbeat.map(|heartbeat| HeartbeatAnswerBody::from(&heartbeat)))
+    answer_authorized(&heartbeat.map(|heartbeat| RenewAnswerBody::from(&heartbeat)))
 }
 
 /// Lets go of a lock: the text was saved, or the editor was closed.
 #[utoipa::path(
     post,
-    path = "/api/v1/edit-locks/release",
-    operation_id = "releaseEditLock",
+    path = "/api/v1/edit-locks/let-go",
+    operation_id = "letGoOfEditLock",
     tag = "editing",
-    request_body = ReleaseLockBody,
+    request_body = LetGoBody,
     responses((status = 204, description = "The lock is gone."), InvalidAnswer, NotSignedInAnswer)
 )]
 pub(super) async fn release_edit_lock(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<ReleaseLockBody>,
+    ApiJson(body): ApiJson<LetGoBody>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .release_lock(
             info,
             ReleaseLockQuery {
                 session_token,
-                what: body.what.what()?,
+                what: body.target.target()?,
                 token: body_id::<LockToken>(&body.lock_token)?,
             },
         )
@@ -161,7 +154,7 @@ pub(super) async fn release_edit_lock(
     path = "/api/v1/edit-locks/ask-to-finish",
     operation_id = "askToFinish",
     tag = "editing",
-    request_body = EditWhatOnlyBody,
+    request_body = EditTargetOnlyBody,
     responses(
         (status = 204, description = "The person is asked."),
         InvalidAnswer,
@@ -174,14 +167,14 @@ pub(super) async fn ask_to_finish(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<EditWhatOnlyBody>,
+    ApiJson(body): ApiJson<EditTargetOnlyBody>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .ask_to_finish(
             info,
             AskToFinish {
                 session_token,
-                what: body.what.what()?,
+                what: body.target.target()?,
             },
         )
         .await?;
@@ -196,7 +189,7 @@ pub(super) async fn ask_to_finish(
     path = "/api/v1/edit-locks/edit-anyway",
     operation_id = "editAnyway",
     tag = "editing",
-    request_body = EditAnywayBody,
+    request_body = TakeLockBody,
     responses(
         (status = 200, description = "The editor has the lock now.", body = LockOutcomeBody),
         InvalidAnswer,
@@ -209,7 +202,7 @@ pub(super) async fn edit_anyway(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<EditAnywayBody>,
+    ApiJson(body): ApiJson<TakeLockBody>,
 ) -> Result<Response, ApiError> {
     let outcome = auth
         .api()?
@@ -217,7 +210,7 @@ pub(super) async fn edit_anyway(
             info,
             EditAnyway {
                 session_token,
-                what: body.what.what()?,
+                what: body.target.target()?,
                 editor: body_id::<EditorId>(&body.editor_id)?,
             },
         )
@@ -229,10 +222,10 @@ pub(super) async fn edit_anyway(
 /// else is editing*; it is written to the security log.
 #[utoipa::path(
     post,
-    path = "/api/v1/edit-locks/release-stuck",
-    operation_id = "releaseStuckEditLock",
+    path = "/api/v1/edit-locks/let-go-stuck",
+    operation_id = "letGoOfStuckEditLock",
     tag = "editing",
-    request_body = EditWhatOnlyBody,
+    request_body = EditTargetOnlyBody,
     responses(
         (status = 204, description = "The lock is gone."),
         InvalidAnswer,
@@ -245,14 +238,14 @@ pub(super) async fn release_stuck_edit_lock(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<EditWhatOnlyBody>,
+    ApiJson(body): ApiJson<EditTargetOnlyBody>,
 ) -> Result<Response, ApiError> {
     auth.api()?
         .release_stuck_lock(
             info,
             ReleaseStuckLock {
                 session_token,
-                what: body.what.what()?,
+                what: body.target.target()?,
             },
         )
         .await?;

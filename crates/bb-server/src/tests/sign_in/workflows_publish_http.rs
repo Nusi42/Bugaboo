@@ -77,8 +77,8 @@ async fn version_of_workflow(who: &mut Browser, site: &Site<'_>) -> Result<Value
 fn open_or_done() -> Value {
     json!({
         "statuses": [
-            {"key": "open", "name": "Open", "group": "not-started"},
-            {"key": "done", "name": "Done", "group": "done"},
+            {"key": "open", "name": "Open", "status_group": "not-started"},
+            {"key": "done", "name": "Done", "status_group": "done"},
         ],
         "changes": [
             {"from": "open", "to": "done", "button": "Finish"},
@@ -159,7 +159,7 @@ async fn refused_for_an_issue(db: &TestDatabase, unseen: bool) -> Result<(), Fai
     let refused = lead.send("PUT", &path, Some(body.clone())).await?;
     assert_eq!(
         (refused.status, refused.code()),
-        (StatusCode::CONFLICT, "workflow.status_in_use"),
+        (StatusCode::CONFLICT, "workflow.status-in-use"),
         "{}",
         refused.body
     );
@@ -244,9 +244,9 @@ async fn wf_02_a_move_ignores_the_rules_of_the_old_change_and_closes_by_the_grou
             "lock_token": lock,
             "name": "Needs a description",
             "statuses": [
-                {"key": "open", "name": "Open", "group": "not-started"},
-                {"key": "in-progress", "name": "In progress", "group": "in-progress"},
-                {"key": "done", "name": "Done", "group": "done"},
+                {"key": "open", "name": "Open", "status_group": "not-started"},
+                {"key": "in-progress", "name": "In progress", "status_group": "in-progress"},
+                {"key": "done", "name": "Done", "status_group": "done"},
             ],
             "changes": [
                 {"from": "open", "to": "in-progress", "button": "Start"},

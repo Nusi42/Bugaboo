@@ -43,7 +43,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// another field of the record since the person started (`sent` is older than `current`) does
     /// not refuse the save: the text goes on the version now. When the text itself (`field`) was
     /// changed since, `sent` is returned, and the write finds the record at another version and
-    /// refuses the save as stale (`edit.version_changed`). The write still compares the version
+    /// refuses the save as stale (`edit.version-changed`). The write still compares the version
     /// it is given, so a change that lands after this look is refused too (ARCH-VERSIONED).
     ///
     /// # Errors
@@ -71,8 +71,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// person started from; any other trouble is its own error), lets go of the lock and deletes
     /// the draft.
     ///
-    /// A refused save answers `edit.lock_lost` (the lease ran out or the lock was let go),
-    /// `edit.taken_over` (somebody used *Edit anyway*) or the structured `edit.version_changed`,
+    /// A refused save answers `edit.lock-lost` (the lease ran out or the lock was let go),
+    /// `edit.taken-over` (somebody used *Edit anyway*) or the structured `edit.version-changed`,
     /// and keeps the text as the draft of the person.
     ///
     /// # Errors

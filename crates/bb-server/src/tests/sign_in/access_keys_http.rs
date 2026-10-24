@@ -75,7 +75,7 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
                 Some(json!({"enabled": false, "domains": [], "version": 0})),
             )
             .await?;
-        assert_eq!(nothing.code(), "request.wrong_origin");
+        assert_eq!(nothing.code(), "request.wrong-origin");
         // A browser with a session: its cookie rules apply even when it sends a key too. No
         // token, no change.
         let mut page = Browser::new(&app, &called());
@@ -88,7 +88,7 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
                 json!({"enabled": false, "domains": [], "version": 0}),
             )
             .await?;
-        assert_eq!(no_token.code(), "request.wrong_token");
+        assert_eq!(no_token.code(), "request.wrong-token");
         Ok(())
     })
     .await
@@ -136,7 +136,7 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> TestResult {
                 Some(json!({"enabled": false, "domains": [], "version": 0})),
             )
             .await?;
-        assert_eq!(not_a_key.code(), "request.wrong_origin");
+        assert_eq!(not_a_key.code(), "request.wrong-origin");
         // And a different scheme is not a key either.
         let basic = page
             .finish(
@@ -150,7 +150,7 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> TestResult {
                 Some(json!({"enabled": false, "domains": [], "version": 0})),
             )
             .await?;
-        assert_eq!(basic.code(), "request.wrong_origin");
+        assert_eq!(basic.code(), "request.wrong-origin");
         Ok(())
     })
     .await
@@ -185,7 +185,7 @@ async fn sec_14_a_key_has_its_own_limit() -> TestResult {
         }
         let limited = script.script("GET", KEY_ROUTE, None, &first).await?;
         assert_eq!(limited.status, StatusCode::TOO_MANY_REQUESTS);
-        assert_eq!(limited.code(), "rate_limit.exceeded");
+        assert_eq!(limited.code(), "rate-limit.exceeded");
         assert!(limited.header("retry-after").parse::<u64>()? >= 1);
         // Another key from the same network, and the person's own session, are not affected.
         let other = script.script("GET", KEY_ROUTE, None, &second).await?;
@@ -252,7 +252,7 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_ove
         let garbage = script.script("GET", KEY_ROUTE, None, "bb_garbage").await?;
         assert_eq!(
             alike(&expired),
-            (401, "auth.not_signed_in".to_owned(), alike(&expired).2)
+            (401, "auth.not-signed-in".to_owned(), alike(&expired).2)
         );
         for reply in [&gone, &never, &garbage] {
             assert_eq!(alike(reply), alike(&expired));
@@ -320,11 +320,11 @@ async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> TestRe
                 "{method} {template}: {}",
                 reply.status
             );
-            assert_ne!(reply.code(), "request.wrong_token", "{method} {template}");
+            assert_ne!(reply.code(), "request.wrong-token", "{method} {template}");
             if reads_or_deletes {
                 assert_eq!(
                     reply.code(),
-                    "auth.access_key_not_allowed",
+                    "auth.access-key-not-allowed",
                     "{method} {template}"
                 );
                 assert_eq!(reply.status, StatusCode::FORBIDDEN);
@@ -359,7 +359,7 @@ async fn rules_and_projects(ada: &mut Browser) -> Result<(), Failure> {
     assert_eq!(rules.body["permissions"][0]["key"], "see-projects");
     assert_eq!(rules.body["permissions"][0]["topic"], "projects");
     let projects = ada
-        .send("GET", "/api/v1/access-keys/projects", None)
+        .send("GET", "/api/v1/access-keys/project-choices", None)
         .await?;
     assert_eq!(projects.body["items"], json!([]));
     assert_eq!(projects.body["next_cursor"], Value::Null);
@@ -404,7 +404,7 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> TestResult
                 Some(json!({"password": "Wrong-Password-1", "name": "x", "choice": "see-only"})),
             )
             .await?;
-        assert_eq!(wrong.code(), "auth.wrong_credentials");
+        assert_eq!(wrong.code(), "auth.wrong-credentials");
         // The list pages newest first, takes the fields asked for and never holds the secret.
         let page = ada
             .send(
@@ -434,11 +434,11 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> TestResult
         let unknown = ada
             .send("GET", "/api/v1/access-keys?fields=secret", None)
             .await?;
-        assert_eq!(unknown.code(), "request.unknown_field");
+        assert_eq!(unknown.code(), "request.unknown-field");
         let bad_cursor = ada
             .send("GET", "/api/v1/access-keys?cursor=nonsense", None)
             .await?;
-        assert_eq!(bad_cursor.code(), "request.bad_cursor");
+        assert_eq!(bad_cursor.code(), "request.bad-cursor");
         // Deleting a key: it stops working at once, and a second delete finds nothing.
         rules_and_projects(&mut ada).await?;
         let id = first.body["key"]["id"].as_str().ok_or("no id")?.to_owned();
@@ -457,16 +457,16 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> TestResult
         assert_eq!(deleted.status, StatusCode::NO_CONTENT);
         assert_eq!(
             script.script("GET", KEY_ROUTE, None, &secret).await?.code(),
-            "auth.not_signed_in"
+            "auth.not-signed-in"
         );
         let again = ada
             .send("DELETE", &format!("/api/v1/access-keys/{id}"), None)
             .await?;
-        assert_eq!(again.code(), "resource.not_found");
+        assert_eq!(again.code(), "resource.not-found");
         let nonsense = ada
             .send("DELETE", "/api/v1/access-keys/not-an-id", None)
             .await?;
-        assert_eq!(nonsense.code(), "resource.not_found");
+        assert_eq!(nonsense.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -488,12 +488,12 @@ async fn auth_07_a_key_is_judged_before_the_body_or_the_address_of_the_request_i
             .script("POST", "/api/v1/access-keys", Some(json!({})), &key)
             .await?;
         assert_eq!(bad_body.status, StatusCode::FORBIDDEN);
-        assert_eq!(bad_body.code(), "auth.access_key_not_allowed");
+        assert_eq!(bad_body.code(), "auth.access-key-not-allowed");
         let bad_address = script
             .script("DELETE", "/api/v1/access-keys/not-an-id", None, &key)
             .await?;
         assert_eq!(bad_address.status, StatusCode::FORBIDDEN);
-        assert_eq!(bad_address.code(), "auth.access_key_not_allowed");
+        assert_eq!(bad_address.code(), "auth.access-key-not-allowed");
         // Both are written into the security log.
         let entries = rig.database.security_log_entries(0, 1000).await?;
         let refused = entries

@@ -46,7 +46,7 @@ async function send(id: string, edit: RoleEdit): Promise<void> {
       : { version: edit.version, two_step: edit.on };
   // One after the other: each change is made on the version the one before it has just made.
   await inOrder(`role:${id}`, () =>
-    api.client.PATCH("/api/v1/roles/{role_id}", { params: { path: { role_id: id } }, body }),
+    api.client.PATCH("/api/v1/roles/{role}", { params: { path: { role: id } }, body }),
   );
   // The list of roles and what people and rows say of the role; the page itself is read again by
   // the helper once the last edit is done, so overlapping edits do not make it flicker.

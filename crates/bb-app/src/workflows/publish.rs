@@ -369,12 +369,12 @@ async fn carry_out_moves<S: AuthStore>(
 /// where the person said, in the same change.
 ///
 /// # Errors
-/// `resource.not_found` for a workflow that is not there, `access.forbidden` without *Manage
+/// `resource.not-found` for a workflow that is not there, `access.forbidden` without *Manage
 /// workflows* where it is used, `workflow.invalid` for a workflow that breaks a rule or a rule that
 /// names a field or a group the person may not know (an own field that issues do not have is
-/// refused in the same words), `workflow.status_in_use` while an issue would be left in a
+/// refused in the same words), `workflow.status-in-use` while an issue would be left in a
 /// status the workflow no longer has or could not be moved by this person, `request.invalid` for a
-/// move that makes no sense; `edit.lock_lost`, `edit.taken_over` and `edit.version_changed` for a
+/// move that makes no sense; `edit.lock-lost`, `edit.taken-over` and `edit.version-changed` for a
 /// lock that is gone, was taken over, or a workflow that changed since (the workflow is kept as the
 /// draft of the person in all three).
 pub async fn publish_workflow<S: AuthStore>(

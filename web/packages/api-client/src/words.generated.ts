@@ -97,17 +97,34 @@ export const historyTabWords = ["everything", "comments", "changes"] as const;
 export const notificationKindWords = [
   "mentioned",
   "assigned",
-  "followed_activity",
-  "followed_fields",
-  "run_ended",
-  "edit_notice",
+  "followed-activity",
+  "followed-fields",
+  "run-ended",
+  "edit-notice",
 ] as const;
 
-/** Every word of `NotificationFilter`, in the order the server lists them. */
-export const notificationFilterWords = ["all", "unread", "mentions"] as const;
+/** Every word of `NotificationTab`, in the order the server lists them. */
+export const notificationTabWords = ["all", "unread", "mentions"] as const;
 
-/** Every word of `Test`, in the order the server lists them. */
-export const testWords = ["filled", "empty"] as const;
+/** Every word of `OnlyIfTest`, in the order the server lists them. */
+export const onlyIfTestWords = ["filled", "empty"] as const;
+
+/** The members of `FieldBody` that are always there, as the server lists them. */
+export const fieldMembers = [
+  "id",
+  "name",
+  "help",
+  "kind",
+  "applies_to",
+  "rules",
+  "look",
+  "never_to_assistant",
+  "retired",
+  "scope",
+  "choices",
+  "may_manage",
+  "version",
+] as const;
 
 /** The priority a new issue has when the form does not say: the server decides, the form shows it. */
 export const newIssuePriority = "normal";

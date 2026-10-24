@@ -133,7 +133,10 @@ async fn an_issue_in_example(ada: &mut Browser) -> Result<String, Failure> {
         )
         .await?;
     assert_eq!(issue.status, StatusCode::OK, "{}", issue.body);
-    Ok(issue.body["key"].as_str().ok_or("no issue")?.to_owned())
+    Ok(issue.body["readable_id"]
+        .as_str()
+        .ok_or("no issue")?
+        .to_owned())
 }
 
 /// An own field, for the route that names one: its ID.
@@ -182,7 +185,7 @@ async fn a_type_and_a_label_group(ada: &mut Browser) -> Result<(String, String),
 fn with_query(template: &str, filled: String, project: &str, project_id: &str) -> String {
     match template {
         "/api/v1/drafts" | "/api/v1/edit-locks" => {
-            format!("{filled}?kind=project&id={project_id}&part=description")
+            format!("{filled}?record_kind=project&record_id={project_id}&part=description")
         }
         "/api/v1/layouts/form" | "/api/v1/layouts/editor" => {
             format!("{filled}?project={project}&kind=new-issue")
@@ -241,15 +244,14 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 "EXAMPLE"
             };
             let filled = template
-                .replace("{role_id}", &role)
-                .replace("{group_id}", &group_id)
-                .replace("{person_id}", &person_id)
+                .replace("{role}", &role)
+                .replace("{label_group}", &label_group_id)
                 .replace("{person}", &person_id)
                 .replace("{issue}", &readable_id)
                 .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
                 .replace("{issue_type}", &issue_type_id)
-                .replace("{group}", &label_group_id)
+                .replace("{group}", &group_id)
                 .replace("{run}", &run_id)
                 .replace("{upload}", &upload_id)
                 .replace("{project}", project);

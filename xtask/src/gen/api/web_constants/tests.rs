@@ -174,10 +174,10 @@ fn error_codes_source() -> Source {
         ERROR_CODE_SOURCE.to_owned(),
         "error_codes! {
     /// Something.
-    NotFound => (\"resource.not_found\", 404),
+    NotFound => (\"resource.not-found\", 404),
     /// Lost.
-    EditLockLost => (\"edit.lock_lost\", 409),
-    VersionChanged => (\"edit.version_changed\", 409),
+    EditLockLost => (\"edit.lock-lost\", 409),
+    VersionChanged => (\"edit.version-changed\", 409),
 }
 "
         .to_owned(),
@@ -195,7 +195,7 @@ fn the_refusals_that_keep_a_draft_come_from_the_list_of_the_edit_module() {
     let sources = [edit, error_codes_source()];
     assert_eq!(
         draft_kept_codes(&file, &sources).unwrap(),
-        ["edit.lock_lost", "edit.version_changed"]
+        ["edit.lock-lost", "edit.version-changed"]
     );
     assert!(draft_kept_codes(&file, &sources[..1]).is_err());
     let unknown =
@@ -245,7 +245,7 @@ pub const SECONDS_PER_DAY: i64 = 86_400;"
     assert!(text.contains("draftTextMax = 100000;"), "{text}");
     assert!(text.contains("versionsMax = 50;"), "{text}");
     assert!(
-        text.contains("draftKeptCodes = [\"edit.lock_lost\", \"edit.version_changed\"] as const;"),
+        text.contains("draftKeptCodes = [\"edit.lock-lost\", \"edit.version-changed\"] as const;"),
         "{text}"
     );
     assert!(text.contains("layoutEditPart = \"layout\";"), "{text}");
@@ -267,6 +267,7 @@ fn the_words_of_a_vocabulary_come_from_the_api_description_in_their_order() {
         .map(|name| format!(r#""{name}":{{"type":"string","enum":["bug","flag"]}}"#))
         .collect::<Vec<_>>()
         .join(",");
+    let schemas = format!(r#"{schemas},"FieldBody":{{"required":["id","name"]}}"#);
     let spec = format!(r#"{{"components":{{"schemas":{{{schemas}}}}}}}"#);
     let issues = (
         ISSUE_SOURCE.to_owned(),
@@ -281,6 +282,10 @@ words! { pub enum Priority { Low => \"low\", Normal => \"normal\" } }"
         "{text}"
     );
     assert!(text.contains("export const choiceColorWords = [\"bug\", \"flag\"] as const;"));
+    assert!(
+        text.contains("export const fieldMembers = [\"id\", \"name\"] as const;"),
+        "{text}"
+    );
     assert!(words("{}", &[issues]).is_err());
     assert!(words("not json", &[]).is_err());
     assert!(

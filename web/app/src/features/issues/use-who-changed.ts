@@ -26,7 +26,7 @@ export function useWhoChanged(issue: string, part: string, version: number): str
       ),
   });
   for (const item of found.data?.items ?? []) {
-    if (item.kind === "change" && item.field === part) {
+    if (item.kind === "change" && item.change?.field === part) {
       return item.by === undefined || item.by === null ? undefined : personName(item.by);
     }
   }

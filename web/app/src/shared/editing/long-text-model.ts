@@ -97,9 +97,9 @@ export interface LongTextDeps {
  * until it has a reason.
  */
 const lostReasons: Readonly<Record<DraftKeptCode, LostReason>> = {
-  "edit.lock_lost": "ran-out",
-  "edit.taken_over": "taken-over",
-  "edit.version_changed": "version-changed",
+  "edit.lock-lost": "ran-out",
+  "edit.taken-over": "taken-over",
+  "edit.version-changed": "version-changed",
 };
 
 const lostReasonsByCode: ReadonlyMap<string, LostReason> = new Map(Object.entries(lostReasons));

@@ -2,7 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
 /** Where a role given to somebody counts, as the API names it. */
-export type WhereItCounts = Schema<"AppliesToBody">;
+export type WhereItCounts = Schema<"AppliesTo">;
 
 /** Where a row of *Who has which role* is: the whole organization, a project, or one that is not named. */
 export type RowPlace = Schema<"PlaceRef">;
@@ -27,7 +27,7 @@ export function placeText(place: RowPlace): string {
 }
 
 /** The role of a row, or *No access* for a row without one. */
-export function roleText(role: Schema<"RoleRef"> | null | undefined): string {
+export function roleText(role: Schema<"NamedRef"> | null | undefined): string {
   return role === null || role === undefined ? t("roles.no-access") : role.name;
 }
 

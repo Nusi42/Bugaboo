@@ -195,7 +195,9 @@ export function useLabelsToAdd(
     (label) =>
       !label.retired &&
       !held.has(label.id) &&
-      (label.group === undefined || label.group === null || !closed.has(label.group)),
+      (label.label_group === undefined ||
+        label.label_group === null ||
+        !closed.has(label.label_group)),
   );
 }
 

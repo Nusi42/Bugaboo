@@ -16,7 +16,7 @@ folder = "crates/bb-store/src/migrations/m0007_issues.rs"
 reason = "Makes the table of that counter (ADR-0021, ISS-01a)."
 
 [[exempt]]
-route = "GET /api/v1/roles/{role_id}/second-step-gap"
+route = "GET /api/v1/roles/{role}/second-step-gap"
 property = "still_to_set_up"
 reason = "Counts only the people the viewer may see: the answer needs Manage roles, and whoever holds it sees names everywhere in Organization settings (M2-Q3, M2-F47)."
 
@@ -36,27 +36,27 @@ property = "backup_codes_left"
 reason = "The caller's own backup codes: a person may see everything about their own sign-in data."
 
 [[exempt]]
-route = "GET /api/v1/groups/{group_id}"
+route = "GET /api/v1/groups/{group}"
 property = "projects"
 reason = "Counts only the projects the viewer can see: a row on a project the viewer may not know about is left out (PRIV-13, `Ctx::rows_seen_by`, test priv_13_used_by_counts_only_what_the_viewer_may_see)."
 
 [[exempt]]
-route = "GET /api/v1/groups/{group_id}"
+route = "GET /api/v1/groups/{group}"
 property = "members"
 reason = "The answer needs Manage groups, and whoever holds it sees every member of every group by name (M2-Q3), so the number holds nothing the viewer may not see."
 
 [[exempt]]
-route = "GET /api/v1/roles/{role_id}"
+route = "GET /api/v1/roles/{role}"
 property = "projects"
 reason = "Counts only the projects the viewer can see: a row on a project the viewer may not know about is left out (PRIV-13, `Ctx::rows_seen_by`, test priv_13_used_by_counts_only_what_the_viewer_may_see)."
 
 [[exempt]]
-route = "GET /api/v1/roles/{role_id}"
+route = "GET /api/v1/roles/{role}"
 property = "people"
 reason = "Counts only the people named by rows in the whole organization and in projects the viewer can see, and whoever holds Manage roles sees names there (M2-Q3, PRIV-13)."
 
 [[exempt]]
-route = "GET /api/v1/roles/{role_id}"
+route = "GET /api/v1/roles/{role}"
 property = "groups"
 reason = "Counts only the groups named by rows in the whole organization and in projects the viewer can see (PRIV-13)."
 
@@ -163,7 +163,7 @@ reason = "Counts only the notifications the person may still see: each of the ne
 [[exempt]]
 route = "POST /api/v1/workflows/{workflow}/publish-preview"
 property = "unseen"
-reason = "Counts issues the viewer may not see on purpose, and only counts them: they are in a status that publishing would drop, and the publish is refused for them with the same fact (workflow.status_in_use). The answer needs Manage workflows wherever the workflow is used, and no issue is named or described (ADR-0031 amendment 12, decided with the lead)."
+reason = "Counts issues the viewer may not see on purpose, and only counts them: they are in a status that publishing would drop, and the publish is refused for them with the same fact (workflow.status-in-use). The answer needs Manage workflows wherever the workflow is used, and no issue is named or described (ADR-0031 amendment 12, decided with the lead)."
 
 [[exempt]]
 route = "POST /api/v1/workflows/{workflow}/publish-preview"
@@ -173,4 +173,4 @@ reason = "Counts the issues the publisher could not move, among them ones they m
 [[exempt]]
 route = "POST /api/v1/workflows/{workflow}/publish-preview"
 property = "issues"
-reason = "Counts the issues in a status that publishing would drop, among them ones the viewer may not see, and only counts them; the publish is refused for them with the same fact (workflow.status_in_use). The answer needs Manage workflows wherever the workflow is used (ADR-0031 amendment 12)."
+reason = "Counts the issues in a status that publishing would drop, among them ones the viewer may not see, and only counts them; the publish is refused for them with the same fact (workflow.status-in-use). The answer needs Manage workflows wherever the workflow is used (ADR-0031 amendment 12)."

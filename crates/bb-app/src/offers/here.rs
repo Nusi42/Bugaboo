@@ -26,7 +26,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// when the list is not asked about a project.
     ///
     /// # Errors
-    /// `resource.not_found` for a project the person may not see.
+    /// `resource.not-found` for a project the person may not see.
     pub(crate) async fn offers_here(
         &self,
         shown: &Shown,

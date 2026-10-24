@@ -79,13 +79,13 @@ async function publishChanged(
   if (slot === undefined || slot === null) {
     throw new TypeError("The place has no workflow of its own.");
   }
-  const what = { record: { kind: "workflow", id: slot.id }, part: workflowEditPart };
+  const what = { record: { kind: "workflow", id: slot.id }, part: workflowEditPart } as const;
   const taken = dataOf(
     await admin.client.POST("/api/v1/edit-locks", {
-      body: { what, editor_id: crypto.randomUUID() },
+      body: { target: what, editor_id: crypto.randomUUID() },
     }),
   );
-  if (taken.status !== "taken") {
+  if (taken.kind !== "taken") {
     throw new TypeError("Somebody else is editing the workflow.");
   }
   const changed = change(editor);
@@ -99,7 +99,7 @@ async function publishChanged(
         statuses: changed.statuses.map((each) => ({
           key: each.key,
           name: each.name,
-          group: each.group,
+          status_group: each.status_group,
         })),
         changes: changed.changes.map((each) => ({
           from: each.from,
@@ -110,8 +110,8 @@ async function publishChanged(
       },
     }),
   );
-  await admin.client.POST("/api/v1/edit-locks/release", {
-    body: { what, lock_token: taken.lock_token },
+  await admin.client.POST("/api/v1/edit-locks/let-go", {
+    body: { target: what, lock_token: taken.lock_token },
   });
 }
 
@@ -183,10 +183,15 @@ export async function createBug(admin: ApiSession, title: string): Promise<MadeI
       body: { issue_type: await firstIssueType(admin), title },
     }),
   );
-  if (made.id === undefined || made.id === null || made.key === undefined || made.key === null) {
+  if (
+    made.id === undefined ||
+    made.id === null ||
+    made.readable_id === undefined ||
+    made.readable_id === null
+  ) {
     throw new TypeError("The server made an issue without an ID.");
   }
-  return { id: made.id, key: made.key };
+  return { id: made.id, key: made.readable_id };
 }
 
 /** Puts the issues in the status *In progress*, one after the other. */

@@ -32,7 +32,7 @@ pub enum AppError {
     Stale(Box<Stale>),
     /// A stale version, with who changed the record, when, which fields, and the values now.
     Conflict(Box<Conflict>),
-    /// A save was refused because somebody took the editing over (`edit.taken_over`), with who,
+    /// A save was refused because somebody took the editing over (`edit.taken-over`), with who,
     /// as the person who saved may see them, so the browser needs no further request to say it.
     TakenOver {
         /// Who holds the lock now.

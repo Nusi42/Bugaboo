@@ -11,7 +11,7 @@ import type { FormKind } from "./layouts.ts";
 import type { Row } from "./editor-model.ts";
 
 /** A role the editor can tick. */
-type Role = Schema<"EditorRoleBody">;
+type Role = Schema<"NamedRef">;
 
 /** Where a field can be moved to with the list: a section, by its number and title. */
 export interface MoveChoice {

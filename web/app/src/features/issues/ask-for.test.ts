@@ -10,7 +10,7 @@ import {
 import { emptyForm } from "./new-issue-form.ts";
 
 const found = "0192b0f2-6f6e-7c11-8a41-2a8f0c3d7e51";
-const testing = { key: "testing", name: "Testing", group: "in-progress" } as const;
+const testing = { key: "testing", name: "Testing", status_group: "in-progress" } as const;
 const own: NeededField = { field: found, kind: "own" };
 const people: NeededField = { field: "assigned-to", kind: "assigned-to" };
 const description: NeededField = { field: "description", kind: "description" };
@@ -20,7 +20,7 @@ describe("wf_04 the status list names the status when two changes have the same 
     ask: vi.fn<(change: unknown) => void>(),
     make: vi.fn<(change: unknown) => void>(),
   };
-  const done = { key: "done", name: "Done", group: "done" } as const;
+  const done = { key: "done", name: "Done", status_group: "done" } as const;
 
   it("tells two changes with the same words apart by the status they lead to", () => {
     const labels = statusActions(

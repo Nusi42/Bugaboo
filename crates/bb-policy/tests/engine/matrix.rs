@@ -245,7 +245,7 @@ fn priv_12_every_kind_and_level_shows_the_person_as_the_rule_says() {
                         gone,
                         if level == PeopleLevel::Names {
                             PersonRef::Former {
-                                label: "K7Q2".to_owned(),
+                                code: "K7Q2".to_owned(),
                             }
                         } else {
                             PersonRef::Someone

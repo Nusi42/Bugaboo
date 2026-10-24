@@ -74,7 +74,7 @@ async fn sec_12_a_change_needs_the_token_of_its_own_session() -> TestResult {
                 .send_as("POST", "/api/v1/auth/sign-out", None, token, origin)
                 .await?;
             assert_eq!(reply.status, StatusCode::FORBIDDEN, "{what}");
-            assert_eq!(reply.code(), "request.wrong_token", "{what}");
+            assert_eq!(reply.code(), "request.wrong-token", "{what}");
         }
         assert_eq!(
             browser.send("GET", "/api/v1/auth/me", None).await?.status,
@@ -91,14 +91,14 @@ async fn sec_12_a_change_needs_the_token_of_its_own_session() -> TestResult {
                 "https://evil.test",
             )
             .await?;
-        assert_eq!(reply.code(), "request.wrong_origin");
+        assert_eq!(reply.code(), "request.wrong-origin");
         // Without a session cookie there is nobody to protect: not signed in.
         let mut stranger = Browser::new(&app, &called());
         let reply = stranger
             .send("POST", "/api/v1/auth/two-step/code-app", None)
             .await?;
         assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
-        assert_eq!(reply.code(), "auth.not_signed_in");
+        assert_eq!(reply.code(), "auth.not-signed-in");
 
         // The right token does it, and both cookies are cleared.
         let reply = browser.send("POST", "/api/v1/auth/sign-out", None).await?;
@@ -139,10 +139,10 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
             let (method, path) = (&operation.method, &operation.path);
             // The routes people use before they have a session: no token can exist yet.
             if operation.needs == Declared::Public {
-                assert_ne!(reply.code(), "request.wrong_token", "{method} {path}");
+                assert_ne!(reply.code(), "request.wrong-token", "{method} {path}");
             } else {
                 assert_eq!(reply.status, StatusCode::FORBIDDEN, "{method} {path}");
-                assert_eq!(reply.code(), "request.wrong_token", "{method} {path}");
+                assert_eq!(reply.code(), "request.wrong-token", "{method} {path}");
                 checked += 1;
             }
         }
@@ -170,7 +170,7 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
         for field in ["type", "title", "status", "code", "message_key"] {
             assert_eq!(wrong.body[field], unknown.body[field], "{field}");
         }
-        assert_eq!(wrong.code(), "auth.wrong_credentials");
+        assert_eq!(wrong.code(), "auth.wrong-credentials");
 
         // Ada's account has two more tries; then even her right password waits.
         for _ in 0..2 {
@@ -179,7 +179,7 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
         }
         let reply = fresh().sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::TOO_MANY_REQUESTS);
-        assert_eq!(reply.code(), "rate_limit.exceeded");
+        assert_eq!(reply.code(), "rate-limit.exceeded");
         let wait: u64 = reply.header("retry-after").parse()?;
         assert!((1..=60).contains(&wait), "{wait}");
         assert_eq!(reply.header("content-type"), "application/problem+json");

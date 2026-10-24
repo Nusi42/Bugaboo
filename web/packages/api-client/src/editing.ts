@@ -17,13 +17,13 @@ export type Client = Readonly<Api["client"]>;
 /** A record by its kind and ID. */
 export type RecordRef = Schema<"RecordRefBody">;
 /** One thing being edited: a part of a record. */
-export type EditWhat = Schema<"EditWhatBody">;
+export type EditTarget = Schema<"EditTargetBody">;
 /** What a draft is for: a part of a record, or the form that makes a new record in a project. */
 export type DraftTarget = Schema<"DraftTargetBody">;
 /** The answer to asking for a lock: it is taken, or somebody else is editing. */
 export type LockOutcome = Schema<"LockOutcomeBody">;
 /** The answer to a heartbeat. */
-export type Heartbeat = Schema<"HeartbeatAnswerBody">;
+export type Heartbeat = Schema<"RenewAnswerBody">;
 /** The text so far of a draft, with the version it started from. */
 export type DraftText = Schema<"DraftTextBody">;
 
@@ -38,15 +38,19 @@ export function newEditorId(): string {
 }
 
 /** The lock on a thing, taken on the first keystroke (`status` says if somebody else is editing). */
-export async function takeEditLock(client: Client, what: EditWhat, editorId: string) {
-  return dataOf(await client.POST("/api/v1/edit-locks", { body: { what, editor_id: editorId } }));
+export async function takeEditLock(client: Client, what: EditTarget, editorId: string) {
+  return dataOf(
+    await client.POST("/api/v1/edit-locks", { body: { target: what, editor_id: editorId } }),
+  );
 }
 
 /** Who is editing a thing now, without taking the lock; `null` when nobody is. */
-export async function readEditLock(client: Client, what: EditWhat) {
+export async function readEditLock(client: Client, what: EditTarget) {
   const state = dataOf(
     await client.GET("/api/v1/edit-locks", {
-      params: { query: { kind: what.record.kind, id: what.record.id, part: what.part } },
+      params: {
+        query: { record_kind: what.record.kind, record_id: what.record.id, part: what.part },
+      },
     }),
   );
   return state.held ?? null;
@@ -58,13 +62,13 @@ export async function readEditLock(client: Client, what: EditWhat) {
  */
 export async function sendHeartbeat(
   client: Client,
-  what: EditWhat,
+  what: EditTarget,
   lockToken: string,
   draft?: DraftText,
 ): Promise<Heartbeat> {
   return dataOf(
-    await client.POST("/api/v1/edit-locks/heartbeat", {
-      body: { what, lock_token: lockToken, ...(draft === undefined ? {} : { draft }) },
+    await client.POST("/api/v1/edit-locks/renew", {
+      body: { target: what, lock_token: lockToken, ...(draft === undefined ? {} : { draft }) },
     }),
   );
 }
@@ -73,27 +77,27 @@ export async function sendHeartbeat(
  * Lets go of a lock: the text was saved, or the editor is closed. The request is `keepalive`, so
  * the browser finishes it when the page is closed or reloaded at once (M3-F105, M4-F26).
  */
-export async function releaseEditLock(
+export async function letGoOfEditLock(
   client: Client,
-  what: EditWhat,
+  what: EditTarget,
   lockToken: string,
 ): Promise<void> {
-  await client.POST("/api/v1/edit-locks/release", {
-    body: { what, lock_token: lockToken },
+  await client.POST("/api/v1/edit-locks/let-go", {
+    body: { target: what, lock_token: lockToken },
     keepalive: true,
   });
 }
 
 /** Asks the person who is editing to save and let go (*Ask Ana to finish*); they are told at their next heartbeat. */
-export async function askToFinish(client: Client, what: EditWhat): Promise<void> {
-  await client.POST("/api/v1/edit-locks/ask-to-finish", { body: { what } });
+export async function askToFinish(client: Client, what: EditTarget): Promise<void> {
+  await client.POST("/api/v1/edit-locks/ask-to-finish", { body: { target: what } });
 }
 
 /** Takes the editing over (*Edit anyway*): the lock is the caller's, and the other person's text stays their draft. */
-export async function editAnyway(client: Client, what: EditWhat, editorId: string) {
+export async function editAnyway(client: Client, what: EditTarget, editorId: string) {
   return dataOf(
     await client.POST("/api/v1/edit-locks/edit-anyway", {
-      body: { what, editor_id: editorId },
+      body: { target: what, editor_id: editorId },
     }),
   );
 }
@@ -106,12 +110,9 @@ export async function readDraft(client: Client, target: DraftTarget) {
 
 /** The target as the query of a read: what is not there is left out. */
 function queryOf(target: DraftTarget) {
-  return {
-    kind: target.kind,
-    ...(typeof target.id === "string" ? { id: target.id } : {}),
-    ...(typeof target.part === "string" ? { part: target.part } : {}),
-    ...(typeof target.project === "string" ? { project: target.project } : {}),
-  };
+  return "record" in target
+    ? { record_kind: target.record.kind, record_id: target.record.id, part: target.part }
+    : { record_kind: target.kind, project: target.project };
 }
 
 /** Keeps a text as the draft of the person. */

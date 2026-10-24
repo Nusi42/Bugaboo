@@ -128,23 +128,23 @@ describe("m1_f29 answers with lists and open objects", () => {
 describe("ux_07 errors from the server", () => {
   it("turn problem+json into an error with the message key to show", async () => {
     const failure = await failureOf(() =>
-      Promise.resolve(problem("rate_limit.exceeded", "error.rate-limit.exceeded", 429)),
+      Promise.resolve(problem("rate-limit.exceeded", "error.rate-limit.exceeded", 429)),
     );
     expect(failure).toBeInstanceOf(ApiError);
     expect(failure).toMatchObject({
       status: 429,
       messageKey: "error.rate-limit.exceeded",
-      problem: { code: "rate_limit.exceeded" },
+      problem: { code: "rate-limit.exceeded" },
     });
   });
 
   it("carry the seconds the server asks to wait", async () => {
-    const answer = problem("rate_limit.exceeded", "error.rate-limit.exceeded", 429);
+    const answer = problem("rate-limit.exceeded", "error.rate-limit.exceeded", 429);
     answer.headers.set("Retry-After", "7");
     const failure = await failureOf(() => Promise.resolve(answer));
     expect(failure).toMatchObject({ retryAfterSeconds: 7 });
     const none = await failureOf(() =>
-      Promise.resolve(problem("rate_limit.exceeded", "error.rate-limit.exceeded", 429)),
+      Promise.resolve(problem("rate-limit.exceeded", "error.rate-limit.exceeded", 429)),
     );
     expect(none).toMatchObject({ retryAfterSeconds: undefined });
   });
@@ -263,10 +263,10 @@ describe("m3_f12 server-rendered HTML becomes SafeHtml", () => {
 
 describe("adr_0019 the structured answer to a stale version", () => {
   const stale = {
-    type: "edit.version_changed",
+    type: "edit.version-changed",
     title: "x",
     status: 409,
-    code: "edit.version_changed",
+    code: "edit.version-changed",
     message_key: "error.edit.version-changed",
     params: {},
     conflict: { version: 4, fields: ["priority"], current: { priority: "critical" } },

@@ -27,59 +27,59 @@ pub(super) fn editing_request(fixture: &Fixture<'_>, operation: &str) -> Option<
         "takeEditLock" => (
             "POST",
             "/api/v1/edit-locks".into(),
-            Some(json!({"what": editing_what(&target), "editor_id": AN_EDITOR})),
+            Some(json!({"target": editing_what(&target), "editor_id": AN_EDITOR})),
         ),
-        "readEditLock" => (
+        "getEditLock" => (
             "GET",
-            format!("/api/v1/edit-locks?kind=project&id={target}&part=description"),
+            format!("/api/v1/edit-locks?record_kind=project&record_id={target}&part=description"),
             None,
         ),
-        "heartbeatEditLock" => (
+        "renewEditLock" => (
             "POST",
-            "/api/v1/edit-locks/heartbeat".into(),
+            "/api/v1/edit-locks/renew".into(),
             Some(json!({
-                "what": editing_what(&target),
+                "target": editing_what(&target),
                 "lock_token": NO_LOCK_TOKEN,
                 "draft": {"text": "Typed by the matrix", "base_version": 1}
             })),
         ),
-        "releaseEditLock" => (
+        "letGoOfEditLock" => (
             "POST",
-            "/api/v1/edit-locks/release".into(),
-            Some(json!({"what": editing_what(&target), "lock_token": NO_LOCK_TOKEN})),
+            "/api/v1/edit-locks/let-go".into(),
+            Some(json!({"target": editing_what(&target), "lock_token": NO_LOCK_TOKEN})),
         ),
         "askToFinish" => (
             "POST",
             "/api/v1/edit-locks/ask-to-finish".into(),
-            Some(json!({"what": editing_what(&target)})),
+            Some(json!({"target": editing_what(&target)})),
         ),
         "editAnyway" => (
             "POST",
             "/api/v1/edit-locks/edit-anyway".into(),
-            Some(json!({"what": editing_what(&target), "editor_id": AN_EDITOR})),
+            Some(json!({"target": editing_what(&target), "editor_id": AN_EDITOR})),
         ),
-        "releaseStuckEditLock" => (
+        "letGoOfStuckEditLock" => (
             "POST",
-            "/api/v1/edit-locks/release-stuck".into(),
-            Some(json!({"what": editing_what(&target)})),
+            "/api/v1/edit-locks/let-go-stuck".into(),
+            Some(json!({"target": editing_what(&target)})),
         ),
         "saveDraft" => (
             "PUT",
             "/api/v1/drafts".into(),
             Some(json!({
-                "target": {"kind": "project", "id": target, "part": "description"},
+                "target": {"record": {"kind": "project", "id": target}, "part": "description"},
                 "draft": {"text": "Typed by the matrix", "base_version": 1}
             })),
         ),
-        "readDraft" => (
+        "getDraft" => (
             "GET",
-            format!("/api/v1/drafts?kind=project&id={target}&part=description"),
+            format!("/api/v1/drafts?record_kind=project&record_id={target}&part=description"),
             None,
         ),
         "throwAwayDraft" => (
             "POST",
             "/api/v1/drafts/throw-away".into(),
-            Some(json!({"kind": "project", "id": target, "part": "description"})),
+            Some(json!({"record": {"kind": "project", "id": target}, "part": "description"})),
         ),
         "checkVersions" => (
             "POST",

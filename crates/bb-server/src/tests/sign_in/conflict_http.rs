@@ -1,5 +1,5 @@
 //! The structured answer to a stale save on every route that takes a version (ADR-0019 amendment
-//! M3, ISS-17): `edit.version_changed` with the `conflict.version` the record has now, whatever
+//! M3, ISS-17): `edit.version-changed` with the `conflict.version` the record has now, whatever
 //! the kind of record. One table, one row for each such route of the API description; a route that
 //! is added without a row fails the second test. Every row runs on SQLite and PostgreSQL.
 
@@ -26,7 +26,7 @@ const VERSIONED: [&str; 29] = [
     "reorderChoices",
     "changeChoice",
     "combineChoices",
-    "renameGroup",
+    "changeGroup",
     "changeIssueType",
     "changeIssueTypeOffers",
     "changeIssue",
@@ -138,7 +138,7 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
                 &now["version"],
             )
         }
-        "renameGroup" => {
+        "changeGroup" => {
             let group = made(ada, "/api/v1/groups", json!({"name": "Backend"})).await?;
             Save::new(
                 "PATCH",
@@ -277,13 +277,13 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             let issue = ok(&site.create(ada, "Commented").await?)?.clone();
             let comment = made(
                 ada,
-                &format!("{ISSUES}/{}/comments", text_in(&issue, "key")?),
+                &format!("{ISSUES}/{}/comments", text_in(&issue, "readable_id")?),
                 json!({"text": "First"}),
             )
             .await?;
             let record = json!({"kind": "comment", "id": text_in(&comment, "id")?});
             Ok(Save::new(
-                "PATCH",
+                "PUT",
                 format!("/api/v1/comments/{}", text_in(&comment, "id")?),
                 json!({"text": "Second"}),
                 &comment["version"],
@@ -296,7 +296,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
         | "setIssueParent"
         | "saveIssueFieldText" => {
             let issue = ok(&site.create(ada, "An issue").await?)?.clone();
-            let key = text_in(&issue, "key")?;
+            let key = text_in(&issue, "readable_id")?;
             let record = json!({"kind": "issue", "id": text_in(&issue, "id")?});
             let version = &issue["version"];
             match id {
@@ -328,7 +328,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
                     Save::new(
                         "PUT",
                         format!("{ISSUES}/{key}/parent"),
-                        json!({"parent": text_in(&parent, "key")?}),
+                        json!({"parent": text_in(&parent, "readable_id")?}),
                         version,
                     )
                 }
@@ -388,7 +388,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             let label = made(
                 ada,
                 "/api/v1/labels",
-                json!({"name": format!("ui for {id}"), "group": null}),
+                json!({"name": format!("ui for {id}"), "label_group": null}),
             )
             .await?;
             let path = format!("/api/v1/labels/{}", text_in(&label, "id")?);
@@ -398,7 +398,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             let other = made(
                 ada,
                 "/api/v1/labels",
-                json!({"name": format!("web for {id}"), "group": null}),
+                json!({"name": format!("web for {id}"), "label_group": null}),
             )
             .await?;
             Save::new(
@@ -413,7 +413,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             for name in ["slow", "fast"] {
                 made(
                     ada,
-                    &format!("{ISSUES}/{}/tags", text_in(&issue, "key")?),
+                    &format!("{ISSUES}/{}/tags", text_in(&issue, "readable_id")?),
                     json!({"name": name}),
                 )
                 .await?;
@@ -504,7 +504,7 @@ async fn prepare_workflow(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
             path,
             json!({
                 "name": "Simple",
-                "statuses": [{"key": "open", "name": "Open", "group": "not-started"}],
+                "statuses": [{"key": "open", "name": "Open", "status_group": "not-started"}],
                 "changes": [],
             }),
             version,
@@ -536,7 +536,7 @@ async fn iss_17_every_route_with_a_version_answers_a_stale_save_with_the_current
                     .send(
                         "POST",
                         LOCKS,
-                        Some(json!({"what": what, "editor_id": AN_EDITOR})),
+                        Some(json!({"target": what, "editor_id": AN_EDITOR})),
                     )
                     .await?;
                 body["lock_token"] = ok(&taken)?["lock_token"].clone();
@@ -544,7 +544,7 @@ async fn iss_17_every_route_with_a_version_answers_a_stale_save_with_the_current
             let body = (!save.in_query).then_some(body);
             let stale = ada.send(save.method, &path, body).await?;
             assert_eq!(stale.status, StatusCode::CONFLICT, "{id}: {}", stale.body);
-            assert_eq!(stale.code(), "edit.version_changed", "{id}: {}", stale.body);
+            assert_eq!(stale.code(), "edit.version-changed", "{id}: {}", stale.body);
             assert_eq!(
                 stale.body["conflict"]["version"],
                 json!(save.version),
@@ -585,7 +585,7 @@ async fn iss_17_a_combine_with_only_a_stale_into_version_names_the_record_combin
             body["version"] = json!(save.version);
             body["into_version"] = json!(into_version + AHEAD);
             let stale = ada.send(save.method, &save.path, Some(body)).await?;
-            assert_eq!(stale.code(), "edit.version_changed", "{id}: {}", stale.body);
+            assert_eq!(stale.code(), "edit.version-changed", "{id}: {}", stale.body);
             assert_eq!(
                 stale.body["conflict"]["version"],
                 json!(into_version),

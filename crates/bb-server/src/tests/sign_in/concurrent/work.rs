@@ -44,7 +44,7 @@ pub(super) async fn workflow_that_asks(
             "POST",
             LOCKS,
             Some(json!({
-                "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
+                "target": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
                 "editor_id": AN_EDITOR,
             })),
         )
@@ -72,7 +72,7 @@ pub(super) async fn workflow_that_asks(
         .as_array()
         .ok_or("no statuses")?
         .iter()
-        .map(|status| json!({"key": status["key"], "name": status["name"], "group": status["group"]}))
+        .map(|status| json!({"key": status["key"], "name": status["name"], "status_group": status["status_group"]}))
         .collect();
     let published = admin
         .send(
@@ -128,7 +128,7 @@ pub(super) async fn guests_issue(
     let body = ok(&made)?;
     Ok(Work {
         id: text_in(body, "id")?,
-        key: text_in(body, "key")?,
+        key: text_in(body, "readable_id")?,
         reporter: Some(guest_id.to_owned()),
     })
 }
@@ -180,7 +180,7 @@ impl Person {
         let moved_since = reply.code() == "field.required"
             && version_in(&self.browser.send("GET", &path, None).await?.body)? != version;
         match reply.code() {
-            "edit.version_changed" | "workflow.no_such_change" => Ok(()),
+            "edit.version-changed" | "workflow.no-such-change" => Ok(()),
             _ if moved_since => Ok(()),
             _ => Err(format!("{}: {}", reply.status, reply.body).into()),
         }
@@ -210,7 +210,7 @@ impl Person {
             .map(|field| format!("\"{}\"", field.code()))
             .collect();
         for item in items {
-            if let Some(key) = item["issue"]["key"].as_str()
+            if let Some(key) = item["issue"]["readable_id"].as_str()
                 && !self.issues.iter().any(|work| work.key == key)
             {
                 return Err(format!("a Guest was shown {key}, which they did not report").into());

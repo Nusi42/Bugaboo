@@ -103,7 +103,7 @@ async fn check_reader(
             .await?;
         assert_eq!(
             (asked.status, asked.code()),
-            (StatusCode::BAD_REQUEST, "request.unknown_field"),
+            (StatusCode::BAD_REQUEST, "request.unknown-field"),
             "{name}: `{member}` can be asked for"
         );
         assert_eq!(asked.body["code"], unknown.body["code"]);
@@ -153,7 +153,10 @@ async fn sec_06_issue_answers_refuse_every_field_the_role_may_not_see() -> TestR
                 })),
             )
             .await?;
-        let key = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        let key = ok(&made)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         let mut readers = vec![(
             "title reader".to_owned(),
             title_only_reader(&site, &rig).await?,
@@ -267,7 +270,10 @@ async fn sec_04_an_unchanged_value_of_a_field_i_may_not_change_is_refused_like_a
                 })),
             )
             .await?;
-        let path = format!("{ISSUES}/{}", ok(&made)?["key"].as_str().ok_or("no key")?);
+        let path = format!(
+            "{ISSUES}/{}",
+            ok(&made)?["readable_id"].as_str().ok_or("no key")?
+        );
         // The values the issue has now: sending one of them back must not tell the sender that
         // it is right, so it is refused like a value that differs.
         let now = [
@@ -328,11 +334,11 @@ async fn priv_13_no_issue_answer_holds_a_count() -> TestResult {
             ok(&site.create(&mut ada, title).await?)?;
         }
         ok(&site.create(&mut gus, "Gus's").await?)?;
-        let key = ok(&site.create(&mut ada, "Four").await?)?["key"]
+        let key = ok(&site.create(&mut ada, "Four").await?)?["readable_id"]
             .as_str()
             .ok_or("no key")?
             .to_owned();
-        let all_fields = "id,key,project,issue_type,title,description,status,priority,reported_by,assigned_to,created_at,updated_at,closed_at,version";
+        let all_fields = "id,readable_id,project,issue_type,title,description,status,priority,reported_by,assigned_to,created_at,updated_at,closed_at,version";
         let answers = [
             ada.send(
                 "GET",

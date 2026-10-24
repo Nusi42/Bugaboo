@@ -150,7 +150,7 @@ pub(crate) async fn content_in<S: AuthStore>(
 /// the top down is given (after `projects::lock_chain_in`, which takes the shared lock of the
 /// workflows): checks that the workflow that counts now still has the status, which the request
 /// was judged on. If a workflow was published meanwhile and dropped it, the write is stopped with
-/// `edit.version_changed`, and the person looks again.
+/// `edit.version-changed`, and the person looks again.
 ///
 /// # Errors
 /// The error of the store, or the stop of the change.

@@ -137,7 +137,7 @@ words! {
     }
 }
 
-words_in_api!(Test, "What a condition of a status change asks of a field.");
+words_in_api!(Test as "OnlyIfTest", "What a condition of a status change asks of a field.");
 
 /// One condition of *Only if …*: something that must be true of a field first. It is written in
 /// the same words as *Must be filled in*.

@@ -232,7 +232,7 @@ async fn sec_03_a_row_from_above_is_listed_as_inherited_and_a_no_access_below_it
         assert!(row["role"].is_null(), "No access has no role");
         assert_eq!(row["inherited"], false);
         let after = bob.send("GET", &format!("/api/v1/projects/{web}"), None).await?;
-        assert_eq!(after.code(), "resource.not_found");
+        assert_eq!(after.code(), "resource.not-found");
         let acme_still = bob
             .send("GET", &format!("/api/v1/projects/{acme}"), None)
             .await?;
@@ -277,7 +277,7 @@ async fn sec_08_nobody_removes_the_last_way_to_manage_roles_over_http() -> TestR
             .await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::CONFLICT, "access.would_lock_out")
+            (StatusCode::CONFLICT, "access.would-lock-out")
         );
         // A second administrator makes it possible.
         let administrator = org.role_named("Administrator").await?;
@@ -429,7 +429,7 @@ async fn sec_02_a_project_lead_decides_who_has_which_role_only_in_their_projects
             let reply = lena.send(method, &path, None).await?;
             assert_eq!(
                 (reply.status, reply.code()),
-                (StatusCode::NOT_FOUND, "resource.not_found"),
+                (StatusCode::NOT_FOUND, "resource.not-found"),
                 "{path}"
             );
         }
@@ -630,7 +630,7 @@ async fn sec_03_the_rows_of_a_place_are_listed_a_page_at_a_time() -> TestResult 
             .ada
             .send("GET", "/api/v1/assignments?cursor=nonsense", None)
             .await?;
-        assert_eq!(bad.code(), "request.bad_cursor");
+        assert_eq!(bad.code(), "request.bad-cursor");
         Ok(())
     })
     .await

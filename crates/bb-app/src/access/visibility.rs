@@ -253,7 +253,7 @@ struct Wanted<'a> {
 /// project (what applies there and where it was set), for every role.
 ///
 /// # Errors
-/// `access.forbidden` without *Decide what roles see* there, `resource.not_found` for a project
+/// `access.forbidden` without *Decide what roles see* there, `resource.not-found` for a project
 /// the person may not know about.
 pub async fn field_permissions<S: AuthStore>(
     ctx: &Ctx<'_, S>,

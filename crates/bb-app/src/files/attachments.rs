@@ -86,7 +86,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The attachment and its issue for an actor who may see them. An attachment that does not
     /// exist, is in the trash (`trashed` says whether that is what is wanted) or whose issue or
-    /// comment the actor may not see answers `resource.not_found`.
+    /// comment the actor may not see answers `resource.not-found`.
     pub(crate) async fn visible_attachment(
         &self,
         actor: &Actor,
@@ -116,7 +116,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// The files of an issue and of the comments under it that the person may see, oldest first.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist or that the person may not see.
+/// `resource.not-found` for an issue that does not exist or that the person may not see.
 pub async fn issue_files<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: IssueFilesQuery,
@@ -173,7 +173,7 @@ pub async fn issue_files<S: AuthStore>(
 /// What the person may add to an issue, and the limits of its project.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist or that the person may not see.
+/// `resource.not-found` for an issue that does not exist or that the person may not see.
 pub async fn file_rules<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: FileRulesQuery,
@@ -248,7 +248,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// whoever may change issues.
 ///
 /// # Errors
-/// `resource.not_found` for an attachment that does not exist, is in the trash already or whose
+/// `resource.not-found` for an attachment that does not exist, is in the trash already or whose
 /// issue the person may not see, `access.forbidden` for a file of someone else without the right
 /// to change issues.
 pub async fn delete_attachment<S: AuthStore>(
@@ -278,7 +278,7 @@ pub async fn delete_attachment<S: AuthStore>(
 /// Takes an attachment out of the trash (*Undo*).
 ///
 /// # Errors
-/// `resource.not_found` for an attachment that is not in the trash or whose issue the person may
+/// `resource.not-found` for an attachment that is not in the trash or whose issue the person may
 /// not see, `access.forbidden` as for deleting.
 pub async fn restore_attachment<S: AuthStore>(
     ctx: &Ctx<'_, S>,

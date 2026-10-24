@@ -27,7 +27,7 @@ export function useCommentText(source: CommentSource, onDone: () => void): LongT
       readonly lockToken: string;
     }) => {
       dataOf(
-        await api.client.PATCH("/api/v1/comments/{comment}", {
+        await api.client.PUT("/api/v1/comments/{comment}", {
           params: { path: { comment } },
           body: { version: input.version, lock_token: input.lockToken, text: input.text },
         }),

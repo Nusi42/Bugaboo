@@ -155,10 +155,10 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// Starts an upload of a file to an issue, or to a comment under it.
 ///
 /// # Errors
-/// `resource.not_found` for an issue or comment that does not exist or that the person may not
+/// `resource.not-found` for an issue or comment that does not exist or that the person may not
 /// see, `access.forbidden` without the right to add files there, `request.invalid` for a name
-/// that is no file name or a file without bytes, `file.too_big` for a file over the limit of the
-/// project, `file.type_blocked` for a type the organization never accepts, `limit.reached` when
+/// that is no file name or a file without bytes, `file.too-big` for a file over the limit of the
+/// project, `file.type-blocked` for a type the organization never accepts, `limit.reached` when
 /// the person has too many uploads open or the issue holds as many files as it may.
 pub async fn start_upload<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -212,7 +212,7 @@ pub async fn start_upload<S: AuthStore>(
 /// How far an upload is, so an interrupted one goes on from there.
 ///
 /// # Errors
-/// `resource.not_found` for an upload that is not the person's or is gone.
+/// `resource.not-found` for an upload that is not the person's or is gone.
 pub async fn upload_state<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: UploadStateQuery,
@@ -230,12 +230,12 @@ pub async fn upload_state<S: AuthStore>(
 /// also shows what the file really is.
 ///
 /// # Errors
-/// `resource.not_found` for an upload that is not the person's or is gone, `access.forbidden` when
+/// `resource.not-found` for an upload that is not the person's or is gone, `access.forbidden` when
 /// the person may not add files there any more (the upload then ends), `request.invalid` for an empty part, a part that is
-/// too big or that goes past the size the upload started with, `file.wrong_part` for a part that
+/// too big or that goes past the size the upload started with, `file.wrong-part` for a part that
 /// does not start where the file stands (the answer to `upload_state` says where), and
-/// `file.type_blocked` when the content is of a type the organization never accepts: the upload
-/// is then gone, and `file.no_room` when the disk would be left with less room than it keeps free.
+/// `file.type-blocked` when the content is of a type the organization never accepts: the upload
+/// is then gone, and `file.no-room` when the disk would be left with less room than it keeps free.
 pub async fn send_part<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SendPartQuery,
@@ -287,7 +287,7 @@ pub async fn send_part<S: AuthStore>(
 /// Throws an unfinished upload away.
 ///
 /// # Errors
-/// `resource.not_found` for an upload that is not the person's or is gone.
+/// `resource.not-found` for an upload that is not the person's or is gone.
 pub async fn cancel_upload<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CancelUploadQuery,
@@ -363,8 +363,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// an attachment of the issue or the comment. A file that is stored already is not stored again.
 ///
 /// # Errors
-/// As for `send_part`, and `file.incomplete` when not all bytes are there, `file.too_big` and
-/// `file.type_blocked` for what the whole file shows (the upload is then gone).
+/// As for `send_part`, and `file.incomplete` when not all bytes are there, `file.too-big` and
+/// `file.type-blocked` for what the whole file shows (the upload is then gone).
 pub async fn finish_upload<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: FinishUpload,

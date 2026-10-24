@@ -6,7 +6,7 @@ import {
   readDraft,
   throwAwayDraft,
   type DraftTarget,
-  type EditWhat,
+  type EditTarget,
   type Schema,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
@@ -199,12 +199,12 @@ export function useSaveLayout() {
 }
 
 /** What the lock on a layout, and its draft, are about: the thing being edited. */
-export function whatOf(layout: string): EditWhat {
+export function whatOf(layout: string): EditTarget {
   return { record: { kind: "layout", id: layout }, part: layoutEditPart };
 }
 
 function targetOf(layout: string): DraftTarget {
-  return { kind: "layout", id: layout, part: layoutEditPart };
+  return { record: { kind: "layout", id: layout }, part: layoutEditPart };
 }
 
 /** The draft that a refused save of the layout kept for this person, if there is one. */

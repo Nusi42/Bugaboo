@@ -86,7 +86,7 @@ async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_i
             .await?;
         let own = cell(&fields.body, "cost-center", contributor)?;
         assert_eq!(own["level"], "can-see");
-        assert_eq!(own["origin"], json!({"kind": "role_own"}));
+        assert_eq!(own["origin"], json!({"kind": "role-own"}));
         // A role that was given no level at all is closed: nothing set, so hidden.
         let blank = org.role("Blank", &[Permission::SeeProjects]).await?;
         let again = ada
@@ -193,7 +193,7 @@ async fn sec_04_a_level_set_on_a_project_never_gives_more_than_the_person_holds_
                 .await?;
             assert_eq!(
                 (too_much.status, too_much.code()),
-                (StatusCode::FORBIDDEN, "access.too_much"),
+                (StatusCode::FORBIDDEN, "access.too-much"),
                 "{subject}"
             );
             let fine = lea_browser
@@ -261,7 +261,7 @@ async fn sec_03_a_checker_without_a_management_permission_chooses_only_people_wi
         let missing = lea_browser.send("GET", &cleo_path, None).await?;
         assert_eq!(
             (missing.status, missing.code()),
-            (StatusCode::NOT_FOUND, "resource.not_found")
+            (StatusCode::NOT_FOUND, "resource.not-found")
         );
         // Whoever manages sees everybody, Cleo too.
         let everybody = ada

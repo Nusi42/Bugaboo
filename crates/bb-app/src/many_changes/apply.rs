@@ -131,8 +131,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// `request.invalid` for no issue, too many issues or an action that asks for nothing,
-/// `resource.not_found` for a project, a label, a kind of relation or an issue named in the action
-/// that is not there for the person, `auth.access_key_not_allowed` for a change to more issues than
+/// `resource.not-found` for a project, a label, a kind of relation or an issue named in the action
+/// that is not there for the person, `auth.access-key-not-allowed` for a change to more issues than
 /// a script may wait for (an access key splits the work into requests that fit).
 pub async fn apply_many_changes<S: AuthStore>(
     ctx: &Ctx<'_, S>,

@@ -19,10 +19,12 @@ use super::auth::{
 };
 use crate::errors::{ApiError, ApiJson};
 
-/// The handle of the person.
-#[derive(Serialize, ToSchema)]
+/// A handle: the one a person has, or the new one they ask for. Without the `@`: lower case or
+/// ASCII letters `a`…`z`, digits, `.`, `-` and `_`, like `ana.brandt`. Nobody else has it, nobody had
+/// it, and no group or role has it.
+#[derive(Deserialize, Serialize, ToSchema)]
 pub(crate) struct HandleBody {
-    /// The handle, without the `@`: lower case, words joined by dots, like `ana.brandt`.
+    /// The handle, without the `@`.
     handle: String,
 }
 
@@ -34,14 +36,6 @@ impl From<MyHandle> for HandleBody {
             handle: found.handle,
         }
     }
-}
-
-/// The new handle.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct NewHandleBody {
-    /// The handle, without the `@`: the ASCII letters `a`…`z`, digits, `.`, `-` and `_`. Nobody
-    /// else has it, nobody had it, and no group or role has it.
-    handle: String,
 }
 
 /// The handle of the person who asks.
@@ -64,7 +58,7 @@ async fn get_my_handle(
     answer_authorized(&found.map(HandleBody::from))
 }
 
-/// Changes the handle of the person who asks, once in a while (`handle.changed_lately` otherwise).
+/// Changes the handle of the person who asks, once in a while (`handle.changed-lately` otherwise).
 /// The one they had stays theirs: nobody else can take it, and the texts written before still name
 /// them, but a new text that uses it names nobody.
 #[utoipa::path(
@@ -72,14 +66,14 @@ async fn get_my_handle(
     path = "/api/v1/me/handle",
     operation_id = "changeMyHandle",
     tag = "people",
-    request_body = NewHandleBody,
+    request_body = HandleBody,
     responses((status = 200, description = "The handle now.", body = HandleBody), InvalidAnswer, ConflictAnswer, NotSignedInAnswer, TooSoonAnswer)
 )]
 async fn change_my_handle(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<NewHandleBody>,
+    ApiJson(body): ApiJson<HandleBody>,
 ) -> Result<Response, ApiError> {
     let changed = auth
         .api()?

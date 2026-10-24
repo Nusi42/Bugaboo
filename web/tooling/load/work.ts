@@ -20,7 +20,7 @@ const ASKS_FOR = "assigned-to";
 /** The refusal of a file for an issue that holds as many files as it may. */
 const ISSUE_IS_FULL = "limit.reached";
 /** Why a status change is no longer there when somebody else moved the issue first. */
-const SOMEBODY_WAS_FIRST = new Set(["edit.version_changed", "workflow.no_such_change"]);
+const SOMEBODY_WAS_FIRST = new Set(["edit.version-changed", "workflow.no-such-change"]);
 /** The refusal of a change that asks for something the request did not carry. */
 const MUST_BE_FILLED_IN = "field.required";
 
@@ -100,10 +100,10 @@ export async function addFile(context: Context, work: Work): Promise<void> {
  */
 function checkWhatAGuestReads(
   context: Context,
-  items: readonly { readonly issue?: { readonly key: string } | null }[],
+  items: readonly { readonly issue?: { readonly readable_id: string } | null }[],
 ): void {
   for (const item of items) {
-    const key = item.issue?.key;
+    const key = item.issue?.readable_id;
     if (key !== undefined && !context.issues.some((work) => work.key === key)) {
       throw new Error(`A Guest was shown ${key}, which they did not report.`);
     }

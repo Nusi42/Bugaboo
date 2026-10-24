@@ -20,9 +20,9 @@ export const versionsMax = 50;
 
 /** The codes of the refusals of a save that keep the text as the person's draft. */
 export const draftKeptCodes = [
-  "edit.lock_lost",
-  "edit.taken_over",
-  "edit.version_changed",
+  "edit.lock-lost",
+  "edit.taken-over",
+  "edit.version-changed",
 ] as const;
 
 /** One code of `draftKeptCodes`. */

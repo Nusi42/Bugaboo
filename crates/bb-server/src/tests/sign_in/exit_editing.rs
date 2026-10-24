@@ -34,7 +34,7 @@ async fn take(
         .send(
             "POST",
             LOCKS,
-            Some(json!({"what": what(issue, part), "editor_id": AN_EDITOR})),
+            Some(json!({"target": what(issue, part), "editor_id": AN_EDITOR})),
         )
         .await
 }
@@ -49,7 +49,7 @@ async fn draft(
             "PUT",
             DRAFTS,
             Some(json!({
-                "target": {"kind": "issue", "id": issue, "part": part},
+                "target": {"record": {"kind": "issue", "id": issue}, "part": part},
                 "draft": {"text": "typed", "base_version": 1},
             })),
         )
@@ -74,16 +74,16 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
         // A part that does not exist is refused like a record that is not there.
         for nonsense in ["nonsense", "field-nonsense", "layout"] {
             let taken = take(&mut ada, &id, nonsense).await?;
-            assert_eq!(taken.code(), "resource.not_found", "{nonsense}");
+            assert_eq!(taken.code(), "resource.not-found", "{nonsense}");
             let kept = draft(&mut ada, &id, nonsense).await?;
-            assert_eq!(kept.code(), "resource.not_found", "{nonsense}");
+            assert_eq!(kept.code(), "resource.not-found", "{nonsense}");
         }
         // The two parts of an issue work.
         assert_eq!(
-            ok(&take(&mut ada, &id, "description").await?)?["status"],
+            ok(&take(&mut ada, &id, "description").await?)?["kind"],
             "taken"
         );
-        assert_eq!(ok(&take(&mut ada, &id, &part).await?)?["status"], "taken");
+        assert_eq!(ok(&take(&mut ada, &id, &part).await?)?["kind"], "taken");
         // A role that changes issues but sees the long text only, and one that does not see it.
         let permissions = [
             Permission::SeeProjects,
@@ -117,7 +117,7 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
             ],
         )
         .await?;
-        let read = |part: &str| format!("{LOCKS}?kind=issue&id={id}&part={part}");
+        let read = |part: &str| format!("{LOCKS}?record_kind=issue&record_id={id}&part={part}");
         // Sam sees the field: they may read who is editing it, not take it or draft on it.
         let held = sam.send("GET", &read(&part), None).await?;
         assert_eq!(held.status, StatusCode::OK, "{}", held.body);
@@ -130,15 +130,15 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
         // Eve does not see it: no sign that somebody is editing, nothing to lock or draft.
         assert_eq!(
             eve.send("GET", &read(&part), None).await?.code(),
-            "resource.not_found"
+            "resource.not-found"
         );
         assert_eq!(
             take(&mut eve, &id, &part).await?.code(),
-            "resource.not_found"
+            "resource.not-found"
         );
         assert_eq!(
             draft(&mut eve, &id, &part).await?.code(),
-            "resource.not_found"
+            "resource.not-found"
         );
         // Both change the description.
         assert_eq!(
@@ -170,10 +170,10 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
         let (_, one_more) = issue_of_type(&site, &mut ada, &site.kind, "One more").await?;
         let kept = draft(&mut ada, &one_more, "description").await?;
         assert_eq!(kept.status, StatusCode::OK, "{}", kept.body);
-        let read = |id: &str| format!("{DRAFTS}?kind=issue&id={id}&part=description");
+        let read = |id: &str| format!("{DRAFTS}?record_kind=issue&record_id={id}&part=description");
         assert!(ada.send("GET", &read(&first), None).await?.body["draft"].is_null());
         assert!(ada.send("GET", &read(&one_more), None).await?.body["draft"].is_object());
-        // A save with a lock nobody holds is refused as before (`edit.lock_lost`), and the text is kept as
+        // A save with a lock nobody holds is refused as before (`edit.lock-lost`), and the text is kept as
         // the draft, though the person is at the cap.
         rig.clock.advance(1);
         let (other, other_id) = issue_of_type(&site, &mut ada, &site.kind, "Another").await?;
@@ -188,7 +188,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
                 })),
             )
             .await?;
-        assert_eq!(lost.code(), "edit.lock_lost", "{}", lost.body);
+        assert_eq!(lost.code(), "edit.lock-lost", "{}", lost.body);
         let kept = ada.send("GET", &read(&other_id), None).await?;
         assert_eq!(kept.body["draft"]["text"], "Typed", "{}", kept.body);
         // The heartbeat of a lock keeps renewing and keeping the text.
@@ -196,9 +196,9 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
         let beat = ada
             .send(
                 "POST",
-                &format!("{LOCKS}/heartbeat"),
+                &format!("{LOCKS}/renew"),
                 Some(json!({
-                    "what": what(&one_more, "description"),
+                    "target": what(&one_more, "description"),
                     "lock_token": locked["lock_token"],
                     "draft": {"text": "Still typing", "base_version": 1},
                 })),
@@ -246,11 +246,11 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
         )
         .await?;
         ok(&take(&mut ada, &id, "description").await?)?;
-        let release = json!({"what": what(&id, "description")});
+        let release = json!({"target": what(&id, "description")});
         let refused = ray
             .send(
                 "POST",
-                &format!("{LOCKS}/release-stuck"),
+                &format!("{LOCKS}/let-go-stuck"),
                 Some(release.clone()),
             )
             .await?;
@@ -259,13 +259,13 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
         let held = ada
             .send(
                 "GET",
-                &format!("{LOCKS}?kind=issue&id={id}&part=description"),
+                &format!("{LOCKS}?record_kind=issue&record_id={id}&part=description"),
                 None,
             )
             .await?;
         assert!(held.body["held"].is_object(), "{}", held.body);
         let freed = kay
-            .send("POST", &format!("{LOCKS}/release-stuck"), Some(release))
+            .send("POST", &format!("{LOCKS}/let-go-stuck"), Some(release))
             .await?;
         assert_eq!(freed.status, StatusCode::NO_CONTENT, "{}", freed.body);
         Ok(())
@@ -283,7 +283,7 @@ async fn sec_06_a_layout_is_not_known_to_who_cannot_edit_layouts() -> TestResult
         let layout = editor["layout"]["id"].as_str().ok_or("no layout")?;
         let ask = |record: &str| {
             json!({
-                "what": {"record": {"kind": "layout", "id": record}, "part": "layout"},
+                "target": {"record": {"kind": "layout", "id": record}, "part": "layout"},
                 "editor_id": AN_EDITOR,
             })
         };
@@ -296,11 +296,11 @@ async fn sec_06_a_layout_is_not_known_to_who_cannot_edit_layouts() -> TestResult
                 Some(ask("01890a5d-ac96-774b-bcce-b302099a8057")),
             )
             .await?;
-        assert_eq!(there.code(), "resource.not_found", "{}", there.body);
-        assert_eq!(nowhere.code(), "resource.not_found", "{}", nowhere.body);
+        assert_eq!(there.code(), "resource.not-found", "{}", there.body);
+        assert_eq!(nowhere.code(), "resource.not-found", "{}", nowhere.body);
         // Whoever edits layouts takes the lock.
         let taken = ada.send("POST", LOCKS, Some(ask(layout))).await?;
-        assert_eq!(ok(&taken)?["status"], "taken");
+        assert_eq!(ok(&taken)?["kind"], "taken");
         Ok(())
     })
     .await
@@ -330,25 +330,60 @@ async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
         ] {
             let body = |part: &str| {
                 json!({
-                    "what": {"record": {"kind": kind, "id": id}, "part": part},
+                    "target": {"record": {"kind": kind, "id": id}, "part": part},
                     "editor_id": AN_EDITOR,
                 })
             };
             let wrong = ada.send("POST", LOCKS, Some(body(bad))).await?;
-            assert_eq!(wrong.code(), "resource.not_found", "{kind}: {}", wrong.body);
+            assert_eq!(wrong.code(), "resource.not-found", "{kind}: {}", wrong.body);
             let draft_bad = ada
                 .send(
                     "PUT",
                     DRAFTS,
                     Some(json!({
-                        "target": {"kind": kind, "id": id, "part": bad},
+                        "target": {"record": {"kind": kind, "id": id}, "part": bad},
                         "draft": {"text": "typed", "base_version": 1},
                     })),
                 )
                 .await?;
-            assert_eq!(draft_bad.code(), "resource.not_found", "{kind}");
+            assert_eq!(draft_bad.code(), "resource.not-found", "{kind}");
             let right = ada.send("POST", LOCKS, Some(body(good))).await?;
-            assert_eq!(ok(&right)?["status"], "taken", "{kind}");
+            assert_eq!(ok(&right)?["kind"], "taken", "{kind}");
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_06_a_kind_of_record_that_is_no_word_of_the_api_is_an_invalid_request() -> TestResult {
+    each_database("sec_06_unknown_record_kind", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_, mut ada) = Site::start(&rig, &app).await?;
+        // A made-up kind, and the form with the underscore of a stored word: both are refused as an
+        // invalid request (400), in a body and in an address, never as a thing that is not found.
+        for kind in ["nothing", "issue_type"] {
+            let body = json!({
+                "target": {"record": {"kind": kind, "id": AN_EDITOR}, "part": "description"},
+                "editor_id": AN_EDITOR,
+            });
+            let refused = ada.send("POST", LOCKS, Some(body)).await?;
+            assert_eq!(
+                refused.status,
+                StatusCode::BAD_REQUEST,
+                "{kind}: {}",
+                refused.body
+            );
+            assert_eq!(refused.code(), "request.invalid", "{kind}");
+            let query =
+                format!("{LOCKS}?record_kind={kind}&record_id={AN_EDITOR}&part=description");
+            let refused = ada.send("GET", &query, None).await?;
+            assert_eq!(
+                refused.status,
+                StatusCode::BAD_REQUEST,
+                "{kind}: {}",
+                refused.body
+            );
         }
         Ok(())
     })

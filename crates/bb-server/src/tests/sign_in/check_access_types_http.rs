@@ -100,7 +100,7 @@ async fn sec_03_check_access_names_the_level_per_issue_type() -> TestResult {
             )
             .await?;
         assert_eq!(nowhere.status, StatusCode::NOT_FOUND);
-        assert_eq!(nowhere.code(), "resource.not_found");
+        assert_eq!(nowhere.code(), "resource.not-found");
         Ok(())
     })
     .await

@@ -25,7 +25,7 @@ at = [
   "messages/en.json#service.settings-is-link",
   "messages/en.json#service.data-folder-real",
   "api:property CreatedInvitationBody.link_path",
-  "api:enum LogBreakBody broken_link",
+  "api:enum LogBreakReason broken-link",
 ]
 reason = "A web link that a person sends or opens (the glossary term Link), a link in the file system, or a link in the chain of the security log (an entry that does not point to the one before it). Not the connection between two issues, which is a Relation."
 
@@ -100,18 +100,16 @@ reason = "The WebAuthn challenge: the random value the server sends so that the 
 
 [[allow]]
 term = "token"
-at = ["api:enum ErrorCode request.wrong_token"]
+at = ["api:enum ErrorCode request.wrong-token"]
 reason = "The name of the error code for the CSRF token that the browser app sends back in a header, a name for scripts and the app; the message a person reads says to sign in again."
 
 [[allow]]
 term = "token"
 at = [
   "api:property TakenLockBody.lock_token",
-  "api:property HeartbeatBody.lock_token",
-  "api:property ReleaseLockBody.lock_token",
-  "api:property SaveCommentBody.lock_token",
-  "api:property SaveFieldTextBody.lock_token",
-  "api:property SaveDescriptionBody.lock_token",
+  "api:property RenewBody.lock_token",
+  "api:property LetGoBody.lock_token",
+  "api:property SaveTextBody.lock_token",
   "api:property SaveLayoutBody.lock_token",
   "api:property PublishWorkflowBody.lock_token",
 ]

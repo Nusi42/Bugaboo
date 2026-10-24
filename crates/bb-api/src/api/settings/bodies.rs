@@ -7,6 +7,8 @@ use super::{
     SettingView, ToSchema, answer_authorized, problem_answers,
 };
 
+use crate::api::projects::ProjectRef;
+
 problem_answers! {
     /// A lower level cannot change what the organization locked.
     LockedAnswer => ("409", "The organization locked this setting (setting.locked)."),
@@ -46,20 +48,20 @@ impl From<ValueBody> for SettingValue {
 
 /// The type of a setting.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub(super) enum KindBody {
+#[serde(rename_all = "kebab-case")]
+pub(super) enum SettingType {
     /// Yes or no.
-    Bool,
+    YesNo,
     /// A whole number.
-    Integer,
+    WholeNumber,
     /// Text.
     Text,
 }
 
 /// What kind of text a text setting holds.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub(super) enum FormatBody {
+#[serde(rename_all = "kebab-case")]
+pub(super) enum SettingFormat {
     /// Any text.
     Free,
     /// One of a fixed list (`choices`).
@@ -78,8 +80,8 @@ pub(super) enum FormatBody {
 
 /// Where a setting can be set.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub(super) enum LevelBody {
+#[serde(rename_all = "kebab-case")]
+pub(super) enum SettingLevel {
     /// The whole organization.
     Organization,
     /// One project and its sub-projects.
@@ -88,7 +90,7 @@ pub(super) enum LevelBody {
     Person,
 }
 
-impl From<Level> for LevelBody {
+impl From<Level> for SettingLevel {
     fn from(level: Level) -> Self {
         match level {
             Level::Organization => Self::Organization,
@@ -127,8 +129,8 @@ pub(super) struct ListLimitsBody {
 
 /// Where the value that counts comes from.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub(super) enum SourceKindBody {
+#[serde(rename_all = "kebab-case")]
+pub(super) enum SettingSourceKind {
     /// Nobody set it: the standard value.
     Default,
     /// The organization set it.
@@ -139,46 +141,35 @@ pub(super) enum SourceKindBody {
     Person,
 }
 
-/// A project a value comes from.
-#[derive(Serialize, ToSchema)]
-pub(super) struct ProjectRefBody {
-    /// The ID of the project.
-    pub(super) id: String,
-    /// Its short name.
-    pub(super) short_name: String,
-    /// Its name.
-    pub(super) name: String,
-}
-
 /// Where the value that counts comes from.
 #[derive(Serialize, ToSchema)]
 pub(super) struct SourceBody {
     /// Which level.
-    pub(super) kind: SourceKindBody,
+    pub(super) kind: SettingSourceKind,
     /// For a value from a project: which one. Missing when the person cannot see the project.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) project: Option<ProjectRefBody>,
+    pub(super) project: Option<ProjectRef>,
 }
 
 impl From<&SettingSource> for SourceBody {
     fn from(source: &SettingSource) -> Self {
         let (kind, project) = match source {
-            SettingSource::Default => (SourceKindBody::Default, None),
-            SettingSource::Organization => (SourceKindBody::Organization, None),
-            SettingSource::Person => (SourceKindBody::Person, None),
+            SettingSource::Default => (SettingSourceKind::Default, None),
+            SettingSource::Organization => (SettingSourceKind::Organization, None),
+            SettingSource::Person => (SettingSourceKind::Person, None),
             SettingSource::Project(ProjectLabel::Visible {
                 id,
                 short_name,
                 name,
             }) => (
-                SourceKindBody::Project,
-                Some(ProjectRefBody {
+                SettingSourceKind::Project,
+                Some(ProjectRef {
                     id: id.to_string(),
                     short_name: short_name.clone(),
                     name: name.clone(),
                 }),
             ),
-            SettingSource::Project(ProjectLabel::Hidden) => (SourceKindBody::Project, None),
+            SettingSource::Project(ProjectLabel::Hidden) => (SettingSourceKind::Project, None),
         };
         Self { kind, project }
     }
@@ -194,9 +185,9 @@ pub(crate) struct SettingBody {
     /// The key of the message that explains it in one line.
     pub(super) help_key: String,
     /// What it holds.
-    pub(super) kind: KindBody,
+    pub(super) kind: SettingType,
     /// For text: what kind of text.
-    pub(super) format: FormatBody,
+    pub(super) format: SettingFormat,
     /// For a setting with a fixed list: the values it can have.
     pub(super) choices: Vec<ChoiceBody>,
     /// For a whole number: the smallest and the largest value.
@@ -206,7 +197,7 @@ pub(crate) struct SettingBody {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) list: Option<ListLimitsBody>,
     /// Where it can be set.
-    pub(super) levels: Vec<LevelBody>,
+    pub(super) levels: Vec<SettingLevel>,
     /// Whether administrators can lock it.
     pub(super) lockable: bool,
     /// The standard value.
@@ -233,18 +224,18 @@ impl From<&SettingView> for SettingBody {
             name_key: definition.name().to_string(),
             help_key: definition.help().to_string(),
             kind: match definition.default() {
-                DefaultValue::Bool(_) => KindBody::Bool,
-                DefaultValue::Integer(_) => KindBody::Integer,
-                DefaultValue::Text(_) => KindBody::Text,
+                DefaultValue::Bool(_) => SettingType::YesNo,
+                DefaultValue::Integer(_) => SettingType::WholeNumber,
+                DefaultValue::Text(_) => SettingType::Text,
             },
             format: match format {
-                Format::Free => FormatBody::Free,
-                Format::Choices(_) => FormatBody::Choice,
-                Format::TimeZone => FormatBody::TimeZone,
-                Format::PageAddress => FormatBody::PageAddress,
-                Format::ShortcutKeys => FormatBody::ShortcutKeys,
-                Format::WindowSizes => FormatBody::WindowSizes,
-                Format::Hosts => FormatBody::Hosts,
+                Format::Free => SettingFormat::Free,
+                Format::Choices(_) => SettingFormat::Choice,
+                Format::TimeZone => SettingFormat::TimeZone,
+                Format::PageAddress => SettingFormat::PageAddress,
+                Format::ShortcutKeys => SettingFormat::ShortcutKeys,
+                Format::WindowSizes => SettingFormat::WindowSizes,
+                Format::Hosts => SettingFormat::Hosts,
             },
             choices: format
                 .choices()
@@ -266,7 +257,7 @@ impl From<&SettingView> for SettingBody {
             levels: definition
                 .levels()
                 .iter()
-                .map(|level| LevelBody::from(*level))
+                .map(|level| SettingLevel::from(*level))
                 .collect(),
             lockable: definition.lockable(),
             default: definition.default().to_value().into(),

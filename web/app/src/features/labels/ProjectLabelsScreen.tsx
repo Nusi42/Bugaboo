@@ -17,7 +17,7 @@ function Groups({
   readonly project: string;
   readonly groups: readonly LabelGroup[];
 }) {
-  const change = api.query.useMutation("put", "/api/v1/label-groups/{group}/offers", {
+  const change = api.query.useMutation("put", "/api/v1/label-groups/{label_group}/offers", {
     onSuccess: refreshLabels,
   });
   return (
@@ -39,7 +39,7 @@ function Groups({
         const group = groups.find((each) => each.id === id);
         if (group !== undefined) {
           change.mutate({
-            params: { path: { group: id } },
+            params: { path: { label_group: id } },
             body: offerChangeBody(group.version, project, offered),
           });
         }

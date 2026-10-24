@@ -23,6 +23,10 @@ path = "tools/checks/sec-matrix-record.txt"
 reason = "Written by the permission matrix test, which fails when the file differs from what ran; SEC-MATRIX holds it against the API description."
 
 [[exempt]]
+path = "tools/checks/api-frozen.json"
+reason = "The API description as it was at the freeze, in compact form, written by `cargo xtask freeze`; ARCH-API-FREEZE compares every new description with it, and no formatter may spread it over lines."
+
+[[exempt]]
 path = "tools/checks/suppressions.txt"
 reason = "Written by `cargo xtask suppressions` and compared with the code by META-SUPPRESS."
 

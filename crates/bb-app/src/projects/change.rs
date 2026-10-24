@@ -134,9 +134,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// # Errors
 /// `access.forbidden` without *Change the project's name, short name and settings* (and, for a
 /// short name, without *Create projects* or *Create sub-projects* where the project sits: only
-/// people who may create projects are told that a short name is taken), `resource.not_found` for a
+/// people who may create projects are told that a short name is taken), `resource.not-found` for a
 /// project the person may not know about, `request.invalid` for a name or short name that
-/// cannot be one or when nothing is asked, `edit.version_changed` when somebody changed the
+/// cannot be one or when nothing is asked, `edit.version-changed` when somebody changed the
 /// project since it was looked at, `name.taken` for a short name that is used by another project
 /// now or was once.
 pub async fn change_project<S: AuthStore>(

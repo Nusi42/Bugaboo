@@ -170,7 +170,7 @@ pub struct GroupMembers {
 impl Masked for GroupMembers {}
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The group, or `resource.not_found`.
+    /// The group, or `resource.not-found`.
     async fn group_or_missing(&self, id: GroupId) -> Result<Group, AppError> {
         self.store()
             .group(id)
@@ -179,7 +179,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
 
-    /// The group as a name in a sentence, or `resource.not_found` for a group that is gone (a row
+    /// The group as a name in a sentence, or `resource.not-found` for a group that is gone (a row
     /// that names a group the store does not have was read between two changes).
     pub(crate) async fn group_view(&self, id: GroupId) -> Result<GroupView, AppError> {
         Ok(GroupView::from(&self.group_or_missing(id).await?))
@@ -231,9 +231,9 @@ pub async fn create_group<S: AuthStore>(
 /// Renames a group.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group,
+/// `access.forbidden` without *Manage groups*, `resource.not-found` for an unknown group,
 /// `request.invalid` for a name that cannot be one, `name.taken` when another group has it,
-/// `edit.version_changed` when somebody changed the group since it was looked at.
+/// `edit.version-changed` when somebody changed the group since it was looked at.
 pub async fn rename_group<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RenameGroup,
@@ -302,8 +302,8 @@ pub async fn rename_group<S: AuthStore>(
 /// Deletes a group, with its members and the rows that give it a role.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group,
-/// `access.would_lock_out` when it would leave nobody who can manage roles.
+/// `access.forbidden` without *Manage groups*, `resource.not-found` for an unknown group,
+/// `access.would-lock-out` when it would leave nobody who can manage roles.
 pub async fn delete_group<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DeleteGroup,
@@ -346,8 +346,8 @@ pub async fn delete_group<S: AuthStore>(
 /// Puts a person into a group.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group or
-/// person, `access.too_much` when the group holds a role with more than the person who asks holds
+/// `access.forbidden` without *Manage groups*, `resource.not-found` for an unknown group or
+/// person, `access.too-much` when the group holds a role with more than the person who asks holds
 /// where the role is given.
 pub async fn add_group_member<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -408,8 +408,8 @@ pub async fn add_group_member<S: AuthStore>(
 /// Takes a person out of a group.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group or a
-/// person who is not in it, `access.would_lock_out` when it would leave nobody who can manage
+/// `access.forbidden` without *Manage groups*, `resource.not-found` for an unknown group or a
+/// person who is not in it, `access.would-lock-out` when it would leave nobody who can manage
 /// roles.
 pub async fn remove_group_member<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -457,7 +457,7 @@ pub async fn remove_group_member<S: AuthStore>(
 /// which role* there, because that is where a person chooses a group to give a role to.
 ///
 /// # Errors
-/// `access.forbidden` without the permission, `resource.not_found` for a project the person may
+/// `access.forbidden` without the permission, `resource.not-found` for a project the person may
 /// not know about, `request.invalid` for a cursor that is not one.
 pub async fn groups<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -494,7 +494,7 @@ pub async fn groups<S: AuthStore>(
 /// manage groups see names (M2-Q3).
 ///
 /// # Errors
-/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group,
+/// `access.forbidden` without *Manage groups*, `resource.not-found` for an unknown group,
 /// `request.invalid` for a cursor that is not one.
 pub async fn group_members<S: AuthStore>(
     ctx: &Ctx<'_, S>,

@@ -1,0 +1,8 @@
+# Schemas that no route reaches (ARCH-API-LINT). Each one is only there to give the browser a
+# vocabulary: its generated type names the words of a list that the server owns. The reason names
+# the follow-up that tracks it. An entry for a schema that a route reaches now, or that is gone,
+# fails, so the file shrinks as the routes grow.
+
+[[exempt]]
+schema = "Field"
+reason = "The words of the built-in fields (title, status, assigned-to …) that the order of the details of an issue is written in; the browser takes its type from it and no route names a built-in field by this type yet (M4-F173)."

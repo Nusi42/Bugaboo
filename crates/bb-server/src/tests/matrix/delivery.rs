@@ -125,7 +125,7 @@ pub(super) async fn run(db: &TestDatabase) -> Result<Vec<Delivered>, Failure> {
 async fn in_the_app(role: StartingRole, person: &mut Browser) -> Result<Delivered, Failure> {
     let listed = person.send("GET", "/api/v1/notifications", None).await?;
     let items: Vec<Value> = listed.body["items"].as_array().cloned().unwrap_or_default();
-    let status_shown = items.iter().any(|item| item["field"] == "status");
+    let status_shown = items.iter().any(|item| item["change"]["field"] == "status");
     let text = items.iter().map(Value::to_string).collect::<String>();
     Ok(Delivered {
         entry: words::ENTRY_NOTIFICATIONS,

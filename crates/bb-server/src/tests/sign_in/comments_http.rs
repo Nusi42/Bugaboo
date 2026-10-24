@@ -42,7 +42,7 @@ async fn lock(browser: &mut Browser, comment: &str) -> Result<String, Failure> {
             "POST",
             "/api/v1/edit-locks",
             Some(json!({
-                "what": {"record": {"kind": "comment", "id": comment}, "part": "text"},
+                "target": {"record": {"kind": "comment", "id": comment}, "part": "text"},
                 "editor_id": AN_EDITOR,
             })),
         )
@@ -76,7 +76,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
         let token = lock(&mut ada, &id).await?;
         let saved = ada
             .send(
-                "PATCH",
+                "PUT",
                 &format!("/api/v1/comments/{id}"),
                 Some(json!({"version": 1, "lock_token": token, "text": "It jams on page three."})),
             )
@@ -97,7 +97,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
         // stale version is told as a conflict.
         let again = ada
             .send(
-                "PATCH",
+                "PUT",
                 &format!("/api/v1/comments/{id}"),
                 Some(json!({"version": 1, "lock_token": token, "text": "Late."})),
             )
@@ -106,12 +106,12 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
         let fresh = lock(&mut ada, &id).await?;
         let stale = ada
             .send(
-                "PATCH",
+                "PUT",
                 &format!("/api/v1/comments/{id}"),
                 Some(json!({"version": 1, "lock_token": fresh, "text": "Stale."})),
             )
             .await?;
-        assert_eq!(stale.code(), "edit.version_changed");
+        assert_eq!(stale.code(), "edit.version-changed");
         assert_eq!(stale.body["conflict"]["version"], 2);
         // Only the author changes a text: another person cannot even take the lock.
         let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
@@ -120,12 +120,12 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
                 "POST",
                 "/api/v1/edit-locks",
                 Some(json!({
-                    "what": {"record": {"kind": "comment", "id": id}, "part": "text"},
+                    "target": {"record": {"kind": "comment", "id": id}, "part": "text"},
                     "editor_id": AN_EDITOR,
                 })),
             )
             .await?;
-        assert_eq!(refused.code(), "resource.not_found");
+        assert_eq!(refused.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -327,7 +327,7 @@ async fn iss_06_history_leaves_out_changes_to_fields_the_reader_cannot_see() -> 
         let fields = |history: &Reply| -> Vec<String> {
             items(history)
                 .iter()
-                .filter_map(|item| item["field"].as_str().map(str::to_owned))
+                .filter_map(|item| item["change"]["field"].as_str().map(str::to_owned))
                 .collect()
         };
         // Ada sees every change, the reader the ones to fields they may see; a change that is
@@ -369,7 +369,7 @@ async fn iss_06_history_leaves_out_changes_to_fields_the_reader_cannot_see() -> 
                 None,
             )
             .await?;
-        assert_eq!(asked.code(), "request.unknown_field");
+        assert_eq!(asked.code(), "request.unknown-field");
         // Their view of the author is as their level for the kind says, not Ada's name.
         let by = &seen.body["items"][0]["by"];
         assert_eq!(by["shown"], "someone", "{by}");
@@ -674,7 +674,7 @@ async fn iss_06_a_page_of_hidden_rows_still_answers_with_a_cursor_and_repeats_no
                 Some(format!(
                     "{}/{}",
                     item["event"].as_str()?,
-                    item["field"].as_str()?
+                    item["change"]["field"].as_str()?
                 ))
             }));
             match ok(&page)?["next_cursor"].as_str() {

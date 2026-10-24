@@ -3,7 +3,7 @@
 //! changing one level. The table is the one of the field permissions (`field_permissions.rs`).
 //!
 //! Both routes need *Decide what roles see* in the place; a level above the person's own is
-//! refused (`access.too_much`).
+//! refused (`access.too-much`).
 
 use axum::extract::State;
 use axum::response::Response;
@@ -21,7 +21,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
 };
-use super::field_permissions::{LevelTableBody, PlaceParams};
+use super::field_permissions::{PeopleLevelTableBody, PlaceParams};
 use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
@@ -37,7 +37,7 @@ pub(crate) struct NewPeopleLevelBody {
 #[derive(Deserialize)]
 pub(crate) struct PeopleCellPath {
     role: String,
-    kind: PeopleKind,
+    people_kind: PeopleKind,
 }
 
 /// How every role sees every kind of people information, for the whole organization or for one
@@ -49,7 +49,7 @@ pub(crate) struct PeopleCellPath {
     operation_id = "getPeopleVisibility",
     tag = "access",
     params(PlaceParams),
-    responses((status = 200, description = "How roles see people.", body = LevelTableBody<PeopleKind, PeopleLevel>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+    responses((status = 200, description = "How roles see people.", body = PeopleLevelTableBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_people_visibility(
     State(auth): State<AuthHandle>,
@@ -68,7 +68,7 @@ async fn get_people_visibility(
             },
         )
         .await?;
-    answer_authorized(&table.map(|table| LevelTableBody::of(&table, PeopleLevel::ALL)))
+    answer_authorized(&table.map(|table| PeopleLevelTableBody::of(&table, PeopleLevel::ALL)))
 }
 
 /// Sets how a role sees one kind of people information, for the whole organization (the role's
@@ -77,12 +77,12 @@ async fn get_people_visibility(
 /// people information each role sees* in the place.
 #[utoipa::path(
     put,
-    path = "/api/v1/people-visibility/{role}/{kind}",
+    path = "/api/v1/people-visibility/{role}/{people_kind}",
     operation_id = "changePeopleVisibility",
     tag = "access",
     params(
         ("role" = String, Path, description = "The ID of the role."),
-        ("kind" = PeopleKind, Path, description = "The key of the kind of people information."),
+        ("people_kind" = PeopleKind, Path, description = "The key of the kind of people information."),
         PlaceParams
     ),
     request_body = NewPeopleLevelBody,
@@ -111,7 +111,7 @@ async fn change_people_visibility(
                 session_token,
                 role,
                 project,
-                kind: path.kind,
+                kind: path.people_kind,
                 level: body.level,
             },
         )

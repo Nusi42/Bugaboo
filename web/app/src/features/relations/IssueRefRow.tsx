@@ -40,13 +40,13 @@ export function IssueRefRow({ issue, meaning, action }: IssueRefRowProps) {
       cells={{
         ...issueCells(
           {
-            key: issue.key,
-            title: issue.title ?? issue.key,
+            key: issue.readable_id,
+            title: issue.title ?? issue.readable_id,
             group,
             statusWord: word,
             type: issue.issue_type,
           },
-          issueAddress(issue.key),
+          issueAddress(issue.readable_id),
           {
             before:
               meaning === undefined ? undefined : <span {...partOf(part.muted)}>{meaning} </span>,

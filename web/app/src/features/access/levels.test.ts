@@ -19,8 +19,8 @@ function table(project: LevelTable<string, Level>["project"]): LevelTable<string
         subject: "cost-center",
         yours: "can-change",
         cells: [
-          { role: "r1", level: "can-see", origin: { kind: "role_own" } },
-          { role: "r2", level: "hidden", origin: { kind: "role_own" } },
+          { role: "r1", level: "can-see", origin: { kind: "role-own" } },
+          { role: "r2", level: "hidden", origin: { kind: "role-own" } },
         ],
       },
     ],
@@ -34,7 +34,7 @@ describe("sec_04 a level changes in the table before the server has answered", (
     expect(after?.rows[0]?.cells[0]).toEqual({
       role: "r1",
       level: "hidden",
-      origin: { kind: "set_here" },
+      origin: { kind: "set-here" },
     });
     expect(after?.rows[0]?.cells[1]?.level).toBe("hidden");
   });
@@ -44,7 +44,7 @@ describe("sec_04 a level changes in the table before the server has answered", (
     expect(after?.rows[0]?.cells[1]).toEqual({
       role: "r2",
       level: "can-see",
-      origin: { kind: "role_own" },
+      origin: { kind: "role-own" },
     });
   });
 

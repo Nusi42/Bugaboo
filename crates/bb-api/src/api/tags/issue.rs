@@ -3,10 +3,11 @@
 use super::{
     AddLabel, AddTag, ApiError, ApiJson, ApiPath, ApiQuery, AuthHandle, ConflictAnswer,
     Deserialize, ForbiddenAnswer, Info, InvalidAnswer, IssueLabelsAndTagsBody,
-    IssueLabelsAndTagsQuery, LabelId, NewIssueLabelBody, NewTagBody, NotFoundAnswer,
-    NotSignedInAnswer, RemoveLabel, RemoveTag, Response, Session, State, TagId, TagRefBody,
-    TagSuggestionsBody, TagSuggestionsQuery, answer_authorized, body_id, path_id,
+    IssueLabelsAndTagsQuery, LabelId, NewIssueLabelBody, NotFoundAnswer, NotSignedInAnswer,
+    RemoveLabel, RemoveTag, Response, Session, State, TagId, TagRefBody, TagSuggestionsBody,
+    TagSuggestionsQuery, answer_authorized, body_id, path_id,
 };
+use crate::api::NameBody;
 
 /// The tags and labels of an issue and what the person may do with them.
 #[utoipa::path(
@@ -44,7 +45,7 @@ pub(super) async fn get_issue_labels_and_tags(
     operation_id = "addTag",
     tag = "tags",
     params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
-    request_body = NewTagBody,
+    request_body = NameBody,
     responses(
         (status = 200, description = "The tags and labels of the issue now.", body = IssueLabelsAndTagsBody),
         InvalidAnswer,
@@ -59,7 +60,7 @@ pub(super) async fn add_tag(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(issue): ApiPath<String>,
-    ApiJson(body): ApiJson<NewTagBody>,
+    ApiJson(body): ApiJson<NameBody>,
 ) -> Result<Response, ApiError> {
     let changed = auth
         .api()?

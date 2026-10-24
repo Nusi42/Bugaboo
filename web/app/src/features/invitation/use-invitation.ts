@@ -10,7 +10,7 @@ export function useInvitation(secret: string) {
   return useQuery({
     queryKey: queryKeys.invitations.one(secret),
     queryFn: async () =>
-      dataOf(await api.client.POST("/api/v1/auth/invitation/lookup", { body: { secret } })),
+      dataOf(await api.client.POST("/api/v1/auth/invitations/lookup", { body: { secret } })),
     // The secret is not kept in memory longer than the page needs it.
     gcTime: 0,
   });

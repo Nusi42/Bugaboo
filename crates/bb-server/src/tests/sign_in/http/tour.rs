@@ -40,7 +40,7 @@ async fn first_start(tour: &mut Tour) -> TestResult {
     let reply = ada
         .route("GET", "/api/v1/auth/me", &format!("{api}/me"), None)
         .await?;
-    assert_eq!(reply.body["display_name"], "Ada Admin");
+    assert_eq!(reply.body["name"], "Ada Admin");
 
     Ok(())
 }
@@ -78,8 +78,8 @@ async fn invitations(tour: &mut Tour) -> TestResult {
     let reply = bob
         .route(
             "POST",
-            "/api/v1/auth/invitation/lookup",
-            &format!("{api}/invitation/lookup"),
+            "/api/v1/auth/invitations/lookup",
+            &format!("{api}/invitations/lookup"),
             Some(json!({"secret": secret})),
         )
         .await?;
@@ -87,9 +87,9 @@ async fn invitations(tour: &mut Tour) -> TestResult {
     let reply = bob
         .route(
             "POST",
-            "/api/v1/auth/invitation/accept",
-            &format!("{api}/invitation/accept"),
-            Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
+            "/api/v1/auth/invitations/accept",
+            &format!("{api}/invitations/accept"),
+            Some(json!({"secret": secret, "name": "Bob", "password": PASSWORD})),
         )
         .await?;
     assert!(ok(&reply));
@@ -106,7 +106,7 @@ async fn invitations(tour: &mut Tour) -> TestResult {
     let reply = ada
         .route(
             "DELETE",
-            "/api/v1/auth/invitations/{invitation_id}",
+            "/api/v1/auth/invitations/{invitation}",
             &format!("{api}/invitations/{id}"),
             None,
         )
@@ -165,7 +165,7 @@ async fn sign_up(tour: &mut Tour) -> TestResult {
             Some(json!({"email": "x@evil.test"})),
         )
         .await?;
-    assert_eq!(reply.code(), "auth.sign_up_refused");
+    assert_eq!(reply.code(), "auth.sign-up-refused");
     Ok(())
 }
 
@@ -366,7 +366,7 @@ async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &st
     let reply = ada
         .route(
             "POST",
-            "/api/v1/auth/passkeys/{passkey_id}/remove",
+            "/api/v1/auth/passkeys/{passkey}/remove",
             &format!("{api}/passkeys/{passkey_id}/remove"),
             Some(json!({"password": PASSWORD})),
         )
@@ -401,7 +401,7 @@ async fn sessions_and_password(tour: &mut Tour) -> TestResult {
     let reply = ada
         .route(
             "DELETE",
-            "/api/v1/auth/sessions/{session_id}",
+            "/api/v1/auth/sessions/{session}",
             &format!("{api}/sessions/{other}"),
             None,
         )

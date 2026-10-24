@@ -72,7 +72,7 @@ describe("iss_17 the heartbeat of a session", () => {
     answers[0]?.(taken("T"));
     await asking;
     expect(beating()).toBe(1);
-    answerWith({ lock: { status: "ran_out" }, notices: [], draft_saved: false });
+    answerWith({ lock: { kind: "ran-out" }, notices: [], draft_saved: false });
     await beat();
     await settle();
     expect(lost).toEqual([["ran-out", undefined]]);
@@ -87,7 +87,7 @@ describe("iss_17 the heartbeat of a session", () => {
     answers[0]?.(taken("T"));
     await asking;
     answerWith({
-      lock: { status: "taken_over", by: { shown: "name", id: "p2", name: "Ben" } },
+      lock: { kind: "taken-over", by: { shown: "name", id: "p2", name: "Ben" } },
       notices: [],
       draft_saved: false,
     });

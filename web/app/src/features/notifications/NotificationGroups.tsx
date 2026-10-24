@@ -24,12 +24,12 @@ export function NotificationGroups({ rows, onRead, readingId }: NotificationGrou
       key={group.key}
       {...partOf(part.notificationGroup)}
       aria-label={t("notifications.group-name", {
-        issue: group.issue?.key ?? t("nav.notifications"),
+        issue: group.issue?.readable_id ?? t("nav.notifications"),
       })}
     >
       {group.issue === null || group.issue === undefined ? null : (
         <h3 {...partOf(part.notificationGroupHead)}>
-          <Link href={issueAddress(group.issue.key)}>{group.issue.key}</Link>
+          <Link href={issueAddress(group.issue.readable_id)}>{group.issue.readable_id}</Link>
           {group.issue.title === undefined || group.issue.title === null ? null : (
             <span>{group.issue.title}</span>
           )}

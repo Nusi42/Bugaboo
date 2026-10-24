@@ -26,7 +26,7 @@ async fn cf_07_combining_two_choices_moves_every_value_and_keeps_a_record() -> T
                 .await?)?
             .clone();
             issues.push((
-                made["key"].as_str().ok_or("no key")?.to_owned(),
+                made["readable_id"].as_str().ok_or("no key")?.to_owned(),
                 made["version"].clone(),
             ));
         }
@@ -109,7 +109,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
         let seen = ada
             .send(
                 "GET",
-                &format!("{ISSUES}/{}", old["key"].as_str().ok_or("no key")?),
+                &format!("{ISSUES}/{}", old["readable_id"].as_str().ok_or("no key")?),
                 None,
             )
             .await?;
@@ -124,7 +124,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
             .await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::BAD_REQUEST, "field.unknown_choice"),
+            (StatusCode::BAD_REQUEST, "field.unknown-choice"),
             "{}",
             refused.body
         );
@@ -132,7 +132,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
         let kept = ada
             .send(
                 "PATCH",
-                &format!("{ISSUES}/{}", old["key"].as_str().ok_or("no key")?),
+                &format!("{ISSUES}/{}", old["readable_id"].as_str().ok_or("no key")?),
                 Some(json!({"version": old["version"], "fields": { &key: &major }})),
             )
             .await?;
@@ -142,7 +142,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
         let list = tim
             .send("GET", &format!("{FIELDS}?project=ACME"), None)
             .await?;
-        assert_eq!(ok(&list)?["fields"].as_array().map(Vec::len), Some(1));
+        assert_eq!(ok(&list)?["items"].as_array().map(Vec::len), Some(1));
         Ok(())
     })
     .await

@@ -221,6 +221,7 @@ Rules:
 | **My settings**          | Personal preferences                                               | profile settings, preferences      |
 | **Project settings**     | Settings of one project                                            | project admin                      |
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
+| **Server status**        | Whether the Bugaboo server is running and healthy: its database, its certificate, its security log (the route `/api/v1/status`; not the status of an issue) | health page, health check page     |
 | **Reset to default**     | Take away the value set at this level, so the value from above counts again; also for a workflow or a layout that a place has of its own (it goes back to the one that counts there without its own) | clear override, use the inherited … again (in UI) |
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
 | **Layout**               | Which fields appear where: on the *issue page*, in the *new-issue form*, on a *card* | screen, screen scheme      |

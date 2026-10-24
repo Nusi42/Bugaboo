@@ -35,7 +35,7 @@ export function CreateRoleForm() {
     void navigate({ to: roleAddress(made.id) });
   };
   const empty = api.query.useMutation("post", "/api/v1/roles", { onSuccess: opened });
-  const copy = api.query.useMutation("post", "/api/v1/roles/{role_id}/copy", {
+  const copy = api.query.useMutation("post", "/api/v1/roles/{role}/copy", {
     onSuccess: opened,
   });
   const problem = empty.error ?? copy.error;
@@ -53,7 +53,7 @@ export function CreateRoleForm() {
         if (from === EMPTY) {
           empty.mutate({ body: { name: typed, permissions: [], two_step: false } });
         } else {
-          copy.mutate({ params: { path: { role_id: from } }, body: { name: typed } });
+          copy.mutate({ params: { path: { role: from } }, body: { name: typed } });
         }
       }}
     >

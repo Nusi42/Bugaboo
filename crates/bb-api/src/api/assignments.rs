@@ -25,7 +25,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_bodies::{AppliesToBody, GroupRef, PlaceRef, RoleRef, cursor_error};
+use super::access_bodies::{NamedRef, PlaceRef, cursor_error};
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
@@ -63,16 +63,16 @@ pub(crate) struct AssignmentItem {
     person: Option<PersonRef>,
     /// The group the row is for; not there for a person.
     #[serde(skip_serializing_if = "Option::is_none")]
-    group: Option<GroupRef>,
+    group: Option<NamedRef>,
     /// The role; not there for *No access*.
     #[serde(skip_serializing_if = "Option::is_none")]
-    role: Option<RoleRef>,
+    role: Option<NamedRef>,
     /// Where the row is.
     #[serde(skip_serializing_if = "Option::is_none")]
     place: Option<PlaceRef>,
     /// Where it counts.
     #[serde(skip_serializing_if = "Option::is_none")]
-    applies_to: Option<AppliesToBody>,
+    applies_to: Option<AppliesTo>,
     /// Whether the row comes from above the place that was asked for (a parent project, or the
     /// whole organization).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -88,15 +88,15 @@ impl From<&AssignmentView> for AssignmentItem {
     fn from(row: &AssignmentView) -> Self {
         let (person, group) = match &row.who {
             WhoView::Person { person } => (Some(person.clone()), None),
-            WhoView::Group { group } => (None, Some(GroupRef::from(group))),
+            WhoView::Group { group } => (None, Some(NamedRef::from(group))),
         };
         Self {
             id: Some(row.id.to_string()),
             person,
             group,
-            role: row.role.as_ref().map(RoleRef::from),
+            role: row.role.as_ref().map(NamedRef::from),
             place: Some(PlaceRef::from(row.project.as_ref())),
-            applies_to: Some(row.applies_to.into()),
+            applies_to: Some(row.applies_to),
             inherited: Some(row.inherited),
             given_at: Some(row.given_at.to_string()),
         }
@@ -105,7 +105,7 @@ impl From<&AssignmentView> for AssignmentItem {
 
 /// What kind of thing a choice is.
 #[derive(Clone, Copy, Deserialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub(crate) enum ChoiceKindBody {
     /// People.
     Person,
@@ -164,7 +164,7 @@ pub(crate) struct NewProjectRowBody {
     role: Option<String>,
     /// Where it counts: only the project, or the project and its sub-projects. *No access* always
     /// covers the project and its sub-projects.
-    applies_to: AppliesToBody,
+    applies_to: AppliesTo,
 }
 
 /// Whom a body names. A person or group that is no ID is one that is not there.
@@ -276,7 +276,7 @@ async fn list_assignments(
 #[utoipa::path(
     post,
     path = "/api/v1/assignments",
-    operation_id = "assignRole",
+    operation_id = "createAssignment",
     tag = "roles",
     request_body = NewOrganizationRowBody,
     responses(
@@ -338,7 +338,7 @@ async fn list_project_assignments(
 #[utoipa::path(
     post,
     path = "/api/v1/projects/{project}/assignments",
-    operation_id = "assignProjectRole",
+    operation_id = "createProjectAssignment",
     tag = "roles",
     params(("project" = String, Path, description = "The ID of the project.")),
     request_body = NewProjectRowBody,
@@ -372,7 +372,7 @@ async fn assign_project_role(
             subject,
             given,
             project: Some(project),
-            applies_to: body.applies_to.into(),
+            applies_to: body.applies_to,
         },
     )
     .await
@@ -382,10 +382,10 @@ async fn assign_project_role(
 /// where the row is; nothing that would leave nobody who can manage roles.
 #[utoipa::path(
     delete,
-    path = "/api/v1/assignments/{assignment_id}",
+    path = "/api/v1/assignments/{assignment}",
     operation_id = "removeAssignment",
     tag = "roles",
-    params(("assignment_id" = String, Path, description = "The ID of the row.")),
+    params(("assignment" = String, Path, description = "The ID of the row.")),
     responses(
         (status = 204, description = "The row is gone."),
         NotSignedInAnswer,
@@ -480,16 +480,16 @@ mod tests {
         let item = AssignmentItem {
             id: Some("i".to_owned()),
             person: Some(PersonRef::Someone),
-            group: Some(GroupRef {
+            group: Some(NamedRef {
                 id: "g".to_owned(),
                 name: "n".to_owned(),
             }),
-            role: Some(RoleRef {
+            role: Some(NamedRef {
                 id: "r".to_owned(),
                 name: "n".to_owned(),
             }),
             place: Some(PlaceRef::Organization),
-            applies_to: Some(AppliesToBody::Organization),
+            applies_to: Some(AppliesTo::Organization),
             inherited: Some(false),
             given_at: Some("t".to_owned()),
         };

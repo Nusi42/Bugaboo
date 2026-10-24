@@ -43,7 +43,7 @@ pub(super) async fn lock_workflow(who: &mut Browser, workflow: &str) -> Result<V
             "POST",
             LOCKS,
             Some(json!({
-                "what": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
+                "target": {"record": {"kind": "workflow", "id": workflow}, "part": "workflow"},
                 "editor_id": AN_EDITOR,
             })),
         )
@@ -57,7 +57,7 @@ async fn wf_06_a_new_organization_offers_the_three_starter_workflows_over_http()
         let (rig, app) = rig_and_app(db).await?;
         let (_, mut ada) = Site::start(&rig, &app).await?;
         let listed = ada.send("GET", WORKFLOWS, None).await?;
-        let names: Vec<&str> = ok(&listed)?["workflows"]
+        let names: Vec<&str> = ok(&listed)?["items"]
             .as_array()
             .ok_or("no workflows")?
             .iter()
@@ -82,7 +82,7 @@ async fn wf_06_a_new_organization_offers_the_three_starter_workflows_over_http()
         let straight = go(&mut ada, &issue, "done").await?;
         assert_eq!(
             (straight.status, straight.code()),
-            (StatusCode::CONFLICT, "workflow.no_such_change")
+            (StatusCode::CONFLICT, "workflow.no-such-change")
         );
         let offered: Vec<String> = ok(&ada
             .send("GET", &format!("{ISSUES}/{issue}"), None)
@@ -120,8 +120,8 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
                 "lock_token": lock,
                 "name": "Open or done",
                 "statuses": [
-                    {"key": "open", "name": "Open", "group": "not-started"},
-                    {"key": "done", "name": "Done", "group": "done"},
+                    {"key": "open", "name": "Open", "status_group": "not-started"},
+                    {"key": "done", "name": "Done", "status_group": "done"},
                 ],
                 "changes": [
                     {"from": "open", "to": "done", "button": "Finish"},
@@ -135,7 +135,7 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
         let refused = ada.send("PUT", &path, Some(publish(json!([])))).await?;
         assert_eq!(
             (refused.status, refused.code()),
-            (StatusCode::CONFLICT, "workflow.status_in_use")
+            (StatusCode::CONFLICT, "workflow.status-in-use")
         );
         ok(&ada
             .send(
@@ -158,12 +158,12 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_over_http() -> TestR
             .as_array()
             .ok_or("no history")?
             .iter()
-            .filter(|each| each["field"] == "status")
+            .filter(|each| each["change"]["field"] == "status")
             .collect();
         // Newest first: the move, the change to *In progress*, and the start.
         assert_eq!(statuses.len(), 3, "{}", history.body);
-        assert_eq!(statuses[0]["before_text"], "in-progress");
-        assert_eq!(statuses[0]["after_text"], "open");
+        assert_eq!(statuses[0]["change"]["before"]["text"], "in-progress");
+        assert_eq!(statuses[0]["change"]["after"]["text"], "open");
         Ok(())
     })
     .await
@@ -237,8 +237,8 @@ async fn wf_02_publishing_and_writing_an_issue_at_once_never_strand_an_issue() -
                 "lock_token": lock,
                 "name": "Open or done",
                 "statuses": [
-                    {"key": "open", "name": "Open", "group": "not-started"},
-                    {"key": "done", "name": "Done", "group": "done"},
+                    {"key": "open", "name": "Open", "status_group": "not-started"},
+                    {"key": "done", "name": "Done", "status_group": "done"},
                 ],
                 "changes": [
                     {"from": "open", "to": "done", "button": "Finish"},

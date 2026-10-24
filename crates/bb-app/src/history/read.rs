@@ -266,7 +266,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 found.get("name").and_then(Value::as_str).map(text)
             }
             (FieldType::Issue, Value::Object(found)) => {
-                found.get("key").and_then(Value::as_str).map(text)
+                found.get("readable_id").and_then(Value::as_str).map(text)
             }
             (
                 FieldType::YesNo
@@ -641,7 +641,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// what the reader just did.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
 /// not see, `request.invalid` for a cursor that is not one.
 pub async fn history<S: AuthStore>(
     ctx: &Ctx<'_, S>,

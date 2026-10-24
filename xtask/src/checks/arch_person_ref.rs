@@ -3,11 +3,15 @@
 //!
 //! A name or an e-mail address in an answer that is not a `PersonRef` would reach a viewer whose
 //! level for that kind of people information is *Role only* or *Hidden*. Two readings of the same
-//! rule:
+//! rule (three readings of it):
 //!
 //! - **The code:** a struct that derives `Serialize` in `bb-api` or `bb-app` and has a field
 //!   called like a person's name or address (`display_name`, `email`, …). The name in the code (a raw `r#` identifier included) and the name `serde` gives
 //!   it (`#[serde(rename = …)]`) both count.
+//! - **The reads:** any read of `.display_name` or `.email` of a value in the code of `bb-api` and
+//!   `bb-app` (without comments, texts and tests). A file that has such reads is listed with the number
+//!   and a reason in the exemptions (`[[read]]`); one more read fails. Whatever a body calls the field,
+//!   the name comes from the record and is read from it.
 //! - **The API description** (`web/packages/api-client/openapi.json`): a property called like that
 //!   in a schema that an answer holds, however deep (what a person types in a request is theirs).
 //!
@@ -54,7 +58,9 @@ impl Check for ArchPersonRef {
         let sources = context.sources(self.id(), Kind::Rust)?;
         let spec = api_spec::load(context.repo)?;
         let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
-        Ok(evaluate(&sources, &spec, &exemptions.exempt))
+        let mut findings = evaluate(&sources, &spec, &exemptions.exempt);
+        findings.extend(read_findings(&sources, &exemptions.read));
+        Ok(findings)
     }
 }
 
@@ -63,6 +69,101 @@ impl Check for ArchPersonRef {
 struct Exemptions {
     #[serde(default)]
     exempt: Vec<Exemption>,
+    #[serde(default)]
+    read: Vec<ReadExemption>,
+}
+
+/// A file that may read the name or the address of a person from a record, how many times, and why.
+#[derive(Deserialize)]
+struct ReadExemption {
+    file: String,
+    reads: usize,
+    reason: String,
+}
+
+impl exemptions::Exemption for ReadExemption {
+    fn name(&self) -> String {
+        self.file.clone()
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+}
+
+/// The reads of a person's name or address in the code that shapes answers and runs use cases: a
+/// field `.display_name` or `.email` of any value. The code is read without comments, texts and tests.
+/// What `serde` and the field names of a body hide (a body that calls the field `name`) is seen here,
+/// because the name the person has comes from the record and is read from it.
+const READ_FIELDS: [&str; 2] = ["display_name", "email"];
+
+/// The folders whose code is read for those reads.
+const READ_FOLDERS: [&str; 2] = ["crates/bb-api/src/", "crates/bb-app/src/"];
+
+/// The lines of the file that read a name or an address from a record.
+fn reads(path: &str, text: &str) -> Vec<usize> {
+    let in_tests = path.contains("/tests/") || path.ends_with("tests.rs");
+    if in_tests || !READ_FOLDERS.iter().any(|folder| path.starts_with(folder)) {
+        return Vec::new();
+    }
+    let code = strip(&without_tests(text));
+    let mut lines = Vec::new();
+    for (number, line) in code.lines().enumerate() {
+        for field in READ_FIELDS {
+            let dotted = format!(".{field}");
+            lines.extend(
+                line.match_indices(&dotted)
+                    .filter(|(at, _)| {
+                        !line[at + dotted.len()..]
+                            .chars()
+                            .next()
+                            .is_some_and(|c| c.is_alphanumeric() || c == '_')
+                    })
+                    .map(|_| number + 1),
+            );
+        }
+    }
+    lines
+}
+
+fn read_findings(sources: &[Source], allowed: &[ReadExemption]) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (path, text) in sources {
+        let lines = reads(path, text);
+        let entry = allowed.iter().find(|entry| entry.file == *path);
+        match (lines.len(), entry) {
+            (0, _) => {}
+            (count, Some(entry)) if count == entry.reads => {}
+            (count, Some(entry)) => findings.push(Finding::at(
+                path,
+                format!(
+                    "The file reads a person's name or address {count} times (lines {}); {EXEMPTIONS_PATH} allows {}. A new read is a new way to show a person outside `PersonRef`: resolve the person for the viewer, or change the entry with a reason.",
+                    lines.iter().map(ToString::to_string).collect::<Vec<_>>().join(", "),
+                    entry.reads
+                ),
+            )),
+            (count, None) => findings.push(Finding::at(
+                path,
+                format!(
+                    "The file reads a person's name or address {count} times (lines {}) and shows people outside `PersonRef`, or is not listed. Resolve the person for the viewer, or name the file in {EXEMPTIONS_PATH} with a reason.",
+                    lines.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                ),
+            )),
+        }
+    }
+    for entry in allowed {
+        let there = sources
+            .iter()
+            .any(|(path, text)| *path == entry.file && !reads(path, text).is_empty());
+        if !there {
+            findings.push(Finding::at(
+                EXEMPTIONS_PATH,
+                format!("The entry for `{}` matches no read. Remove it.", entry.file),
+            ));
+        }
+    }
+    findings.extend(exemptions::reason_findings(EXEMPTIONS_PATH, allowed));
+    findings
 }
 
 /// One field that may hold a name or an address: the type (the struct and the schema have one
@@ -551,5 +652,65 @@ mod tests {
         let mut empty = exemption("Gone", "email");
         empty.reason = " ".to_owned();
         assert_eq!(evaluate(&[], &json!({}), &[empty]).len(), 2);
+    }
+
+    fn allowed(file: &str, reads: usize) -> ReadExemption {
+        ReadExemption {
+            file: file.to_owned(),
+            reads,
+            reason: "the own account of the person".to_owned(),
+        }
+    }
+
+    #[test]
+    fn bad_example_a_read_of_a_name_or_an_address_that_nobody_allowed() {
+        let sources = api_source(
+            "fn body(person: &Person) -> Body { Body { name: person.display_name.clone(), to: person.email.clone() } }",
+        );
+        let found = read_findings(&sources, &[]);
+        assert_eq!(found.len(), 1);
+        assert!(found[0].message.contains("2 times"), "{}", found[0].message);
+        // More reads than the entry allows, an entry for a file without a read, and no reason.
+        let found = read_findings(&sources, &[allowed("crates/bb-api/src/api/x.rs", 1)]);
+        assert!(
+            found[0].message.contains("allows 1"),
+            "{}",
+            found[0].message
+        );
+        let found = read_findings(&sources, &[allowed("crates/bb-api/src/api/y.rs", 1)]);
+        assert!(
+            found
+                .iter()
+                .any(|each| each.message.contains("matches no read"))
+        );
+        let bare = ReadExemption {
+            reason: String::new(),
+            ..allowed("crates/bb-api/src/api/x.rs", 2)
+        };
+        assert!(!read_findings(&sources, &[bare]).is_empty());
+    }
+
+    #[test]
+    fn good_example_the_reads_an_entry_allows_and_what_is_no_read() {
+        let sources = api_source(
+            "fn body(p: &Person) -> Body { Body { name: p.display_name.clone() } }
+// p.email is said in a comment
+fn other(p: &Person) { let _ = p.display_name_of_group; let _ = \"p.email\"; }
+#[cfg(test)]
+mod tests { fn t(p: &Person) { let _ = p.email; } }",
+        );
+        assert!(read_findings(&sources, &[allowed("crates/bb-api/src/api/x.rs", 1)]).is_empty());
+        // A file outside bb-api and bb-app, and a file of tests, are not read.
+        let elsewhere = vec![
+            (
+                "crates/bb-store/src/x.rs".to_owned(),
+                "fn f(p: P) { p.email }".to_owned(),
+            ),
+            (
+                "crates/bb-app/src/tests/x.rs".to_owned(),
+                "fn f(p: P) { p.email }".to_owned(),
+            ),
+        ];
+        assert!(read_findings(&elsewhere, &[]).is_empty());
     }
 }

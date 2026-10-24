@@ -41,10 +41,10 @@ export async function prepareTheDemo(server: Instance): Promise<void> {
       body: { issue_type: await firstIssueType(guestSession), title: BUG },
     }),
   );
-  if (reported.key === undefined || reported.key === null) {
+  if (reported.readable_id === undefined || reported.readable_id === null) {
     throw new TypeError("The server made an issue without a readable ID.");
   }
-  made.key = reported.key;
+  made.key = reported.readable_id;
   await guestSession.client.PUT("/api/v1/me/settings/{key}", {
     params: { path: { key: settingKeys.notificationsFollowedActivityByMail } },
     body: { value: true },

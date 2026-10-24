@@ -115,9 +115,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// the only thing a network over its limit is answered with a wait.
     ///
     /// # Errors
-    /// `auth.not_signed_in` for a key that does not work, whatever the reason (expired,
+    /// `auth.not-signed-in` for a key that does not work, whatever the reason (expired,
     /// deleted, unknown, malformed); 429 when that is a guess of a network over its limit;
-    /// `auth.second_step_required` while the owner has to set up a second step.
+    /// `auth.second-step-required` while the owner has to set up a second step.
     pub(crate) async fn key_actor(&self, key_text: &str) -> Result<Actor, AppError> {
         let Some((record, owner)) = self.working_key(key_text).await? else {
             let slot = self.reserve_network(GUESSING)?;
@@ -272,9 +272,9 @@ fn a_try_at_the_key<S: AuthStore>(
 /// kept. The password is asked again, so a stolen session cannot make a key that outlives it.
 ///
 /// # Errors
-/// `auth.wrong_credentials` for a wrong password, `request.invalid` for a name, a date, a choice
-/// or a project that cannot be used (or too many keys), `resource.not_found` for a project the
-/// person may not know about, `auth.access_key_not_allowed` for a key.
+/// `auth.wrong-credentials` for a wrong password, `request.invalid` for a name, a date, a choice
+/// or a project that cannot be used (or too many keys), `resource.not-found` for a project the
+/// person may not know about, `auth.access-key-not-allowed` for a key.
 pub async fn create_access_key<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CreateAccessKey,
@@ -375,7 +375,7 @@ pub async fn create_access_key<S: AuthStore>(
 /// Deletes an access key of the person at once. A deleted key cannot come back.
 ///
 /// # Errors
-/// `resource.not_found` for a key that is not the person's (it does not say whether it exists).
+/// `resource.not-found` for a key that is not the person's (it does not say whether it exists).
 pub async fn delete_access_key<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DeleteAccessKey,
@@ -445,7 +445,7 @@ pub async fn access_keys<S: AuthStore>(
 /// than the longest time) and the longest time.
 ///
 /// # Errors
-/// `auth.not_signed_in` without a session.
+/// `auth.not-signed-in` without a session.
 pub async fn access_key_rules<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AccessKeyRulesQuery,
@@ -600,7 +600,7 @@ pub async fn project_choices<S: AuthStore>(
 /// a key counts with the narrowing it has, so a key that may see the status is let in.
 ///
 /// # Errors
-/// `auth.not_signed_in`, `auth.access_key_not_allowed` never (a key is the actor here),
+/// `auth.not-signed-in`, `auth.access-key-not-allowed` never (a key is the actor here),
 /// `access.forbidden` without the permission.
 pub async fn see_server_status<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -618,7 +618,7 @@ pub async fn see_server_status<S: AuthStore>(
 /// an address that does not exist gets an answer of its own. A session passes.
 ///
 /// # Errors
-/// `auth.access_key_not_allowed` for a key, `auth.not_signed_in` for no session.
+/// `auth.access-key-not-allowed` for a key, `auth.not-signed-in` for no session.
 pub async fn require_session<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RequireSessionQuery,

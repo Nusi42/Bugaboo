@@ -18,7 +18,7 @@ export function moreActions(
   mayDelete: boolean,
   handlers: DeleteHandlers,
 ): MenuAction[] {
-  const key = issue.key ?? "";
+  const key = issue.readable_id ?? "";
   const copy = {
     id: "copy",
     label: t("issues.copy-link"),

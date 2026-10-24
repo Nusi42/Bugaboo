@@ -77,7 +77,7 @@ pub(super) async fn workflow_request(
                     "version": version,
                     "lock_token": NOBODYS_LOCK,
                     "name": "Simple",
-                    "statuses": [{"key": "open", "name": "Open", "group": "not-started"}],
+                    "statuses": [{"key": "open", "name": "Open", "status_group": "not-started"}],
                     "changes": [],
                 })),
             )
@@ -88,7 +88,7 @@ pub(super) async fn workflow_request(
                 "POST",
                 format!("/api/v1/workflows/{workflow}/publish-preview"),
                 Some(json!({
-                    "statuses": [{"key": "open", "name": "Open", "group": "not-started"}],
+                    "statuses": [{"key": "open", "name": "Open", "status_group": "not-started"}],
                     "changes": [],
                 })),
             )

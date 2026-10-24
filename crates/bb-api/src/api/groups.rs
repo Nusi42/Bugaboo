@@ -4,6 +4,8 @@
 //! that (the last administrator, no escalation, a *No access* that a change would lift) comes back
 //! as the refusal of the use case.
 
+use crate::api::NameBody;
+use crate::api::access_bodies::NamedVersionItem;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::people::{
@@ -35,32 +37,6 @@ const GROUP_FIELDS: [FieldSpec; 3] = [
 ];
 /// The name of the list, so its cursors are its own.
 const GROUPS_LIST: &str = "groups";
-
-/// A group in a list: the fields that can be asked for.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct GroupItem {
-    /// The ID of the group.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    id: Option<String>,
-    /// What it is called.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    name: Option<String>,
-    /// Counts up with every change. A change is made on the version that was looked at.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    version: Option<i64>,
-}
-
-impl Masked for GroupItem {}
-
-impl From<&GroupView> for GroupItem {
-    fn from(group: &GroupView) -> Self {
-        Self {
-            id: Some(group.id.to_string()),
-            name: Some(group.name.clone()),
-            version: Some(group.version),
-        }
-    }
-}
 
 /// A group after it was made or renamed.
 #[derive(Serialize, ToSchema)]
@@ -121,16 +97,9 @@ impl From<&GroupDetail> for GroupDetailBody {
     }
 }
 
-/// A name for a group.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct GroupNameBody {
-    /// What the group is called.
-    name: String,
-}
-
 /// A new name for a group, made on the version that was looked at.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct RenameGroupBody {
+pub(crate) struct ChangeGroupBody {
     /// What the group is called from now on.
     name: String,
     /// The version of the group the person looked at; a change made meanwhile stops this one.
@@ -231,7 +200,7 @@ pub(crate) fn choice_page(
     operation_id = "listGroups",
     tag = "groups",
     params(ListParams),
-    responses((status = 200, description = "The groups, by name.", body = Page<GroupItem>), NotSignedInAnswer, ForbiddenAnswer)
+    responses((status = 200, description = "The groups, by name.", body = Page<NamedVersionItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn list_groups(
     State(auth): State<AuthHandle>,
@@ -255,7 +224,7 @@ async fn list_groups(
         .map_err(cursor_error)?;
     bad_cursor?;
     let listed = found.map(|list| Listed {
-        items: list.groups.iter().map(GroupItem::from).collect(),
+        items: list.groups.iter().map(NamedVersionItem::from).collect(),
         next: list.next_cursor,
     });
     let fields = params.fields_readable(&GROUP_FIELDS, &listed.hidden_properties())?;
@@ -268,7 +237,7 @@ async fn list_groups(
     path = "/api/v1/groups",
     operation_id = "createGroup",
     tag = "groups",
-    request_body = GroupNameBody,
+    request_body = NameBody,
     responses(
         (status = 200, description = "The group.", body = GroupBody),
         InvalidAnswer,
@@ -281,7 +250,7 @@ async fn create_group(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<GroupNameBody>,
+    ApiJson(body): ApiJson<NameBody>,
 ) -> Result<Response, ApiError> {
     let made = auth
         .api()?
@@ -300,10 +269,10 @@ async fn create_group(
 /// change who is in them*.
 #[utoipa::path(
     get,
-    path = "/api/v1/groups/{group_id}",
+    path = "/api/v1/groups/{group}",
     operation_id = "getGroup",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group.")),
+    params(("group" = String, Path, description = "The ID of the group.")),
     responses((status = 200, description = "The group.", body = GroupDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_group(
@@ -330,11 +299,11 @@ async fn get_group(
 /// them*.
 #[utoipa::path(
     patch,
-    path = "/api/v1/groups/{group_id}",
-    operation_id = "renameGroup",
+    path = "/api/v1/groups/{group}",
+    operation_id = "changeGroup",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group.")),
-    request_body = RenameGroupBody,
+    params(("group" = String, Path, description = "The ID of the group.")),
+    request_body = ChangeGroupBody,
     responses(
         (status = 200, description = "The group as it is now.", body = GroupBody),
         InvalidAnswer,
@@ -349,7 +318,7 @@ async fn rename_group(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(group_id): ApiPath<String>,
-    ApiJson(body): ApiJson<RenameGroupBody>,
+    ApiJson(body): ApiJson<ChangeGroupBody>,
 ) -> Result<Response, ApiError> {
     let group = path_id::<GroupId>(&group_id)?;
     let renamed = auth
@@ -372,10 +341,10 @@ async fn rename_group(
 /// access*, *Decide who has which role* there.
 #[utoipa::path(
     delete,
-    path = "/api/v1/groups/{group_id}",
+    path = "/api/v1/groups/{group}",
     operation_id = "deleteGroup",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group.")),
+    params(("group" = String, Path, description = "The ID of the group.")),
     responses(
         (status = 204, description = "The group is gone."),
         NotSignedInAnswer,
@@ -407,10 +376,10 @@ async fn delete_group(
 /// and change who is in them*.
 #[utoipa::path(
     get,
-    path = "/api/v1/groups/{group_id}/members",
+    path = "/api/v1/groups/{group}/members",
     operation_id = "listGroupMembers",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group."), ListParams),
+    params(("group" = String, Path, description = "The ID of the group."), ListParams),
     responses((status = 200, description = "The people in the group.", body = Page<MemberItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_group_members(
@@ -449,12 +418,12 @@ async fn list_group_members(
 /// themselves.
 #[utoipa::path(
     put,
-    path = "/api/v1/groups/{group_id}/members/{person_id}",
+    path = "/api/v1/groups/{group}/members/{person}",
     operation_id = "addGroupMember",
     tag = "groups",
     params(
-        ("group_id" = String, Path, description = "The ID of the group."),
-        ("person_id" = String, Path, description = "The ID of the person.")
+        ("group" = String, Path, description = "The ID of the group."),
+        ("person" = String, Path, description = "The ID of the person.")
     ),
     responses(
         (status = 204, description = "The person is in the group."),
@@ -488,12 +457,12 @@ async fn add_group_member(
 /// who is in them*, and, where the group has *No access*, *Decide who has which role* there.
 #[utoipa::path(
     delete,
-    path = "/api/v1/groups/{group_id}/members/{person_id}",
+    path = "/api/v1/groups/{group}/members/{person}",
     operation_id = "removeGroupMember",
     tag = "groups",
     params(
-        ("group_id" = String, Path, description = "The ID of the group."),
-        ("person_id" = String, Path, description = "The ID of the person.")
+        ("group" = String, Path, description = "The ID of the group."),
+        ("person" = String, Path, description = "The ID of the person.")
     ),
     responses(
         (status = 204, description = "The person is not in the group."),
@@ -529,10 +498,10 @@ async fn remove_group_member(
 /// them*. Names only, never e-mail addresses.
 #[utoipa::path(
     get,
-    path = "/api/v1/groups/{group_id}/member-choices",
+    path = "/api/v1/groups/{group}/member-choices",
     operation_id = "listMemberChoices",
     tag = "groups",
-    params(("group_id" = String, Path, description = "The ID of the group."), ListParams, ChoiceFilter),
+    params(("group" = String, Path, description = "The ID of the group."), ListParams, ChoiceFilter),
     responses((status = 200, description = "The people to choose from.", body = Page<ChoiceItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_member_choices(
@@ -585,7 +554,7 @@ mod tests {
     fn perf_02_the_field_tables_name_exactly_the_fields_of_their_items() {
         crate::lean::assert_fields_are_the_keys_of(
             &GROUP_FIELDS,
-            &GroupItem {
+            &NamedVersionItem {
                 id: Some("i".to_owned()),
                 name: Some("n".to_owned()),
                 version: Some(1),

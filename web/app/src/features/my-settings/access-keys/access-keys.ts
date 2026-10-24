@@ -34,7 +34,7 @@ export function rulesOptions() {
 
 /** The projects the person can limit a key to. */
 export function projectsOptions() {
-  return api.query.queryOptions("get", "/api/v1/access-keys/projects", {
+  return api.query.queryOptions("get", "/api/v1/access-keys/project-choices", {
     params: { query: { limit: pageSize.largest } },
   });
 }

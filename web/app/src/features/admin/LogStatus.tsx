@@ -10,8 +10,8 @@ type Reason = NonNullable<SecurityLog["reason"]>;
 /** The sentence for why a chain of the security log breaks, by the reason the server names. */
 const reasonMessages: Readonly<Record<Reason, MessageKey>> = {
   gap: "security-log.reason.gap",
-  broken_link: "security-log.reason.broken-link",
-  changed_content: "security-log.reason.changed-content",
+  "broken-link": "security-log.reason.broken-link",
+  "changed-content": "security-log.reason.changed-content",
   checkpoint: "security-log.reason.checkpoint",
   truncated: "security-log.reason.truncated",
   anchor: "security-log.reason.anchor",
@@ -26,7 +26,7 @@ function Result({ log }: { readonly log: SecurityLog }) {
     return (
       <Alert tone={alertTone.danger}>
         {t("security-log.broken", {
-          seq: log.broken_at ?? 0,
+          seq: log.broken_seq ?? 0,
           reason: reason === undefined ? "" : t(reason),
         })}
       </Alert>

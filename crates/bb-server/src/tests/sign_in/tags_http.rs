@@ -32,7 +32,11 @@ fn names(labels_and_tags: &Value, member: &str) -> Vec<String> {
 /// A label made as `ada`: its ID.
 async fn a_label(ada: &mut Browser, name: &str, group: Option<&str>) -> Result<String, Failure> {
     let made = ada
-        .send("POST", LABELS, Some(json!({"name": name, "group": group})))
+        .send(
+            "POST",
+            LABELS,
+            Some(json!({"name": name, "label_group": group})),
+        )
         .await?;
     id_of(&made)
 }
@@ -106,7 +110,7 @@ async fn tag_01_autocomplete_never_offers_a_tag_only_used_in_a_hidden_project() 
                 None,
             )
             .await?;
-        assert_eq!(nothing.code(), "resource.not_found");
+        assert_eq!(nothing.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -175,7 +179,7 @@ async fn tag_02_a_pick_one_group_keeps_one_label_per_issue() -> TestResult {
                 Some(json!({"version": 1, "pick_one": true})),
             )
             .await?;
-        assert_eq!(refused.code(), "label.pick_one_conflict");
+        assert_eq!(refused.code(), "label.pick-one-conflict");
         Ok(())
     })
     .await
@@ -188,10 +192,10 @@ fn history_of(history: &Value, field: &str) -> Vec<(Vec<String>, Vec<String>)> {
         .map(|items| {
             items
                 .iter()
-                .filter(|item| item["field"] == field)
+                .filter(|item| item["change"]["field"] == field)
                 .map(|item| {
-                    let list = |name: &str| -> Vec<String> {
-                        item[name]
+                    let list = |side: &str| -> Vec<String> {
+                        item["change"][side]["names"]
                             .as_array()
                             .map(|each| {
                                 each.iter()
@@ -200,7 +204,7 @@ fn history_of(history: &Value, field: &str) -> Vec<(Vec<String>, Vec<String>)> {
                             })
                             .unwrap_or_default()
                     };
-                    (list("before_names"), list("after_names"))
+                    (list("before"), list("after"))
                 })
                 .collect()
         })
@@ -315,7 +319,7 @@ async fn tag_03_renaming_a_tag_asks_for_the_version_and_changes_every_issue() ->
                 Some(json!({"version": 7, "name": "sluggish"})),
             )
             .await?;
-        assert_eq!(stale.code(), "edit.version_changed");
+        assert_eq!(stale.code(), "edit.version-changed");
         let renamed = ada
             .send(
                 "PATCH",
@@ -458,7 +462,7 @@ async fn adr_0017_a_tag_added_while_the_title_is_saved_lands_and_the_version_agr
         // The title is saved from the version it read; if the tag came first, it is told so
         // and saves again from the version it is told.
         let saved = saved?;
-        if saved.code() == "edit.version_changed" {
+        if saved.code() == "edit.version-changed" {
             let now = version_of(&mut ben, &issue).await?;
             ok(&ben
                 .send(
@@ -508,7 +512,7 @@ async fn adr_0017_tags_and_labels_of_an_issue_in_the_trash_are_not_found() -> Te
                 Some(json!({"name": "late"})),
             )
             .await?;
-        assert_eq!(tag.code(), "resource.not_found");
+        assert_eq!(tag.code(), "resource.not-found");
         let put = ada
             .send(
                 "POST",
@@ -516,7 +520,7 @@ async fn adr_0017_tags_and_labels_of_an_issue_in_the_trash_are_not_found() -> Te
                 Some(json!({"label": label})),
             )
             .await?;
-        assert_eq!(put.code(), "resource.not_found");
+        assert_eq!(put.code(), "resource.not-found");
         Ok(())
     })
     .await

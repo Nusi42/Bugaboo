@@ -341,7 +341,7 @@ async fn dist_01_assets_health_and_api_never_fall_back_to_the_start_page() {
             "{path}"
         );
         assert!(
-            body(response).await.contains("resource.not_found"),
+            body(response).await.contains("resource.not-found"),
             "{path}"
         );
     }

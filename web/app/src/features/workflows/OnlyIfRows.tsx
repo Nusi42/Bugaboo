@@ -1,4 +1,4 @@
-import { testWords, type Schema } from "@bugaboo/api-client";
+import { onlyIfTestWords, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Button, IconButton, iconName, SelectField, partOf, part } from "@bugaboo/ui";
 
@@ -17,13 +17,13 @@ export interface OnlyIfRowsProps {
 }
 
 /** The tests of a condition, by the words people read. */
-const testLabels: Record<Schema<"Test">, string> = {
+const testLabels: Record<Schema<"OnlyIfTest">, string> = {
   filled: t("workflows.test-filled"),
   empty: t("workflows.test-empty"),
 };
 
 /** The tests of a condition in the order the server lists them. */
-const testChoices = testWords.map((word) => ({ value: word, label: testLabels[word] }));
+const testChoices = onlyIfTestWords.map((word) => ({ value: word, label: testLabels[word] }));
 
 /** One condition: the field, what it must be like, and a way to take it away. */
 function ConditionRow({

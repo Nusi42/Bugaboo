@@ -138,12 +138,6 @@ whole_value = true
 reason = "The kinds of information a field can hold are as many as the code declares (15 in M3): a list bounded by the code, not one that grows with data, and the screen that makes a field needs all of them at once (M3-F48)."
 
 [[exempt]]
-route = "GET /api/v1/fields"
-property = "fields"
-whole_value = true
-reason = "A field is refused when the organization already has 200 (FIELDS_MAX), so the list is bounded when it is written, and the screens that show or fill in fields need all of them at once; the items hold the choices and rules of a field, which the value editors need (M3-F48)."
-
-[[exempt]]
 route = "GET /api/v1/fields/{field}"
 property = "choices"
 whole_value = true
@@ -239,11 +233,6 @@ whole_value = true
 reason = "The roles of the organization that may change one field: at most as many as roles exist (ROLES_MAX caps them), and a sentence or the editor needs them all at once. (M3-F106)"
 
 [[exempt]]
-route = "GET /api/v1/workflows"
-property = "workflows"
-reason = "An organization has a handful of workflows; the list has a hard cap (WORKFLOWS_LISTED_MAX), says when it was cut, and a choice of one needs them all at once. (M3-F106)"
-
-[[exempt]]
 route = "GET /api/v1/workflows/editor"
 property = "statuses"
 whole_value = true
@@ -272,3 +261,36 @@ route = "GET /api/v1/workflows/editor"
 property = "fields"
 whole_value = true
 reason = "The fields a rule can name: the description, Assigned to and the own fields of the organization (at most 200, own_fields::FIELDS_MAX); the editor lists them all. (M3-F106)"
+
+# Members of the items of a paged list that hold an object which is a part of the item itself and no
+# other resource (`embedded = true`), so the list needs no `include`.
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/history"
+property = "change"
+embedded = true
+reason = "The change of a row of the history is the row's own value: the field and what it was and is. Every row of a change holds it, so asking for it separately would not make the list leaner (M4-F65, API change A2)."
+
+[[exempt]]
+route = "GET /api/v1/notifications"
+property = "change"
+embedded = true
+reason = "The change of a notification is its own value, the same shape as in the history: the field and what it was and is (M4-F65, API change A2)."
+
+[[exempt]]
+route = "GET /api/v1/fields"
+property = "choices"
+embedded = true
+reason = "The choices of a field are part of its definition; a field has at most 200 (M4-F171), and `fields=` leaves them out for a list that does not need them."
+
+[[exempt]]
+route = "GET /api/v1/fields"
+property = "rules"
+embedded = true
+reason = "The rules of a field are part of its definition, a small value (M4-F179)."
+
+[[exempt]]
+route = "GET /api/v1/fields"
+property = "scope"
+embedded = true
+reason = "Where a field is used is part of its definition; the projects in it are references (M4-F179)."

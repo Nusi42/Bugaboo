@@ -46,7 +46,7 @@ export function useNewIssue(): NewIssue {
     create: (another, onMade) => {
       create.mutate(forForm(state.values, layout.shows), {
         onSuccess: (made: Schema<"IssueItem">) => {
-          const key = made.key ?? "";
+          const key = made.readable_id ?? "";
           if (another) {
             state.startAgain();
             setLastKey(key);

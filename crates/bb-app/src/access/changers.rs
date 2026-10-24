@@ -3,7 +3,7 @@
 //!
 //! One question, `bb_policy::roles_that_change`, answered over the roles of the organization. Three
 //! rules keep it from telling more than the reader may know:
-//! - **A field the reader cannot see is not there** (`resource.not_found`).
+//! - **A field the reader cannot see is not there** (`resource.not-found`).
 //! - **Only roles somebody holds at the place are named**: a role nobody has there is not part of
 //!   the answer, so it tells nothing about roles of other projects.
 //! - **A reader who is not shown the people of the project by role or by name is named no role**:
@@ -57,7 +57,7 @@ impl Masked for WhoMayChange {}
 /// Which roles may change a field in the issues of a project.
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not see and for a field they may not see;
+/// `resource.not-found` for a project the person may not see and for a field they may not see;
 /// a refusal for a person who holds no right to see issues there.
 pub async fn who_may_change<S: AuthStore>(
     ctx: &Ctx<'_, S>,

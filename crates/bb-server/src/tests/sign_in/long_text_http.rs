@@ -78,12 +78,12 @@ impl Target {
                 "POST",
                 LOCKS,
                 Some(json!({
-                    "what": {"record": {"kind": "issue", "id": self.issue}, "part": self.part},
+                    "target": {"record": {"kind": "issue", "id": self.issue}, "part": self.part},
                     "editor_id": AN_EDITOR,
                 })),
             )
             .await?;
-        assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+        assert_eq!(taken.body["kind"], "taken", "{}", taken.body);
         Ok(ok(&taken)?["lock_token"]
             .as_str()
             .ok_or("no lock token")?
@@ -159,7 +159,7 @@ async fn adr_0019_a_stale_long_text_gets_the_structured_answer_and_the_text_is_k
                 "{text:?}: {}",
                 stale.body
             );
-            assert_eq!(stale.code(), "edit.version_changed", "{text:?}");
+            assert_eq!(stale.code(), "edit.version-changed", "{text:?}");
             let conflict = &stale.body["conflict"];
             assert_eq!(conflict["version"], 2, "{text:?}: {}", stale.body);
             assert_eq!(conflict["fields"], json!([target.member]), "{text:?}");
@@ -168,7 +168,7 @@ async fn adr_0019_a_stale_long_text_gets_the_structured_answer_and_the_text_is_k
                 .send(
                     "GET",
                     &format!(
-                        "{DRAFTS}?kind=issue&id={}&part={}",
+                        "{DRAFTS}?record_kind=issue&record_id={}&part={}",
                         target.issue, target.part
                     ),
                     None,

@@ -5,6 +5,8 @@
 //! or `tools/checks/fixtures/<ID>/`).
 
 mod api_spec;
+pub(crate) mod arch_api_freeze;
+mod arch_api_lint;
 mod arch_api_out;
 mod arch_authz_only;
 pub(crate) mod arch_db_parity;
@@ -207,6 +209,8 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_pure::ArchPure),
         Box::new(arch_wasm::ArchWasm),
         Box::new(arch_http_edge::ArchHttpEdge),
+        Box::new(arch_api_freeze::ArchApiFreeze),
+        Box::new(arch_api_lint::ArchApiLint),
         Box::new(arch_lean::ArchLean),
         Box::new(arch_lock_order::ArchLockOrder),
         Box::new(arch_versioned::ArchVersioned),

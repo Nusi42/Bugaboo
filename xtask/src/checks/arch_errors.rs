@@ -175,7 +175,7 @@ fn is_code(code: &str) -> bool {
     let word = |part: &str| {
         !part.is_empty()
             && part.starts_with(|c: char| c.is_ascii_lowercase())
-            && part.chars().all(|c| c.is_ascii_lowercase() || c == '_')
+            && part.chars().all(|c| c.is_ascii_lowercase() || c == '-')
     };
     code.split_once('.')
         .is_some_and(|(area, name)| word(area) && word(name))
@@ -359,7 +359,9 @@ fn check_spec(spec: &Value, table: &[Entry]) -> Vec<Finding> {
         for status in STANDARD_STATUSES {
             let content = operation
                 .body
-                .pointer(&format!("/responses/{status}/content"));
+                .pointer(&format!("/responses/{status}"))
+                .map(|answer| api_spec::resolve(spec, answer))
+                .and_then(|answer| answer.get("content"));
             if content
                 .and_then(|content| content.get("application/problem+json"))
                 .is_none()
@@ -391,13 +393,13 @@ mod tests {
         vec![
             entry(
                 "WrongCredentials",
-                "auth.wrong_credentials",
+                "auth.wrong-credentials",
                 401,
                 "error.auth.wrong",
             ),
             entry(
                 "NotFound",
-                "resource.not_found",
+                "resource.not-found",
                 404,
                 "error.resource.not-found",
             ),
@@ -412,7 +414,7 @@ mod tests {
     }
 
     /// A description that agrees with `good_table`.
-    const GOOD_SPEC: &str = r#"{"components":{"schemas":{"Problem":{},"ErrorCode":{"enum":["auth.wrong_credentials","resource.not_found"]}}},
+    const GOOD_SPEC: &str = r#"{"components":{"schemas":{"Problem":{},"ErrorCode":{"enum":["auth.wrong-credentials","resource.not-found"]}}},
         "paths":{"/api/v1/x":{"get":{"responses":{
             "429":{"content":{"application/problem+json":{}}},
             "500":{"content":{"application/problem+json":{}}},
@@ -539,7 +541,7 @@ mod tests {
             "{found}"
         );
 
-        let other_codes = GOOD_SPEC.replace("auth.wrong_credentials", "auth.other");
+        let other_codes = GOOD_SPEC.replace("auth.wrong-credentials", "auth.other");
         let found = run_with_spec(&good_table(), &GOOD_MESSAGES, "", &other_codes).join("\n");
         assert!(found.contains("does not list exactly the codes"), "{found}");
     }

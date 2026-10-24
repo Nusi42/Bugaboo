@@ -88,7 +88,7 @@ describe("prj_03 how people are named in the preview", () => {
         projects: [{ project: web, now: nobody, after: viewer, ...none }],
       },
       {
-        person: { shown: "former", label: "K7Q2" },
+        person: { shown: "former", code: "K7Q2" },
         projects: [{ project: web, now: viewer, after: nobody, ...none }],
       },
     ]);
@@ -178,7 +178,7 @@ describe("m2c_f80 the preview grouped by person for the long preview", () => {
       preview([
         { person: cleo, projects: [{ project: web, now: nobody, after: viewer, ...none }] },
         {
-          person: { shown: "former", label: "K7Q2" },
+          person: { shown: "former", code: "K7Q2" },
           projects: [{ project: web, now: viewer, after: viewer, ...none }],
         },
       ]),

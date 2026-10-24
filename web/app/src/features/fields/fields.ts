@@ -1,9 +1,18 @@
-import { ownFieldPartPrefix, type Schema } from "@bugaboo/api-client";
+import {
+  dataOf,
+  fieldMembers,
+  ownFieldPartPrefix,
+  pageSizeMax,
+  type Schema,
+} from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { IssueBlockProps } from "../issues/index.ts";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import { linesFrom } from "../../shared/paged.ts";
+import { holdsAll } from "../../shared/present.ts";
+import { queryKeys } from "../../shared/query-keys.ts";
 import { detailsText } from "../../shared/list-text.ts";
 import type { Picked } from "../../shared/reference.ts";
 
@@ -61,17 +70,49 @@ export function useFieldTypes() {
 export function useFields(
   options: { readonly project?: string | undefined; readonly retired?: boolean } = {},
 ) {
+  const query = {
+    ...(options.project === undefined ? {} : { project: options.project }),
+    ...(options.retired === true ? { retired: true } : {}),
+  };
   return useQuery({
-    ...api.query.queryOptions("get", "/api/v1/fields", {
+    queryKey: queryKeys.fields.list(query),
+    queryFn: () => readAllFields(query),
+  });
+}
+
+/** Reads the pages of the list of fields one after the other: a form needs every field. */
+async function readAllFields(query: {
+  readonly project?: string;
+  readonly retired?: boolean;
+}): Promise<{ readonly fields: readonly OwnField[] }> {
+  return { fields: await readFieldPages(query, undefined, []) };
+}
+
+async function readFieldPages(
+  query: { readonly project?: string; readonly retired?: boolean },
+  cursor: string | undefined,
+  before: readonly OwnField[],
+): Promise<readonly OwnField[]> {
+  const page = dataOf(
+    await api.client.GET("/api/v1/fields", {
       params: {
-        query: {
-          ...(options.project === undefined ? {} : { project: options.project }),
-          ...(options.retired === true ? { retired: true } : {}),
-        },
+        query: { ...query, limit: pageSizeMax, ...(cursor === undefined ? {} : { cursor }) },
       },
     }),
-    select: (page: Schema<"FieldListBody">) => page,
-  });
+  );
+  // A cursor is a position and a list may change between two requests: a field seen twice is kept
+  // once, and a cursor that comes back ends the reading.
+  const seen = new Set(before.map((each) => each.id));
+  const fields = [...before, ...linesFrom([page], fieldOf).filter((each) => !seen.has(each.id))];
+  const next = page.next_cursor;
+  return next === undefined || next === null || next === cursor
+    ? fields
+    : readFieldPages(query, next, fields);
+}
+
+/** A field of the list, or nothing for an item that came without what a field always has. */
+function fieldOf(item: Schema<"FieldItem">): OwnField | undefined {
+  return holdsAll(item, fieldMembers) ? item : undefined;
 }
 
 /** One field. */

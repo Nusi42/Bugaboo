@@ -3,11 +3,12 @@
 //! readable ID (`WEB-142`, `WEB-K7Q2X`; an old one too, the answer holds the current one) or its
 //! internal ID.
 //!
-//! An issue the person may not see answers `resource.not_found`, exactly like one that does not
+//! An issue the person may not see answers `resource.not-found`, exactly like one that does not
 //! exist or is in the trash, and no answer holds a count (PRIV-13). Every change names the
 //! `version` it looked at. The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).
 
+use crate::api::editing::SaveTextBody;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{
@@ -42,7 +43,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 /// request names none: what a row of a list needs.
 const ISSUE_FIELDS: [FieldSpec; 16] = [
     FieldSpec::by_default("id"),
-    FieldSpec::by_default("key"),
+    FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
     FieldSpec::by_default("issue_type"),
     FieldSpec::by_default("title"),
@@ -104,7 +105,7 @@ pub(crate) struct IssueItem {
     /// The readable ID now (`WEB-142`, `WEB-K7Q2X`).
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
-    key: Option<String>,
+    readable_id: Option<String>,
     /// The project it is in.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(nested)]
@@ -169,7 +170,7 @@ impl From<&IssueView> for IssueItem {
     fn from(issue: &IssueView) -> Self {
         Self {
             id: Some(issue.id.to_string()),
-            key: Some(issue.key.clone()),
+            readable_id: Some(issue.key.clone()),
             project: Some(ProjectRef::from(&issue.project)),
             issue_type: Some(IssueTypeRef::from(&issue.issue_type)),
             title: Some(issue.title.clone()),
@@ -295,17 +296,6 @@ pub(crate) struct ChangeIssueBody {
     /// A long text is saved on its own route, under its edit lock.
     #[serde(default)]
     fields: BTreeMap<String, serde_json::Value>,
-}
-
-/// The description to save under the lock the person holds.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct SaveDescriptionBody {
-    /// The version the person started from.
-    version: i64,
-    /// The token of the edit lock the person holds on the description.
-    lock_token: String,
-    /// The description, in Markdown.
-    text: String,
 }
 
 /// The people in a request body.
@@ -565,7 +555,7 @@ async fn change_issue(
     operation_id = "saveIssueDescription",
     tag = "issues",
     params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
-    request_body = SaveDescriptionBody,
+    request_body = SaveTextBody,
     responses(
         (status = 200, description = "The issue as it is now.", body = IssueItem),
         InvalidAnswer,
@@ -580,7 +570,7 @@ async fn save_issue_description(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(issue): ApiPath<String>,
-    ApiJson(body): ApiJson<SaveDescriptionBody>,
+    ApiJson(body): ApiJson<SaveTextBody>,
 ) -> Result<Response, ApiError> {
     let lock_token = body_id(&body.lock_token)?;
     let saved = auth
@@ -740,7 +730,7 @@ mod tests {
     fn perf_02_the_field_table_names_exactly_the_fields_of_an_issue() {
         let item = IssueItem {
             id: Some(String::new()),
-            key: Some(String::new()),
+            readable_id: Some(String::new()),
             project: Some(ProjectRef {
                 id: String::new(),
                 short_name: String::new(),

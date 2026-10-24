@@ -25,7 +25,7 @@ export function DeleteRole({ id, name, used }: DeleteRoleProps) {
   const remove = useDeleteRole();
   const { ask, dialog } = useAskFirst();
   // The viewer may not see every place the role is used, so the server can still ask for one.
-  const asks = isUsed(used) || codeOf(remove.error) === "role.in_use";
+  const asks = isUsed(used) || codeOf(remove.error) === "role.in-use";
   return (
     <div {...partOf(part.stack)}>
       {dialog}
@@ -50,7 +50,7 @@ export function DeleteRole({ id, name, used }: DeleteRoleProps) {
               if (go) {
                 remove.mutate({
                   params: {
-                    path: { role_id: id },
+                    path: { role: id },
                     query: taking === null ? {} : { replacement: taking },
                   },
                 });

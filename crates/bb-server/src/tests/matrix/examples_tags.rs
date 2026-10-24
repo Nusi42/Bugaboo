@@ -260,7 +260,7 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             "/api/v1/labels".into(),
             Some(json!({
                 "name": format!("label {}", fixture.next_number()),
-                "group": a_group(fixture, Some(target_of(fixture))).await?,
+                "label_group": a_group(fixture, Some(target_of(fixture))).await?,
             })),
         ),
         "previewLabelChange" => (

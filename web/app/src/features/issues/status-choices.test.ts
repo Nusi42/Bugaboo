@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { choiceIdOf, choiceLabelOf } from "./status-choices.ts";
 
-const open = { key: "open", name: "Open", group: "not-started" } as const;
-const testing = { key: "testing", name: "Testing", group: "in-progress" } as const;
-const done = { key: "done", name: "Done", group: "done" } as const;
+const open = { key: "open", name: "Open", status_group: "not-started" } as const;
+const testing = { key: "testing", name: "Testing", status_group: "in-progress" } as const;
+const done = { key: "done", name: "Done", status_group: "done" } as const;
 
 describe("iss_09 the choices of a status change for many issues are told apart by their words", () => {
   it("names two changes to the same status differently", () => {

@@ -32,7 +32,7 @@ export function QueryGate<Data>({
   children,
 }: QueryGateProps<Data>) {
   if (error !== null && error !== undefined) {
-    return notFound !== undefined && codeOf(error) === "resource.not_found" ? (
+    return notFound !== undefined && codeOf(error) === "resource.not-found" ? (
       notFound
     ) : (
       <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>

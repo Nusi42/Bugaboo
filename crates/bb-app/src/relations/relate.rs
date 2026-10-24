@@ -172,7 +172,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// says.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist or that the person may not see, or a kind
+/// `resource.not-found` for an issue that does not exist or that the person may not see, or a kind
 /// that is not there, `access.forbidden` without the right to change `issue`, `request.invalid`
 /// for the same issue twice, a retired kind or an issue that has too many relations,
 /// `relation.exists` for a relation that is there already.
@@ -226,7 +226,7 @@ pub async fn add_relation<S: AuthStore>(
 // Takes a relation away. The person has to see both issues and may change one of them.
 ///
 /// # Errors
-/// `resource.not_found` for a relation that does not exist or whose issues the person may not
+/// `resource.not-found` for a relation that does not exist or whose issues the person may not
 /// both see, `access.forbidden` without the right to change either issue.
 pub async fn remove_relation<S: AuthStore>(
     ctx: &Ctx<'_, S>,

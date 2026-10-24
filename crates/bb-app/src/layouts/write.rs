@@ -244,8 +244,8 @@ fn keep_unknown_fields(
 /// it (*Customize this form*). A place that has one is shown as it is.
 ///
 /// # Errors
-/// `resource.not_found` for a project the person may not know about, `access.forbidden` without
-/// *Manage issue types, kinds of relation and layouts* at the place, `edit.version_changed` when
+/// `resource.not-found` for a project the person may not know about, `access.forbidden` without
+/// *Manage issue types, kinds of relation and layouts* at the place, `edit.version-changed` when
 /// somebody made the layout at the same moment.
 pub async fn create_layout<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -319,11 +319,11 @@ pub async fn create_layout<S: AuthStore>(
 /// about levels here; they are applied when the form is read.
 ///
 /// # Errors
-/// `resource.not_found` for a layout that is not there or a project the person may not know about,
+/// `resource.not-found` for a layout that is not there or a project the person may not know about,
 /// `access.forbidden` without the permission, `request.invalid` for a layout that breaks a rule
-/// (twice the same field, too many sections, a role that does not exist), `field.not_here` for an
-/// own field that does not reach the place or that the person may not know; `edit.lock_lost`,
-/// `edit.taken_over` and `edit.version_changed` for a lock that is gone, was taken over, or a layout
+/// (twice the same field, too many sections, a role that does not exist), `field.not-here` for an
+/// own field that does not reach the place or that the person may not know; `edit.lock-lost`,
+/// `edit.taken-over` and `edit.version-changed` for a lock that is gone, was taken over, or a layout
 /// that changed since (the sections are kept as the draft of the person in all three).
 pub async fn save_layout<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -404,9 +404,9 @@ pub async fn save_layout<S: AuthStore>(
 /// layout.
 ///
 /// # Errors
-/// `resource.not_found` for a layout that is not there or a project the person may not know about,
-/// `access.forbidden` without the permission, `edit.version_changed` when the layout changed since
-/// the person looked at it, `edit.in_progress` while somebody else holds its edit lock. A lock of
+/// `resource.not-found` for a layout that is not there or a project the person may not know about,
+/// `access.forbidden` without the permission, `edit.version-changed` when the layout changed since
+/// the person looked at it, `edit.in-progress` while somebody else holds its edit lock. A lock of
 /// the person's own is let go in the same change.
 pub async fn delete_layout<S: AuthStore>(
     ctx: &Ctx<'_, S>,

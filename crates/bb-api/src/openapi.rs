@@ -15,10 +15,11 @@ use bb_api_words::versions::{CONFLICT_SCHEMA, VERSION};
 use bb_core::fields::Field;
 use bb_core::history::HistoryTab;
 use bb_core::mail::MailServerReadiness;
+use bb_core::message::Message;
 use bb_core::notification::{NotificationFilter, NotificationKind};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
-use utoipa::openapi::path::{Operation as OperationSpec, PathItem};
+use utoipa::openapi::path::{Operation as OperationSpec, ParameterIn, PathItem};
 use utoipa::openapi::response::{ResponseBuilder, ResponsesBuilder};
 use utoipa::openapi::schema::{ArrayItems, Components, Object, Schema};
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
@@ -29,6 +30,11 @@ use crate::api::{AuthHandle, ProbeHandle};
 use crate::conflict::ConflictProblem;
 use crate::cookies::{CSRF_HEADER, Cookie};
 use crate::permissions::{Answer, Declared};
+
+mod ordered;
+mod tidy;
+
+use ordered::finished_text;
 
 /// The name of the security scheme for the session cookie.
 const SESSION_SCHEME: &str = "sessionCookie";
@@ -116,7 +122,7 @@ pub fn json() -> &'static str {
         let mut text = document()
             .to_pretty_json()
             .ok()
-            .and_then(|text| steady_text(&text))
+            .and_then(|text| finished_text(&text))
             .unwrap_or_default();
         text.push('\n');
         text
@@ -235,6 +241,9 @@ impl Modify for StandardParts {
                 add_standard_answers(operation);
                 add_marks(operation);
                 add_conflict_answer(&components, operation);
+                one_shape_for_conflicts(operation);
+                add_list_errors(operation);
+                add_body_errors(operation);
             }
             if let Some(read) = item.get.as_mut() {
                 add_read_answers(read);
@@ -303,7 +312,7 @@ fn body_has(components: &Components, operation: &OperationSpec, name: &str) -> b
 /// (`ConflictProblem`, ADR-0019 amendment M3): the description says so for every such route, so the
 /// generated client types it for all of them and no route describes it by hand.
 fn add_conflict_answer(components: &Components, operation: &mut OperationSpec) {
-    if !body_has(components, operation, VERSION) {
+    if !body_has(components, operation, VERSION) && !query_has(operation, VERSION) {
         return;
     }
     let code = ErrorCode::VersionChanged;
@@ -319,7 +328,7 @@ fn add_conflict_answer(components: &Components, operation: &mut OperationSpec) {
             known
         }
         _ => ResponseBuilder::new()
-            .description(format!("{} ({})", code.message(), code.code()))
+            .description(answer_text(code))
             .content(PROBLEM_CONTENT_TYPE, content)
             .build(),
     };
@@ -327,6 +336,93 @@ fn add_conflict_answer(components: &Components, operation: &mut OperationSpec) {
         .responses
         .responses
         .insert(status, RefOr::T(answer));
+}
+
+/// The English words of an answer for a code, then the code: what a person who writes a client
+/// reads (the message key is for the browser, not for the description).
+fn answer_text(code: ErrorCode) -> String {
+    format!(
+        "{} ({})",
+        Message::from(code.message()).render(),
+        code.code()
+    )
+}
+
+/// Whether the operation takes the query parameter `name`.
+fn query_has(operation: &OperationSpec, name: &str) -> bool {
+    operation
+        .parameters
+        .iter()
+        .flatten()
+        .any(|parameter| match parameter {
+            RefOr::T(parameter) => {
+                parameter.name == name && matches!(parameter.parameter_in, ParameterIn::Query)
+            }
+            RefOr::Ref(_) => false,
+        })
+}
+
+/// A `409` has one shape on every route (B3): the usual problem, and for a stale version the
+/// `conflict` member. A route that answers `409` with the plain problem answers with
+/// `ConflictProblem` too, which holds everything the plain problem holds.
+fn one_shape_for_conflicts(operation: &mut OperationSpec) {
+    let Some(RefOr::T(conflict)) = operation.responses.responses.get_mut("409") else {
+        return;
+    };
+    let content = ContentBuilder::new()
+        .schema(Some(Ref::from_schema_name(CONFLICT_SCHEMA)))
+        .build();
+    conflict
+        .content
+        .insert(PROBLEM_CONTENT_TYPE.to_owned(), RefOr::T(content));
+}
+
+/// A list route that takes `limit` can be asked for a cursor it did not give or a field it does
+/// not have (B2).
+fn add_list_errors(operation: &mut OperationSpec) {
+    if !query_has(operation, "limit") || operation.responses.responses.contains_key("400") {
+        return;
+    }
+    let text = format!(
+        "The request is not valid: a cursor that is not one of this list, or a name in `fields` that does not exist ({}, {}).",
+        ErrorCode::BadCursor.code(),
+        ErrorCode::UnknownField.code()
+    );
+    let answer = ResponseBuilder::new()
+        .description(text)
+        .content(
+            PROBLEM_CONTENT_TYPE,
+            ContentBuilder::new()
+                .schema(Some(Ref::from_schema_name("Problem")))
+                .build(),
+        )
+        .build();
+    operation
+        .responses
+        .responses
+        .insert("400".to_owned(), RefOr::T(answer));
+}
+
+/// A request with a body can be refused for being too big (B2).
+fn add_body_errors(operation: &mut OperationSpec) {
+    if operation.request_body.is_none() {
+        return;
+    }
+    let code = ErrorCode::TooLarge;
+    let answer = ResponseBuilder::new()
+        .description(answer_text(code))
+        .content(
+            PROBLEM_CONTENT_TYPE,
+            ContentBuilder::new()
+                .schema(Some(Ref::from_schema_name("Problem")))
+                .build(),
+        )
+        .build();
+    operation
+        .responses
+        .responses
+        .entry(code.status().to_string())
+        .or_insert(RefOr::T(answer));
 }
 
 /// The operations of one address with the name of their method, the one list of methods.
@@ -460,9 +556,7 @@ fn add_standard_answers(operation: &mut OperationSpec) {
             .schema(Some(Ref::from_schema_name("Problem")))
             .build()
     };
-    let answer = |code: ErrorCode| {
-        ResponseBuilder::new().description(format!("{} ({})", code.message(), code.code()))
-    };
+    let answer = |code: ErrorCode| ResponseBuilder::new().description(answer_text(code));
     let mut responses = ResponsesBuilder::new();
     for code in [
         ErrorCode::TooManyRequests,
@@ -492,143 +586,9 @@ fn add_standard_answers(operation: &mut OperationSpec) {
     }
 }
 
-/// A JSON document that keeps the order of its keys as it was written. The extensions of
-/// utoipa (`x-…`) sit in a hash map, so two runs of the program write them in two orders;
-/// [`Ordered::steady`] puts them in the order of their names and touches nothing else.
-enum Ordered {
-    Object(Vec<(String, Ordered)>),
-    Array(Vec<Ordered>),
-    Leaf(serde_json::Value),
-}
-
-impl Ordered {
-    /// The extensions of every object in the order of their names, in the places where they are.
-    fn steady(&mut self) {
-        match self {
-            Self::Object(entries) => {
-                let places: Vec<usize> = entries
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, (key, _))| key.starts_with("x-"))
-                    .map(|(place, _)| place)
-                    .collect();
-                let mut extensions: Vec<(String, Ordered)> = places
-                    .iter()
-                    .map(|place| {
-                        std::mem::replace(
-                            &mut entries[*place],
-                            (String::new(), Self::Array(Vec::new())),
-                        )
-                    })
-                    .collect();
-                extensions.sort_by(|a, b| a.0.cmp(&b.0));
-                for (place, entry) in places.into_iter().zip(extensions) {
-                    entries[place] = entry;
-                }
-                for (_, value) in entries {
-                    value.steady();
-                }
-            }
-            Self::Array(items) => items.iter_mut().for_each(Self::steady),
-            Self::Leaf(_) => {}
-        }
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for Ordered {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct Reader;
-
-        impl<'de> serde::de::Visitor<'de> for Reader {
-            type Value = Ordered;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("a JSON value")
-            }
-
-            fn visit_map<A: serde::de::MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Ordered, A::Error> {
-                let mut entries = Vec::new();
-                while let Some(entry) = map.next_entry::<String, Ordered>()? {
-                    entries.push(entry);
-                }
-                Ok(Ordered::Object(entries))
-            }
-
-            fn visit_seq<A: serde::de::SeqAccess<'de>>(
-                self,
-                mut seq: A,
-            ) -> Result<Ordered, A::Error> {
-                let mut items = Vec::new();
-                while let Some(item) = seq.next_element::<Ordered>()? {
-                    items.push(item);
-                }
-                Ok(Ordered::Array(items))
-            }
-
-            fn visit_bool<E>(self, value: bool) -> Result<Ordered, E> {
-                Ok(Ordered::Leaf(value.into()))
-            }
-
-            fn visit_i64<E>(self, value: i64) -> Result<Ordered, E> {
-                Ok(Ordered::Leaf(value.into()))
-            }
-
-            fn visit_u64<E>(self, value: u64) -> Result<Ordered, E> {
-                Ok(Ordered::Leaf(value.into()))
-            }
-
-            fn visit_f64<E>(self, value: f64) -> Result<Ordered, E> {
-                Ok(Ordered::Leaf(serde_json::Value::from(value)))
-            }
-
-            fn visit_str<E>(self, value: &str) -> Result<Ordered, E> {
-                Ok(Ordered::Leaf(value.into()))
-            }
-
-            fn visit_unit<E>(self) -> Result<Ordered, E> {
-                Ok(Ordered::Leaf(serde_json::Value::Null))
-            }
-        }
-
-        deserializer.deserialize_any(Reader)
-    }
-}
-
-impl serde::Serialize for Ordered {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::{SerializeMap as _, SerializeSeq as _};
-        match self {
-            Self::Object(entries) => {
-                let mut map = serializer.serialize_map(Some(entries.len()))?;
-                for (key, value) in entries {
-                    map.serialize_entry(key, value)?;
-                }
-                map.end()
-            }
-            Self::Array(items) => {
-                let mut seq = serializer.serialize_seq(Some(items.len()))?;
-                for item in items {
-                    seq.serialize_element(item)?;
-                }
-                seq.end()
-            }
-            Self::Leaf(value) => value.serialize(serializer),
-        }
-    }
-}
-
-/// The text of the document with the order of the extensions fixed.
-fn steady_text(text: &str) -> Option<String> {
-    let mut document: Ordered = serde_json::from_str(text).ok()?;
-    document.steady();
-    serde_json::to_string_pretty(&document).ok()
-}
-
 #[cfg(test)]
 mod tests {
+    use super::ordered::steady_text;
     use super::*;
 
     #[test]

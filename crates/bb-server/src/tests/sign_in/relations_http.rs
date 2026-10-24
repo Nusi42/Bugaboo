@@ -25,7 +25,7 @@ fn keys(list: &Reply) -> Vec<String> {
         .map(|items| {
             items
                 .iter()
-                .filter_map(|item| item["key"].as_str().map(str::to_owned))
+                .filter_map(|item| item["readable_id"].as_str().map(str::to_owned))
                 .collect()
         })
         .unwrap_or_default()
@@ -72,21 +72,21 @@ async fn iss_03_a_parent_cannot_become_its_own_sub_issue() -> TestResult {
         let itself = put_under(&mut ada, &a, 1, Some(&a)).await?;
         assert_eq!(
             (itself.status, itself.code()),
-            (StatusCode::CONFLICT, "issue.parent_circle")
+            (StatusCode::CONFLICT, "issue.parent-circle")
         );
         // B under A, C under B: a chain.
         let first = put_under(&mut ada, &b, 1, Some(&a)).await?;
-        assert_eq!(ok(&first)?["part_of"]["key"], a);
+        assert_eq!(ok(&first)?["part_of"]["readable_id"], a);
         let second = put_under(&mut ada, &c, 1, Some(&b)).await?;
-        assert_eq!(ok(&second)?["part_of"]["key"], b);
+        assert_eq!(ok(&second)?["part_of"]["readable_id"], b);
         // A under B or under C would close the circle, however deep.
         for parent in [&b, &c] {
             let circle = put_under(&mut ada, &a, 1, Some(parent)).await?;
-            assert_eq!(circle.code(), "issue.parent_circle", "{parent}");
+            assert_eq!(circle.code(), "issue.parent-circle", "{parent}");
         }
         // The same version twice is stale (B's version counted up with its parent).
         let stale = put_under(&mut ada, &b, 1, None).await?;
-        assert_eq!(stale.code(), "edit.version_changed");
+        assert_eq!(stale.code(), "edit.version-changed");
         // Taking B out from under A works and is in the sub-issues of nobody.
         let seen = ada.send("GET", &format!("{ISSUES}/{b}"), None).await?;
         let version = ok(&seen)?["issue"]["version"]
@@ -144,11 +144,11 @@ async fn iss_03_progress_counts_only_the_sub_issues_you_see() -> TestResult {
         let own = gus
             .send("GET", &format!("{ISSUES}/{mine}/relations"), None)
             .await?;
-        assert_eq!(ok(&own)?["part_of"]["key"], goal);
+        assert_eq!(ok(&own)?["part_of"]["readable_id"], goal);
         let hidden = gus
             .send("GET", &format!("{ISSUES}/{first}/relations"), None)
             .await?;
-        assert_eq!(hidden.code(), "resource.not_found");
+        assert_eq!(hidden.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -166,17 +166,17 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": victim, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": victim, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?;
         assert_eq!(ok(&added)?["name"], "blocks");
-        assert_eq!(added.body["issue"]["key"], victim);
+        assert_eq!(added.body["issue"]["readable_id"], victim);
         // The same relation again is refused.
         let again = ada
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": victim, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": victim, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?;
         assert_eq!(again.code(), "relation.exists");
@@ -185,19 +185,21 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send("GET", &format!("{ISSUES}/{blocker}/related-issues"), None)
             .await?;
         assert_eq!(from.body["items"][0]["name"], "blocks");
-        assert_eq!(from.body["items"][0]["issue"]["key"], victim);
+        assert_eq!(from.body["items"][0]["issue"]["readable_id"], victim);
         let to = ada
             .send("GET", &format!("{ISSUES}/{victim}/related-issues"), None)
             .await?;
         assert_eq!(to.body["items"][0]["name"], "is blocked by");
-        assert_eq!(to.body["items"][0]["issue"]["key"], blocker);
+        assert_eq!(to.body["items"][0]["issue"]["readable_id"], blocker);
         assert_eq!(to.body["items"][0]["direction"], "backward");
         // Started from the other end, the same words come out the same way round.
         let backward = ada
             .send(
                 "POST",
                 &format!("{ISSUES}/{victim}/relations"),
-                Some(json!({"other": blocker, "kind": related_to, "direction": "backward"})),
+                Some(
+                    json!({"other": blocker, "relation_kind": related_to, "direction": "backward"}),
+                ),
             )
             .await?;
         assert_eq!(ok(&backward)?["name"], "related to");
@@ -206,7 +208,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": victim, "kind": related_to, "direction": "forward"})),
+                Some(json!({"other": victim, "relation_kind": related_to, "direction": "forward"})),
             )
             .await?;
         assert_eq!(alike.code(), "relation.exists");
@@ -215,7 +217,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": blocker, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": blocker, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?;
         assert_eq!(itself.code(), "request.invalid");
@@ -237,7 +239,7 @@ async fn iss_04_a_relation_to_a_hidden_issue_is_not_shown() -> TestResult {
             .send(
                 "POST",
                 &format!("{ISSUES}/{secret}/relations"),
-                Some(json!({"other": theirs, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": theirs, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?)?;
         // Ada sees it on both; Gus sees his own issue with nothing related to it, and no sign
@@ -256,10 +258,10 @@ async fn iss_04_a_relation_to_a_hidden_issue_is_not_shown() -> TestResult {
             .send(
                 "POST",
                 &format!("{ISSUES}/{theirs}/relations"),
-                Some(json!({"other": secret, "kind": related_to, "direction": "forward"})),
+                Some(json!({"other": secret, "relation_kind": related_to, "direction": "forward"})),
             )
             .await?;
-        assert_eq!(refused.code(), "resource.not_found");
+        assert_eq!(refused.code(), "resource.not-found");
         let relation = ada_list.body["items"][0]["id"]
             .as_str()
             .ok_or("no relation ID")?
@@ -267,7 +269,7 @@ async fn iss_04_a_relation_to_a_hidden_issue_is_not_shown() -> TestResult {
         let removal = gus
             .send("DELETE", &format!("/api/v1/relations/{relation}"), None)
             .await?;
-        assert_eq!(removal.code(), "resource.not_found");
+        assert_eq!(removal.code(), "resource.not-found");
         Ok(())
     })
     .await
@@ -285,7 +287,7 @@ async fn iss_04_adding_and_removing_is_in_both_histories() -> TestResult {
             .send(
                 "POST",
                 &format!("{ISSUES}/{first}/relations"),
-                Some(json!({"other": second, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": second, "relation_kind": blocks, "direction": "forward"})),
             )
             .await?;
         let relation = ok(&added)?["id"].as_str().ok_or("no ID")?.to_owned();
@@ -311,9 +313,9 @@ async fn iss_04_adding_and_removing_is_in_both_histories() -> TestResult {
                 .filter(|item| item["kind"] == "relation")
                 .map(|item| {
                     (
-                        item["relation"].as_str().unwrap_or_default(),
-                        item["field"].as_str().unwrap_or_default(),
-                        item["issue"]["key"].as_str().unwrap_or_default(),
+                        item["relation_event"].as_str().unwrap_or_default(),
+                        item["relation_name"].as_str().unwrap_or_default(),
+                        item["issue"]["readable_id"].as_str().unwrap_or_default(),
                     )
                 })
                 .collect();
@@ -371,7 +373,7 @@ async fn iss_04_relations_made_at_the_same_moment_do_not_pass_the_limit() -> Tes
                 .send(
                     "POST",
                     &format!("{ISSUES}/{hub}/relations"),
-                    Some(json!({"other": other, "kind": blocks, "direction": "forward"})),
+                    Some(json!({"other": other, "relation_kind": blocks, "direction": "forward"})),
                 )
                 .await?;
             ok(&added)?;

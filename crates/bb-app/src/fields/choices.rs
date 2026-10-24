@@ -154,9 +154,9 @@ fn refused<S: AuthStore>(
 /// Adds a choice at the end.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage fields*, `resource.not_found` for a field that is not there,
+/// `access.forbidden` without *Manage fields*, `resource.not-found` for a field that is not there,
 /// `request.invalid` for a field without choices or a name that cannot be one, `name.taken` for a
-/// name another choice has, `edit.version_changed` when somebody changed the field meanwhile.
+/// name another choice has, `edit.version-changed` when somebody changed the field meanwhile.
 pub async fn add_choice<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AddChoice,
@@ -226,7 +226,7 @@ pub async fn add_choice<S: AuthStore>(
 /// Changes the name, color, icon or retired state of a choice: what is `Some` is changed.
 ///
 /// # Errors
-/// As [`add_choice`], and `resource.not_found` for a choice the field does not have.
+/// As [`add_choice`], and `resource.not-found` for a choice the field does not have.
 pub async fn change_choice<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangeChoice,

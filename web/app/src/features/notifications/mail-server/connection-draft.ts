@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 
 import { settingOf, type MySettings, type SettingValue } from "../../../shared/my-settings.ts";
 import type { OptimisticMutation } from "../../../shared/use-optimistic.ts";
-import { numberIn } from "../../../shared/number.ts";
+import { wholeNumberIn } from "../../../shared/number.ts";
 
 /** What the form changes in the settings of the organization. */
 export type SettingEdits = OptimisticMutation<{
@@ -55,7 +55,7 @@ export interface Changes {
  */
 export function changesOf(settings: MySettings, draft: Draft): Changes {
   const bounds = settingOf(settings, settingKeys.mailPort)?.bounds ?? undefined;
-  const port = numberIn(draft.port, bounds);
+  const port = wholeNumberIn(draft.port, bounds);
   if (port === null) {
     return {
       changes: [],

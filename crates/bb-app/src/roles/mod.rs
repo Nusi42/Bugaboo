@@ -72,7 +72,7 @@ fn view(record: &RoleRecord) -> RoleView {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The role, or `resource.not_found`.
+    /// The role, or `resource.not-found`.
     pub(crate) async fn role_or_missing(&self, id: RoleId) -> Result<RoleRecord, AppError> {
         self.store()
             .role(id)
@@ -106,7 +106,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The role as a name in a sentence, or `resource.not_found` for a role that is gone (a row
+    /// The role as a name in a sentence, or `resource.not-found` for a role that is gone (a row
     /// that names a role the store does not have was read between two changes).
     pub(crate) async fn role_ref(&self, id: RoleId) -> Result<RoleRef, AppError> {
         Ok(RoleRef {
@@ -126,7 +126,7 @@ fn set_of(permissions: &[Permission]) -> BTreeSet<Permission> {
 ///
 /// # Errors
 /// `access.forbidden` without *Manage roles*, `request.invalid` for a name that cannot be one,
-/// `name.taken` when another role has the name or a person has or had it as a handle, `access.too_much` when the role holds a
+/// `name.taken` when another role has the name or a person has or had it as a handle, `access.too-much` when the role holds a
 /// permission the person who makes it does not hold.
 pub async fn create_role<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -182,9 +182,9 @@ pub async fn create_role<S: AuthStore>(
 /// Changes a role: its name, its permissions, its two-step switch.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage roles*, `resource.not_found` for an unknown role,
-/// `request.invalid` for a name that cannot be one, `name.taken`, `access.too_much` when a
-/// permission is added that the person who asks does not hold, `access.would_lock_out` when it
+/// `access.forbidden` without *Manage roles*, `resource.not-found` for an unknown role,
+/// `request.invalid` for a name that cannot be one, `name.taken`, `access.too-much` when a
+/// permission is added that the person who asks does not hold, `access.would-lock-out` when it
 /// would leave nobody who can manage roles.
 pub async fn change_role<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -295,10 +295,10 @@ pub async fn change_role<S: AuthStore>(
 /// do not hold themselves).
 ///
 /// # Errors
-/// `access.forbidden` without *Manage roles*, `resource.not_found` for an unknown role,
-/// `request.invalid` when the replacement is the role itself, `role.in_use` for a role that
-/// somebody has, deleted without a replacement, `access.too_much` when the replacement holds more
-/// than the person who asks holds where it would be given, `access.would_lock_out` when it would
+/// `access.forbidden` without *Manage roles*, `resource.not-found` for an unknown role,
+/// `request.invalid` when the replacement is the role itself, `role.in-use` for a role that
+/// somebody has, deleted without a replacement, `access.too-much` when the replacement holds more
+/// than the person who asks holds where it would be given, `access.would-lock-out` when it would
 /// leave nobody who can manage roles.
 pub async fn delete_role<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -399,10 +399,10 @@ fn starting_levels(starting: StartingRole) -> (FieldLevels, PeopleLevels) {
 /// starting permissions*). The name stays; so do the levels set for single projects.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage roles*, `resource.not_found` for an unknown role,
-/// `request.invalid` for a role that is not a copy of a starting role, `access.too_much` when
+/// `access.forbidden` without *Manage roles*, `resource.not-found` for an unknown role,
+/// `request.invalid` for a role that is not a copy of a starting role, `access.too-much` when
 /// the reset adds a permission or a level the person who asks does not hold themselves,
-/// `access.would_lock_out` when it would leave nobody who can manage roles.
+/// `access.would-lock-out` when it would leave nobody who can manage roles.
 pub async fn reset_role<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ResetRole,
@@ -508,7 +508,7 @@ pub async fn reset_role<S: AuthStore>(
 /// because that is where a person chooses a role to give.
 ///
 /// # Errors
-/// `access.forbidden` without the permission, `resource.not_found` for a project the person may
+/// `access.forbidden` without the permission, `resource.not-found` for a project the person may
 /// not know about, `request.invalid` for a cursor that is not one.
 pub async fn roles<S: AuthStore>(
     ctx: &Ctx<'_, S>,

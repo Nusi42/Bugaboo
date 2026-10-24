@@ -63,7 +63,7 @@ pub(crate) struct ManyChangeBody {
 
 /// What is done to every issue of the selection.
 #[derive(Deserialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ManyChangeActionBody {
     /// Change fields (*Change fields*, *Change status*).
     Change {
@@ -161,7 +161,7 @@ pub(crate) struct ApplyManyChangesBody {
 
 /// A value in a change, as the person may see it.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "shown", rename_all = "snake_case")]
+#[serde(tag = "shown", rename_all = "kebab-case")]
 pub(crate) enum ChangeValueBody {
     /// A word, a name or a number.
     Text {
@@ -237,10 +237,33 @@ pub(crate) struct FieldChangeBody {
     after: Option<ChangeValueBody>,
 }
 
+#[cfg(test)]
+impl FieldChangeBody {
+    /// A change with every member filled, for the tests that hold a table of fields to the members.
+    pub(crate) fn blank() -> Self {
+        Self {
+            field: String::new(),
+            name: Some(String::new()),
+            before: None,
+            after: None,
+        }
+    }
+}
+
+/// The word of the API for the field of a change: the renewal of an issue's ID is stored as `key`, a
+/// word the glossary rules out, and the API says `readable-id`.
+fn field_word(stored: &str) -> String {
+    if stored == "key" {
+        "readable-id".to_owned()
+    } else {
+        stored.to_owned()
+    }
+}
+
 impl From<&FieldChangeView> for FieldChangeBody {
     fn from(change: &FieldChangeView) -> Self {
         Self {
-            field: change.field.clone(),
+            field: field_word(&change.field),
             name: change.name.clone(),
             before: change.before.as_ref().map(ChangeValueBody::from),
             after: change.after.as_ref().map(ChangeValueBody::from),
@@ -250,7 +273,7 @@ impl From<&FieldChangeView> for FieldChangeBody {
 
 /// Something a person should know about a change that will be made, beside what changes.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ManyChangeNoteBody {
     /// The issue moves to a project that does not use its issue type. It keeps the type.
     TypeNotUsed {
@@ -277,7 +300,7 @@ impl From<&ManyChangeNote> for ManyChangeNoteBody {
 
 /// What a row of the preview says will happen to the issue.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum ManyChangeDetailBody {
     /// The fields that would change.
     Changes {
@@ -638,4 +661,15 @@ where
         .routes(routes!(apply_many_changes))
         .routes(routes!(get_many_changes_run))
         .routes(routes!(stop_many_changes_run))
+}
+
+#[cfg(test)]
+mod field_word_tests {
+    use super::field_word;
+
+    #[test]
+    fn the_renewal_of_an_issue_id_is_the_field_readable_id_and_other_fields_stay() {
+        assert_eq!(field_word("key"), "readable-id");
+        assert_eq!(field_word("title"), "title");
+    }
 }

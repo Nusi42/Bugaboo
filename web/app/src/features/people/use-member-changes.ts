@@ -24,11 +24,11 @@ export interface MemberChanges {
 
 /** Puts a person into a group (`true`) or takes them out (`false`). */
 async function put(group: string, person: string, into: boolean): Promise<void> {
-  const params = { params: { path: { group_id: group, person_id: person } } };
+  const params = { params: { path: { group: group, person: person } } };
   if (into) {
-    await api.client.PUT("/api/v1/groups/{group_id}/members/{person_id}", params);
+    await api.client.PUT("/api/v1/groups/{group}/members/{person}", params);
   } else {
-    await api.client.DELETE("/api/v1/groups/{group_id}/members/{person_id}", params);
+    await api.client.DELETE("/api/v1/groups/{group}/members/{person}", params);
   }
   refreshAccess();
 }

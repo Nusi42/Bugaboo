@@ -14,7 +14,7 @@ interface LabelsSectionProps extends OpenProps {
 
 /** The row of a label: its group beside its name. */
 function rowOf(label: Label, props: LabelsSectionProps): ListRow {
-  const group = props.groups.find((each) => each.id === label.group);
+  const group = props.groups.find((each) => each.id === label.label_group);
   return {
     key: label.id,
     name: label.name,

@@ -3,7 +3,7 @@ import { ChoiceGroup, Form, SelectField, SubmitButton, Switch, TextField } from 
 import { useState } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
-import { numberIn } from "../../shared/number.ts";
+import { wholeNumberIn } from "../../shared/number.ts";
 import { hasNoGenericControl, wordsOf } from "./texts.ts";
 
 /** What a control needs: the setting, and what to do with a new value. */
@@ -34,7 +34,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
   const [draft, setDraft] = useState(String(setting.value));
   const [problem, setProblem] = useState<string>();
   const bounds = setting.bounds ?? undefined;
-  const number = setting.kind === "integer";
+  const number = setting.kind === "whole-number";
   const between =
     bounds === undefined
       ? undefined
@@ -45,7 +45,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
       return;
     }
     // A number that is none, or outside the bounds, is not sent: the server would only refuse it.
-    const value = numberIn(draft, bounds);
+    const value = wholeNumberIn(draft, bounds);
     if (value === null) {
       setProblem(between ?? t("setting.ui.whole-number"));
       return;
@@ -77,7 +77,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
  */
 export function SettingControl({ setting, onChange }: SettingControlProps) {
   const value = setting.value;
-  if (setting.kind === "bool" && typeof value === "boolean") {
+  if (setting.kind === "yes-no" && typeof value === "boolean") {
     return <Switch label={wordsOf(setting.name_key)} isSelected={value} onChange={onChange} />;
   }
   if (setting.format === "choice" && typeof value === "string") {
@@ -101,7 +101,7 @@ export function SettingControl({ setting, onChange }: SettingControlProps) {
       />
     );
   }
-  if (setting.format === "time_zone" && typeof value === "string") {
+  if (setting.format === "time-zone" && typeof value === "string") {
     return (
       <SelectField
         label={wordsOf(setting.name_key)}

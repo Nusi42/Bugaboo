@@ -38,10 +38,10 @@ pub enum PersonRef {
     },
     /// As *Someone*. Nothing else.
     Someone,
-    /// A removed person: the screen says "Former user {label}". No ID.
+    /// A removed person: the screen says "Former user {code}". No ID.
     Former {
         /// The random code, like `K7Q2`.
-        label: String,
+        code: String,
     },
 }
 
@@ -161,7 +161,7 @@ pub fn resolve(
     if let Some(former) = target.removed {
         return if level == PeopleLevel::Names {
             PersonRef::Former {
-                label: former.label.clone(),
+                code: former.label.clone(),
             }
         } else {
             PersonRef::Someone

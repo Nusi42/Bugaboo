@@ -109,7 +109,7 @@ function useAddRelation(readableId: string) {
   const add = api.query.useMutation("post", "/api/v1/issues/{issue}/relations", {
     onSuccess: (relation) => {
       refreshIssueRelations();
-      setMade({ relation: relation.id, other: relation.issue.key, name: relation.name });
+      setMade({ relation: relation.id, other: relation.issue.readable_id, name: relation.name });
       setOther("");
       setChosen(null);
     },
@@ -125,7 +125,7 @@ function useAddRelation(readableId: string) {
     if (choice !== undefined) {
       add.mutate({
         params: { path: { issue: readableId } },
-        body: { other: other.trim(), kind: choice.kind, direction: choice.direction },
+        body: { other: other.trim(), relation_kind: choice.kind, direction: choice.direction },
       });
     }
   };

@@ -40,9 +40,9 @@ fn told(verdict: Verdict, rules_hide_a_field: bool) -> TriedVerdict {
 /// tries sees.
 ///
 /// # Errors
-/// `resource.not_found` for an issue the person may not see or a person they may not know about,
+/// `resource.not-found` for an issue the person may not see or a person they may not know about,
 /// `access.forbidden` without *Manage workflows* or *Check access* in the project of the issue,
-/// `resource.not_found` for a reader who is not shown the people of the project.
+/// `resource.not-found` for a reader who is not shown the people of the project.
 pub async fn try_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: TryWorkflowQuery,

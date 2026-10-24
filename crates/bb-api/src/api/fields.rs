@@ -2,16 +2,16 @@
 //! person sees, and making, changing and retiring a field and its choices for those who hold
 //! *Manage fields*. A field is retired, never deleted.
 //!
-//! A field the person may not see is in no answer and answers `resource.not_found` like one that
+//! A field the person may not see is in no answer and answers `resource.not-found` like one that
 //! does not exist. Every change names the `version` it looked at. The use cases are in `bb-app`,
 //! behind [`AuthApi`](bb_app::auth::AuthApi).
 
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::fields::{
-    AddChoice, ChangeChoice, ChangeField, ChoiceView, CombineChoices, CreateField, FieldPage,
-    FieldQuery, FieldTypePage, FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, NewChoice,
-    ReorderChoices, SaveFieldText, ScopeView,
+    AddChoice, ChangeChoice, ChangeField, ChoiceView, CombineChoices, CreateField, FieldQuery,
+    FieldTypePage, FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, NewChoice, ReorderChoices,
+    SaveFieldText, ScopeView,
 };
 use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LockToken, ProjectId};
 use bb_core::issue::IssueIcon;

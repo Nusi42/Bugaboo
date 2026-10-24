@@ -33,7 +33,7 @@ function namesOf(fields: WorkflowEditor["fields"], keys: readonly string[]): str
 }
 
 /** Why the judge turned a status change down, said to the person who tries the workflow (who is not the person it is tried for). */
-function reasonOf(why: Schema<"Why">): string {
+function reasonOf(why: Schema<"RefusalReason">): string {
   if (why === "not-for-you") {
     return t("workflows.try-not-for-you");
   }
@@ -68,7 +68,7 @@ function Result({
     <div {...partOf(part.stack)}>
       <p {...partOf(part.row)}>
         <span>{t("workflows.try-in-status", { key: issue })}</span>
-        <StatusPill group={tried.status.group} label={tried.status.name} />
+        <StatusPill group={tried.status.status_group} label={tried.status.name} />
       </p>
       {tried.changes.length === 0 ? (
         <p {...partOf(part.muted)}>{t("workflows.try-none")}</p>
@@ -78,7 +78,7 @@ function Result({
             <li key={change.to.key} {...partOf(part.workflowTry)}>
               <Icon name={change.verdict === "allowed" ? iconName.check : iconName.close} />
               <strong>{change.button}</strong>
-              <StatusPill group={change.to.group} label={change.to.name} />
+              <StatusPill group={change.to.status_group} label={change.to.name} />
               <span>{sentenceOf(change, fields)}</span>
             </li>
           ))}

@@ -27,7 +27,7 @@ function Answer({
     return null;
   }
   const wait = retryAfterSecondsOf(error);
-  if (codeOf(error) === "rate_limit.exceeded" && wait !== undefined) {
+  if (codeOf(error) === "rate-limit.exceeded" && wait !== undefined) {
     // The time that is left, as the server counts it: not the whole of the time between two tests.
     return <Alert tone={alertTone.warning}>{t("mail-server.test-wait", { seconds: wait })}</Alert>;
   }

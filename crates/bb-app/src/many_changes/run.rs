@@ -300,7 +300,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// for it reads it.
 ///
 /// # Errors
-/// `resource.not_found` for a run that is not there or that somebody else asked for.
+/// `resource.not-found` for a run that is not there or that somebody else asked for.
 pub async fn many_changes_run<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ManyChangeRunQuery,
@@ -324,7 +324,7 @@ pub async fn many_changes_run<S: AuthStore>(
 /// Stopping a run that is over changes nothing.
 ///
 /// # Errors
-/// `resource.not_found` for a run that is not there or that somebody else asked for and the person
+/// `resource.not-found` for a run that is not there or that somebody else asked for and the person
 /// does not manage people.
 pub async fn stop_many_changes_run<S: AuthStore>(
     ctx: &Ctx<'_, S>,

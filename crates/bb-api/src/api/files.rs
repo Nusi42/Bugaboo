@@ -61,13 +61,13 @@ const ITEM_FIELDS: [FieldSpec; 13] = [
 
 problem_answers! {
     /// A file over the limit, or a part over the limit of a part.
-    TooBigAnswer => ("413", "The file is bigger than the project allows, or the part is bigger than a part may be (file.too_big, request.too_large)."),
+    TooBigAnswer => ("413", "The file is bigger than the project allows, or the part is bigger than a part may be (file.too-big, request.too-large)."),
     /// A type the organization does not accept.
-    BlockedAnswer => ("415", "The organization does not accept this type of file (file.type_blocked)."),
+    BlockedAnswer => ("415", "The organization does not accept this type of file (file.type-blocked)."),
     /// The disk has no room for the part.
-    NoRoomAnswer => ("507", "The disk of the server has no room for the part (file.no_room); trying later can work."),
+    NoRoomAnswer => ("507", "The disk of the server has no room for the part (file.no-room); trying later can work."),
     /// A part out of order, or an upload that is not complete.
-    OutOfOrderAnswer => ("409", "The part does not start where the file stands, or the upload is not complete yet (file.wrong_part, file.incomplete)."),
+    OutOfOrderAnswer => ("409", "The part does not start where the file stands, or the upload is not complete yet (file.wrong-part, file.incomplete)."),
 }
 
 /// The address of a signed link. The route of the download is `/api/v1/files/{file}`.
@@ -199,9 +199,9 @@ pub(crate) struct PartQuery {
 }
 
 /// The bytes of a part, as they are.
-pub(crate) struct PartBytes;
+pub(crate) struct FileBytes;
 
-impl utoipa::PartialSchema for PartBytes {
+impl utoipa::PartialSchema for FileBytes {
     fn schema() -> RefOr<utoipa::openapi::schema::Schema> {
         utoipa::openapi::schema::ObjectBuilder::new()
             .schema_type(utoipa::openapi::schema::Type::String)
@@ -212,7 +212,7 @@ impl utoipa::PartialSchema for PartBytes {
     }
 }
 
-impl ToSchema for PartBytes {}
+impl ToSchema for FileBytes {}
 
 /// Starts an upload of a file to an issue, or to a comment under it. Needs the right to change the
 /// issue (a Guest: an issue they reported), or, for a comment, to have written it. A file that is
@@ -301,7 +301,7 @@ async fn get_upload(
     operation_id = "sendUploadPart",
     tag = "files",
     params(("upload" = String, Path, description = "The ID of the upload."), PartQuery),
-    request_body(content = PartBytes, content_type = "application/octet-stream"),
+    request_body(content = FileBytes, content_type = "application/octet-stream"),
     responses(
         (status = 200, description = "The upload, with the bytes the server has now.", body = UploadItem),
         InvalidAnswer,
@@ -603,7 +603,7 @@ fn download_headers(name: &str, media_type: &str, size: u64) -> HeaderMap {
     tag = "files",
     params(("file" = String, Path, description = "The signed address of a file, as the list of files gives it.")),
     responses(
-        (status = 200, description = "The bytes of the file, or the PNG of its preview.", content_type = "application/octet-stream", body = PartBytes),
+        (status = 200, description = "The bytes of the file, or the PNG of its preview.", content_type = "application/octet-stream", body = FileBytes),
         NotSignedInAnswer,
         NotFoundAnswer
     )

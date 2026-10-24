@@ -71,7 +71,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// the current short name, so the page can show the address that is right now).
 ///
 /// # Errors
-/// `resource.not_found` for a project that does not exist or that the person may not see: the
+/// `resource.not-found` for a project that does not exist or that the person may not see: the
 /// two cannot be told apart.
 pub async fn project<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -178,7 +178,7 @@ fn matches(search: &[String], name: &str, short_name: &str) -> bool {
 /// project whose parent is hidden is at the top of the tree.
 ///
 /// # Errors
-/// `resource.not_found` for a project to look inside that the person may not see (or that does
+/// `resource.not-found` for a project to look inside that the person may not see (or that does
 /// not exist), `request.invalid` for a cursor that is not one.
 pub async fn projects<S: AuthStore>(
     ctx: &Ctx<'_, S>,

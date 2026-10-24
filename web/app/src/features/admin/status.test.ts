@@ -21,7 +21,7 @@ function healthy(): State {
     version: "0.0.0",
     started_at: "2026-10-05T08:00:00Z",
     uptime_seconds: 3600,
-    database: { kind: "built_in", ok: true },
+    database: { kind: "built-in", ok: true },
     certificate: { expires_at: "2027-10-05T12:00:00Z" },
     security_log: {
       result: "valid",
@@ -57,12 +57,12 @@ describe("ops_08 how serious the state of the server is", () => {
   });
 
   it("is a problem when the database is silent, the log is broken or the certificate has run out", () => {
-    expect(levelOf({ ...healthy(), database: { kind: "built_in", ok: false } }, NOW)).toBe(
+    expect(levelOf({ ...healthy(), database: { kind: "built-in", ok: false } }, NOW)).toBe(
       "problem",
     );
     const broken: State = {
       ...healthy(),
-      security_log: { result: "broken", broken_at: 7, reason: "gap", write_failures: 0 },
+      security_log: { result: "broken", broken_seq: 7, reason: "gap", write_failures: 0 },
     };
     expect(levelOf(broken, NOW)).toBe("problem");
     const unreadable: State = {
@@ -71,7 +71,7 @@ describe("ops_08 how serious the state of the server is", () => {
     };
     const behind: State = {
       ...healthy(),
-      security_log: { result: "broken", broken_at: 9, reason: "behind", write_failures: 0 },
+      security_log: { result: "broken", broken_seq: 9, reason: "behind", write_failures: 0 },
     };
     expect(levelOf(behind, NOW)).toBe("problem");
     expect(levelOf(unreadable, NOW)).toBe("problem");

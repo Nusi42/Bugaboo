@@ -8,6 +8,7 @@
 //! the version that was looked at. The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).
 
+use crate::api::editing::SlotBody;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::layouts::{
@@ -25,6 +26,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::access_bodies::NamedRef;
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized, done,
@@ -128,38 +130,11 @@ impl From<&EditorSection> for EditorSectionBody {
     }
 }
 
-/// A role the editor can tick.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct EditorRoleBody {
-    /// The ID of the role.
-    id: String,
-    /// Its name.
-    name: String,
-}
-
-impl From<&EditorRole> for EditorRoleBody {
+impl From<&EditorRole> for NamedRef {
     fn from(role: &EditorRole) -> Self {
         Self {
             id: role.id.to_string(),
             name: role.name.clone(),
-        }
-    }
-}
-
-/// The layout set at exactly the place that was asked about.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct LayoutSlotBody {
-    /// The ID of the layout, which the edit lock is about.
-    id: String,
-    /// Counts up with every change. A change is made on the version that was looked at.
-    version: i64,
-}
-
-impl From<&LayoutSlot> for LayoutSlotBody {
-    fn from(slot: &LayoutSlot) -> Self {
-        Self {
-            id: slot.id.to_string(),
-            version: slot.version,
         }
     }
 }
@@ -196,7 +171,7 @@ pub(crate) struct LayoutEditorBody {
     issue_type: Option<IssueTypeRef>,
     /// The layout set at this place. Without it the place uses the layout it inherits (or the
     /// starting layout), and *Customize* makes one.
-    layout: Option<LayoutSlotBody>,
+    layout: Option<SlotBody>,
     /// Where the layout that counts is set, when it is another place.
     inherited_from: Option<InheritedFromBody>,
     /// The sections, in order.
@@ -205,7 +180,7 @@ pub(crate) struct LayoutEditorBody {
     available: Vec<EditorFieldBody>,
     /// The roles that can be ticked, in the order of roles; none when the person may not choose
     /// the roles of a field.
-    roles: Vec<EditorRoleBody>,
+    roles: Vec<NamedRef>,
     /// The person may choose the roles of a field (*Decide what roles see* at the place). When
     /// false, `roles` is empty, no field has a mark, and a save keeps the roles of the fields on
     /// the layout.
@@ -220,7 +195,7 @@ impl From<&LayoutEditor> for LayoutEditorBody {
             kind: editor.kind,
             project: editor.project.as_ref().map(ProjectRef::from),
             issue_type: editor.issue_type.as_ref().map(IssueTypeRef::from),
-            layout: editor.layout.as_ref().map(LayoutSlotBody::from),
+            layout: editor.layout.as_ref().map(SlotBody::from),
             inherited_from: editor.inherited_from.as_ref().map(InheritedFromBody::from),
             sections: editor
                 .sections
@@ -228,7 +203,7 @@ impl From<&LayoutEditor> for LayoutEditorBody {
                 .map(EditorSectionBody::from)
                 .collect(),
             available: editor.available.iter().map(EditorFieldBody::from).collect(),
-            roles: editor.roles.iter().map(EditorRoleBody::from).collect(),
+            roles: editor.roles.iter().map(NamedRef::from).collect(),
             choose_roles: editor.choose_roles,
         }
     }
@@ -507,4 +482,13 @@ where
         .routes(routes!(get_layout_editor))
         .routes(routes!(create_layout))
         .routes(routes!(save_layout, delete_layout))
+}
+
+impl From<&LayoutSlot> for SlotBody {
+    fn from(slot: &LayoutSlot) -> Self {
+        Self {
+            id: slot.id.to_string(),
+            version: slot.version,
+        }
+    }
 }

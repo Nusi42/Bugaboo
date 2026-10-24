@@ -18,7 +18,7 @@ use crate::auth::{AppError, AuthStore, Ctx};
 /// *Manage workflows* wherever the workflow is used. It changes nothing and takes no lock.
 ///
 /// # Errors
-/// `resource.not_found` for a workflow that is not there, `access.forbidden` without *Manage
+/// `resource.not-found` for a workflow that is not there, `access.forbidden` without *Manage
 /// workflows* where it is used, `workflow.invalid` for a workflow that breaks a rule or a rule
 /// that names a field or a group the person may not know (a field that does not exist is told
 /// the same way).

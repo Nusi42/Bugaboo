@@ -23,7 +23,7 @@ const fn refusal_code(refusal: TypeRefusal) -> ErrorCode {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The issue type a write names, for a person: `resource.not_found` for one that is not there
+    /// The issue type a write names, for a person: `resource.not-found` for one that is not there
     /// or that they may not know (`known.rs`), then the refusals of
     /// [`Self::ensure_type_takes_issues`].
     pub(crate) async fn writable_issue_type(
@@ -38,8 +38,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Refuses an issue type that takes no new issue in the project whose chain from the top down
-    /// is given: it is retired (`issue.type_retired`), or the project does not offer it
-    /// (`issue.type_not_offered`). An issue keeps a type that is retired or not offered; only a new
+    /// is given: it is retired (`issue.type-retired`), or the project does not offer it
+    /// (`issue.type-not-offered`). An issue keeps a type that is retired or not offered; only a new
     /// issue and a change of type are judged.
     pub(crate) async fn ensure_type_takes_issues(
         &self,
@@ -57,8 +57,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// Inside the transaction that writes an issue of this type in the project whose chain is given
 /// (after [`lock_chain_in`]): checks that the type still takes new issues. If it was retired
-/// meanwhile, the write is stopped with `issue.type_retired`, and if a place was changed so that
-/// the project does not offer it any more, with `issue.type_not_offered`.
+/// meanwhile, the write is stopped with `issue.type-retired`, and if a place was changed so that
+/// the project does not offer it any more, with `issue.type-not-offered`.
 ///
 /// # Errors
 /// The error of the store, or the stop of the change.

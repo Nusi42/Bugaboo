@@ -25,10 +25,10 @@ export function EditGroup({ group }: { readonly group: LabelGroup }) {
 function GroupEditor({ group }: { readonly group: LabelGroup }) {
   const [name, setName] = useState(group.name);
   const [pickOne, setPickOne] = useState(group.pick_one);
-  const change = api.query.useMutation("patch", "/api/v1/label-groups/{group}", {
+  const change = api.query.useMutation("patch", "/api/v1/label-groups/{label_group}", {
     onSuccess: refreshLabels,
   });
-  const path = { params: { path: { group: group.id } } } as const;
+  const path = { params: { path: { label_group: group.id } } } as const;
   return (
     <div {...partOf(part.stack)}>
       <Form

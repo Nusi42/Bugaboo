@@ -32,7 +32,7 @@ pub(crate) struct StatusRef {
     /// What it is called.
     name: String,
     /// The status group it belongs to.
-    group: StatusGroup,
+    status_group: StatusGroup,
 }
 
 impl From<&StatusView> for StatusRef {
@@ -40,7 +40,7 @@ impl From<&StatusView> for StatusRef {
         Self {
             key: status.key.to_string(),
             name: status.name.clone(),
-            group: status.group,
+            status_group: status.group,
         }
     }
 }
@@ -52,7 +52,7 @@ impl StatusRef {
         Self {
             key: String::new(),
             name: String::new(),
-            group: StatusGroup::NotStarted,
+            status_group: StatusGroup::NotStarted,
         }
     }
 }

@@ -38,7 +38,7 @@ fn view(passkey: &StoredPasskey) -> PasskeyView {
 /// How the second step of the signed-in person is set up.
 ///
 /// # Errors
-/// `auth.not_signed_in` without a session.
+/// `auth.not-signed-in` without a session.
 pub async fn two_step<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: TwoStepQuery,
@@ -87,7 +87,7 @@ fn challenge_failed(error: bb_auth::AuthError) -> AppError {
 /// Starts checking a passkey as the second step of signing in.
 ///
 /// # Errors
-/// `auth.not_signed_in` without a half finished sign-in; `auth.passkey_rejected` when the person
+/// `auth.not-signed-in` without a half finished sign-in; `auth.passkey-rejected` when the person
 /// has no passkey.
 pub async fn passkey_second_step_options<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -138,7 +138,7 @@ pub async fn passkey_sign_in_options<S: AuthStore>(
 /// once.
 ///
 /// # Errors
-/// `auth.passkey_rejected` for anything that does not check out, without saying why.
+/// `auth.passkey-rejected` for anything that does not check out, without saying why.
 pub async fn passkey_sign_in<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: PasskeySignIn,
@@ -291,7 +291,7 @@ fn new_backup_codes() -> Result<(Vec<String>, Vec<bb_core::security_log::Digest>
 /// (shown once).
 ///
 /// # Errors
-/// `auth.wrong_second_step_code` when the code is wrong, `request.invalid` when setup was not
+/// `auth.wrong-second-step-code` when the code is wrong, `request.invalid` when setup was not
 /// started or is finished already.
 pub async fn confirm_code_app<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -351,7 +351,7 @@ pub async fn confirm_code_app<S: AuthStore>(
 /// Switches the code app off; the person types their password again for this.
 ///
 /// # Errors
-/// `auth.wrong_credentials` for a wrong password.
+/// `auth.wrong-credentials` for a wrong password.
 pub async fn remove_code_app<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RemoveCodeApp,
@@ -383,7 +383,7 @@ pub async fn remove_code_app<S: AuthStore>(
 /// Creates new backup codes; the old ones stop working. The person types their password again.
 ///
 /// # Errors
-/// `auth.wrong_credentials` for a wrong password, `request.invalid` without a code app.
+/// `auth.wrong-credentials` for a wrong password, `request.invalid` without a code app.
 pub async fn renew_backup_codes<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RenewBackupCodes,
@@ -421,7 +421,7 @@ pub async fn renew_backup_codes<S: AuthStore>(
 /// Starts adding a passkey.
 ///
 /// # Errors
-/// `auth.not_signed_in` without a session.
+/// `auth.not-signed-in` without a session.
 pub async fn passkey_registration_options<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: PasskeyRegistrationQuery,
@@ -449,7 +449,7 @@ pub async fn passkey_registration_options<S: AuthStore>(
 /// Adds a passkey.
 ///
 /// # Errors
-/// `auth.passkey_rejected` when the answer of the device does not check out,
+/// `auth.passkey-rejected` when the answer of the device does not check out,
 /// `request.invalid` for a name that is empty or too long, or when the person has too many.
 pub async fn add_passkey<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -502,7 +502,7 @@ pub async fn add_passkey<S: AuthStore>(
 /// Removes a passkey; the person types their password again for this.
 ///
 /// # Errors
-/// `auth.wrong_credentials` for a wrong password, `resource.not_found` for a passkey that is not
+/// `auth.wrong-credentials` for a wrong password, `resource.not-found` for a passkey that is not
 /// the person's.
 pub async fn remove_passkey<S: AuthStore>(
     ctx: &Ctx<'_, S>,

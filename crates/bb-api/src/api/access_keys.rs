@@ -345,10 +345,10 @@ async fn create_access_key(
 /// Deletes an access key at once. A deleted key cannot come back.
 #[utoipa::path(
     delete,
-    path = "/api/v1/access-keys/{access_key_id}",
+    path = "/api/v1/access-keys/{access_key}",
     operation_id = "deleteAccessKey",
     tag = "access-keys",
-    params(("access_key_id" = String, Path, description = "The ID of the key.")),
+    params(("access_key" = String, Path, description = "The ID of the key.")),
     responses((status = 204, description = "Deleted."), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn delete_access_key(
@@ -442,7 +442,7 @@ impl From<&ProjectChoice> for ProjectChoiceItem {
 /// time.
 #[utoipa::path(
     get,
-    path = "/api/v1/access-keys/projects",
+    path = "/api/v1/access-keys/project-choices",
     operation_id = "listProjectChoices",
     tag = "access-keys",
     params(ListParams),

@@ -24,7 +24,7 @@ const CANDIDATES: u64 = 10 * TAG_SUGGESTIONS_MAX as u64;
 /// an issue in the project.
 ///
 /// # Errors
-/// `resource.not_found` for a project that does not exist or that the person may not see.
+/// `resource.not-found` for a project that does not exist or that the person may not see.
 pub async fn tag_suggestions<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: TagSuggestionsQuery,

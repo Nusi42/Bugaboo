@@ -3,7 +3,7 @@
 use super::*;
 use crate::checks::arch_settings::CATALOG_PATH;
 
-const KINDS: &str = r#"{"components":{"schemas":{"NotificationKind":{"type":"string","enum":["mentioned","followed_activity"]}}}}"#;
+const KINDS: &str = r#"{"components":{"schemas":{"NotificationKind":{"type":"string","enum":["mentioned","followed-activity"]}}}}"#;
 
 const NOTIFICATION: &str = "impl NotificationKind {
     pub const fn setting(self, via: Via) -> &'static Setting<Bool> {
@@ -64,7 +64,7 @@ fn the_table_of_customize_comes_from_the_match_of_the_notification_kind() {
         "{text}"
     );
     assert!(
-        text.contains("followed_activity: { app: \"notifications.followed-activity-in-app\""),
+        text.contains("\"followed-activity\": { app: \"notifications.followed-activity-in-app\""),
         "{text}"
     );
 }
@@ -94,7 +94,7 @@ fn a_kind_without_both_settings_or_a_missing_source_is_an_error() {
 
 #[test]
 fn a_word_is_spelled_as_the_variant_of_the_rust_enum() {
-    assert_eq!(pascal_case("followed_activity"), "FollowedActivity");
-    assert_eq!(pascal_case("run_ended"), "RunEnded");
+    assert_eq!(pascal_case("followed-activity"), "FollowedActivity");
+    assert_eq!(pascal_case("run-ended"), "RunEnded");
     assert_eq!(pascal_case("mentioned"), "Mentioned");
 }

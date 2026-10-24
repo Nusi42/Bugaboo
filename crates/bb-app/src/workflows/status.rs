@@ -141,8 +141,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Lets the status change `from` → `to` pass, or refuses it with the answer of the judge.
     ///
     /// # Errors
-    /// `workflow.no_such_change`, `workflow.not_for_you`, `workflow.not_named`, `workflow.only_if` and
-    /// `workflow.cannot_fill` for a change the judge turns down, and `field.required` at the field
+    /// `workflow.no-such-change`, `workflow.not-for-you`, `workflow.not-named`, `workflow.only-if` and
+    /// `workflow.cannot-fill` for a change the judge turns down, and `field.required` at the field
     /// for a change that still needs one.
     pub(crate) async fn ensure_status_change(
         &self,

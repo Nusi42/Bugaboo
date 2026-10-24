@@ -44,7 +44,10 @@ async fn iss_06_history_shows_an_own_field_by_the_mask_of_the_reader() -> TestRe
                 })),
             )
             .await?;
-        let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        let issue = ok(&made)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
         let version = ok(&made)?["version"].clone();
         ok(&ada
             .send(
@@ -75,24 +78,37 @@ async fn iss_06_history_shows_an_own_field_by_the_mask_of_the_reader() -> TestRe
         let all = changes(ok(&all)?);
         let severity_change = all
             .iter()
-            .find(|item| item["field"] == json!(severity_id) && item["before_names"].is_array())
+            .find(|item| {
+                item["change"]["field"] == json!(severity_id)
+                    && item["change"]["before"]["names"].is_array()
+            })
             .ok_or("no change of the severity")?;
-        assert_eq!(severity_change["field_name"], "Severity");
-        assert_eq!(severity_change["before_names"], json!(["Minor"]));
-        assert_eq!(severity_change["after_names"], json!(["Critical"]));
+        assert_eq!(severity_change["change"]["name"], "Severity");
+        assert_eq!(
+            severity_change["change"]["before"]["names"],
+            json!(["Minor"])
+        );
+        assert_eq!(
+            severity_change["change"]["after"]["names"],
+            json!(["Critical"])
+        );
         let salary_change = all
             .iter()
-            .find(|item| item["field"] == json!(salary_id) && item["before_text"].is_string())
+            .find(|item| {
+                item["change"]["field"] == json!(salary_id)
+                    && item["change"]["before"]["text"].is_string()
+            })
             .ok_or("no change of the salary band")?;
-        assert_eq!(salary_change["field_name"], "Salary band");
-        assert_eq!(salary_change["after_text"], "C-9");
+        assert_eq!(salary_change["change"]["name"], "Salary band");
+        assert_eq!(salary_change["change"]["after"]["text"], "C-9");
         // The reader sees the severity, and nothing of the salary band: no key, no name, no text.
         let seen = reader.send("GET", &path, None).await?;
         let body = ok(&seen)?;
         let seen = changes(body);
         assert!(
             seen.iter()
-                .any(|item| item["field"] == json!(severity_id) && item["field_name"] == "Severity"),
+                .any(|item| item["change"]["field"] == json!(severity_id)
+                    && item["change"]["name"] == "Severity"),
             "{body}"
         );
         let text = body.to_string();
@@ -144,7 +160,7 @@ async fn history_of(browser: &mut Browser, issue: &str) -> Result<Vec<Value>, Fa
 
 /// Whether an item is a change of this field.
 fn is_change_of(item: &Value, field: &str) -> bool {
-    item["field"] == json!(field)
+    item["change"]["field"] == json!(field)
 }
 
 #[tokio::test]
@@ -210,13 +226,7 @@ async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_on
         assert!(!bug.iter().any(|item| is_change_of(item, &approved)));
         // Nothing of the typed field is there either: no kind, no value, on either side.
         let bug_text = json!(bug).to_string();
-        for leak in [
-            "Secret-1",
-            "Approved",
-            "field_kind",
-            "before_value",
-            "after_value",
-        ] {
+        for leak in ["Secret-1", "Approved", "typed"] {
             assert!(
                 !bug_text.contains(leak),
                 "{leak} is in the history: {bug_text}"
@@ -229,14 +239,14 @@ async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_on
             .iter()
             .find(|item| is_change_of(item, &centre))
             .ok_or("no change of the cost centre on a Question")?;
-        assert_eq!(shown["field_name"], "Cost centre");
-        assert_eq!(shown["after_text"], "Secret-1");
+        assert_eq!(shown["change"]["name"], "Cost centre");
+        assert_eq!(shown["change"]["after"]["text"], "Secret-1");
         let typed = other
             .iter()
             .find(|item| is_change_of(item, &approved))
             .ok_or("no change of the typed field on a Question")?;
-        assert_eq!(typed["field_kind"], "yes-no", "{typed}");
-        assert_eq!(typed["after_value"], true, "{typed}");
+        assert_eq!(typed["change"]["after"]["kind"], "yes-no", "{typed}");
+        assert_eq!(typed["change"]["after"]["value"], true, "{typed}");
         // Ada sees it on both.
         let all = history_of(&mut ada, &in_bug).await?;
         assert!(all.iter().any(|item| is_change_of(item, &centre)));
@@ -251,9 +261,9 @@ fn change_to<'a>(items: &'a [Value], field: &str) -> Result<&'a Value, Failure> 
         .iter()
         .find(|item| {
             is_change_of(item, field)
-                && ["after_text", "after_names", "after_value", "after_people"]
+                && ["text", "names", "value", "people"]
                     .iter()
-                    .any(|side| !item[*side].is_null())
+                    .any(|member| !item["change"]["after"][*member].is_null())
         })
         .ok_or_else(|| format!("no change to {field}: {items:?}").into())
 }
@@ -370,16 +380,19 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
             (due, "date", json!("2026-03-01")),
         ] {
             let typed = change_to(&seen, field)?;
-            assert_eq!(typed["field_kind"], kind, "{typed}");
-            assert_eq!(typed["after_value"], value, "{typed}");
-            assert!(typed["after_text"].is_null(), "{typed}");
+            assert_eq!(typed["change"]["after"]["kind"], kind, "{typed}");
+            assert_eq!(typed["change"]["after"]["value"], value, "{typed}");
+            assert!(typed["change"]["after"]["text"].is_null(), "{typed}");
         }
         for field in [owner, owners] {
-            let people = &change_to(&seen, field)?["after_people"];
+            let people = &change_to(&seen, field)?["change"]["after"]["people"];
             assert_eq!(people[0]["name"], "Vic Viewer", "{people}");
         }
-        assert_eq!(change_to(&seen, team)?["after_text"], "Core");
-        assert_eq!(change_to(&seen, twin)?["after_text"], hidden_key.as_str());
+        assert_eq!(change_to(&seen, team)?["change"]["after"]["text"], "Core");
+        assert_eq!(
+            change_to(&seen, twin)?["change"]["after"]["text"],
+            hidden_key.as_str()
+        );
         // Max cannot see the issue Twin names: no row, no key, no value, and the ID is nowhere.
         let theirs_seen = history_of(&mut max, &theirs).await?;
         assert_twin_is_not_there(&theirs_seen, twin, &[&hidden_key, &hidden_id]);
@@ -392,7 +405,7 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
         site.show_people(&mut ada, StartingRole::Viewer, "mentions", "names")
             .await?;
         let named = history_of(&mut vic, &issue).await?;
-        assert_eq!(change_to(&named, team)?["after_text"], "Core");
+        assert_eq!(change_to(&named, team)?["change"]["after"]["text"], "Core");
         Ok(())
     })
     .await

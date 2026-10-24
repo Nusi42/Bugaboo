@@ -58,8 +58,8 @@ export function useRole(id: string) {
     queryKey: queryKeys.roles.one(id),
     queryFn: async () =>
       dataOf(
-        await api.client.GET("/api/v1/roles/{role_id}", {
-          params: { path: { role_id: id } },
+        await api.client.GET("/api/v1/roles/{role}", {
+          params: { path: { role: id } },
         }),
       ),
   });

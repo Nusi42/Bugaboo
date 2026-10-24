@@ -93,7 +93,7 @@ async fn lock_for(browser: &mut Browser, comment: &str) -> Result<String, Failur
             "POST",
             "/api/v1/edit-locks",
             Some(json!({
-                "what": {"record": {"kind": "comment", "id": comment}, "part": "text"},
+                "target": {"record": {"kind": "comment", "id": comment}, "part": "text"},
                 "editor_id": AN_EDITOR,
             })),
         )
@@ -174,7 +174,7 @@ pub(super) async fn relation_request(
                 format!("/api/v1/issues/{first}/relations"),
                 Some(json!({
                     "other": other,
-                    "kind": a_kind(fixture).await?,
+                    "relation_kind": a_kind(fixture).await?,
                     "direction": "forward",
                 })),
             )
@@ -221,7 +221,7 @@ async fn text_request(
             let comment = comment_for(fixture, browser, &issue).await?;
             let token = lock_for(browser, &comment).await?;
             (
-                "PATCH",
+                "PUT",
                 format!("/api/v1/comments/{comment}"),
                 Some(json!({"version": 1, "lock_token": token, "text": "Changed by the matrix."})),
             )

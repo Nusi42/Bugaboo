@@ -58,7 +58,7 @@ pub async fn status<S: AuthStore>(
 /// Who is behind this session.
 ///
 /// # Errors
-/// `auth.not_signed_in` when the cookie is missing, unknown, not finished or run out.
+/// `auth.not-signed-in` when the cookie is missing, unknown, not finished or run out.
 pub async fn authenticate<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AuthenticateQuery,
@@ -210,7 +210,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// that is made can do nothing but finish it.
 ///
 /// # Errors
-/// `auth.wrong_credentials` for an unknown address and a wrong password alike, 429 when the
+/// `auth.wrong-credentials` for an unknown address and a wrong password alike, 429 when the
 /// account has used up its failed tries.
 pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<Started, AppError> {
     let SignIn {
@@ -304,7 +304,7 @@ fn is_app_code(typed: &str) -> bool {
 /// password step is replaced by a new one.
 ///
 /// # Errors
-/// `auth.wrong_second_step_code` when the code is wrong or was used already, 429 after too many
+/// `auth.wrong-second-step-code` when the code is wrong or was used already, 429 after too many
 /// failed tries.
 pub async fn second_step<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -417,7 +417,7 @@ pub async fn second_step<S: AuthStore>(
 /// replaced by a new one.
 ///
 /// # Errors
-/// `auth.passkey_rejected` when the answer of the device does not check out, 429 after too many
+/// `auth.passkey-rejected` when the answer of the device does not check out, 429 after too many
 /// failed tries.
 pub async fn passkey_second_step<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -536,7 +536,7 @@ pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<
 /// leaves the keys.
 ///
 /// # Errors
-/// `auth.not_signed_in` without a session.
+/// `auth.not-signed-in` without a session.
 pub async fn sign_out_everywhere<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SignOutEverywhere,
@@ -584,7 +584,7 @@ pub async fn sign_out_everywhere<S: AuthStore>(
 /// Ends one of the sessions of the signed-in person.
 ///
 /// # Errors
-/// `auth.not_signed_in` without a session; `resource.not_found` for a session that is not the
+/// `auth.not-signed-in` without a session; `resource.not-found` for a session that is not the
 /// person's (it does not say whether it exists).
 pub async fn end_session<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -619,7 +619,7 @@ pub async fn end_session<S: AuthStore>(
 /// The sessions of the signed-in person, newest first, with the one of the request marked.
 ///
 /// # Errors
-/// `auth.not_signed_in` without a session.
+/// `auth.not-signed-in` without a session.
 pub async fn sessions<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SessionsQuery,
@@ -669,7 +669,7 @@ pub async fn sessions<S: AuthStore>(
 /// not see.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage roles*, `resource.not_found` for a role that does not exist.
+/// `access.forbidden` without *Manage roles*, `resource.not-found` for a role that does not exist.
 pub async fn second_step_gap<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SecondStepGapQuery,

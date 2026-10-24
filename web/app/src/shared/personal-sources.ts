@@ -91,7 +91,7 @@ function signedInWithoutSettings(): boolean {
     return true;
   }
   const state = queryClient.getQueryState(mySettingsKey());
-  return state?.status === "error" && codeOf(state.error) !== "auth.not_signed_in";
+  return state?.status === "error" && codeOf(state.error) !== "auth.not-signed-in";
 }
 
 /**

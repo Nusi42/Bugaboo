@@ -18,7 +18,7 @@ pub struct GroupQuery {
 /// One group with what it is used for, counting only what the viewer may see.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group.
+/// `access.forbidden` without *Manage groups*, `resource.not-found` for an unknown group.
 pub async fn group<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: GroupQuery,

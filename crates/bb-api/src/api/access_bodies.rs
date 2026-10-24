@@ -7,24 +7,26 @@
 use bb_app::access::ProjectLabel;
 use bb_app::people::{GroupView, HeldRole};
 use bb_app::roles::RoleRef as AppRoleRef;
+use bb_app::workflows::WorkflowListItem;
 use bb_core::ErrorCode;
 use bb_core::access::AppliesTo;
 use bb_policy::Masked;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::errors::ApiError;
 
-/// A group named in an answer.
+/// A role or a group named in an answer: its ID and what it is called (empty when it was deleted
+/// meanwhile). One schema for everything that is only an ID and a name.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct GroupRef {
-    /// The ID of the group.
+pub(crate) struct NamedRef {
+    /// The ID.
     pub(crate) id: String,
     /// What it is called.
     pub(crate) name: String,
 }
 
-impl From<&GroupView> for GroupRef {
+impl From<&GroupView> for NamedRef {
     fn from(group: &GroupView) -> Self {
         Self {
             id: group.id.to_string(),
@@ -33,16 +35,7 @@ impl From<&GroupView> for GroupRef {
     }
 }
 
-/// A role named in an answer.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct RoleRef {
-    /// The ID of the role.
-    pub(crate) id: String,
-    /// What it is called; empty when the role was deleted meanwhile.
-    pub(crate) name: String,
-}
-
-impl From<&AppRoleRef> for RoleRef {
+impl From<&AppRoleRef> for NamedRef {
     fn from(role: &AppRoleRef) -> Self {
         Self {
             id: role.id.to_string(),
@@ -54,7 +47,7 @@ impl From<&AppRoleRef> for RoleRef {
 /// Where a row of *Who has which role* is: the whole organization, a project, or a project the
 /// person cannot see (which is not named).
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub(crate) enum PlaceRef {
     /// The whole organization.
     Organization,
@@ -91,34 +84,38 @@ impl From<Option<&ProjectLabel>> for PlaceRef {
     }
 }
 
-/// Where a role given to somebody counts (*Where it counts*).
-#[derive(Clone, Copy, Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum AppliesToBody {
-    /// The whole organization.
-    Organization,
-    /// Only the project the row is on.
-    Project,
-    /// The project the row is on and its sub-projects.
-    ProjectAndSubProjects,
+/// A group or a workflow in a list: the members that were asked for.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct NamedVersionItem {
+    /// The ID.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) id: Option<String>,
+    /// What it is called.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) name: Option<String>,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) version: Option<i64>,
 }
 
-impl From<AppliesTo> for AppliesToBody {
-    fn from(applies_to: AppliesTo) -> Self {
-        match applies_to {
-            AppliesTo::Organization => Self::Organization,
-            AppliesTo::Project => Self::Project,
-            AppliesTo::ProjectAndSubProjects => Self::ProjectAndSubProjects,
+impl Masked for NamedVersionItem {}
+
+impl From<&GroupView> for NamedVersionItem {
+    fn from(group: &GroupView) -> Self {
+        Self {
+            id: Some(group.id.to_string()),
+            name: Some(group.name.clone()),
+            version: Some(group.version),
         }
     }
 }
 
-impl From<AppliesToBody> for AppliesTo {
-    fn from(applies_to: AppliesToBody) -> Self {
-        match applies_to {
-            AppliesToBody::Organization => Self::Organization,
-            AppliesToBody::Project => Self::Project,
-            AppliesToBody::ProjectAndSubProjects => Self::ProjectAndSubProjects,
+impl From<&WorkflowListItem> for NamedVersionItem {
+    fn from(item: &WorkflowListItem) -> Self {
+        Self {
+            id: Some(item.id.to_string()),
+            name: Some(item.name.clone()),
+            version: Some(item.version),
         }
     }
 }
@@ -130,20 +127,20 @@ pub(crate) struct RoleAtRef {
     /// The ID of the row of *Who has which role*.
     id: String,
     /// The role; `null` for *No access*.
-    role: Option<RoleRef>,
+    role: Option<NamedRef>,
     /// Where the row is.
     place: PlaceRef,
     /// Where it counts.
-    applies_to: AppliesToBody,
+    applies_to: AppliesTo,
 }
 
 impl From<&HeldRole> for RoleAtRef {
     fn from(held: &HeldRole) -> Self {
         Self {
             id: held.id.to_string(),
-            role: held.role.as_ref().map(RoleRef::from),
+            role: held.role.as_ref().map(NamedRef::from),
             place: PlaceRef::from(held.project.as_ref()),
-            applies_to: held.applies_to.into(),
+            applies_to: held.applies_to,
         }
     }
 }

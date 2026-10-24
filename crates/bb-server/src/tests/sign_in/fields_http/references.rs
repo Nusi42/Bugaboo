@@ -43,7 +43,7 @@ async fn person_refusals(
         .await?;
     assert_eq!(
         wrong_kind.code(),
-        "field.wrong_value",
+        "field.wrong-value",
         "{}",
         wrong_kind.body
     );
@@ -59,7 +59,7 @@ async fn person_refusals(
             Some(json!({"version": version, "fields": { tester: gone }})),
         )
         .await?;
-    assert_eq!(nobody.code(), "field.unknown_reference", "{}", nobody.body);
+    assert_eq!(nobody.code(), "field.unknown-reference", "{}", nobody.body);
     // A person who has no role anywhere cannot see the issue, so they cannot be named in it.
     let outsider = rig
         .person(&site.org.admin.session, "otto@example.test")
@@ -74,7 +74,7 @@ async fn person_refusals(
             Some(json!({"version": version, "fields": { tester: outsider }})),
         )
         .await?;
-    assert_eq!(unseen.code(), "field.unknown_reference", "{}", unseen.body);
+    assert_eq!(unseen.code(), "field.unknown-reference", "{}", unseen.body);
     Ok(())
 }
 
@@ -96,7 +96,10 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
         let (guest, _) = site.person(StartingRole::Guest, "gus").await?;
         let mut guest = guest;
         let second = ok(&site.create(&mut guest, "The second").await?)?.clone();
-        let path = format!("{ISSUES}/{}", second["key"].as_str().ok_or("no key")?);
+        let path = format!(
+            "{ISSUES}/{}",
+            second["readable_id"].as_str().ok_or("no key")?
+        );
         let values = json!({
             tester: me, reviewers: [me], team: group, duplicate: first["id"],
         });
@@ -113,7 +116,7 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
         assert_eq!(own[tester]["shown"], "name", "{own}");
         assert_eq!(own[reviewers][0]["shown"], "name", "{own}");
         assert_eq!(own[team]["id"], json!(group), "{own}");
-        assert_eq!(own[duplicate]["key"], first["key"], "{own}");
+        assert_eq!(own[duplicate]["readable_id"], first["readable_id"], "{own}");
         // The Guest sees only the issue they reported: the issue named in the field is not theirs
         // to see, so the field shows nothing.
         let seen = guest.send("GET", &path, None).await?;

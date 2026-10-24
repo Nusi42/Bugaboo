@@ -19,7 +19,7 @@ interface InvitationRowProps {
 
 function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
   const { id, email, created_at: made, expires_at: expires } = invitation;
-  const revoke = api.query.useMutation("delete", "/api/v1/auth/invitations/{invitation_id}", {
+  const revoke = api.query.useMutation("delete", "/api/v1/auth/invitations/{invitation}", {
     onSuccess: () => {
       refreshInvitations();
       onTakenBack();
@@ -53,7 +53,7 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
         cancelLabel={t("common.cancel")}
         confirmLook={buttonLook.danger}
         onConfirm={() => {
-          revoke.mutate({ params: { path: { invitation_id: id } } });
+          revoke.mutate({ params: { path: { invitation: id } } });
         }}
       />
     </li>

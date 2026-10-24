@@ -65,7 +65,10 @@ struct Exemptions {
 /// One list that is allowed to be a plain array: the route (`GET /api/v1/...`), the name of the
 /// array property in the answer, and why. `whole_value` says that the array is the value of one
 /// setting, read and written as a whole and bounded when it is written, not a list of records that
-/// grows; it needs no `truncated` flag.
+/// grows; it needs no `truncated` flag. `embedded` says that the entry is not about a list but
+/// about a member of an item of a paged list that holds an object: a part of the item itself (the
+/// change of a row of the history, the choices of a field), not another resource, so the route
+/// needs no `include`.
 #[derive(Deserialize)]
 struct Exemption {
     route: String,
@@ -73,6 +76,8 @@ struct Exemption {
     reason: String,
     #[serde(default)]
     whole_value: bool,
+    #[serde(default)]
+    embedded: bool,
 }
 
 impl exemptions::Exemption for Exemption {
@@ -262,7 +267,13 @@ fn embedded_properties(spec: &Value, schema: &Value) -> Vec<String> {
 }
 
 /// The rule of `include`: declared, with a closed set of names, exactly when the items embed.
-fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str) -> Vec<Finding> {
+fn include_findings(
+    spec: &Value,
+    operation: &Value,
+    schema: &Value,
+    place: &str,
+    parts: &[String],
+) -> Vec<Finding> {
     let include = operation
         .get("parameters")
         .and_then(Value::as_array)
@@ -273,7 +284,10 @@ fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str
             parameter.get("name").and_then(Value::as_str) == Some(INCLUDE)
                 && parameter.get("in").and_then(Value::as_str) == Some("query")
         });
-    let embedded = embedded_properties(spec, schema);
+    let embedded: Vec<String> = embedded_properties(spec, schema)
+        .into_iter()
+        .filter(|name| !parts.contains(name))
+        .collect();
     match (include, embedded.is_empty()) {
         (None, false) => vec![Finding::at(
             place,
@@ -308,6 +322,27 @@ fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str
     }
 }
 
+/// The members of the items of the route that the exemptions name as a part of the item itself;
+/// the entries that name one are marked as needed.
+fn parts_of_the_item(
+    spec: &Value,
+    schema: &Value,
+    route: &str,
+    exemptions: &[Exemption],
+    used: &mut Used,
+) -> Vec<String> {
+    let embedded = embedded_properties(spec, schema);
+    let mut parts = Vec::new();
+    for (index, exemption) in exemptions.iter().enumerate() {
+        if exemption.embedded && exemption.route == route && embedded.contains(&exemption.property)
+        {
+            used.mark(index);
+            parts.push(exemption.property.clone());
+        }
+    }
+    parts
+}
+
 fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
     let mut findings = Vec::new();
     let Some(operations) = api_spec::operations(spec) else {
@@ -333,9 +368,9 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
             continue;
         }
         for property in array_properties(spec, schema) {
-            let exemption = exemptions
-                .iter()
-                .position(|exemption| exemption.route == place && exemption.property == property);
+            let exemption = exemptions.iter().position(|exemption| {
+                !exemption.embedded && exemption.route == place && exemption.property == property
+            });
             if let Some(index) = exemption {
                 let exemption = &exemptions[index];
                 used.mark(index);
@@ -348,7 +383,8 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
                 }
             } else if property == ITEMS {
                 findings.extend(paging_findings(spec, operation, schema, &place));
-                findings.extend(include_findings(spec, operation, schema, &place));
+                let parts = parts_of_the_item(spec, schema, &place, exemptions, &mut used);
+                findings.extend(include_findings(spec, operation, schema, &place, &parts));
             } else {
                 findings.push(Finding::at(
                     &place,
@@ -423,6 +459,7 @@ mod tests {
             property: property.to_owned(),
             reason: reason.to_owned(),
             whole_value: false,
+            embedded: false,
         }
     }
 
@@ -464,10 +501,7 @@ mod tests {
             &parameters(&REQUIRED_PARAMETERS, true),
             &json!({"type": "array", "items": {"type": "string"}}),
         );
-        let found = messages(&bare, &[]).join(
-            "
-",
-        );
+        let found = messages(&bare, &[]).join("\n");
         assert!(found.contains("bare array"), "{found}");
     }
 
@@ -567,6 +601,32 @@ mod tests {
             assert_eq!(found.len(), 1, "{name}: {found:?}");
             assert!(found[0].contains(expected), "{name}: {found:?}");
         }
+    }
+
+    #[test]
+    fn good_example_a_part_of_the_item_itself_is_named_as_embedded_and_needs_no_include() {
+        let spec = fixture("bad", "embeds-without-include.json");
+        let route = spec["paths"]
+            .as_object()
+            .and_then(|paths| paths.keys().next())
+            .map(|path| format!("GET {path}"))
+            .unwrap();
+        let part = Exemption {
+            embedded: true,
+            ..exemption(
+                &route,
+                "project",
+                "The project is a part of the item (M4-F171).",
+            )
+        };
+        let found = messages(&spec, &[part]);
+        assert!(found.is_empty(), "{found:?}");
+        let stale = Exemption {
+            embedded: true,
+            ..exemption(&route, "nothing", "Not a member of the item (M4-F171).")
+        };
+        let found = messages(&spec, &[stale]).join("\n");
+        assert!(found.contains("matches no list"), "{found}");
     }
 
     #[test]

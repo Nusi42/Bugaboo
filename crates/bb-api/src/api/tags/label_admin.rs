@@ -137,10 +137,10 @@ pub(super) async fn create_label_group(
 /// Changes a group of labels. Needs *Manage labels and tags* where the group was made.
 #[utoipa::path(
     patch,
-    path = "/api/v1/label-groups/{group}",
+    path = "/api/v1/label-groups/{label_group}",
     operation_id = "changeLabelGroup",
     tag = "tags",
-    params(("group" = String, Path, description = "The ID of the group.")),
+    params(("label_group" = String, Path, description = "The ID of the label group.")),
     request_body = ChangeLabelGroupBody,
     responses(
         (status = 200, description = "The group as it is now.", body = LabelGroupBody),
@@ -198,7 +198,7 @@ pub(super) async fn create_label(
     ApiJson(body): ApiJson<NewLabelBody>,
 ) -> Result<Response, ApiError> {
     let group = body
-        .group
+        .label_group
         .as_deref()
         .map(body_id::<LabelGroupId>)
         .transpose()?;
@@ -282,7 +282,7 @@ pub(super) async fn change_label(
     ApiPath(label): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeLabelBody>,
 ) -> Result<Response, ApiError> {
-    let group = match body.group {
+    let group = match body.label_group {
         Edit::Keep => Edit::Keep,
         Edit::Clear => Edit::Clear,
         Edit::Set(text) => Edit::Set(body_id::<LabelGroupId>(&text)?),

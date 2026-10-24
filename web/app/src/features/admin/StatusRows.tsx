@@ -10,7 +10,7 @@ import { CERTIFICATE_WARNING_DAYS, openParts, serverNow, unknownParts } from "./
 type State = Schema<"ServerStatusBody">;
 
 const databaseKinds: Readonly<Record<State["database"]["kind"], MessageKey>> = {
-  built_in: "server-status.database.built-in",
+  "built-in": "server-status.database.built-in",
   sqlite: "server-status.database.sqlite",
   postgres: "server-status.database.postgres",
 };

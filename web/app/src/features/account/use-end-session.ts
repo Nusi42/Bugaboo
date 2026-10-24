@@ -24,8 +24,8 @@ export function useEndSession(): OptimisticMutation<{ readonly id: string }> {
         ? undefined
         : { ...before, sessions: before.sessions.filter((one) => one.id !== id) },
     send: ({ id }) =>
-      api.client.DELETE("/api/v1/auth/sessions/{session_id}", {
-        params: { path: { session_id: id } },
+      api.client.DELETE("/api/v1/auth/sessions/{session}", {
+        params: { path: { session: id } },
       }),
   });
 }

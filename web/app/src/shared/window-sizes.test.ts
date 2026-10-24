@@ -13,7 +13,7 @@ function settings(text: string): MySettings {
     name_key: "app.name",
     help_key: "app.name",
     kind: "text",
-    format: "window_sizes",
+    format: "window-sizes",
     choices: [],
     levels: ["person"],
     lockable: false,

@@ -18,7 +18,7 @@ export interface GroupLine {
 }
 
 /** The line of a group, or nothing for an item that came without what it needs. */
-export function groupLineOf(item: Schema<"GroupItem">): GroupLine | undefined {
+export function groupLineOf(item: Schema<"NamedVersionItem">): GroupLine | undefined {
   const { id, name, version } = item;
   return id === undefined ||
     id === null ||
@@ -31,7 +31,9 @@ export function groupLineOf(item: Schema<"GroupItem">): GroupLine | undefined {
 }
 
 /** The groups in the pages read so far. */
-export function groupLinesOf(pages: readonly Schema<"Page_GroupItem">[] | undefined): GroupLine[] {
+export function groupLinesOf(
+  pages: readonly Schema<"Page_NamedVersionItem">[] | undefined,
+): GroupLine[] {
   return linesFrom(pages, groupLineOf);
 }
 
@@ -43,7 +45,7 @@ export function useGroups() {
       api.client.GET("/api/v1/groups", {
         params: {
           query: {
-            fields: fieldList<Schema<"GroupItem">>(["id", "name", "version"]),
+            fields: fieldList<Schema<"NamedVersionItem">>(["id", "name", "version"]),
             limit: pageSize.largest,
             ...after,
           },
@@ -58,8 +60,8 @@ export function useGroup(id: string) {
     queryKey: queryKeys.groups.one(id),
     queryFn: async () =>
       dataOf(
-        await api.client.GET("/api/v1/groups/{group_id}", {
-          params: { path: { group_id: id } },
+        await api.client.GET("/api/v1/groups/{group}", {
+          params: { path: { group: id } },
         }),
       ),
   });
@@ -70,9 +72,9 @@ export function useMembers(group: string) {
   return usePaged({
     queryKey: queryKeys.groups.members(group),
     read: (after) =>
-      api.client.GET("/api/v1/groups/{group_id}/members", {
+      api.client.GET("/api/v1/groups/{group}/members", {
         params: {
-          path: { group_id: group },
+          path: { group: group },
           query: {
             fields: fieldList<Schema<"MemberItem">>(["person"]),
             limit: pageSize.usual,
@@ -88,9 +90,9 @@ export function useMemberChoices(group: string, search: string) {
   return usePaged({
     queryKey: queryKeys.groups.choices(group, search),
     read: (after) =>
-      api.client.GET("/api/v1/groups/{group_id}/member-choices", {
+      api.client.GET("/api/v1/groups/{group}/member-choices", {
         params: {
-          path: { group_id: group },
+          path: { group: group },
           query: {
             fields: fieldList<Schema<"ChoiceItem">>(["id", "name", "already_in"]),
             limit: pageSize.short,

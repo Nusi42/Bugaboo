@@ -58,7 +58,7 @@ impl Masked for AssignablePeoplePage {}
 /// The members of a project to choose from for *Assigned to*, a page at a time, by name.
 ///
 /// # Errors
-/// `resource.not_found` for a project that does not exist or that the person may not see,
+/// `resource.not-found` for a project that does not exist or that the person may not see,
 /// `access.forbidden` without the right to set *Assigned to* there, `request.invalid` for a cursor that is not
 /// one.
 pub async fn assignable_people<S: AuthStore>(

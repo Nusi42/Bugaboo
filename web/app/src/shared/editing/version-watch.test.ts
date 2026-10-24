@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { checkedJustNow, newerThan, startWatching, type WatchEnv } from "./version-watch.ts";
 
-const issue = { kind: "issue", id: "i1" };
-const other = { kind: "issue", id: "i2" };
+const issue = { kind: "issue", id: "i1" } as const;
+const other = { kind: "issue", id: "i2" } as const;
 
 describe("adr_0019 what somebody else changed since the screen looked", () => {
   it("lists the records whose version is newer, with the version now", () => {

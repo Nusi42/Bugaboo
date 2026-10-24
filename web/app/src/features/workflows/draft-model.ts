@@ -40,7 +40,7 @@ export function draftOf(editor: Schema<"WorkflowEditorBody">): Draft {
       id: status.key,
       key: status.key,
       name: status.name,
-      group: status.group,
+      group: status.status_group,
     })),
     changes: editor.changes.map((change) => ({
       id: `${change.from}>${change.to}`,
@@ -75,8 +75,8 @@ export function bodyOf(
   return {
     statuses: draft.statuses.map((status) =>
       status.key === null
-        ? { name: status.name, group: status.group }
-        : { key: status.key, name: status.name, group: status.group },
+        ? { name: status.name, status_group: status.group }
+        : { key: status.key, name: status.name, status_group: status.group },
     ),
     changes: draft.changes.map((change) => ({
       from: nameInBody(draft, change.from),

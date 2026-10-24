@@ -6,6 +6,7 @@
 //! beyond that (nobody adds a permission they do not hold, the last administrator, a role in
 //! use deleted without a replacement) comes back as the refusal of the use case.
 
+use crate::api::NameBody;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::roles::{
@@ -177,13 +178,6 @@ pub(crate) struct NewRoleBody {
     two_step: bool,
 }
 
-/// A role to make from a copy of another.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct CopyRoleBody {
-    /// What the copy is called.
-    name: String,
-}
-
 /// What to change about a role: what is left out stays as it is.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ChangeRoleBody {
@@ -208,8 +202,8 @@ pub(crate) struct DeleteRoleFilter {
 
 /// Where a permission counts, as the API names it.
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub(crate) enum CountsBody {
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum PermissionPlace {
     /// Only from a role given for the whole organization: a role given on a project that holds
     /// the permission gives nothing for it, and the role page says so.
     Organization,
@@ -217,7 +211,7 @@ pub(crate) enum CountsBody {
     Project,
 }
 
-impl From<Counts> for CountsBody {
+impl From<Counts> for PermissionPlace {
     fn from(counts: Counts) -> Self {
         match counts {
             Counts::Organization => Self::Organization,
@@ -235,7 +229,7 @@ pub(crate) struct PermissionBody {
     /// What it is about.
     topic: Topic,
     /// Where it counts.
-    scope: CountsBody,
+    scope: PermissionPlace,
 }
 
 /// The permission catalogue, topic by topic.
@@ -353,10 +347,10 @@ async fn create_role(
 /// delete roles*.
 #[utoipa::path(
     get,
-    path = "/api/v1/roles/{role_id}",
+    path = "/api/v1/roles/{role}",
     operation_id = "getRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role.")),
+    params(("role" = String, Path, description = "The ID of the role.")),
     responses((status = 200, description = "The role.", body = RoleDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_role(
@@ -384,10 +378,10 @@ async fn get_role(
 /// that would leave nobody who can manage roles.
 #[utoipa::path(
     patch,
-    path = "/api/v1/roles/{role_id}",
+    path = "/api/v1/roles/{role}",
     operation_id = "changeRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role.")),
+    params(("role" = String, Path, description = "The ID of the role.")),
     request_body = ChangeRoleBody,
     responses(
         (status = 200, description = "The role as it is now.", body = RoleBody),
@@ -427,10 +421,10 @@ async fn change_role(
 /// place in every row that gave it. Needs the permission *Create, change and delete roles*.
 #[utoipa::path(
     delete,
-    path = "/api/v1/roles/{role_id}",
+    path = "/api/v1/roles/{role}",
     operation_id = "deleteRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role."), DeleteRoleFilter),
+    params(("role" = String, Path, description = "The ID of the role."), DeleteRoleFilter),
     responses(
         (status = 204, description = "The role is gone."),
         InvalidAnswer,
@@ -472,11 +466,11 @@ async fn delete_role(
 /// than they hold themselves.
 #[utoipa::path(
     post,
-    path = "/api/v1/roles/{role_id}/copy",
+    path = "/api/v1/roles/{role}/copy",
     operation_id = "copyRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role to copy.")),
-    request_body = CopyRoleBody,
+    params(("role" = String, Path, description = "The ID of the role to copy.")),
+    request_body = NameBody,
     responses(
         (status = 200, description = "The new role.", body = RoleBody),
         InvalidAnswer,
@@ -491,7 +485,7 @@ async fn copy_role(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(role_id): ApiPath<String>,
-    ApiJson(body): ApiJson<CopyRoleBody>,
+    ApiJson(body): ApiJson<NameBody>,
 ) -> Result<Response, ApiError> {
     let role = path_id::<RoleId>(&role_id)?;
     let copied = auth
@@ -512,10 +506,10 @@ async fn copy_role(
 /// starting permissions*). Needs the permission *Create, change and delete roles*.
 #[utoipa::path(
     post,
-    path = "/api/v1/roles/{role_id}/reset",
+    path = "/api/v1/roles/{role}/reset",
     operation_id = "resetRole",
     tag = "roles",
-    params(("role_id" = String, Path, description = "The ID of the role.")),
+    params(("role" = String, Path, description = "The ID of the role.")),
     request_body = ResetRoleBody,
     responses(
         (status = 200, description = "The role as it is now.", body = RoleBody),

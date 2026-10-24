@@ -20,7 +20,7 @@ export interface DeleteGroupProps {
  * back with *Undo*: the rows that gave the group a role go with it.
  */
 export function DeleteGroup({ group, members, onDeleted }: DeleteGroupProps) {
-  const remove = api.query.useMutation("delete", "/api/v1/groups/{group_id}", {
+  const remove = api.query.useMutation("delete", "/api/v1/groups/{group}", {
     onSuccess: () => {
       refreshAccess();
       onDeleted();
@@ -44,7 +44,7 @@ export function DeleteGroup({ group, members, onDeleted }: DeleteGroupProps) {
             // The group may be what gives the person their own way to manage roles.
             void ask({ kind: "delete-group", group: group.id }).then((go) => {
               if (go) {
-                remove.mutate({ params: { path: { group_id: group.id } } });
+                remove.mutate({ params: { path: { group: group.id } } });
               }
             });
           }}

@@ -50,8 +50,7 @@ async function draftOf(server: Instance, person: Person, key: string) {
   try {
     const issue = await issueOf(admin, key);
     return await readDraft(session.client, {
-      kind: "issue",
-      id: issue.id,
+      record: { kind: "issue", id: issue.id },
       part: descriptionEditPart,
     });
   } finally {

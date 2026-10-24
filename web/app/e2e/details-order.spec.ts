@@ -29,13 +29,13 @@ async function prepareDetailsOrder(server: Instance): Promise<void> {
     throw new TypeError("The layout was not created.");
   }
   const roles = created.roles.map((role) => role.id);
-  const what = { record: { kind: "layout", id: slot.id }, part: layoutEditPart };
+  const what = { record: { kind: "layout", id: slot.id }, part: layoutEditPart } as const;
   const taken = dataOf(
     await admin.client.POST("/api/v1/edit-locks", {
-      body: { what, editor_id: crypto.randomUUID() },
+      body: { target: what, editor_id: crypto.randomUUID() },
     }),
   );
-  if (taken.status !== "taken") {
+  if (taken.kind !== "taken") {
     throw new TypeError("Somebody else is editing the layout.");
   }
   const field = (word: Schema<"EditorFieldBody">["field"]) => ({ field: word, roles });

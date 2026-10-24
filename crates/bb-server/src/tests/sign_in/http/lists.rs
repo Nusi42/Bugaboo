@@ -63,9 +63,9 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
         changed.pop();
         changed.push(if cursor.ends_with('A') { 'B' } else { 'A' });
         for (bad, code) in [
-            ("fields=password".to_owned(), "request.unknown_field"),
-            ("cursor=nonsense".to_owned(), "request.bad_cursor"),
-            (format!("cursor={changed}"), "request.bad_cursor"),
+            ("fields=password".to_owned(), "request.unknown-field"),
+            ("cursor=nonsense".to_owned(), "request.bad-cursor"),
+            (format!("cursor={changed}"), "request.bad-cursor"),
             ("limit=many".to_owned(), "request.invalid"),
         ] {
             let reply = ada

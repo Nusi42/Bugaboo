@@ -101,6 +101,9 @@ enum Command {
     Suppressions,
     /// List every check in the catalogue and whether it is implemented.
     List,
+    /// Store the API description as the frozen copy that ARCH-API-FREEZE compares with. The lead
+    /// does it at `m4-done`; after that a change of /api/v1 may only add (ADR-0008).
+    Freeze,
     /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
     Setup,
     /// Write files that are generated from a single source.
@@ -217,6 +220,11 @@ fn run() -> anyhow::Result<ExitCode> {
         }
         Command::List => {
             output::list(&catalog, &registry);
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Freeze => {
+            checks::arch_api_freeze::write_frozen(&repo)?;
+            output::wrote(checks::arch_api_freeze::FROZEN_PATH);
             Ok(ExitCode::SUCCESS)
         }
         Command::Setup => {

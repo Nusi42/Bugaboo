@@ -5,7 +5,7 @@ import type { Schema } from "./readonly.ts";
 /** The body of every error answer (`application/problem+json`), as the API describes it. */
 export type Problem = Schema<"Problem">;
 
-/** What changed a record since a person looked at it: the structured part of `edit.version_changed`. */
+/** What changed a record since a person looked at it: the structured part of `edit.version-changed`. */
 export type Conflict = Schema<"ConflictBody">;
 
 /** What can go wrong, as the API names it. */
@@ -82,11 +82,11 @@ function isConflict(value: unknown): value is Conflict {
 
 /**
  * Who changed a record, when, which fields and the values now, when the error is the answer to a
- * change made on a stale version (`edit.version_changed`, ADR-0019). Nothing for any other error.
+ * change made on a stale version (`edit.version-changed`, ADR-0019). Nothing for any other error.
  * The screen writes the sentence from it ("Ben changed Priority to Critical 2 minutes ago").
  */
 export function conflictOf(error: unknown): Conflict | undefined {
-  if (!(error instanceof ApiError) || error.problem?.code !== "edit.version_changed") {
+  if (!(error instanceof ApiError) || error.problem?.code !== "edit.version-changed") {
     return undefined;
   }
   const found: unknown = Reflect.get(error.problem, "conflict");
@@ -100,11 +100,11 @@ function isPersonRef(value: unknown): value is Schema<"PersonRef"> {
 
 /**
  * Who took the editing over, when the error is the refusal of a save for that reason
- * (`edit.taken_over`, M3-F176): the server names them in the answer, as the reader may see them,
+ * (`edit.taken-over`, M3-F176): the server names them in the answer, as the reader may see them,
  * so the screen needs no further request. Nothing for any other error.
  */
 export function takenOverByOf(error: unknown): Schema<"PersonRef"> | undefined {
-  if (!(error instanceof ApiError) || error.problem?.code !== "edit.taken_over") {
+  if (!(error instanceof ApiError) || error.problem?.code !== "edit.taken-over") {
     return undefined;
   }
   const found: unknown = Reflect.get(error.problem, "taken_over_by");

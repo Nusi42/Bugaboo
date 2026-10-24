@@ -4,6 +4,9 @@
 //! person. All need *Manage workflows* at the place. The use cases are in `bb-app`, behind
 //! [`AuthApi`](bb_app::auth::AuthApi).
 
+use crate::api::access_bodies::NamedVersionItem;
+use crate::api::auth::answer;
+use crate::lean::{ListParams, Listed, Page};
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::workflows::{
@@ -18,7 +21,8 @@ use utoipa_axum::routes;
 
 use super::bodies::{
     ChangeDraftBody, PublishPreviewAnswer, PublishPreviewBody, PublishWorkflowBody, PublishedBody,
-    StatusDraftBody, TriedBody, WorkflowEditorBody, WorkflowListBody, workflow_in_path,
+    StatusDraftBody, TriedBody, WORKFLOW_FIELDS, WORKFLOWS_LIST, WorkflowEditorBody,
+    workflow_in_path,
 };
 use crate::api::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
@@ -88,21 +92,25 @@ pub(crate) struct TryParams {
 }
 
 /// The workflows there are, by name, for choosing one for a place. Needs the permission *Manage
-/// workflows* at the place.
+/// workflows* at the place. A page holds at most 100 workflows, and the list stops at 200: a 201st
+/// workflow is not listed (an organization has a handful). The sentence is held to the constants
+/// by a test, because the description of a route takes a text and no constant.
 #[utoipa::path(
     get,
     path = "/api/v1/workflows",
     operation_id = "listWorkflows",
     tag = "workflows",
-    params(WorkflowsParams),
-    responses((status = 200, description = "The workflows.", body = WorkflowListBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+    params(WorkflowsParams, ListParams),
+    responses((status = 200, description = "The workflows, a page at a time.", body = Page<NamedVersionItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_workflows(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<WorkflowsParams>,
+    ApiQuery(paging): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
+    let (cursor, bad_cursor) = paging.start(WORKFLOWS_LIST);
     let list = auth
         .api()?
         .workflows(
@@ -113,7 +121,17 @@ async fn list_workflows(
             },
         )
         .await?;
-    answer_authorized(&list.map(|list| WorkflowListBody::from(&list)))
+    bad_cursor?;
+    let limit = usize::try_from(paging.limit()).unwrap_or(usize::MAX);
+    let page = list.map(|list| {
+        Listed::cut(
+            list.workflows.iter().map(NamedVersionItem::from).collect(),
+            cursor.as_deref(),
+            limit,
+        )
+    });
+    let fields = paging.fields_readable(&WORKFLOW_FIELDS, &page.hidden_properties())?;
+    Ok(answer(Page::of_authorized(WORKFLOWS_LIST, &page, &fields)?))
 }
 
 /// The workflow that counts at a place, for somebody who may change it: its statuses, status
@@ -380,4 +398,22 @@ where
         .routes(routes!(publish_workflow, delete_workflow))
         .routes(routes!(preview_publish_workflow))
         .routes(routes!(try_workflow))
+}
+
+#[cfg(test)]
+mod cap_tests {
+    #[test]
+    fn the_list_of_workflows_says_its_cap() {
+        let document = serde_json::to_value(crate::openapi::document()).unwrap();
+        let route = &document["paths"]["/api/v1/workflows"]["get"];
+        let said = format!("{} {}", route["summary"], route["description"]);
+        assert!(
+            said.contains(&format!(
+                "at most {} workflows, and the list stops at {}",
+                bb_core::paging::PAGE_SIZE_MAX,
+                bb_app::workflows::WORKFLOWS_LISTED_MAX
+            )),
+            "{said}"
+        );
+    }
 }

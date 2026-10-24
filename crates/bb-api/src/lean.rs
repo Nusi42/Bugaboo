@@ -7,7 +7,7 @@
 //! `paging.rs` and `seal.rs` do the rest. ARCH-LEAN checks the API description of every list.
 //!
 //! A person may only ask for fields they may read. A field that is hidden from them is refused
-//! exactly like one that does not exist (`request.unknown_field`, SEC-06), so the answer never
+//! exactly like one that does not exist (`request.unknown-field`, SEC-06), so the answer never
 //! tells which fields exist behind a mask. The policy engine (`Authorized<T>`, M2 WP-05) plugs in
 //! by passing only the fields the person may read.
 
@@ -106,7 +106,7 @@ impl ListParams {
     /// fails exactly like asking for a field that does not exist (SEC-06).
     ///
     /// # Errors
-    /// `request.unknown_field` for a name that is not in `fields`, or is hidden.
+    /// `request.unknown-field` for a name that is not in `fields`, or is hidden.
     pub(crate) fn fields_readable(
         &self,
         fields: &[FieldSpec],
@@ -136,7 +136,7 @@ impl ListParams {
     /// of another list is refused.
     ///
     /// # Errors
-    /// `request.bad_cursor` for a cursor that was changed or is not one of this list.
+    /// `request.bad-cursor` for a cursor that was changed or is not one of this list.
     pub(crate) fn position(&self, list: &str) -> Result<Option<String>, ApiError> {
         self.cursor
             .as_deref()
@@ -147,7 +147,7 @@ impl ListParams {
     /// What a list route hands the use case and what it answers afterwards: the position to start
     /// at, and the verdict on the cursor. A cursor that is not ours does not make the use case
     /// skip its own judgement: it gets a position that no item has, judges who may list (a person
-    /// who may not is refused as such) and the route answers `request.bad_cursor` after it
+    /// who may not is refused as such) and the route answers `request.bad-cursor` after it
     /// (`bad_cursor?;`).
     pub(crate) fn start(&self, list: &str) -> (Option<String>, Result<(), ApiError>) {
         match self.position(list) {
@@ -173,7 +173,7 @@ impl Fields {
     /// when the request said nothing.
     ///
     /// # Errors
-    /// `request.unknown_field` for a name that is not in `fields`, whether it does not exist or
+    /// `request.unknown-field` for a name that is not in `fields`, whether it does not exist or
     /// the person may not read it.
     pub(crate) fn choose(asked: Option<&str>, fields: &[FieldSpec]) -> Result<Self, ApiError> {
         let Some(asked) = asked else {
@@ -215,8 +215,9 @@ impl Fields {
     }
 }
 
-/// One page of a list. `T` is the view of an item for the API description; an answer holds the
-/// items cut to the chosen fields ([`Page::of_authorized`]).
+// `T` is the view of an item for the API description; an answer holds the items cut to the chosen
+// fields (`Page::of_authorized`).
+/// One page of a list: its items, and where the next page starts.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct Page<T> {
     /// The items of this page.
@@ -254,6 +255,33 @@ impl Page<Value> {
                 .map(|position| paging::seal(list, position))
                 .transpose()?,
         })
+    }
+}
+
+impl<V> Listed<V> {
+    /// The page of a list that the use case reads whole (it has a hard cap) and the route cuts: the
+    /// items after the position `after` of the cursor, at most `limit` of them, and the position of
+    /// the last one when there are more. A position is the number of the item in the list, so a list
+    /// that changed between two requests is cut at the same place, never fails.
+    ///
+    /// The cursor is **positional**: it is the number of the last item, not the item. It is not
+    /// stable across changes: an item added or taken away before the position moves the next page by
+    /// one (an item may be seen twice or missed). The browser reads such a list to its end and drops
+    /// a repeated ID. The store gives a stable cursor in M4-F171.
+    pub(crate) fn cut(all: Vec<V>, after: Option<&str>, limit: usize) -> Self {
+        let start = after
+            .and_then(|position| position.parse::<usize>().ok())
+            .map_or(0, |last| last.saturating_add(1));
+        let mut rest: Vec<V> = all.into_iter().skip(start).collect();
+        let more = rest.len() > limit;
+        rest.truncate(limit);
+        let next = more.then(|| {
+            start
+                .saturating_add(rest.len())
+                .saturating_sub(1)
+                .to_string()
+        });
+        Self { items: rest, next }
     }
 }
 
@@ -326,6 +354,31 @@ mod tests {
         FieldSpec::on_request("status"),
         FieldSpec::on_request("cost_center"),
     ];
+
+    #[test]
+    fn perf_02_a_list_read_whole_is_cut_into_pages_that_walk_every_item_once() {
+        let all: Vec<u32> = (0..250).collect();
+        let mut seen = Vec::new();
+        let mut after: Option<String> = None;
+        let mut sizes = Vec::new();
+        loop {
+            let page = Listed::cut(all.clone(), after.as_deref(), 100);
+            sizes.push(page.items.len());
+            seen.extend(page.items);
+            match page.next {
+                Some(position) => after = Some(position),
+                None => break,
+            }
+        }
+        assert_eq!(sizes, [100, 100, 50]);
+        assert_eq!(seen, all);
+        // A list that is empty, or that fits one page, has no next page; a position past the end
+        // gives an empty page and no next one.
+        assert!(Listed::cut(Vec::<u32>::new(), None, 100).next.is_none());
+        assert!(Listed::cut(vec![1, 2, 3], None, 3).next.is_none());
+        let past = Listed::cut(vec![1, 2, 3], Some("99"), 3);
+        assert!(past.items.is_empty() && past.next.is_none());
+    }
 
     /// One row of the pretend list.
     #[derive(Serialize)]
@@ -463,7 +516,7 @@ mod tests {
             ask(app(Some(Field::CostCenter)), "fields=id,cost_center").await;
         assert_eq!(unknown_status, StatusCode::BAD_REQUEST);
         assert_eq!(hidden_status, unknown_status);
-        assert_eq!(unknown["code"], "request.unknown_field");
+        assert_eq!(unknown["code"], "request.unknown-field");
         // Same code, same message, same everything: nothing tells the two apart.
         assert_eq!(hidden, unknown);
         // Left out, a hidden default is simply not there.
@@ -481,7 +534,7 @@ mod tests {
         ] {
             let (status, body) = ask(app(None), query).await;
             assert_eq!(status, StatusCode::BAD_REQUEST, "{query}");
-            assert_eq!(body["code"], "request.unknown_field", "{query}");
+            assert_eq!(body["code"], "request.unknown-field", "{query}");
         }
     }
 
@@ -508,7 +561,7 @@ mod tests {
         for cursor in ["nonsense".to_owned(), changed, foreign] {
             let (status, body) = ask(app(None), &format!("cursor={cursor}")).await;
             assert_eq!(status, StatusCode::BAD_REQUEST, "{cursor}");
-            assert_eq!(body["code"], "request.bad_cursor", "{cursor}");
+            assert_eq!(body["code"], "request.bad-cursor", "{cursor}");
         }
     }
 

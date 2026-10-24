@@ -19,9 +19,9 @@ use crate::member;
 /// its parent.
 ///
 /// # Errors
-/// `access.forbidden` without the permission (`resource.not_found` for a parent the person may
+/// `access.forbidden` without the permission (`resource.not-found` for a parent the person may
 /// not know about), `request.invalid` for a short name or a name that cannot be one,
-/// `project.too_deep` when the project would be nested deeper than a tree may go, `name.taken`
+/// `project.too-deep` when the project would be nested deeper than a tree may go, `name.taken`
 /// when the short name is taken, or was used by a project once (only a person who
 /// may create projects there is told, with the same answer whether the project is hidden or not).
 pub async fn create_project<S: AuthStore>(

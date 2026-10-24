@@ -7,10 +7,10 @@ import {
   keepsTextAsDraft,
   newEditorId,
   readDraft,
-  releaseEditLock,
+  letGoOfEditLock,
   sendHeartbeat,
   takeEditLock,
-  type EditWhat,
+  type EditTarget,
 } from "@bugaboo/api-client";
 
 import { type Work } from "./book.ts";
@@ -21,7 +21,7 @@ import { addFile, hear, moveOn } from "./work.ts";
 /** How often a stale change is sent again on the newer version before it is called stuck. */
 const MOST_TRIES = 40;
 
-function whatOf(work: Work): EditWhat {
+function whatOf(work: Work): EditTarget {
   return { record: { kind: "issue", id: work.id }, part: descriptionEditPart };
 }
 
@@ -82,7 +82,7 @@ async function look(context: Context, work: Work): Promise<void> {
 /** The lock, taken, or taken over from somebody when the person may; nothing when somebody holds it. */
 async function lockOn(context: Context, work: Work, editor: string): Promise<string | undefined> {
   const asked = await takeEditLock(context.client, whatOf(work), editor);
-  if (asked.status === "taken") {
+  if (asked.kind === "taken") {
     return asked.lock_token;
   }
   if (!asked.can_edit_anyway || pick(context.random, 4) !== 0) {
@@ -90,14 +90,13 @@ async function lockOn(context: Context, work: Work, editor: string): Promise<str
   }
   const over = await editAnyway(context.client, whatOf(work), editor);
   context.book.tookOver();
-  return over.status === "taken" ? over.lock_token : undefined;
+  return over.kind === "taken" ? over.lock_token : undefined;
 }
 
 /** A refused save keeps the text: whether it is the draft of the person is written in the book. */
 async function keptAsDraft(context: Context, work: Work, text: string): Promise<void> {
   const draft = await readDraft(context.client, {
-    kind: "issue",
-    id: work.id,
+    record: { kind: "issue", id: work.id },
     part: descriptionEditPart,
   });
   context.book.drafted({
@@ -141,9 +140,9 @@ async function save(context: Context, work: Work, token: string, version: number
       throw error;
     }
     await keptAsDraft(context, work, text);
-    if (code === "edit.version_changed") {
+    if (code === "edit.version-changed") {
       // The lock is still the person's: the page lets it go, as the browser does.
-      await releaseEditLock(context.client, whatOf(work), token);
+      await letGoOfEditLock(context.client, whatOf(work), token);
     }
   }
 }

@@ -49,6 +49,7 @@ mod m0017_notifications;
 mod m0018_offers;
 mod m0019_layout_off_fields;
 mod m0020_mention_read_at;
+mod m0021_kebab_words;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -241,6 +242,11 @@ const ALL: &[Definition] = &[
         version: 20,
         name: "mention_read_at",
         steps: || Ok(m0020_mention_read_at::steps()),
+    },
+    Definition {
+        version: 21,
+        name: "kebab_words",
+        steps: || Ok(m0021_kebab_words::steps()),
     },
 ];
 
@@ -455,7 +461,7 @@ mod tests {
     fn the_checksum_of_an_applied_migration_never_changes() {
         // By the number of the migration, not by place in the list: the numbers of other
         // migrations that are added later fall between these.
-        const APPLIED: [(i64, &str); 20] = [
+        const APPLIED: [(i64, &str); 21] = [
             (
                 1,
                 "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
@@ -535,6 +541,10 @@ mod tests {
             (
                 20,
                 "e1510d877cd996f9285d03a87bd8024feac32701a89fb0a9a8340785ac674ee6",
+            ),
+            (
+                21,
+                "d80ffbf5d3a0b8999ffadcf0dbf1a9fe63bd1d1628f7973ce02aabc7368f816d",
             ),
         ];
         for (version, wanted) in APPLIED {

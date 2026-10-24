@@ -7,8 +7,8 @@ import { draftOfKept, keptText } from "./left-draft.ts";
 const editor: Schema<"WorkflowEditorBody"> = {
   name: "Simple",
   statuses: [
-    { key: "open", name: "Open", group: "not-started" },
-    { key: "done", name: "Done", group: "done" },
+    { key: "open", name: "Open", status_group: "not-started" },
+    { key: "done", name: "Done", status_group: "done" },
   ],
   changes: [
     {

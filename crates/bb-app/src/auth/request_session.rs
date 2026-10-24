@@ -161,7 +161,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// session that was open before: ADR-0025, decision 7).
     ///
     /// # Errors
-    /// `auth.second_step_required` while the person has to set up a second step.
+    /// `auth.second-step-required` while the person has to set up a second step.
     pub(crate) async fn active(&self, token_text: &str) -> Result<SessionRecord, AppError> {
         let record = self.session(token_text, SessionStage::Active).await?;
         if self.must_set_up_second_step(record.person.id).await? {

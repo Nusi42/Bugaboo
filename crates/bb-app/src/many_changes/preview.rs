@@ -26,7 +26,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// (the project, the label, the issue at the other end of a relation) is there for the person.
     ///
     /// # Errors
-    /// `request.invalid` for nothing asked or a retired kind of relation, `resource.not_found` for
+    /// `request.invalid` for nothing asked or a retired kind of relation, `resource.not-found` for
     /// a project, a label, a kind or an issue that is not there for the person.
     pub(super) async fn selection<'a>(
         &self,
@@ -137,7 +137,7 @@ pub(super) fn distinct<'a>(
 ///
 /// # Errors
 /// `request.invalid` for no issue, too many issues, or an action that asks for nothing,
-/// `resource.not_found` for a project, a label, a kind of relation or an issue named in the
+/// `resource.not-found` for a project, a label, a kind of relation or an issue named in the
 /// action that is not there for the person.
 pub async fn preview_many_changes<S: AuthStore>(
     ctx: &Ctx<'_, S>,

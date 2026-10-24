@@ -13,9 +13,9 @@ use crate::auth::{AppError, AuthStore, Ctx, entity};
 /// Moves every issue from a label to another one, then takes the first label away.
 ///
 /// # Errors
-/// `access.forbidden` without *Manage labels and tags*, `resource.not_found` for a label that is
-/// not there, `request.invalid` for the same label twice, `label.pick_one_conflict` when some issue
-/// would then have two labels of a *Pick one* group, `edit.version_changed` when somebody changed
+/// `access.forbidden` without *Manage labels and tags*, `resource.not-found` for a label that is
+/// not there, `request.invalid` for the same label twice, `label.pick-one-conflict` when some issue
+/// would then have two labels of a *Pick one* group, `edit.version-changed` when somebody changed
 /// one of the labels since it was looked at.
 pub async fn combine_labels<S: AuthStore>(
     ctx: &Ctx<'_, S>,
