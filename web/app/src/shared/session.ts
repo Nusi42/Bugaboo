@@ -3,6 +3,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { api } from "./api.ts";
 import { forgetBrowserDrafts } from "./editing/browser-drafts.ts";
 import { codeOf } from "./errors.ts";
+import { mySettingsKey } from "./my-settings.ts";
 import { forgetPersonalChoices } from "./personal-sources.ts";
 import { queryClient } from "./query-client.ts";
 
@@ -104,6 +105,10 @@ export async function leaveSession(go: () => Promise<void>): Promise<void> {
   forgetPersonalChoices();
   queryClient.removeQueries({ queryKey: meOptions().queryKey });
   await go();
+  // The page has changed, so nothing asks for the person's settings any more. They go now, not
+  // with the cache: the look and the choice of theme of the page we are on read them, and for as
+  // long as questions are on their way a choice made here would go to the person who has left.
+  queryClient.removeQueries({ queryKey: mySettingsKey() });
   await answersOnTheirWay();
   queryClient.clear();
   // A change of the settings in the cache while the page was changing writes the copy for the

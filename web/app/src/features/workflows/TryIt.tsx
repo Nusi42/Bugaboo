@@ -76,10 +76,14 @@ function Result({
         <ul {...partOf(part.workflowTried)}>
           {tried.changes.map((change) => (
             <li key={change.to.key} {...partOf(part.workflowTry)}>
-              <Icon name={change.verdict === "allowed" ? iconName.check : iconName.close} />
-              <strong>{change.button}</strong>
-              <StatusPill group={change.to.status_group} label={change.to.name} />
-              <span>{sentenceOf(change, fields)}</span>
+              <span {...partOf(part.workflowTrySign)}>
+                <Icon name={change.verdict === "allowed" ? iconName.check : iconName.close} />
+              </span>
+              <span {...partOf(part.workflowTryTitle)}>
+                <strong>{change.button}</strong>
+                <StatusPill group={change.to.status_group} label={change.to.name} />
+              </span>
+              <span {...partOf(part.workflowTryReason)}>{sentenceOf(change, fields)}</span>
             </li>
           ))}
         </ul>

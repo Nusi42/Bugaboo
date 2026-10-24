@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { createAdmin } from "./support/accounts.ts";
+import { ada, createAdmin } from "./support/accounts.ts";
 import {
   chooseTheme,
   expectNoSidewaysScroll,
@@ -9,6 +9,7 @@ import {
   expectLook,
 } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { signIn, signOut } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({
@@ -74,4 +75,25 @@ test("thm_02 Match my device names the theme of the device even when another is 
   await expect(page.getByRole("radio", { name: t("theme.device") })).toHaveAccessibleName(
     t("theme.device-resolved", { device: t("theme.device"), theme: t("theme.daylight") }),
   );
+});
+
+test("thm_02 a theme chosen right after signing out stays while the page finishes the sign-out", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  // The question the sign-in page asks is still on its way for a while: the app keeps its cache
+  // until it is answered, and the choice must not go to the person who has left meanwhile.
+  await page.route("**/api/v1/auth/status", async (route) => {
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 2500);
+    });
+    await route.continue();
+  });
+  await signOut(page);
+  await page.getByRole("radio", { name: t("theme.midnight"), exact: true }).check();
+  await expectLook(page, "midnight");
+  // The wait is longer than the question: once it is answered the choice still stands.
+  await page.waitForTimeout(4000);
+  await expectLook(page, "midnight");
+  await expect(page.getByRole("radio", { name: t("theme.midnight"), exact: true })).toBeChecked();
 });

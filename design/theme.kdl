@@ -829,13 +829,19 @@ part "field.description" {
 
 // A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
 // review of M4: "Alder Street Baker|y" in the Details).
+// One height for a box of one line and a choice (a select ignores the line height and would be 2 px
+// taller): labels and boxes side by side line up (the review of M4).
 part "field.input" {
     use "input-box"
+    height "$size-control"
+    padding-block 0
     line-height "$lh-body"
     text-overflow ellipsis
 }
 
 part "field.input[variant=multiline]" {
+    height auto
+    padding-block "$space-2"
     resize vertical
 }
 
@@ -1086,7 +1092,6 @@ part "choice-group.input:checked + choice-group.label" "choice-group.input:check
     border-color "$accent"
     background "$bg-selected"
     color "$accent-fg"
-    font-weight "$weight-bold"
     use "marked"
 }
 
@@ -1828,8 +1833,15 @@ part "name-value.value > muted" {
 part "followers-state" {
     display inline-flex
     align-items center
-    gap "$space-2"
     white-space nowrap
+}
+
+// The words after the count are the size of the count, so the line reads as one sentence, and the
+// space before the dot is the space after it.
+part "followers-state.words" {
+    margin-inline-start "$space-1"
+    color "$fg-muted"
+    font-size "$fs-ui"
 }
 
 // *Website · Offered* with its sign: the sign stays beside the first line of the words, whatever
@@ -1838,13 +1850,6 @@ part "offer-state" {
     display inline-flex
     align-items center
     gap "$space-2"
-    min-width 0
-}
-
-// A box for a value of one line (a text, a choice) fills the column of the value (the review of M4: "Alder
-// Street Baker|y" ended under the edge of a box of its own width).
-part "name-value.value > field" {
-    flex "1 1 100%"
     min-width 0
 }
 
@@ -2815,7 +2820,8 @@ part "access.reasons" {
     line-height "$lh-text"
 }
 
-part "access.topic" {
+// A heading inside a card, below its own heading (a topic of access, a form that makes something).
+part "access.topic" "card.topic" {
     margin 0
     font-size "$fs-md"
     font-weight "$weight-bold"
@@ -4100,11 +4106,12 @@ part "key-capture-field.box:focus" {
     use "ring"
 }
 
+// The keys of one shortcut never break inside their combination: "G then H" is one thing.
 part "keys" {
     display inline-flex
-    flex-wrap wrap
     align-items center
     gap "$space-1"
+    white-space nowrap
 }
 
 part "keys.chord" {
@@ -4281,9 +4288,11 @@ part "shortcuts-page.intro" {
 
 part "shortcuts-page.keys" {
     display inline-flex
-    flex-wrap wrap
+    flex none
     align-items center
+    justify-content flex-end
     gap "$space-2"
+    white-space nowrap
 }
 
 
@@ -11641,6 +11650,13 @@ part "app-layout[variant=phone] workflow-change" {
     align-items center
 }
 
+// The last row of a card has no padding below it, and its button (as high as a finger) hangs a little
+// below the words: the space under *Rules* is the space above the card's head (the review of M4).
+part "app-layout[variant=phone] workflow-change:last-child" {
+    padding-bottom 0
+    margin-bottom "calc(-1 * $space-2)"
+}
+
 part "workflow-change.to" {
     min-width 0
     padding-bottom "$space-2"
@@ -11753,13 +11769,33 @@ part "workflow-tried" {
     gap "$space-2"
 }
 
+// One result of *Try it*: the sign at the start edge, and beside it the button with its status and,
+// under them, why. The sign is level with the first line, whatever the words do below.
 part "workflow-try" {
     use "sunken-box"
+    display grid
+    grid-template-columns "auto minmax(0, 1fr)"
+    align-items start
+    gap "$space-1" "$space-3"
+    padding "$space-3"
+}
+
+part "workflow-try.sign" {
+    display flex
+    align-items center
+    min-height "$size-control-small"
+}
+
+part "workflow-try.title" {
     display flex
     flex-wrap wrap
-    align-items baseline
-    gap "$space-2" "$space-4"
-    padding "$space-3"
+    align-items center
+    gap "$space-2" "$space-3"
+    min-height "$size-control-small"
+}
+
+part "workflow-try.reason" {
+    grid-column 2
 }
 
 // The drawing: a column for each status group, the boxes in them, and the arrows over them.
@@ -11842,4 +11878,21 @@ part "drawing-line" {
 
 part "drawing-head" {
     fill "$fg-muted"
+}
+
+// ───────────── Boxes in the Details ─────────────
+//
+// At the end of the file, after the parts they reach into.
+
+// A box for a value of one line (a text, a choice) fills the column of the value (the review of M4: "Alder
+// Street Baker|y" ended under the edge of a box of its own width).
+part "name-value.value > field" "name-value.value > value-frame" "name-value.value > stack" "name-value.value > row" {
+    flex "1 1 100%"
+    min-width 0
+}
+
+// A box beside an icon (the priority) takes what the icon leaves, so every box ends at the same edge.
+part "name-value.value > row > field" {
+    flex "1 1 auto"
+    min-width 0
 }

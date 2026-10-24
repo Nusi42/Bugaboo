@@ -1,6 +1,7 @@
 import { CancelledError } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { currentMySettings, mySettingsKey } from "./my-settings.ts";
 import { queryClient } from "./query-client.ts";
 import { leaveSession } from "./session.ts";
 
@@ -33,6 +34,21 @@ describe("sec_12 leaving the session does not cancel the questions on their way"
     await expect(asked).resolves.toBe("the answer");
     await left;
     expect(queryClient.getQueryCache().findAll()).toHaveLength(0);
+  });
+
+  it("stops reading the look from the settings of the person as soon as the page has changed", async () => {
+    queryClient.clear();
+    queryClient.setQueryData(mySettingsKey(), { settings: [] });
+    const gate = Promise.withResolvers<string>();
+    const asked = queryClient.query({ queryKey: ["waiting"], queryFn: () => gate.promise });
+    const left = leaveSession(() => Promise.resolve());
+    await pause();
+    // A theme chosen on the sign-in page now must not go to the person who has left, nor be drawn
+    // over again with their look when the cache is emptied.
+    expect(currentMySettings()).toBeUndefined();
+    gate.resolve("the answer");
+    await asked;
+    await left;
   });
 
   it("is what cancels that question when the cache is emptied under it", async () => {
