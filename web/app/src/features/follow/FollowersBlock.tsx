@@ -72,7 +72,7 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
   return (
     <NameValueRow name={t("followers.name")}>
       <div {...partOf(part.row)}>
-        <span {...partOf(part.row)}>
+        <span {...partOf(part.followersState)}>
           {counted ? (
             <Button
               look={buttonLook.quiet}

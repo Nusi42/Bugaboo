@@ -19,7 +19,7 @@ export function AddStatus({ draft, edit }: { readonly draft: Draft; readonly edi
   const noName = name.trim() === "";
   const taken = keyOf !== undefined && statusNameTaken(draft, null, name, keyOf);
   return (
-    <div {...partOf(part.workflowAdd)}>
+    <div {...partOf(part.workflowAdd, { variants: taken ? ["error"] : [] })}>
       <TextField
         label={t("workflows.new-status")}
         value={name}

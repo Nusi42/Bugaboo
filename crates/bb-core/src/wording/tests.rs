@@ -35,6 +35,28 @@ fn a_change_is_changed_set_cleared_or_a_long_text() {
 }
 
 #[test]
+fn an_assignment_from_nobody_says_who_assigned_it_to_whom() {
+    let people = |names: &[&str]| Side::People {
+        people: names.iter().map(|name| (*name).to_owned()).collect(),
+    };
+    let said = |before, after| change_sentence(&change("assigned-to", before, after)).render();
+    assert_eq!(
+        said(Some(people(&[])), Some(people(&["Someone (Team member)"]))),
+        "Ben assigned this issue to Someone (Team member)"
+    );
+    // A field set when the issue was made is a set field.
+    assert_eq!(
+        said(None, Some(people(&["Thea"]))),
+        "Ben set Priority: Thea"
+    );
+    // From one person to another it stays a change of the field.
+    assert_eq!(
+        said(Some(people(&["Ana"])), Some(people(&["Thea"]))),
+        "Ben changed Priority from Ana to Thea"
+    );
+}
+
+#[test]
 fn a_status_and_a_priority_have_their_words_and_other_text_stays() {
     let word = |field, text| word_of(Field::from_code(field), text).render();
     assert_eq!(word("status", "in-progress"), "In progress");

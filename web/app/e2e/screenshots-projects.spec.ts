@@ -24,6 +24,8 @@ test.use({
       await createProject(admin, "DOCS", "Documents", website);
       await createProject(admin, "SHOP", "Online shop", acme);
       await createProject(admin, "LAB", "Research lab");
+      // Ten capitals, the longest a short name may be: the column of the short names takes its width.
+      await createProject(admin, "WWWWWWWWWW", "Wide capitals");
       await admin.dispose();
     },
   },

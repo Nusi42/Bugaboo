@@ -6410,6 +6410,18 @@ pub fn handle_rule_weekly(days: i64) -> Message {
     )
 }
 
+/// The message `history.assigned`.
+#[must_use]
+pub fn history_assigned(after: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.assigned"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
 /// The message `history.by`.
 #[must_use]
 pub fn history_by(when: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
@@ -10953,6 +10965,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Somebody has this handle, or had it, or a group or a role has it. Choose another one.",
     ),
     ("handle.title", "Handle"),
+    ("history.assigned", "{who} assigned this issue to {after}"),
     ("history.by", "{who} · {when}"),
     (
         "history.changed",
