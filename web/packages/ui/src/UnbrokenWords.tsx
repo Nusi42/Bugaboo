@@ -62,12 +62,13 @@ export function SentenceWithValue({
   if (at < 0 || value === null || value === undefined) {
     return sentence;
   }
+  // One element, so that a list item that lays out its children (a flex box) keeps it in one line of words.
   return (
-    <>
+    <span>
       {sentence.slice(0, at)}
       {children(value)}
       {sentence.slice(at + value.length)}
-    </>
+    </span>
   );
 }
 

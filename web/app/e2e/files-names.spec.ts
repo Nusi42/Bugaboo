@@ -6,7 +6,7 @@ import { dropFile, filesBlock, report, rowOf } from "./support/files.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareLook } from "./support/list-look.ts";
-import { expectNameOnOneLine } from "./support/name-lines.ts";
+import { expectNameOnOneLine, expectSentenceOnOneLine } from "./support/name-lines.ts";
 
 // A file name never breaks at a hyphen (the final check of M4): in the row of the file and in the
 // sentence of the history it goes to the next line as a whole, on a phone too.
@@ -24,4 +24,8 @@ test("ux_4_4 the name quarter-report.pdf stays on one line in its row and in the
   );
   await expect(rowOf(page, "quarter-report.pdf")).toBeVisible();
   await expectNameOnOneLine(page, "quarter-report.pdf", 2);
+  await expectSentenceOnOneLine(
+    page,
+    t("history.file-added", { who: ada.name, name: "quarter-report.pdf" }),
+  );
 });
