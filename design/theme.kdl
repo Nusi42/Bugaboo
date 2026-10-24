@@ -4255,8 +4255,9 @@ part "shortcut-editor.row" {
     margin 0
 }
 
+// Wide enough for the longer of the two labels, so the keys of both rows start on one edge.
 part "shortcut-editor.label" {
-    min-width "$size-control"
+    min-width "calc($size-control * 2.5)"
     margin-inline-end "$space-2"
     font-weight "$weight-bold"
 }

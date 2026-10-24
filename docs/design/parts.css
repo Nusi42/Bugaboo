@@ -3757,7 +3757,7 @@ body {
 }
 
 [data-part="shortcut-editor.label"] {
-  min-width: var(--size-control);
+  min-width: calc(var(--size-control) * 2.5);
   margin-inline-end: var(--space-2);
   font-weight: var(--weight-bold);
 }
