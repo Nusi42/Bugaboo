@@ -5322,10 +5322,14 @@ body {
   }
 }
 
+[data-part="sidebar"][data-variant~="narrow"] [data-part="nav-item"] {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+}
+
 [data-part="sidebar"][data-variant~="narrow"] [data-part="nav-item.count"] {
-  position: absolute;
-  top: 0;
-  inset-inline-end: 0;
   min-width: 0;
   padding: 0 var(--space-1);
   font-size: var(--fs-xs);

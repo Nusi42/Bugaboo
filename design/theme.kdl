@@ -11498,12 +11498,16 @@ part "nav-item.count" "bottom-bar.count" {
     }
 }
 
-// In the narrow menu there is no room after the icon: the number sits on the corner of the icon,
-// inside the menu (UX review of M4, A5).
+// In the narrow menu there is no room after the icon: the number stands under the icon, inside the
+// item, so it covers neither the bell nor the item above it (UX review of M4, A5, and the final check).
+part "sidebar[variant=narrow] nav-item" {
+    flex-direction column
+    align-items flex-start
+    justify-content center
+    gap 0
+}
+
 part "sidebar[variant=narrow] nav-item.count" {
-    position absolute
-    top 0
-    inset-inline-end 0
     min-width 0
     padding 0 "$space-1"
     font-size "$fs-xs"
