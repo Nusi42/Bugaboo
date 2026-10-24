@@ -4816,6 +4816,12 @@ body {
   overflow-wrap: anywhere;
 }
 
+[data-part="unbroken-word"] {
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-all;
+}
+
 [data-part="files.name"] {
   font-weight: var(--weight-bold);
   font-size: var(--fs-md);

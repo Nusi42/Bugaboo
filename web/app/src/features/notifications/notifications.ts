@@ -105,6 +105,11 @@ export function failedRenewalProjectOf(row: NotificationRow): string | undefined
   return renewal?.shown === "visible" ? (renewal.short_name ?? undefined) : undefined;
 }
 
+/** The name of the file a notification is about, if it is about one the reader may name. */
+export function fileNameOf(row: NotificationRow): string | undefined {
+  return row.entries.find((entry) => entry.file_event !== undefined)?.file_name ?? undefined;
+}
+
 /** What a notification says, as the shared wording takes it (`bb-core`, `wording::Notice`). */
 export function noticeOf(row: NotificationRow): WordedNotice {
   const edit = row.entries.find((entry) => entry.notice !== undefined)?.notice;

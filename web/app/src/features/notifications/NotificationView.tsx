@@ -1,5 +1,13 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, MarkdownView, partOf, part, Skeleton } from "@bugaboo/ui";
+import {
+  Button,
+  buttonLook,
+  MarkdownView,
+  partOf,
+  part,
+  SentenceWithName,
+  Skeleton,
+} from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 
@@ -10,6 +18,7 @@ import { addressInProject, issueAddress, issueTargetAddress, paths } from "../..
 import { RunProgress } from "../many-changes/index.ts";
 import {
   failedRenewalProjectOf,
+  fileNameOf,
   sentencesOf,
   targetOf,
   type NotificationRow,
@@ -115,11 +124,19 @@ function NotificationActions({
 }
 
 /** What one notification says, once the shared wording is there. */
-function Sentences({ sentences }: { readonly sentences: readonly string[] }) {
+function Sentences({
+  sentences,
+  fileName,
+}: {
+  readonly sentences: readonly string[];
+  readonly fileName: string | undefined;
+}) {
   return (
     <ul {...partOf(part.notificationSentences)}>
       {sentences.map((sentence) => (
-        <li key={sentence}>{sentence}</li>
+        <li key={sentence}>
+          <SentenceWithName sentence={sentence} name={fileName} />
+        </li>
       ))}
     </ul>
   );
@@ -143,7 +160,9 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
         )}
         <span {...partOf(part.historyWhen)}>{formatDateTime(row.at)}</span>
       </div>
-      {loaded.state === "ready" ? <Sentences sentences={sentences} /> : null}
+      {loaded.state === "ready" ? (
+        <Sentences sentences={sentences} fileName={fileNameOf(row)} />
+      ) : null}
       {loaded.state === "loading" ? <Skeleton /> : null}
       <CommentText row={row} />
       <NotificationActions row={row} what={what} onRead={onRead} isReading={isReading} />

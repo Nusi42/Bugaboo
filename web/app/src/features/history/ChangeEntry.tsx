@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { partOf, part, SentenceWithName } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
 import { fileSentence } from "../../shared/file-sentence.ts";
@@ -39,7 +39,14 @@ export function ChangeEntry({
             {plainSentenceOf(item) ?? (
               <WithWording>
                 {(wording) =>
-                  item.kind === "file" ? fileSentence(wording, item) : changeSentence(wording, item)
+                  item.kind === "file" ? (
+                    <SentenceWithName
+                      sentence={fileSentence(wording, item)}
+                      name={item.file_name}
+                    />
+                  ) : (
+                    changeSentence(wording, item)
+                  )
                 }
               </WithWording>
             )}

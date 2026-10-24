@@ -4,13 +4,14 @@ import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui"
 import { useFileLimit } from "./files.ts";
 import { formatSize } from "./size.ts";
 import { transfers, type Transfer } from "./transfers.ts";
+import { FileName } from "./FileName.tsx";
 
 /** A file that waits for its turn or is on its way: its name, and the bar where it will be. */
 function Sending({ transfer }: { readonly transfer: Transfer }) {
   return (
     <div {...partOf(part.filesRow)}>
       <div {...partOf(part.filesInfo)}>
-        <span {...partOf(part.filesName)}>{transfer.name}</span>
+        <FileName name={transfer.name} />
         {transfer.status === "waiting" ? (
           <span {...partOf(part.filesMeta)}>{t("files.waiting", { name: transfer.name })}</span>
         ) : (

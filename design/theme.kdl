@@ -4553,6 +4553,14 @@ part "files.info" {
     overflow-wrap anywhere
 }
 
+// A word that never breaks at a hyphen: it goes to the next line as a whole, and is cut anywhere only
+// where it is longer than the line itself (file names, like an issue ID).
+part "unbroken-word" {
+    display inline-block
+    max-width "100%"
+    word-break break-all
+}
+
 part "files.name" {
     font-weight "$weight-bold"
     font-size "$fs-md"
