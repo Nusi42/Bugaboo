@@ -2398,7 +2398,10 @@ part "key-box" {
     use "sunken-box"
     font-family "$mono"
     font-size "$fs-md"
-    overflow-wrap anywhere
+    // A key has no spaces: it breaks anywhere, in lines of one length, so that a few letters never stand
+    // alone on the last one.
+    word-break break-all
+    text-wrap balance
 }
 
 part "key-box[variant=small]" {

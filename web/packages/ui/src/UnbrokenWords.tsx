@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
@@ -45,6 +45,32 @@ export function UnbrokenWords({ text }: { readonly text: string }) {
   );
 }
 
+/**
+ * A sentence that has a value in it (the name of a file, the start of a key): the value is drawn by
+ * `children`, as a part of its own, and the rest of the sentence flows around it.
+ */
+export function SentenceWithValue({
+  sentence,
+  value,
+  children,
+}: {
+  readonly sentence: string;
+  readonly value: string | null | undefined;
+  readonly children: (value: string) => ReactNode;
+}) {
+  const at = value === null || value === undefined ? -1 : sentence.indexOf(value);
+  if (at < 0 || value === null || value === undefined) {
+    return sentence;
+  }
+  return (
+    <>
+      {sentence.slice(0, at)}
+      {children(value)}
+      {sentence.slice(at + value.length)}
+    </>
+  );
+}
+
 /** A sentence that has the name of a file in it: the name keeps its words together, the rest flows. */
 export function SentenceWithName({
   sentence,
@@ -53,15 +79,9 @@ export function SentenceWithName({
   readonly sentence: string;
   readonly name: string | null | undefined;
 }) {
-  const at = name === null || name === undefined ? -1 : sentence.indexOf(name);
-  if (at < 0 || name === null || name === undefined) {
-    return sentence;
-  }
   return (
-    <>
-      {sentence.slice(0, at)}
-      <UnbrokenWords text={name} />
-      {sentence.slice(at + name.length)}
-    </>
+    <SentenceWithValue sentence={sentence} value={name}>
+      {(value) => <UnbrokenWords text={value} />}
+    </SentenceWithValue>
   );
 }

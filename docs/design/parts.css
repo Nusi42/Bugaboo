@@ -1794,7 +1794,8 @@ body {
   background: var(--bg-sunken);
   font-family: var(--mono);
   font-size: var(--fs-md);
-  overflow-wrap: anywhere;
+  word-break: break-all;
+  text-wrap: balance;
 }
 
 [data-part="key-box"][data-variant~="small"] {
