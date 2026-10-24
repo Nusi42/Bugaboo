@@ -156,6 +156,7 @@ body {
 
 [data-part="button"][data-disabled] {
   opacity: var(--opacity-disabled);
+  border-color: var(--fg-muted);
   cursor: default;
 }
 
@@ -166,7 +167,7 @@ body {
 }
 
 [data-part="button"][data-variant~="primary"][data-disabled] {
-  border-color: var(--border);
+  border-color: var(--fg-muted);
   background: var(--bg-raised);
   color: var(--fg);
 }

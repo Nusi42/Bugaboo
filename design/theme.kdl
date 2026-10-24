@@ -775,8 +775,11 @@ part "button[pressed]" {
     background "$bg-selected"
 }
 
+// The edge of a button that cannot be pressed is drawn in the color of quiet words, so that it can be
+// seen on every page in every theme, even after the fading (the final check of M4).
 part "button[disabled]" {
     opacity "$opacity-disabled"
+    border-color "$fg-muted"
     cursor default
     forced {
         border-color GrayText
@@ -788,7 +791,7 @@ part "button[disabled]" {
 // filled one, whose white words are hard to read (the review of M4, A14). The dashed edge belongs to
 // the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" {
-    border-color "$border"
+    border-color "$fg-muted"
     background "$bg-raised"
     color "$fg"
 }
