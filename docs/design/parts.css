@@ -223,12 +223,14 @@ body {
   font-family: var(--font);
   font-size: var(--fs-ui);
   height: var(--size-control);
+  padding-block: 0;
   line-height: var(--lh-body);
   text-overflow: ellipsis;
 }
 
 [data-part="field.input"][data-variant~="multiline"] {
   height: auto;
+  padding-block: var(--space-2);
   resize: vertical;
 }
 

@@ -834,12 +834,14 @@ part "field.description" {
 part "field.input" {
     use "input-box"
     height "$size-control"
+    padding-block 0
     line-height "$lh-body"
     text-overflow ellipsis
 }
 
 part "field.input[variant=multiline]" {
     height auto
+    padding-block "$space-2"
     resize vertical
 }
 
