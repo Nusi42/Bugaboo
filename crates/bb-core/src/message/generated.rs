@@ -152,6 +152,9 @@ pub const ACCESS_ROLE_CHOOSER: MessageKey = MessageKey::new("access.role-chooser
 /// The message `access.roles-cut`.
 pub const ACCESS_ROLES_CUT: MessageKey = MessageKey::new("access.roles-cut");
 
+/// The message `access.scrolls`.
+pub const ACCESS_SCROLLS: MessageKey = MessageKey::new("access.scrolls");
+
 /// The message `app.name`.
 pub const APP_NAME: MessageKey = MessageKey::new("app.name");
 
@@ -1519,10 +1522,6 @@ pub const FOLLOWERS_FOLLOW: MessageKey = MessageKey::new("followers.follow");
 
 /// The message `followers.following`.
 pub const FOLLOWERS_FOLLOWING: MessageKey = MessageKey::new("followers.following");
-
-/// The message `followers.following-after-count`.
-pub const FOLLOWERS_FOLLOWING_AFTER_COUNT: MessageKey =
-    MessageKey::new("followers.following-after-count");
 
 /// The message `followers.more`.
 pub const FOLLOWERS_MORE: MessageKey = MessageKey::new("followers.more");
@@ -3157,9 +3156,6 @@ pub const PERSON_SOMEONE_INSIDE: MessageKey = MessageKey::new("person.someone-in
 /// The message `preview.label`.
 pub const PREVIEW_LABEL: MessageKey = MessageKey::new("preview.label");
 
-/// The message `preview.nothing`.
-pub const PREVIEW_NOTHING: MessageKey = MessageKey::new("preview.nothing");
-
 /// The message `priority.critical`.
 pub const PRIORITY_CRITICAL: MessageKey = MessageKey::new("priority.critical");
 
@@ -3362,9 +3358,6 @@ pub const PROJECTS_PREVIEW_LIST: MessageKey = MessageKey::new("projects.preview-
 
 /// The message `projects.preview-loading`.
 pub const PROJECTS_PREVIEW_LOADING: MessageKey = MessageKey::new("projects.preview-loading");
-
-/// The message `projects.preview-nothing`.
-pub const PROJECTS_PREVIEW_NOTHING: MessageKey = MessageKey::new("projects.preview-nothing");
 
 /// The message `projects.preview-truncated`.
 pub const PROJECTS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("projects.preview-truncated");
@@ -9674,6 +9667,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "access.roles-cut",
         "There are more roles than fit in this table. The first ones are shown.",
     ),
+    (
+        "access.scrolls",
+        "There are more roles to the right. Scroll sideways to see them.",
+    ),
     ("app.name", "Bugaboo"),
     ("appearance.dark", "Theme when my device is dark"),
     (
@@ -10878,7 +10875,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("followers.follow", "Follow"),
     ("followers.following", "You follow it"),
-    ("followers.following-after-count", "· You follow it"),
     ("followers.more", "Show more followers"),
     ("followers.name", "Followers"),
     ("followers.reason-assigned", "It is assigned to you"),
@@ -12180,7 +12176,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.someone", "Someone"),
     ("person.someone-inside", "someone"),
     ("preview.label", "Issues in this change"),
-    ("preview.nothing", "None of the issues would change."),
     (
         "preview.summary",
         "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
@@ -12345,10 +12340,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("projects.preview-list", "Changes for people"),
     ("projects.preview-loading", "Working out what changes…"),
-    (
-        "projects.preview-nothing",
-        "Nobody gains or loses access, and nobody changes role.",
-    ),
     (
         "projects.preview-summary",
         "{changed, plural, =0 {Nobody} one {# person} other {# people}} will gain or lose access or change role in the projects you can see.",

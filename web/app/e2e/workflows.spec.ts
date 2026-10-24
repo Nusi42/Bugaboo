@@ -7,7 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { startWorking, statusButton } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
-import { foundInVersion, prepareWorkflows } from "./support/workflows.ts";
+import { askedForField, prepareWorkflows } from "./support/workflows.ts";
 import {
   addSendToTesting,
   blockOf,
@@ -43,7 +43,7 @@ test("wf_02 a lead adds Testing to Simple with Must be filled in, publishes it, 
   await expect(asking.getByRole("textbox")).toHaveCount(1);
   await asking.getByRole("button", { name: "Send to testing", exact: true }).click();
   await expect(asking.getByText(t("error.field.required"), { exact: true })).toBeVisible();
-  await asking.getByLabel(foundInVersion, { exact: true }).fill("2.4.1");
+  await asking.getByLabel(askedForField, { exact: true }).fill("Acme");
   await asking.getByRole("button", { name: "Send to testing", exact: true }).click();
   await expect(statusButton(page)).toHaveText("Testing");
   await expect(

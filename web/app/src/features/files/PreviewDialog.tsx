@@ -3,6 +3,7 @@ import { Button, buttonLook, Overlay, partOf, part } from "@bugaboo/ui";
 
 import { DownloadButton } from "./FileLinks.tsx";
 import type { FileItem } from "./file-item.ts";
+import { FileName } from "./FileName.tsx";
 
 /**
  * The preview of a file, larger (UX §4.4): a picture from our own origin, never the file itself,
@@ -31,7 +32,7 @@ export function PreviewDialog({
       label={t("files.preview-of", { name: item.name })}
     >
       <div {...partOf(part.stack)}>
-        <span {...partOf(part.filesName)}>{item.name}</span>
+        <FileName name={item.name} />
         {url === null ? null : (
           <img
             {...partOf(part.filesLarge)}

@@ -1,6 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
+import { useEffect, useRef, useState } from "react";
+
 import { CellControl } from "./CellControl.tsx";
 import type { Change, LevelTable, Row } from "./levels.ts";
 
@@ -70,6 +72,26 @@ function MatrixRow<Subject extends string, Level extends string>({
   );
 }
 
+/** Whether the region has more to the side than it shows, kept up to date while the page is resized. */
+function useScrollsSideways() {
+  const region = useRef<HTMLElement>(null);
+  const [scrolls, setScrolls] = useState(false);
+  useEffect(() => {
+    const measure = () => {
+      setScrolls((region.current?.scrollWidth ?? 0) > (region.current?.clientWidth ?? 0));
+    };
+    measure();
+    const watch = new ResizeObserver(measure);
+    if (region.current !== null) {
+      watch.observe(region.current);
+    }
+    return () => {
+      watch.disconnect();
+    };
+  }, []);
+  return { region, scrolls };
+}
+
 /**
  * The matrix of a computer: the fields (or kinds) down, the roles across, every cell a list of the
  * levels. The region scrolls on its own when there are more roles than fit; the lists inside it
@@ -81,31 +103,35 @@ export function LevelsMatrix<Subject extends string, Level extends string>({
   tableName,
   ...rest
 }: LevelsViewProps<Subject, Level>) {
+  const { region, scrolls } = useScrollsSideways();
   return (
-    <section {...partOf(part.accessScroll)} aria-label={tableName}>
-      <table {...partOf(part.accessMatrix)}>
-        <thead>
-          <tr {...partOf(part.accessMatrixRow)}>
-            <th scope={column} {...partOf(part.accessMatrixCell, { variants: ["head"] })}>
-              {subjectHeading}
-            </th>
-            {table.roles.map((role) => (
-              <th
-                key={role.id}
-                scope={column}
-                {...partOf(part.accessMatrixCell, { variants: ["head"] })}
-              >
-                {role.name}
+    <>
+      {scrolls ? <p {...partOf(part.muted)}>{t("access.scrolls")}</p> : null}
+      <section ref={region} {...partOf(part.accessScroll)} aria-label={tableName}>
+        <table {...partOf(part.accessMatrix)}>
+          <thead>
+            <tr {...partOf(part.accessMatrixRow)}>
+              <th scope={column} {...partOf(part.accessMatrixCell, { variants: ["head"] })}>
+                {subjectHeading}
               </th>
+              {table.roles.map((role) => (
+                <th
+                  key={role.id}
+                  scope={column}
+                  {...partOf(part.accessMatrixCell, { variants: ["head"] })}
+                >
+                  {role.name}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row) => (
+              <MatrixRow key={row.subject} table={table} row={row} {...rest} />
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {table.rows.map((row) => (
-            <MatrixRow key={row.subject} table={table} row={row} {...rest} />
-          ))}
-        </tbody>
-      </table>
-    </section>
+          </tbody>
+        </table>
+      </section>
+    </>
   );
 }

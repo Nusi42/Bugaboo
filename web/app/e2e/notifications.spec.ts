@@ -5,6 +5,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { apiOf, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
+import { expectCountUnderTheBell } from "./support/menu-count.ts";
 import {
   asBen,
   changeStatus,
@@ -17,7 +18,7 @@ import {
   readEverything,
   writeCommentOnThePage,
 } from "./support/notifications.ts";
-import { paths } from "../src/shared/paths.ts";
+import { issueAddress, paths } from "../src/shared/paths.ts";
 
 // Notifications on screen (NTF-01, M4 WP-08): what happened on issues a person follows and where
 // they are named, the page with its filters, *Open* and *Mark as read*, and the start page. A
@@ -42,6 +43,9 @@ test("ntf_01 a comment on an issue Ana follows raises her count, Open lands on i
   const ben = await asBen(browser, server);
   await writeCommentOnThePage(ben, "WEB-1", "The first note, from Ben.");
   await expectUnread(page, 1);
+  // A screen with a list narrows the menu to its icons, where the number stands under the bell.
+  await page.goto(issueAddress("WEB-1"));
+  await expectCountUnderTheBell(page);
 
   await openNotifications(page);
   const group = page.getByRole("region", {

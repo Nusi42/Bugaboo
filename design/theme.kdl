@@ -158,7 +158,8 @@ tokens {
     size "size-reading" "75ch"
     size "size-main" "780px"
     size "size-sheet-share" "85%"
-    size "size-matrix-cell" "calc($size-control * 3)"
+    // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
+    size "size-matrix-cell" "calc($size-control * 4)"
     size "size-list-tall" "calc($size-list * 2)"
     // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
     size "size-line-medium" "80%"
@@ -774,8 +775,11 @@ part "button[pressed]" {
     background "$bg-selected"
 }
 
+// The edge of a button that cannot be pressed is drawn in the color of quiet words, so that it can be
+// seen on every page in every theme, even after the fading (the final check of M4).
 part "button[disabled]" {
     opacity "$opacity-disabled"
+    border-color "$fg-muted"
     cursor default
     forced {
         border-color GrayText
@@ -787,7 +791,7 @@ part "button[disabled]" {
 // filled one, whose white words are hard to read (the review of M4, A14). The dashed edge belongs to
 // the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" {
-    border-color "$border"
+    border-color "$fg-muted"
     background "$bg-raised"
     color "$fg"
 }
@@ -1828,18 +1832,31 @@ part "name-value.value > muted" {
     padding "calc(($size-control - $fs-base * $lh-body) / 2) 0"
 }
 
-// "2 followers · You follow it" stays on one line, so the dot never starts a line; the button for
-// turning it round goes under it when there is no room beside it.
+// The *Followers* row is one line on a computer and on a phone: the count (or the words *You follow it*
+// where there is no count) and the button for turning it round (the review of M4: *Stop following*
+// dropped under the words).
+part "followers-line" {
+    display flex
+    flex-wrap nowrap
+    align-items center
+    gap "$space-2"
+    min-width 0
+}
+
+// The button never breaks its words, so *Stop following* stays one line.
+part "followers-line button" {
+    white-space nowrap
+}
+
+// The count and the words stay together on one line.
 part "followers-state" {
     display inline-flex
     align-items center
     white-space nowrap
 }
 
-// The words after the count are the size of the count, so the line reads as one sentence, and the
-// space before the dot is the space after it.
+// The words *You follow it* are the size of the count.
 part "followers-state.words" {
-    margin-inline-start "$space-1"
     color "$fg-muted"
     font-size "$fs-ui"
 }
@@ -2381,7 +2398,10 @@ part "key-box" {
     use "sunken-box"
     font-family "$mono"
     font-size "$fs-md"
-    overflow-wrap anywhere
+    // A key has no spaces: it breaks anywhere, in lines of one length, so that a few letters never stand
+    // alone on the last one.
+    word-break break-all
+    text-wrap balance
 }
 
 part "key-box[variant=small]" {
@@ -3223,6 +3243,12 @@ part "shell.section-heading" {
     font-weight "$weight-bold"
 }
 
+// In the sheet *More* the heading starts where the line *Signed in as* above it starts: the sheet has
+// its own padding, and the heading needs none of the one that lines it up with the items of the menu.
+part "shell.sheet shell.section-heading" {
+    padding-inline 0
+}
+
 part "shell.fill" {
     flex 1
     min-width 0
@@ -3301,7 +3327,10 @@ part "app-layout.column" {
     min-width 0
 }
 
+// The page scrolls inside this frame. It is also where the hidden parts (the box of a switch, a
+// choice) are placed, so that one far down the page does not make the document itself taller.
 part "app-layout.main" {
+    position relative
     display flex
     flex 1
     flex-direction column
@@ -3733,6 +3762,8 @@ part "settings-frame.heading" {
     font-weight "$weight-bold"
 }
 
+// The offers float over the page at the bottom, in the middle of the window: the end is where the
+// Details of an issue end, and a corner is where the menu ends.
 part "undo-host" {
     position fixed
     right "$space-4"
@@ -3741,7 +3772,7 @@ part "undo-host" {
     z-index "$z-panel"
     display flex
     flex-direction column
-    align-items flex-end
+    align-items center
     gap "$space-2"
     pointer-events none
 }
@@ -4235,8 +4266,9 @@ part "shortcut-editor.row" {
     margin 0
 }
 
+// Wide enough for the longer of the two labels, so the keys of both rows start on one edge.
 part "shortcut-editor.label" {
-    min-width "$size-control"
+    min-width "calc($size-control * 2.5)"
     margin-inline-end "$space-2"
     font-weight "$weight-bold"
 }
@@ -4538,6 +4570,14 @@ part "files.info" {
     flex "1 1 $size-col-labels"
     min-width 0
     overflow-wrap anywhere
+}
+
+// A word that never breaks at a hyphen: it goes to the next line as a whole, and is cut anywhere only
+// where it is longer than the line itself (file names, like an issue ID).
+part "unbroken-word" {
+    display inline-block
+    max-width "100%"
+    word-break break-all
 }
 
 part "files.name" {
@@ -11485,12 +11525,16 @@ part "nav-item.count" "bottom-bar.count" {
     }
 }
 
-// In the narrow menu there is no room after the icon: the number sits on the corner of the icon,
-// inside the menu (UX review of M4, A5).
+// In the narrow menu there is no room after the icon: the number stands under the icon, inside the
+// item, so it covers neither the bell nor the item above it (UX review of M4, A5, and the final check).
+part "sidebar[variant=narrow] nav-item" {
+    flex-direction column
+    align-items flex-start
+    justify-content center
+    gap 0
+}
+
 part "sidebar[variant=narrow] nav-item.count" {
-    position absolute
-    top 0
-    inset-inline-end 0
     min-width 0
     padding 0 "$space-1"
     font-size "$fs-xs"

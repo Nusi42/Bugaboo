@@ -5,6 +5,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
 import { detailRow, prepareWeb, savedNote } from "./support/issues.ts";
+import { boxOf } from "./support/windows.ts";
 import { addRelation, addSubIssue } from "./support/relate.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
@@ -98,6 +99,10 @@ test("iss_07 following can be stopped and started again, and the server keeps it
     detailRow(page, t("followers.name")).getByRole("button", { name: t("followers.stop") }),
   ).toBeVisible();
   const stop = () => page.getByRole("button", { name: t("followers.stop"), exact: true });
+  // The count and the button stand on one line, on a phone too (the review of M4).
+  const row = detailRow(page, t("followers.name"));
+  const counted = await boxOf(row.getByRole("button", { name: /follower/u }).first());
+  expect(Math.abs(counted.y - (await boxOf(stop())).y)).toBeLessThan(2);
   const follow = () => page.getByRole("button", { name: t("followers.follow"), exact: true });
   const stopped = serverKeptFollow(page, "DELETE");
   await stop().click();

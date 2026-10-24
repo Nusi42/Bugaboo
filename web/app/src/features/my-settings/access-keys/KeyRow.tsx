@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
+import { buttonLook, ConfirmDialog, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
-import { formatDate, formatDateTime } from "../../../shared/format.ts";
+import { formatDateTime, formatDay } from "../../../shared/format.ts";
 import { listText } from "../../../shared/list-text.ts";
 import type { AccessKey } from "./access-keys.ts";
 import { choiceName } from "./choice.ts";
@@ -46,7 +46,8 @@ function RunsOut({ item }: { readonly item: AccessKey }) {
   if (day === undefined || day === null) {
     return null;
   }
-  const when = formatDate(day);
+  // The day the person picked on this device's calendar, like the box of the form.
+  const when = formatDay(new Date(day).getTime());
   return item.expired === true ? (
     <span {...partOf(part.accessKeysExpired)}>{t("access-keys.row.expired", { when })}</span>
   ) : (
@@ -58,12 +59,18 @@ function RunsOut({ item }: { readonly item: AccessKey }) {
 export function KeyRow({ item, onDelete }: KeyRowProps) {
   const name = item.name ?? "";
   const used = item.last_used_at;
+  const start = `bb_${item.prefix ?? ""}`;
   return (
     <li {...partOf(part.item)}>
       <span {...partOf(part.accessKeysItemText)}>
         <span {...partOf(part.itemTitle)}>{name}</span>
-        <span {...partOf(part.accessKeysPrefix)}>
-          {t("access-keys.row.prefix", { prefix: `bb_${item.prefix ?? ""}` })}
+        <span>
+          <SentenceWithValue
+            sentence={t("access-keys.row.prefix", { prefix: start })}
+            value={start}
+          >
+            {(value) => <span {...partOf(part.accessKeysPrefix)}>{value}</span>}
+          </SentenceWithValue>
         </span>
         <span {...partOf(part.muted)}>{mayText(item)}</span>
         <span {...partOf(part.muted)}>{whereText(item)}</span>

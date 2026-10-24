@@ -7,6 +7,7 @@ import { undoStore } from "../../shared/optimistic-undo.ts";
 import { refreshIssueFiles } from "../../shared/query-keys.ts";
 import { metaOf, type FileItem } from "./file-item.ts";
 import { DownloadButton, FileTile } from "./FileLinks.tsx";
+import { FileName } from "./FileName.tsx";
 
 /**
  * Brings a deleted file back, as *Undo* asks. The row it was in is gone by then, so this is not a
@@ -41,7 +42,7 @@ function FileRow({ item, issue }: { readonly item: FileItem; readonly issue: str
     <div {...partOf(part.filesRow)}>
       <FileTile item={item} issue={issue} />
       <div {...partOf(part.filesInfo)}>
-        <span {...partOf(part.filesName)}>{item.name}</span>
+        <FileName name={item.name} />
         <span {...partOf(part.filesMeta)}>{metaOf(item)}</span>
       </div>
       <div {...partOf(part.filesActions)}>

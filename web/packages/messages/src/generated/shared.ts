@@ -621,7 +621,6 @@ export const messages = {
   "preview.summary":
     "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
   "preview.label": "Issues in this change",
-  "preview.nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
   "workflows.nav": "Workflows",

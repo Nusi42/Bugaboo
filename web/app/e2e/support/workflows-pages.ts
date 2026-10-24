@@ -6,7 +6,7 @@ import { check } from "./access.ts";
 import { type Person } from "./accounts.ts";
 import { editWhenYouCan } from "./layouts.ts";
 import { serverWord } from "./server-words.ts";
-import { foundInVersion } from "./workflows.ts";
+import { askedForField } from "./workflows.ts";
 
 /** The block of a status in the plain list, found by the name of the status. */
 export function blockOf(page: Page, name: string): Locator {
@@ -49,7 +49,7 @@ export async function addSendToTesting(page: Page): Promise<void> {
     .click();
 }
 
-/** Opens the rules of *Send to testing*, asks for *Found in version* to be filled in, and closes them. */
+/** Opens the rules of *Send to testing*, asks for *Customer* to be filled in, and closes them. */
 export async function requireFoundInVersion(page: Page): Promise<void> {
   await page
     .getByRole("button", { name: t("workflows.rules-open", { button: "Send to testing" }) })
@@ -59,7 +59,7 @@ export async function requireFoundInVersion(page: Page): Promise<void> {
   });
   await rules
     .getByRole("group", { name: t("workflows.must-fill") })
-    .getByText(foundInVersion, { exact: true })
+    .getByText(askedForField, { exact: true })
     .click();
   await rules.getByRole("button", { name: t("workflows.rules-done"), exact: true }).click();
   await expect(rules).toHaveCount(0);

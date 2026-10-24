@@ -3,6 +3,7 @@ import { Button, buttonLook, FilePicker, partOf, part } from "@bugaboo/ui";
 
 import { chosenKey, type ChosenFiles } from "./chosen-files.ts";
 import { formatSize } from "./size.ts";
+import { FileName } from "./FileName.tsx";
 
 /** *Add files* under the box of a comment, and the list of what was chosen, each with *Take out*. */
 export function ChosenFilesPicker({ chosen }: { readonly chosen: ChosenFiles }) {
@@ -16,7 +17,7 @@ export function ChosenFilesPicker({ chosen }: { readonly chosen: ChosenFiles }) 
           {chosen.files.map((file, at) => (
             <li key={chosenKey(file, at)}>
               <div {...partOf(part.row)}>
-                <span {...partOf(part.filesName)}>{file.name}</span>
+                <FileName name={file.name} />
                 <span {...partOf(part.filesMeta)}>{formatSize(file.size)}</span>
                 <Button
                   look={buttonLook.quiet}

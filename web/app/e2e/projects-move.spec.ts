@@ -5,6 +5,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { answerPreviewsWithEverything, expectEverySentence } from "./support/fake-preview.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { partIn } from "./support/parts.ts";
 import { createProject, openMove } from "./support/projects.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
 
@@ -45,7 +46,11 @@ test("prj_03 moving shows what changes and then moves the project", async ({ pag
   await signIn(page, ada);
   const dialog = await openMove(page, addressInProject(paths.projectSettings, "DOCS"));
   // Nobody has a role besides the administrator, so nobody gains or loses anything.
-  await expect(dialog.getByText(t("projects.preview-nothing"))).toBeVisible();
+  // One sentence says it, not two that mean the same.
+  await expect(
+    dialog.getByText(t("projects.preview-summary", { changed: 0 }), { exact: true }),
+  ).toBeVisible();
+  await expect(partIn(dialog, "long-preview").locator("> *")).toHaveCount(1);
   await expect(dialog.getByText(t("projects.preview-hidden-note"))).toBeVisible();
   await expectGoodInEveryLook(page);
   await dialog.getByRole("button", { name: t("projects.move-confirm") }).click();

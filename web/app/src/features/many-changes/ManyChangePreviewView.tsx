@@ -102,7 +102,6 @@ export function ManyChangePreviewView({ preview, plain }: ManyChangePreviewViewP
               skipped: preview.summary.skipped,
             })}
             label={t("preview.label")}
-            nothing={t("preview.nothing")}
             groups={preview.rows.map((row) => groupOf(row, plain, wording))}
           />
         )}

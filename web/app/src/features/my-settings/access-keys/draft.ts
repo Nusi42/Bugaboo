@@ -1,7 +1,9 @@
+import type { Schema } from "@bugaboo/api-client";
 import { useState } from "react";
 
 import type { PermissionKey } from "../../../shared/permissions.ts";
 import type { PlainChoice } from "./choice.ts";
+import { endOfDay, presetDay } from "./expiry-day.ts";
 
 /** What the person has filled in so far, and how to change each part. */
 export interface Draft {
@@ -12,8 +14,8 @@ export interface Draft {
   readonly picked: readonly PermissionKey[];
   /** The IDs of the projects the key is limited to; none means every project. */
   readonly projects: readonly string[];
-  /** The day the key runs out, when the person picked one; else the organization's default. */
-  readonly day: string | null;
+  /** The day the key runs out, as the date field writes it: the one the person picked, else the organization's default. */
+  readonly day: string;
   readonly password: string;
   readonly setName: (name: string) => void;
   readonly setChoice: (choice: PlainChoice) => void;
@@ -41,13 +43,13 @@ function withProject(list: readonly string[], item: string, on: boolean): readon
 }
 
 /** The form of *Create an access key*, as a person fills it in. */
-export function useDraft(): Draft {
+export function useDraft(rules: Schema<"AccessKeyRulesBody">): Draft {
   const [name, setName] = useState("");
   const [choice, setChoice] = useState<PlainChoice>("see-only");
   const [single, setSingle] = useState(false);
   const [picked, setPicked] = useState<readonly PermissionKey[]>([]);
   const [projects, setProjects] = useState<readonly string[]>([]);
-  const [day, setDay] = useState<string | null>(null);
+  const [pickedDay, setDay] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   return {
     name,
@@ -55,7 +57,7 @@ export function useDraft(): Draft {
     single,
     picked,
     projects,
-    day,
+    day: pickedDay ?? presetDay(rules),
     password,
     setName,
     setChoice,
@@ -72,14 +74,16 @@ export function useDraft(): Draft {
 }
 
 /** What the server is asked to make: the draft in the words of the API. */
-export function bodyOf(draft: Draft) {
+export function bodyOf(
+  draft: Pick<Draft, "name" | "choice" | "single" | "picked" | "projects" | "day" | "password">,
+) {
   return {
     password: draft.password,
     name: draft.name.trim(),
     choice: draft.single ? ("permissions" as const) : draft.choice,
     permissions: draft.single ? [...draft.picked] : [],
     projects: [...draft.projects],
-    // The key runs out at the end of the day that was picked.
-    expires_at: draft.day === null ? null : `${draft.day}T23:59:59Z`,
+    // The key runs out at the end of the day in the box, on the person's own clock.
+    expires_at: endOfDay(draft.day),
   };
 }

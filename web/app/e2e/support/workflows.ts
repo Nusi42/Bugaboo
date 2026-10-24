@@ -19,7 +19,7 @@ import { statusOf } from "./many-changes.ts";
 import { type Instance } from "./server.ts";
 
 /** The own field that the workflow tests ask for and require. */
-export const foundInVersion = "Found in version";
+export const askedForField = "Customer";
 
 /** The key of the status that the tests add to *Simple*. */
 export const testing = "testing";
@@ -44,13 +44,13 @@ function rulesBody(rules: Schema<"StatusRulesBody">) {
 
 /**
  * Gets a server ready for the tests of workflows: the project WEB with its people (Ana the Viewer,
- * Bob the Team member, Lea the Guest) and Cleo, a Contributor, and the own field *Found in
- * version*. A new organization has *Simple* for Task, *Bug* for Bug and *Development* for Feature.
+ * Bob the Team member, Lea the Guest) and Cleo, a Contributor, and the own field *Customer*.
+ * A new organization has *Simple* for Task, *Bug* for Bug and *Development* for Feature.
  */
 export async function prepareWorkflows(server: Instance): Promise<void> {
   await prepareWeb(server);
   const admin = await signedInAdmin(server);
-  await createOwnField(admin, foundInVersion, "text");
+  await createOwnField(admin, askedForField, "text");
   await createPeopleWithRoles(server, admin, [
     { person: cleo, role: roleName.contributor, project: "WEB" },
   ]);
