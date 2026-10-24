@@ -27,7 +27,7 @@ The maintainer sees no screen of M4 that breaks UX design §1.1: no cut or broke
 7. **No word broken in the middle:** `M2/30-projects-*` breaks "Website" before its last letter; the short-name column lines up.
 8. **Someone with the role:** "changed Assigned to from nobody to someone" and *Assigned to: Someone* in `demo/06` and `demo/07` follow the glossary (*Someone (Team member)*) and a plain sentence for an assignment.
 9. **Disabled main buttons in Midnight** read as disabled, not as secondary buttons (`15-name-taken-computer-midnight`, `new-issue-*-phone-midnight`).
-10. New pictures of every set into `<work root>/screenshots/M4/final`, and a look at each set in a light and a dark theme on computer and phone, all four themes for the issue page, the demo and the workflow editor.
+10. New pictures of every set into `.work/screenshots/M4/final` in your folder, and a look at each set in a light and a dark theme on computer and phone, all four themes for the issue page, the demo and the workflow editor.
 
 ## Depends on
 

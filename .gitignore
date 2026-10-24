@@ -36,6 +36,9 @@ desktop.ini
 # Pinned external tools installed by `cargo xtask setup` (tools/dev/tools.toml)
 /.tools/
 
+# A work folder's own logs, notes, helper scripts and pictures (04-milestones, Working in a folder)
+/.work/
+
 # Browser app build output and test reports (WP-02)
 /test-results/
 /playwright-report/

@@ -48,6 +48,7 @@ flowchart LR
 
 - **Never build, install or run anything in the master repository** (`<master>`, which may live in a synced folder). Work only in your own folder `<work root>/bugaboo.winN`, on your branch `WINn` (ADR-0024).
 - A builder's folder starts from `main`: `git fetch origin && git checkout -B WINn origin/main`, then `cargo xtask setup` (pinned tools and Git hooks, coding-standards §7).
+- **Nothing outside your folder.** Logs, notes, helper scripts, pictures, servers' data and built programs stay inside `bugaboo.winN`, in its ignored `.work/` folder (pictures in `.work/screenshots/`). Never create files or folders next to the work folders in `<work root>`, in your user folder or anywhere else; a tool that writes elsewhere by default is pointed into `.work/`. Delete what you no longer need before you report.
 - Commit on your branch and push it to `origin` when the work package is done. Never push to `main`: only the lead moves it, by a fast-forward in the master.
 - Ports come from your folder's block in `tools/dev/ports.json` (ADR-0023).
 - **CodeGraph** keeps one index per work folder, never in the master. If your folder has no `.codegraph/codegraph.db`, run `codegraph init` in it, then pass your folder as `projectPath` to `codegraph_explore` (or run `codegraph explore` there). The lead's index is in `bugaboo.win1`.

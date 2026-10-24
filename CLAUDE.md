@@ -4,7 +4,7 @@ Read this before every task. The rules live in `docs/`; this file only says wher
 
 ## Everyone
 
-1. **Where you work:** "Working in a folder" in [`docs/04-milestones.md`](docs/04-milestones.md#working-in-a-folder): never build in the master (`<master>`); your own folder `bugaboo.winN` and branch `WINn`; `cargo xtask setup` first; CodeGraph per folder.
+1. **Where you work:** "Working in a folder" in [`docs/04-milestones.md`](docs/04-milestones.md#working-in-a-folder): never build in the master (`<master>`); your own folder `bugaboo.winN` and branch `WINn`; `cargo xtask setup` first; CodeGraph per folder; nothing written outside your folder (logs, scripts, pictures go into its ignored `.work/`).
 2. **Your work package** in `docs/milestones/Mx/`, and "Life of a work package" and "Definition of done" in the same file: tests first, `cargo xtask check staged` and your tests green, report the exact commands you ran and their results.
 3. **[`docs/coding-standards.md`](docs/coding-standards.md), all of it.** These rules are the easiest to break:
    - §1: SSOT, DRY, ODR. This is a merge gate for existing and new code.
