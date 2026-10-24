@@ -7,7 +7,7 @@ import { layoutOf } from "./layout.ts";
 import {
   addSendToTesting,
   openSimpleToChange,
-  requireFoundInVersion,
+  requireAskedForField,
   tryMarkAsDone,
 } from "./workflows-pages.ts";
 
@@ -26,7 +26,7 @@ export async function shootEditor(page: Page): Promise<void> {
   await openSimpleToChange(page);
   await addSendToTesting(page);
   await inFourThemes(page, "10-editor-list");
-  await requireFoundInVersion(page);
+  await requireAskedForField(page);
   await page
     .getByRole("button", { name: t("workflows.rules-open", { button: "Send to testing" }) })
     .click();

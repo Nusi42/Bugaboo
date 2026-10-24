@@ -49,8 +49,8 @@ export async function addSendToTesting(page: Page): Promise<void> {
     .click();
 }
 
-/** Opens the rules of *Send to testing*, asks for *Customer* to be filled in, and closes them. */
-export async function requireFoundInVersion(page: Page): Promise<void> {
+/** Opens the rules of *Send to testing*, asks for the extra field to be filled in, and closes them. */
+export async function requireAskedForField(page: Page): Promise<void> {
   await page
     .getByRole("button", { name: t("workflows.rules-open", { button: "Send to testing" }) })
     .click();
