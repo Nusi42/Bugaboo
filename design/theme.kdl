@@ -3753,6 +3753,8 @@ part "settings-frame.heading" {
     font-weight "$weight-bold"
 }
 
+// The offers float over the page at the bottom, in the middle of the window: the end is where the
+// Details of an issue end, and a corner is where the menu ends.
 part "undo-host" {
     position fixed
     right "$space-4"
@@ -3761,7 +3763,7 @@ part "undo-host" {
     z-index "$z-panel"
     display flex
     flex-direction column
-    align-items flex-end
+    align-items center
     gap "$space-2"
     pointer-events none
 }
