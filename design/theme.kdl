@@ -3315,7 +3315,10 @@ part "app-layout.column" {
     min-width 0
 }
 
+// The page scrolls inside this frame. It is also where the hidden parts (the box of a switch, a
+// choice) are placed, so that one far down the page does not make the document itself taller.
 part "app-layout.main" {
+    position relative
     display flex
     flex 1
     flex-direction column
