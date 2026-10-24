@@ -184,7 +184,7 @@ pub enum LockStatus {
         /// When it runs out now.
         expires_at: Timestamp,
     },
-    /// No heartbeat came for a minute, or the lock was released.
+    /// No heartbeat came for a minute, or the lock was let go.
     RanOut,
     /// Somebody took the editing over (*Edit anyway*).
     TakenOver {

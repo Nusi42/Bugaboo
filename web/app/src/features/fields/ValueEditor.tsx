@@ -8,14 +8,7 @@ import { MomentEditor } from "./MomentEditor.tsx";
 import { ReferenceEditor } from "./ReferenceEditor.tsx";
 import { SaveForm } from "./SaveForm.tsx";
 import { useSynced } from "./use-synced.ts";
-import {
-  durationSeconds,
-  isDecimalText,
-  isUnchanged,
-  textOf,
-  type Kept,
-  wholeNumberIn,
-} from "./value-text.ts";
+import { isUnchanged, sentFrom, textOf, type Kept } from "./value-text.ts";
 
 export type { Sent } from "./fields.ts";
 
@@ -49,29 +42,6 @@ export interface ValueEditorProps {
 /** The choices a person can pick: those not retired, and the ones the value has now. */
 function pickable(field: OwnField, current: readonly string[]) {
   return field.choices.filter((choice) => !choice.retired || current.includes(choice.id));
-}
-
-/** What the text of a box means for the API, or a sentence that says why it cannot be sent. */
-function sentFrom(
-  field: OwnField,
-  text: string,
-): { readonly value: Sent } | { readonly problem: string } {
-  const trimmed = text.trim();
-  if (trimmed === "") {
-    return { value: null };
-  }
-  if (field.kind === "whole-number") {
-    const whole = wholeNumberIn(trimmed);
-    return whole === null ? { problem: t("fields.not-a-whole-number") } : { value: whole };
-  }
-  if (field.kind === "decimal") {
-    return isDecimalText(trimmed) ? { value: trimmed } : { problem: t("fields.not-a-decimal") };
-  }
-  if (field.kind === "duration") {
-    const seconds = durationSeconds(trimmed);
-    return seconds === undefined ? { problem: t("fields.not-a-duration") } : { value: seconds };
-  }
-  return { value: trimmed };
 }
 
 /** A box for the kinds of value a person types: text, numbers and lengths of time. */

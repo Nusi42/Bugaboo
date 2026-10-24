@@ -32,6 +32,17 @@ describe("value-text", () => {
     expect(isDecimalText("12")).toBe(true);
   });
 
+  it("cf_01_a_number_with_too_many_digits_is_none", () => {
+    expect(durationSeconds("999999999")).toBe(999_999_999 * 60);
+    expect(durationSeconds("1000000000")).toBeUndefined();
+    expect(durationSeconds("1000000000h")).toBeUndefined();
+    expect(durationSeconds("1h 1000000000m")).toBeUndefined();
+    expect(durationSeconds(`1${"0".repeat(400)}`)).toBeUndefined();
+    expect(decimalToMillionths("123456789.5")).toBe(123_456_789_500_000);
+    expect(decimalToMillionths("1234567890.5")).toBeUndefined();
+    expect(isDecimalText(`1${"0".repeat(400)}`)).toBe(false);
+  });
+
   it("cf_01_a_decimal_is_kept_in_millionths_and_comes_back_the_same", () => {
     expect(decimalToMillionths("12.5")).toBe(12_500_000);
     expect(decimalToMillionths("-0.25")).toBe(-250_000);

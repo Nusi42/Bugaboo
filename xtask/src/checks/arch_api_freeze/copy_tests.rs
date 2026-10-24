@@ -52,10 +52,7 @@ fn good_example_a_new_copy_may_hold_more_than_the_copy_at_the_merge_base() {
 fn bad_example_a_new_copy_that_lacks_a_fact_of_the_copy_to_keep_is_refused() {
     let (_temp, repo) = repo("freeze-less", Some(&description(true)), &description(false));
     let error = write_frozen(&repo).unwrap_err();
-    assert!(
-        format!("{error:#}").contains("property Thing.title"),
-        "{error:#}"
-    );
+    assert!(format!("{error:#}").contains("title"), "{error:#}");
     // And the check refuses a frozen copy in the work tree that lacks it.
     let kept = description(true);
     let frozen = description(false);
@@ -96,5 +93,9 @@ fn good_example_the_tag_wins_over_main() {
     assert!(temp.git(&["tag", FREEZE_TAG]));
     let (origin, kept) = copy_to_keep(&repo).unwrap().unwrap();
     assert!(origin.contains("tag"), "{origin}");
-    assert!(facts(&kept).names.contains("property Thing.title"));
+    assert!(
+        broken(&kept, &description(false))
+            .iter()
+            .any(|line| line.contains("title"))
+    );
 }

@@ -93,8 +93,9 @@ pub(crate) struct TryParams {
 
 /// The workflows there are, by name, for choosing one for a place. Needs the permission *Manage
 /// workflows* at the place. A page holds at most 100 workflows, and the list stops at 200: a 201st
-/// workflow is not listed (an organization has a handful). The sentence is held to the constants
-/// by a test, because the description of a route takes a text and no constant.
+/// workflow is not listed (an organization has a handful).
+// The two numbers in the description are held to the constants by a test: the description of a
+// route takes a text and no constant.
 #[utoipa::path(
     get,
     path = "/api/v1/workflows",
