@@ -459,3 +459,29 @@ pub(crate) struct Wanted {
     pub(crate) groups: bool,
     pub(crate) roles: bool,
 }
+
+#[cfg(test)]
+mod cursor_tests {
+    use bb_core::id::UserId;
+    use bb_core::person::Person;
+    use jiff::Timestamp;
+
+    use super::write_cursor;
+
+    fn ada() -> Person {
+        Person {
+            id: UserId::from_random([7; 16]),
+            display_name: "Ada Lovelace".to_owned(),
+            email: "ada@example.test".to_owned(),
+            created_at: Timestamp::UNIX_EPOCH,
+        }
+    }
+
+    #[test]
+    fn priv_cursor_of_a_page_of_people_holds_the_id_and_never_the_name() {
+        let person = ada();
+        let cursor = write_cursor(&person);
+        assert_eq!(cursor, person.id.to_string());
+        assert!(!cursor.contains("Ada") && !cursor.contains("example"));
+    }
+}

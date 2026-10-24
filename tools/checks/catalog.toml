@@ -496,7 +496,7 @@ status = "active"
 id = "ARCH-PERSON-REF"
 title = "People are only shown through PersonRef, resolved for the viewer (names, role only or Someone)"
 rule = "ADR-0022, PRIV-12"
-tool = "xtask (reads the code of bb-api and bb-app, and the generated API description: no name or address outside PersonRef; exemptions with a reason in person-ref-exemptions.toml)"
+tool = "xtask (reads the code of bb-api and bb-app, and the generated API description: no name or address outside PersonRef: a serialized field of that name, a read of .display_name or .email, a destructuring that names them, and an answer property of that name; a read is allowed only for the file and the function that person-ref-exemptions.toml lists with the number of reads and a reason)"
 when = ["edit", "commit", "ci"]
 files = [
   "crates/bb-api/**/*.rs",
