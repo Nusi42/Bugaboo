@@ -1828,18 +1828,31 @@ part "name-value.value > muted" {
     padding "calc(($size-control - $fs-base * $lh-body) / 2) 0"
 }
 
-// "2 followers · You follow it" stays on one line, so the dot never starts a line; the button for
-// turning it round goes under it when there is no room beside it.
+// The *Followers* row is one line on a computer and on a phone: the count (or the words *You follow it*
+// where there is no count) and the button for turning it round (the review of M4: *Stop following*
+// dropped under the words).
+part "followers-line" {
+    display flex
+    flex-wrap nowrap
+    align-items center
+    gap "$space-2"
+    min-width 0
+}
+
+// The button never breaks its words, so *Stop following* stays one line.
+part "followers-line button" {
+    white-space nowrap
+}
+
+// The count and the words stay together on one line.
 part "followers-state" {
     display inline-flex
     align-items center
     white-space nowrap
 }
 
-// The words after the count are the size of the count, so the line reads as one sentence, and the
-// space before the dot is the space after it.
+// The words *You follow it* are the size of the count.
 part "followers-state.words" {
-    margin-inline-start "$space-1"
     color "$fg-muted"
     font-size "$fs-ui"
 }

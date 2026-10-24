@@ -1992,6 +1992,18 @@ body {
   padding: calc((var(--size-control) - var(--fs-base) * var(--lh-body)) / 2) 0;
 }
 
+[data-part="followers-line"] {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+[data-part="followers-line"] [data-part="button"] {
+  white-space: nowrap;
+}
+
 [data-part="followers-state"] {
   display: inline-flex;
   align-items: center;
@@ -1999,7 +2011,6 @@ body {
 }
 
 [data-part="followers-state.words"] {
-  margin-inline-start: var(--space-1);
   color: var(--fg-muted);
   font-size: var(--fs-ui);
 }

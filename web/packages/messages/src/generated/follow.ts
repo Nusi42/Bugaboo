@@ -8,7 +8,6 @@ export const messages = {
   "followers.count-more": "{count, plural, other {# or more followers}}",
   "followers.follow": "Follow",
   "followers.following": "You follow it",
-  "followers.following-after-count": "· You follow it",
   "followers.stop": "Stop following",
   "followers.more": "Show more followers",
   "followers.reason-reported": "You reported it",

@@ -59,7 +59,7 @@ function useFollowing(issue: string) {
 
 /**
  * The *Followers* row of the Details (ISS-07, *3 followers · Follow*): the number of followers, the button, and the
- * names when asked for. A row of the one list of the Details; each line starts with a button that hangs back
+ * names when asked for. The words *You follow it* stand only where there is no count; with a count, the button *Stop following* says it, so the row stays one line in the narrow column. A row of the one list of the Details; each line starts with a button that hangs back
  * by its padding, so the text of the lines stands on one edge (R1). A reader who may not see followers gets neither names nor a number.
  * People who report, are assigned or comment follow by themselves.
  */
@@ -71,8 +71,8 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
   const counted = people.length > 0;
   return (
     <NameValueRow name={t("followers.name")}>
-      <div {...partOf(part.row)}>
-        <span {...partOf(part.followersState)}>
+      <div {...partOf(part.followersLine)}>
+        <span {...partOf(part.followersState)} title={mine.why}>
           {counted ? (
             <Button
               look={buttonLook.quiet}
@@ -83,10 +83,8 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
               {followerCount(people.length, list.hasNextPage)}
             </Button>
           ) : null}
-          {mine.following ? (
-            <span {...partOf(part.followersStateWords)} title={mine.why}>
-              {t(counted ? "followers.following-after-count" : "followers.following")}
-            </span>
+          {mine.following && !counted ? (
+            <span {...partOf(part.followersStateWords)}>{t("followers.following")}</span>
           ) : null}
         </span>
         <Button look={buttonLook.quiet} isPending={mine.pending} onPress={mine.turn}>
