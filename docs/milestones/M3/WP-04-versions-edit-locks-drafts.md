@@ -23,7 +23,7 @@ No change ever overwrites another one unseen: every change route asks for the ve
 
 - `iss_17_a_second_person_sees_who_is_editing_or_someone`, `iss_17_a_lock_frees_itself_a_minute_after_the_last_heartbeat` (fake clock), `iss_17_edit_anyway_keeps_the_first_persons_text_as_their_draft`, `iss_17_a_save_with_a_lost_lock_is_refused_and_the_text_kept`, `iss_17_a_stale_version_answers_who_changed_what` (both databases).
 - `iss_11_a_draft_is_readable_only_by_its_author`, `iss_11_a_draft_goes_after_save_and_after_its_keep_period`.
-- `sec_17_releasing_a_stuck_lock_is_in_the_security_log`.
+- `sec_17_letting_go_of_a_stuck_lock_is_in_the_security_log`.
 - `arch_versioned_every_change_route_takes_a_version` (the check's own tests).
 
 ## Checks

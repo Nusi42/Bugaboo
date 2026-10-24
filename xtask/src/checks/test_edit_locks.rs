@@ -32,7 +32,7 @@ pub(super) const REQUIRED: [Required; 8] = [
     Required::anywhere("iss_17_a_stale_version_answers_who_changed_what").within(SUITE),
     Required::anywhere("iss_11_a_draft_is_readable_only_by_its_author").within(SUITE),
     Required::anywhere("iss_11_a_draft_goes_after_save_and_after_its_keep_period").within(SUITE),
-    Required::anywhere("sec_17_releasing_a_stuck_lock_is_in_the_security_log").within(SUITE),
+    Required::anywhere("sec_17_letting_go_of_a_stuck_lock_is_in_the_security_log").within(SUITE),
 ];
 
 /// What the browser must show (M3 WP-10): the first two scenarios of ten people at once.

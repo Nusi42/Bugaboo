@@ -199,7 +199,7 @@ error_codes! {
     TooLarge => ("request.too-large", 413),
     /// Someone else changed the thing since the person loaded it (ADR-0019).
     VersionChanged => ("edit.version-changed", 409),
-    /// The edit lock ran out or was released, so the text cannot be saved with it. The text is
+    /// The edit lock ran out or was let go, so the text cannot be saved with it. The text is
     /// kept as the person's draft (ADR-0019).
     EditLockLost => ("edit.lock-lost", 409),
     /// Somebody took the editing over (*Edit anyway*), so the text cannot be saved with the

@@ -143,7 +143,7 @@ async fn iss_17_letting_go_frees_the_lock_at_once_and_only_for_its_token() -> Te
 }
 
 #[tokio::test]
-async fn sec_17_releasing_a_stuck_lock_is_in_the_security_log() -> TestResult {
+async fn sec_17_letting_go_of_a_stuck_lock_is_in_the_security_log() -> TestResult {
     on_both_databases("sec_17_stuck_lock", async |stage| {
         let release = |by: &Member| {
             stage.rig().api().release_stuck_lock(
@@ -165,7 +165,7 @@ async fn sec_17_releasing_a_stuck_lock_is_in_the_security_log() -> TestResult {
                 .collect())
         };
         let (token, _) = stage.lock(&stage.ben).await?;
-        // Without *Edit anyway* nothing is released.
+        // Without *Edit anyway* nothing is let go.
         assert_eq!(
             refused(release(&stage.cleo).await),
             Some(ErrorCode::Forbidden)
@@ -208,7 +208,7 @@ async fn sec_17_releasing_a_stuck_lock_is_in_the_security_log() -> TestResult {
         assert_eq!(logged().await?.len(), 1);
         let beat = stage.heartbeat(&stage.ben, token, None).await?;
         assert!(beat.notices.is_empty());
-        // The person's own lock, released the administrator's way, is not logged either.
+        // The person's own lock, let go the administrator's way, is not logged either.
         stage.lock(&stage.dan).await?;
         release(&stage.dan).await?;
         assert_eq!(logged().await?.len(), 1);
