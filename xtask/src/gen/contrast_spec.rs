@@ -103,6 +103,8 @@ pub(crate) struct PlainLines {
     pub(crate) min: f64,
     pub(crate) colors: Vec<String>,
     pub(crate) on: Vec<String>,
+    /// The opacity token that fades the line before it is seen (`faded-by`), when the line is.
+    pub(crate) faded_by: Option<String>,
 }
 
 pub(crate) struct ContrastSpec {
@@ -231,6 +233,7 @@ impl ContrastSpec {
                         min: child.number_prop("min")?,
                         colors: child.words("colors")?,
                         on: child.words("on")?,
+                        faded_by: child.prop("faded-by")?,
                     });
                 }
                 "more" => more = Some(MoreSpec::parse(child)?),

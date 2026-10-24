@@ -60,11 +60,18 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
     findings
 }
 
-/// The lines that people have to see (the edge of a box to tick) reach their ratio on the plain
-/// surfaces in every theme, as they are without the device setting for more contrast.
+/// The lines that people have to see (the edge of a box to tick, the edge of a button that cannot be
+/// pressed) reach their ratio on the plain surfaces in every theme, as they are without the device
+/// setting for more contrast. A line that is faded (`faded-by`) is checked as it is seen: its color
+/// mixed with the surface behind it by the opacity.
 fn line_findings(file: &ThemeFile) -> Vec<Finding> {
     let mut findings = Vec::new();
     for lines in &file.contrast.plain_lines {
+        let opacity = lines
+            .faded_by
+            .as_deref()
+            .and_then(|name| file.token(name)?.same.as_deref()?.parse::<f64>().ok())
+            .unwrap_or(1.0);
         for theme in &file.themes {
             for line in &lines.colors {
                 for surface in &lines.on {
@@ -74,7 +81,7 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
                     ) else {
                         continue;
                     };
-                    let ratio = contrast_ratio(a, b);
+                    let ratio = contrast_ratio(&fade(a, b, opacity), b);
                     if ratio < lines.min {
                         findings.push(Finding::at(
                             THEME_PATH,
@@ -89,6 +96,19 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
         }
     }
     findings
+}
+
+/// A `#RRGGBB` color as it is seen when it is drawn with `opacity` over `behind`.
+fn fade(color: &str, behind: &str, opacity: f64) -> String {
+    let channel = |hex: &str, at: usize| {
+        let digits = hex.get(at..at + 2).unwrap_or("00");
+        f64::from(u8::from_str_radix(digits, 16).unwrap_or(0))
+    };
+    let mixed = |at: usize| {
+        let value = channel(color, at).mul_add(opacity, channel(behind, at) * (1.0 - opacity));
+        format!("{:02x}", value.round().clamp(0.0, 255.0) as u8)
+    };
+    format!("#{}{}{}", mixed(1), mixed(3), mixed(5))
 }
 
 /// For people whose device asks for more contrast (THM-06): the listed text reaches the higher
@@ -319,6 +339,26 @@ mod tests {
         let bad = format!("{}    non-text \"border\" {}", &text[..start], &text[end..]);
         let error = ThemeFile::parse(&bad).err().unwrap();
         assert!(format!("{error:#}").contains("border-subtle"), "{error:#}");
+    }
+
+    #[test]
+    fn the_edge_of_a_disabled_button_is_checked_as_it_is_seen() {
+        // The edge is the color of quiet words faded by the opacity of a disabled control: a
+        // quiet-words color that is close to the page in Dusk leaves no edge once it is faded.
+        let findings = evaluate(&with_value("fg-muted", "dusk", "#2a2e38"));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("the line `fg-muted`")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
+    fn a_color_fades_toward_the_surface_behind_it() {
+        assert_eq!(fade("#ffffff", "#000000", 0.5), "#808080");
+        assert_eq!(fade("#123456", "#000000", 1.0), "#123456");
     }
 
     #[test]

@@ -397,6 +397,22 @@ impl ThemeFile {
         {
             bail!("contrast rules use unknown color `{unknown}`");
         }
+        for fading in spec
+            .plain_lines
+            .iter()
+            .filter_map(|lines| lines.faded_by.as_deref())
+        {
+            if self.token(fading).is_none_or(|token| {
+                token.kind != TokenKind::Opacity
+                    || token
+                        .same
+                        .as_deref()
+                        .and_then(|v| v.parse::<f64>().ok())
+                        .is_none()
+            }) {
+                bail!("a contrast rule is faded by `{fading}`, which is not an opacity token");
+            }
+        }
         if let Some(color) = self.colors().find(|color| !spec.classifies(&color.name)) {
             bail!(
                 "color `{}` is not classified: list it under contrast `text`, `backgrounds` or `non-text` (with a reason)",

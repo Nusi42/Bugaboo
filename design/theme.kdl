@@ -357,6 +357,11 @@ contrast min=4.5 {
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
     }
 
+    lines min=2 faded-by="opacity-disabled" reason="The edge of a button that cannot be pressed is drawn in the color of quiet words and faded by the opacity of a disabled control: as it is seen it stays 2:1 against every plain surface in every theme (a disabled control is exempt from WCAG 1.4.11, but its frame must not vanish; the final check of M4 found 1.24:1)." {
+        colors "fg-muted"
+        on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
+    }
+
     // With the device setting for more contrast.
     more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
         text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent"
@@ -696,6 +701,18 @@ part "button" {
     cursor pointer
 }
 
+// The edge of a button that cannot be pressed is drawn in the color of quiet words, so that it can be
+// seen on every page in every theme, even after the fading (STY-CONTRAST holds the ratio). It comes
+// before the looks and has no more weight than they: a look without an edge (quiet, item) keeps none.
+part "button[disabled]" {
+    opacity "$opacity-disabled"
+    border-color "$fg-muted"
+    cursor default
+    forced {
+        border-color GrayText
+    }
+}
+
 part "button[variant=wide]" {
     width "100%"
 }
@@ -746,12 +763,6 @@ part "files.actions button[variant=quiet]" "item.actions button[variant=quiet]" 
     margin-inline-start "$size-phone-hang"
 }
 
-// The count of followers is a quiet button followed by words: its padding on the end side must not make
-// a gap before the dot, so it hangs over the end edge like any text button that ends a row.
-part "followers-state button[variant=quiet]" {
-    margin-inline-end "calc(-1 * $pad-control)"
-}
-
 // An entry of a list of actions (the status list, *More*): its words start at the start edge, and it
 // has no box until it is pointed at.
 part "button[variant=item]" {
@@ -773,17 +784,6 @@ part "button[hovered]" {
 
 part "button[pressed]" {
     background "$bg-selected"
-}
-
-// The edge of a button that cannot be pressed is drawn in the color of quiet words, so that it can be
-// seen on every page in every theme, even after the fading (the final check of M4).
-part "button[disabled]" {
-    opacity "$opacity-disabled"
-    border-color "$fg-muted"
-    cursor default
-    forced {
-        border-color GrayText
-    }
 }
 
 // A main button that cannot be pressed yet looks like any button that cannot be pressed: the same
