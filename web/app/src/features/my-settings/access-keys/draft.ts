@@ -1,9 +1,9 @@
-import type { Schema } from "@bugaboo/api-client";
 import { useState } from "react";
 
+import { currentRegion, type Region } from "../../../shared/region.ts";
 import type { PermissionKey } from "../../../shared/permissions.ts";
 import type { PlainChoice } from "./choice.ts";
-import { endOfDay, presetDay } from "./expiry-day.ts";
+import { endOfDay } from "./expiry-day.ts";
 
 /** What the person has filled in so far, and how to change each part. */
 export interface Draft {
@@ -14,8 +14,8 @@ export interface Draft {
   readonly picked: readonly PermissionKey[];
   /** The IDs of the projects the key is limited to; none means every project. */
   readonly projects: readonly string[];
-  /** The day the key runs out, as the date field writes it: the one the person picked, else the organization's default. */
-  readonly day: string;
+  /** The day the key runs out, as the date field writes it; null until the person picks one (the server's default stands). */
+  readonly day: string | null;
   readonly password: string;
   readonly setName: (name: string) => void;
   readonly setChoice: (choice: PlainChoice) => void;
@@ -43,7 +43,7 @@ function withProject(list: readonly string[], item: string, on: boolean): readon
 }
 
 /** The form of *Create an access key*, as a person fills it in. */
-export function useDraft(rules: Schema<"AccessKeyRulesBody">): Draft {
+export function useDraft(): Draft {
   const [name, setName] = useState("");
   const [choice, setChoice] = useState<PlainChoice>("see-only");
   const [single, setSingle] = useState(false);
@@ -57,7 +57,7 @@ export function useDraft(rules: Schema<"AccessKeyRulesBody">): Draft {
     single,
     picked,
     projects,
-    day: pickedDay ?? presetDay(rules),
+    day: pickedDay,
     password,
     setName,
     setChoice,
@@ -76,6 +76,7 @@ export function useDraft(rules: Schema<"AccessKeyRulesBody">): Draft {
 /** What the server is asked to make: the draft in the words of the API. */
 export function bodyOf(
   draft: Pick<Draft, "name" | "choice" | "single" | "picked" | "projects" | "day" | "password">,
+  region: Region = currentRegion(),
 ) {
   return {
     password: draft.password,
@@ -83,7 +84,8 @@ export function bodyOf(
     choice: draft.single ? ("permissions" as const) : draft.choice,
     permissions: draft.single ? [...draft.picked] : [],
     projects: [...draft.projects],
-    // The key runs out at the end of the day in the box, on the person's own clock.
-    expires_at: endOfDay(draft.day),
+    // The key runs out at the end of the day the person picked, on the clock of the region; with
+    // no day picked, the organization's default stands and the server works it out.
+    expires_at: draft.day === null ? null : endOfDay(draft.day, region),
   };
 }

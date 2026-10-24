@@ -4,11 +4,13 @@ import { type Page } from "@playwright/test";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
+import { chooseTimeZone } from "./support/region.ts";
 
 // The day a key runs out (M4, the final check): the day in the box of the form is the day the list
 // of keys says afterwards, for a person whose calendar day is not the day in UTC. Two zones are
 // used because one of them is on another day than UTC whatever the hour is: 14 hours ahead of UTC
-// and 11 hours behind it.
+// and 11 hours behind it. A person who chose a time zone of the region has the days counted by that
+// zone, the box and the list alike, whatever the clock of the device says (the review of WP-18).
 
 test.use({
   preparation: {
@@ -34,8 +36,16 @@ function dayAfter(day: string): string {
 }
 
 /** Makes a key as a person does and returns the day in the box, and whether the day was typed in. */
-async function createKeyLikeAPerson(page: Page, name: string, typed: boolean): Promise<string> {
+async function createKeyLikeAPerson(
+  page: Page,
+  name: string,
+  typed: boolean,
+  regionZone?: string,
+): Promise<string> {
   await signIn(page, ada);
+  if (regionZone !== undefined) {
+    await chooseTimeZone(page, regionZone);
+  }
   await openFromMenu(page, t("nav.access-keys"));
   await page.getByRole("button", { name: t("access-keys.create"), exact: true }).click();
   const form = page.getByRole("region", { name: t("access-keys.create"), exact: true });
@@ -77,3 +87,25 @@ for (const timezoneId of ["Pacific/Kiritimati", "Pacific/Pago_Pago"]) {
     }
   });
 }
+
+// The device is 14 hours ahead of UTC, the region of the person is 11 hours behind it: the days
+// are the region's days.
+test.describe("with a region zone other than the zone of the device", () => {
+  test.use({ timezoneId: "Pacific/Kiritimati" });
+
+  for (const [how, typed] of [
+    ["the day that is filled in", false],
+    ["a day that was typed", true],
+  ] as const) {
+    test(`auth_07 the key runs out on the day of the region, ${how}`, async ({ page }) => {
+      const name = `Key for the region, ${how}`;
+      const day = await createKeyLikeAPerson(page, name, typed, "Pacific/Pago_Pago");
+      await expect(
+        page
+          .getByRole("listitem")
+          .filter({ hasText: name })
+          .getByText(t("access-keys.row.expires", { when: written(day) }), { exact: true }),
+      ).toBeVisible();
+    });
+  }
+});

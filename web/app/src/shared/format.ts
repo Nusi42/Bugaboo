@@ -4,7 +4,7 @@ import { locale } from "@bugaboo/messages";
 import { currentRegion, type NumberFormat, type Region } from "./region.ts";
 
 /** The time zone option of `Intl`: left out for `device`, which is the zone of this device. */
-function zoneOf(region: Region): { readonly timeZone?: string } {
+export function zoneOf(region: Region): { readonly timeZone?: string } {
   return region.timeZone === "device" ? {} : { timeZone: region.timeZone };
 }
 
@@ -112,14 +112,9 @@ export function formatCalendarDay(day: string, region: Region = currentRegion())
   return formatDate(`${day}T00:00:00Z`, { ...region, timeZone: "UTC" });
 }
 
-/** A day (milliseconds since 1970, a date on the person's own calendar) as people write it: "October 5, 2026". */
-export function formatDay(moment: number, region: Region = currentRegion()): string {
-  // A day on the person's own calendar, picked on this device: the zone of the region does not
-  // move it to another day, the way the person wrote it (date format only).
-  const onDevice: Region = { ...region, timeZone: "device" };
-  return region.dateFormat === "device"
-    ? new Intl.DateTimeFormat(locale, dateStyles.date).format(moment)
-    : numeric(moment, onDevice);
+/** The day of a moment (milliseconds since 1970) in the zone of the region, as a date field writes it: `2027-03-01`. */
+export function calendarDayOf(moment: number, region: Region = currentRegion()): string {
+  return numeric(moment, { ...region, dateFormat: "year-month-day" });
 }
 
 /** Whole days from `nowMs` (milliseconds since 1970) to `moment`; negative when the moment has passed. */
