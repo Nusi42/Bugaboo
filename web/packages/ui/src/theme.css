@@ -965,11 +965,13 @@ body {
   color: var(--fg);
   font-family: var(--font);
   font-size: var(--fs-ui);
+  height: var(--size-control);
   line-height: var(--lh-body);
   text-overflow: ellipsis;
 }
 
 [data-part="field.input"][data-variant~="multiline"] {
+  height: auto;
   resize: vertical;
 }
 
@@ -1232,7 +1234,6 @@ body {
   border-color: var(--accent);
   background: var(--bg-selected);
   color: var(--accent-fg);
-  font-weight: var(--weight-bold);
 }
 
 @media (forced-colors: active) {

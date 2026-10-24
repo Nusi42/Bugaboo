@@ -829,13 +829,17 @@ part "field.description" {
 
 // A value longer than its box ends in an ellipsis instead of running under the edge of the box (the
 // review of M4: "Alder Street Baker|y" in the Details).
+// One height for a box of one line and a choice (a select ignores the line height and would be 2 px
+// taller): labels and boxes side by side line up (the review of M4).
 part "field.input" {
     use "input-box"
+    height "$size-control"
     line-height "$lh-body"
     text-overflow ellipsis
 }
 
 part "field.input[variant=multiline]" {
+    height auto
     resize vertical
 }
 
@@ -1086,7 +1090,6 @@ part "choice-group.input:checked + choice-group.label" "choice-group.input:check
     border-color "$accent"
     background "$bg-selected"
     color "$accent-fg"
-    font-weight "$weight-bold"
     use "marked"
 }
 
