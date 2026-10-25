@@ -9,6 +9,12 @@ describe("cfg_01 the form a person gets", () => {
     expect(view.shows("priority")).toBe(true);
   });
 
+  it("waits for nothing when there is no project to ask the layout about", () => {
+    const view = formViewOf({ data: undefined, isError: false }, false);
+    expect(view).toMatchObject({ ready: true, failed: false, sections: [] });
+    expect(view.shows("priority")).toBe(true);
+  });
+
   it("shows what the layout lists and nothing else", () => {
     const view = formViewOf({
       data: {

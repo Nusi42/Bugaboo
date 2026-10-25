@@ -74,10 +74,28 @@ const loading: FormView = {
  */
 export const basicFields: readonly string[] = ["description"];
 
-/** The form while its layout is on the way, read, or could not be read. */
+/**
+ * What a form is when no layout was asked for (there is no project to ask about): nothing is
+ * waited for, the layout places no field, and every field is shown.
+ */
+const unplaced: FormView = {
+  ready: true,
+  failed: false,
+  sections: [],
+  shows: () => true,
+};
+
+/**
+ * The form while its layout is on the way, read, or could not be read; `asked` is false when there
+ * was nothing to ask it about.
+ */
 export function formViewOf(
   read: Pick<UseQueryResult<Schema<"FormLayoutBody">>, "data" | "isError">,
+  asked = true,
 ): FormView {
+  if (!asked) {
+    return unplaced;
+  }
   if (read.data !== undefined) {
     const fields = new Set(read.data.sections.flatMap((section) => section.fields));
     return {
@@ -117,7 +135,7 @@ export function useFormLayout({ project, issueType, kind }: FormQuery): FormView
     select: (body: Schema<"FormLayoutBody">) => body,
     enabled: project !== undefined && project !== "",
   });
-  return formViewOf(form);
+  return formViewOf(form, project !== undefined && project !== "");
 }
 
 /** Which layout to edit: a project (none for the whole organization), an issue type (none for all) and a form. */
