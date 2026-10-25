@@ -384,7 +384,7 @@
   participant P as bb-policy
   participant S as bb-store
   B-&gt;&gt;A: search text or syntax tree
-  A-&gt;&gt;P: field catalogue for actor (readable fields only)
+  A-&gt;&gt;P: readable fields of the actor
   A-&gt;&gt;Q: parse + check against catalogue
   Q--&gt;&gt;A: syntax tree, or "There is no field called …"
   A-&gt;&gt;P: visibility predicates (projects, restricted issues)

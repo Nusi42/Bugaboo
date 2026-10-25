@@ -34,7 +34,7 @@ sequenceDiagram
   participant P as bb-policy
   participant S as bb-store
   B->>A: search text or syntax tree
-  A->>P: field catalogue for actor (readable fields only)
+  A->>P: readable fields of the actor
   A->>Q: parse + check against catalogue
   Q-->>A: syntax tree, or "There is no field called …"
   A->>P: visibility predicates (projects, restricted issues)

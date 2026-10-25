@@ -14,7 +14,7 @@ One search bar above every list. Simple search and Advanced search show the same
 ## Tasks
 
 1. **The search in the address:** the canonical text in `s`; the view parameters next to it (UX §2.1). Back and forward work; a shared address opens the same search for anyone who may see it.
-2. **Simple search:** filter buttons from the tree (through the WebAssembly module of WP-02): one per condition, ✕ to remove, *+ Add filter* from the person's field catalogue (most used first, with a search box), *Any of* for OR, and the dashed text button for what has no picker. Pickers for choice fields, people, projects, dates (the date range editor) and issues (by ID or title, through the search route).
+2. **Simple search:** filter buttons from the tree (through the WebAssembly module of WP-02): one per filter, ✕ to remove, *+ Add filter* from the person's readable fields (most used first, with a search box), *Any of* for OR, and the dashed text button for what has no picker. Pickers for choice fields, people, projects, dates (the date range editor) and issues (by ID or title, through the search route).
 3. **Advanced search:** a text box with the words marked, suggestions at the cursor (values only the server knows are asked for, WP-02 task 5), mistakes underlined with the checker's message, the last results kept dimmed until the search is fixed.
 4. **Switching:** Simple ⇄ Advanced edits one tree; a test types texts in Advanced, switches to Simple and back, and gets the same canonical text.
 5. **Save, change, share:** *Save search*, *Save* or *Save a copy* next to an open saved search's name, the *Share* window with only the groups and projects the person may share with, and *Use as the project's list* for those who may.
