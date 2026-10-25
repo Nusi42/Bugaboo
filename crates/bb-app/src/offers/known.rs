@@ -80,6 +80,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Ok(known);
         }
+        if !shown.has_levels() {
+            return Err(AppError::Internal(
+                "the groups of labels in use need a view with the levels".into(),
+            ));
+        }
         let failed = |error| internal::<S>(&error);
         let types: Vec<IssueTypeId> = self
             .all_issue_types()
@@ -87,12 +92,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .map(|found| found.id)
             .collect();
-        let leveled = self
-            .shown_with_levels(shown.person(), shown.key().cloned())
-            .await?;
         let found = Arc::new(
             self.store()
-                .used_label_groups(&leveled.label_sight(&types))
+                .used_label_groups(&shown.label_sight(&types))
                 .await
                 .map_err(failed)?,
         );
@@ -236,7 +238,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if found.project.is_none() {
             return Ok(found);
         }
-        let shown = self.shown_to(actor).await?;
+        let shown = self.shown_with_levels_to(actor).await?;
         self.known_groups(&shown, vec![found])
             .await?
             .pop()

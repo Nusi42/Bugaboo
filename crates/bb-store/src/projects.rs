@@ -172,12 +172,17 @@ impl ProjectStore for AuthStorage {
         load_policy(transaction, Wanted::Everybody).await
     }
 
-    async fn policy_of(&self, person: UserId) -> Result<Policy, StoreError> {
+    async fn policy_and_tree_of(
+        &self,
+        person: UserId,
+    ) -> Result<(Policy, Vec<Project>), StoreError> {
         let mut transaction = self.database().begin_read().await?;
-        load_policy(&mut transaction, Wanted::Person(person)).await
+        let policy = load_policy(&mut transaction, Wanted::Person(person)).await?;
+        let projects = tree_in(&mut transaction).await?;
+        Ok((policy, projects))
     }
 
-    async fn policy_and_tree_of(
+    async fn leveled_policy_and_tree_of(
         &self,
         person: UserId,
     ) -> Result<(Policy, Vec<Project>), StoreError> {

@@ -111,7 +111,7 @@ pub async fn change_label_group<S: AuthStore>(
     input: ChangeLabelGroup,
 ) -> Result<Authorized<LabelGroupView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let shown = ctx.shown_to(&actor).await?;
+    let shown = ctx.shown_with_levels_to(&actor).await?;
     let catalogue = ctx.label_catalogue().await?;
     let group = catalogue.group(input.group)?.clone();
     let held = ctx

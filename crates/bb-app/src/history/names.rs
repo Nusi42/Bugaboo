@@ -80,7 +80,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// What the reader sees of the tree of projects, read the first time it is asked for.
     async fn shown_for<'k>(&self, reading: &'k mut Reading<'_>) -> Result<&'k Shown, AppError> {
         if reading.names.shown.is_none() {
-            reading.names.shown = Some(self.shown_to(reading.actor).await?);
+            reading.names.shown = Some(self.shown_with_levels_to(reading.actor).await?);
         }
         reading
             .names

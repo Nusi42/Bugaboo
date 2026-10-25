@@ -28,6 +28,8 @@ pub(crate) struct Shown {
     /// in everything below, so a key for one project sees that project and what is inside it, and
     /// its trail stops there (M2-F27).
     key: Option<Narrowing>,
+    /// Whether the policy holds the levels of the roles ([`Ctx::shown_with_levels`]).
+    levels: bool,
     policy: Policy,
     tree: Tree,
     projects: BTreeMap<ProjectId, Project>,
@@ -38,28 +40,32 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// What the actor sees of the tree, as it is stored now: their own view, narrowed to the access
     /// key they came with, if any.
     pub(crate) async fn shown_to(&self, actor: &Actor) -> Result<Shown, AppError> {
-        let person = actor.person.id;
-        let projects = self
+        let (policy, projects) = self
             .store()
-            .project_tree()
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let policy = self
-            .store()
-            .policy_of(person)
+            .policy_and_tree_of(actor.person.id)
             .await
             .map_err(|error| internal::<S>(&error))?;
         Ok(Shown::of(
-            person,
+            actor.person.id,
             actor.key_scope().cloned(),
             policy,
             projects,
+            false,
         ))
     }
 
-    /// The same view of `person`, with the levels of their roles, so that a decision about a field
-    /// can be made for every project in memory. The one place that loads a policy with its levels
-    /// and the tree: the rows, the levels and the projects come from one read.
+    /// The same view as [`Ctx::shown_to`], with the levels ([`Ctx::shown_with_levels`]).
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn shown_with_levels_to(&self, actor: &Actor) -> Result<Shown, AppError> {
+        self.shown_with_levels(actor.person.id, actor.key_scope().cloned())
+            .await
+    }
+
+    /// The same view of `person` (narrowed to `key`), with the levels of their roles, so that a decision about a field
+    /// can be made for every project in memory. For what can need them: the tags to offer, the
+    /// groups of labels in use. The rows, the levels and the projects come from one read.
     ///
     /// # Errors
     /// An internal error when the store fails.
@@ -70,20 +76,27 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Shown, AppError> {
         let (policy, projects) = self
             .store()
-            .policy_and_tree_of(person)
+            .leveled_policy_and_tree_of(person)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        Ok(Shown::of(person, key, policy, projects))
+        Ok(Shown::of(person, key, policy, projects, true))
     }
 }
 
 impl Shown {
-    fn of(person: UserId, key: Option<Narrowing>, policy: Policy, projects: Vec<Project>) -> Self {
+    fn of(
+        person: UserId,
+        key: Option<Narrowing>,
+        policy: Policy,
+        projects: Vec<Project>,
+        levels: bool,
+    ) -> Self {
         let tree = Tree::of(&projects);
         Self {
             visible: policy.visible_as(person, key.as_ref(), &tree),
             person,
             key,
+            levels,
             policy,
             tree,
             projects: projects
@@ -98,23 +111,16 @@ impl Shown {
         self.person
     }
 
-    /// What the access key behind the request narrows the person to, if one is in use.
-    pub(crate) const fn key(&self) -> Option<&Narrowing> {
-        self.key.as_ref()
+    /// Whether the view holds the levels of the roles, which the decisions about fields need.
+    pub(crate) const fn has_levels(&self) -> bool {
+        self.levels
     }
 
     /// What the person themselves may do in each of `projects` (not narrowed to a key), decided in
     /// memory from the rows and the tree read once; a project that is not stored is left out.
     pub(crate) fn evaluations_in(&self, projects: &[ProjectId]) -> Vec<(ProjectId, Evaluation)> {
-        let rows = self.policy.rows_of(self.person);
-        projects
-            .iter()
-            .filter_map(|project| {
-                self.policy
-                    .evaluate_with(self.person, &rows, &self.tree, Place::Project(*project))
-                    .map(|found| (*project, found))
-            })
-            .collect()
+        self.policy
+            .evaluations_in(self.person, &self.tree, projects)
     }
 
     /// A project as it is stored, whether the person sees it or not: only for what is shown after

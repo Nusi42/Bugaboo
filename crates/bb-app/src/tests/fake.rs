@@ -143,6 +143,8 @@ pub(crate) struct Shared {
     pub(crate) policy_loads: usize,
     /// How many reads of any kind the store answered.
     pub(crate) reads: usize,
+    /// How many times the policy was read with the levels of its roles, and every project.
+    pub(crate) leveled_reads: usize,
     /// The security log cannot be written.
     pub(crate) log_fails: bool,
     /// Changes fail as the database does when it breaks.
@@ -215,6 +217,11 @@ impl FakeStore {
     /// How many reads the store answered so far, of any kind.
     pub(crate) fn reads(&self) -> usize {
         self.lock().reads
+    }
+
+    /// How many times the policy was read with its levels and every project at once.
+    pub(crate) fn leveled_reads(&self) -> usize {
+        self.lock().leveled_reads
     }
 
     /// How many times the engine loaded the rows of a person at a place.
