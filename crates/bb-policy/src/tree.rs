@@ -333,11 +333,34 @@ impl Policy {
         key: Option<&Narrowing>,
         tree: &Tree,
     ) -> BTreeSet<ProjectId> {
+        let projects: Vec<ProjectId> = tree.projects().collect();
+        self.evaluations_in(person, tree, &projects)
+            .into_iter()
+            .filter_map(|(project, found)| {
+                Arc::new(found)
+                    .narrowed_by(key)
+                    .sees_project()
+                    .then_some(project)
+            })
+            .collect()
+    }
+
+    /// What `person` themselves may do in each of `projects` (not narrowed to a key), decided from
+    /// the rows read once; a project that is not in `tree` is left out. The one loop behind
+    /// [`Policy::visible_as`] and the decisions over many projects at once.
+    #[must_use]
+    pub fn evaluations_in(
+        &self,
+        person: UserId,
+        tree: &Tree,
+        projects: &[ProjectId],
+    ) -> Vec<(ProjectId, Evaluation)> {
         let rows = self.rows_of(person);
-        tree.projects()
-            .filter(|project| {
+        projects
+            .iter()
+            .filter_map(|project| {
                 self.evaluate_with(person, &rows, tree, Place::Project(*project))
-                    .is_some_and(|found| Arc::new(found).narrowed_by(key).sees_project())
+                    .map(|found| (*project, found))
             })
             .collect()
     }
