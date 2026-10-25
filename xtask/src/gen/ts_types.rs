@@ -227,7 +227,9 @@ fn field_lines(
     Ok(out)
 }
 
-fn interface(item: &syn::ItemStruct, known: &mut Vec<String>) -> anyhow::Result<String> {
+/// The named fields of a struct that both generators follow, refusing what they would get wrong:
+/// a `rename_all` on the struct, or fields without names.
+pub(crate) fn named_fields(item: &syn::ItemStruct) -> anyhow::Result<&syn::FieldsNamed> {
     let name = &item.ident;
     if serde_of(&item.attrs)?.rename_all.is_some() {
         bail!("`{name}`: `rename_all` on a struct is not understood; rename the fields");
@@ -235,6 +237,12 @@ fn interface(item: &syn::ItemStruct, known: &mut Vec<String>) -> anyhow::Result<
     let Fields::Named(fields) = &item.fields else {
         bail!("`{name}` is not a struct with named fields");
     };
+    Ok(fields)
+}
+
+fn interface(item: &syn::ItemStruct, known: &mut Vec<String>) -> anyhow::Result<String> {
+    let name = &item.ident;
+    let fields = named_fields(item)?;
     let mut out = format!(
         "{}export interface {name} {{\n",
         doc_comment(&docs_of(&item.attrs), "")
