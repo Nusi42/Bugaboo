@@ -126,14 +126,14 @@ The first numbers, on this computer, in a release build, at the 95th percentile 
 
 | Scenario | SQLite p95 | PostgreSQL p95 |
 |----------|-----------:|---------------:|
-| *issue-page*: the eight reads of an issue page at once | 10.7 ms | 21.0 ms |
-| *list-big-project*: the first page of the list of the big project (the first project of the sample, which the dataset ranks biggest; the benchmark fails when it has no more than one page) | 5.3 ms | 9.6 ms |
-| *list-small-project*: the same for a small project (the last project of the list that has issues and less than one page of them, counted by reading its first page) | 5.2 ms | 8.9 ms |
-| *notifications-count*: the number on the menu | 42.6 ms | **100.5 ms** |
-| *notifications-page*: the first page of 50 | 37.7 ms | 68.8 ms |
-| *project-list*: the list of projects (M3-F114) | 7.6 ms | 8.9 ms |
+| *issue-page*: the eight reads of an issue page at once | 11.8 ms | 23.7 ms |
+| *list-big-project*: the first page of the list of the big project (the first project of the sample, which the dataset ranks biggest; the benchmark fails when it has no more than one page) | 8.3 ms | 16.9 ms |
+| *list-small-project*: the same for a small project (the one with the fewest issues among the last ten of the list, counted by reading its pages) | 8.2 ms | 13.0 ms |
+| *notifications-count*: the number on the menu | 22.6 ms | 34.8 ms |
+| *notifications-page*: the first page of 50 | 20.2 ms | 30.3 ms |
+| *project-list*: the list of projects (M3-F114) | 8.0 ms | 9.5 ms |
 
-The number on the menu is the one read that is over its budget on PostgreSQL (and the one that costs most on SQLite); it is reported to the lead and not changed here. The budget of the complex search (300 ms) has no scenario yet: the searches come with M5 WP-04 to WP-06, which add theirs to `scenarios.ts`.
+The number on the menu was the read that cost most (M5 WP-03 fix round, on a dataset made with the final code: 1,000,000 issues, the biggest project APP with 133,505 issues and the smallest with 117). Before the fix it was 45.9 ms on SQLite and 88.0 ms on PostgreSQL (100.5 ms on the first dataset, over its budget), the page 35.7 and 62.6 ms. The statement for the rows is fast (0.8 ms on PostgreSQL, from the index `notification_by_recipient`); the time went into the rights: a page named the issues of a hundred notifications in many projects, and for each project the person's rows, roles and levels were read again (about fifteen statements) and the project on its own. They are now read once for all the projects of a page (`Ctx::evaluate_projects`, the same decision as `Policy::evaluate_with`), and the test `perf_05_the_number_on_the_menu_runs_as_many_statements_for_twelve_projects_as_for_two` holds it (183 statements against 53 before). After: 22.6 ms and 34.8 ms, the page 20.2 and 30.3 ms. The budget of the complex search (300 ms) has no scenario yet: the searches come with M5 WP-04 to WP-06, which add theirs to `scenarios.ts`.
 
 ## Ten people at the same time
 
