@@ -178,6 +178,15 @@ Most of the connections are from **WebKit**, not from the helpers of the tests. 
 
 **Reading the numbers again.** Run the end-to-end tests with `npm run test:e2e` (or `cargo xtask ci`), and read the last lines: `Connections of the tests: at most N left over at once …`. The seconds-by-seconds counts are in `test-results/connections.csv`.
 
+## Browser tests wait for what they depend on (M4 WP-18)
+
+A test that is right on a quiet computer can lose a race in the full run, where 16 workers share the processors. Two such races were found only by `cargo xtask ci`, so a browser test waits, with a web-first assertion (`await expect(…)`), for the state its next step depends on:
+
+- **Before it stops the page's clock** (`page.clock.pauseAt`, `page.clock.setFixedTime`), it waits until the screen it tests has drawn. The page reads its data on timers, and a stopped clock holds them back (`access-key-day.spec.ts`).
+- **Before a second window reads**, it waits until the first window shows that the change is stored, not only that the text is on screen (`concurrent/locks.spec.ts`: the watcher reloads only after *Save mine* is saved).
+
+No retry and no longer timeout is added to hide a race; the fix is the missing wait.
+
 ## Local ports (ADR-0023)
 
 Your machine runs other Vite projects, so Bugaboo never uses default ports. All ports live in **`tools/dev/ports.json`** (single source); Vite, Playwright, the server and xtask read them from there, and every tool uses `strictPort`, so a busy port fails with a clear message instead of silently moving.

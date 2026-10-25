@@ -1437,7 +1437,14 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><em>Showcase pictures</em> (M2C-F104): the browser of every window stands at the moment the sample was made (<code>sampleStartMs()</code>), so "3 days ago" is the same on every run, and the address of the invitation is fixed. The few screens that show what the server makes in every run (a date and time, how long it runs, the link of an invitation with its secret, the hash of the security log) have those places painted over in their pictures (<code>support/showcase-masks.ts</code>, M4-F24), the link of an invitation is written the same way before the picture (its secret wraps at other places, so the box around it was another height), and the pointer is out of the page: two runs of the 212 phone pictures are now the same bytes.</li>
 </ul>
 <p><strong>Reading the numbers again.</strong> Run the end-to-end tests with <code>npm run test:e2e</code> (or <code>cargo xtask ci</code>), and read the last lines: <code>Connections of the tests: at most N left over at once …</code>. The seconds-by-seconds counts are in <code>test-results/connections.csv</code>.</p>
-<h3 id="s11-6"><button class="sec" data-sec>§11.6</button>Local ports (ADR-0023)</h3>
+<h3 id="s11-6"><button class="sec" data-sec>§11.6</button>Browser tests wait for what they depend on (M4 WP-18)</h3>
+<p>A test that is right on a quiet computer can lose a race in the full run, where 16 workers share the processors. Two such races were found only by <code>cargo xtask ci</code>, so a browser test waits, with a web-first assertion (<code>await expect(…)</code>), for the state its next step depends on:</p>
+<ul>
+<li><strong>Before it stops the page's clock</strong> (<code>page.clock.pauseAt</code>, <code>page.clock.setFixedTime</code>), it waits until the screen it tests has drawn. The page reads its data on timers, and a stopped clock holds them back (<code>access-key-day.spec.ts</code>).</li>
+<li><strong>Before a second window reads</strong>, it waits until the first window shows that the change is stored, not only that the text is on screen (<code>concurrent/locks.spec.ts</code>: the watcher reloads only after <em>Save mine</em> is saved).</li>
+</ul>
+<p>No retry and no longer timeout is added to hide a race; the fix is the missing wait.</p>
+<h3 id="s11-7"><button class="sec" data-sec>§11.7</button>Local ports (ADR-0023)</h3>
 <p>Your machine runs other Vite projects, so Bugaboo never uses default ports. All ports live in <strong><code>tools/dev/ports.json</code></strong> (single source); Vite, Playwright, the server and xtask read them from there, and every tool uses <code>strictPort</code>, so a busy port fails with a clear message instead of silently moving.</p>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Offset</th><th>Used by</th></tr></thead><tbody>
 <tr><td>0</td><td>Bugaboo server in development (API + embedded app)</td></tr>
