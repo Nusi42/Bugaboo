@@ -135,7 +135,7 @@ test("iss_07 the reason for following is read with the button, and a long count 
     row.getByRole("button", { name: t("followers.count-more", { count: pageOfFollowers }) }),
   ).toBeVisible();
   // The reason is the description of the button that turns it round, not a hint on the count.
-  await expect(stop).toHaveAccessibleDescription(t("followers.reason-reported"));
+  await expect(stop).toHaveAccessibleDescription(t("followers.reason-chose"));
   await expect(row.locator("[title]")).toHaveCount(0);
   // The button stays inside the column, wherever it stands.
   const [inside, button] = [await boxOf(row), await boxOf(stop)];
