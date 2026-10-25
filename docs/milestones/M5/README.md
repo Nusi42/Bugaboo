@@ -21,6 +21,7 @@ M5 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | 1 | WP-01 | Decision records, words, the security chapter, the UX gaps, the maintainer's answers | Lead | `bugaboo.win1` / `WIN1` |
 | 1 | [WP-02](WP-02-search-language.md) | The search language: grammar, parser, printer, checker, suggestions, WebAssembly | Builder | `bugaboo.win2` / `WIN2` |
 | 1 | [WP-03](WP-03-large-dataset-and-nightly-benchmarks.md) | The large dataset, the benchmarks and the nightly run | Builder | `bugaboo.win3` / `WIN3` |
+| 1 | [WP-11](WP-11-no-fixed-paths.md) | No fixed paths: ask the operating system (added later, a rule of the maintainer) | Builder | `bugaboo.win4` / `WIN4` |
 | 2 | [WP-04](WP-04-searching-on-the-server.md) | Searching on the server: the compiler, permissions, limits, the search routes | Builder | `bugaboo.win2` / `WIN2` |
 | 2 | [WP-05](WP-05-full-text-search.md) | Full-text search on both databases | Builder | `bugaboo.win3` / `WIN3` |
 | 2 | [WP-06](WP-06-saved-searches-on-the-server.md) | Saved searches on the server: stored, shared, a stable address | Builder | `bugaboo.win4` / `WIN4` |
