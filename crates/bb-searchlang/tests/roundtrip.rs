@@ -1,16 +1,19 @@
 //! TEST-SEARCH-ROUNDTRIP: Simple search and Advanced search never disagree, because both are one
 //! tree that prints to one canonical text (QRY-02, ADR-0005). The tests here are property tests:
-//! over generated trees, `parse(print(tree)) == tree`; over generated texts, a parse never panics,
-//! and the canonical text of an accepted text is stable.
+//! over generated trees, `parse(print(tree))` has the words of the tree; over generated texts, a
+//! parse never panics, and the canonical text of an accepted text is stable. A tree that the
+//! browser gives back as JSON is read, and held to the rules of a tree.
 
 #![cfg(test)]
 
+use bb_core as _;
 use proptest::prelude::*;
 use serde as _;
 
 use bb_searchlang::{
-    Comparison, Date, Decimal, Direction, Expr, FieldRef, Operand, ReadableId, Search, ShortName,
-    SortKey, Span, Steps, Test, Text, TimeWord, Unit, parse, print, search_from_json,
+    Comparison, Date, Decimal, Direction, Expr, FieldRef, MAX_DEPTH, Operand, ReadableId, Search,
+    ShortName, SortKey, Span, Steps, Test, Text, TimeWord, Unit, parse, print, print_from_json,
+    search_from_json,
 };
 
 fn span() -> Span {
@@ -35,8 +38,14 @@ fn field() -> impl Strategy<Value = FieldRef> {
     field_word().prop_map(|word| FieldRef { word, span: span() })
 }
 
+/// An Issue ID by the rules of `bb-core`: a short name of 2 to 10 symbols, and a counting number or
+/// a random code of 4 to 8 symbols without I, L, O and U, with a letter.
 fn readable_id() -> impl Strategy<Value = ReadableId> {
-    "[A-Z][A-Z0-9]{0,9}-[A-Z0-9]{1,8}".prop_map(|text| ReadableId { text, span: span() })
+    prop_oneof![
+        "[A-Z][A-Z0-9]{1,9}-[1-9][0-9]{0,8}",
+        "[A-Z][A-Z0-9]{1,9}-[A-HJKMNP-TV-Z][0-9A-HJKMNP-TV-Z]{3,7}",
+    ]
+    .prop_map(|text| ReadableId { text, span: span() })
 }
 
 fn number() -> impl Strategy<Value = Decimal> {
@@ -54,13 +63,7 @@ fn date() -> impl Strategy<Value = Date> {
 }
 
 fn time_word() -> impl Strategy<Value = TimeWord> {
-    prop_oneof![
-        Just(TimeWord::Today),
-        Just(TimeWord::Yesterday),
-        Just(TimeWord::ThisWeek),
-        Just(TimeWord::LastWeek),
-        Just(TimeWord::ThisMonth),
-    ]
+    prop::sample::select(TimeWord::ALL.to_vec())
 }
 
 /// A text: plain words, words of the language, numbers, days, IDs, anything.
@@ -74,6 +77,7 @@ fn words() -> impl Strategy<Value = String> {
         Just("404".to_owned()),
         Just("2026-10-25".to_owned()),
         Just("WEB-1".to_owned()),
+        Just("web-1".to_owned()),
         Just(String::new()),
         "[a-zA-Z][a-zA-Z0-9_]{0,8}",
         ".{0,8}",
@@ -99,16 +103,11 @@ fn text() -> impl Strategy<Value = Text> {
 }
 
 fn comparison() -> impl Strategy<Value = Comparison> {
-    prop_oneof![
-        Just(Comparison::Less),
-        Just(Comparison::Greater),
-        Just(Comparison::LessOrEqual),
-        Just(Comparison::GreaterOrEqual),
-    ]
+    prop::sample::select(Comparison::ALL.to_vec())
 }
 
 fn unit() -> impl Strategy<Value = Unit> {
-    prop_oneof![Just(Unit::Day), Just(Unit::Week), Just(Unit::Month)]
+    prop::sample::select(Unit::ALL.to_vec())
 }
 
 fn test() -> impl Strategy<Value = Test> {
@@ -142,14 +141,14 @@ fn test() -> impl Strategy<Value = Test> {
             group,
             span: span()
         }),
-        "[A-Z][A-Z0-9]{0,9}".prop_map(|text| Test::Within {
+        "[A-Z][A-Z0-9]{1,9}".prop_map(|text| Test::Within {
             project: ShortName { text, span: span() },
             span: span()
         }),
     ]
 }
 
-fn condition() -> impl Strategy<Value = Expr> {
+fn filter() -> impl Strategy<Value = Expr> {
     prop_oneof![
         (field(), test()).prop_map(|(field, test)| Expr::Field {
             field,
@@ -173,7 +172,7 @@ fn condition() -> impl Strategy<Value = Expr> {
 /// Trees, built the way the parser and the editor of Simple search build them: no `and` directly
 /// in an `and`, no `or` directly in an `or`, at least two items.
 fn expression() -> impl Strategy<Value = Expr> {
-    condition().prop_recursive(4, 24, 4, |inner| {
+    filter().prop_recursive(4, 24, 4, |inner| {
         prop_oneof![
             prop::collection::vec(inner.clone(), 2..4).prop_map(|items| {
                 let mut items = items.into_iter();
@@ -196,7 +195,7 @@ fn expression() -> impl Strategy<Value = Expr> {
 fn placeholder() -> Expr {
     Expr::Under {
         id: ReadableId {
-            text: "A-1".to_owned(),
+            text: "AB-1".to_owned(),
             span: span(),
         },
         span: span(),
@@ -204,14 +203,7 @@ fn placeholder() -> Expr {
 }
 
 fn direction() -> impl Strategy<Value = Direction> {
-    prop_oneof![
-        Just(Direction::HighestFirst),
-        Just(Direction::LowestFirst),
-        Just(Direction::NewestFirst),
-        Just(Direction::OldestFirst),
-        Just(Direction::AToZ),
-        Just(Direction::ZToA),
-    ]
+    prop::sample::select(Direction::ALL.to_vec())
 }
 
 fn search() -> impl Strategy<Value = Search> {
@@ -286,40 +278,240 @@ fn nearly_a_search() -> impl Strategy<Value = String> {
     prop::collection::vec(pieces, 0..14).prop_map(|pieces| pieces.join(" "))
 }
 
+/// The tree, the way the parser makes it, with the places of a real text.
+fn parsed(tree: &Search) -> Search {
+    parse(&print(tree)).unwrap()
+}
+
+/// A search with only this filter.
+fn around(filter: Expr) -> Search {
+    Search {
+        filter: Some(filter),
+        sort: Vec::new(),
+        span: span(),
+    }
+}
+
+/// `under` the issue with this ID, written as it is (a defect in it is the point).
+fn under(text: &str) -> Search {
+    around(Expr::Under {
+        id: ReadableId {
+            text: text.to_owned(),
+            span: span(),
+        },
+        span: span(),
+    })
+}
+
+/// A filter of the field `due` with this test.
+fn due(test: Test) -> Search {
+    around(Expr::Field {
+        field: FieldRef {
+            word: "due".to_owned(),
+            span: span(),
+        },
+        test,
+        span: span(),
+    })
+}
+
+fn is(value: Operand) -> Search {
+    due(Test::Is {
+        value,
+        span: span(),
+    })
+}
+
+fn all_of(items: Vec<Expr>) -> Expr {
+    Expr::And {
+        items,
+        span: span(),
+    }
+}
+
+fn any_of(items: Vec<Expr>) -> Expr {
+    Expr::Or {
+        items,
+        span: span(),
+    }
+}
+
+/// Trees that break a rule of how `and`, `or` and `not` are built, around a filter of a good tree.
+fn broken_combinations(good: &Expr) -> Vec<(&'static str, Search)> {
+    let mut deep = good.clone();
+    for _ in 0..=MAX_DEPTH {
+        deep = Expr::Not {
+            item: Box::new(deep),
+            span: span(),
+        };
+    }
+    vec![
+        ("an and of one item", around(all_of(vec![good.clone()]))),
+        ("an or of no item", around(any_of(Vec::new()))),
+        (
+            "an and in an and",
+            around(all_of(vec![
+                all_of(vec![good.clone(), placeholder()]),
+                placeholder(),
+            ])),
+        ),
+        (
+            "an or in an or",
+            around(any_of(vec![
+                placeholder(),
+                any_of(vec![good.clone(), placeholder()]),
+            ])),
+        ),
+        ("nesting deeper than the limit", around(deep)),
+    ]
+}
+
+/// Trees with an ID, a short name or a count that the rules of `bb-core` and of the language refuse.
+fn broken_names() -> Vec<(&'static str, Search)> {
+    let steps = |count| {
+        around(Expr::ConnectedTo {
+            id: ReadableId {
+                text: "AB-1".to_owned(),
+                span: span(),
+            },
+            steps: Some(Steps {
+                count,
+                span: span(),
+            }),
+            span: span(),
+        })
+    };
+    vec![
+        ("an ID in lower case", under("ab-1")),
+        ("an ID without a code", under("AB-")),
+        ("a code with a leading zero", under("AB-01")),
+        ("a code with an I", under("AB-KILO1")),
+        ("a short name of one letter", under("A-1")),
+        ("a short name of eleven letters", under("ABCDEFGHIJK-1")),
+        ("a chain of no step", steps(0)),
+        (
+            "a project in lower case",
+            due(Test::Within {
+                project: ShortName {
+                    text: "web".to_owned(),
+                    span: span(),
+                },
+                span: span(),
+            }),
+        ),
+    ]
+}
+
+/// Trees with a value that is not in its one form, or a test that holds nothing.
+fn broken_values() -> Vec<(&'static str, Search)> {
+    let number = |value, scale| {
+        is(Operand::Number {
+            number: Decimal { value, scale },
+            span: span(),
+        })
+    };
+    vec![
+        (
+            "a day that is not in the calendar",
+            is(Operand::Date {
+                date: Date {
+                    year: 2026,
+                    month: 2,
+                    day: 30,
+                },
+                span: span(),
+            }),
+        ),
+        ("a number with a zero at the end", number(10, 1)),
+        (
+            "a number with too many digits",
+            number(1_000_000_000_000_000, 0),
+        ),
+        (
+            "a list of no value",
+            due(Test::In {
+                values: Vec::new(),
+                span: span(),
+            }),
+        ),
+        (
+            "a count of none",
+            due(Test::InLast {
+                count: 0,
+                unit: Unit::Day,
+                span: span(),
+            }),
+        ),
+    ]
+}
+
+/// A tree that breaks one rule of a tree, for each of the rules.
+fn broken(good: &Expr) -> Vec<(&'static str, Search)> {
+    let mut all = broken_combinations(good);
+    all.extend(broken_names());
+    all.extend(broken_values());
+    all
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(512))]
 
     #[test]
-    fn search_roundtrip_the_json_of_a_tree_reads_back_as_the_tree(tree in search()) {
-        // The browser gives the tree back as JSON; the module reads it by hand (`json.rs`).
-        let json = serde_json::to_value(&tree).unwrap();
-        let read = search_from_json(&json);
-        prop_assert_eq!(read, Ok(tree));
+    fn qry_03_the_json_of_a_tree_reads_back_as_the_tree(tree in search()) {
+        // The browser gives the tree back as JSON; the module reads it with the reader that is
+        // written from the types (`cargo xtask gen search-reader`). The places are real ones.
+        let tree = parsed(&tree);
+        let json = serde_json::to_string(&tree).unwrap();
+        prop_assert_eq!(search_from_json(&json), Ok(tree.clone()));
+        prop_assert_eq!(print_from_json(&json), Ok(print(&tree)));
     }
 
     #[test]
-    fn search_roundtrip_parse_of_print_is_the_tree(tree in search()) {
+    fn qry_03_a_tree_in_json_with_other_places_has_the_same_words(tree in search()) {
+        // Simple search builds trees without a text; the places in them mean nothing.
+        let json = serde_json::to_string(&tree).unwrap();
+        let read = search_from_json(&json).unwrap();
+        prop_assert_eq!(&read, &tree);
+        prop_assert!(read.same_words(&parsed(&tree)));
+    }
+
+    #[test]
+    fn qry_02_a_tree_that_breaks_a_rule_is_refused_when_read(tree in search()) {
+        let good = tree.filter.clone().unwrap_or_else(placeholder);
+        for (rule, search) in broken(&good) {
+            let json = serde_json::to_string(&search).unwrap();
+            prop_assert!(search_from_json(&json).is_err(), "{rule}: {json}");
+            prop_assert!(print_from_json(&json).is_err(), "{rule}");
+        }
+    }
+
+    #[test]
+    fn qry_02_parse_of_print_is_the_tree(tree in search()) {
         let text = print(&tree);
         let parsed = parse(&text);
         prop_assert!(parsed.is_ok(), "{text}: {:?}", parsed.err());
-        prop_assert_eq!(parsed.unwrap(), tree, "{}", text);
+        let parsed = parsed.unwrap();
+        prop_assert!(parsed.same_words(&tree), "{}", text);
+        // A word that is not the same is seen: the places do not hide it.
+        let other = Search { filter: None, ..tree.clone() };
+        prop_assert_eq!(parsed.same_words(&other), tree.filter.is_none());
     }
 
     #[test]
-    fn search_roundtrip_a_parse_never_panics_on_any_text(any in ".{0,120}", glued in nearly_a_search()) {
+    fn qry_01_a_parse_never_panics_on_any_text(any in ".{0,120}", glued in nearly_a_search()) {
         let _ = parse(&any);
         let _ = parse(&glued);
     }
 
     #[test]
-    fn search_roundtrip_the_canonical_text_of_an_accepted_text_is_stable(glued in nearly_a_search(), tree in search()) {
+    fn qry_01_the_canonical_text_of_an_accepted_text_is_stable(glued in nearly_a_search(), tree in search()) {
         for text in [glued, print(&tree)] {
             if let Ok(first) = parse(&text) {
                 let canonical = print(&first);
                 let second = parse(&canonical);
                 prop_assert!(second.is_ok(), "{text} -> {canonical}");
                 let second = second.unwrap();
-                prop_assert_eq!(&second, &first, "{} -> {}", text, canonical);
+                prop_assert!(second.same_words(&first), "{} -> {}", text, canonical);
                 prop_assert_eq!(print(&second), canonical);
             }
         }

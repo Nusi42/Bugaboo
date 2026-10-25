@@ -207,7 +207,7 @@ export const messages = {
   "nav.projects": "Projects",
   "nav.group.work": "Work",
   "search.clear": "Clear the search",
-  "search.mistake.expected-condition":
+  "search.mistake.expected-filter":
     "A filter is missing here. Start it with the name of a field, like “priority”.",
   "search.mistake.expected-operator":
     "What should be true of “{field}”? Write for example “{is}”, “{contains}” or “{in}”.",
@@ -252,7 +252,9 @@ export const messages = {
   "search.mistake.wrong-text": "“{field}” needs a text here. Put it in quotes.",
   "search.mistake.wrong-person": "“{field}” needs the name of a person here, or “{me}”.",
   "search.mistake.wrong-issue": "“{field}” needs an Issue ID here, like WEB-142.",
-  "search.mistake.too-many-conditions": "A search can have at most {limit} filters.",
+  "search.mistake.too-many-filters": "A search can have at most {limit} filters.",
+  "search.mistake.too-many-sort-keys": "A search can be sorted by at most {limit} fields.",
+  "search.mistake.too-long": "This search is too long. Please shorten it.",
   "search.mistake.too-many-steps": "A search can look at most {limit} steps away.",
   "shortcut.quick-search": "Open quick search",
   "shortcut.show-shortcuts": "Show all keyboard shortcuts",

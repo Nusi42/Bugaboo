@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use serde::Serialize;
 
 use crate::messages as key;
-use crate::parser::{ParseError, Reason, Situation};
+use crate::situation::{ParseError, Reason, Situation};
 use crate::span::Span;
 use crate::syntax::{Direction, Unit};
 use crate::words::Keyword;
@@ -56,6 +56,7 @@ impl From<&ParseError> for Mistake {
             Reason::NotADate(text) => Self::new(span, key::NOT_A_DATE, &[("text", text)]),
             Reason::Unreadable(text) => Self::new(span, key::UNREADABLE, &[("text", text)]),
             Reason::TooDeep => Self::new(span, key::TOO_DEEP, &[]),
+            Reason::TooLong => Self::new(span, key::TOO_LONG, &[]),
         }
     }
 }
@@ -85,7 +86,7 @@ fn expected(span: Span, situation: &Situation) -> Mistake {
         )
     };
     match situation {
-        Situation::Start | Situation::Condition => with(key::EXPECTED_CONDITION, &[]),
+        Situation::Start | Situation::Filter => with(key::EXPECTED_FILTER, &[]),
         Situation::Operator { field } => operator(field),
         Situation::Value { field }
         | Situation::IsRest { field }

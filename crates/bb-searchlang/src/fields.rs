@@ -1,15 +1,17 @@
-//! The fields a person may search by: the **field catalogue** that the caller passes to the checker
+//! The fields a person may search by: the **readable fields** that the caller passes to the checker
 //! and to the suggestions. The crate knows nothing about permissions: a field the person may not
-//! read is simply not in the catalogue, and is then as unknown as a field that does not exist
-//! (QRY-05, ADR-0005 amendment M5, decision 5).
+//! read is simply not among them, and is then as unknown as a field that does not exist (QRY-05,
+//! ADR-0005 amendment M5, decision 5). Not to be mixed up with the field catalogue of `bb-core`
+//! (the built-in fields that field permissions apply to).
 
 use serde::Serialize;
 
+use crate::syntax::Comparison;
 use crate::words::Keyword;
 
 /// The fields a person may read, each with its word.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
-pub struct FieldCatalogue {
+pub struct ReadableFields {
     /// The fields, in the order they are offered.
     pub fields: Vec<Field>,
 }
@@ -80,35 +82,34 @@ pub enum Operator {
     Within,
 }
 
-impl Operator {
-    /// Every operator.
-    pub const ALL: [Self; 13] = [
-        Self::Is,
-        Self::IsNot,
-        Self::Less,
-        Self::Greater,
-        Self::LessOrEqual,
-        Self::GreaterOrEqual,
-        Self::In,
-        Self::Contains,
-        Self::IsEmpty,
-        Self::IsNotEmpty,
-        Self::InLast,
-        Self::MemberOf,
-        Self::Within,
-    ];
+every!(
+    Operator: Is,
+    IsNot,
+    Less,
+    Greater,
+    LessOrEqual,
+    GreaterOrEqual,
+    In,
+    Contains,
+    IsEmpty,
+    IsNotEmpty,
+    InLast,
+    MemberOf,
+    Within
+);
+every!(FieldKind: Text, Number, Date, Choice, Person, Project, Issue);
 
+impl Operator {
     /// How the operator is written, the way a person is offered it.
     #[must_use]
     pub fn text(self) -> String {
         use Keyword::{Contains, Empty, In, Is, Last, Member, Not, Of, Within};
+        if let Some(comparison) = self.comparison() {
+            return comparison.sign().to_owned();
+        }
         let words: &[Keyword] = match self {
             Self::Is => &[Is],
             Self::IsNot => &[Is, Not],
-            Self::Less => return "<".to_owned(),
-            Self::Greater => return ">".to_owned(),
-            Self::LessOrEqual => return "<=".to_owned(),
-            Self::GreaterOrEqual => return ">=".to_owned(),
             Self::In => &[In],
             Self::Contains => &[Contains],
             Self::IsEmpty => &[Is, Empty],
@@ -116,6 +117,7 @@ impl Operator {
             Self::InLast => &[In, Last],
             Self::MemberOf => &[Member, Of],
             Self::Within => &[Within],
+            Self::Less | Self::Greater | Self::LessOrEqual | Self::GreaterOrEqual => &[],
         };
         words
             .iter()
@@ -125,18 +127,32 @@ impl Operator {
     }
 }
 
-impl FieldKind {
-    /// Every kind.
-    pub const ALL: [Self; 7] = [
-        Self::Text,
-        Self::Number,
-        Self::Date,
-        Self::Choice,
-        Self::Person,
-        Self::Project,
-        Self::Issue,
-    ];
+impl Operator {
+    /// The comparison this operator is, if it is one.
+    #[must_use]
+    pub const fn comparison(self) -> Option<Comparison> {
+        match self {
+            Self::Less => Some(Comparison::Less),
+            Self::Greater => Some(Comparison::Greater),
+            Self::LessOrEqual => Some(Comparison::LessOrEqual),
+            Self::GreaterOrEqual => Some(Comparison::GreaterOrEqual),
+            _ => None,
+        }
+    }
+}
 
+impl From<Comparison> for Operator {
+    fn from(comparison: Comparison) -> Self {
+        match comparison {
+            Comparison::Less => Self::Less,
+            Comparison::Greater => Self::Greater,
+            Comparison::LessOrEqual => Self::LessOrEqual,
+            Comparison::GreaterOrEqual => Self::GreaterOrEqual,
+        }
+    }
+}
+
+impl FieldKind {
     /// What may be asked of a field of this kind, unless the field says otherwise.
     #[must_use]
     pub const fn operators(self) -> &'static [Operator] {
@@ -205,7 +221,7 @@ impl Field {
     }
 }
 
-impl FieldCatalogue {
+impl ReadableFields {
     /// The field that has this word. The word is compared as written.
     #[must_use]
     pub fn field(&self, word: &str) -> Option<&Field> {

@@ -432,7 +432,8 @@ export interface MessageArguments {
   "search.mistake.not-a-date": { text: string | number };
   "search.mistake.operator-not-allowed": { field: string | number; operator: string | number };
   "search.mistake.reserved-word": { word: string | number };
-  "search.mistake.too-many-conditions": { limit: string | number };
+  "search.mistake.too-many-filters": { limit: string | number };
+  "search.mistake.too-many-sort-keys": { limit: string | number };
   "search.mistake.too-many-steps": { limit: string | number };
   "search.mistake.unknown-choice": { field: string | number; value: string | number };
   "search.mistake.unknown-choice-did-you-mean": {

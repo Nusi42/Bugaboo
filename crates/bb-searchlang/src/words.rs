@@ -192,15 +192,6 @@ pub(crate) const fn steps_word(count: u32) -> Keyword {
 }
 
 impl TimeWord {
-    /// Every time word.
-    pub const ALL: [Self; 5] = [
-        Self::Today,
-        Self::Yesterday,
-        Self::ThisWeek,
-        Self::LastWeek,
-        Self::ThisMonth,
-    ];
-
     /// How the printer writes it.
     #[must_use]
     pub(crate) fn text(self) -> String {
@@ -209,16 +200,6 @@ impl TimeWord {
 }
 
 impl Direction {
-    /// Every direction.
-    pub const ALL: [Self; 6] = [
-        Self::HighestFirst,
-        Self::LowestFirst,
-        Self::NewestFirst,
-        Self::OldestFirst,
-        Self::AToZ,
-        Self::ZToA,
-    ];
-
     /// How the printer writes it.
     #[must_use]
     pub(crate) fn text(self) -> String {

@@ -10,9 +10,11 @@
 
 use serde::Serialize;
 
+use serde_json::Value as Json;
+
 use crate::span::Span;
 
-/// A whole search: the conditions and the order of the results.
+/// A whole search: the filters and the order of the results.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Search {
     /// What the results must fulfil; `null` when the search asks for everything.
@@ -23,7 +25,7 @@ pub struct Search {
     pub span: Span,
 }
 
-/// A condition or a combination of conditions.
+/// A filter or a combination of filters.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Expr {
@@ -61,21 +63,21 @@ pub enum Expr {
     Under {
         /// The issue.
         id: ReadableId,
-        /// The whole condition.
+        /// The whole filter.
         span: Span,
     },
     /// The issues that an issue blocks (`blocks WEB-1`).
     Blocks {
         /// The issue.
         id: ReadableId,
-        /// The whole condition.
+        /// The whole filter.
         span: Span,
     },
     /// The issues that block an issue (`blocked by WEB-1`).
     BlockedBy {
         /// The issue.
         id: ReadableId,
-        /// The whole condition.
+        /// The whole filter.
         span: Span,
     },
     /// Every issue on a chain of relations from an issue (`connected to WEB-7 within 3 steps`).
@@ -84,7 +86,7 @@ pub enum Expr {
         id: ReadableId,
         /// How far the chain may go; `null` for as far as the limit allows.
         steps: Option<Steps>,
-        /// The whole condition.
+        /// The whole filter.
         span: Span,
     },
 }
@@ -179,7 +181,7 @@ pub enum Comparison {
     GreaterOrEqual,
 }
 
-/// A value in a condition.
+/// A value in a filter.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Operand {
@@ -226,7 +228,7 @@ pub enum Operand {
     },
 }
 
-/// A text in a condition that always asks for words (`contains`, `member of`).
+/// A text in a filter that always asks for words (`contains`, `member of`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Text {
     /// The text, without quotes.
@@ -349,6 +351,45 @@ pub enum Direction {
     ZToA,
 }
 
+impl Search {
+    /// Whether the two searches say the same, whatever the places of their words: the words, the
+    /// order and the brackets decide, the bytes of the text they were read from do not. `==` also
+    /// compares the places.
+    #[must_use]
+    pub fn same_words(&self, other: &Self) -> bool {
+        match (without_places(self), without_places(other)) {
+            (Some(left), Some(right)) => left == right,
+            _ => false,
+        }
+    }
+}
+
+/// The search as JSON with every place (a `Span`) taken out. A place is found by its shape, the
+/// members of a `Span`, so no type of the tree needs to say which of its members is one.
+fn without_places(search: &Search) -> Option<Json> {
+    fn strip(json: &mut Json, place: &[String]) {
+        match json {
+            Json::Object(members) => {
+                members.retain(|_, member| !is_place(member, place));
+                members.values_mut().for_each(|member| strip(member, place));
+            }
+            Json::Array(items) => items.iter_mut().for_each(|item| strip(item, place)),
+            _ => {}
+        }
+    }
+    fn is_place(json: &Json, place: &[String]) -> bool {
+        json.as_object()
+            .is_some_and(|members| members.keys().eq(place))
+    }
+    let Ok(Json::Object(members)) = serde_json::to_value(Span::default()) else {
+        return None;
+    };
+    let place: Vec<String> = members.keys().cloned().collect();
+    let mut json = serde_json::to_value(search).ok()?;
+    strip(&mut json, &place);
+    Some(json)
+}
+
 impl Expr {
     /// Where the expression stands in the text.
     #[must_use]
@@ -406,31 +447,41 @@ impl Expr {
         }
     }
 
-    /// Calls `visit` for each condition (not for `and`, `or` and `not`), in the order of the text.
-    pub fn each_condition<'a>(&'a self, visit: &mut impl FnMut(&'a Self)) {
+    /// Calls `visit` for each filter (not for `and`, `or` and `not`), in the order of the text.
+    pub fn each_filter<'a>(&'a self, visit: &mut impl FnMut(&'a Self)) {
         match self {
             Self::Or { items, .. } | Self::And { items, .. } => {
                 for item in items {
-                    item.each_condition(visit);
+                    item.each_filter(visit);
                 }
             }
-            Self::Not { item, .. } => item.each_condition(visit),
-            condition => visit(condition),
+            Self::Not { item, .. } => item.each_filter(visit),
+            filter => visit(filter),
         }
     }
 }
 
-impl Comparison {
-    /// Every comparison.
-    pub const ALL: [Self; 4] = [
-        Self::Less,
-        Self::Greater,
-        Self::LessOrEqual,
-        Self::GreaterOrEqual,
-    ];
-}
+every!(Comparison: Less, Greater, LessOrEqual, GreaterOrEqual);
+every!(Unit: Day, Week, Month);
+every!(TimeWord: Today, Yesterday, ThisWeek, LastWeek, ThisMonth);
+every!(
+    Direction: HighestFirst,
+    LowestFirst,
+    NewestFirst,
+    OldestFirst,
+    AToZ,
+    ZToA
+);
 
-impl Unit {
-    /// Every unit.
-    pub const ALL: [Self; 3] = [Self::Day, Self::Week, Self::Month];
+impl Comparison {
+    /// The sign, as the printer writes it and as an operator is offered.
+    #[must_use]
+    pub const fn sign(self) -> &'static str {
+        match self {
+            Self::Less => "<",
+            Self::Greater => ">",
+            Self::LessOrEqual => "<=",
+            Self::GreaterOrEqual => ">=",
+        }
+    }
 }

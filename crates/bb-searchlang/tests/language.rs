@@ -3,20 +3,22 @@
 
 #![cfg(test)]
 
+use bb_core as _;
 use proptest as _;
 use serde as _;
 use serde_json as _;
 
-use bb_searchlang::vectors::{ACCEPTED, REFUSED, sample_catalogue};
+use bb_searchlang::messages;
+use bb_searchlang::vectors::{ACCEPTED, REFUSED, sample_fields};
 use bb_searchlang::{
-    Expr, FieldCatalogue, MAX_CONDITIONS, MAX_STEPS, Mistake, Suggestion, Test, check, parse,
-    print, suggest,
+    Expr, Field, FieldKind, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES, Mistake,
+    ReadableFields, Suggestion, Test, check, parse, print, suggest,
 };
 
-/// A text parsed and checked against the sample catalogue, printed.
+/// A text parsed and checked against the sample fields, printed.
 fn checked(text: &str) -> Result<String, Vec<Mistake>> {
     let search = parse(text).map_err(|mistake| vec![mistake])?;
-    check(search, &sample_catalogue()).map(|search| print(search.search()))
+    check(search, &sample_fields()).map(|search| print(search.search()))
 }
 
 fn mistakes_of(text: &str) -> Vec<Mistake> {
@@ -56,7 +58,7 @@ fn qry_04_every_helper_parses_checks_and_prints_back() {
 }
 
 #[test]
-fn every_accepted_text_prints_to_a_canonical_text_that_prints_to_itself() {
+fn qry_01_every_accepted_text_prints_to_a_canonical_text_that_prints_to_itself() {
     for text in ACCEPTED {
         let canonical = checked(text).unwrap_or_else(|mistakes| panic!("{text}: {mistakes:?}"));
         assert_eq!(
@@ -68,7 +70,7 @@ fn every_accepted_text_prints_to_a_canonical_text_that_prints_to_itself() {
 }
 
 #[test]
-fn every_refused_text_has_mistakes_with_a_key_and_a_place_inside_the_text() {
+fn qry_01_every_refused_text_has_mistakes_with_a_key_and_a_place_inside_the_text() {
     for text in REFUSED {
         for mistake in mistakes_of(text) {
             assert!(mistake.key.starts_with("search.mistake."), "{text}");
@@ -79,7 +81,7 @@ fn every_refused_text_has_mistakes_with_a_key_and_a_place_inside_the_text() {
 }
 
 #[test]
-fn the_canonical_text_has_one_spelling_for_everything() {
+fn qry_02_the_canonical_text_has_one_spelling_for_everything() {
     for (written, canonical) in [
         ("STATUS  IS   NOT  Open", "STATUS is not Open"),
         (
@@ -118,77 +120,200 @@ fn the_canonical_text_has_one_spelling_for_everything() {
 }
 
 #[test]
-fn a_mistake_names_the_field_and_offers_what_may_be_meant() {
+fn qry_01_a_mistake_names_the_field_and_offers_what_may_be_meant() {
     let mistakes = mistakes_of("prio is high");
     assert_eq!(mistakes.len(), 1);
-    assert_eq!(mistakes[0].key, "search.mistake.unknown-field-did-you-mean");
+    assert_eq!(mistakes[0].key, messages::UNKNOWN_FIELD_DID_YOU_MEAN);
     assert_eq!(mistakes[0].args["field"], "prio");
     assert_eq!(mistakes[0].args["suggestion"], "priority");
     assert_eq!(mistakes[0].suggestions, ["priority"]);
     assert_eq!((mistakes[0].span.start, mistakes[0].span.end), (0, 4));
 }
 
-#[test]
-fn qry_05_a_hidden_field_and_an_unknown_field_give_the_same_mistake() {
-    // "reportedBy" exists, but this person may not read it, so the caller leaves it out of the
-    // catalogue. A second catalogue never had it. The checker gets nothing else to go by.
-    let without = |words: &[&str]| FieldCatalogue {
-        fields: sample_catalogue()
-            .fields
-            .into_iter()
-            .filter(|field| !words.contains(&field.word.as_str()))
-            .collect(),
-    };
-    let hidden = without(&["reportedBy"]);
-    let never_existed = without(&["reportedBy"]);
-    for text in ["reportedBy is me", "reportedBy is not empty sort by title"] {
-        let search = parse(text).unwrap();
-        let from_hidden = check(search.clone(), &hidden).unwrap_err();
-        let from_unknown = check(search, &never_existed).unwrap_err();
-        assert_eq!(from_hidden, from_unknown, "{text}");
-        assert_eq!(from_hidden[0].key, "search.mistake.unknown-field");
-        assert_eq!(from_hidden[0].args["field"], "reportedBy");
-        assert!(from_hidden[0].suggestions.is_empty());
+/// The fields of a person who may not read `reportedBy`. They are written out here, so a change of
+/// the sample cannot make the test pass for another reason.
+fn without_reported_by() -> ReadableFields {
+    ReadableFields {
+        fields: vec![
+            Field::new("title", FieldKind::Text),
+            Field::new("status", FieldKind::Choice).with_choices(&["Open", "Done"]),
+            Field::new("assignedTo", FieldKind::Person),
+            Field::new("reportedOn", FieldKind::Date),
+        ],
     }
-    // Neither the suggestions nor the offers give the hidden field away.
-    let offered = suggest("repo", 4, &hidden);
-    assert!(offered.items.is_empty());
-    let close = mistakes_of("reportedby is me");
-    assert_eq!(close[0].suggestions, ["reportedBy"]);
-    let search = parse("reportedby is me").unwrap();
-    let hidden_close = check(search, &hidden).unwrap_err();
-    assert!(hidden_close[0].suggestions.is_empty());
+}
+
+/// What a mistake says apart from the word it is about: its key, what it suggests, how long the
+/// word is and every argument but the word itself.
+fn shape(mistake: &Mistake) -> (String, Vec<String>, usize, Vec<(String, String)>) {
+    let args = mistake
+        .args
+        .iter()
+        .filter(|(name, _)| name.as_str() != "field")
+        .map(|(name, value)| (name.clone(), value.clone()))
+        .collect();
+    (
+        mistake.key.clone(),
+        mistake.suggestions.clone(),
+        mistake.span.end - mistake.span.start,
+        args,
+    )
 }
 
 #[test]
-fn the_limits_fifty_filters_pass_and_fifty_one_fail() {
+fn qry_05_a_hidden_field_and_an_unknown_field_give_the_same_mistake() {
+    let readable = without_reported_by();
+    // Both words are as close to the visible `reportedOn`, and as long, as each other.
+    for (hidden, invented) in [
+        ("reportedBy is me", "reportedXx is me"),
+        (
+            "title is x sort by reportedBy",
+            "title is x sort by reportedXx",
+        ),
+        ("reportedBy is not empty", "reportedXx is not empty"),
+    ] {
+        let from_hidden = check(parse(hidden).unwrap(), &readable).unwrap_err();
+        let from_invented = check(parse(invented).unwrap(), &readable).unwrap_err();
+        assert_eq!(from_hidden.len(), from_invented.len(), "{hidden}");
+        assert_eq!(
+            shape(&from_hidden[0]),
+            shape(&from_invented[0]),
+            "{hidden} and {invented}"
+        );
+        assert_eq!(
+            from_hidden[0].key,
+            messages::UNKNOWN_FIELD_DID_YOU_MEAN,
+            "{hidden}"
+        );
+        assert_eq!(from_hidden[0].args["field"], "reportedBy");
+        assert_eq!(from_invented[0].args["field"], "reportedXx");
+    }
+    // A text where nothing visible is close: the same plain mistake for both.
+    let nothing = ReadableFields::default();
+    let from_hidden = check(parse("reportedBy is me").unwrap(), &nothing).unwrap_err();
+    let from_invented = check(parse("qqqqqqqqqq is me").unwrap(), &nothing).unwrap_err();
+    assert_eq!(shape(&from_hidden[0]), shape(&from_invented[0]));
+    assert_eq!(from_hidden[0].key, messages::UNKNOWN_FIELD);
+    // Neither the suggestions of a mistake nor the offers at the cursor give the field away.
+    for text in ["reportedby is me", "reportedB is me", "reported is me"] {
+        let mistakes = check(parse(text).unwrap(), &readable).unwrap_err();
+        assert!(
+            mistakes[0]
+                .suggestions
+                .iter()
+                .all(|word| word != "reportedBy"),
+            "{text}"
+        );
+    }
+    let offered = suggest("reportedB", 9, &readable);
+    assert!(offered.items.iter().all(|offer| match offer {
+        Suggestion::Word { text, .. } => text != "reportedBy",
+        Suggestion::Ask { .. } => true,
+    }));
+    // The person who may read it gets it offered, so the checks above can fail.
+    let close = mistakes_of("reportedby is me");
+    assert_eq!(close[0].suggestions, ["reportedBy"]);
+}
+
+#[test]
+fn qry_01_the_limits_fifty_filters_pass_and_fifty_one_fail() {
     let many = |count: usize| vec!["status is Open"; count].join(" and ");
-    assert!(checked(&many(MAX_CONDITIONS)).is_ok());
-    let text = many(MAX_CONDITIONS + 1);
+    assert!(checked(&many(MAX_FILTERS)).is_ok());
+    let text = many(MAX_FILTERS + 1);
     let mistakes = mistakes_of(&text);
     assert_eq!(mistakes.len(), 1);
-    assert_eq!(mistakes[0].key, "search.mistake.too-many-conditions");
-    assert_eq!(mistakes[0].args["limit"], MAX_CONDITIONS.to_string());
+    assert_eq!(mistakes[0].key, messages::TOO_MANY_FILTERS);
+    assert_eq!(mistakes[0].args["limit"], MAX_FILTERS.to_string());
     // The mistake stands on the first filter over the limit.
     assert_eq!(mistakes[0].span.end, text.len());
 }
 
 #[test]
-fn the_limits_five_steps_pass_and_six_fail() {
+fn qry_01_the_values_of_a_list_count_against_the_limit_of_filters() {
+    let list = |count: usize| format!("status in ({})", vec!["Open"; count].join(", "));
+    assert!(checked(&list(MAX_FILTERS)).is_ok());
+    let mistakes = mistakes_of(&list(MAX_FILTERS + 1));
+    assert_eq!(mistakes.len(), 1);
+    assert_eq!(mistakes[0].key, messages::TOO_MANY_FILTERS);
+    // A list and a filter share the limit.
+    let both = format!("title is x and {}", list(MAX_FILTERS));
+    assert_eq!(mistakes_of(&both)[0].key, messages::TOO_MANY_FILTERS);
+}
+
+#[test]
+fn qry_01_nothing_is_looked_at_beyond_the_limit_of_filters() {
+    // Each of these would need a search for close words; after the limit there is none.
+    let text = vec!["statuz is Open"; MAX_FILTERS * 4].join(" and ");
+    let mistakes = mistakes_of(&text);
+    assert_eq!(mistakes.len(), MAX_FILTERS + 1);
+    assert_eq!(
+        mistakes
+            .iter()
+            .filter(|mistake| mistake.key == messages::TOO_MANY_FILTERS)
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn qry_01_five_sort_keys_pass_and_six_fail() {
+    let keys = |count: usize| format!("sort by {}", vec!["title"; count].join(", "));
+    assert!(checked(&keys(MAX_SORT_KEYS)).is_ok());
+    let mistakes = mistakes_of(&keys(MAX_SORT_KEYS + 1));
+    assert_eq!(mistakes.len(), 1);
+    assert_eq!(mistakes[0].key, messages::TOO_MANY_SORT_KEYS);
+    assert_eq!(mistakes[0].args["limit"], MAX_SORT_KEYS.to_string());
+}
+
+#[test]
+fn qry_01_a_text_over_the_limit_is_refused_before_anything_is_read_of_it() {
+    // The most filters, each with a field, an operator and a usual value, fit with room to spare.
+    let usual = vec!["assignedTo is \"Marie Curie-Sklodowska\""; MAX_FILTERS].join(" and ");
+    assert!(usual.len() < MAX_TEXT_BYTES, "{}", usual.len());
+    // A text of exactly the limit is read; one byte more is not.
+    let padded = |bytes: usize| format!("title is x{}", " ".repeat(bytes - "title is x".len()));
+    assert!(parse(&padded(MAX_TEXT_BYTES)).is_ok());
+    let long = padded(MAX_TEXT_BYTES + 1);
+    let mistake = parse(&long).unwrap_err();
+    assert_eq!(mistake.key, messages::TOO_LONG);
+    assert_eq!(mistake.span.start, MAX_TEXT_BYTES);
+    assert_eq!(mistake.span.end, long.len());
+    // The place is a place of characters, also when the limit falls inside one.
+    let wide = "ü".repeat(MAX_TEXT_BYTES);
+    let mistake = parse(&wide).unwrap_err();
+    assert_eq!(mistake.key, messages::TOO_LONG);
+    assert!(wide.is_char_boundary(mistake.span.start));
+    // Nothing is offered for it either.
+    assert!(suggest(&long, 3, &sample_fields()).items.is_empty());
+}
+
+#[test]
+fn qry_01_a_long_unknown_word_costs_no_search_for_close_words() {
+    let word = "x".repeat(MAX_TEXT_BYTES - " is 1".len());
+    let mistakes = mistakes_of(&format!("{word} is 1"));
+    assert_eq!(mistakes[0].key, messages::UNKNOWN_FIELD);
+    assert!(mistakes[0].suggestions.is_empty());
+}
+
+#[test]
+fn qry_01_the_limits_five_steps_pass_and_six_fail() {
     let within = |steps: u32| format!("connected to WEB-7 within {steps} steps");
     assert!(checked(&within(MAX_STEPS)).is_ok());
     let mistakes = mistakes_of(&within(MAX_STEPS + 1));
     assert_eq!(mistakes.len(), 1);
-    assert_eq!(mistakes[0].key, "search.mistake.too-many-steps");
+    assert_eq!(mistakes[0].key, messages::TOO_MANY_STEPS);
     assert_eq!(mistakes[0].args["limit"], MAX_STEPS.to_string());
 }
 
 #[test]
-fn a_text_nested_too_deep_is_a_mistake_and_never_a_crash() {
-    let deep = format!("{}status is Open{}", "(".repeat(5000), ")".repeat(5000));
-    assert_eq!(parse(&deep).unwrap_err().key, "search.mistake.too-deep");
-    let nots = format!("{}status is Open", "not ".repeat(5000));
-    assert_eq!(parse(&nots).unwrap_err().key, "search.mistake.too-deep");
+fn qry_01_a_text_nested_too_deep_is_a_mistake_and_never_a_crash() {
+    let deep = format!("{}status is Open{}", "(".repeat(900), ")".repeat(900));
+    assert_eq!(parse(&deep).unwrap_err().key, messages::TOO_DEEP);
+    let nots = format!("{}status is Open", "not ".repeat(900));
+    assert_eq!(parse(&nots).unwrap_err().key, messages::TOO_DEEP);
+    // More nesting than the text may hold is a text that is too long, and is never read.
+    let long = format!("{}status is Open", "not ".repeat(MAX_TEXT_BYTES));
+    assert_eq!(parse(&long).unwrap_err().key, messages::TOO_LONG);
 }
 
 #[test]
@@ -212,7 +337,7 @@ fn qry_03_the_tree_keeps_where_each_word_stands() {
 fn suggestions_at(marked: &str) -> (Vec<String>, (usize, usize)) {
     let at = marked.find('|').unwrap();
     let text = marked.replacen('|', "", 1);
-    let found = suggest(&text, at, &sample_catalogue());
+    let found = suggest(&text, at, &sample_fields());
     let words = found
         .items
         .iter()
@@ -228,14 +353,14 @@ fn suggestions_at(marked: &str) -> (Vec<String>, (usize, usize)) {
 }
 
 #[test]
-fn suggestions_after_a_typed_start_offer_the_fields_that_begin_so() {
+fn qry_03_suggestions_after_a_typed_start_offer_the_fields_that_begin_so() {
     let (words, replace) = suggestions_at("assi|");
     assert_eq!(words, ["assignedTo"]);
     assert_eq!(replace, (0, 4));
 }
 
 #[test]
-fn suggestions_after_a_field_offer_what_it_allows() {
+fn qry_03_suggestions_after_a_field_offer_what_it_allows() {
     let (words, replace) = suggestions_at("assignedTo |");
     assert_eq!(
         words,
@@ -255,7 +380,7 @@ fn suggestions_after_a_field_offer_what_it_allows() {
 }
 
 #[test]
-fn suggestions_after_is_offer_the_choices_of_the_field() {
+fn qry_03_suggestions_after_is_offer_the_choices_of_the_field() {
     let (words, _) = suggestions_at("priority is |");
     assert_eq!(
         words,
@@ -268,7 +393,7 @@ fn suggestions_after_is_offer_the_choices_of_the_field() {
 }
 
 #[test]
-fn suggestions_inside_quotes_offer_the_values_and_replace_the_quoted_text() {
+fn qry_03_suggestions_inside_quotes_offer_the_values_and_replace_the_quoted_text() {
     let (words, replace) = suggestions_at("status is \"In pr|\" and");
     assert_eq!(words, ["\"In progress\""]);
     assert_eq!(replace, (10, 17));
@@ -282,7 +407,7 @@ fn suggestions_inside_quotes_offer_the_values_and_replace_the_quoted_text() {
 }
 
 #[test]
-fn suggestions_name_what_the_server_alone_knows_as_a_request() {
+fn qry_03_suggestions_name_what_the_server_alone_knows_as_a_request() {
     let (words, _) = suggestions_at("project within |");
     assert_eq!(words, ["ask Projects "]);
     let (words, _) = suggestions_at("parent is |");
@@ -292,7 +417,7 @@ fn suggestions_name_what_the_server_alone_knows_as_a_request() {
 }
 
 #[test]
-fn suggestions_after_a_whole_filter_offer_the_joining_words() {
+fn qry_03_suggestions_after_a_whole_filter_offer_the_joining_words() {
     let (words, _) = suggestions_at("status is Open |");
     assert_eq!(words, ["and", "or", "sort by"]);
     let (words, _) = suggestions_at("(status is Open |");
@@ -305,7 +430,7 @@ fn suggestions_after_a_whole_filter_offer_the_joining_words() {
 }
 
 #[test]
-fn suggestions_for_a_text_that_is_wrong_before_the_cursor_are_empty() {
+fn qry_03_suggestions_for_a_text_that_is_wrong_before_the_cursor_are_empty() {
     let (words, _) = suggestions_at("nothing |");
     assert_eq!(words, Vec::<String>::new());
     let (words, _) = suggestions_at("status = Open and |");
@@ -313,11 +438,11 @@ fn suggestions_for_a_text_that_is_wrong_before_the_cursor_are_empty() {
 }
 
 #[test]
-fn the_cursor_may_stand_anywhere_in_any_text_without_a_crash() {
+fn qry_03_the_cursor_may_stand_anywhere_in_any_text_without_a_crash() {
     for text in ACCEPTED.iter().chain(REFUSED) {
         for cursor in 0..=text.len() + 2 {
-            let _ = suggest(text, cursor, &sample_catalogue());
+            let _ = suggest(text, cursor, &sample_fields());
         }
     }
-    let _ = suggest("ünï is é ö", 3, &sample_catalogue());
+    let _ = suggest("ünï is é ö", 3, &sample_fields());
 }

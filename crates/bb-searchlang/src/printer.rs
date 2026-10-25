@@ -3,7 +3,7 @@
 //! kept. The address, the API and a saved search carry this text (ADR-0005, amendment M5).
 
 use crate::literal::{quoted, value_or_quoted, word_or_quoted};
-use crate::syntax::{Comparison, Expr, Operand, Search, SortKey, Test, Text};
+use crate::syntax::{Expr, Operand, Search, SortKey, Test, Text};
 use crate::words::{Keyword, steps_word, unit_word};
 
 /// The canonical text of a search.
@@ -110,7 +110,7 @@ fn test_text(test: &Test) -> String {
         ),
         Test::Compare {
             operator, value, ..
-        } => format!("{} {}", comparison(*operator), value_text(value)),
+        } => format!("{} {}", operator.sign(), value_text(value)),
         Test::In { values, .. } => {
             let values: Vec<String> = values.iter().map(value_text).collect();
             format!("{} ({})", Keyword::In.text(), values.join(", "))
@@ -139,17 +139,6 @@ fn test_text(test: &Test) -> String {
         Test::Within { project, .. } => {
             format!("{} {}", Keyword::Within.text(), project.text)
         }
-    }
-}
-
-/// The sign of a comparison.
-#[must_use]
-pub(crate) const fn comparison(operator: Comparison) -> &'static str {
-    match operator {
-        Comparison::Less => "<",
-        Comparison::Greater => ">",
-        Comparison::LessOrEqual => "<=",
-        Comparison::GreaterOrEqual => ">=",
     }
 }
 

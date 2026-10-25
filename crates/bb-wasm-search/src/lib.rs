@@ -12,21 +12,17 @@ use serde::Serialize;
 use wasm_bindgen::JsError;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-/// Reads the JSON text of the browser. A text that is not JSON, or not what the Rust types hold, is
-/// an error that says what is wrong with it: the browser and the Rust types differ, which is a
-/// defect and must not pass as an empty answer. The types are read by hand (`bb_searchlang::json`)
-/// because deriving the reading makes the module too big (ADR-0005, amendment M5).
-fn read_json<Output>(
-    json: &str,
-    from_json: impl FnOnce(&serde_json::Value) -> Result<Output, String>,
-) -> Result<Output, String> {
-    let value = serde_json::from_str(json).map_err(|error| format!("unreadable input: {error}"))?;
-    from_json(&value).map_err(|problem| format!("unreadable input: {problem}"))
-}
-
 /// Writes an answer as the JSON text the browser reads.
 fn write_json(answer: &impl Serialize) -> Result<String, String> {
     serde_json::to_string(answer).map_err(|error| format!("unwritable answer: {error}"))
+}
+
+/// Reads the readable fields of the browser. JSON that is not what the Rust types hold is an error
+/// that says what is wrong with it: the browser and the Rust types differ, which is a defect and
+/// must not pass as an empty answer.
+fn read_fields(json: &str) -> Result<bb_searchlang::ReadableFields, JsError> {
+    bb_searchlang::readable_fields_from_json(json)
+        .map_err(|problem| thrown(&format!("unreadable input: {problem}")))
 }
 
 /// Gives the error of the Rust side to the browser.
@@ -48,32 +44,30 @@ pub fn parse(text: &str) -> Result<String, JsError> {
 /// of the checker.
 ///
 /// # Errors
-/// The catalogue is not a `bb_searchlang::FieldCatalogue` as JSON.
+/// The readable fields are not a `bb_searchlang::ReadableFields` as JSON.
 #[wasm_bindgen]
-pub fn check(text: &str, catalogue: &str) -> Result<String, JsError> {
-    let fields =
-        read_json(catalogue, bb_searchlang::catalogue_from_json).map_err(|e| thrown(&e))?;
+pub fn check(text: &str, fields: &str) -> Result<String, JsError> {
+    let fields = read_fields(fields)?;
     write_json(&bb_searchlang::read(text, Some(&fields))).map_err(|e| thrown(&e))
 }
 
 /// The canonical text of a tree, which Simple search edits.
 ///
 /// # Errors
-/// The text is not a `bb_searchlang::Search` as JSON.
+/// The text is not a `bb_searchlang::Search` as JSON, the tree breaks a rule of a tree, or the
+/// language does not read its text back as the same tree.
 #[wasm_bindgen]
 pub fn print(search: &str) -> Result<String, JsError> {
-    let search = read_json(search, bb_searchlang::search_from_json).map_err(|e| thrown(&e))?;
-    Ok(bb_searchlang::print(&search))
+    bb_searchlang::print_from_json(search).map_err(|e| thrown(&format!("unreadable input: {e}")))
 }
 
 /// What may come next at byte `cursor` of the text (`bb_searchlang::Suggestions`, as JSON).
 ///
 /// # Errors
-/// The catalogue is not a `bb_searchlang::FieldCatalogue` as JSON.
+/// The readable fields are not a `bb_searchlang::ReadableFields` as JSON.
 #[wasm_bindgen]
-pub fn suggest(text: &str, cursor: usize, catalogue: &str) -> Result<String, JsError> {
-    let fields =
-        read_json(catalogue, bb_searchlang::catalogue_from_json).map_err(|e| thrown(&e))?;
+pub fn suggest(text: &str, cursor: usize, fields: &str) -> Result<String, JsError> {
+    let fields = read_fields(fields)?;
     write_json(&bb_searchlang::suggest(text, cursor, &fields)).map_err(|e| thrown(&e))
 }
 
@@ -87,23 +81,18 @@ pub fn own_field_word(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bb_searchlang::vectors::sample_catalogue;
+    use bb_searchlang::vectors::sample_fields;
 
-    fn catalogue() -> String {
-        write_json(&sample_catalogue()).unwrap_or_default()
-    }
-
-    /// The answer of a call that reads the catalogue, without the browser's error type.
-    fn checked(text: &str, catalogue: &str) -> Result<String, String> {
-        let fields = read_json(catalogue, bb_searchlang::catalogue_from_json)?;
-        write_json(&bb_searchlang::read(text, Some(&fields)))
+    fn fields_json() -> String {
+        write_json(&sample_fields()).unwrap_or_default()
     }
 
     #[test]
     fn the_browser_gets_the_answer_of_the_server() {
         let text = "status is Open sort by priority, highest first";
-        let json = checked(text, &catalogue()).unwrap_or_default();
-        let expected = bb_searchlang::read(text, Some(&sample_catalogue()));
+        let fields = bb_searchlang::readable_fields_from_json(&fields_json());
+        let json = write_json(&bb_searchlang::read(text, fields.as_ref().ok())).unwrap_or_default();
+        let expected = bb_searchlang::read(text, Some(&sample_fields()));
         assert_eq!(json, write_json(&expected).unwrap_or_default());
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
         assert_eq!(parsed["canonical"], text);
@@ -111,19 +100,17 @@ mod tests {
 
     #[test]
     fn a_tree_comes_back_to_its_canonical_text() {
-        let parsed = write_json(&bb_searchlang::read("status  is Open", None)).unwrap_or_default();
-        let tree: serde_json::Value = serde_json::from_str(&parsed).unwrap_or_default();
-        let search = read_json(&tree["search"].to_string(), bb_searchlang::search_from_json);
+        let answer = bb_searchlang::read("status  is Open", None);
+        let tree = serde_json::to_string(&answer.search).unwrap_or_default();
         assert_eq!(
-            search.map(|search| bb_searchlang::print(&search)),
+            bb_searchlang::print_from_json(&tree),
             Ok("status is Open".to_owned())
         );
     }
 
     #[test]
     fn the_suggestions_are_those_of_the_server() {
-        let fields =
-            read_json(&catalogue(), bb_searchlang::catalogue_from_json).unwrap_or_default();
+        let fields = bb_searchlang::readable_fields_from_json(&fields_json()).unwrap_or_default();
         let json = write_json(&bb_searchlang::suggest("assi", 4, &fields)).unwrap_or_default();
         let found: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
         assert_eq!(found["items"][0]["text"], "assignedTo");
@@ -131,8 +118,8 @@ mod tests {
 
     #[test]
     fn a_text_that_is_no_input_is_an_error_that_says_so() {
-        assert!(checked("x", "not json").is_err_and(|text| text.contains("unreadable input")));
-        assert!(read_json("{}", bb_searchlang::search_from_json).is_err());
+        assert!(bb_searchlang::readable_fields_from_json("not json").is_err());
+        assert!(bb_searchlang::print_from_json("{}").is_err());
     }
 
     #[test]

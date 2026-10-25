@@ -2,19 +2,19 @@
 //! suggestions, all made by the Rust code the server runs. `cargo xtask gen search-vectors` writes
 //! them to a file, and the unit tests of the browser run the WebAssembly module on the same texts,
 //! so both sides prove the same results (QRY-03; the files are held to the code by DOC-GENERATED).
-//! The sample catalogue is also what the tests of this crate use.
+//! The sample fields are also what the tests of this crate use.
 
 use serde::Serialize;
 
 use crate::answer::{Answer, read};
-use crate::catalogue::{Field, FieldCatalogue, FieldKind};
+use crate::fields::{Field, FieldKind, ReadableFields};
 use crate::suggest::{Suggestions, suggest};
 
 /// The fields of the vectors, as a person who may read all of them would get them.
 #[must_use]
-pub fn sample_catalogue() -> FieldCatalogue {
+pub fn sample_fields() -> ReadableFields {
     let priority = ["lowest", "low", "normal", "high", "highest"];
-    FieldCatalogue {
+    ReadableFields {
         fields: vec![
             Field::new("project", FieldKind::Project),
             Field::new("title", FieldKind::Text),
@@ -38,7 +38,7 @@ pub fn sample_catalogue() -> FieldCatalogue {
     }
 }
 
-/// Texts that are searches: each parses, checks against the sample catalogue and prints to its
+/// Texts that are searches: each parses, checks against the sample fields and prints to its
 /// canonical text (the first example is the one of QRY-01).
 pub const ACCEPTED: &[&str] = &[
     "project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first",
@@ -75,9 +75,12 @@ pub const ACCEPTED: &[&str] = &[
     "not not status is Open",
     "status is Open and (priority is high and assignedTo is me)",
     "storyPoints > 5 sort by storyPoints",
+    "title contains \"Größe\"",
+    "title is \"ünï 😀\" and description contains \"naïve café\"",
 ];
 
-/// Texts that are not accepted, each for a different reason.
+/// Texts that are not accepted, each for a different reason (some with letters of more than one
+/// byte, so the places of the mistakes are not the same in bytes and in units of the string).
 pub const REFUSED: &[&str] = &[
     "prio is high",
     "priority < 3",
@@ -113,9 +116,16 @@ pub const REFUSED: &[&str] = &[
     "sort by nothing",
     "status = Open",
     "status is Open, priority is high",
+    "ünï is Open",
+    "title contains \"Größe\" and ünï < 3",
+    "title is 😀",
+    "status is Öpen",
+    "title contains \"Größe and",
 ];
 
-/// Where the cursor is in a text, marked with a bar that is not part of the text.
+/// Where the cursor is in a text, marked with a bar that is not part of the text. Some texts hold
+/// letters of more than one byte, so the browser has places to turn from bytes into units of the
+/// string.
 pub const SUGGESTED: &[&str] = &[
     "|",
     "assi|",
@@ -149,6 +159,11 @@ pub const SUGGESTED: &[&str] = &[
     "status is Open sort by priority, highest |",
     "sort by priority, |",
     "nothing |",
+    "title contains \"Grö|",
+    "ünï|",
+    "title contains \"Größe\" and assi|",
+    "description contains \"😀\" and sta|",
+    "title is \"Größe\" and |",
 ];
 
 /// One text and what the code makes of it.
@@ -169,7 +184,7 @@ struct VectorPlace {
 /// The whole file.
 #[derive(Serialize)]
 struct VectorFile {
-    catalogue: FieldCatalogue,
+    readable_fields: ReadableFields,
     cases: Vec<VectorCase>,
     places: Vec<VectorPlace>,
 }
@@ -185,13 +200,13 @@ fn cursor_in(marked: &str) -> (String, usize) {
 /// # Errors
 /// The vectors cannot be written as JSON.
 pub fn file() -> Result<String, serde_json::Error> {
-    let catalogue = sample_catalogue();
+    let readable = sample_fields();
     let cases = ACCEPTED
         .iter()
         .chain(REFUSED)
         .map(|text| VectorCase {
             text: (*text).to_owned(),
-            answer: read(text, Some(&catalogue)),
+            answer: read(text, Some(&readable)),
         })
         .collect();
     let places = SUGGESTED
@@ -199,14 +214,14 @@ pub fn file() -> Result<String, serde_json::Error> {
         .map(|marked| {
             let (text, cursor) = cursor_in(marked);
             VectorPlace {
-                suggestions: suggest(&text, cursor, &catalogue),
+                suggestions: suggest(&text, cursor, &readable),
                 text,
                 cursor,
             }
         })
         .collect();
     let mut text = serde_json::to_string_pretty(&VectorFile {
-        catalogue,
+        readable_fields: readable,
         cases,
         places,
     })?;

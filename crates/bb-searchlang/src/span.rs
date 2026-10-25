@@ -2,21 +2,15 @@
 
 use serde::Serialize;
 
-/// A range of bytes in the text of a search, so the browser can mark a word. Comparing two spans
-/// always says they are equal: two trees are the same tree when their words are the same, wherever
-/// the words stood (`parse(print(tree)) == tree` holds although the printer moves everything).
-#[derive(Debug, Clone, Copy, Default, Eq, Serialize)]
+/// A range of bytes in the text of a search, so the browser can mark a word. Two spans are equal
+/// when they are the same range. A tree compares its places too; `Search::same_words` compares the
+/// words only.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
 pub struct Span {
     /// The first byte.
     pub start: usize,
     /// The byte after the last one.
     pub end: usize,
-}
-
-impl PartialEq for Span {
-    fn eq(&self, _: &Self) -> bool {
-        true
-    }
 }
 
 impl Span {

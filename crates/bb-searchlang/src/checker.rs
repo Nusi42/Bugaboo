@@ -1,23 +1,23 @@
-//! The checker: a tree and the field catalogue go in; the tree, checked, or the mistakes come out.
+//! The checker: a tree and the readable fields go in; the tree, checked, or the mistakes come out.
 //! It looks at the fields, the operators, the kind of each value, the fixed lists of choices and the
 //! two limits. The server checks every search again and never relies on the browser's check
 //! (ADR-0005, amendment M5, decision 4).
 //!
-//! A field that is not in the catalogue gives the same mistake whether it does not exist or the
-//! person may not read it (QRY-05): the checker cannot tell the two apart, because the catalogue
+//! A field that is not among the readable fields gives the same mistake whether it does not exist or the
+//! person may not read it (QRY-05): the checker cannot tell the two apart, because readable fields
 //! only holds what the person may read.
 
-use crate::catalogue::{Field, FieldCatalogue, FieldKind, Operator};
-use crate::limits::{MAX_CONDITIONS, MAX_STEPS};
+use crate::fields::{Field, FieldKind, Operator, ReadableFields};
+use crate::limits::{MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS};
 use crate::messages as key;
 use crate::mistake::Mistake;
 use crate::parser::value_span;
 use crate::similar::closest;
 use crate::span::Span;
-use crate::syntax::{Comparison, Expr, FieldRef, Operand, Search, Test};
+use crate::syntax::{Expr, FieldRef, Operand, Search, Test};
 use crate::words::Keyword;
 
-/// A search that the checker has accepted, for a catalogue. The compiler of the server takes this
+/// A search that the checker has accepted, for readable fields. The compiler of the server takes this
 /// type, so a search that was not checked cannot be compiled.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckedSearch(Search);
@@ -41,17 +41,24 @@ impl CheckedSearch {
 ///
 /// # Errors
 /// The mistakes, when there is at least one.
-pub fn check(search: Search, catalogue: &FieldCatalogue) -> Result<CheckedSearch, Vec<Mistake>> {
+pub fn check(search: Search, readable: &ReadableFields) -> Result<CheckedSearch, Vec<Mistake>> {
     let mut checker = Checker {
-        catalogue,
-        conditions: 0,
+        readable,
+        filters: 0,
         mistakes: Vec::new(),
     };
     if let Some(filter) = &search.filter {
         checker.expression(filter);
     }
-    for key in &search.sort {
+    for key in search.sort.iter().take(MAX_SORT_KEYS) {
         checker.known_field(&key.field);
+    }
+    if let Some(over) = search.sort.get(MAX_SORT_KEYS) {
+        checker.mistakes.push(Mistake::new(
+            over.span,
+            key::TOO_MANY_SORT_KEYS,
+            &[("limit", &MAX_SORT_KEYS.to_string())],
+        ));
     }
     let mut mistakes = checker.mistakes;
     mistakes.sort_by_key(|mistake| mistake.span.start);
@@ -63,8 +70,8 @@ pub fn check(search: Search, catalogue: &FieldCatalogue) -> Result<CheckedSearch
 }
 
 struct Checker<'a> {
-    catalogue: &'a FieldCatalogue,
-    conditions: usize,
+    readable: &'a ReadableFields,
+    filters: usize,
     mistakes: Vec<Mistake>,
 }
 
@@ -78,16 +85,20 @@ impl<'a> Checker<'a> {
             }
             Expr::Not { item, .. } => self.expression(item),
             Expr::Field { field, test, span } => {
-                self.count(*span);
+                if !self.count(*span, test_values(test)) {
+                    return;
+                }
                 if let Some(found) = self.known_field(field) {
                     self.test(found, test);
                 }
             }
             Expr::Under { span, .. } | Expr::Blocks { span, .. } | Expr::BlockedBy { span, .. } => {
-                self.count(*span);
+                self.count(*span, 1);
             }
             Expr::ConnectedTo { steps, span, .. } => {
-                self.count(*span);
+                if !self.count(*span, 1) {
+                    return;
+                }
                 if let Some(steps) = steps.as_ref().filter(|steps| steps.count > MAX_STEPS) {
                     self.mistakes.push(Mistake::new(
                         steps.span,
@@ -99,28 +110,32 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// Counts a condition; the first one over the limit is the mistake.
-    fn count(&mut self, span: Span) {
-        self.conditions += 1;
-        if self.conditions == MAX_CONDITIONS + 1 {
+    /// Counts a filter of `values` comparisons; the first one over the limit is the mistake.
+    /// Whether the filter is within the limit: nothing is looked at beyond it, so a hostile search
+    /// costs no more than the limit allows (no search for close words for the thousandth filter).
+    fn count(&mut self, span: Span, values: usize) -> bool {
+        let before = self.filters;
+        self.filters = self.filters.saturating_add(values);
+        if self.filters <= MAX_FILTERS {
+            return true;
+        }
+        if before <= MAX_FILTERS {
             self.mistakes.push(Mistake::new(
                 span,
-                key::TOO_MANY_CONDITIONS,
-                &[("limit", &MAX_CONDITIONS.to_string())],
+                key::TOO_MANY_FILTERS,
+                &[("limit", &MAX_FILTERS.to_string())],
             ));
         }
+        false
     }
 
     /// The field with this word, or the mistake of a field that is not known.
     fn known_field(&mut self, field: &FieldRef) -> Option<&'a Field> {
-        let found = self.catalogue.field(&field.word);
+        let found = self.readable.field(&field.word);
         if found.is_none() {
             let suggestions = closest(
                 &field.word,
-                self.catalogue
-                    .fields
-                    .iter()
-                    .map(|field| field.word.as_str()),
+                self.readable.fields.iter().map(|field| field.word.as_str()),
             );
             self.mistakes.push(unknown_field(field, suggestions));
         }
@@ -152,7 +167,15 @@ impl<'a> Checker<'a> {
     }
 }
 
-/// The mistake of a field that the catalogue does not have. Nothing in it tells a field that does
+/// How many comparisons a test makes: one for each value of `in (…)`, one for any other.
+fn test_values(test: &Test) -> usize {
+    match test {
+        Test::In { values, .. } => values.len().max(1),
+        _ => 1,
+    }
+}
+
+/// The mistake of a field that the readable fields do not have. Nothing in it tells a field that does
 /// not exist from one that is hidden.
 fn unknown_field(field: &FieldRef, suggestions: Vec<String>) -> Mistake {
     let args = [("field", field.word.as_str())];
@@ -172,15 +195,7 @@ fn operator_of(test: &Test) -> (Operator, Span) {
     match test {
         Test::Is { span, .. } => (Operator::Is, *span),
         Test::IsNot { span, .. } => (Operator::IsNot, *span),
-        Test::Compare { operator, span, .. } => (
-            match operator {
-                Comparison::Less => Operator::Less,
-                Comparison::Greater => Operator::Greater,
-                Comparison::LessOrEqual => Operator::LessOrEqual,
-                Comparison::GreaterOrEqual => Operator::GreaterOrEqual,
-            },
-            *span,
-        ),
+        Test::Compare { operator, span, .. } => (Operator::from(*operator), *span),
         Test::In { span, .. } => (Operator::In, *span),
         Test::Contains { span, .. } => (Operator::Contains, *span),
         Test::IsEmpty { span } => (Operator::IsEmpty, *span),

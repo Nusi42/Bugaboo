@@ -2,16 +2,21 @@
 //! shape of an Issue ID. The lexer reads with these, the printer writes with these, so a value
 //! that is printed is read back as the same value.
 
+use bb_core::project::ShortName;
+use bb_core::readable_id::ReadableId;
+
 use crate::syntax::{Date, Decimal};
 use crate::words::Keyword;
 
-/// The character between the short name of a project and the code of an issue.
-const ID_SEPARATOR: char = '-';
+/// The dash of a day (`2026-10-25`) and the sign of a negative number. The dash of an Issue ID is
+/// `bb_core::readable_id::KEY_SEPARATOR`.
+pub(crate) const DASH: char = DASH_BYTE as char;
 /// The character that marks the start and the end of a quoted text, and the one that escapes it.
 pub(crate) const QUOTE: char = '"';
 pub(crate) const ESCAPE: char = '\\';
 /// The most digits of a number. A decimal number of this size fits `i64` and a JavaScript number.
-const MAX_DIGITS: usize = 15;
+pub(crate) const MAX_DIGITS: usize = 15;
+const DASH_BYTE: u8 = b'-';
 /// The first and the last year of a day.
 const FIRST_YEAR: u16 = 1;
 const LAST_YEAR: u16 = 9999;
@@ -22,7 +27,7 @@ impl Decimal {
     #[must_use]
     pub fn parse(text: &str) -> Option<Self> {
         let (negative, digits) = text
-            .strip_prefix('-')
+            .strip_prefix(DASH)
             .map_or((false, text), |rest| (true, rest));
         let (whole, fraction) = digits.split_once('.').unwrap_or((digits, ""));
         let fraction = fraction.trim_end_matches('0');
@@ -64,8 +69,8 @@ impl Date {
     pub fn parse(text: &str) -> Option<Self> {
         let bytes = text.as_bytes();
         let shaped = bytes.len() == 10
-            && bytes[4] == b'-'
-            && bytes[7] == b'-'
+            && bytes[4] == DASH_BYTE
+            && bytes[7] == DASH_BYTE
             && bytes
                 .iter()
                 .enumerate()
@@ -115,28 +120,17 @@ pub(crate) fn is_plain_word(text: &str) -> bool {
         && Keyword::of(text).is_none()
 }
 
-/// Whether `text` has the shape of an Issue ID: the short name of a project, a dash and a code of
-/// capital letters and digits.
+/// The Issue ID that `text` spells, written the one way (in capitals), by the rule of `bb-core`
+/// that the server reads the same ID with; `None` when it is not an Issue ID.
 #[must_use]
-pub(crate) fn is_readable_id(text: &str) -> bool {
-    text.split_once(ID_SEPARATOR)
-        .is_some_and(|(short_name, code)| {
-            is_short_name(short_name)
-                && !code.is_empty()
-                && code
-                    .bytes()
-                    .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit())
-        })
+pub(crate) fn issue_id(text: &str) -> Option<String> {
+    text.parse::<ReadableId>().ok().map(|id| id.to_string())
 }
 
-/// Whether `text` has the shape of the short name of a project: capital letters and digits,
-/// starting with a letter.
+/// Whether `text` is the short name of a project, by the rule of `bb-core`.
 #[must_use]
 pub(crate) fn is_short_name(text: &str) -> bool {
-    text.bytes().next().is_some_and(|b| b.is_ascii_uppercase())
-        && text
-            .bytes()
-            .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit())
+    ShortName::new(text).is_ok()
 }
 
 /// Whether `text` is one plain word that can stand as a value: like [`is_plain_word`], but a word of
@@ -237,12 +231,23 @@ mod tests {
 
     #[test]
     fn the_shapes_of_ids_and_short_names() {
-        assert!(is_readable_id("WEB-142"));
-        assert!(is_readable_id("WEB-K7Q2X"));
-        assert!(!is_readable_id("web-142"));
-        assert!(!is_readable_id("WEB-"));
-        assert!(!is_readable_id("WEB"));
+        assert_eq!(issue_id("WEB-142").as_deref(), Some("WEB-142"));
+        assert_eq!(issue_id("WEB-K7Q2X").as_deref(), Some("WEB-K7Q2X"));
+        // The server reads lower case too, and the tree holds the one way of writing it.
+        assert_eq!(issue_id("web-142").as_deref(), Some("WEB-142"));
+        // The rules are those of bb-core: 2 to 10 letters, and no I, L, O, U or leading zero.
+        for not_an_id in [
+            "WEB-",
+            "WEB",
+            "W-1",
+            "ABCDEFGHIJK-1",
+            "WEB-0142",
+            "WEB-KILO1",
+        ] {
+            assert_eq!(issue_id(not_an_id), None, "{not_an_id}");
+        }
         assert!(is_short_name("WEB"));
         assert!(!is_short_name("1WEB"));
+        assert!(!is_short_name("W"));
     }
 }

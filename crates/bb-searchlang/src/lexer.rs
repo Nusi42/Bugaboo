@@ -2,7 +2,9 @@
 //! it covers. It never fails: a piece that means nothing becomes a token of its own kind, and the
 //! parser says what is wrong with it.
 
-use crate::literal::{ESCAPE, QUOTE, is_readable_id};
+use bb_core::readable_id::KEY_SEPARATOR;
+
+use crate::literal::{DASH, ESCAPE, QUOTE, issue_id};
 use crate::span::Span;
 use crate::syntax::{Date, Decimal};
 
@@ -59,7 +61,10 @@ impl TokenKind {
 
 /// Whether `character` can be part of a run of letters and digits.
 fn in_chunk(character: char) -> bool {
-    character.is_alphanumeric() || character == '_' || character == '-'
+    character.is_alphanumeric()
+        || character == '_'
+        || character == DASH
+        || character == KEY_SEPARATOR
 }
 
 /// Every token of `text`, in order.
@@ -153,11 +158,11 @@ fn chunk(text: &str) -> TokenKind {
         TokenKind::Number(number)
     } else if let Some(date) = Date::parse(text) {
         TokenKind::Date(date)
-    } else if is_readable_id(text) {
-        TokenKind::Id(text.to_owned())
+    } else if let Some(id) = issue_id(text) {
+        TokenKind::Id(id)
     } else if looks_like_a_date(text) {
         TokenKind::NotADate(text.to_owned())
-    } else if first.is_alphabetic() && !text.contains(['-', '.']) {
+    } else if first.is_alphabetic() && !text.contains([DASH, KEY_SEPARATOR, '.']) {
         TokenKind::Word(text.to_owned())
     } else {
         TokenKind::Unreadable(text.to_owned())
@@ -166,7 +171,7 @@ fn chunk(text: &str) -> TokenKind {
 
 /// Whether the text is made like a day (`dddd-dd-dd`) whatever the numbers are.
 fn looks_like_a_date(text: &str) -> bool {
-    let parts: Vec<&str> = text.split('-').collect();
+    let parts: Vec<&str> = text.split(DASH).collect();
     matches!(parts.as_slice(), [year, month, day]
         if [(year, 4), (month, 2), (day, 2)]
             .iter()
@@ -235,7 +240,11 @@ mod tests {
         );
         assert_eq!(kinds("7days"), [TokenKind::Unreadable("7days".into())]);
         assert_eq!(kinds("a=b")[1], TokenKind::Unreadable("=".into()));
-        assert_eq!(kinds("web-1"), [TokenKind::Unreadable("web-1".into())]);
+        // The rules of an Issue ID are those of bb-core: also lower case is read, in capitals; a
+        // short name of one letter, or a code with a leading zero, is not an ID.
+        assert_eq!(kinds("web-1"), [TokenKind::Id("WEB-1".into())]);
+        assert_eq!(kinds("w-1"), [TokenKind::Unreadable("w-1".into())]);
+        assert_eq!(kinds("WEB-01"), [TokenKind::Unreadable("WEB-01".into())]);
     }
 
     proptest::proptest! {

@@ -3765,13 +3765,13 @@ pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
 /// The message `search.label`.
 pub const SEARCH_LABEL: MessageKey = MessageKey::new("search.label");
 
-/// The message `search.mistake.expected-condition`.
-pub const SEARCH_MISTAKE_EXPECTED_CONDITION: MessageKey =
-    MessageKey::new("search.mistake.expected-condition");
-
 /// The message `search.mistake.expected-count`.
 pub const SEARCH_MISTAKE_EXPECTED_COUNT: MessageKey =
     MessageKey::new("search.mistake.expected-count");
+
+/// The message `search.mistake.expected-filter`.
+pub const SEARCH_MISTAKE_EXPECTED_FILTER: MessageKey =
+    MessageKey::new("search.mistake.expected-filter");
 
 /// The message `search.mistake.expected-issue-id`.
 pub const SEARCH_MISTAKE_EXPECTED_ISSUE_ID: MessageKey =
@@ -3795,6 +3795,9 @@ pub const SEARCH_MISTAKE_EXPECTED_TEXT: MessageKey =
 
 /// The message `search.mistake.too-deep`.
 pub const SEARCH_MISTAKE_TOO_DEEP: MessageKey = MessageKey::new("search.mistake.too-deep");
+
+/// The message `search.mistake.too-long`.
+pub const SEARCH_MISTAKE_TOO_LONG: MessageKey = MessageKey::new("search.mistake.too-long");
 
 /// The message `search.mistake.unclosed-quote`.
 pub const SEARCH_MISTAKE_UNCLOSED_QUOTE: MessageKey =
@@ -8847,11 +8850,20 @@ pub fn search_mistake_reserved_word(word: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `search.mistake.too-many-conditions`.
+/// The message `search.mistake.too-many-filters`.
 #[must_use]
-pub fn search_mistake_too_many_conditions(limit: impl std::fmt::Display) -> Message {
+pub fn search_mistake_too_many_filters(limit: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("search.mistake.too-many-conditions"),
+        MessageKey::new("search.mistake.too-many-filters"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `search.mistake.too-many-sort-keys`.
+#[must_use]
+pub fn search_mistake_too_many_sort_keys(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.too-many-sort-keys"),
         vec![("limit", Value::Text(limit.to_string()))],
     )
 }
@@ -13085,10 +13097,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Write “{by}” after “{blocked}”.",
     ),
     (
-        "search.mistake.expected-condition",
-        "A filter is missing here. Start it with the name of a field, like “priority”.",
-    ),
-    (
         "search.mistake.expected-connected-to",
         "Write “{to}” after “{connected}”.",
     ),
@@ -13107,6 +13115,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "search.mistake.expected-direction",
         "Write how to sort here: {directions}.",
+    ),
+    (
+        "search.mistake.expected-filter",
+        "A filter is missing here. Start it with the name of a field, like “priority”.",
     ),
     (
         "search.mistake.expected-in",
@@ -13173,8 +13185,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "There are too many brackets inside brackets.",
     ),
     (
-        "search.mistake.too-many-conditions",
+        "search.mistake.too-long",
+        "This search is too long. Please shorten it.",
+    ),
+    (
+        "search.mistake.too-many-filters",
         "A search can have at most {limit} filters.",
+    ),
+    (
+        "search.mistake.too-many-sort-keys",
+        "A search can be sorted by at most {limit} fields.",
     ),
     (
         "search.mistake.too-many-steps",

@@ -7,93 +7,15 @@
 //! what the person is told and what is offered cannot disagree.
 
 use crate::lexer::{Token, TokenKind, tokens};
-use crate::limits::MAX_DEPTH;
+use crate::limits::{MAX_DEPTH, MAX_TEXT_BYTES};
 use crate::literal::is_short_name;
+use crate::situation::{ParseError, Reason, Situation};
 use crate::span::Span;
 use crate::syntax::{
     Comparison, Direction, Expr, FieldRef, Operand, ReadableId, Search, ShortName, SortKey, Steps,
     Test, Text, TimeWord,
 };
 use crate::words::{Keyword, Part, direction_phrase, starts_phrase, time_phrase, unit_of};
-
-/// What the grammar wants at a place of the text.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Situation {
-    /// The start of the text: a condition, or `sort by`.
-    Start,
-    /// A condition: a field, `not`, a bracket or a helper.
-    Condition,
-    /// The operator of a field.
-    Operator { field: String },
-    /// A value for a field, after `is not`, a comparison or inside `in (…)`.
-    Value { field: String },
-    /// After `is`: `not`, `empty` or a value.
-    IsRest { field: String },
-    /// After `is not`: `empty` or a value.
-    IsNotRest { field: String },
-    /// After `in`: `last` or an opening bracket.
-    InRest,
-    /// After a value in `in (…)`: a comma or the closing bracket.
-    ListNext,
-    /// A whole number of at least one.
-    Count,
-    /// `days`, `weeks` or `months`.
-    Unit,
-    /// `step` or `steps`.
-    StepsWord,
-    /// The text of `contains`.
-    Text,
-    /// The name of the group of `member of`.
-    Group,
-    /// After `member`: `of`.
-    MemberOf,
-    /// The short name of a project.
-    ShortName,
-    /// An Issue ID.
-    ReadableId,
-    /// After `blocked`: `by`.
-    BlockedBy,
-    /// After `connected`: `to`.
-    ConnectedTo,
-    /// After a whole condition: `and`, `or`, `sort by`, a closing bracket, or the end.
-    Continue { closing: bool },
-    /// After `sort`: `by`.
-    SortBy,
-    /// A field to sort by.
-    SortField,
-    /// After the field of a sort key: a direction, a comma, or the end.
-    SortAfterField,
-    /// After a whole sort key: a comma or the end.
-    SortAfterKey,
-    /// A direction, of which the person has typed the first `typed` words.
-    Direction { typed: Vec<String> },
-}
-
-/// Why a text is not a search.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Reason {
-    /// The grammar wants something else here.
-    Expected(Situation),
-    /// A word of the language where a value is needed: it has to be quoted.
-    ReservedWord(String),
-    /// A quoted text that does not end.
-    UnclosedQuote,
-    /// Something that looks like a day but is not one.
-    NotADate(String),
-    /// A piece the language does not know.
-    Unreadable(String),
-    /// Brackets or `not` nested deeper than the limit.
-    TooDeep,
-}
-
-/// A failed parse: why, and where.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ParseError {
-    pub(crate) reason: Reason,
-    pub(crate) span: Span,
-    /// Whether the text ended before the error: nothing was found where something is needed.
-    pub(crate) at_end: bool,
-}
 
 /// What a parse of a text leaves: the search, or the error, and what the grammar wants next.
 pub(crate) struct Parsed {
@@ -105,6 +27,16 @@ pub(crate) struct Parsed {
 
 /// Parses the text of a search.
 pub(crate) fn parse(text: &str) -> Parsed {
+    if let Some(excess) = excess(text) {
+        return Parsed {
+            result: Err(ParseError {
+                reason: Reason::TooLong,
+                span: excess,
+                at_end: false,
+            }),
+            next: None,
+        };
+    }
     let mut parser = Parser {
         text,
         tokens: tokens(text),
@@ -123,6 +55,18 @@ pub(crate) fn parse(text: &str) -> Parsed {
         Ok(_) => Some(parser.hint),
     };
     Parsed { result, next }
+}
+
+/// The part of the text beyond the limit, if there is one. Before the limit is checked, nothing
+/// reads the text: the work of the lexer and of the parser is bounded by it.
+pub(crate) fn excess(text: &str) -> Option<Span> {
+    (text.len() > MAX_TEXT_BYTES).then(|| {
+        let start = (0..=MAX_TEXT_BYTES)
+            .rev()
+            .find(|&at| text.is_char_boundary(at))
+            .unwrap_or_default();
+        Span::new(start, text.len())
+    })
 }
 
 type Step<T> = Result<T, ParseError>;
@@ -276,7 +220,7 @@ impl Parser<'_> {
         }
         if let Some(open) = self.eat(&TokenKind::OpenBracket) {
             self.enter()?;
-            self.hint = Situation::Condition;
+            self.hint = Situation::Filter;
             let inner = self.or()?;
             self.hint = Situation::Continue { closing: true };
             let Some(close) = self.eat(&TokenKind::CloseBracket) else {
@@ -289,14 +233,14 @@ impl Parser<'_> {
             // The brackets are part of the expression's place in the text, not of the tree.
             return Ok(with_span(inner, open.to(close)));
         }
-        let condition = self.condition()?;
+        let filter = self.filter()?;
         self.hint = Situation::Continue {
             closing: self.depth > 0,
         };
-        Ok(condition)
+        Ok(filter)
     }
 
-    fn condition(&mut self) -> Step<Expr> {
+    fn filter(&mut self) -> Step<Expr> {
         let start = self
             .peek()
             .map_or(self.text.len(), |token| token.span.start);
@@ -330,11 +274,11 @@ impl Parser<'_> {
                     })
                 }
                 Some(Keyword::Connected) => self.connected_to(start),
-                Some(_) => self.fail(Situation::Condition),
-                None => self.field_condition(),
+                Some(_) => self.fail(Situation::Filter),
+                None => self.field_filter(),
             },
-            Some(TokenKind::Quoted { closed: true, .. }) => self.field_condition(),
-            _ => self.fail(Situation::Condition),
+            Some(TokenKind::Quoted { closed: true, .. }) => self.field_filter(),
+            _ => self.fail(Situation::Filter),
         }
     }
 
@@ -395,8 +339,8 @@ impl Parser<'_> {
         }
     }
 
-    fn field_condition(&mut self) -> Step<Expr> {
-        let field = self.field_ref(Situation::Condition)?;
+    fn field_filter(&mut self) -> Step<Expr> {
+        let field = self.field_ref(Situation::Filter)?;
         let test = self.test(&field.word)?;
         Ok(Expr::Field {
             span: field.span.to(test_span(&test)),

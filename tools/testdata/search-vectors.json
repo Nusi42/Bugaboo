@@ -1,5 +1,5 @@
 {
-  "catalogue": {
+  "readable_fields": {
     "fields": [
       {
         "word": "project",
@@ -2028,6 +2028,128 @@
       }
     },
     {
+      "text": "title contains \"Größe\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "title",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "contains",
+              "text": {
+                "text": "Größe",
+                "span": {
+                  "start": 15,
+                  "end": 24
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 24
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 24
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 24
+          }
+        },
+        "canonical": "title contains \"Größe\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "title is \"ünï 😀\" and description contains \"naïve café\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "title",
+                  "span": {
+                    "start": 0,
+                    "end": 5
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "ünï 😀",
+                    "span": {
+                      "start": 9,
+                      "end": 21
+                    }
+                  },
+                  "span": {
+                    "start": 6,
+                    "end": 21
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 21
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "description",
+                  "span": {
+                    "start": 26,
+                    "end": 37
+                  }
+                },
+                "test": {
+                  "type": "contains",
+                  "text": {
+                    "text": "naïve café",
+                    "span": {
+                      "start": 47,
+                      "end": 61
+                    }
+                  },
+                  "span": {
+                    "start": 38,
+                    "end": 61
+                  }
+                },
+                "span": {
+                  "start": 26,
+                  "end": 61
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 61
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 61
+          }
+        },
+        "canonical": "title is \"ünï 😀\" and description contains \"naïve café\"",
+        "mistakes": []
+      }
+    },
+    {
       "text": "prio is high",
       "answer": {
         "search": {
@@ -2310,7 +2432,7 @@
               "start": 18,
               "end": 18
             },
-            "key": "search.mistake.expected-condition",
+            "key": "search.mistake.expected-filter",
             "args": {},
             "suggestions": []
           }
@@ -2328,7 +2450,7 @@
               "start": 18,
               "end": 20
             },
-            "key": "search.mistake.expected-condition",
+            "key": "search.mistake.expected-filter",
             "args": {},
             "suggestions": []
           }
@@ -3158,6 +3280,252 @@
               "or": "or",
               "sort": "sort"
             },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "ünï is Open",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "ünï",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "Open",
+                "span": {
+                  "start": 9,
+                  "end": 13
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 13
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 13
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 13
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 0,
+              "end": 5
+            },
+            "key": "search.mistake.unknown-field",
+            "args": {
+              "field": "ünï"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "title contains \"Größe\" and ünï < 3",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "title",
+                  "span": {
+                    "start": 0,
+                    "end": 5
+                  }
+                },
+                "test": {
+                  "type": "contains",
+                  "text": {
+                    "text": "Größe",
+                    "span": {
+                      "start": 15,
+                      "end": 24
+                    }
+                  },
+                  "span": {
+                    "start": 6,
+                    "end": 24
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 24
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "ünï",
+                  "span": {
+                    "start": 29,
+                    "end": 34
+                  }
+                },
+                "test": {
+                  "type": "compare",
+                  "operator": "less",
+                  "value": {
+                    "type": "number",
+                    "number": {
+                      "value": 3,
+                      "scale": 0
+                    },
+                    "span": {
+                      "start": 37,
+                      "end": 38
+                    }
+                  },
+                  "span": {
+                    "start": 35,
+                    "end": 38
+                  }
+                },
+                "span": {
+                  "start": 29,
+                  "end": 38
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 38
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 38
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 29,
+              "end": 34
+            },
+            "key": "search.mistake.unknown-field",
+            "args": {
+              "field": "ünï"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "title is 😀",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 9,
+              "end": 13
+            },
+            "key": "search.mistake.unreadable",
+            "args": {
+              "text": "😀"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Öpen",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "Öpen",
+                "span": {
+                  "start": 10,
+                  "end": 15
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 15
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 15
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 15
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 10,
+              "end": 15
+            },
+            "key": "search.mistake.unknown-choice-did-you-mean",
+            "args": {
+              "field": "status",
+              "suggestion": "Open",
+              "value": "Öpen"
+            },
+            "suggestions": ["Open"]
+          }
+        ]
+      }
+    },
+    {
+      "text": "title contains \"Größe and",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 15,
+              "end": 27
+            },
+            "key": "search.mistake.unclosed-quote",
+            "args": {},
             "suggestions": []
           }
         ]
@@ -4285,6 +4653,179 @@
           "end": 8
         },
         "items": []
+      }
+    },
+    {
+      "text": "title contains \"Grö",
+      "cursor": 20,
+      "suggestions": {
+        "replace": {
+          "start": 15,
+          "end": 20
+        },
+        "items": []
+      }
+    },
+    {
+      "text": "ünï",
+      "cursor": 5,
+      "suggestions": {
+        "replace": {
+          "start": 0,
+          "end": 5
+        },
+        "items": []
+      }
+    },
+    {
+      "text": "title contains \"Größe\" and assi",
+      "cursor": 33,
+      "suggestions": {
+        "replace": {
+          "start": 29,
+          "end": 33
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "description contains \"😀\" and sta",
+      "cursor": 35,
+      "suggestions": {
+        "replace": {
+          "start": 32,
+          "end": 35
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "status",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "statusGroup",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "title is \"Größe\" and ",
+      "cursor": 23,
+      "suggestions": {
+        "replace": {
+          "start": 23,
+          "end": 23
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "project",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "title",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "description",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "status",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "statusGroup",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "priority",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "reportedBy",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "parent",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "created",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "changed",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "due",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "estimate",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "storyPoints",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "not",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "(",
+            "kind": "sign"
+          },
+          {
+            "type": "word",
+            "text": "under",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "blocks",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "blocked by",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "connected to",
+            "kind": "helper"
+          }
+        ]
       }
     }
   ]

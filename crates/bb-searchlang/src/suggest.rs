@@ -1,15 +1,16 @@
 //! Suggestions: given the text and the place of the cursor, what may come next. The parser says
 //! what the grammar wants at that place (its `Situation`); this module turns that into words: the
-//! fields of the catalogue, the operators a field allows, the choices it offers and the words of
+//! readable fields, the operators a field allows, the choices it offers and the words of
 //! the language. What only the server knows (people, groups, projects, issues) comes back as a
 //! request of its kind, which the search bar sends to the server (M5 WP-07).
 
 use serde::Serialize;
 
-use crate::catalogue::{Field, FieldCatalogue, FieldKind};
+use crate::fields::{Field, FieldKind, ReadableFields};
 use crate::lexer::{TokenKind, tokens};
 use crate::literal::{value_or_quoted, word_or_quoted};
-use crate::parser::{Situation, parse};
+use crate::parser::{excess, parse};
+use crate::situation::Situation;
 use crate::span::Span;
 use crate::syntax::{Direction, TimeWord, Unit};
 use crate::words::{Keyword, direction_phrase, starts_phrase, unit_word};
@@ -82,8 +83,14 @@ pub enum AskKind {
 
 /// The suggestions for `text` with the cursor at byte `cursor`.
 #[must_use]
-pub fn suggest(text: &str, cursor: usize, catalogue: &FieldCatalogue) -> Suggestions {
+pub fn suggest(text: &str, cursor: usize, readable: &ReadableFields) -> Suggestions {
     let mut cursor = cursor.min(text.len());
+    if excess(text).is_some() {
+        return Suggestions {
+            replace: Span::new(cursor, cursor),
+            items: Vec::new(),
+        };
+    }
     while !text.is_char_boundary(cursor) {
         cursor -= 1;
     }
@@ -99,7 +106,7 @@ pub fn suggest(text: &str, cursor: usize, catalogue: &FieldCatalogue) -> Suggest
             items: items(
                 parse(&text[..quote.span.start]).next,
                 typed,
-                catalogue,
+                readable,
                 Quoted::Yes,
             ),
         };
@@ -115,7 +122,7 @@ pub fn suggest(text: &str, cursor: usize, catalogue: &FieldCatalogue) -> Suggest
         items: items(
             parse(&text[..start]).next,
             &text[start..cursor],
-            catalogue,
+            readable,
             Quoted::No,
         ),
     }
@@ -141,7 +148,7 @@ fn word(text: String, kind: WordKind) -> Suggestion {
 fn items(
     situation: Option<Situation>,
     typed: &str,
-    catalogue: &FieldCatalogue,
+    readable: &ReadableFields,
     quoted: Quoted,
 ) -> Vec<Suggestion> {
     let Some(situation) = situation else {
@@ -150,7 +157,7 @@ fn items(
     let keyword = |keyword: Keyword, kind| word(keyword.text().to_owned(), kind);
     let sign = |text: &str| word(text.to_owned(), WordKind::Sign);
     let fields = || {
-        catalogue
+        readable
             .fields
             .iter()
             .map(|field| word(word_or_quoted(&field.word), WordKind::Field))
@@ -181,11 +188,11 @@ fn items(
             .chain(helpers())
             .chain([sort()])
             .collect(),
-        Situation::Condition => fields()
+        Situation::Filter => fields()
             .chain([keyword(Keyword::Not, WordKind::Keyword), sign("(")])
             .chain(helpers())
             .collect(),
-        Situation::Operator { field } => catalogue.field(&field).map_or_else(Vec::new, |field| {
+        Situation::Operator { field } => readable.field(&field).map_or_else(Vec::new, |field| {
             field
                 .operators
                 .iter()
@@ -197,13 +204,13 @@ fn items(
             keyword(Keyword::Empty, WordKind::Operator),
         ]
         .into_iter()
-        .chain(values(catalogue.field(&field), typed))
+        .chain(values(readable.field(&field), typed))
         .collect(),
         Situation::IsNotRest { field } => [keyword(Keyword::Empty, WordKind::Operator)]
             .into_iter()
-            .chain(values(catalogue.field(&field), typed))
+            .chain(values(readable.field(&field), typed))
             .collect(),
-        Situation::Value { field } => values(catalogue.field(&field), typed),
+        Situation::Value { field } => values(readable.field(&field), typed),
         Situation::InRest => vec![keyword(Keyword::Last, WordKind::Operator), sign("(")],
         Situation::ListNext => vec![sign(","), sign(")")],
         Situation::Unit => [Unit::Day, Unit::Week, Unit::Month]

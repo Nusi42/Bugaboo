@@ -37,9 +37,7 @@ export function offsetsOf(text: string): Offsets {
   };
 }
 
-/** The keys under which a place is stored in the answers of the module. */
-const PLACE_KEYS: ReadonlySet<string> = new Set(["span", "replace"]);
-
+/** Whether the value is a place: the `start` and the `end` of a range of the text. */
 function isPlace(value: unknown): value is { start: number; end: number } {
   return (
     typeof value === "object" &&
@@ -51,7 +49,10 @@ function isPlace(value: unknown): value is { start: number; end: number } {
   );
 }
 
-/** The answer of the module with every place (`span`, `replace`) in units of the string. */
+/**
+ * The answer of the module with every place in units of the string. A place is found by its shape
+ * (the members of a `Span`), so no list of the members that hold one can fall behind the types.
+ */
 export function inStringUnits(value: unknown, offsets: Offsets): unknown {
   if (Array.isArray(value)) {
     return value.map((item) => inStringUnits(item, offsets));
@@ -61,10 +62,9 @@ export function inStringUnits(value: unknown, offsets: Offsets): unknown {
   }
   const converted: Record<string, unknown> = {};
   for (const [key, member] of Object.entries(value)) {
-    converted[key] =
-      PLACE_KEYS.has(key) && isPlace(member)
-        ? { start: offsets.inString(member.start), end: offsets.inString(member.end) }
-        : inStringUnits(member, offsets);
+    converted[key] = isPlace(member)
+      ? { start: offsets.inString(member.start), end: offsets.inString(member.end) }
+      : inStringUnits(member, offsets);
   }
   return converted;
 }

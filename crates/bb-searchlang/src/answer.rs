@@ -4,8 +4,8 @@
 
 use serde::Serialize;
 
-use crate::catalogue::FieldCatalogue;
 use crate::checker::check;
+use crate::fields::ReadableFields;
 use crate::mistake::Mistake;
 use crate::printer::print;
 use crate::syntax::Search;
@@ -23,7 +23,7 @@ pub struct Answer {
 
 /// Parses `text`, checks it when the fields are given, and prints it.
 #[must_use]
-pub fn read(text: &str, catalogue: Option<&FieldCatalogue>) -> Answer {
+pub fn read(text: &str, readable: Option<&ReadableFields>) -> Answer {
     let search = match crate::parse(text) {
         Ok(search) => search,
         Err(mistake) => {
@@ -34,7 +34,7 @@ pub fn read(text: &str, catalogue: Option<&FieldCatalogue>) -> Answer {
             };
         }
     };
-    let mistakes = catalogue
+    let mistakes = readable
         .and_then(|fields| check(search.clone(), fields).err())
         .unwrap_or_default();
     Answer {
@@ -47,7 +47,7 @@ pub fn read(text: &str, catalogue: Option<&FieldCatalogue>) -> Answer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vectors::sample_catalogue;
+    use crate::vectors::sample_fields;
 
     #[test]
     fn a_text_comes_to_its_tree_and_canonical_text_or_to_mistakes() {
@@ -55,12 +55,12 @@ mod tests {
         assert_eq!(good.canonical.as_deref(), Some("STATUS is Open"));
         assert!(good.mistakes.is_empty());
         let unchecked = read("nothing is Open", None);
-        assert!(unchecked.mistakes.is_empty(), "no catalogue, no check");
-        let catalogue = sample_catalogue();
-        let wrong = read("nothing is Open", Some(&catalogue));
+        assert!(unchecked.mistakes.is_empty(), "no readable, no check");
+        let readable = sample_fields();
+        let wrong = read("nothing is Open", Some(&readable));
         assert!(wrong.search.is_some() && wrong.canonical.is_none());
         assert_eq!(wrong.mistakes.len(), 1);
-        let broken = read("status is", Some(&catalogue));
+        let broken = read("status is", Some(&readable));
         assert!(broken.search.is_none() && broken.mistakes.len() == 1);
     }
 }

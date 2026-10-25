@@ -9,9 +9,16 @@ publish.workspace = true
 [lints]
 workspace = true
 
+[features]
+# Reading a tree and the readable fields from JSON. Only the WebAssembly module of the browser turns
+# it on: the server never reads a tree from outside. The tests of this crate switch it on too.
+browser = []
+
 [dependencies]
+bb-core = { path = "../bb-core" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
+bb-searchlang = { path = ".", features = ["browser"] }
 proptest = { workspace = true }

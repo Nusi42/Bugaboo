@@ -650,6 +650,8 @@ dependencies = [
 name = "bb-searchlang"
 version = "0.0.0"
 dependencies = [
+ "bb-core",
+ "bb-searchlang",
  "proptest",
  "serde",
  "serde_json",

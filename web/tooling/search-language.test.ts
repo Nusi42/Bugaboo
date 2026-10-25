@@ -3,12 +3,15 @@ import { fileURLToPath } from "node:url";
 
 import {
   type Answer,
+  inStringUnits,
+  type Mistake,
   moduleLocation,
   offsetsOf,
-  startSearchLanguage,
   type Search,
   type VectorFile,
 } from "@bugaboo/wasm-search";
+import { textByKey } from "@bugaboo/messages";
+import { startSearchLanguage } from "@bugaboo/wasm-search/testing";
 import { describe, expect, it } from "vitest";
 
 const vectorsLocation = new URL("../../tools/testdata/search-vectors.json", import.meta.url);
@@ -17,7 +20,7 @@ function isVectorFile(value: unknown): value is VectorFile {
   return (
     typeof value === "object" &&
     value !== null &&
-    "catalogue" in value &&
+    "readable_fields" in value &&
     "cases" in value &&
     Array.isArray(value.cases) &&
     "places" in value &&
@@ -57,7 +60,11 @@ describe("qry_03 the browser answers every text as the server does", () => {
   it.each(vectors.cases.map((vector) => [vector.text, vector] as const))(
     "the text %j comes to the same tree, canonical text and mistakes",
     (_text, vector) => {
-      expect(language.check(vector.text, vectors.catalogue)).toEqual(vector.answer);
+      // The vectors hold the places in bytes, as the Rust code counts them; the browser counts the
+      // units of the string, so the expected places are turned with the offsets of the text.
+      expect(language.check(vector.text, vectors.readable_fields)).toEqual(
+        inStringUnits(vector.answer, offsetsOf(vector.text)),
+      );
     },
   );
 
@@ -71,11 +78,67 @@ describe("qry_03 the browser answers every text as the server does", () => {
   it.each(vectors.places.map((vector) => [`${vector.text}|${vector.cursor}`, vector] as const))(
     "the suggestions at %j are those of the server",
     (_place, vector) => {
-      expect(language.suggest(vector.text, vector.cursor, vectors.catalogue)).toEqual(
-        vector.suggestions,
-      );
+      const offsets = offsetsOf(vector.text);
+      expect(
+        language.suggest(vector.text, offsets.inString(vector.cursor), vectors.readable_fields),
+      ).toEqual(inStringUnits(vector.suggestions, offsets));
     },
   );
+});
+
+/** Whether the places in the text are not the same in bytes and in units of the string. */
+const wide = (text: string): boolean => new TextEncoder().encode(text).length !== text.length;
+
+describe("qry_03 the vectors reach past the first byte", () => {
+  it("has texts whose places are not the same in bytes and in units of the string", () => {
+    const cases = vectors.cases.filter((vector) => wide(vector.text));
+    const places = vectors.places.filter((vector) => wide(vector.text));
+    expect(cases.some((vector) => vector.answer.mistakes.length > 0)).toBe(true);
+    expect(cases.some((vector) => vector.answer.canonical !== null)).toBe(true);
+    expect(places.length).toBeGreaterThan(2);
+    // A place after the wide letters: the same word, another number in bytes than in the string.
+    expect(
+      vectors.cases.some((vector) => {
+        const offsets = offsetsOf(vector.text);
+        return vector.answer.mistakes.some(
+          (mistake) => offsets.inString(mistake.span.start) !== mistake.span.start,
+        );
+      }),
+    ).toBe(true);
+  });
+});
+
+/** The one mistake of a text, which the checker finds in the fields. */
+function mistakeOf(text: string, fields: typeof vectors.readable_fields): Mistake {
+  const [mistake] = language.check(text, fields).mistakes;
+  if (mistake === undefined) {
+    throw new Error("The text has no mistake.");
+  }
+  return mistake;
+}
+
+describe("qry_05 a hidden field is told like an unknown one", () => {
+  // The person may not read `reportedBy`, so the fields they get do not hold it.
+  const readable = {
+    fields: vectors.readable_fields.fields.filter((field) => field.word !== "reportedBy"),
+  };
+
+  it("says the same words, with the word of the person in them", () => {
+    const hidden = mistakeOf("reportedBy is me", readable);
+    const invented = mistakeOf("reportedXx is me", readable);
+    expect(hidden.key).toBe(invented.key);
+    expect(hidden.args).toEqual({ ...invented.args, field: "reportedBy" });
+    expect(hidden.suggestions).toEqual(invented.suggestions);
+    // Rendered through the catalog, as the person reads it: the same text but for the word.
+    const said = textByKey(hidden.key, hidden.args);
+    expect(said).toContain("reportedBy");
+    expect(said).toBe(textByKey(invented.key, { ...invented.args, field: "reportedBy" }));
+  });
+
+  it("does not offer the field at the cursor", () => {
+    const offered = language.suggest("reported", "reported".length, readable);
+    expect(JSON.stringify(offered)).not.toContain("reportedBy");
+  });
 });
 
 describe("the module gives the browser what the server has", () => {
@@ -83,7 +146,7 @@ describe("the module gives the browser what the server has", () => {
     const answer = language.parse("nothing is Open");
     expect(answer.mistakes).toEqual([]);
     expect(answer.canonical).toBe("nothing is Open");
-    expect(language.check("nothing is Open", vectors.catalogue).mistakes).toHaveLength(1);
+    expect(language.check("nothing is Open", vectors.readable_fields).mistakes).toHaveLength(1);
   });
 
   it("gives an own field its word by the rule of the language", () => {
@@ -114,21 +177,21 @@ describe("the places of the module are the places of the string", () => {
 
   it("marks the same word in a text with letters of other languages", () => {
     const text = 'title contains "Größe"';
-    const answer = language.check(text, vectors.catalogue);
+    const answer = language.check(text, vectors.readable_fields);
     const filter = answer.search?.filter;
     expect(filter?.type).toBe("field");
     expect(text.slice(filter?.span.start, filter?.span.end)).toBe(text);
     const found = language.suggest(
       'title contains "Gr',
       'title contains "Gr'.length,
-      vectors.catalogue,
+      vectors.readable_fields,
     );
     expect(found.replace).toEqual({ start: 15, end: 18 });
   });
 
   it("gives a mistake the place of its word in the string", () => {
     const text = "ünï is Open";
-    const answer = language.check(text, vectors.catalogue);
+    const answer = language.check(text, vectors.readable_fields);
     expect(answer.mistakes).toHaveLength(1);
     const place = answer.mistakes[0]?.span;
     expect(text.slice(place?.start, place?.end)).toBe("ünï");

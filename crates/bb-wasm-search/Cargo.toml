@@ -13,7 +13,7 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bb-searchlang = { path = "../bb-searchlang" }
+bb-searchlang = { path = "../bb-searchlang", features = ["browser"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 wasm-bindgen = { workspace = true }
