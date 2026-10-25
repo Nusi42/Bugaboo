@@ -128,16 +128,13 @@ impl Operator {
 }
 
 impl Operator {
-    /// The comparison this operator is, if it is one.
+    /// The comparison this operator is, if it is one: found among the comparisons by the one
+    /// conversion `From<Comparison>`, so no second mapping can disagree with it.
     #[must_use]
-    pub const fn comparison(self) -> Option<Comparison> {
-        match self {
-            Self::Less => Some(Comparison::Less),
-            Self::Greater => Some(Comparison::Greater),
-            Self::LessOrEqual => Some(Comparison::LessOrEqual),
-            Self::GreaterOrEqual => Some(Comparison::GreaterOrEqual),
-            _ => None,
-        }
+    pub fn comparison(self) -> Option<Comparison> {
+        Comparison::ALL
+            .into_iter()
+            .find(|comparison| Self::from(*comparison) == self)
     }
 }
 
@@ -280,6 +277,19 @@ mod tests {
         assert_eq!(Operator::IsNotEmpty.text(), "is not empty");
         assert_eq!(Operator::MemberOf.text(), "member of");
         assert_eq!(Operator::LessOrEqual.text(), "<=");
+    }
+
+    #[test]
+    fn a_comparison_and_its_operator_are_each_other() {
+        for comparison in Comparison::ALL {
+            assert_eq!(Operator::from(comparison).comparison(), Some(comparison));
+            assert_eq!(Operator::from(comparison).text(), comparison.sign());
+        }
+        let others = Operator::ALL
+            .iter()
+            .filter(|operator| operator.comparison().is_none())
+            .count();
+        assert_eq!(others, Operator::ALL.len() - Comparison::ALL.len());
     }
 
     #[test]
