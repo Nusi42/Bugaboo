@@ -1,4 +1,4 @@
-import { dataOf, pageSizeMax } from "@bugaboo/api-client";
+import { pageSizeMax } from "@bugaboo/api-client";
 
 import { type ApiSession } from "../../app/e2e/support/api.ts";
 import { listPage, pageReads } from "../../app/e2e/support/perf-reads.ts";
@@ -43,17 +43,20 @@ async function firstPage(context: Context, project: string): Promise<number> {
   return (await timed(() => listPage(context.session, project))).ms;
 }
 
-/** The number on the menu and the first page of the notifications. */
-async function notifications(context: Context): Promise<number> {
-  const { session } = context;
-  const began = performance.now();
-  await session.client.GET("/api/v1/notifications/unread");
-  dataOf(
-    await session.client.GET("/api/v1/notifications", {
-      params: { query: { limit: NOTIFICATIONS_PAGE } },
-    }),
-  );
-  return performance.now() - began;
+/** The number on the menu. */
+async function unreadCount(context: Context): Promise<number> {
+  return (await timed(() => context.session.client.GET("/api/v1/notifications/unread"))).ms;
+}
+
+/** The first page of the notifications. */
+async function notificationsPage(context: Context): Promise<number> {
+  return (
+    await timed(() =>
+      context.session.client.GET("/api/v1/notifications", {
+        params: { query: { limit: NOTIFICATIONS_PAGE } },
+      }),
+    )
+  ).ms;
 }
 
 export const scenarios: readonly Scenario[] = [
@@ -76,10 +79,16 @@ export const scenarios: readonly Scenario[] = [
     once: (context) => firstPage(context, context.small),
   },
   {
-    name: "notifications",
+    name: "notifications-count",
     budget: "page",
     runs: RUNS,
-    once: (context) => notifications(context),
+    once: (context) => unreadCount(context),
+  },
+  {
+    name: "notifications-page",
+    budget: "page",
+    runs: RUNS,
+    once: (context) => notificationsPage(context),
   },
   {
     name: "project-list",

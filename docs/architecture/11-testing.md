@@ -111,7 +111,29 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 
 ### Large dataset
 
-`cargo xtask dataset large --issues 1000000` builds the same shape at the PERF scale (500 people, 500 projects) for benchmarks.
+`cargo xtask dataset large [--issues N] [--database sqlite|postgres] [--check]` makes the PERF-01 scale: 500 people, 500 projects (the sample's four with their sub-projects, the rest in families of up to five), 40 groups and a million issues, on both databases unless one is named. The kinds of things are the sample's; the scale and the shares are written once, in `large` of `tools/dev/sample.json` (`LargePlan` in `bb-dev-words`). The datasets are kept in `.work/dataset/<database>` (an older one of the database is thrown away first), and the data of PostgreSQL is in the database `bblarge` of the throwaway cluster.
+
+- **How it is made.** `bb-sample --large` makes the first start, the fifty people of the sample, the sample's organization and what the issues stand on (issue types, own fields, labels, the workflow *Operations*) through the use cases, as the sample does, and adds the own field *Cost center*, hidden from Contributors. The rest is written in big transactions without the use cases (`large*.rs` of `bb-sample`): about 450 more people in the mix of roles of the sample (they cannot sign in: their password is thrown away), the rest of the groups, projects and role rows, and every issue with its comments (English and German), followers, tags, labels, sub-issue, relation, own-field values and file record (no file bytes; a download is not found). Every record that the use cases would have written an event for has its event, built by the same functions as the use cases' (`bb_app::dataset_events`, in the order they happened), and the counters of the projects are set at the end. The history of every issue and the notifications are then read from the events by the code a server runs; notifications are made for the newest 2% of the events (the older ones count as read long ago). The only thing the store adds for this is the feature `dataset` of `bb-store` (`Transaction::set_issue_counter`), which only `bb-sample` switches on.
+- **Same every time.** Every issue is drawn from the seed and its own number, so a run gives the same data whatever the size of the transactions. The IDs of the fifty people of the use cases are random, so they are left out of the fingerprint.
+- **The check.** The program does not make the dump of the sample (it names the sample's four projects). It reads the database back and holds it against the rules of the sample that apply to bulk data: every project that counts its issue IDs has a counter equal to its issues, the version of an issue is one more than the events that count a version up, every event about an issue has its row in the history of the issue, a Guest is told only about issues they reported, and neither Guests nor Contributors are told the value of *Cost center*. It prints a fingerprint of the issues. `cargo xtask dataset large --check` (a step of `cargo xtask ci`) makes 3,000 issues twice on each database with one start moment, and fails when a rule does not hold or the fingerprints differ. Enforced by: TEST-SAMPLE-DATA (the same rules as the sample's, for bulk data).
+- **Time and disk** (this computer, release build, 1,000,000 issues): SQLite 18.7 minutes, 7.1 GB (the file and the keys); PostgreSQL 37.4 minutes, 9.0 GB (the database and the data folder). The check of the made dataset (20,000 issues held against their events) is part of those times.
+- **The benchmarks.** `cargo xtask bench [--database …]` starts a release server on the dataset of each database (a Node program, `web/tooling/bench/main.ts`, like `cargo xtask load`), signs in as the first Administrator, runs every scenario of `web/tooling/bench/scenarios.ts` 20 times as a warm-up and 200 times for the numbers, and writes p50, p95 and p99 of each to `.work/bench/<date>.json`. A scenario is registered once, in `scenarios.ts`, with the name of its budget; the budgets are written once, in `tools/checks/perf-bench.toml`, and `cargo xtask gen bench-budgets` writes them as a TypeScript constant that the benchmarks and the speed tests (`perf.ts`) import. A run over a budget fails with the scenario, the number and the budget. Enforced by: PERF-BENCH (at commit time the file and the scenario list; every night the numbers).
+- **The nightly run.** `cargo xtask nightly` runs `cargo xtask ci`, then `dataset large` for a database whose dataset is missing or older than the newest migration, then `bench`, and writes one log to `.work/nightly/`. It waits while another full run is on the computer: `ci`, `bench` and `nightly` take a lock first, a local port (`fullRunLock` in `tools/dev/ports.json`) that the system gives to one program at a time and takes back when it ends. `cargo xtask nightly --install` registers the daily task (03:00, in the folder it is run in) with the scheduler of Windows; the lead runs it in `bugaboo.win1` after the merge.
+
+### Speed on 1 M issues
+
+The first numbers, on this computer, in a release build, at the 95th percentile (p50 and p99 in the file of the run), against the budget of 100 ms (PERF-01):
+
+| Scenario | SQLite p95 | PostgreSQL p95 |
+|----------|-----------:|---------------:|
+| *issue-page*: the eight reads of an issue page at once | 10.7 ms | 21.0 ms |
+| *list-big-project*: the first page of the list of the biggest project | 5.3 ms | 9.6 ms |
+| *list-small-project*: the same for a project of the tail | 5.2 ms | 8.9 ms |
+| *notifications-count*: the number on the menu | 42.6 ms | **100.5 ms** |
+| *notifications-page*: the first page of 50 | 37.7 ms | 68.8 ms |
+| *project-list*: the list of projects (M3-F114) | 7.6 ms | 8.9 ms |
+
+The number on the menu is the one read that is over its budget on PostgreSQL (and the one that costs most on SQLite); it is reported to the lead and not changed here. The budget of the complex search (300 ms) has no scenario yet: the searches come with M5 WP-04 to WP-06, which add theirs to `scenarios.ts`.
 
 ## Ten people at the same time
 
