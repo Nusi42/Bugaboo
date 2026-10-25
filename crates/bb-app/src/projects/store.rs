@@ -43,7 +43,8 @@ pub trait ProjectStore: PolicyStore + 'static {
         /// only needs permissions).
         fn policy_and_tree_of(person: UserId) -> (Policy, Vec<Project>);
         /// The same, with the levels their roles set: what a decision over many projects at once
-        /// (the rights in the projects of a page, the tags to offer) is made from, in memory.
+        /// (the rights in the projects of a page, the tags to offer, the groups of labels in use)
+        /// is made from, in memory.
         fn leveled_policy_and_tree_of(person: UserId) -> (Policy, Vec<Project>);
         /// The project that has this short name, or had it once.
         fn project_by_address(name: &ShortName) -> Option<Found>;
