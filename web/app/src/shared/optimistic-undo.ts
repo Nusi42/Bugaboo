@@ -6,6 +6,8 @@ export interface UndoOffer {
   readonly id: number;
   /** What happened, in a sentence: "The invitation was taken back." */
   readonly message: string;
+  /** The name of a file in the sentence: it is drawn whole, never broken at a hyphen. */
+  readonly name?: string;
   /** Puts things back as they were. A notice that only tells something has none. */
   readonly undo?: () => void;
   /** Where the focus goes after `undo`: the thing that is back. Without it, the content heading. */
@@ -17,6 +19,7 @@ export interface UndoOffer {
 /** What a caller gives: the sentence and the way back. */
 export interface UndoRequest {
   readonly message: string;
+  readonly name?: string;
   readonly undo?: () => void;
   readonly restoredFocus?: () => HTMLElement | null;
   readonly inline?: boolean;

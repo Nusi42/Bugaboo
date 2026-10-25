@@ -3979,6 +3979,16 @@ body {
   pointer-events: none;
 }
 
+[data-part="app-layout"][data-variant~="side"] [data-part="undo-host"] {
+  right: calc(var(--size-details) + var(--space-5) * 2);
+  left: calc(var(--size-sidebar) + var(--space-4));
+}
+
+[data-part="app-layout"][data-variant~="side-narrow"] [data-part="undo-host"] {
+  right: calc(var(--size-details) + var(--space-5) * 2);
+  left: calc(var(--size-sidebar-narrow) + var(--space-4));
+}
+
 [data-part="undo-host.offer"] {
   display: flex;
   flex-wrap: wrap;

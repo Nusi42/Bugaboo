@@ -6,6 +6,7 @@ import { withChange, type FlatChange } from "../../shared/change-fixtures.ts";
 import { testWording } from "../../shared/wording-testing.ts";
 import {
   failedRenewalProjectOf,
+  fileNamesOf,
   groupsOf,
   rowsOf,
   sentencesOf,
@@ -183,5 +184,21 @@ describe("ntf_02 a renewal of issue IDs that gave up names the project", () => {
     expect(say(entry({ kind: "followed-activity", file_event: "added" }))).toEqual([
       t("history.file-added-unnamed", { who: "Ben" }),
     ]);
+  });
+});
+
+describe("ntf_02 the files a notification is about", () => {
+  it("names every file a grouped notification is about, so each sentence keeps its own name whole", () => {
+    const row = rowOfItems(
+      entry({ id: "n1", kind: "followed-activity", file_event: "added", file_name: "jam.txt" }),
+      entry({
+        id: "n1",
+        kind: "followed-activity",
+        file_event: "added",
+        file_name: "quarter-report.pdf",
+      }),
+      entry({ id: "n1", kind: "followed-activity", file_event: "added" }),
+    );
+    expect(fileNamesOf(row)).toEqual(["jam.txt", "quarter-report.pdf"]);
   });
 });

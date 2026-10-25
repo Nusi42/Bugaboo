@@ -9,6 +9,7 @@ const words = {
   key: "bb_ab12",
   missing: "No key here",
   added: "Added quarter-report.pdf today",
+  twice: "quarter-report.pdf is empty. quarter-report.pdf was not added.",
   name: "quarter-report.pdf",
 } as const;
 
@@ -34,5 +35,12 @@ describe("ux_4_4 a sentence with a value in it is one element", () => {
     );
     expect(markup).toContain(">quarter-report.pdf</span>");
     expect(markup.startsWith("<span>Added ")).toBe(true);
+  });
+
+  it("keeps the name whole every time the sentence says it", () => {
+    const markup = renderToStaticMarkup(
+      <SentenceWithName sentence={words.twice} name={words.name} />,
+    );
+    expect(markup.split(">quarter-report.pdf</span>")).toHaveLength(3);
   });
 });

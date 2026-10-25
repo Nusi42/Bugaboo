@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, partOf, part, SentenceWithName } from "@bugaboo/ui";
 
 import { useFileLimit } from "./files.ts";
 import { formatSize } from "./size.ts";
@@ -13,7 +13,12 @@ function Sending({ transfer }: { readonly transfer: Transfer }) {
       <div {...partOf(part.filesInfo)}>
         <FileName name={transfer.name} />
         {transfer.status === "waiting" ? (
-          <span {...partOf(part.filesMeta)}>{t("files.waiting", { name: transfer.name })}</span>
+          <span {...partOf(part.filesMeta)}>
+            <SentenceWithName
+              sentence={t("files.waiting", { name: transfer.name })}
+              name={transfer.name}
+            />
+          </span>
         ) : (
           <div {...partOf(part.row)}>
             <progress
@@ -46,10 +51,10 @@ function NotAdded({ transfer }: { readonly transfer: Transfer }) {
     <Alert tone={alertTone.danger}>
       <div {...partOf(part.filesRefusal)}>
         <span>
-          {t("files.not-added", {
-            name: transfer.name,
-            reason,
-          })}
+          <SentenceWithName
+            sentence={t("files.not-added", { name: transfer.name, reason })}
+            name={transfer.name}
+          />
         </span>
         <div {...partOf(part.filesActions)}>
           {transfer.canRetry ? (

@@ -41,9 +41,25 @@ export function UnbrokenWords({ text }: { readonly text: string }) {
   );
 }
 
+interface Placed {
+  readonly start: number;
+  readonly text: string;
+}
+
+/** The pieces of a sentence between the places a value stands, each with where the piece ends up in the sentence. */
+function placedAround(sentence: string, value: string): readonly Placed[] {
+  let start = 0;
+  return sentence.split(value).map((text) => {
+    const placed = { start, text };
+    start += text.length + value.length;
+    return placed;
+  });
+}
+
 /**
  * A sentence that has a value in it (the name of a file, the start of a key): the value is drawn by
- * `children`, as a part of its own, and the rest of the sentence flows around it.
+ * `children`, as a part of its own, every time the sentence has it, and the rest of the sentence flows
+ * around it.
  */
 export function SentenceWithValue({
   sentence,
@@ -54,20 +70,19 @@ export function SentenceWithValue({
   readonly value: string | null | undefined;
   readonly children: (value: string) => ReactNode;
 }) {
-  const at = value === null || value === undefined ? -1 : sentence.indexOf(value);
   // One element from both ways, so that a list item that lays out its children (a flex box) keeps
   // the sentence in one line of words.
+  const shown = value === null || value === undefined || value === "" ? null : value;
   return (
     <span>
-      {at < 0 || value === null || value === undefined ? (
-        sentence
-      ) : (
-        <>
-          {sentence.slice(0, at)}
-          {children(value)}
-          {sentence.slice(at + value.length)}
-        </>
-      )}
+      {shown === null
+        ? sentence
+        : placedAround(sentence, shown).map(({ start, text }) => (
+            <Fragment key={start}>
+              {start > 0 ? children(shown) : null}
+              {text}
+            </Fragment>
+          ))}
     </span>
   );
 }
