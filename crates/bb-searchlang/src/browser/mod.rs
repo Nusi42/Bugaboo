@@ -6,7 +6,9 @@
 //! stands in one place (`syntax.rs`, `fields.rs`); deriving `Deserialize` makes the module bigger
 //! than its budget. The types cannot keep the rules of a tree that came from the parser, so a tree
 //! that is read is held to them here, and the canonical text is only given when the language reads
-//! it back as the very same tree.
+//! it back as the very same tree. How deep a tree may be is the parser's rule alone (`MAX_DEPTH`
+//! counts brackets and `not` in a text): a tree that is too deep has no text that reads back, and
+//! the reader's own recursion is bounded by the depth that `serde_json` reads.
 
 use serde_json::Value as Json;
 
@@ -14,7 +16,6 @@ use serde_json::Value as Json;
 mod reader;
 
 use crate::fields::ReadableFields;
-use crate::limits::MAX_DEPTH;
 use crate::literal::{is_short_name, issue_id};
 use crate::syntax::{Date, Decimal, Expr, Operand, ReadableId, Search, ShortName, Test};
 
@@ -41,7 +42,7 @@ fn parsed(json: &str) -> Result<Json, Problem> {
 pub fn search_from_json(json: &str) -> Result<Search, Problem> {
     let search = reader::read_search(&parsed(json)?)?;
     if let Some(filter) = &search.filter {
-        expression(filter, 0)?;
+        expression(filter)?;
     }
     Ok(search)
 }
@@ -61,7 +62,7 @@ pub fn print_from_json(json: &str) -> Result<String, Problem> {
     }
 }
 
-fn expression(node: &Expr, depth: usize) -> Result<(), Problem> {
+fn expression(node: &Expr) -> Result<(), Problem> {
     match node {
         Expr::Or { items, .. } | Expr::And { items, .. } => {
             if items.len() < 2 {
@@ -76,9 +77,9 @@ fn expression(node: &Expr, depth: usize) -> Result<(), Problem> {
             if items.iter().any(same_kind) {
                 return Err("an `and` or an `or` holds none of its own kind".to_owned());
             }
-            nested(items, depth)
+            items.iter().try_for_each(expression)
         }
-        Expr::Not { item, .. } => nested(std::slice::from_ref(&**item), depth),
+        Expr::Not { item, .. } => expression(item),
         Expr::Field { test, .. } => check_test(test),
         Expr::Under { id, .. } | Expr::Blocks { id, .. } | Expr::BlockedBy { id, .. } => issue(id),
         Expr::ConnectedTo { id, steps, .. } => {
@@ -89,16 +90,6 @@ fn expression(node: &Expr, depth: usize) -> Result<(), Problem> {
             Ok(())
         }
     }
-}
-
-/// The items one level deeper; the nesting is as limited as the parser limits it.
-fn nested(items: &[Expr], depth: usize) -> Result<(), Problem> {
-    if depth + 1 > MAX_DEPTH {
-        return Err(format!("the tree is nested deeper than {MAX_DEPTH} levels"));
-    }
-    items
-        .iter()
-        .try_for_each(|item| expression(item, depth + 1))
 }
 
 fn check_test(test: &Test) -> Result<(), Problem> {

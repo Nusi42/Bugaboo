@@ -11,9 +11,9 @@ use proptest::prelude::*;
 use serde as _;
 
 use bb_searchlang::{
-    Comparison, Date, Decimal, Direction, Expr, FieldRef, MAX_DEPTH, Operand, ReadableId, Search,
-    ShortName, SortKey, Span, Steps, Test, Text, TimeWord, Unit, parse, print, print_from_json,
-    search_from_json,
+    Comparison, Date, Decimal, Direction, Expr, FieldRef, MAX_DEPTH, MAX_TEXT_BYTES, Operand,
+    ReadableId, Search, ShortName, SortKey, Span, Steps, Test, Text, TimeWord, Unit, parse, print,
+    print_from_json, search_from_json,
 };
 
 fn span() -> Span {
@@ -338,13 +338,6 @@ fn any_of(items: Vec<Expr>) -> Expr {
 
 /// Trees that break a rule of how `and`, `or` and `not` are built, around a filter of a good tree.
 fn broken_combinations(good: &Expr) -> Vec<(&'static str, Search)> {
-    let mut deep = good.clone();
-    for _ in 0..=MAX_DEPTH {
-        deep = Expr::Not {
-            item: Box::new(deep),
-            span: span(),
-        };
-    }
     vec![
         ("an and of one item", around(all_of(vec![good.clone()]))),
         ("an or of no item", around(any_of(Vec::new()))),
@@ -362,7 +355,6 @@ fn broken_combinations(good: &Expr) -> Vec<(&'static str, Search)> {
                 any_of(vec![good.clone(), placeholder()]),
             ])),
         ),
-        ("nesting deeper than the limit", around(deep)),
     ]
 }
 
@@ -516,4 +508,64 @@ proptest! {
             }
         }
     }
+}
+
+/// A text of `levels` brackets, one inside the other, with `or` and `and` taking turns.
+fn mixed_brackets(levels: usize) -> String {
+    (0..levels).rev().fold("z is 0".to_owned(), |inner, level| {
+        let joiner = if level % 2 == 0 { "or" } else { "and" };
+        format!("(f{level} is {level} {joiner} {inner})")
+    })
+}
+
+#[test]
+fn qry_03_a_text_with_many_brackets_goes_through_the_module() {
+    // The depth of a text is the parser's rule; the module reads and prints every tree it makes.
+    for levels in [1, 16, 20, MAX_DEPTH] {
+        let text = mixed_brackets(levels);
+        let tree = parse(&text).unwrap();
+        let json = serde_json::to_string(&tree).unwrap();
+        assert_eq!(search_from_json(&json), Ok(tree.clone()), "{levels}");
+        assert_eq!(print_from_json(&json), Ok(print(&tree)), "{levels}");
+    }
+}
+
+#[test]
+fn qry_03_a_tree_nested_deeper_than_the_parser_reads_has_no_text() {
+    let mut item = placeholder();
+    for _ in 0..=MAX_DEPTH {
+        item = Expr::Not {
+            item: Box::new(item),
+            span: span(),
+        };
+    }
+    let json = serde_json::to_string(&Search {
+        filter: Some(item),
+        sort: Vec::new(),
+        span: span(),
+    })
+    .unwrap();
+    // It breaks no rule of a tree, but the language does not read its text back.
+    assert!(search_from_json(&json).is_ok());
+    assert!(print_from_json(&json).is_err());
+}
+
+#[test]
+fn qry_03_a_tree_whose_text_is_too_long_has_no_text() {
+    let filter = || Expr::Under {
+        id: ReadableId {
+            text: "AB-1".to_owned(),
+            span: span(),
+        },
+        span: span(),
+    };
+    let filters = (0..MAX_TEXT_BYTES / 4).map(|_| filter()).collect();
+    let json = serde_json::to_string(&around(Expr::And {
+        items: filters,
+        span: span(),
+    }))
+    .unwrap();
+    assert!(search_from_json(&json).is_ok());
+    assert!(print(&search_from_json(&json).unwrap()).len() > MAX_TEXT_BYTES);
+    assert!(print_from_json(&json).is_err());
 }
