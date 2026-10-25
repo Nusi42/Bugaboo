@@ -55,6 +55,7 @@ pub mod system_answer;
 pub mod tags;
 pub mod technical;
 pub mod text;
+pub mod text_words;
 pub mod time;
 pub mod version;
 pub mod wording;
