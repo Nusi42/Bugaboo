@@ -35,6 +35,8 @@ The M5 proposals (M5-Q7, Q10) were accepted. Decided:
 
 Enforced by: TEST-SEARCH-ROUNDTRIP (decisions 1 to 4, the printer and the parser), the tests of M5 WP-02 (decisions 5 and 6), SEC-MATRIX with the `search` entry point (decision 5 on the server), PERF-BUNDLE (decision 7).
 
+9. **Values are written as the person sees them** (the lead, from the review of M5 WP-04): a status, an issue type and a choice of an own field are written by their name as shown on screen (`status is "In progress"`, `type is Bug`), never by a stored key or ID; the comparison ignores case and accents by the rule of `bb-core`. The server turns a name into the things of that name that the person may see, at the moment the search runs; a name the person cannot see is an unknown value, with the same message as a name that does not exist. A rename makes the old name unknown in a saved search, and the checker says so; nothing silently matches something else. Each word of the language (built-in fields, the words of *yes* and *no*, the operators each kind of field allows) is defined once, next to the field, and a word belongs to one field for everyone: an own field never takes the word of a built-in field, also not of one the person may not read or that cannot be searched yet.
+
 ## Enforced by
 
 ARCH-PURE, ARCH-WASM, TEST-SEARCH-ROUNDTRIP (see `tools/checks/catalog.toml`).
