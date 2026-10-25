@@ -28,12 +28,37 @@ function written(day: string): string {
   return formatCalendarDay(day, deviceRegion);
 }
 
+/** The last Sunday of a month (`month` counts from 0) in UTC, as the day of the month. */
+function lastSundayOf(year: number, month: number): number {
+  const lastDay = new Date(Date.UTC(year, month + 1, 0));
+  return lastDay.getUTCDate() - lastDay.getUTCDay();
+}
+
 /**
- * The clock of the page for a day that was typed: 23:30 in Berlin on the eve of the first day of
- * summer time in 2027, so that the default time of a key crosses the change of the clocks whatever
- * day the test runs on. A day 90 days on is still inside what the server allows for a key.
+ * The clock of the page for a day that was typed: 23:30 in Berlin on the eve of the next change of
+ * the clocks (the last Saturday of March or of October) after now, so that the default time of a
+ * key crosses the change whatever day the test runs on. The eve is at most half a year ahead: the
+ * day typed (the default time and a day on) is then still after now and inside the longest time
+ * (365 days) that the server counts from its own clock, on every day the test runs.
  */
-const eveOfSummerTime = new Date("2027-03-27T22:30:00Z");
+function eveOfChangeOfClocks(now: number): Date {
+  const year = new Date(now).getUTCFullYear();
+  for (const candidateYear of [year, year + 1]) {
+    // March: 23:30 in Berlin is 22:30 UTC (winter time); October: it is 21:30 UTC (summer time).
+    for (const [month, hour] of [
+      [2, 22],
+      [9, 21],
+    ] as const) {
+      const eve = new Date(
+        Date.UTC(candidateYear, month, lastSundayOf(candidateYear, month) - 1, hour, 30),
+      );
+      if (eve.getTime() > now) {
+        return eve;
+      }
+    }
+  }
+  throw new Error("no change of the clocks ahead");
+}
 
 /** Makes a key as a person does and returns the day in the box, and whether the day was typed in. */
 async function createKeyLikeAPerson(
@@ -44,7 +69,7 @@ async function createKeyLikeAPerson(
 ): Promise<string> {
   if (typed) {
     // The server counts the default from its own clock, so only a day that was typed can have the clock of the page.
-    await page.clock.install({ time: eveOfSummerTime });
+    await page.clock.install({ time: eveOfChangeOfClocks(Date.now()) });
   }
   await signIn(page, ada);
   if (regionZone !== undefined) {
@@ -132,9 +157,11 @@ test.describe("in Europe/Berlin, with the clock of the page", () => {
   test("auth_07 a form left open past midnight shows the day of now, not the day it was opened", async ({
     page,
   }) => {
-    // One minute before midnight in Berlin (summer time).
-    await page.clock.install({ time: new Date("2027-05-10T21:59:00Z") });
+    // Signing in takes the time it takes, so the clock starts well before midnight in Berlin (summer
+    // time) and is stopped one minute before it once the form is open.
+    await page.clock.install({ time: new Date("2027-05-10T21:50:00Z") });
     const { box } = await openForm(page, "Europe/Berlin");
+    await page.clock.pauseAt(new Date("2027-05-10T21:59:00Z"));
     const opened = await box.inputValue();
     await page.clock.runFor(120_000);
     await expect(box).toHaveValue(addDays(opened, 1));
