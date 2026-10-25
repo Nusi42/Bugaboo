@@ -124,6 +124,20 @@ impl Sample {
                 ));
             }
         }
+        // Tags and labels are hashed by name: their IDs come from the clock and the system, and
+        // differ in every run.
+        let tag_names: BTreeMap<_, _> = storage
+            .tags()
+            .await?
+            .into_iter()
+            .map(|tag| (tag.id, tag.name))
+            .collect();
+        let label_names: BTreeMap<_, _> = storage
+            .labels()
+            .await?
+            .into_iter()
+            .map(|label| (label.id, label.name))
+            .collect();
         let step = issues.len().div_ceil(SAMPLED_AT_MOST).max(1);
         let mut sampled = 0;
         for issue in issues.iter().step_by(step) {
@@ -154,7 +168,8 @@ impl Sample {
                     ));
                 }
             }
-            self.hash_around(issue.id, &mut hasher).await?;
+            self.hash_around(issue.id, (&tag_names, &label_names), &mut hasher)
+                .await?;
         }
         self.check_told(facts, &issues, &mut problems).await?;
         Ok(Report {
@@ -170,6 +185,10 @@ impl Sample {
     async fn hash_around(
         &self,
         issue: bb_core::id::IssueId,
+        (tag_names, label_names): (
+            &BTreeMap<bb_core::id::TagId, String>,
+            &BTreeMap<bb_core::id::LabelId, String>,
+        ),
         hasher: &mut impl std::hash::Hasher,
     ) -> Result<(), SampleError> {
         let storage = &self.storage;
@@ -188,18 +207,20 @@ impl Sample {
             .collect();
         texts.sort();
         (written.len(), texts).hash(hasher);
-        let tags: Vec<_> = storage
+        let mut tags: Vec<_> = storage
             .issue_tags(issue)
             .await?
             .iter()
-            .map(|each| each.tag)
+            .filter_map(|each| tag_names.get(&each.tag).cloned())
             .collect();
-        let labels: Vec<_> = storage
+        tags.sort();
+        let mut labels: Vec<_> = storage
             .issue_labels(issue)
             .await?
             .iter()
-            .map(|each| each.label)
+            .filter_map(|each| label_names.get(&each.label).cloned())
             .collect();
+        labels.sort();
         (tags, labels).hash(hasher);
         Ok(())
     }
