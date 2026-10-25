@@ -38,7 +38,12 @@ function requireSample(): void {
  */
 export function samplePeople(): readonly SamplePerson[] {
   requireSample();
-  return readFileSync(join(sampleFolder(), layout.signInFile), "utf8")
+  return peopleIn(sampleFolder());
+}
+
+/** The people of a sample (or a large dataset) made in `folder`, from its `sign-in.txt`. */
+export function peopleIn(folder: string): readonly SamplePerson[] {
+  return readFileSync(join(folder, layout.signInFile), "utf8")
     .split("\n")
     .map((line) => line.replace(/\r$/u, ""))
     .filter((line) => line.trim() !== "" && !line.startsWith("#"))

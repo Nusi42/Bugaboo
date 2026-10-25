@@ -168,6 +168,8 @@
     "checkIssues": 3000,
     "out": ".work/dataset",
     "checkOut": ".work/dataset/check",
+    "benchOut": ".work/bench",
+    "nightlyOut": ".work/nightly",
     "database": "bblarge",
     "people": 500,
     "projects": 500,

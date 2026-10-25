@@ -18,7 +18,7 @@ export const PAGE_LEN = pageSizeDefault;
 export const PAGES_OF_A_LIST = 3;
 
 /** One page of the list of a project. */
-export async function listPage(session: ApiSession, project: string, cursor: string | undefined) {
+export async function listPage(session: ApiSession, project: string, cursor?: string) {
   return dataOf(
     await session.client.GET("/api/v1/projects/{project}/issues", {
       params: {

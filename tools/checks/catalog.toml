@@ -741,10 +741,10 @@ status = "active"
 id = "PERF-BENCH"
 title = "Latency budgets hold on the 1 M-issue dataset"
 rule = "PERF-01"
-tool = "xtask dataset + benchmarks"
-when = ["nightly"]
-files = ["*"]
-status = "planned"
+tool = "xtask (at commit time: tools/checks/perf-bench.toml is usable and every scenario of web/tooling/bench/scenarios.ts names a budget in it; every night: cargo xtask bench runs the scenarios on the large dataset on both databases and fails a scenario over its budget with the scenario, the number and the budget)"
+when = ["commit", "ci", "nightly"]
+files = ["tools/checks/perf-bench.toml", "web/tooling/bench/**"]
+status = "active"
 
 [[check]]
 id = "TEST-A11Y"

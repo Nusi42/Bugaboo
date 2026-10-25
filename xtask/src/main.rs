@@ -5,6 +5,8 @@
 
 #![forbid(unsafe_code)]
 
+mod bench;
+mod bench_budgets;
 mod build;
 mod bundle;
 mod catalog;
@@ -22,6 +24,7 @@ mod hook;
 mod load;
 mod location;
 mod metadata;
+mod nightly;
 mod output;
 mod ports;
 mod repo;
@@ -91,6 +94,20 @@ enum Command {
     /// Ten people work on the same issues through the API at speed, and the invariants of
     /// architecture §11 are checked afterwards (TEST-CONCURRENT). Both databases unless one is named.
     Load(load::Arguments),
+    /// Run the scenarios of the benchmarks on the large dataset and hold the numbers against
+    /// their budgets (PERF-BENCH). Both databases unless one is named.
+    Bench {
+        /// Only this database.
+        #[arg(long, value_parser = parse_database)]
+        database: Option<DatabaseKind>,
+    },
+    /// The nightly run: `ci`, the large dataset if it is older than the last migration, and the
+    /// benchmarks. It waits while another full run is on this computer.
+    Nightly {
+        /// Instead: register the daily task (03:00, in this folder) with the scheduler of Windows.
+        #[arg(long)]
+        install: bool,
+    },
     /// Entry points for Claude Code hooks.
     Hook {
         #[command(subcommand)]
@@ -259,13 +276,21 @@ fn run() -> anyhow::Result<ExitCode> {
         }
         Command::Dev { sample } => Ok(steps::exit_code(dev::run(repo.root(), sample)?)),
         Command::Dataset { kind } => Ok(steps::exit_code(dataset::run(&repo, &request_of(kind))?)),
+        Command::Bench { database } => Ok(steps::exit_code(bench::run(
+            &repo,
+            &database.into_iter().collect::<Vec<_>>(),
+        )?)),
+        Command::Nightly { install } => Ok(steps::exit_code(nightly::run(&repo, install)?)),
         Command::Load(arguments) => Ok(steps::exit_code(load::run(&repo, &arguments.request())?)),
         Command::Build { target } => Ok(steps::exit_code(build::run(
             repo.root(),
             target.as_deref(),
         )?)),
         Command::Wasm => Ok(steps::exit_code(wasm::run(repo.root())?)),
-        Command::Ci => Ok(steps::exit_code(ci::run(repo.root())?)),
+        Command::Ci => {
+            let _lock = nightly::FullRun::take(&repo)?;
+            Ok(steps::exit_code(ci::run(repo.root())?))
+        }
         Command::Db { action } => {
             let action = match action {
                 DbAction::Start => db::Action::Start,

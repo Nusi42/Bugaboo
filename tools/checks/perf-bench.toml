@@ -1,0 +1,17 @@
+# Settings of PERF-BENCH (PERF-01, architecture section 11): the budgets of the benchmarks live
+# here and nowhere else. `cargo xtask gen bench-budgets` writes them into the TypeScript of the
+# benchmarks and of the speed tests (web/tooling/bench/budgets.generated.ts).
+#
+# A budget is the most a request may take at the 95th percentile, in milliseconds. Every scenario
+# in web/tooling/bench/scenarios.ts names one of them. The budgets count on the computer of the
+# nightly run until a reference server exists.
+
+# An issue page (the reads the browser makes at once), a list of issues, a saved search, the
+# notifications and the project list.
+[budgets.page]
+p95_ms = 100
+
+# A complex search, for example `statusGroup is not Done and priority is High` across 500 projects
+# (architecture section 8).
+[budgets.search]
+p95_ms = 300

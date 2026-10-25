@@ -20,6 +20,10 @@ pub struct LargePlan {
     pub out: String,
     /// The folder of the runs of `--check`.
     pub check_out: String,
+    /// Where the numbers of the benchmarks are kept.
+    pub bench_out: String,
+    /// Where the log of the nightly run is kept.
+    pub nightly_out: String,
     /// The name of the PostgreSQL database that holds the large dataset.
     pub database: String,
     /// How many people there are in all: the sample's people and the rest.
