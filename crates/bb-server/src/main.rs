@@ -10,6 +10,7 @@ mod log;
 mod log_file;
 mod output;
 mod probe;
+mod system;
 mod wiring;
 
 use std::process::ExitCode;

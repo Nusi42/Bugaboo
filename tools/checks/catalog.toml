@@ -86,6 +86,23 @@ files = ["**/*.rs", "tools/checks/size-exemptions.toml"]
 status = "active"
 
 [[check]]
+id = "LINT-PATHS"
+title = "No path of the system is written down: code and tools ask the operating system"
+rule = "coding-standards §2"
+tool = "xtask (a string that starts with a folder of the system or a drive in Rust, tooling and scripts; tests and fixtures are left out by one list in the check)"
+when = ["edit", "commit", "ci"]
+files = [
+  "crates/**/*.rs",
+  "xtask/**/*.rs",
+  "web/tooling/**/*.{ts,mjs,js,cmd,sh}",
+  "web/packages/**/scripts/**/*.{ts,mjs,js,cmd,sh}",
+  "tools/**/*.{cmd,sh,ps1,toml}",
+  "lefthook.yml",
+  ".claude/settings.json",
+]
+status = "active"
+
+[[check]]
 id = "LINT-TS"
 title = "oxlint finds no problems, including type-aware rules (TypeScript 7)"
 rule = "coding-standards §4"

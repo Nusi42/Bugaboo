@@ -54,6 +54,7 @@ mod lint_dry;
 mod lint_file_size;
 mod lint_html;
 mod lint_links;
+mod lint_paths;
 mod lint_rust;
 mod lint_spell;
 mod lint_ts;
@@ -238,6 +239,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(fmt_css::FmtCss),
         Box::new(lint_ts::LintTs),
         Box::new(lint_file_size::LintFileSize),
+        Box::new(lint_paths::LintPaths),
         Box::new(lint_types::LintTypes),
         Box::new(lint_api_types::LintApiTypes),
         Box::new(lint_css::LintCss),

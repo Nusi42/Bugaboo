@@ -6,7 +6,6 @@
 //! then talks to the service manager: it says when it runs and stops cleanly when asked to.
 
 use std::ffi::OsString;
-use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -28,6 +27,7 @@ use windows_service::service_manager::{ServiceManager, ServiceManagerAccess};
 use super::{Found, NAME, refused, tell_about_setup_code};
 use crate::cli::{ConfigArgs, load_settings, serve};
 use crate::data_folder::{ADMINISTRATORS_SID, DataFolder, OwnFiles, check_for_service};
+use crate::system::system_tool;
 use crate::{log, output};
 
 /// The Windows error numbers that are answered with a plain sentence.
@@ -87,14 +87,12 @@ fn explain(error: &ServiceError) -> anyhow::Error {
 /// Lets the service account own the data folder, and lets administrators read what is directly
 /// in it (the setup code of the first start, which a service cannot print). The folders with
 /// secrets (`keys`, `tls`, `logs`) are made private to the service account again at every start.
-fn grant(data_dir: &std::path::Path) -> anyhow::Result<()> {
-    let system = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_owned());
-    let icacls = PathBuf::from(system).join("System32").join("icacls.exe");
+fn grant(data_dir: &std::path::Path, icacls: &std::path::Path) -> anyhow::Result<()> {
     for permission in [
         format!("{}:(OI)(CI)F", account()),
         format!("*{ADMINISTRATORS_SID}:(OI)(CI)R"),
     ] {
-        let output = std::process::Command::new(&icacls)
+        let output = std::process::Command::new(icacls)
             .arg(data_dir)
             .args(["/grant", &permission, "/T", "/Q"])
             .output()
@@ -108,6 +106,8 @@ fn grant(data_dir: &std::path::Path) -> anyhow::Result<()> {
 
 /// `bugaboo service install`.
 pub(super) fn install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
+    // What Windows names is asked before anything is created, so a failure leaves no half-made service.
+    let icacls = system_tool("icacls.exe").map_err(|said| refused(&said.render()))?;
     let manager =
         ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CREATE_SERVICE)
             .map_err(|error| explain(&error))?;
@@ -122,7 +122,7 @@ pub(super) fn install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> 
     service
         .set_description(Message::from(message::SERVER_ABOUT).render())
         .map_err(|error| explain(&error))?;
-    grant(&found.settings.data_dir)?;
+    grant(&found.settings.data_dir, &icacls)?;
     service
         .start::<&str>(&[])
         .map_err(|error| explain(&error))?;

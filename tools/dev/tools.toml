@@ -8,7 +8,8 @@
 # kind = "bundle"   → fetch the archive for this platform, verify sha256, unpack the listed `folders`
 #                     into .tools/<name>/. A platform without a download entry uses the program
 #                     already installed on the machine (`system-programs`); `system-hint` says how
-#                     to install it. The programs are looked up on the PATH and in `system-folders`.
+#                     to install it. The programs are looked up on the PATH and in the folder
+#                     that `system-folder-command` prints (`pg_config --bindir`): the system names it.
 
 [[tool]]
 name = "cargo-deny"
@@ -89,6 +90,6 @@ kind = "bundle"
 version = "18.6"
 folders = ["bin", "lib", "share"]
 system-programs = ["initdb", "pg_ctl", "pg_isready", "psql", "postgres"]
-system-folders = ["/usr/lib/postgresql/*/bin"]
-system-hint = "Install PostgreSQL 16 or newer, for example `sudo apt-get install postgresql postgresql-client` (the server is not started; xtask runs its own cluster)."
+system-folder-command = ["pg_config", "--bindir"]
+system-hint = "Install PostgreSQL 16 or newer, for example `sudo apt-get install postgresql postgresql-client libpq-dev` (the server is not started; xtask runs its own cluster). xtask finds the programs with pg_config --bindir, so libpq-dev must be the version of the installed server."
 windows-x64 = { url = "https://get.enterprisedb.com/postgresql/postgresql-18.6-1-windows-x64-binaries.zip", sha256 = "fbe23da234ee31547bf8a36d29dfd81e82b849df2d2b78d2eecb43d360252f8c" }

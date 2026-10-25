@@ -38,8 +38,15 @@ tracing-subscriber = { workspace = true }
 # Runs Bugaboo as a Windows service (OPS-04): installing it and answering the service manager.
 [target.'cfg(windows)'.dependencies]
 windows-service = { workspace = true }
+# Asks Windows for its system folder, where icacls and whoami are (coding-standards section 2, no fixed paths).
+known-folders = { workspace = true }
 # The access list of the data folder is saved to a temporary file and read back (SEC-16, M1-F65).
 tempfile = { workspace = true }
+
+# Asks the system who runs the program and what an account number is called, instead of reading
+# its files (coding-standards section 2, no fixed paths).
+[target.'cfg(unix)'.dependencies]
+nix = { workspace = true }
 
 [dev-dependencies]
 argon2 = { workspace = true }

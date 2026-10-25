@@ -139,6 +139,13 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     use systemd::{Installation, Step, USER, plan};
 
     require_systemd()?;
+    // What the system names is asked before anything is changed.
+    let unit_folder = systemd::unit_folder().map_err(|said| anyhow!(said.render()))?;
+    let new_account_shell = if crate::system::account_exists(USER) {
+        None
+    } else {
+        Some(systemd::no_login().map_err(|said| anyhow!(said.render()))?)
+    };
     // `chown -h` changes a link and not the folder it leads to: the plan and the unit name the
     // real folder, and the person is told when that is another one.
     let data_dir = systemd::real_path(&found.settings.data_dir);
@@ -160,11 +167,11 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     let installation = Installation {
         program: &found.program,
         config: &found.config,
+        unit_folder: &unit_folder,
         data_dir: &data_dir,
         known_files: &known_files,
     };
-    let user_exists = succeeds("id", &["-u", USER]);
-    for step in plan(&installation, user_exists) {
+    for step in plan(&installation, new_account_shell.as_deref()) {
         match step {
             Step::Run { program, arguments } => run_command(program, &arguments)?,
             Step::PrepareDataFolder(path) => {
@@ -186,13 +193,14 @@ fn output_installed(found: &Found) {
 
 #[cfg(unix)]
 fn systemd_uninstall() -> anyhow::Result<()> {
-    use systemd::{Step, UNIT, UNIT_FOLDER, removal};
+    use systemd::{Step, UNIT, removal};
 
     require_systemd()?;
-    if !Path::new(UNIT_FOLDER).join(UNIT).is_file() {
+    let unit_folder = systemd::unit_folder().map_err(|said| anyhow!(said.render()))?;
+    if !unit_folder.join(UNIT).is_file() {
         return Err(anyhow!(message::service_not_installed(UNIT).render()));
     }
-    for step in removal() {
+    for step in removal(&unit_folder) {
         if let Step::Run { program, arguments } = step {
             run_command(program, &arguments)?;
         }
@@ -201,33 +209,22 @@ fn systemd_uninstall() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Whether the machine runs systemd (the standard test), and whether the person has the rights.
+/// Whether the machine runs systemd (asked of systemd itself), and whether the person has the
+/// rights (the account number of root is 0 on every Unix).
 #[cfg(unix)]
 fn require_systemd() -> anyhow::Result<()> {
-    if !Path::new("/run/systemd/system").is_dir() {
+    if !systemd::runs_this_computer() {
         return Err(anyhow!(
             Message::from(message::SERVICE_UNSUPPORTED).render()
         ));
     }
-    let is_root = std::process::Command::new("id")
-        .arg("-u")
-        .output()
-        .is_ok_and(|output| String::from_utf8_lossy(&output.stdout).trim() == "0");
-    if is_root {
+    if crate::system::account_number() == 0 {
         Ok(())
     } else {
         Err(anyhow!(
             Message::from(message::SERVICE_NEEDS_ADMIN).render()
         ))
     }
-}
-
-#[cfg(unix)]
-fn succeeds(program: &str, arguments: &[&str]) -> bool {
-    std::process::Command::new(program)
-        .args(arguments)
-        .output()
-        .is_ok_and(|output| output.status.success())
 }
 
 #[cfg(unix)]

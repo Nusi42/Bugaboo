@@ -25,6 +25,9 @@ mod rights;
 
 use bb_core::message;
 
+#[cfg(windows)]
+use crate::system::system_tool;
+
 /// The flag of `bugaboo service install` that takes over a folder with the person's own
 /// certificate in `tls/`; the messages name it.
 pub(crate) const TAKE_OVER_FLAG: &str = "--take-over-data-folder";
@@ -394,22 +397,17 @@ fn restrict_to(path: &Path, grants: &[String]) -> Result<(), String> {
         grant.push(entry.clone());
     }
     for arguments in [vec!["/reset".to_owned()], grant] {
-        let output = std::process::Command::new(system_tool("icacls.exe"))
-            .arg(path)
-            .args(arguments)
-            .output()
-            .map_err(|error| error.to_string())?;
+        let output =
+            std::process::Command::new(system_tool("icacls.exe").map_err(|said| said.render())?)
+                .arg(path)
+                .args(arguments)
+                .output()
+                .map_err(|error| error.to_string())?;
         if !output.status.success() {
             return Err(String::from_utf8_lossy(&output.stdout).trim().to_owned());
         }
     }
     Ok(())
-}
-
-#[cfg(windows)]
-fn system_tool(name: &str) -> PathBuf {
-    let system = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_owned());
-    Path::new(&system).join("System32").join(name)
 }
 
 /// On Linux: the name of the account that owns `path`, when it is not the account that runs this
@@ -420,29 +418,13 @@ fn system_tool(name: &str) -> PathBuf {
 pub(crate) fn other_owner(path: &Path) -> Option<String> {
     use std::os::unix::fs::MetadataExt as _;
     let owner = std::fs::metadata(path).ok()?.uid();
-    // The owner of /proc/self is the account the program runs as.
-    let current = std::fs::metadata("/proc/self").ok()?.uid();
-    (owner != current).then(|| {
-        std::fs::read_to_string("/etc/passwd")
-            .ok()
-            .and_then(|passwd| name_in_passwd(&passwd, owner))
-            .unwrap_or_else(|| owner.to_string())
-    })
+    (owner != crate::system::account_number())
+        .then(|| crate::system::account_name(owner).unwrap_or_else(|| owner.to_string()))
 }
 
 #[cfg(not(target_os = "linux"))]
 pub(crate) fn other_owner(_path: &Path) -> Option<String> {
     None
-}
-
-/// The account name for a user number, from the text of `/etc/passwd` (`name:x:uid:...`).
-#[cfg(target_os = "linux")]
-fn name_in_passwd(passwd: &str, uid: u32) -> Option<String> {
-    passwd.lines().find_map(|line| {
-        let mut fields = line.split(':');
-        let name = fields.next()?;
-        (fields.nth(1)?.parse::<u32>().ok()? == uid).then(|| name.to_owned())
-    })
 }
 
 /// What `write_private` does with a file that is there already.
@@ -660,10 +642,11 @@ pub(crate) fn open_to_others(_folder: &Path) -> bool {
 /// the SID is not.
 #[cfg(windows)]
 fn current_sid() -> Result<String, String> {
-    let output = std::process::Command::new(system_tool("whoami.exe"))
-        .args(["/user", "/fo", "csv", "/nh"])
-        .output()
-        .map_err(|error| error.to_string())?;
+    let output =
+        std::process::Command::new(system_tool("whoami.exe").map_err(|said| said.render())?)
+            .args(["/user", "/fo", "csv", "/nh"])
+            .output()
+            .map_err(|error| error.to_string())?;
     parse_sid(&String::from_utf8_lossy(&output.stdout))
         .ok_or_else(|| message::Message::from(message::DATA_FOLDER_ACCOUNT_UNKNOWN).render())
 }
