@@ -9,7 +9,9 @@ use std::process::ExitCode;
 
 use bb_core::message::{self, Message, MessageKey};
 use bb_dev_words::database::{DatabaseKind, parse as parse_database};
-use bb_sample::{DEFAULT_SEED, Everything, Layout, Options, Output, SampleError, Target, create};
+use bb_sample::{
+    DEFAULT_SEED, Everything, Large, Layout, Options, Output, SampleError, Target, create,
+};
 use clap::{CommandFactory as _, FromArgMatches as _, Parser};
 use jiff::Timestamp;
 
@@ -23,6 +25,7 @@ use getrandom as _;
 use serde as _;
 use serde_json as _;
 use toml as _;
+use zeroize as _;
 
 /// The text of a message without placeholders, for the help texts of the command line.
 fn text(key: MessageKey) -> String {
@@ -41,6 +44,10 @@ struct Args {
     database: DatabaseKind,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_ISSUES))]
     issues: Option<u32>,
+    #[arg(long, help = text(message::CLI_HELP_SAMPLE_LARGE))]
+    large: bool,
+    #[arg(long, requires = "large", help = text(message::CLI_HELP_SAMPLE_CHECK))]
+    check: bool,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_OUT))]
     out: PathBuf,
 }
@@ -60,13 +67,37 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         seed: args.seed,
         start,
     };
-    let mut everything = match args.issues {
-        Some(issues) => Everything::new(issues)?,
-        None => Everything::full()?,
+    let mut checked = None;
+    let sample = if args.large {
+        let mut large = Large::new(args.issues, args.check)?;
+        let sample = create(&options, &output.data_folder(), &target, &mut large).await?;
+        checked = Some(sample.check_large(large.facts(), large.is_check()).await?);
+        sample
+    } else {
+        let mut everything = match args.issues {
+            Some(issues) => Everything::new(issues)?,
+            None => Everything::full()?,
+        };
+        create(&options, &output.data_folder(), &target, &mut everything).await?
     };
-    let sample = create(&options, &output.data_folder(), &target, &mut everything).await?;
     sample.verify_security_log().await?;
-    output.write_dump(&sample.dump().await?.to_json()?)?;
+    if let Some(report) = checked {
+        // The dump of the sample names its own projects; the large dataset has the check instead.
+        let said = message::sample_large_checked(
+            format!("{:016x}", report.fingerprint),
+            report.issues,
+            report.sampled,
+        );
+        let _ = writeln!(std::io::stdout(), "{}", said.render());
+        if let Some(problem) = report.problems.first() {
+            return Err(SampleError::Large(format!(
+                "{} problems, the first: {problem}",
+                report.problems.len()
+            )));
+        }
+    } else {
+        output.write_dump(&sample.dump().await?.to_json()?)?;
+    }
     output.write_sign_in(&sample.sign_in_text())?;
     let done = message::sample_done(
         output.sign_in_file().display(),
@@ -91,7 +122,7 @@ fn arguments(layout: &Layout) -> Args {
 /// Reads the layout, takes the arguments and makes the sample.
 async fn start() -> Result<String, SampleError> {
     let layout = Layout::bundled()?;
-    run(&arguments(&layout), &layout).await
+    Box::pin(run(&arguments(&layout), &layout)).await
 }
 
 #[tokio::main]

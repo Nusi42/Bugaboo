@@ -5,12 +5,15 @@
 
 #![forbid(unsafe_code)]
 
+mod bench;
+mod bench_budgets;
 mod build;
 mod bundle;
 mod catalog;
 mod checks;
 mod ci;
 mod dataset;
+mod dataset_large;
 mod db;
 mod dev;
 mod docs;
@@ -21,6 +24,7 @@ mod hook;
 mod load;
 mod location;
 mod metadata;
+mod nightly;
 mod output;
 mod ports;
 mod repo;
@@ -90,6 +94,20 @@ enum Command {
     /// Ten people work on the same issues through the API at speed, and the invariants of
     /// architecture §11 are checked afterwards (TEST-CONCURRENT). Both databases unless one is named.
     Load(load::Arguments),
+    /// Run the scenarios of the benchmarks on the large dataset and hold the numbers against
+    /// their budgets (PERF-BENCH). Both databases unless one is named.
+    Bench {
+        /// Only this database.
+        #[arg(long, value_parser = parse_database)]
+        database: Option<DatabaseKind>,
+    },
+    /// The nightly run: `ci`, the large dataset if it is older than the last migration, and the
+    /// benchmarks. It waits while another full run is on this computer.
+    Nightly {
+        /// Instead: register the daily task (03:00, in this folder) with the scheduler of Windows.
+        #[arg(long)]
+        install: bool,
+    },
     /// Entry points for Claude Code hooks.
     Hook {
         #[command(subcommand)]
@@ -134,6 +152,23 @@ enum DatasetKind {
         out: Option<PathBuf>,
         /// Instead: make it twice on each database and check that the dumps are the same and
         /// fictional (TEST-SAMPLE-DATA). It always uses both databases and its own folders.
+        #[arg(long)]
+        check: bool,
+    },
+    /// The large dataset of PERF-01: 500 people, 500 projects and a million issues, written in
+    /// big transactions (architecture §11, "Large dataset"). On both databases unless one is named.
+    Large {
+        /// The number the dataset is made from (default 42).
+        #[arg(long)]
+        seed: Option<u64>,
+        /// Only this database (default: both).
+        #[arg(long, conflicts_with = "check", value_parser = parse_database)]
+        database: Option<DatabaseKind>,
+        /// How many issues (default: the number of tools/dev/sample.json).
+        #[arg(long, conflicts_with = "check")]
+        issues: Option<u32>,
+        /// Instead: make a small one twice on each database and check that it holds the rules
+        /// of the large dataset and is the same both times.
         #[arg(long)]
         check: bool,
     },
@@ -240,32 +275,22 @@ fn run() -> anyhow::Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Command::Dev { sample } => Ok(steps::exit_code(dev::run(repo.root(), sample)?)),
-        Command::Dataset {
-            kind:
-                DatasetKind::Sample {
-                    seed,
-                    database,
-                    issues,
-                    out,
-                    check,
-                },
-        } => {
-            let request = dataset::Request {
-                seed,
-                issues,
-                database: database.unwrap_or(DatabaseKind::Sqlite),
-                out,
-                check,
-            };
-            Ok(steps::exit_code(dataset::run(&repo, &request)?))
-        }
+        Command::Dataset { kind } => Ok(steps::exit_code(dataset::run(&repo, &request_of(kind))?)),
+        Command::Bench { database } => Ok(steps::exit_code(bench::run(
+            &repo,
+            &database.into_iter().collect::<Vec<_>>(),
+        )?)),
+        Command::Nightly { install } => Ok(steps::exit_code(nightly::run(&repo, install)?)),
         Command::Load(arguments) => Ok(steps::exit_code(load::run(&repo, &arguments.request())?)),
         Command::Build { target } => Ok(steps::exit_code(build::run(
             repo.root(),
             target.as_deref(),
         )?)),
         Command::Wasm => Ok(steps::exit_code(wasm::run(repo.root())?)),
-        Command::Ci => Ok(steps::exit_code(ci::run(repo.root())?)),
+        Command::Ci => {
+            let _lock = nightly::FullRun::take(&repo)?;
+            Ok(steps::exit_code(ci::run(repo.root())?))
+        }
         Command::Db { action } => {
             let action = match action {
                 DbAction::Start => db::Action::Start,
@@ -299,6 +324,41 @@ fn run() -> anyhow::Result<ExitCode> {
                 ExitCode::FAILURE
             })
         }
+    }
+}
+
+/// What `cargo xtask dataset …` was asked to do.
+fn request_of(kind: DatasetKind) -> dataset::Request {
+    match kind {
+        DatasetKind::Sample {
+            seed,
+            database,
+            issues,
+            out,
+            check,
+        } => dataset::Request {
+            seed,
+            issues,
+            database: database.unwrap_or(DatabaseKind::Sqlite),
+            out,
+            check,
+            large: false,
+            databases: Vec::new(),
+        },
+        DatasetKind::Large {
+            seed,
+            database,
+            issues,
+            check,
+        } => dataset::Request {
+            seed,
+            issues,
+            database: database.unwrap_or(DatabaseKind::Sqlite),
+            out: None,
+            check,
+            large: true,
+            databases: database.into_iter().collect(),
+        },
     }
 }
 

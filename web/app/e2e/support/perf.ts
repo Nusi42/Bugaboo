@@ -1,14 +1,18 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { budgets } from "../../../tooling/bench/budgets.generated.ts";
 import { repoRoot } from "../../../tooling/ports.ts";
 
 // What the speed tests share (PERF-01, architecture §7 *Performance*): the budget, how long a
 // request takes, the 95th percentile of many, and where the numbers are written so a review can
 // read them.
 
-/** The budget of PERF-01 for issue pages and lists: the 95th percentile of the answers, in milliseconds. */
-export const BUDGET_MS = 100;
+/**
+ * The budget of PERF-01 for issue pages and lists: the 95th percentile of the answers, in
+ * milliseconds. It is written once, in `tools/checks/perf-bench.toml`.
+ */
+export const BUDGET_MS = budgets.page.p95Ms;
 
 /** The folder the numbers of the speed tests are written to (Git ignores it). */
 const NUMBERS = resolve(repoRoot, "test-results");
@@ -27,20 +31,26 @@ function tenth(ms: number): number {
   return Math.round(ms * 10) / 10;
 }
 
-/** The 95th percentile of the times: the time that 95 of 100 were not slower than. */
-export function p95(times: readonly number[]): number {
+/** The time that `share` of the times were not slower than (`share` is between 0 and 1). */
+export function percentile(times: readonly number[], share: number): number {
   if (times.length === 0) {
     throw new RangeError("There are no times to take the percentile of.");
   }
   const sorted = times.toSorted((a, b) => a - b);
-  return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.95) - 1)] ?? 0;
+  return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * share) - 1)] ?? 0;
 }
 
-/** What one kind of request took: how many were made, the median, the 95th percentile and the slowest. */
+/** The 95th percentile of the times: the time that 95 of 100 were not slower than. */
+export function p95(times: readonly number[]): number {
+  return percentile(times, 0.95);
+}
+
+/** What one kind of request took: how many were made, the median, the 95th and 99th percentile and the slowest. */
 export interface Summary {
   readonly requests: number;
   readonly median: number;
   readonly p95: number;
+  readonly p99: number;
   readonly slowest: number;
 }
 
@@ -51,6 +61,7 @@ export function summary(times: readonly number[]): Summary {
     requests: times.length,
     median: tenth(sorted[Math.floor(sorted.length / 2)] ?? 0),
     p95: tenth(p95(times)),
+    p99: tenth(percentile(times, 0.99)),
     slowest: tenth(sorted.at(-1) ?? 0),
   };
 }

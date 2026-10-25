@@ -511,8 +511,14 @@ pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
 /// The message `cli.help.public-url`.
 pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
 
+/// The message `cli.help.sample-check`.
+pub const CLI_HELP_SAMPLE_CHECK: MessageKey = MessageKey::new("cli.help.sample-check");
+
 /// The message `cli.help.sample-issues`.
 pub const CLI_HELP_SAMPLE_ISSUES: MessageKey = MessageKey::new("cli.help.sample-issues");
+
+/// The message `cli.help.sample-large`.
+pub const CLI_HELP_SAMPLE_LARGE: MessageKey = MessageKey::new("cli.help.sample-large");
 
 /// The message `cli.help.sample-out`.
 pub const CLI_HELP_SAMPLE_OUT: MessageKey = MessageKey::new("cli.help.sample-out");
@@ -3667,6 +3673,9 @@ pub const SAMPLE_STEP_CODE_APP: MessageKey = MessageKey::new("sample.step.code-a
 
 /// The message `sample.step.comment`.
 pub const SAMPLE_STEP_COMMENT: MessageKey = MessageKey::new("sample.step.comment");
+
+/// The message `sample.step.dataset`.
+pub const SAMPLE_STEP_DATASET: MessageKey = MessageKey::new("sample.step.dataset");
 
 /// The message `sample.step.dates`.
 pub const SAMPLE_STEP_DATES: MessageKey = MessageKey::new("sample.step.dates");
@@ -8542,6 +8551,15 @@ pub fn sample_error_folder(
     )
 }
 
+/// The message `sample.error.large`.
+#[must_use]
+pub fn sample_error_large(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.large"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
 /// The message `sample.error.layout`.
 #[must_use]
 pub fn sample_error_layout(reason: impl std::fmt::Display) -> Message {
@@ -8638,6 +8656,23 @@ pub fn sample_error_too_few_names(people: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("sample.error.too-few-names"),
         vec![("people", Value::Text(people.to_string()))],
+    )
+}
+
+/// The message `sample.large-checked`.
+#[must_use]
+pub fn sample_large_checked(
+    fingerprint: impl std::fmt::Display,
+    issues: impl std::fmt::Display,
+    sampled: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.large-checked"),
+        vec![
+            ("fingerprint", Value::Text(fingerprint.to_string())),
+            ("issues", Value::Text(issues.to_string())),
+            ("sampled", Value::Text(sampled.to_string())),
+        ],
     )
 }
 
@@ -10389,12 +10424,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
     ),
     (
+        "cli.help.sample-check",
+        "With --large: makes a small dataset for the check of its rules: every event makes its notifications, and the check fails when Guests or Contributors were told nothing to look at",
+    ),
+    (
         "cli.help.sample-database",
         "Where the sample is kept: sqlite (a file in the data folder) or postgres (the address of an empty database is in the environment variable {variable})",
     ),
     (
         "cli.help.sample-issues",
         "How many issues the sample is created with. Without it, the number of the plan in tools/dev/sample.json; the comments, relations and the rest are scaled to it",
+    ),
+    (
+        "cli.help.sample-large",
+        "Makes the large dataset of PERF-01 instead of the sample: the same kinds of things at the scale of the large plan in tools/dev/sample.json (500 people, 500 projects, a million issues unless --issues says otherwise)",
     ),
     (
         "cli.help.sample-out",
@@ -12982,6 +13025,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The answer to a new access key does not hold the key.",
     ),
     (
+        "sample.error.large",
+        "The large dataset does not hold: {reason}",
+    ),
+    (
         "sample.error.layout",
         "The file tools/dev/sample.json is not usable: {reason}",
     ),
@@ -13047,6 +13094,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The list of names is too short for {people} different people.",
     ),
     (
+        "sample.large-checked",
+        "Checked the large dataset: {issues} issues, {sampled} of them held against their events and history. Fingerprint {fingerprint}",
+    ),
+    (
         "sample.sign-in-header",
         "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, name, the secret of the code app (empty for people who have none), and the access key for the few people who have one.",
     ),
@@ -13059,6 +13110,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.step.change", "changing an issue"),
     ("sample.step.code-app", "setting up a code app"),
     ("sample.step.comment", "writing a comment"),
+    ("sample.step.dataset", "writing the large dataset"),
     ("sample.step.dates", "working out the dates"),
     (
         "sample.step.editing",

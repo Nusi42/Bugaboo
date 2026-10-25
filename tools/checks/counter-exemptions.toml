@@ -174,3 +174,7 @@ reason = "Counts the issues the publisher could not move, among them ones they m
 route = "POST /api/v1/workflows/{workflow}/publish-preview"
 property = "issues"
 reason = "Counts the issues in a status that publishing would drop, among them ones the viewer may not see, and only counts them; the publish is refused for them with the same fact (workflow.status-in-use). The answer needs Manage workflows wherever the workflow is used (ADR-0031 amendment 12)."
+
+[[counting]]
+folder = "crates/bb-store/src/dataset.rs"
+reason = "Says where the counter of the counting issue IDs of a project stands after the large dataset wrote its issues in one go; the same counter as in issues.rs, set once (ADR-0021)."

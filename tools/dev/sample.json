@@ -161,5 +161,36 @@
       "viewerFollows": 400,
       "readPercent": 40
     }
+  },
+  "large": {
+    "$comment": "The large dataset of PERF-01 (architecture §11, 'Large dataset', cargo xtask dataset large): the sample's kinds of things at the scale the budgets are measured on. 'people' and 'projects' count the sample's too. A share is in percent of the issues, the projects or the events; 'notifiedPercent' is how many of the newest events the notification reader makes notifications for.",
+    "issues": 1000000,
+    "checkIssues": 3000,
+    "out": ".work/dataset",
+    "checkOut": ".work/dataset/check",
+    "benchOut": ".work/bench",
+    "nightlyOut": ".work/nightly",
+    "database": "bblarge",
+    "people": 500,
+    "projects": 500,
+    "subProjectsEach": 4,
+    "groups": 40,
+    "ownWorkflowProjects": 25,
+    "months": 24,
+    "commentsPer100": 200,
+    "germanPercent": 30,
+    "donePercentOldest": 92,
+    "donePercentNewest": 8,
+    "relationsPer100": 25,
+    "subIssuePercent": 8,
+    "tagPercent": 40,
+    "labelPercent": 30,
+    "filePercent": 3,
+    "assignedPercent": 70,
+    "followersAtMost": 3,
+    "notifiedPercent": 2,
+    "checkNotifiedPercent": 100,
+    "batch": 2000,
+    "bigProjectsShare": 60
   }
 }

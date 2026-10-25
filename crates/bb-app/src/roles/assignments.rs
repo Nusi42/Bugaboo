@@ -16,9 +16,7 @@ use super::types::{
     WhoView,
 };
 use crate::access::{Actor, ensure_may_give_in};
-use crate::auth::{
-    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal, set_to,
-};
+use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal};
 
 /// Whether `new` and `old` are for the same person or group.
 pub(super) fn same_subject(new: &Assignment, old: &Assignment) -> bool {
@@ -138,10 +136,7 @@ pub async fn assign_role<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Assignment, row.id),
-        vec![
-            set_to("role", json!(row.role.map(|role| role.to_string()))),
-            set_to("applies_to", json!(row.applies_to.code())),
-        ],
+        crate::event_members::assignment_given(&row),
     )?;
     let stored = row.clone();
     let giver = actor.person.id;

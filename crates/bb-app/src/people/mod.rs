@@ -35,7 +35,7 @@ use serde_json::json;
 
 use crate::access::{ensure_may_give_in, ensure_may_lift_in};
 use crate::auth::{
-    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
+    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal,
 };
 use crate::input::clean_name;
 use crate::member;
@@ -210,7 +210,7 @@ pub async fn create_group<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Group, group.id),
-        vec![set_to(member::group::NAME, json!(group.name))],
+        crate::event_members::group_created(&group),
     )?;
     let stored = group.clone();
     ctx.store()
@@ -374,7 +374,7 @@ pub async fn add_group_member<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Group, group.id),
-        vec![changed("member")],
+        crate::event_members::group_member_added(),
     )?;
     let giver = actor.person.id;
     ctx.store()

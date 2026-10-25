@@ -417,6 +417,28 @@ impl Postgres<'_> {
 }
 
 impl Postgres<'_> {
+    /// The address that opens the database `name`, which must be there (it is not made or emptied).
+    pub(crate) fn url_of(&self, name: &str) -> anyhow::Result<String> {
+        if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            bail!("`{name}` is no name for a database: use letters, digits and underscores.");
+        }
+        Ok(database_url(
+            &self.cluster.password()?,
+            self.cluster.port,
+            name,
+        ))
+    }
+
+    /// How many bytes the database `name` takes on disk.
+    pub(crate) fn size_of(&self, name: &str) -> anyhow::Result<u64> {
+        self.url_of(name)?;
+        self.cluster
+            .psql(&format!("SELECT pg_database_size('{name}')"))?
+            .trim()
+            .parse()
+            .context("PostgreSQL did not answer with a size")
+    }
+
     /// Writes what the tables of the database `name` hold into `file`, as SQL (`pg_dump` of the
     /// pinned PostgreSQL, data only), so it can be read like any other file.
     pub(crate) fn dump_data(&self, name: &str, file: &Path) -> anyhow::Result<()> {

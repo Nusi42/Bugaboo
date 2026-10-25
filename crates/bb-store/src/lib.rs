@@ -12,6 +12,8 @@ mod anchor;
 mod auth;
 mod chain;
 mod comments;
+#[cfg(feature = "dataset")]
+mod dataset;
 mod db;
 mod editing;
 mod error;

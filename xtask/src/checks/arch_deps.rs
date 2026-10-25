@@ -26,6 +26,13 @@ const TESTING_FEATURE: &str = "testing";
 /// only, so the program that ships never has the hooks.
 const TOOLS_WITH_TESTING: [&str; 2] = ["bb-sample", "bb-load-check"];
 
+/// The feature of `bb-store` that opens the one write only the large dataset needs.
+const DATASET_FEATURE: &str = "dataset";
+
+/// The only crate that may switch `dataset` on, in any kind of dependency: the program that ships
+/// never has the write.
+const TOOLS_WITH_DATASET: [&str; 1] = ["bb-sample"];
+
 pub(crate) struct ArchDeps;
 
 impl Check for ArchDeps {
@@ -84,6 +91,20 @@ fn evaluate(packages: &[Package], map: &Map) -> Vec<Finding> {
                     name,
                     format!(
                         "switches on `{TESTING_FEATURE}` of `{}` outside `[dev-dependencies]`. The test hooks must not be in the program that ships; only the developer tools {TOOLS_WITH_TESTING:?} may.",
+                        dependency.name
+                    ),
+                ));
+            }
+            if dependency
+                .features
+                .iter()
+                .any(|each| each == DATASET_FEATURE)
+                && !TOOLS_WITH_DATASET.contains(&name)
+            {
+                findings.push(Finding::at(
+                    name,
+                    format!(
+                        "switches on `{DATASET_FEATURE}` of `{}`. The write of the large dataset must not be in a crate that ships or in a test; only {TOOLS_WITH_DATASET:?} may.",
                         dependency.name
                     ),
                 ));
@@ -210,6 +231,37 @@ mod tests {
         // A tool is not in this small map, so only the one rule is looked at.
         let tool = evaluate(&with_testing("bb-sample", None), &map);
         assert!(tool.iter().all(|f| !f.message.contains("switches on")));
+    }
+
+    fn with_dataset(name: &str, kind: Option<&str>) -> Vec<Package> {
+        let mut app = package(name, &["bb-core"]);
+        app.dependencies[0].features = vec![DATASET_FEATURE.to_owned()];
+        app.dependencies[0].kind = kind.map(str::to_owned);
+        let mut packages = crates(&[]);
+        packages.retain(|p| p.name != name);
+        packages.push(app);
+        packages
+    }
+
+    #[test]
+    fn bad_example_a_crate_other_than_the_sample_switches_the_dataset_write_on() {
+        let map = parse_map(MAP).unwrap();
+        for kind in [None, Some("dev")] {
+            let findings = evaluate(&with_dataset("bb-app", kind), &map);
+            assert!(
+                findings
+                    .iter()
+                    .any(|f| f.message.contains("switches on `dataset`")),
+                "{:?}",
+                findings.iter().map(|f| &f.message).collect::<Vec<_>>()
+            );
+        }
+    }
+
+    #[test]
+    fn good_example_the_sample_switches_the_dataset_write_on() {
+        let findings = evaluate(&with_dataset("bb-sample", None), &parse_map(MAP).unwrap());
+        assert!(findings.iter().all(|f| !f.message.contains("switches on")));
     }
 
     #[test]

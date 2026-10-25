@@ -4,6 +4,7 @@
 
 mod check_access_types;
 mod editing;
+mod event_members;
 mod events;
 mod failures;
 mod fake;
@@ -41,6 +42,7 @@ mod moving;
 mod names_stored;
 mod notifications;
 mod notifications_files;
+mod notifications_projects;
 mod offers;
 mod offers_known_uses;
 mod offers_secrecy;

@@ -153,7 +153,9 @@ impl Setup {
 }
 
 /// The IDs of the projects, by short name.
-async fn project_ids(world: &World<'_>) -> Result<BTreeMap<String, ProjectId>, SampleError> {
+pub(crate) async fn project_ids(
+    world: &World<'_>,
+) -> Result<BTreeMap<String, ProjectId>, SampleError> {
     Ok(world
         .storage
         .project_tree()
@@ -164,7 +166,7 @@ async fn project_ids(world: &World<'_>) -> Result<BTreeMap<String, ProjectId>, S
 }
 
 /// Makes one own field for issues, used where the plan says.
-async fn create_one_field(
+pub(crate) async fn create_one_field(
     world: &World<'_>,
     token: &str,
     plan: &FieldPlan,

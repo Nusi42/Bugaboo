@@ -151,6 +151,20 @@ impl<S: AuthStore> Ctx<'_, S> {
                 reading.comments.insert(comment.id, comment);
             }
         }
+        // The rights in every project the rows name, from one read and not one for each project.
+        let projects: Vec<_> = rows
+            .iter()
+            .filter_map(|row| row.issue)
+            .filter_map(|id| reading.issues.get(&id))
+            .map(|issue| issue.project)
+            .collect();
+        // The projects the rights were read with are known to the lines: one read for both.
+        if let Some(read) = self
+            .evaluate_projects(reading.actor.person.id, &projects)
+            .await?
+        {
+            reading.maker.know_projects(&projects, &read);
+        }
         Ok(())
     }
 

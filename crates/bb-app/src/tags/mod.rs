@@ -22,8 +22,8 @@ mod store;
 mod suggest;
 mod types;
 
-pub(crate) use issue::labels_changed;
 pub use issue::{add_label, add_tag, issue_labels_and_tags, remove_label, remove_tag};
+pub(crate) use issue::{labels_changed, names_changed};
 pub use labels::{
     change_label, change_label_group, combine_labels, create_label, create_label_group,
     label_change_preview, label_groups, labels,
@@ -33,4 +33,4 @@ pub use store::{TagLimit, TagStore, TagUse};
 pub use suggest::tag_suggestions;
 pub use types::*;
 
-pub(crate) use refs::{EventLabel, event_labels};
+pub(crate) use refs::{EventLabel, NameRef, event_labels};

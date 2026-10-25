@@ -68,6 +68,7 @@ mod meta_speed;
 pub(crate) mod meta_suppress;
 pub(crate) mod meta_wiring;
 mod node_tool;
+mod perf_bench;
 mod perf_bundle;
 mod perf_n1;
 mod plan_trace;
@@ -267,6 +268,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(plan_trace::PlanTrace),
         Box::new(arch_map_sync::ArchMapSync),
         Box::new(perf_bundle::PerfBundle),
+        Box::new(perf_bench::PerfBench),
         Box::new(meta_fixtures::MetaFixtures),
         Box::new(meta_coverage::MetaCoverage),
         Box::new(meta_new_module::MetaNewModule),

@@ -25,7 +25,7 @@ use crate::steps::{self, Profile};
 /// and the end-to-end tests read the same file.
 const LAYOUT_FILE: &str = "tools/dev/sample.json";
 /// The moment every run of `--check` ends at: 2027-01-15 08:00:00 UTC, an arbitrary fixed one.
-const CHECK_START: i64 = 1_800_000_000;
+pub(crate) const CHECK_START: i64 = 1_800_000_000;
 /// The database of the throwaway cluster that holds the sample made with `--database postgres`.
 const SAMPLE_DATABASE: &str = "bbsample";
 /// What `--check` makes of the tables of a PostgreSQL run, so the scan for secrets covers them.
@@ -48,7 +48,7 @@ pub(crate) fn load_layout(root: &Path) -> anyhow::Result<Layout> {
 
 /// The folder `relative` (written with `/` in the layout) inside `root`, with the separator of
 /// this system on every part, so a path in a message does not mix both.
-fn in_folder(root: &Path, relative: &str) -> PathBuf {
+pub(crate) fn in_folder(root: &Path, relative: &str) -> PathBuf {
     relative
         .split('/')
         .fold(root.to_path_buf(), |folder, part| folder.join(part))
@@ -62,6 +62,10 @@ pub(crate) struct Request {
     pub(crate) database: DatabaseKind,
     pub(crate) out: Option<PathBuf>,
     pub(crate) check: bool,
+    /// Make the large dataset of PERF-01 instead (`cargo xtask dataset large`).
+    pub(crate) large: bool,
+    /// The databases of a large dataset; none means both.
+    pub(crate) databases: Vec<DatabaseKind>,
 }
 
 /// Makes the sample, or checks it; the result says whether everything went well.
@@ -69,6 +73,9 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
     let Some(program) = build_program(repo.root())? else {
         return Ok(false);
     };
+    if request.large {
+        return crate::dataset_large::run(repo, &program, request);
+    }
     if request.check {
         return check(repo, &program, request.seed);
     }
@@ -84,6 +91,8 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
             &program,
             repo.root(),
             &Arguments {
+                large: false,
+                check: false,
                 seed: request.seed,
                 start: now()?,
                 database: request.database,
@@ -139,6 +148,8 @@ pub(crate) fn create_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
         &program,
         root,
         &Arguments {
+            large: false,
+            check: false,
             seed: None,
             start: now()?,
             database: DatabaseKind::Sqlite,
@@ -155,13 +166,13 @@ pub(crate) fn create_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
 /// Builds the program and returns where it is; `None` when the build failed (cargo said why).
 /// It is built with optimisations: the full sample is about seventy thousand use cases one after
 /// the other, which take about twice as long in an unoptimised build.
-fn build_program(root: &Path) -> anyhow::Result<Option<PathBuf>> {
+pub(crate) fn build_program(root: &Path) -> anyhow::Result<Option<PathBuf>> {
     let built = steps::run(root, &[steps::sample_build(Profile::Release)])?;
     Ok(built.executable.filter(|_| built.passed))
 }
 
 /// The moment the sample ends: now, in seconds since 1970.
-fn now() -> anyhow::Result<i64> {
+pub(crate) fn now() -> anyhow::Result<i64> {
     let since = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .context("the clock of this computer is before 1970")?;
@@ -169,17 +180,20 @@ fn now() -> anyhow::Result<i64> {
 }
 
 /// What the program is told.
-struct Arguments<'a> {
-    seed: Option<u64>,
-    start: i64,
-    database: DatabaseKind,
-    issues: Option<u32>,
-    out: &'a Path,
+pub(crate) struct Arguments<'a> {
+    pub(crate) large: bool,
+    /// A run of `dataset large --check`: the program is told `--check`.
+    pub(crate) check: bool,
+    pub(crate) seed: Option<u64>,
+    pub(crate) start: i64,
+    pub(crate) database: DatabaseKind,
+    pub(crate) issues: Option<u32>,
+    pub(crate) out: &'a Path,
 }
 
 /// The command that runs the program. The address of a PostgreSQL database goes in the
 /// environment, never on the command line, where every program on the computer can read it.
-fn program_command(
+pub(crate) fn program_command(
     program: &Path,
     root: &Path,
     arguments: &Arguments<'_>,
@@ -197,6 +211,12 @@ fn program_command(
         .arg(arguments.database.code())
         .arg("--out")
         .arg(arguments.out);
+    if arguments.large {
+        command.arg("--large");
+    }
+    if arguments.check {
+        command.arg("--check");
+    }
     if let Some(issues) = arguments.issues {
         command.arg("--issues").arg(issues.to_string());
     }
@@ -233,6 +253,8 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
                 program,
                 root,
                 &Arguments {
+                    large: false,
+                    check: false,
                     seed,
                     start: CHECK_START,
                     database,
@@ -357,6 +379,8 @@ mod tests {
             Path::new("bb-sample"),
             Path::new("."),
             &Arguments {
+                large: false,
+                check: false,
                 seed: Some(7),
                 start: 1_800_000_000,
                 database: DatabaseKind::Postgres,
@@ -395,6 +419,8 @@ mod tests {
             Path::new("bb-sample"),
             Path::new("."),
             &Arguments {
+                large: false,
+                check: false,
                 seed: None,
                 start: 1,
                 database: DatabaseKind::Sqlite,

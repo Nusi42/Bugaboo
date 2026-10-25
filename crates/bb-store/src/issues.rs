@@ -73,6 +73,16 @@ pub(crate) fn issue_select() -> SelectStatement {
     select
 }
 
+/// The question for the number a project has given out up to: the one statement that the use cases
+/// and the check of the large dataset both ask.
+pub(crate) fn counter_select(project: ProjectId) -> SelectStatement {
+    let mut read = Query::select();
+    read.column(IssueCounterRow::Last)
+        .from(IssueCounterRow::Table)
+        .and_where(Expr::col(IssueCounterRow::Project).eq(project.stored()));
+    read
+}
+
 fn read_code(text: &str) -> Result<IssueCode, StoreError> {
     IssueCode::new(text).map_err(|_| StoreError::Corrupt("an issue code"))
 }
@@ -584,12 +594,8 @@ impl IssueStore for AuthStorage {
             )
             .and_where(Expr::col(IssueCounterRow::Project).eq(project.stored()));
         transaction.execute(&raise).await?;
-        let mut read = Query::select();
-        read.column(IssueCounterRow::Last)
-            .from(IssueCounterRow::Table)
-            .and_where(Expr::col(IssueCounterRow::Project).eq(project.stored()));
         transaction
-            .fetch_optional(&read)
+            .fetch_optional(&counter_select(project))
             .await?
             .ok_or(StoreError::Corrupt("a counter"))?
             .get(IssueCounterRow::Last)

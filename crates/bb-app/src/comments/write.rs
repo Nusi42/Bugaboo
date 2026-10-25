@@ -140,10 +140,7 @@ pub async fn add_comment<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Comment, comment.id),
-        vec![
-            set_to(member::ISSUE, json!(issue.id.to_string())),
-            set_to(member::TEXT, json!(comment.text)),
-        ],
+        crate::event_members::comment_written(issue.id, &comment.text),
     )?;
     let stored = comment.clone();
     ctx.store()

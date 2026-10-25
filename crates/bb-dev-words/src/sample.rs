@@ -9,12 +9,20 @@ use std::fmt;
 
 use serde::Deserialize;
 
+use crate::sample_large::LargePlan;
+
 /// The text of the file, built into the program that needs it without a file on disk.
 const BUNDLED: &str = include_str!("../../../tools/dev/sample.json");
 
 /// The file is not usable.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LayoutError(String);
+
+impl LayoutError {
+    pub(crate) const fn new(text: String) -> Self {
+        Self(text)
+    }
+}
 
 impl fmt::Display for LayoutError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -55,6 +63,8 @@ pub struct Layout {
     pub organization: OrganizationNames,
     /// What the organization holds besides the people: the issues and what belongs to them.
     pub issues: IssuePlan,
+    /// The large dataset of PERF-01: the same kinds of things at a larger scale.
+    pub large: LargePlan,
 }
 
 /// What the sample holds in issues (architecture §11, *Projects*): the counts of the full sample,
@@ -329,6 +339,7 @@ impl Layout {
     pub fn parse(text: &str) -> Result<Self, LayoutError> {
         let layout: Self =
             serde_json::from_str(text).map_err(|error| LayoutError(error.to_string()))?;
+        layout.large.check()?;
         let names = [
             &layout.out,
             &layout.out_postgres,

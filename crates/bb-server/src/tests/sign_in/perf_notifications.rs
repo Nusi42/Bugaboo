@@ -111,6 +111,75 @@ async fn perf_05_the_number_on_the_menu_runs_as_many_statements_for_forty_unread
     .await
 }
 
+/// Bob finishes one new issue of Ada in each of the projects `from..to` (made as `P<number>`), so
+/// Ada hears of one change in each of them.
+async fn news_in_projects(
+    site: &Site<'_>,
+    ada: &mut Browser,
+    bob: &mut Browser,
+    from: usize,
+    to: usize,
+) -> Result<(), Failure> {
+    for number in from..to {
+        let short = format!("P{number}");
+        ok(&ada
+            .send(
+                "POST",
+                super::issues_site::PROJECTS,
+                Some(json!({"short_name": short, "name": format!("Project {number}")})),
+            )
+            .await?)?;
+        let made = ada
+            .send(
+                "POST",
+                &format!("{}/{short}/issues", super::issues_site::PROJECTS),
+                Some(site.new_issue("An issue")),
+            )
+            .await?;
+        let issue = key_of(&made)?;
+        let version = version_of(bob, &issue).await?;
+        let changed = bob
+            .send(
+                "PATCH",
+                &format!("{ISSUES}/{issue}"),
+                Some(json!({"version": version, "status": "done"})),
+            )
+            .await?;
+        assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn perf_05_the_number_on_the_menu_runs_as_many_statements_for_twelve_projects_as_for_two()
+-> TestResult {
+    each_database("perf_05_notifications_projects", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bob, _) = site
+            .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
+            .await?;
+        let unread = format!("{NOTIFICATIONS}/unread");
+        let mut counter = Counter::on(&rig.database);
+        news_in_projects(&site, &mut ada, &mut bob, 0, 2).await?;
+        ok(&ada.send("GET", &unread, None).await?)?;
+        counter.take();
+        let few = ada.send("GET", &unread, None).await?;
+        assert_eq!(ok(&few)?["unread"], 2);
+        let on_two = counter.take();
+        news_in_projects(&site, &mut ada, &mut bob, 2, 12).await?;
+        ok(&ada.send("GET", &unread, None).await?)?;
+        counter.take();
+        let many = ada.send("GET", &unread, None).await?;
+        assert_eq!(ok(&many)?["unread"], 12);
+        let on_twelve = counter.take();
+        // The rights in each project are read together, not one project after the other.
+        assert_as_many_statements(on_two, on_twelve, AT_MOST, "more projects");
+        Ok(())
+    })
+    .await
+}
+
 /// Makes a new issue that `followers` more people follow, and changes it `changes` times as Ada
 /// (`status` false: the title, which followers do not want to hear of unless they turned it on;
 /// true: the status, which they do). The statements the reader runs to catch up with the changes.

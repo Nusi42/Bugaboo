@@ -87,14 +87,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .map(|found| found.id)
             .collect();
-        let rules = self
-            .store()
-            .level_rules_of_roles(shown.role_ids())
-            .await
-            .map_err(failed)?;
+        let leveled = self
+            .shown_with_levels(shown.person(), shown.key().cloned())
+            .await?;
         let found = Arc::new(
             self.store()
-                .used_label_groups(&shown.label_sight(rules, &types))
+                .used_label_groups(&leveled.label_sight(&types))
                 .await
                 .map_err(failed)?,
         );

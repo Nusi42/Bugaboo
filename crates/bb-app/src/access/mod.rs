@@ -43,7 +43,7 @@ pub use visibility::{
 use serde::Serialize;
 
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal, locked};
-use crate::projects::sub_projects_in;
+use crate::projects::{Shown, sub_projects_in};
 
 /// Who asks: the signed-in person behind a session, or the owner of the access key a script
 /// came with.
@@ -210,6 +210,41 @@ impl<S: AuthStore> Ctx<'_, S> {
         );
         self.remember_evaluation(person, place, &evaluation);
         Ok(evaluation)
+    }
+
+    /// Keeps the evaluation of `person` at each of `projects` for the rest of the request, from
+    /// one read of their rows, the levels of their roles and the tree of the projects. Each
+    /// `evaluate` of a place reads all of that again (some fifteen statements), which a page of
+    /// notifications in many projects pays for every project; the decision is the same
+    /// ([`Policy::evaluate_with`] is what a preview of a move asks too). Nothing is read when
+    /// fewer than two of the places are not kept yet. What was read is given back, so that the
+    /// caller does not read the projects once more.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn evaluate_projects(
+        &self,
+        person: UserId,
+        projects: &[ProjectId],
+    ) -> Result<Option<Shown>, AppError> {
+        let mut wanted: Vec<ProjectId> = projects
+            .iter()
+            .copied()
+            .filter(|project| {
+                self.cached_evaluation(person, Place::Project(*project))
+                    .is_none()
+            })
+            .collect();
+        wanted.sort();
+        wanted.dedup();
+        if wanted.len() < 2 {
+            return Ok(None);
+        }
+        let shown = self.shown_with_levels(person, None).await?;
+        for (project, found) in shown.evaluations_in(&wanted) {
+            self.remember_evaluation(person, Place::Project(project), &Arc::new(found));
+        }
+        Ok(Some(shown))
     }
 
     fn cached_evaluation(&self, person: UserId, place: Place) -> Option<Arc<Evaluation>> {

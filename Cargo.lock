@@ -644,6 +644,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "toml",
+ "zeroize",
 ]
 
 [[package]]
@@ -5596,6 +5597,7 @@ dependencies = [
  "flate2",
  "getrandom 0.4.3",
  "globset",
+ "jiff",
  "kdl",
  "pulldown-cmark",
  "serde",

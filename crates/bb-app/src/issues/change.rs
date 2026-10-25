@@ -7,11 +7,11 @@ use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, StatusGroup};
-use bb_core::version::{counted_up, next as next_version};
+use bb_core::version::next as next_version;
 use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Place};
 use jiff::Timestamp;
-use serde_json::{Value, json};
+use serde_json::json;
 
 use super::fields::{Given, clean_title, ensure_may_change, member};
 use super::types::{ChangeIssue, IssueView};
@@ -47,32 +47,28 @@ impl Plan {
     pub(crate) fn field_changes(&self) -> Vec<FieldChange> {
         let (before, after) = (&self.current, &self.next);
         let mut changes = Vec::new();
-        let mut add = |name: &str, was: Value, now: Value| {
-            if was != now {
-                changes.push(FieldChange {
-                    field: name.to_owned(),
-                    before: Some(was),
-                    after: Some(now),
-                });
-            }
-        };
-        add(
+        let mut add = |change: Option<FieldChange>| changes.extend(change);
+        let difference = crate::event_members::difference;
+        add(difference(
             member::ISSUE_TYPE,
             json!(before.issue_type.to_string()),
             json!(after.issue_type.to_string()),
-        );
-        add(member::TITLE, json!(before.title), json!(after.title));
-        add(
-            member::STATUS,
-            json!(before.status.as_str()),
-            json!(after.status.as_str()),
-        );
-        add(
+        ));
+        add(difference(
+            member::TITLE,
+            json!(before.title),
+            json!(after.title),
+        ));
+        add(crate::event_members::status_member(
+            &before.status,
+            &after.status,
+        ));
+        add(difference(
             member::PRIORITY,
             json!(before.priority.code()),
             json!(after.priority.code()),
-        );
-        add(
+        ));
+        add(difference(
             member::ASSIGNED_TO,
             json!(
                 self.assigned_now
@@ -86,7 +82,7 @@ impl Plan {
                     .map(ToString::to_string)
                     .collect::<Vec<_>>()
             ),
-        );
+        ));
         changes.extend(self.own.changes());
         changes
     }
@@ -402,8 +398,7 @@ pub async fn change_issue<S: AuthStore>(
         group.closed_after(current.closed_at, now)
     });
     let id = current.id;
-    let mut field_changes = field_changes;
-    field_changes.push(counted_up(current.version));
+    let field_changes = crate::event_members::issue_counted_up(field_changes, current.version);
     let (record, place, editor) = (
         entity(RecordKind::Issue, id),
         Place::Project(current.project),

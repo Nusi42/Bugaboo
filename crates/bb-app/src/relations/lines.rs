@@ -20,7 +20,7 @@ use super::types::IssueLine;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::issues::{IssueTypeRef, Where};
-use crate::projects::ProjectRef;
+use crate::projects::{ProjectRef, Shown};
 use crate::workflows::StatusView;
 use std::sync::Arc;
 
@@ -32,6 +32,18 @@ pub(crate) struct LineMaker {
     projects: HashMap<ProjectId, Option<Project>>,
     /// The workflow that counts for each project and issue type of the lines so far.
     workflows: HashMap<(ProjectId, IssueTypeId), Arc<WorkflowContent>>,
+}
+
+impl LineMaker {
+    /// Takes the projects of `wanted` that are not known yet from `all`, the projects as they are
+    /// stored, which one read gave: so a page over many projects does not read them one by one.
+    pub(crate) fn know_projects(&mut self, wanted: &[ProjectId], all: &Shown) {
+        for id in wanted {
+            if let Entry::Vacant(slot) = self.projects.entry(*id) {
+                slot.insert(all.stored(*id).cloned());
+            }
+        }
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

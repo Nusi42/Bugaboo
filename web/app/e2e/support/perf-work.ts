@@ -17,7 +17,7 @@ export const FILES_EACH = 3;
 /** The side of the pictures the test adds, in pixels. */
 const PICTURE_SIDE = 64;
 /** How many notifications a page of the list holds. */
-const NOTIFICATIONS_PAGE = 50;
+export const NOTIFICATIONS_PAGE = 50;
 /** How many pages of notifications a person reads one after the other, as they scroll. */
 const NOTIFICATION_PAGES = 3;
 /** How many status changes are timed. */
