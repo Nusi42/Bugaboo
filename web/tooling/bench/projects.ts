@@ -34,8 +34,9 @@ async function countOf(
  * The projects of the list scenarios. The big one is the first project of the sample (the dataset
  * ranks the sample's projects among the biggest, and the first of them first); it must have more
  * than one page of issues. The small one is the one with the fewest issues, counted, among the last
- * projects of the list; it must have some and fewer than the big one. Fails when either cannot be
- * found, so a scenario never measures a project that is not what its name says.
+ * projects of the list, leaving the big one out; it must have some and fewer than the big one. Fails
+ * when either cannot be found, so a scenario never measures a project that is not what its name
+ * says.
  */
 export async function bigAndSmall(
   session: ApiSession,
@@ -50,15 +51,24 @@ export async function bigAndSmall(
   }
   const counts: Counted[] = [];
   await inOrder(
-    projects.slice(-TAIL_COUNTED).map((project) => async () => {
-      counts.push({ project, count: await countOf(session, project) });
-    }),
+    projects
+      .slice(-TAIL_COUNTED)
+      .filter((project) => project !== big)
+      .map((project) => async () => {
+        counts.push({ project, count: await countOf(session, project) });
+      }),
   );
   const filled = counts.filter((each) => each.count > 0);
   const fewest = Math.min(...filled.map((each) => each.count));
   const smallest = filled.find((each) => each.count === fewest);
   if (smallest === undefined) {
     throw new Error("The last projects of the dataset have no issues.");
+  }
+  const bigCount = await countOf(session, big);
+  if (fewest >= bigCount) {
+    throw new Error(
+      `The smallest project ${smallest.project} has ${fewest} issues counted, not fewer than the big ${big} with ${bigCount}.`,
+    );
   }
   return { big, small: smallest.project };
 }
