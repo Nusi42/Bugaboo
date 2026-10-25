@@ -97,7 +97,7 @@ Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package f
 
 | Package | Owns |
 |---------|------|
-| WP-02 | `crates/bb-searchlang/**`, the search part of `crates/bb-wasm`, `web/packages/wasm` (search bindings) |
+| WP-02 | `crates/bb-searchlang/**`, `crates/bb-wasm-search`, `web/packages/wasm-search` |
 | WP-03 | `xtask/src/dataset*`, the benchmark code, `tools/checks/perf-*`, the nightly job |
 | WP-04 | `crates/bb-store/src/search/**`, `crates/bb-app/src/search/**`, `crates/bb-api/src/api/search*`, the issue list route, new migrations for indexes |
 | WP-05 | `crates/bb-store/src/text_index/**`, its outbox reader, its migration |

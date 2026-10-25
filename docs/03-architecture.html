@@ -169,7 +169,8 @@
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-dev-words/       the words the developer tools, the tests and xtask share: databases, test variables, the sample layout
-│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation, the wording of changes and notifications and the rule of the same name (bb-core)
+│   ├── bb-wasm/            WebAssembly bindings for markdown, the wording of changes and notifications and the rule of the same name (bb-core); a module of its own
+│   ├── bb-wasm-search/     WebAssembly bindings for searchlang; a module of its own, fetched when a search bar first opens (ADR-0005, amendment M5)
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
 │   ├── bb-load-check/      the invariants after a run of many people at once, written once; developer tool and test support (never shipped)
@@ -183,7 +184,8 @@
 │   └── packages/
 │       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
 │       ├── ui/             shared components on React Aria + the generated style sheet; depends on api-client for the generated choices and defaults of the settings (the look of a person), and loads `wasm` when a Markdown preview opens
-│       ├── wasm/           loads the module of bb-wasm (Markdown preview; the rule of the same name for the draft of a workflow) (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
+│       ├── wasm/           loads the module of bb-wasm (Markdown preview; the wording of changes; the rule of the same name for the draft of a workflow) (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
+│       ├── wasm-search/    loads the module of bb-wasm-search (the search bar: parse, print, check and suggest; places counted in the units of the string; the types are generated from the Rust types, `cargo xtask gen search-types`)
 │       └── messages/       generated, typed message keys
 ├── docs/                   development docs (this)
 └── userDocs/               user and admin docs</code></pre>
@@ -207,6 +209,7 @@
   notify["bb-notify"]
   jobs["bb-jobs"]
   wasm["bb-wasm"]
+  wasmsearch["bb-wasm-search"]
   testing["bb-testing&lt;br/&gt;database test harness"]
   sample["bb-sample&lt;br/&gt;sample organization"]
   loadcheck["bb-load-check&lt;br/&gt;invariants after a run"]
@@ -227,7 +230,8 @@
   store --&gt; search &amp; policy &amp; core
   files --&gt; core
   notify --&gt; core
-  wasm --&gt; search &amp; md &amp; core
+  wasm --&gt; md &amp; core
+  wasmsearch --&gt; search
   store -. tests only .-&gt; testing
   server -. tests only .-&gt; words
   testing --&gt; devwords
@@ -261,7 +265,9 @@
 <li><strong><code>Authorized&lt;T&gt;</code>:</strong> the only way data leaves the domain. It carries the field mask, so projections drop hidden fields automatically. A view is masked by <code>#[derive(Masked)]</code>: every member says whether it holds a field of the catalogue, a view inside the view or nothing hidden, so a hidden field of a nested view never leaves (SEC-04, M2-F21).</li>
 </ul>
 <h4>bb-searchlang</h4>
-<p>Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes a <strong>field catalogue</strong> (the fields this person may read), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree.</p>
+<p>Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes a <strong>field catalogue</strong> (the fields this person may read), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree. The final grammar, the limits and the canonical text are in <span title="07-cross-cutting.md#search-language-adr-0005 in the repository">§7, Search language</span>. The tree and the catalogue cross into the browser module as JSON that is read by hand (<code>json.rs</code>): deriving the reading made the module a third bigger than its budget. The test vectors (<code>vectors.rs</code>) are what the browser's unit tests run the module on.</p>
+<h4>bb-wasm and bb-wasm-search</h4>
+<p>Two modules, one way: each has its own crate (the bindings only pass calls through to the pure crates, they hold no rule), its own package in <code>web/packages/</code> that loads it when its feature first opens, and its own budget in <code>tools/checks/perf-bundle.toml</code> (PERF-BUNDLE, by the name of the file without the hash). A list should not fetch the module of Markdown, nor an editor the search language. <code>cargo xtask wasm</code> builds both (the list <code>MODULES</code> in <code>xtask/src/wasm.rs</code>).</p>
 <h4>bb-app — use cases by feature</h4>
 <p>Built so far (M0 to M4): <code>auth</code> (signing in), <code>people</code> (people and groups), <code>roles</code> (roles and who has which role), <code>access</code> (field permissions, <em>Who sees people</em>, <em>Check access</em>, the starting roles), <code>projects</code>, <code>settings</code>, <code>issues</code> (issues, types, IDs, the trash), <code>fields</code> (own fields and their choices), <code>relations</code> (relations, sub-issues, kinds of relation), <code>tags</code> (tags, labels, groups of labels), <code>comments</code> (comments, mentions), <code>follow</code>, <code>history</code> (the history read from the events), <code>editing</code> (edit locks, drafts, the check of versions, the structured conflict), <code>layouts</code> (the issue page and the new-issue form), <code>many_changes</code> (changing many issues, with the run that goes on in the background), <code>notifications</code> (the reader of the outbox that tells people, their e-mail, handles and the confirming of an address; M4), <code>jobs</code> (the queue as the use cases see it, and what each kind of job does), <code>first_start</code> (what a new server makes before anyone signs in), <code>workflows</code> (the judge's inputs, the editor, <em>Publish</em> with its preview and the check that no issue is stranded; M4), <code>offers</code> (where issue types and groups of labels are offered, and what a person may know of them; M4), <code>files</code> (uploads in parts, attachments with the trash and <em>Undo</em>, signed downloads, previews and the daily clean-up; M4), <code>preview</code>, <code>status</code>. Planned: <code>releases</code>, <code>search</code>, <code>boards</code>, <code>timeline</code>, <code>calendar</code>, <code>relation_map</code>, <code>time</code> (timers, time entries, working hours, rules), <code>documents</code>, <code>assistant</code>, <code>privacy</code>, <code>themes</code>, <code>admin</code>.</p>
 <p>Every use case has the same shape:</p>
@@ -902,17 +908,35 @@ Place  = "organization" | ProjectRef | "hidden"                                 
 <li><strong>Legal holds:</strong> working hours stay until their keep period ends, even after a person is removed.</li>
 </ul>
 <h3 id="s7-6"><button class="sec" data-sec>§7.6</button>Search language (ADR-0005)</h3>
-<p>Grammar sketch (the final grammar is written by M5 WP-02, within the amendment M5 of ADR-0005):</p>
-<pre><code>search     = [ expr ] [ "sort by" sort ("," sort)* ]
-expr       = term ( ("and" | "or") term )*
-term       = "not" term | "(" expr ")" | condition
-condition  = field op value | field "contains" text | helper
-op         = "is" | "is not" | "&lt;" | "&gt;" | "&lt;=" | "&gt;=" | "in" | "within"
-helper     = "connected to" key [ "within" n "steps" ] | "under" key | "blocks" key | …
-value      = word | quoted | number | date | "me" | "today" | "in last" n unit</code></pre>
+<p>One grammar, written once in Rust (<code>bb-searchlang</code>) and used by the server and, as its own WebAssembly module (<code>bb-wasm-search</code>), by the browser. The words are English and the same in every language of the app, so a shared search works for everyone. A field is written as on screen in one word, in lower camel case (<code>assignedTo</code>, <code>statusGroup</code>); the caller passes the <strong>field catalogue</strong> (the fields this person may read), and a field outside it is as unknown as one that does not exist.</p>
+<pre><code>search      = [ or ] [ sort ]
+or          = and { "or" and }
+and         = unary { "and" unary }
+unary       = "not" unary | "(" or ")" | filter
+filter      = helper | field test
+helper      = "under" id | "blocks" id | "blocked" "by" id
+            | "connected" "to" id [ "within" count ( "step" | "steps" ) ]
+test        = "is" [ "not" ] value | "is" [ "not" ] "empty"
+            | ( "&lt;" | "&gt;" | "&lt;=" | "&gt;=" ) value
+            | "in" "(" value { "," value } ")" | "in" "last" count unit
+            | "contains" text | "member" "of" text | "within" short-name
+value       = word | quoted | number | day | id | "me" | time
+time        = "today" | "yesterday" | "this week" | "last week" | "this month"
+sort        = "sort" "by" key { "," key }
+key         = field [ [ "," ] direction ]
+direction   = "highest first" | "lowest first" | "newest first" | "oldest first" | "A to Z" | "Z to A"
+field       = word | quoted
+unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre>
 <ul>
-<li>The printer writes a <strong>canonical</strong> form; <code>parse(print(tree)) == tree</code> is a property test.</li>
-<li>Simple search edits the same tree; anything without a picker becomes an editable text button.</li>
+<li><strong>Words.</strong> A <em>word</em> is letters, digits and the underscore, starting with a letter. A <em>number</em> is <code>12</code>, <code>-3</code> or <code>1.25</code>, at most 15 digits. A <em>day</em> is written <code>2026-10-25</code>; a day that the calendar does not have is a mistake. An <em>id</em> is an Issue ID of either kind (<code>WEB-142</code>, <code>WEB-K7Q2X</code>, ADR-0021); a <em>short name</em> is the capital letters of a project (<code>WEB</code>). A <em>quoted</em> text is in double quotes; <code>\"</code> and <code>\</code> are the only escapes. A <em>count</em> is a whole number of 1 or more.</li>
+<li><strong>Words of the language</strong> (<code>and</code>, <code>or</code>, <code>not</code>, <code>is</code>, <code>in</code>, <code>contains</code>, <code>empty</code>, <code>member</code>, <code>of</code>, <code>within</code>, <code>last</code>, <code>this</code>, <code>today</code>, <code>yesterday</code>, <code>me</code>, <code>sort</code>, <code>by</code>, <code>under</code>, <code>blocks</code>, <code>blocked</code>, <code>connected</code>, <code>to</code>, the units, <code>step</code>, <code>steps</code>, <code>first</code> and the four directions) are read in any case and written in lower case. A field that is one of them is written in quotes. A value is written in quotes only when it would be read as the language: <code>and</code>, <code>or</code>, <code>not</code>, <code>is</code>, <code>in</code>, <code>contains</code>, <code>empty</code>, <code>member</code>, <code>within</code>, <code>last</code>, <code>this</code>, <code>today</code>, <code>yesterday</code>, <code>me</code> and <code>sort</code>. A status <em>Blocked</em> and a priority <em>highest</em> need no quotes. The word of an own field is made from its name by one rule (<code>own_field_word</code>): <em>Story points</em> is <code>storyPoints</code>; a name that cannot be one word stays as it is and is written in quotes.</li>
+<li><strong>Helpers.</strong> <code>project within WEB</code> is a project and everything below it, <code>assignedTo member of "Backend"</code> a group, <code>under WEB-7</code> the sub-issues, <code>blocks WEB-1</code> and <code>blocked by WEB-1</code> the two ends of a relation, <code>connected to WEB-7 within 3 steps</code> any chain of relations (as far as the limit allows without <code>within</code>). Time words stay relative in the tree; the server turns them into moments in the zone of the person's region.</li>
+<li><strong>The tree.</strong> Every node has the bytes it covers, so the browser can mark a word. <code>and</code> and <code>or</code> are lists of at least two items with no same kind directly inside: <code>(a and b) and c</code> is <code>a and b and c</code>. A text is a plain word, a number, a day or an ID by how it is written, so a text value that looks like one is quoted (<code>"404"</code>).</li>
+<li><strong>Canonical text.</strong> The printer writes one spelling of each word, one space between words, quotes only where needed, brackets only where the meaning needs them (<code>or</code> inside <code>and</code>, <code>and</code> or <code>or</code> inside <code>not</code>), <code>contains</code> and <code>member of</code> always with quotes, <code>sort by</code> with commas as in <code>sort by priority, highest first, dueDate, oldest first</code>, and the unit and <code>step</code> in the singular for one. <code>parse(print(tree)) == tree</code> for every tree (the property test of TEST-SEARCH-ROUNDTRIP) and <code>print(parse(text))</code> is the canonical text of any accepted text. The canonical text is what the address, the API and a saved search carry; the tree never crosses the wire.</li>
+<li><strong>Limits</strong> (named once, <code>limits.rs</code>): at most 50 filters (<code>in (a, b)</code> counts as one), <code>within N steps</code> at most 5, brackets and <code>not</code> at most 32 deep.</li>
+<li><strong>Mistakes</strong> have the bytes they stand on, a message key <code>search.mistake.*</code> with the words for its placeholders, and what may be meant (the closest field or choice). The parser stops at its first mistake; the checker returns all of them. The message texts are in the catalog; no sentence is written in Rust or TypeScript.</li>
+<li><strong>Suggestions</strong> for a text and a cursor: the fields, the operators a field allows, the choices of its list, <code>me</code> and the time words, and the words of the language that may come next. What only the server knows comes back as a request of its kind (<code>ask</code> people, groups, projects or issues starting with what is typed), which the search bar sends to the server.</li>
+<li><strong>In the browser.</strong> <code>bb-wasm-search</code> takes and gives JSON (the text, the tree, the catalogue, the mistakes, the suggestions) with byte offsets; <code>@bugaboo/wasm-search</code> loads it when a search bar first opens and turns the offsets into positions in the string. Its types are generated from the Rust types (<code>cargo xtask gen search-types</code>), and the vectors of texts, canonical texts, mistakes and suggestions come from the same code (<code>cargo xtask gen search-vectors</code>); the unit tests of the browser run the module on them.</li>
 </ul>
 <h3 id="s7-7"><button class="sec" data-sec>§7.7</button>Settings and configuration (ADR-0018)</h3>
 <ul>
@@ -1009,7 +1033,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><strong>Two databases</strong> double the testing and can hide dialect bugs</td><td>Medium</td><td>One schema source; every repository test runs against both in CI; PostgreSQL-only features are not allowed in core paths</td></tr>
 <tr><td><strong>Size of scope</strong> (tracker + time + documents + planning + AI)</td><td>High</td><td>Strict milestones; each milestone ships something usable; "Later" items stay out until 1.0</td></tr>
 <tr><td><strong>Custom-built timeline, calendar and relation map</strong> take effort</td><td>Medium</td><td>Built on shared primitives (scales, virtualization, drag helpers); simple first versions, then polish</td></tr>
-<tr><td><strong>WebAssembly size</strong> (search language + Markdown)</td><td>Medium</td><td>Size budget for the bundle in <code>tools/checks/perf-bundle.toml</code> (Brotli), loaded only when needed; <code>wasm-opt</code>; measure in CI</td></tr>
+<tr><td><strong>WebAssembly size</strong> (search language, Markdown and wording)</td><td>Medium</td><td>A module for each (<code>bb-wasm</code>, <code>bb-wasm-search</code>) and a size budget for each in <code>tools/checks/perf-bundle.toml</code> (Brotli), loaded only when its feature opens; <code>wasm-opt</code>; the reading of JSON written by hand where the derived one was too big; measure in CI</td></tr>
 <tr><td><strong>TypeScript 7</strong> tooling is young (oxfmt is before 1.0)</td><td>Low–Medium</td><td>oxlint + tsgolint are built on TypeScript 7 itself; versions pinned; Biome as fallback formatter; TS 6 as last resort</td></tr>
 <tr><td><strong>Prompt injection</strong> through issue text</td><td>Medium</td><td>Untrusted-content fencing, proposals instead of writes, no remote content in output, AI off by default</td></tr>
 <tr><td><strong>EU law uncertainty</strong> (CRA category, AI Act details, NIS2 in Germany)</td><td>Medium</td><td>Build for the strict reading; legal review before first release (compliance.md)</td></tr>
@@ -1213,7 +1237,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>STY-CONTRAST</code></td><td>Every text/background pair in the built-in themes passes WCAG AA</td><td>THM-03, UX-04</td><td>xtask (reads design/theme.kdl: every theme, in the usual mode and with more contrast)</td><td>commit · ci</td></tr>
 <tr><td><code>ARCH-DEPS</code></td><td>Crates depend only on what the module map allows</td><td>architecture §4 (dependency rules), ADR-0001</td><td>xtask (cargo metadata vs allowed edges)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-PURE</code></td><td>bb-core, bb-searchlang and bb-markdown do no I/O (no tokio, sqlx, std::fs, std::net)</td><td>architecture §4, ADR-0005, ADR-0011</td><td>xtask (reads the dependencies of the three crates) + clippy (disallowed methods and types of the standard library that reach the world, in a clippy.toml per crate that `cargo xtask gen clippy` writes, held by DOC-GENERATED; clippy runs on push and in CI)</td><td>edit · push · ci</td></tr>
-<tr><td><code>ARCH-WASM</code></td><td>The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) and bb-wasm still build for WebAssembly, and the wasm-bindgen program is the version of the library</td><td>ADR-0001, ADR-0005, ADR-0011</td><td>xtask (cargo check --target wasm32-unknown-unknown; compares the wasm-bindgen version in tools/dev/tools.toml with Cargo.lock). The size of the module, PERF-04, is measured in the browser build by PERF-BUNDLE</td><td>push · ci</td></tr>
+<tr><td><code>ARCH-WASM</code></td><td>The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) and the crates of the modules (bb-wasm, bb-wasm-search) still build for WebAssembly, and the wasm-bindgen program is the version of the library</td><td>ADR-0001, ADR-0005, ADR-0011</td><td>xtask (cargo check --target wasm32-unknown-unknown; compares the wasm-bindgen version in tools/dev/tools.toml with Cargo.lock). The size of each module, PERF-04, is measured by PERF-BUNDLE</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-AUTHZ-ONLY</code></td><td>Authorized&lt;T&gt; is only created inside bb-policy</td><td>ADR-0004</td><td>xtask (reads the code: no copy, literal or constructor of Authorized outside bb-policy, no call of evaluate outside bb-app/src/access and no literal of Inputs outside bb-store, no private field made public, the test feature only for dev-dependencies) + private constructor (a compile-fail test in bb-policy builds it from outside and must fail)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-API-OUT</code></td><td>API and MCP handlers return only Authorized views, never domain or database types</td><td>ADR-0004</td><td>xtask (answer_authorized and Page::of_authorized take only an Authorized&lt;T&gt;; the check finds handlers that answer through the wrappers that take any value, or with axum::Json, unless tools/checks/api-out-exemptions.toml names them with a reason)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-HTTP-EDGE</code></td><td>Only bb-api and bb-mcp use HTTP crates; only bb-server, bb-sample and bb-load-check depend on the adapters</td><td>architecture §4</td><td>xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)</td><td>push · ci</td></tr>
@@ -1256,13 +1280,13 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>DEP-UNUSED</code></td><td>No unused dependencies</td><td>coding-standards §2</td><td>cargo-machete + knip-style check for npm</td><td>ci</td></tr>
 <tr><td><code>DEP-SBOM</code></td><td>Release has CycloneDX and SPDX SBOMs and third-party notices</td><td>COMP-01, COMP-02</td><td>cargo-cyclonedx + @cyclonedx/cyclonedx-npm + cargo-about</td><td>release</td></tr>
 <tr><td><code>DOC-GENERATED</code></td><td>Generated files are up to date (API client, style sheet, theme names, message types, docs HTML)</td><td>SSOT</td><td>xtask (regenerates the docs pages and compares)</td><td>push · ci</td></tr>
-<tr><td><code>DOC-PROVEN-BY</code></td><td>A test that the security chapter cites as proof next to a check is a test that check requires</td><td>docs/architecture/12-security.md, ADR-0020</td><td>xtask (reads the Proven by cells; for a cell that names TEST-WORKFLOWS, TEST-UPLOADS, TEST-EDIT-LOCKS, TEST-ISSUE-IDS, PERF-N1 or ARCH-LOCK-ORDER, each test it names, by its form `wf_02_…`, must be in that check's list; a pipe inside a cell is escaped with a backslash)</td><td>commit · ci</td></tr>
+<tr><td><code>DOC-PROVEN-BY</code></td><td>A test that the security chapter cites as proof next to a check is a test that check requires</td><td>docs/architecture/12-security.md, ADR-0020</td><td>xtask (reads the Proven by cells; for a cell that names TEST-WORKFLOWS, TEST-UPLOADS, TEST-EDIT-LOCKS, TEST-ISSUE-IDS, TEST-SEARCH-ROUNDTRIP, PERF-N1 or ARCH-LOCK-ORDER, each test it names, by its form `wf_02_…`, must be in that check's list; a pipe inside a cell is escaped with a backslash)</td><td>commit · ci</td></tr>
 <tr><td><code>DOC-ADR-ENFORCED</code></td><td>Every decision record says how it is enforced (check IDs, or 'review' with a reason)</td><td>META, ADR template</td><td>xtask (parses docs/adr)</td><td>commit · ci</td></tr>
-<tr><td><code>PERF-BUNDLE</code></td><td>Initial JavaScript stays within its budget (Brotli)</td><td>PERF-04</td><td>xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly modules of the build, together, have their own budget there)</td><td>ci</td></tr>
+<tr><td><code>PERF-BUNDLE</code></td><td>Initial JavaScript stays within its budget (Brotli)</td><td>PERF-04</td><td>xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; each WebAssembly module, found in the build or made by `cargo xtask wasm`, has a budget of its own there, by the name of its file without the hash; a module without a line fails)</td><td>ci</td></tr>
 <tr><td><code>PERF-N1</code></td><td>List endpoints run a bounded number of queries</td><td>PERF-05</td><td>xtask (the tests with a statement counter exist by name, run on both databases and are not switched off: the issue page, the list of issues, tag suggestions, the types and groups of a project, the notifications and the unread count)</td><td>ci</td></tr>
 <tr><td><code>PERF-BENCH</code></td><td>Latency budgets hold on the 1 M-issue dataset</td><td>PERF-01</td><td>xtask dataset + benchmarks</td><td>nightly</td></tr>
 <tr><td><code>TEST-A11Y</code></td><td>No accessibility violations on key screens in all four themes</td><td>UX-04</td><td>Playwright + axe (web/app/e2e/a11y*.spec.ts); xtask checks that every address in paths.ts has an entry there, the suite itself runs in cargo xtask ci</td><td>commit · ci</td></tr>
-<tr><td><code>TEST-SEARCH-ROUNDTRIP</code></td><td>Simple ⇄ Advanced search never loses information</td><td>QRY-02, ADR-0005</td><td>proptest: parse(print(tree)) == tree</td><td>ci</td></tr>
+<tr><td><code>TEST-SEARCH-ROUNDTRIP</code></td><td>Simple ⇄ Advanced search never loses information</td><td>QRY-02, ADR-0005</td><td>xtask (the tests of crates/bb-searchlang/tests exist and are not switched off: proptest over generated trees, parse(print(tree)) == tree, no text makes the parser panic, the canonical text of an accepted text is stable, the JSON of a tree reads back; the example of QRY-01, every helper of QRY-04, the limits, and the equal mistake for a hidden and an unknown field)</td><td>ci</td></tr>
 <tr><td><code>TEST-EDIT-LOCKS</code></td><td>Edit locks and confirmed saves: lost lock, take-over, conflict and offline cases keep the person's text</td><td>ADR-0019, ISS-17</td><td>integration tests on both databases (the server part: the tests named iss_17_* and iss_11_*, with a record kind that exists only in tests); the Playwright scenarios of three people at one description and of a lock holder whose network drops are in web/app/e2e/concurrent/locks.spec.ts</td><td>ci</td></tr>
 <tr><td><code>DEV-PORTS</code></td><td>No default framework ports; every port comes from tools/dev/ports.json and is strict</td><td>ADR-0023</td><td>xtask (scans vite, vitest and playwright configs)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TEST-SAMPLE-DATA</code></td><td>The sample organization builds from its seed, is identical on both databases, and contains only fictional data</td><td>architecture §11, ADR-0023</td><td>xtask dataset sample --check</td><td>ci</td></tr>
@@ -2085,7 +2109,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <ul>
 <li>One allow list (SSOT), in the writer; no client-side HTML rendering library.</li>
 <li>Nothing is parsed back and cleaned, so there is no gap between what the writer meant and what a sanitizer's HTML parser reads (mutation XSS has no place to start).</li>
-<li>The WebAssembly module stays small: the budget of the module is in <code>tools/checks/perf-bundle.toml</code> (architecture §8, PERF-04), and the search language shares it.</li>
+<li>The WebAssembly module stays small: the budget of the module is in <code>tools/checks/perf-bundle.toml</code> (architecture §8, PERF-04), and the search language has a module and a budget of its own (ADR-0005, amendment M5).</li>
 <li>The browser shows the HTML with one Trusted Types policy, <code>bugaboo-markdown</code>, in the one component <code>MarkdownView</code> (SEC-RICHTEXT).</li>
 <li>The document editor (Tiptap) stores Markdown; its schema is limited to what <code>bb-markdown</code> renders.</li>
 </ul>
