@@ -11,8 +11,9 @@ use serde_json as _;
 use bb_searchlang::messages;
 use bb_searchlang::vectors::{ACCEPTED, REFUSED, sample_fields};
 use bb_searchlang::{
-    Expr, Field, FieldKind, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES, Mistake,
-    Operand, ReadableFields, Suggestion, Test, check, parse, parse_with, print, suggest,
+    Expr, Field, FieldKind, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES,
+    MIN_PREFIX_CHARS, Mistake, Operand, ReadableFields, Suggestion, Test, check, parse, parse_with,
+    print, suggest,
 };
 
 /// A text parsed and checked against the sample fields, printed.
@@ -303,6 +304,18 @@ fn qry_01_the_limits_five_steps_pass_and_six_fail() {
     assert_eq!(mistakes.len(), 1);
     assert_eq!(mistakes[0].key, messages::TOO_MANY_STEPS);
     assert_eq!(mistakes[0].args["limit"], MAX_STEPS.to_string());
+}
+
+#[test]
+fn iss_13_a_word_with_a_star_needs_two_letters_before_it() {
+    assert!(checked("title contains \"cr*\"").is_ok());
+    assert!(checked("title contains \"crash on sa*\"").is_ok());
+    for text in ["title contains \"c*\"", "title contains \"crash o*\""] {
+        let mistakes = mistakes_of(text);
+        assert_eq!(mistakes.len(), 1, "{text}");
+        assert_eq!(mistakes[0].key, messages::PREFIX_TOO_SHORT);
+        assert_eq!(mistakes[0].args["limit"], MIN_PREFIX_CHARS.to_string());
+    }
 }
 
 #[test]

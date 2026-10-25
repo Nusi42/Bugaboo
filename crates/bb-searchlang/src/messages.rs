@@ -67,6 +67,9 @@ pub const NOT_A_DATE: &str = "search.mistake.not-a-date";
 /// The message `search.mistake.operator-not-allowed`.
 pub const OPERATOR_NOT_ALLOWED: &str = "search.mistake.operator-not-allowed";
 
+/// The message `search.mistake.prefix-too-short`.
+pub const PREFIX_TOO_SHORT: &str = "search.mistake.prefix-too-short";
+
 /// The message `search.mistake.reserved-word`.
 pub const RESERVED_WORD: &str = "search.mistake.reserved-word";
 

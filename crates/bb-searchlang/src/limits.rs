@@ -9,6 +9,11 @@ pub const MAX_FILTERS: usize = 50;
 /// The most steps `connected to … within N steps` may take.
 pub const MAX_STEPS: u32 = 5;
 
+/// The fewest letters a word of `contains` needs before its `*` (`cra*` is fine, `c*` would match
+/// nearly every word). The words of a search are prepared by `bb_core::text_words`; the number is
+/// counted on the prepared word.
+pub const MIN_PREFIX_CHARS: usize = 2;
+
 /// The most keys `sort by` may have.
 pub const MAX_SORT_KEYS: usize = 5;
 

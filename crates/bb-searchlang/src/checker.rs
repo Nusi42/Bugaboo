@@ -7,8 +7,10 @@
 //! person may not read it (QRY-05): the checker cannot tell the two apart, because readable fields
 //! only holds what the person may read.
 
+use bb_core::text_words::search_words;
+
 use crate::fields::{Field, FieldKind, Operator, ReadableFields};
-use crate::limits::{MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS};
+use crate::limits::{MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MIN_PREFIX_CHARS};
 use crate::messages as key;
 use crate::mistake::Mistake;
 use crate::parser::value_span;
@@ -151,6 +153,17 @@ impl<'a> Checker<'a> {
                 &[("field", &field.word), ("operator", &operator.text())],
             ));
             return;
+        }
+        if let Test::Contains { text, .. } = test
+            && search_words(&text.text)
+                .iter()
+                .any(|word| word.prefix && word.text.chars().count() < MIN_PREFIX_CHARS)
+        {
+            self.mistakes.push(Mistake::new(
+                text.span,
+                key::PREFIX_TOO_SHORT,
+                &[("limit", &MIN_PREFIX_CHARS.to_string())],
+            ));
         }
         let values: &[Operand] = match test {
             Test::Is { value, .. } | Test::IsNot { value, .. } | Test::Compare { value, .. } => {

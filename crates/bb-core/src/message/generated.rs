@@ -8882,6 +8882,15 @@ pub fn search_mistake_operator_not_allowed(
     )
 }
 
+/// The message `search.mistake.prefix-too-short`.
+#[must_use]
+pub fn search_mistake_prefix_too_short(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.prefix-too-short"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
 /// The message `search.mistake.reserved-word`.
 #[must_use]
 pub fn search_mistake_reserved_word(word: impl std::fmt::Display) -> Message {
@@ -13264,6 +13273,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "search.mistake.operator-not-allowed",
         "“{operator}” cannot be used with “{field}”.",
+    ),
+    (
+        "search.mistake.prefix-too-short",
+        "A word that ends in * needs at least {limit} letters before the *.",
     ),
     (
         "search.mistake.reserved-word",

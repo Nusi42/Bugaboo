@@ -39,7 +39,9 @@ pub use answer::{Answer, read};
 pub use browser::{Problem, print_from_json, readable_fields_from_json, search_from_json};
 pub use checker::{CheckedSearch, check};
 pub use fields::{Field, FieldKind, Operator, ReadableFields, own_field_word};
-pub use limits::{MAX_DEPTH, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES};
+pub use limits::{
+    MAX_DEPTH, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES, MIN_PREFIX_CHARS,
+};
 pub use mistake::Mistake;
 pub use printer::print;
 pub use span::Span;
