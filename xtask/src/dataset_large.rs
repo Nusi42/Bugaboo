@@ -22,6 +22,13 @@ use crate::db;
 use crate::output;
 use crate::repo::Repo;
 
+/// Where the migrations are; the name of the newest file says which schema a dataset was made for.
+const MIGRATIONS: &str = "crates/bb-store/src/migrations";
+
+/// The file in the folder of a dataset that holds the name of the newest migration at the time the
+/// dataset was made (the nightly run compares names, not file times, which a checkout changes).
+const MADE_FOR: &str = "made-for";
+
 /// What the program prints before the fingerprint of a run.
 const FINGERPRINT_WORD: &str = "Fingerprint ";
 
@@ -68,6 +75,26 @@ fn said(made: &Output) -> String {
         String::from_utf8_lossy(&made.stdout),
         String::from_utf8_lossy(&made.stderr)
     )
+}
+
+/// The name of the newest migration (`m0022_name.rs`: the files are numbered, `mod.rs` is none).
+pub(crate) fn newest_migration(root: &Path) -> Option<String> {
+    fs::read_dir(root.join(MIGRATIONS))
+        .ok()?
+        .flatten()
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .filter(|name| {
+            name.strip_prefix('m')
+                .is_some_and(|rest| rest.starts_with(|first: char| first.is_ascii_digit()))
+        })
+        .max()
+}
+
+/// The migration a dataset in `folder` was made for; none when it has none.
+pub(crate) fn made_for(folder: &Path) -> Option<String> {
+    fs::read_to_string(folder.join(MADE_FOR))
+        .ok()
+        .map(|text| text.trim().to_owned())
 }
 
 /// The folder of the dataset of `database`.
@@ -167,6 +194,11 @@ fn build_on(
     if !made.status.success() {
         return Ok(false);
     }
+    fs::write(
+        out.join(MADE_FOR),
+        newest_migration(repo.root()).unwrap_or_default(),
+    )
+    .with_context(|| format!("could not write {MADE_FOR} in {}", out.display()))?;
     output::info(&format!(
         "dataset large: {} done in {:.1} minutes, {} on disk.",
         database.code(),
@@ -266,6 +298,28 @@ mod tests {
         let said = "Checked the large dataset: 3 issues. Fingerprint 0ffb\nCreated.";
         assert_eq!(fingerprint(said).as_deref(), Some("0ffb"));
         assert_eq!(fingerprint("nothing"), None);
+    }
+
+    #[test]
+    fn the_newest_migration_is_the_highest_numbered_file() {
+        let folder = tempfile::tempdir().unwrap();
+        let migrations = folder.path().join(MIGRATIONS);
+        fs::create_dir_all(&migrations).unwrap();
+        for name in ["m0002_b.rs", "m0010_c.rs", "m0009_a.rs", "mod.rs"] {
+            fs::write(migrations.join(name), "").unwrap();
+        }
+        assert_eq!(
+            newest_migration(folder.path()).as_deref(),
+            Some("m0010_c.rs")
+        );
+        assert_eq!(made_for(folder.path()), None);
+        fs::write(
+            folder.path().join(MADE_FOR),
+            "m0010_c.rs
+",
+        )
+        .unwrap();
+        assert_eq!(made_for(folder.path()).as_deref(), Some("m0010_c.rs"));
     }
 
     #[test]

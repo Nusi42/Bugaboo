@@ -13,12 +13,12 @@ use std::fs::{self, File};
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use anyhow::{Context as _, bail};
 
 use crate::dataset::{in_folder, load_layout};
-use crate::dataset_large::dataset_folder;
+use crate::dataset_large::{dataset_folder, made_for, newest_migration};
 use crate::output;
 use crate::ports::Layout as Ports;
 use crate::repo::Repo;
@@ -35,8 +35,6 @@ const HELD_VARIABLE: &str = "BUGABOO_FULL_RUN_LOCK_HELD";
 /// The name and the time of the task.
 const TASK_NAME: &str = "Bugaboo nightly";
 const TASK_TIME: &str = "03:00";
-/// Where the migrations are; the newest file decides whether a dataset is old.
-const MIGRATIONS: &str = "crates/bb-store/src/migrations";
 
 /// The lock of the computer, held while this value lives.
 pub(crate) struct FullRun {
@@ -85,23 +83,11 @@ impl FullRun {
     }
 }
 
-/// The moment of the newest file in `folder`.
-fn newest(folder: &Path) -> Option<SystemTime> {
-    fs::read_dir(folder)
-        .ok()?
-        .flatten()
-        .filter_map(|entry| entry.metadata().ok()?.modified().ok())
-        .max()
-}
-
-/// Whether a dataset made at `made` (none: there is none) must be made again for migrations whose
-/// newest file was changed at `migrated`.
-fn stale(made: Option<SystemTime>, migrated: Option<SystemTime>) -> bool {
-    match (made, migrated) {
-        (None, _) => true,
-        (Some(made), Some(migrated)) => made < migrated,
-        (Some(_), None) => false,
-    }
+/// Whether a dataset made for the migration `made` (none: there is none) must be made again
+/// because the newest migration is `newest`. The names are compared: file times change with a
+/// checkout or a copy, and a migration that was only touched would make a new dataset for nothing.
+fn stale(made: Option<&str>, newest: Option<&str>) -> bool {
+    made.is_none() || made != newest
 }
 
 /// The arguments of `schtasks` that register the daily task for the folder `root`.
@@ -173,10 +159,10 @@ pub(crate) fn run(repo: &Repo, install_task: bool) -> anyhow::Result<bool> {
     let layout = load_layout(root)?;
     let (log, path) = log_file(root, &layout)?;
     let mut held = step(root, &log, "all checks and tests", &["ci"])?;
-    let migrated = newest(&root.join(MIGRATIONS));
+    let newest = newest_migration(root);
     for database in DatabaseKind::ALL.iter().copied() {
-        let made = newest(&dataset_folder(repo, &layout, database).join("data"));
-        if stale(made, migrated) {
+        let made = made_for(&dataset_folder(repo, &layout, database));
+        if stale(made.as_deref(), newest.as_deref()) {
             held &= step(
                 root,
                 &log,
@@ -241,13 +227,12 @@ mod tests {
     }
 
     #[test]
-    fn a_dataset_is_made_again_when_it_is_missing_or_older_than_the_last_migration() {
-        let old = SystemTime::UNIX_EPOCH;
-        let new = old + Duration::from_secs(10);
-        assert!(stale(None, Some(old)));
-        assert!(stale(Some(old), Some(new)));
-        assert!(!stale(Some(new), Some(old)));
-        assert!(!stale(Some(new), None));
+    fn a_dataset_is_made_again_when_it_is_missing_or_made_for_another_migration() {
+        assert!(stale(None, Some("m0002.rs")));
+        assert!(stale(Some("m0001.rs"), Some("m0002.rs")));
+        assert!(!stale(Some("m0002.rs"), Some("m0002.rs")));
+        // A newer file time alone changes nothing; only the name counts.
+        assert!(stale(Some("m0002.rs"), None));
     }
 
     #[test]
