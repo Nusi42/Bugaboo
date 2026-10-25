@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import {
   Alert,
+  containsEveryWord,
   alertTone,
   type SaveState,
   SaveStatus,
@@ -37,12 +38,7 @@ function isDrawn(setting: Setting, controls: SettingsFormProps["controls"]): boo
 
 /** Whether every word the person typed is in the name or the explanation of the setting. */
 function matches(setting: Setting, query: string): boolean {
-  const text = `${wordsOf(setting.name_key)} ${wordsOf(setting.help_key)}`.toLowerCase();
-  return query
-    .toLowerCase()
-    .split(/\s+/u)
-    .filter((word) => word !== "")
-    .every((word) => text.includes(word));
+  return containsEveryWord(`${wordsOf(setting.name_key)} ${wordsOf(setting.help_key)}`, query);
 }
 
 /**

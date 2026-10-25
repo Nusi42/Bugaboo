@@ -1,4 +1,4 @@
-import { isGap, wordsAndGaps } from "@bugaboo/ui";
+import { isGap, wordsAndGaps, wordsOnly } from "@bugaboo/ui";
 
 /** Which of the two texts a paragraph is taken from. */
 export type Side = "mine" | "theirs";
@@ -95,7 +95,7 @@ function unmatchedWords(words: readonly string[], other: readonly string[]): rea
 function changedTokens(tokens: readonly string[], other: string): readonly (boolean | null)[] {
   const unmatched = unmatchedWords(
     tokens.filter((token) => !isGap(token)),
-    wordsAndGaps(other).filter((token) => !isGap(token)),
+    wordsOnly(other),
   );
   let word = -1;
   return tokens.map((token) => {
