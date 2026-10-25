@@ -242,14 +242,12 @@ async fn sec_06_a_page_over_three_projects_shows_the_two_the_reader_sees() -> Ou
     take_away_b_and_hide_priority_in_c(&crew, &three).await?;
     let before = crew.world.store.leveled_reads();
     let page = crew.heard(&dave.session_token).await?;
-    // One read for the rights in the three projects (the person's own, batched), one for the view
-    // the lines of the changes are judged with (narrowed to the access key); a read for each
-    // project would make it three or more.
     assert_eq!(
         crew.world.store.leveled_reads() - before,
-        2,
-        "the rights in the three projects of the page are not read one project at a time"
+        1,
+        "the rights in the three projects of the page come from one read"
     );
+
     let by_issue = |wanted: IssueId| {
         page.iter()
             .filter(|item| item.kind == NotificationKind::FollowedFields)
