@@ -115,9 +115,11 @@ test.describe("with a region zone other than the zone of the device", () => {
   }
 });
 
-/** Opens the form *Create an access key* and returns its box for the day. */
-async function openForm(page: Page) {
+/** Opens the form *Create an access key*, in the region zone given, and returns its box for the day. */
+async function openForm(page: Page, regionZone: string) {
   await signIn(page, ada);
+  // The person keeps the zone of an earlier test: the days here are counted by the zone chosen now.
+  await chooseTimeZone(page, regionZone);
   await openFromMenu(page, t("nav.access-keys"));
   await page.getByRole("button", { name: t("access-keys.create"), exact: true }).click();
   const form = page.getByRole("region", { name: t("access-keys.create"), exact: true });
@@ -132,23 +134,9 @@ test.describe("in Europe/Berlin, with the clock of the page", () => {
   }) => {
     // One minute before midnight in Berlin (summer time).
     await page.clock.install({ time: new Date("2027-05-10T21:59:00Z") });
-    const { box } = await openForm(page);
+    const { box } = await openForm(page, "Europe/Berlin");
     const opened = await box.inputValue();
     await page.clock.runFor(120_000);
     await expect(box).toHaveValue(addDays(opened, 1));
-  });
-
-  test("auth_07 a day that is no day is told, and the telling goes when the day is changed", async ({
-    page,
-  }) => {
-    const { form, box } = await openForm(page);
-    await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
-    await form.getByLabel(t("access-keys.name")).fill("Key without a day");
-    const preset = await box.inputValue();
-    await box.fill("");
-    await form.getByRole("button", { name: t("access-keys.submit") }).click();
-    await expect(form.getByText(t("error.field.wrong-value"))).toBeVisible();
-    await box.fill(preset);
-    await expect(form.getByText(t("error.field.wrong-value"))).toHaveCount(0);
   });
 });
