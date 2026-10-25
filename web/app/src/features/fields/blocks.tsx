@@ -37,7 +37,13 @@ function useOwnFieldLines({ issue, mask, form, rowStatus, onChange }: IssueBlock
     />
   );
   const sections = onlyFields(form.sections, (key) => shown.some((field) => field.id === key));
-  return { error: fields.isError ? fields.error : null, shown, line, sections, ready: form.ready };
+  return {
+    error: fields.isError ? fields.error : null,
+    shown,
+    line,
+    sections,
+    ready: form.ready,
+  };
 }
 
 /**
@@ -45,11 +51,11 @@ function useOwnFieldLines({ issue, mask, form, rowStatus, onChange }: IssueBlock
  * no titled sections and no tabs (the other case is `OwnFieldGroups`).
  */
 export function OwnFieldRows(props: IssueBlockProps) {
-  const { shown, line, sections, ready } = useOwnFieldLines(props);
-  if (ready && !isPlain(sections)) {
+  const { shown, line, sections } = useOwnFieldLines(props);
+  if (!isPlain(sections)) {
     return null;
   }
-  const order = ready ? sections.flatMap((section) => section.fields) : shown.map((f) => f.id);
+  const order = sections.flatMap((section) => section.fields);
   return order.map((key) => {
     const field = shown.find((each) => each.id === key);
     return field === undefined ? null : line(field);
