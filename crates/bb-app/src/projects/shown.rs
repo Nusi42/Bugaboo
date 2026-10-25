@@ -87,14 +87,14 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// An internal error when the store fails.
     pub(crate) async fn leveled(&self, shown: &Shown) -> Result<Leveled, AppError> {
-        let roles = shown.policy.roles.iter().map(|role| role.id).collect();
-        let rules = self
+        let held = shown.policy.roles.iter().map(|role| role.id).collect();
+        let levels = self
             .store()
-            .level_rules_of_roles(roles)
+            .level_rules_of_roles(held)
             .await
             .map_err(|error| internal::<S>(&error))?;
         let mut leveled = shown.clone();
-        leveled.policy.rules = rules;
+        leveled.policy.rules = levels;
         Ok(Leveled(leveled))
     }
 }
