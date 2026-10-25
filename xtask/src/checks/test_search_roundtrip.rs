@@ -49,24 +49,60 @@ impl Check for TestSearchRoundtrip {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
+
     use super::super::required_tests::examples;
     use super::*;
 
+    /// A test file of the suite (every file in `tests/` is a root of its own) with each required
+    /// test in it, except `without`.
+    fn suite(without: Option<&str>) -> Vec<(String, String)> {
+        let mut text = String::new();
+        for each in REQUIRED.iter().filter(|each| Some(each.name) != without) {
+            let _ = writeln!(
+                text,
+                "#[test]
+fn {}() {{}}",
+                each.name
+            );
+        }
+        vec![(format!("{SUITE}/language.rs"), text)]
+    }
+
     #[test]
-    fn good_example_every_test_exists() {
-        examples::every_test_is_there(&REQUIRED);
+    fn good_example_every_test_is_in_the_suite() {
+        assert!(evaluate(&suite(None), &REQUIRED, "").is_empty());
+    }
+
+    #[test]
+    fn this_repository_has_every_test() {
+        examples::this_repository_has_every_test(&REQUIRED);
     }
 
     #[test]
     fn bad_example_a_missing_test_is_found() {
-        examples::a_missing_or_single_test_is_found(&REQUIRED);
+        let found = evaluate(&suite(Some(REQUIRED[2].name)), &REQUIRED, "");
+        assert_eq!(found.len(), 1);
+        assert!(found[0].message.contains(REQUIRED[2].name));
+        assert_eq!(evaluate(&[], &REQUIRED, "").len(), REQUIRED.len());
+    }
+
+    #[test]
+    fn bad_example_a_test_of_the_name_outside_the_suite_does_not_count() {
+        let elsewhere: Vec<(String, String)> = suite(None)
+            .into_iter()
+            .map(|(_, text)| ("crates/bb-store/tests/language.rs".to_owned(), text))
+            .collect();
+        assert_eq!(evaluate(&elsewhere, &REQUIRED, "").len(), REQUIRED.len());
     }
 
     #[test]
     fn a_name_in_a_comment_is_not_a_test() {
-        examples::a_name_in_a_comment_is_no_test(
-            &REQUIRED,
-            "search_roundtrip_a_parse_never_panics",
-        );
+        let name = REQUIRED[1].name;
+        let mut sources = suite(None);
+        for (_, text) in &mut sources {
+            *text = text.replace(&format!("fn {name}"), &format!("// fn {name}"));
+        }
+        assert_eq!(evaluate(&sources, &REQUIRED, "").len(), 1);
     }
 }
