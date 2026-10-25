@@ -196,7 +196,7 @@ impl ProjectStore for AuthStorage {
     ) -> Result<(Policy, Vec<Project>), StoreError> {
         let mut transaction = self.database().begin_read().await?;
         let (mut policy, projects) = policy_and_tree_in(&mut transaction, person).await?;
-        let roles = policy.roles.iter().map(|role| role.id).collect();
+        let roles = policy.role_ids();
         policy.rules = level_rules_of_roles_in(&mut transaction, roles).await?;
         Ok((policy, projects))
     }

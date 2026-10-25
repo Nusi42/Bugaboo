@@ -148,6 +148,12 @@ pub struct Policy {
 }
 
 impl Policy {
+    /// The IDs of the roles the policy holds.
+    #[must_use]
+    pub fn role_ids(&self) -> Vec<RoleId> {
+        self.roles.iter().map(|role| role.id).collect()
+    }
+
     /// The rows that are the person's own or one of their groups'.
     #[must_use]
     pub fn rows_of(&self, person: UserId) -> Vec<Row> {

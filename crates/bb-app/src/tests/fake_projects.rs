@@ -95,7 +95,7 @@ impl ProjectStore for FakeStore {
         self.lock().leveled_reads += 1;
         Ok(self.read(|state| {
             let (mut policy, projects) = policy_and_tree_of(state, person);
-            let roles = policy.roles.iter().map(|role| role.id).collect();
+            let roles = policy.role_ids().into_iter().collect();
             policy.rules = state.rules.of_roles(&roles);
             (policy, projects)
         }))
