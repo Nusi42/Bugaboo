@@ -22,7 +22,7 @@ function standsAlone(sentence: string, start: number, end: number): boolean {
 }
 
 /** Where the value stands as a whole name in the sentence, each place by its start. */
-export function placesOf(sentence: string, value: string): readonly number[] {
+export function wholeNamePlaces(sentence: string, value: string): readonly number[] {
   const places: number[] = [];
   for (let at = sentence.indexOf(value); at !== -1; at = sentence.indexOf(value, at + 1)) {
     if (standsAlone(sentence, at, at + value.length)) {
@@ -39,7 +39,7 @@ export function placesOf(sentence: string, value: string): readonly number[] {
  */
 export function longestNameIn(sentence: string, names: readonly string[]): string | undefined {
   return names
-    .filter((name) => name !== "" && placesOf(sentence, name).length > 0)
+    .filter((name) => name !== "" && wholeNamePlaces(sentence, name).length > 0)
     .toSorted((a, b) => b.length - a.length)
     .at(0);
 }

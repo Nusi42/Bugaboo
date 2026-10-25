@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 
-import { placesOf } from "./names-in-sentence.ts";
+import { wholeNamePlaces } from "./names-in-sentence.ts";
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
 import { isGap, wordsAndGaps } from "./words.ts";
@@ -51,7 +51,7 @@ interface Placed {
 function placedAround(sentence: string, value: string): readonly Placed[] {
   const pieces: Placed[] = [];
   let start = 0;
-  for (const at of placesOf(sentence, value)) {
+  for (const at of wholeNamePlaces(sentence, value)) {
     pieces.push({ start, text: sentence.slice(start, at) });
     start = at + value.length;
   }
