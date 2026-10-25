@@ -8,7 +8,8 @@
 //!   version up.
 //! - **History:** every event about an issue has its row in the history of the issue.
 //! - **What people are told:** a Guest is told only about issues they reported; neither a Guest
-//!   nor a Contributor is told the value of *Cost center*.
+//!   nor a Contributor is told the value of *Cost center*. The rule counts the notifications it
+//!   read and fails when it read none for a kind of person, so it cannot pass without looking.
 //!
 //! Every issue is read when there are few; with many, every n-th, so the check stays a matter of
 //! minutes.
@@ -17,12 +18,15 @@ use std::collections::BTreeMap;
 use std::hash::{Hash as _, Hasher as _};
 
 use bb_app::access::StartingRole;
+use bb_app::comments::CommentStore as _;
 use bb_app::history::HistoryStore as _;
 use bb_app::notifications::NotificationStore as _;
+use bb_app::tags::TagStore as _;
 use bb_app::workflows::{StatusFilter, WorkflowStore as _};
 use bb_core::event::{EntityRef, RecordKind};
 use bb_core::fields::FieldKey;
-use bb_core::id::{FieldId, ProjectId, UserId};
+use bb_core::history::HistoryKind;
+use bb_core::id::{CommentId, FieldId, ProjectId, UserId};
 use bb_core::notification::NotificationFilter;
 use bb_core::readable_id::IdMode;
 
@@ -150,6 +154,7 @@ impl Sample {
                     ));
                 }
             }
+            self.hash_around(issue.id, &mut hasher).await?;
         }
         self.check_told(facts, &issues, &mut problems).await?;
         Ok(Report {
@@ -158,6 +163,45 @@ impl Sample {
             issues: issues.len(),
             sampled,
         })
+    }
+
+    /// Puts what hangs on a sampled issue into the fingerprint: its comments (how many and their
+    /// texts) and the tags and labels on it, which the columns of the issue do not show.
+    async fn hash_around(
+        &self,
+        issue: bb_core::id::IssueId,
+        hasher: &mut impl std::hash::Hasher,
+    ) -> Result<(), SampleError> {
+        let storage = &self.storage;
+        let written = storage
+            .history_page(issue, Some(HistoryKind::Comment), None, ROWS_AT_MOST)
+            .await?;
+        let ids: Vec<CommentId> = written
+            .iter()
+            .filter_map(|row| CommentId::from_bytes(row.record.to_bytes()).ok())
+            .collect();
+        let mut texts: Vec<String> = storage
+            .comments_by_ids(&ids)
+            .await?
+            .into_iter()
+            .map(|comment| comment.text)
+            .collect();
+        texts.sort();
+        (written.len(), texts).hash(hasher);
+        let tags: Vec<_> = storage
+            .issue_tags(issue)
+            .await?
+            .iter()
+            .map(|each| each.tag)
+            .collect();
+        let labels: Vec<_> = storage
+            .issue_labels(issue)
+            .await?
+            .iter()
+            .map(|each| each.label)
+            .collect();
+        (tags, labels).hash(hasher);
+        Ok(())
     }
 
     async fn check_told(
@@ -175,6 +219,7 @@ impl Sample {
             .map(|field| FieldKey::Own(field).code().into_owned());
         let storage = &self.storage;
         for (people, only_own) in [(&facts.guests, true), (&facts.contributors, false)] {
+            let mut read = 0_usize;
             for person in people {
                 let told = storage
                     .notifications_of(
@@ -184,6 +229,7 @@ impl Sample {
                         NOTIFICATIONS_AT_MOST,
                     )
                     .await?;
+                read += told.len();
                 for each in told {
                     let own = each
                         .issue
@@ -201,6 +247,12 @@ impl Sample {
                         problems.push("a notification tells the value of Cost center to somebody who may not see it".to_owned());
                     }
                 }
+            }
+            if !people.is_empty() && read == 0 {
+                problems.push(format!(
+                    "no notification of the {} was read, so the rules of what they are told were not checked",
+                    if only_own { "Guests" } else { "Contributors" }
+                ));
             }
         }
         Ok(())

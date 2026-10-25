@@ -286,8 +286,12 @@ impl Maker<'_> {
         let plan = &self.bank.plan;
         let place = &self.org.places[facts.place_at];
         let ladder = &self.bank.ladders[facts.place_at][facts.type_at];
-        let assigned = if !facts.outsider
-            && (ladder.needs_person || facts.random.chance(plan.assigned_percent))
+        // An issue that a Contributor or a Guest reported is always assigned to the team and goes
+        // on like the others, so the team's changes and comments tell the reporter, which the
+        // rules of what they are told need to look at.
+        let assigned = if facts.outsider
+            || ladder.needs_person
+            || facts.random.chance(plan.assigned_percent)
         {
             let mut people = vec![self.team(place, &mut facts.random)];
             if facts.random.chance(10) {
@@ -303,7 +307,7 @@ impl Maker<'_> {
         let done = f64::from(plan.done_percent_oldest) * (1.0 - age)
             + f64::from(plan.done_percent_newest) * age;
         let roll = f64::from(u32::try_from(facts.random.below(100)).unwrap_or(0));
-        let progress = if facts.outsider || last == 0 {
+        let progress = if last == 0 {
             0
         } else if roll < done {
             last
@@ -606,7 +610,7 @@ impl Maker<'_> {
         let mut events_of = Vec::new();
         let per_issue = usize::try_from(plan.comments_per_100).unwrap_or(0) / 100;
         for _ in 0..facts.random.below(per_issue * 2 + 1) {
-            let author = if facts.outsider {
+            let author = if facts.outsider && facts.random.chance(50) {
                 facts.reporter
             } else if facts.random.chance(50) {
                 doer

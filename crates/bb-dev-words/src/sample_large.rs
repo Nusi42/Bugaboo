@@ -66,6 +66,10 @@ pub struct LargePlan {
     /// are marked as read by the notification reader without a notification, as a server that has
     /// been running for a long time has cleaned them up.
     pub notified_percent: u32,
+    /// The same for a dataset of no more than `check_issues` issues (the runs of `--check`): the
+    /// rules of what Guests and Contributors are told need notifications to look at, and in a
+    /// small dataset the newest 2 % hold none of theirs.
+    pub check_notified_percent: u32,
     /// How many issues one transaction writes.
     pub batch: u32,
     /// How many of 100 issues are in the biggest tenth of the projects.
@@ -116,6 +120,7 @@ impl LargePlan {
             ("donePercentOldest", self.done_percent_oldest),
             ("donePercentNewest", self.done_percent_newest),
             ("notifiedPercent", self.notified_percent),
+            ("checkNotifiedPercent", self.check_notified_percent),
             ("bigProjectsShare", self.big_projects_share),
         ];
         if let Some((name, _)) = percents.iter().find(|(_, value)| *value > 100) {

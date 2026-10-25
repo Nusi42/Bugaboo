@@ -20,14 +20,13 @@ use crate::error::{SampleError, Step};
 use crate::generate::{Later, World};
 use crate::issues_setup::{Setup, create_one_field, project_ids};
 use crate::large_check::Facts;
+use crate::large_org::{WORDS, Words};
 use crate::organization::Organization;
 
 /// The number of days in a month the history is counted in.
 const MONTH_DAYS: i64 = 30;
 /// How long before the dataset ends the last issue is made, in seconds.
 const END_ROOM: i64 = SECONDS_PER_DAY;
-/// The name of the own field that Contributors may not see.
-const COST_CENTER: &str = "Cost center";
 
 /// The large dataset.
 #[derive(Clone, Debug)]
@@ -72,10 +71,16 @@ impl Later for Large {
     async fn after_people(&mut self, world: &World<'_>) -> Result<(), SampleError> {
         Organization.after_people(world).await?;
         let names = self.layout.issues.clone();
-        let plan = self.layout.large.clone();
+        let mut plan = self.layout.large.clone();
+        if self.issues <= plan.check_issues {
+            plan.notified_percent = plan.check_notified_percent;
+        }
         let token = world.administrator_session.to_owned();
         let setup = Setup::create(world, &token, &names).await?;
-        let cost_center = cost_center(world, &token, &names, &setup).await?;
+        let words: Words =
+            toml::from_str(WORDS).map_err(|error| SampleError::Names(error.to_string()))?;
+        let cost_center =
+            cost_center(world, &token, &words.fields.cost_center, &names, &setup).await?;
         let begin = world.clock.now().as_second() + 3600;
         let end = world.start.as_second() - END_ROOM;
         let org = crate::large_org::grow(world, &plan, &self.layout).await?;
@@ -114,13 +119,14 @@ impl Later for Large {
 async fn cost_center(
     world: &World<'_>,
     token: &str,
+    name: &str,
     names: &IssuePlan,
     setup: &Setup,
 ) -> Result<bb_core::id::FieldId, SampleError> {
     world.tick();
     let projects = project_ids(world).await?;
     let plan = FieldPlan {
-        name: COST_CENTER.to_owned(),
+        name: name.to_owned(),
         kind: "text".to_owned(),
         issue_types: Vec::new(),
         projects: Vec::new(),

@@ -3,7 +3,13 @@
 # and teams of the large dataset, are here. Comments are whole sentences so full-text search finds
 # real words in both languages. Nothing here names a real company, product or person.
 
+[fields]
+# The own field that Contributors may not see.
+cost_center = "Cost center"
+
 [projects]
+# The name of a team group; {team} is a word of `teams`, {number} counts up.
+team_name = "Team {team} {number}"
 nouns = [
   "Atlas",
   "Beacon",

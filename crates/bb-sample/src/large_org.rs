@@ -36,7 +36,9 @@ use crate::organization::workers;
 use crate::people_plan::{EMAIL_DOMAIN, ROLE_MIX};
 use crate::random::SeededRandom;
 
-const WORDS: &str = include_str!("../data/large.toml");
+/// The words of the large dataset (`data/large.toml`): the names of projects and teams, the name of
+/// the own field, and the comments in both languages. Every file that reads them reads this text.
+pub(crate) const WORDS: &str = include_str!("../data/large.toml");
 
 /// How many of 100 Team members of the rest work in the whole organization (the others hold
 /// their role in a few projects, directly or through a group).
@@ -49,12 +51,20 @@ const FAMILIES_PER_CONTRIBUTOR: usize = 2;
 const AREAS: [&str; 4] = ["app", "web", "ops", "doc"];
 
 #[derive(Deserialize)]
-struct Words {
-    projects: ProjectWords,
+pub(crate) struct Words {
+    pub(crate) projects: ProjectWords,
+    pub(crate) fields: FieldWords,
+}
+
+/// The names of the own fields that the dataset adds.
+#[derive(Deserialize)]
+pub(crate) struct FieldWords {
+    pub(crate) cost_center: String,
 }
 
 #[derive(Deserialize)]
-struct ProjectWords {
+pub(crate) struct ProjectWords {
+    team_name: String,
     nouns: Vec<String>,
     topics: Vec<String>,
     teams: Vec<String>,
@@ -438,7 +448,10 @@ fn group_rows(
             let team = random.pick(&words.teams).cloned().unwrap_or_default();
             let group = Group {
                 id: ordered(GroupId::from_parts, given_at, random)?,
-                name: format!("Team {team} {}", at_group + 1),
+                name: words
+                    .team_name
+                    .replace("{team}", &team)
+                    .replace("{number}", &(at_group + 1).to_string()),
                 version: FIRST_VERSION,
             };
             let family = at_group % family_count;

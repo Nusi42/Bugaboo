@@ -22,9 +22,7 @@ use crate::error::SampleError;
 use crate::issues_setup::{MadeField, Setup};
 use crate::issues_words::IssueWords;
 use crate::large_ids::{ordered, rng_for};
-use crate::large_org::Org;
-
-const WORDS: &str = include_str!("../data/large.toml");
+use crate::large_org::{Org, WORDS};
 
 /// How many different file records the dataset has: a file record is one row; issues share them.
 pub(crate) const FILE_RECORDS: usize = 64;

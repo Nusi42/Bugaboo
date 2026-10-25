@@ -189,6 +189,7 @@
     "assignedPercent": 70,
     "followersAtMost": 3,
     "notifiedPercent": 2,
+    "checkNotifiedPercent": 100,
     "batch": 2000,
     "bigProjectsShare": 60
   }
