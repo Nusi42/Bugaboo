@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 
+import { placesOf } from "./names-in-sentence.ts";
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
 import { isGap, wordsAndGaps } from "./words.ts";
@@ -48,17 +49,19 @@ interface Placed {
 
 /** The pieces of a sentence between the places a value stands, each with where the piece ends up in the sentence. */
 function placedAround(sentence: string, value: string): readonly Placed[] {
+  const pieces: Placed[] = [];
   let start = 0;
-  return sentence.split(value).map((text) => {
-    const placed = { start, text };
-    start += text.length + value.length;
-    return placed;
-  });
+  for (const at of placesOf(sentence, value)) {
+    pieces.push({ start, text: sentence.slice(start, at) });
+    start = at + value.length;
+  }
+  pieces.push({ start, text: sentence.slice(start) });
+  return pieces;
 }
 
 /**
  * A sentence that has a value in it (the name of a file, the start of a key): the value is drawn by
- * `children`, as a part of its own, every time the sentence has it, and the rest of the sentence flows
+ * `children`, as a part of its own, every time the sentence has it as a whole name (not as a piece of a longer one), and the rest of the sentence flows
  * around it.
  */
 export function SentenceWithValue({

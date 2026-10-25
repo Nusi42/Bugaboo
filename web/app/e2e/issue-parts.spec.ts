@@ -131,9 +131,11 @@ test("iss_07 the reason for following is read with the button, and a long count 
   await openIssueWithDetails(page, "WEB-1");
   const row = detailRow(page, t("followers.name"));
   const stop = row.getByRole("button", { name: t("followers.stop"), exact: true });
-  await expect(row.getByRole("button", { name: /or more followers/u })).toBeVisible();
+  await expect(
+    row.getByRole("button", { name: t("followers.count-more", { count: pageOfFollowers }) }),
+  ).toBeVisible();
   // The reason is the description of the button that turns it round, not a hint on the count.
-  await expect(stop).toHaveAccessibleDescription(/you/iu);
+  await expect(stop).toHaveAccessibleDescription(t("followers.reason-reported"));
   await expect(row.locator("[title]")).toHaveCount(0);
   // The button stays inside the column, wherever it stands.
   const [inside, button] = [await boxOf(row), await boxOf(stop)];

@@ -144,6 +144,7 @@ export { StatusIcon, type StatusIconProps } from "./StatusIcon.tsx";
 export { StatusPill, type StatusPillProps } from "./StatusPill.tsx";
 export { SelectField, type SelectChoice, type SelectFieldProps } from "./SelectField.tsx";
 export { Skeleton, type SkeletonProps } from "./Skeleton.tsx";
+export { longestNameIn } from "./names-in-sentence.ts";
 export { SentenceWithName, SentenceWithValue, UnbrokenWords } from "./UnbrokenWords.tsx";
 export { containsEveryWord, isGap, wordsAndGaps, wordsOnly } from "./words.ts";
 export { SubmitButton, type SubmitButtonProps } from "./SubmitButton.tsx";
