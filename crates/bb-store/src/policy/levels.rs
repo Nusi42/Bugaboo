@@ -196,21 +196,17 @@ async fn read_rows(
     if let Some(issue_type) = table.issue_type {
         select.column(issue_type);
     }
-    match which {
-        Which::All => {}
-        Which::Roles(roles) => {
-            select.and_where(Expr::col(table.role).is_in(super::in_list(roles)));
+    if let Which::At { chain, .. } = which {
+        if in_project && chain.is_empty() {
+            // The organization has no project: nothing is set for it.
+            return Ok(Vec::new());
         }
-        Which::At { roles, chain } => {
-            if in_project && chain.is_empty() {
-                // The organization has no project: nothing is set for it.
-                return Ok(Vec::new());
-            }
-            select.and_where(Expr::col(table.role).is_in(super::in_list(roles)));
-            if let Some(project) = table.project {
-                select.and_where(Expr::col(project).is_in(super::in_list(chain)));
-            }
+        if let Some(project) = table.project {
+            select.and_where(Expr::col(project).is_in(super::in_list(chain)));
         }
+    }
+    if let Which::Roles(roles) | Which::At { roles, .. } = which {
+        select.and_where(Expr::col(table.role).is_in(super::in_list(roles)));
     }
     let mut rows = Vec::new();
     for row in reader.fetch_all(&select).await? {
