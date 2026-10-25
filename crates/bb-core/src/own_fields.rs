@@ -465,9 +465,14 @@ impl Scope {
     /// `chain`, and (for an issue) of the issue type `issue_type`.
     #[must_use]
     pub fn reaches(&self, chain: &[ProjectId], issue_type: Option<IssueTypeId>) -> bool {
-        let project_ok =
-            self.projects.is_empty() || self.projects.iter().any(|project| chain.contains(project));
-        project_ok && self.reaches_type(issue_type)
+        self.reaches_project(chain) && self.reaches_type(issue_type)
+    }
+
+    /// Whether the field is offered in a project whose projects from the top down are `chain`
+    /// (the half of [`Self::reaches`] that is about the place), whatever the issue type.
+    #[must_use]
+    pub fn reaches_project(&self, chain: &[ProjectId]) -> bool {
+        self.projects.is_empty() || self.projects.iter().any(|project| chain.contains(project))
     }
 
     /// Whether the field is offered for issues of the issue type `issue_type` in some project: the

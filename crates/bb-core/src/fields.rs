@@ -193,6 +193,26 @@ impl Field {
         }
     }
 
+    /// The word of the field in the search language (ADR-0005): the key in lower camel case
+    /// (`assigned-to` is `assignedTo`), so the word is made from the key by one rule and no
+    /// second list of words can disagree with the catalogue.
+    #[must_use]
+    pub fn search_word(self) -> String {
+        let mut word = String::new();
+        let mut upper = false;
+        for letter in self.code().chars() {
+            if letter == '-' {
+                upper = true;
+            } else if upper {
+                word.extend(letter.to_uppercase());
+                upper = false;
+            } else {
+                word.push(letter);
+            }
+        }
+        word
+    }
+
     /// The kind of people information the field holds, when it holds a person: a person in the
     /// field is shown only when the field is visible, and then as this kind says.
     #[must_use]
@@ -233,6 +253,16 @@ mod tests {
                 "cost-center",
             ]
         );
+    }
+
+    #[test]
+    fn qry_05_the_search_word_of_a_field_is_its_key_in_lower_camel_case() {
+        assert_eq!(Field::AssignedTo.search_word(), "assignedTo");
+        assert_eq!(Field::PlannedForRelease.search_word(), "plannedForRelease");
+        assert_eq!(Field::Title.search_word(), "title");
+        let words: std::collections::HashSet<String> =
+            Field::ALL.iter().map(|field| field.search_word()).collect();
+        assert_eq!(words.len(), Field::ALL.len());
     }
 
     #[test]
