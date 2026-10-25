@@ -51,7 +51,10 @@ export interface FormQuery {
 
 /** The form for one person: its sections, and whether a field is on it. */
 export interface FormView {
-  /** The layout has been read (or could not be); before that every field counts as shown, so nothing flashes away. */
+  /**
+   * The layout has been read, could not be, or there was nothing to ask it about (no project);
+   * before that every field counts as shown, so nothing flashes away.
+   */
   readonly ready: boolean;
   /** The layout could not be read: the form shows only the basics ([`basicFields`]). */
   readonly failed: boolean;
@@ -78,12 +81,7 @@ export const basicFields: readonly string[] = ["description"];
  * What a form is when no layout was asked for (there is no project to ask about): nothing is
  * waited for, the layout places no field, and every field is shown.
  */
-const unplaced: FormView = {
-  ready: true,
-  failed: false,
-  sections: [],
-  shows: () => true,
-};
+const unplaced: FormView = { ...loading, ready: true };
 
 /**
  * The form while its layout is on the way, read, or could not be read; `asked` is false when there
@@ -91,7 +89,7 @@ const unplaced: FormView = {
  */
 export function formViewOf(
   read: Pick<UseQueryResult<Schema<"FormLayoutBody">>, "data" | "isError">,
-  asked = true,
+  asked: boolean,
 ): FormView {
   if (!asked) {
     return unplaced;
@@ -122,6 +120,7 @@ export function formViewOf(
  * the levels of the person, so a field they may not see (or fill in) is not in it.
  */
 export function useFormLayout({ project, issueType, kind }: FormQuery): FormView {
+  const asked = project !== undefined && project !== "";
   const form = useQuery({
     ...api.query.queryOptions("get", "/api/v1/layouts/form", {
       params: {
@@ -133,9 +132,9 @@ export function useFormLayout({ project, issueType, kind }: FormQuery): FormView
       },
     }),
     select: (body: Schema<"FormLayoutBody">) => body,
-    enabled: project !== undefined && project !== "",
+    enabled: asked,
   });
-  return formViewOf(form, project !== undefined && project !== "");
+  return formViewOf(form, asked);
 }
 
 /** Which layout to edit: a project (none for the whole organization), an issue type (none for all) and a form. */
