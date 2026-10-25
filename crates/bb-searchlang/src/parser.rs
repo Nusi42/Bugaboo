@@ -94,11 +94,11 @@ impl Parser<'_> {
     /// Whether a value of the field that `wanted` names may be an Issue. It may, unless the fields
     /// are given and say that the field holds something else.
     fn issue_expected(&self, wanted: &Situation) -> bool {
-        let word = match wanted {
-            Situation::Value { field }
-            | Situation::IsRest { field }
-            | Situation::IsNotRest { field } => field,
-            _ => return true,
+        let (Situation::Value { field: word }
+        | Situation::IsRest { field: word }
+        | Situation::IsNotRest { field: word }) = wanted
+        else {
+            return true;
         };
         self.fields
             .and_then(|fields| fields.field(word))
