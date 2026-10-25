@@ -296,7 +296,7 @@ pub async fn accept_invitation<S: AuthStore>(
     let event = ctx.event(
         by(person.id),
         entity(RecordKind::Person, person.id),
-        crate::dataset_events::person_joined(),
+        crate::event_members::person_joined(),
     )?;
     let reserved = ctx.reserved_handles().await?;
     let (store, stored_person, session, invitation_id) = (

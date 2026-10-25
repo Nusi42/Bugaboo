@@ -71,7 +71,7 @@ pub async fn create_project<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Project, project.id),
-        crate::dataset_events::project_created(&project),
+        crate::event_members::project_created(&project),
     )?;
     let stored = project.clone();
     let why = Why::default();

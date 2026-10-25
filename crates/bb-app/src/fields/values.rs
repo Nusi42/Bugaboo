@@ -14,7 +14,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
-use crate::dataset_events::own_change;
+use crate::event_members::own_change;
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::access::PeopleLevel;

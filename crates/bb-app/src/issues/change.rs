@@ -48,7 +48,7 @@ impl Plan {
         let (before, after) = (&self.current, &self.next);
         let mut changes = Vec::new();
         let mut add = |name: &str, was: Value, now: Value| {
-            changes.extend(crate::dataset_events::difference(name, was, now));
+            changes.extend(crate::event_members::difference(name, was, now));
         };
         add(
             member::ISSUE_TYPE,

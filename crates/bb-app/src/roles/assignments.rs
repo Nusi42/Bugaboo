@@ -136,7 +136,7 @@ pub async fn assign_role<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Assignment, row.id),
-        crate::dataset_events::assignment_given(&row),
+        crate::event_members::assignment_given(&row),
     )?;
     let stored = row.clone();
     let giver = actor.person.id;

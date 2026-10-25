@@ -231,7 +231,7 @@ pub async fn create_issue<S: AuthStore>(
     let own_writes = new.own.writes();
     let own_changes = new.own.changes();
     let changes =
-        crate::dataset_events::issue_created(&new.issue, &new.assigned_people, own_changes);
+        crate::event_members::issue_created(&new.issue, &new.assigned_people, own_changes);
     let event = ctx.event(by(actor.person.id), entity(RecordKind::Issue, id), changes)?;
     let mut tried = 0;
     loop {

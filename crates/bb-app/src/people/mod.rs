@@ -210,7 +210,7 @@ pub async fn create_group<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Group, group.id),
-        crate::dataset_events::group_created(&group),
+        crate::event_members::group_created(&group),
     )?;
     let stored = group.clone();
     ctx.store()
@@ -374,7 +374,7 @@ pub async fn add_group_member<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Group, group.id),
-        crate::dataset_events::group_member_added(),
+        crate::event_members::group_member_added(),
     )?;
     let giver = actor.person.id;
     ctx.store()

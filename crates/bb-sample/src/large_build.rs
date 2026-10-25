@@ -3,7 +3,7 @@
 //! issue number `n` comes from the seed and `n` alone, so a run makes the same dataset whatever the
 //! size of the batches it is written in.
 
-use bb_app::dataset_events as events;
+use bb_app::event_members as events;
 use bb_core::comment::Comment;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange, RecordKind};
 use bb_core::files::{Attachment, PreviewStatus};

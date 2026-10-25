@@ -9,7 +9,7 @@ use std::collections::BTreeSet;
 use bb_app::access::{PolicyStore as _, StartingRole};
 use bb_app::auth::AccountStore as _;
 use bb_app::context::Clock as _;
-use bb_app::dataset_events;
+use bb_app::event_members;
 use bb_app::projects::ProjectStore as _;
 use bb_auth::PasswordHasher;
 use bb_core::access::{AppliesTo, Assignment, Group, GroupMember};
@@ -481,7 +481,7 @@ fn events_of(
             person.id,
             RecordKind::Person,
             person.id,
-            dataset_events::person_joined(),
+            event_members::person_joined(),
         )?);
     }
     let mut add = |kind, id: EntityId, changes| -> Result<(), SampleError> {
@@ -492,25 +492,25 @@ fn events_of(
         add(
             RecordKind::Project,
             project.id.into(),
-            dataset_events::project_created(project),
+            event_members::project_created(project),
         )?;
     }
     for (group, members, assignment) in &written.groups {
         add(
             RecordKind::Group,
             group.id.into(),
-            dataset_events::group_created(group),
+            event_members::group_created(group),
         )?;
         add(
             RecordKind::Assignment,
             assignment.id.into(),
-            dataset_events::assignment_given(assignment),
+            event_members::assignment_given(assignment),
         )?;
         for member in members {
             add(
                 RecordKind::Group,
                 member.group.into(),
-                dataset_events::group_member_added(),
+                event_members::group_member_added(),
             )?;
         }
     }
@@ -518,7 +518,7 @@ fn events_of(
         add(
             RecordKind::Assignment,
             row.id.into(),
-            dataset_events::assignment_given(row),
+            event_members::assignment_given(row),
         )?;
     }
     Ok(found)
@@ -542,7 +542,7 @@ async fn store(
         .record_changes(events, async |transaction| {
             for person in &written.people {
                 AuthStorage::insert_person(transaction, person, &hash, at).await?;
-                dataset_events::give_handle::<AuthStorage>(transaction, person, at, reserved)
+                event_members::give_handle::<AuthStorage>(transaction, person, at, reserved)
                     .await?;
             }
             for project in &written.projects {

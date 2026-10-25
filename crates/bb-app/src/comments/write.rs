@@ -140,7 +140,7 @@ pub async fn add_comment<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Comment, comment.id),
-        crate::dataset_events::comment_written(issue.id, &comment.text),
+        crate::event_members::comment_written(issue.id, &comment.text),
     )?;
     let stored = comment.clone();
     ctx.store()

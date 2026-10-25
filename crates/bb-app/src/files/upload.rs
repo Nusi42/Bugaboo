@@ -404,7 +404,7 @@ pub async fn finish_upload<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Attachment, attachment.id),
-        crate::dataset_events::attachment_added(&attachment, &file),
+        crate::event_members::attachment_added(&attachment, &file),
     )?;
     let (stored_attachment, stored_file, upload_id) = (attachment.clone(), file.clone(), upload.id);
     let issue_id = issue.id;

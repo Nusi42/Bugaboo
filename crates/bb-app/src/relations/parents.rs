@@ -115,7 +115,7 @@ pub async fn set_parent<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         record.clone(),
-        crate::dataset_events::parent_changed(current, wanted, child.version),
+        crate::event_members::parent_changed(current, wanted, child.version),
     )?;
     let (child_id, version, by_whom) = (child.id, child.version, actor.person.id);
     let why = Why::default();
