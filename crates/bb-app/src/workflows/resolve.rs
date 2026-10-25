@@ -132,6 +132,26 @@ impl WorkflowDirectory {
             .collect()
     }
 
+    /// The keys of the statuses of every workflow here, the starting workflow too, each once, in
+    /// the order they are found: what an issue can be in.
+    pub(crate) fn status_keys(&self) -> Vec<StatusKey> {
+        let mut ids: Vec<&WorkflowId> = self.workflows.keys().collect();
+        ids.sort_unstable();
+        let mut keys: Vec<StatusKey> = Vec::new();
+        let contents = std::iter::once(&self.starting).chain(
+            ids.into_iter()
+                .filter_map(|id| self.workflows.get(id).map(|each| &each.content)),
+        );
+        for content in contents {
+            for status in &content.statuses {
+                if !keys.contains(&status.key) {
+                    keys.push(status.key.clone());
+                }
+            }
+        }
+        keys
+    }
+
     /// Every place a workflow is used at.
     pub(crate) fn uses(&self) -> &[WorkflowUse] {
         &self.uses
