@@ -87,11 +87,11 @@ const levelLists = '[data-part="access.matrix-cell"] select';
 /**
  * For each level list in the matrix: the width the chosen level needs in the list's own type, and
  * the width inside the list that it has for it. The words are measured with the list's own font.
- * It runs in the page, so it takes nothing from outside.
+ * It runs in the page, so it takes what it needs as an argument.
  */
-function roomForLevels(): { needed: number; available: number }[] {
+function roomForLevels(selector: string): { needed: number; available: number }[] {
   const rooms: { needed: number; available: number }[] = [];
-  for (const list of document.querySelectorAll<HTMLSelectElement>(levelLists)) {
+  for (const list of document.querySelectorAll<HTMLSelectElement>(selector)) {
     const style = getComputedStyle(list);
     const ruler = document.createElement("span");
     ruler.style.font = style.font;
@@ -112,8 +112,8 @@ function roomForLevels(): { needed: number; available: number }[] {
 }
 
 /** Makes every level list of the matrix as narrow as a list can be squeezed. */
-function squeezeLevels(): void {
-  for (const list of document.querySelectorAll<HTMLSelectElement>(levelLists)) {
+function squeezeLevels(selector: string): void {
+  for (const list of document.querySelectorAll<HTMLSelectElement>(selector)) {
     list.style.width = "20px";
   }
 }
@@ -132,14 +132,14 @@ test("ux_04 no level in the matrix is cut with Larger text on, and the measure c
       await expect(
         await levelList(page, t("issue-field.cost-center"), roleName.contributor),
       ).toBeVisible();
-      const rooms = await page.evaluate(roomForLevels);
+      const rooms = await page.evaluate(roomForLevels, levelLists);
       expect(rooms.length).toBeGreaterThan(0);
       for (const room of rooms) {
         expect(room.needed).toBeLessThanOrEqual(room.available);
       }
       // The same measure finds lists that are too narrow for their level: the check can fail.
-      await page.evaluate(squeezeLevels);
-      const squeezed = await page.evaluate(roomForLevels);
+      await page.evaluate(squeezeLevels, levelLists);
+      const squeezed = await page.evaluate(roomForLevels, levelLists);
       expect(squeezed.length).toBe(rooms.length);
       for (const room of squeezed) {
         expect(room.needed).toBeGreaterThan(room.available);
