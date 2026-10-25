@@ -9,7 +9,7 @@
 use crate::fields::{FieldKind, ReadableFields};
 use crate::lexer::{Token, TokenKind, tokens};
 use crate::limits::{MAX_DEPTH, MAX_TEXT_BYTES};
-use crate::literal::is_short_name;
+use crate::literal::short_name;
 use crate::situation::{ParseError, Reason, Situation};
 use crate::span::Span;
 use crate::syntax::{
@@ -510,13 +510,12 @@ impl Parser<'_> {
     /// The short name of a project, written in any case and kept in capitals. A word of the
     /// language is a short name only in capitals, so `within and` is not a project.
     fn short_name(&mut self) -> Step<ProjectRef> {
-        if let Some(TokenKind::Word(typed)) = self.peek_kind(0) {
-            let text = typed.to_ascii_uppercase();
-            let is_keyword = Keyword::of(typed).is_some() && *typed != text;
-            if !is_keyword && is_short_name(&text) {
-                let span = self.advance();
-                return Ok(ProjectRef { text, span });
-            }
+        if let Some(TokenKind::Word(typed)) = self.peek_kind(0)
+            && let Some(text) = short_name(typed)
+            && !(Keyword::of(typed).is_some() && *typed != text)
+        {
+            let span = self.advance();
+            return Ok(ProjectRef { text, span });
         }
         self.fail(Situation::ProjectRef)
     }

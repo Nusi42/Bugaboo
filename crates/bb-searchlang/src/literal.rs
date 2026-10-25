@@ -127,10 +127,11 @@ pub(crate) fn issue_id(text: &str) -> Option<String> {
     text.parse::<ReadableId>().ok().map(|id| id.to_string())
 }
 
-/// Whether `text` is the short name of a project, by the rule of `bb-core`.
+/// The short name that `text` spells, written in any case and kept in capitals, by the rule of
+/// `bb-core` that the server reads it with; `None` when it is not a short name.
 #[must_use]
-pub(crate) fn is_short_name(text: &str) -> bool {
-    ShortName::new(text).is_ok()
+pub(crate) fn short_name(text: &str) -> Option<String> {
+    text.parse::<ShortName>().ok().map(|name| name.to_string())
 }
 
 /// Whether `text` is one plain word that can stand as a value: like [`is_plain_word`], but a word of
@@ -246,8 +247,9 @@ mod tests {
         ] {
             assert_eq!(issue_id(not_an_id), None, "{not_an_id}");
         }
-        assert!(is_short_name("WEB"));
-        assert!(!is_short_name("1WEB"));
-        assert!(!is_short_name("W"));
+        assert_eq!(short_name("web").as_deref(), Some("WEB"));
+        assert_eq!(short_name("Web2").as_deref(), Some("WEB2"));
+        assert_eq!(short_name("1web"), None);
+        assert_eq!(short_name("w"), None);
     }
 }

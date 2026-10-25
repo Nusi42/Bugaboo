@@ -16,7 +16,7 @@ use serde_json::Value as Json;
 mod reader;
 
 use crate::fields::ReadableFields;
-use crate::literal::{is_short_name, issue_id};
+use crate::literal::{issue_id, short_name as read_short_name};
 use crate::syntax::{Date, Decimal, Expr, IssueRef, Operand, ProjectRef, Search, Test};
 
 /// What is wrong with the JSON: in plain words, for the developer of the browser (a defect, never
@@ -146,7 +146,7 @@ fn issue(id: &IssueRef) -> Result<(), Problem> {
 }
 
 fn short_name(name: &ProjectRef) -> Result<(), Problem> {
-    if is_short_name(&name.text) {
+    if read_short_name(&name.text).as_deref() == Some(name.text.as_str()) {
         Ok(())
     } else {
         Err(format!("`{}` is no short name", name.text))

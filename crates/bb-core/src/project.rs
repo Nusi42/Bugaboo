@@ -1,6 +1,7 @@
 //! Projects and their short names (PRJ-01, ADR-0025 decision 13, M2-Q4).
 
 use std::fmt;
+use std::str::FromStr;
 
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
@@ -61,6 +62,16 @@ impl ShortName {
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+}
+
+impl FromStr for ShortName {
+    type Err = InvalidShortName;
+
+    /// Reads a short name written in any case (`web`, `Web`) and keeps it in capitals: the one
+    /// reader of typed short names, for issue IDs and for the search language alike.
+    fn from_str(text: &str) -> Result<Self, InvalidShortName> {
+        Self::new(&text.to_ascii_uppercase())
     }
 }
 
@@ -150,6 +161,21 @@ mod tests {
             "WEB\n",
         ] {
             assert_eq!(ShortName::new(bad), Err(InvalidShortName), "{bad:?}");
+        }
+    }
+
+    #[test]
+    fn a_typed_short_name_is_read_in_any_case_and_kept_in_capitals() {
+        for (typed, capitals) in [
+            ("web", "WEB"),
+            ("Web", "WEB"),
+            ("WEB", "WEB"),
+            ("app2", "APP2"),
+        ] {
+            assert_eq!(typed.parse::<ShortName>().unwrap().as_str(), capitals);
+        }
+        for bad in ["", "w", "2web", "we b", "web-1", "äb", "abcdefghijk"] {
+            assert_eq!(bad.parse::<ShortName>(), Err(InvalidShortName), "{bad:?}");
         }
     }
 
