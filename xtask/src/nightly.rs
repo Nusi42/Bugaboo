@@ -7,7 +7,8 @@
 //! local port nobody else uses (`fullRunLock` in `tools/dev/ports.json`): the system gives it to
 //! one program at a time, writes nothing anywhere and takes it back when the program ends, even
 //! when it is killed. `--install` registers the daily task with the scheduler of Windows (03:00,
-//! in the folder it is run in, which is the lead's); the lead installs it after the merge.
+//! in the folder it is run in, which is the lead's, and only while the user is logged on); the
+//! lead installs it after the merge.
 
 use std::fs::{self, File};
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
@@ -30,6 +31,9 @@ const LOCK_BLOCK: u32 = 1;
 const LOCK_PORT: &str = "fullRunLock";
 /// How long a waiting run sleeps between two tries.
 const WAIT: Duration = Duration::from_secs(30);
+/// How long a run waits for the lock at most (six hours) before it gives up with an error, so a
+/// night run cannot hang for ever behind a run that never ends.
+const GIVE_UP_AFTER: Duration = Duration::from_hours(6);
 /// Set for a program the holder of the lock started: it needs no lock of its own.
 const HELD_VARIABLE: &str = "BUGABOO_FULL_RUN_LOCK_HELD";
 /// The name and the time of the task.
@@ -47,15 +51,22 @@ fn try_lock(port: u16) -> Option<TcpListener> {
     TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port)).ok()
 }
 
-/// Takes the lock, calling `waiting` and then `pause` after every failed try.
-fn acquire_with(port: u16, mut waiting: impl FnMut(), mut pause: impl FnMut()) -> TcpListener {
-    loop {
+/// Takes the lock, calling `waiting` and then `pause` after every failed try; none after
+/// `tries` failed tries.
+fn acquire_with(
+    port: u16,
+    tries: u64,
+    mut waiting: impl FnMut(),
+    mut pause: impl FnMut(),
+) -> Option<TcpListener> {
+    for _ in 0..tries {
         if let Some(lock) = try_lock(port) {
-            return lock;
+            return Some(lock);
         }
         waiting();
         pause();
     }
+    try_lock(port)
 }
 
 impl FullRun {
@@ -71,14 +82,23 @@ impl FullRun {
         let mut told = false;
         let lock = acquire_with(
             port,
+            GIVE_UP_AFTER.as_secs() / WAIT.as_secs(),
             || {
                 if !told {
-                    output::info("Another full run is on this computer; waiting for it to end.");
+                    output::info(&format!(
+                        "Another full run is on this computer (the lock is port {port}); waiting for it to end."
+                    ));
                     told = true;
                 }
             },
             || std::thread::sleep(WAIT),
         );
+        let Some(lock) = lock else {
+            bail!(
+                "Another full run held the lock (port {port}) for {} hours; giving up.",
+                GIVE_UP_AFTER.as_secs() / 3600
+            );
+        };
         Ok(Self { _lock: Some(lock) })
     }
 }
@@ -90,9 +110,18 @@ fn stale(made: Option<&str>, newest: Option<&str>) -> bool {
     made.is_none() || made != newest
 }
 
-/// The arguments of `schtasks` that register the daily task for the folder `root`.
-fn schtasks_arguments(root: &Path) -> Vec<String> {
-    let command = format!("cmd /c cd /d \"{}\" && cargo xtask nightly", root.display());
+/// The file that gets what the task prints before the program writes its own log: the output of a
+/// build of xtask that failed, which no log of the night holds.
+const START_LOG: &str = "start.log";
+
+/// The arguments of `schtasks` that register the daily task for the folder `root`, with the
+/// output of the task appended to `start_log`.
+fn schtasks_arguments(root: &Path, start_log: &Path) -> Vec<String> {
+    let command = format!(
+        "cmd /c cd /d \"{}\" && cargo xtask nightly >> \"{}\" 2>&1",
+        root.display(),
+        start_log.display()
+    );
     [
         "/Create", "/F", "/SC", "DAILY", "/ST", TASK_TIME, "/TN", TASK_NAME, "/TR",
     ]
@@ -108,14 +137,17 @@ fn install(repo: &Repo) -> anyhow::Result<bool> {
             "The nightly task is registered with the scheduler of Windows; on Linux use cron to run `cargo xtask nightly` at night."
         );
     }
+    let folder = in_folder(repo.root(), &load_layout(repo.root())?.large.nightly_out);
+    fs::create_dir_all(&folder)?;
     let status = Command::new("schtasks")
-        .args(schtasks_arguments(repo.root()))
+        .args(schtasks_arguments(repo.root(), &folder.join(START_LOG)))
         .status()
         .context("could not run schtasks")?;
     if status.success() {
         output::info(&format!(
-            "The task \"{TASK_NAME}\" runs `cargo xtask nightly` every day at {TASK_TIME} in {}.",
-            repo.root().display()
+            "The task \"{TASK_NAME}\" runs `cargo xtask nightly` every day at {TASK_TIME} in {}, but only while you are logged on to Windows. The output of a build that fails goes to {}.",
+            repo.root().display(),
+            folder.join(START_LOG).display()
         ));
     }
     Ok(status.success())
@@ -213,8 +245,9 @@ mod tests {
         let held = try_lock(port).unwrap();
         let waited = Cell::new(0);
         let mut holder = Some(held);
-        let _lock = acquire_with(
+        let lock = acquire_with(
             port,
+            10,
             || waited.set(waited.get() + 1),
             || {
                 // The other run ends after three tries.
@@ -223,7 +256,18 @@ mod tests {
                 }
             },
         );
+        assert!(lock.is_some());
         assert_eq!(waited.get(), 3);
+    }
+
+    #[test]
+    fn the_nightly_run_gives_up_when_the_lock_is_never_free() {
+        let port = free_port();
+        let _held = try_lock(port).unwrap();
+        let waited = Cell::new(0);
+        let lock = acquire_with(port, 4, || waited.set(waited.get() + 1), || {});
+        assert!(lock.is_none());
+        assert_eq!(waited.get(), 4);
     }
 
     #[test]
@@ -237,9 +281,15 @@ mod tests {
 
     #[test]
     fn the_task_is_registered_daily_at_three_in_the_given_folder() {
-        let arguments = schtasks_arguments(Path::new("lead"));
+        let arguments = schtasks_arguments(Path::new("lead"), Path::new("night/start.log"));
         assert!(arguments.windows(2).any(|pair| pair == ["/ST", "03:00"]));
         assert!(arguments.last().unwrap().contains("cargo xtask nightly"));
         assert!(arguments.last().unwrap().contains("lead"));
+        assert!(
+            arguments
+                .last()
+                .unwrap()
+                .ends_with(">> \"night/start.log\" 2>&1")
+        );
     }
 }

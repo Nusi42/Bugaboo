@@ -104,6 +104,11 @@ pub(crate) fn dataset_folder(repo: &Repo, layout: &Layout, database: DatabaseKin
 
 pub(crate) fn run(repo: &Repo, program: &Path, request: &Request) -> anyhow::Result<bool> {
     let layout = load_layout(repo.root())?;
+    // Making the dataset takes the computer for an hour: one full run at a time, as `ci` and
+    // `bench` do. `--check` is small and takes no lock.
+    let _lock = (!request.check)
+        .then(|| crate::nightly::FullRun::take(repo))
+        .transpose()?;
     let databases = if request.databases.is_empty() {
         DatabaseKind::ALL.to_vec()
     } else {
