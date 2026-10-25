@@ -86,7 +86,7 @@ fn iss_01_a_new_issue_gives_its_members_in_the_order_of_the_form() {
 }
 
 #[test]
-fn iss_09_a_status_change_gives_the_status_then_the_counted_up_version() {
+fn wf_01_a_status_change_gives_the_status_then_the_counted_up_version() {
     let changes = members::status_changed(&key("open"), &key("done"), 4);
     assert_eq!(names(&changes), ["status", "version"]);
     assert_eq!(changes[0].before, Some(json!("open")));
@@ -96,11 +96,15 @@ fn iss_09_a_status_change_gives_the_status_then_the_counted_up_version() {
 }
 
 #[test]
-fn iss_09_a_tag_and_a_label_put_on_give_their_names_then_the_counted_up_version() {
+fn tag_01_a_tag_put_on_gives_the_names_then_the_counted_up_version() {
     let tags = members::tag_put_on(&[], &["red".to_owned()], 2);
     assert_eq!(names(&tags), ["tags", "version"]);
     assert_eq!(after(&tags, "tags"), &json!(["red"]));
     assert_eq!(tags[1].after, Some(json!(3)));
+}
+
+#[test]
+fn tag_02_a_label_put_on_gives_the_labels_then_the_counted_up_version() {
     let none: [Label; 0] = [];
     let labels = members::label_put_on(&none, &none, 5);
     assert_eq!(names(&labels), ["labels", "version"]);
@@ -108,7 +112,7 @@ fn iss_09_a_tag_and_a_label_put_on_give_their_names_then_the_counted_up_version(
 }
 
 #[test]
-fn iss_09_a_sub_issue_put_under_a_parent_gives_the_parent_then_the_version() {
+fn iss_03_a_sub_issue_put_under_a_parent_gives_the_parent_then_the_version() {
     let mut ids = SystemIds;
     let parent = IssueId::generate(&mut ids).unwrap();
     let changes = members::parent_changed(None, Some(parent), 1);
