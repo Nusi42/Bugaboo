@@ -3,7 +3,7 @@
 //! for each database in the folder `large.out` of `tools/dev/sample.json` (inside `.work/`), and
 //! says how long it took and how much disk it takes. An older dataset of the database is thrown
 //! away first. With `--check` it makes a small one twice on each database instead and holds the
-//! runs against each other: the program checks the rules of bulk data itself and prints a
+//! runs against each other: the program checks the rules of the large dataset itself and prints a
 //! fingerprint, which must be the same both times.
 
 use std::fs;
@@ -213,55 +213,70 @@ fn build_on(
     Ok(true)
 }
 
-/// Makes the small dataset twice on `database`; the fingerprints it printed.
+/// Makes the small dataset twice on `database`; the fingerprints it printed. PostgreSQL is started
+/// only for its own runs.
 fn two_runs(
+    repo: &Repo,
+    program: &Path,
+    both: (&Request, &Layout),
+    database: DatabaseKind,
+) -> anyhow::Result<Vec<Option<String>>> {
+    match database {
+        DatabaseKind::Sqlite => twice(repo, program, both, database, None),
+        DatabaseKind::Postgres => db::with_postgres(repo, |postgres| {
+            twice(repo, program, both, database, Some(postgres))
+        }),
+    }
+}
+
+/// The two runs; `postgres` is there exactly when `database` is PostgreSQL.
+fn twice(
     repo: &Repo,
     program: &Path,
     (request, layout): (&Request, &Layout),
     database: DatabaseKind,
+    postgres: Option<&db::Postgres<'_>>,
 ) -> anyhow::Result<Vec<Option<String>>> {
     let folder = in_folder(repo.root(), &layout.large.check_out);
     let issues = Some(request.issues.unwrap_or(layout.large.check_issues));
-    db::with_postgres(repo, |postgres| {
-        let mut prints = Vec::new();
-        for number in 1..=2 {
-            let out = folder.join(format!("{}-{number}", database.code()));
-            if out.exists() {
-                fs::remove_dir_all(&out)?;
-            }
-            fs::create_dir_all(&out)?;
-            let name = format!("{}_check_{number}", layout.large.database);
-            let url = match database {
-                DatabaseKind::Sqlite => None,
-                DatabaseKind::Postgres => Some(postgres.empty_database(&name)?),
-            };
-            let run = Run {
-                out: &out,
-                start: CHECK_START,
-                issues,
-            };
-            let made = run_program(
-                repo,
-                program,
-                (request, layout),
-                database,
-                (&run, url.as_deref()),
-            )?;
-            if database == DatabaseKind::Postgres {
-                postgres.drop_database(&name)?;
-            }
+    let mut prints = Vec::new();
+    for number in 1..=2 {
+        let out = folder.join(format!("{}-{number}", database.code()));
+        if out.exists() {
             fs::remove_dir_all(&out)?;
-            if !made.status.success() {
-                bail!(
-                    "The large dataset did not hold its rules on {}:\n{}",
-                    database.code(),
-                    said(&made)
-                );
-            }
-            prints.push(fingerprint(&said(&made)));
         }
-        Ok(prints)
-    })
+        fs::create_dir_all(&out)?;
+        let name = format!("{}_check_{number}", layout.large.database);
+        let url = postgres
+            .map(|postgres| postgres.empty_database(&name))
+            .transpose()?;
+        let run = Run {
+            out: &out,
+            start: CHECK_START,
+            issues,
+        };
+        let made = run_program(
+            repo,
+            program,
+            (request, layout),
+            database,
+            (&run, url.as_deref()),
+        )?;
+        if let Some(postgres) = postgres {
+            postgres.drop_database(&name)?;
+        }
+        fs::remove_dir_all(&out)?;
+        if !made.status.success() {
+            bail!(
+                "The large dataset did not hold its rules on {}:
+{}",
+                database.code(),
+                said(&made)
+            );
+        }
+        prints.push(fingerprint(&said(&made)));
+    }
+    Ok(prints)
 }
 
 fn check_on(

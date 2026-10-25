@@ -31,16 +31,16 @@ pub(crate) fn random16(random: &mut SeededRandom) -> [u8; 16] {
     std::array::from_fn(|_| byte(random))
 }
 
-/// An ID of a kind that sorts by time, made for the moment `at`.
+/// An ID of a kind that sorts by time, built for the moment `at`.
 ///
 /// # Errors
 /// [`SampleError`] when the moment is before 1970.
 pub(crate) fn ordered<T>(
-    make: impl Fn(Timestamp, [u8; 10]) -> Result<T, IdError>,
+    build: impl Fn(Timestamp, [u8; 10]) -> Result<T, IdError>,
     at: Timestamp,
     random: &mut SeededRandom,
 ) -> Result<T, SampleError> {
-    make(at, ten(random)).map_err(|error| SampleError::step(Step::Dataset, &error))
+    build(at, ten(random)).map_err(|error| SampleError::step(Step::Dataset, &error))
 }
 
 /// The source of the random codes of readable issue IDs: the numbers of the dataset's own random

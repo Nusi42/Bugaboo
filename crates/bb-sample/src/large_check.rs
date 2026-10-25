@@ -1,5 +1,5 @@
 //! The check of the large dataset (architecture §11, *Large dataset*): it reads the database back
-//! and holds it against the rules of the sample that apply to bulk data, and makes a fingerprint
+//! and holds it against the rules of the sample that apply to the large dataset, and makes a fingerprint
 //! that two runs with one seed must share.
 //!
 //! - **Counters:** each project that counts its issue IDs has a counter equal to the number of
@@ -74,7 +74,7 @@ pub struct Report {
 }
 
 impl Sample {
-    /// Holds the large dataset against the rules that apply to bulk data.
+    /// Holds the large dataset against the rules that apply to the large dataset.
     ///
     /// # Errors
     /// [`SampleError`] when the database cannot be read.

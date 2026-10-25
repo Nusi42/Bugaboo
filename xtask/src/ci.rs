@@ -59,7 +59,7 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
             xtask.to_string_lossy(),
             &["dataset", "sample", "--check"],
         ),
-        // A small large dataset is made twice on each database, holds the rules of bulk data and
+        // A small large dataset is made twice on each database, holds the rules of the large dataset and
         // is the same both times (PERF-BENCH, architecture section 11).
         Step::new(
             "large dataset",

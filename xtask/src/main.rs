@@ -156,7 +156,7 @@ enum DatasetKind {
         check: bool,
     },
     /// The large dataset of PERF-01: 500 people, 500 projects and a million issues, written in
-    /// bulk (architecture §11, "Large dataset"). On both databases unless one is named.
+    /// big transactions (architecture §11, "Large dataset"). On both databases unless one is named.
     Large {
         /// The number the dataset is made from (default 42).
         #[arg(long)]
@@ -168,7 +168,7 @@ enum DatasetKind {
         #[arg(long, conflicts_with = "check")]
         issues: Option<u32>,
         /// Instead: make a small one twice on each database and check that it holds the rules
-        /// of bulk data and is the same both times.
+        /// of the large dataset and is the same both times.
         #[arg(long)]
         check: bool,
     },

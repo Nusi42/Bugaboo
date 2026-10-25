@@ -5,7 +5,7 @@
 //! (`dataset` is switched on by `bb-sample` only).
 
 use bb_core::id::ProjectId;
-use sea_query::{Expr, ExprTrait as _, OnConflict, Query};
+use sea_query::{Expr, OnConflict, Query};
 
 use crate::db::{StoredId, Transaction};
 use crate::error::StoreError;
@@ -42,11 +42,7 @@ impl crate::db::Database {
     /// # Errors
     /// The error of the database.
     pub async fn issue_counter(&self, project: ProjectId) -> Result<Option<i64>, StoreError> {
-        let mut read = Query::select();
-        read.column(IssueCounterRow::Last)
-            .from(IssueCounterRow::Table)
-            .and_where(Expr::col(IssueCounterRow::Project).eq(project.stored()));
-        self.fetch_optional(&read)
+        self.fetch_optional(&crate::issues::counter_select(project))
             .await?
             .map(|row| row.get(IssueCounterRow::Last))
             .transpose()
