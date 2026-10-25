@@ -62,12 +62,16 @@ impl Required {
 
 /// Every check that holds a list of required tests, by ID: DOC-PROVEN-BY reads the lists to see that
 /// a test the docs cite as proof is required by the check they cite.
-pub(super) fn lists() -> [(&'static str, &'static [Required]); 6] {
+pub(super) fn lists() -> [(&'static str, &'static [Required]); 7] {
     use super::Check as _;
     [
         (
             super::test_issue_ids::TestIssueIds.id(),
             &super::test_issue_ids::REQUIRED,
+        ),
+        (
+            super::test_search_roundtrip::TestSearchRoundtrip.id(),
+            &super::test_search_roundtrip::REQUIRED,
         ),
         (
             super::test_workflows::TestWorkflows.id(),
