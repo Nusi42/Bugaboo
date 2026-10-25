@@ -1,0 +1,10 @@
+# M5 follow-ups
+
+Points found while building M5 that were accepted for later. Each names where it will be done. The IDs (`M5-F01` …) are what the review refers to. WP-02 uses F10 and up, WP-03 F20 and up, WP-04 F40 and up, WP-05 F50 and up, WP-06 F60 and up, WP-07 F70 and up, WP-08 F80 and up, WP-09 F90 and up, WP-10 F100 and up, WP-11 F110 and up.
+
+| ID | What | Why later | Planned in |
+|----|------|-----------|------------|
+| M5-F10 | The test of reading a short name in `bb-core` (`ShortName: FromStr`) names no feature ID | Found after the merge of WP-02; the test itself is right | The next package that changes `bb-core` |
+| M5-F20 | The notification count of the speed project was over its budget on PostgreSQL (100.5 ms) before WP-03 read the rights of all projects of a page at once (34.8 ms) | Fixed in WP-03; recorded so the nightly benchmark watches it | The nightly benchmark (WP-03) |
+| M5-F21 | `held.roles().iter().map(\|role\| role.id).collect()` is written three times (`layouts/effective.rs`, `layouts/read.rs`, `workflows/status.rs`); one `Held::role_ids()` next to `Held::roles()` in `bb-policy` | Older code, found in the fourth gate check of WP-03 | The next package that changes these files, or WP-04 |
+| M5-F22 | The doc of `Ctx::leveled` explains why its later read is acceptable by its only use today; it should also say "use it only for that; what decides what is shown reads `shown_with_levels`" | Only a doc line | With F21 |
