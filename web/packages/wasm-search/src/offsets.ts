@@ -37,11 +37,12 @@ export function offsetsOf(text: string): Offsets {
   };
 }
 
-/** Whether the value is a place: the `start` and the `end` of a range of the text. */
+/** Whether the value is a place: an object of exactly the `start` and the `end` of a range. */
 function isPlace(value: unknown): value is { start: number; end: number } {
   return (
     typeof value === "object" &&
     value !== null &&
+    Object.keys(value).length === 2 &&
     "start" in value &&
     typeof value.start === "number" &&
     "end" in value &&

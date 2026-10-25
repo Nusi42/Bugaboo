@@ -132,7 +132,9 @@ describe("qry_05 a hidden field is told like an unknown one", () => {
     // Rendered through the catalog, as the person reads it: the same text but for the word.
     const said = textByKey(hidden.key, hidden.args);
     expect(said).toContain("reportedBy");
-    expect(said).toBe(textByKey(invented.key, { ...invented.args, field: "reportedBy" }));
+    expect(said.replaceAll("reportedBy", "reportedXx")).toBe(
+      textByKey(invented.key, invented.args),
+    );
   });
 
   it("does not offer the field at the cursor", () => {
@@ -141,7 +143,7 @@ describe("qry_05 a hidden field is told like an unknown one", () => {
   });
 });
 
-describe("the module gives the browser what the server has", () => {
+describe("qry_03 the module gives the browser what the server has", () => {
   it("parses without the fields and keeps what the checker would refuse", () => {
     const answer = language.parse("nothing is Open");
     expect(answer.mistakes).toEqual([]);
@@ -162,7 +164,7 @@ describe("the module gives the browser what the server has", () => {
   });
 });
 
-describe("the places of the module are the places of the string", () => {
+describe("qry_03 the places of the module are the places of the string", () => {
   it("counts units of the string where the module counts bytes", () => {
     const text = 'title contains "Größe" and 😀 is';
     const offsets = offsetsOf(text);
