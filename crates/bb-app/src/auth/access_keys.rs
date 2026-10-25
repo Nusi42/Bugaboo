@@ -5,7 +5,8 @@
 //! - a key is `bb_` + a public prefix + a 256-bit secret; only a hash of the secret is stored, and
 //!   the secret is returned once, with the answer that makes the key;
 //! - every key runs out, after the organization's default number of days unless the person picks
-//!   another date, never later than the organization's longest time;
+//!   another date, never later than the organization's longest time (a moment a few minutes
+//!   past it, from a device clock that is a little fast, is cut to it);
 //! - a key has no permissions of its own: at every request it is its owner's evaluation narrowed
 //!   by its choice and its projects (`Ctx::evaluation_of`), so it follows its owner losing a role
 //!   at once and never holds more than the owner;
@@ -201,8 +202,13 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// When a key made now stops working: the date the person picked, or the default number of days;
-/// in the future and at most the organization's longest time (`request.invalid` otherwise).
+/// Five minutes: how far past the longest time a picked moment may be and still be cut to it instead of refused:
+/// a device whose clock is a little fast works out the end of the latest day a few minutes late.
+const CLOCK_SLACK_SECONDS: i64 = 300;
+
+/// When a key made now stops working: the moment the person picked, or the default number of days;
+/// in the future and at most the organization's longest time. A moment at most
+/// [`CLOCK_SLACK_SECONDS`] after the longest time is cut to it; a later one is `request.invalid`.
 fn expiry(
     now: Timestamp,
     picked: Option<Timestamp>,
@@ -221,10 +227,10 @@ fn expiry(
         },
         Timestamp::as_second,
     );
-    if wanted <= now.as_second() || wanted > latest {
+    if wanted <= now.as_second() || wanted > latest.saturating_add(CLOCK_SLACK_SECONDS) {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    Timestamp::from_second(wanted).map_err(|_| ErrorCode::InvalidRequest.into())
+    Timestamp::from_second(wanted.min(latest)).map_err(|_| ErrorCode::InvalidRequest.into())
 }
 
 /// Checks *What it may do* and its permissions: single permissions only with the choice *More
@@ -626,4 +632,59 @@ pub async fn require_session<S: AuthStore>(
     ctx.session(&input.session_token, SessionStage::Active)
         .await
         .map(|_| Done)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CLOCK_SLACK_SECONDS, expiry};
+    use bb_core::ErrorCode;
+    use bb_core::time::SECONDS_PER_DAY;
+    use jiff::Timestamp;
+
+    const NOW: i64 = 1_800_000_000;
+    const LONGEST: i64 = 30;
+
+    fn at(second: i64) -> Timestamp {
+        Timestamp::from_second(second).expect("a moment")
+    }
+
+    fn latest() -> i64 {
+        NOW + LONGEST * SECONDS_PER_DAY
+    }
+
+    fn picked(second: i64) -> Result<i64, Option<ErrorCode>> {
+        expiry(at(NOW), Some(at(second)), 90, LONGEST)
+            .map(Timestamp::as_second)
+            .map_err(|error| error.code())
+    }
+
+    #[test]
+    fn auth_07_a_key_without_a_picked_day_runs_the_default_cut_to_the_longest_time() {
+        let made = expiry(at(NOW), None, 90, LONGEST).expect("a key");
+        assert_eq!(made.as_second(), latest());
+        let made = expiry(at(NOW), None, 7, LONGEST).expect("a key");
+        assert_eq!(made.as_second(), NOW + 7 * SECONDS_PER_DAY);
+    }
+
+    #[test]
+    fn auth_07_a_picked_moment_up_to_the_longest_time_stands() {
+        assert_eq!(picked(latest()), Ok(latest()));
+        assert_eq!(picked(NOW + 1), Ok(NOW + 1));
+    }
+
+    #[test]
+    fn auth_07_a_moment_a_little_after_the_longest_time_is_cut_to_it_for_a_clock_that_is_fast() {
+        assert_eq!(picked(latest() + 1), Ok(latest()));
+        assert_eq!(picked(latest() + CLOCK_SLACK_SECONDS), Ok(latest()));
+    }
+
+    #[test]
+    fn auth_07_a_moment_later_than_the_slack_or_not_in_the_future_is_refused() {
+        assert_eq!(
+            picked(latest() + CLOCK_SLACK_SECONDS + 1),
+            Err(Some(ErrorCode::InvalidRequest))
+        );
+        assert_eq!(picked(NOW), Err(Some(ErrorCode::InvalidRequest)));
+        assert_eq!(picked(NOW - 1), Err(Some(ErrorCode::InvalidRequest)));
+    }
 }
