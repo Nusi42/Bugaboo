@@ -63,6 +63,19 @@ async fn starting_roles_made(reader: &mut impl Reader) -> Result<bool, StoreErro
     Ok(reader.fetch_optional(&select).await?.is_some())
 }
 
+/// Every level these roles have set, read on `reader`; none for no roles, without a statement.
+pub(crate) async fn level_rules_of_roles_in(
+    reader: &mut impl Reader,
+    roles: Vec<RoleId>,
+) -> Result<LevelRules, StoreError> {
+    if roles.is_empty() {
+        return Ok(LevelRules::default());
+    }
+    Ok(loading::rules_of(reader, Which::All)
+        .await?
+        .of_roles(&roles.into_iter().collect()))
+}
+
 impl PolicyStore for AuthStorage {
     async fn policy_inputs_in(
         transaction: &mut Transaction,
@@ -171,13 +184,8 @@ impl PolicyStore for AuthStorage {
     }
 
     async fn level_rules_of_roles(&self, roles: Vec<RoleId>) -> Result<LevelRules, StoreError> {
-        if roles.is_empty() {
-            return Ok(LevelRules::default());
-        }
         let mut transaction = self.database().begin_read().await?;
-        Ok(loading::rules_of(&mut transaction, Which::All)
-            .await?
-            .of_roles(&roles.into_iter().collect()))
+        level_rules_of_roles_in(&mut transaction, roles).await
     }
 
     async fn groups(&self) -> Result<Vec<Group>, StoreError> {

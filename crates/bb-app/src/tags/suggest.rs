@@ -30,7 +30,9 @@ pub async fn tag_suggestions<S: AuthStore>(
     input: TagSuggestionsQuery,
 ) -> Result<Authorized<TagSuggestions>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let shown = ctx.shown_to(&actor).await?;
+    let shown = ctx
+        .shown_with_levels(actor.person.id, actor.key_scope().cloned())
+        .await?;
     // Only to tell whether the asked type exists (the lowest level counts if not): no name is given
     // out, so this may see all types.
     let types: Vec<IssueTypeId> = ctx
@@ -43,12 +45,6 @@ pub async fn tag_suggestions<S: AuthStore>(
         .collect();
     // A type that does not exist is no type: the lowest level across types counts (fail closed).
     let issue_type = input.issue_type.filter(|id| types.contains(id));
-    let rules = ctx
-        .store()
-        .level_rules_of_roles(shown.role_ids())
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let shown = shown.with_levels(rules);
     let found = ctx.find_project(&input.project).await?;
     let place = found.as_ref().map_or(Place::Organization, |found| {
         Place::Project(found.project.id)

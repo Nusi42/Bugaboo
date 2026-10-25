@@ -80,6 +80,18 @@ impl ProjectStore for FakeStore {
         Ok(self.read(|state| policy_of(state, Some(person))))
     }
 
+    async fn policy_and_tree_of(
+        &self,
+        person: UserId,
+    ) -> Result<(Policy, Vec<Project>), FakeError> {
+        Ok(self.read(|state| {
+            let mut policy = policy_of(state, Some(person));
+            let roles = policy.roles.iter().map(|role| role.id).collect();
+            policy.rules = state.rules.of_roles(&roles);
+            (policy, tree_of(state))
+        }))
+    }
+
     async fn policy_all(&self) -> Result<Policy, FakeError> {
         Ok(self.read(|state| policy_of(state, None)))
     }

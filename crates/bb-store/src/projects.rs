@@ -13,7 +13,7 @@ use sea_query::{Expr, ExprTrait as _, Query, SelectStatement};
 use crate::auth::AuthStorage;
 use crate::db::{Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
-use crate::policy::{Wanted, load_policy};
+use crate::policy::{Wanted, level_rules_of_roles_in, load_policy};
 use crate::schema::{ProjectAliasRow, ProjectRow};
 
 pub(crate) fn project_select() -> SelectStatement {
@@ -175,6 +175,18 @@ impl ProjectStore for AuthStorage {
     async fn policy_of(&self, person: UserId) -> Result<Policy, StoreError> {
         let mut transaction = self.database().begin_read().await?;
         load_policy(&mut transaction, Wanted::Person(person)).await
+    }
+
+    async fn policy_and_tree_of(
+        &self,
+        person: UserId,
+    ) -> Result<(Policy, Vec<Project>), StoreError> {
+        let mut transaction = self.database().begin_read().await?;
+        let mut policy = load_policy(&mut transaction, Wanted::Person(person)).await?;
+        let roles = policy.roles.iter().map(|role| role.id).collect();
+        policy.rules = level_rules_of_roles_in(&mut transaction, roles).await?;
+        let projects = tree_in(&mut transaction).await?;
+        Ok((policy, projects))
     }
 
     async fn project_by_address(&self, name: &ShortName) -> Result<Option<Found>, StoreError> {

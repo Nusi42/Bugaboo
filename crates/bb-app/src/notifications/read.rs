@@ -158,18 +158,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .filter_map(|id| reading.issues.get(&id))
             .map(|issue| issue.project)
             .collect();
-        self.evaluate_projects(reading.actor.person.id, &projects)
-            .await?;
-        let mut unknown = projects;
-        unknown.sort();
-        unknown.dedup();
-        if unknown.len() > 1 {
-            let all = self
-                .store()
-                .project_tree()
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            reading.maker.know_projects(&unknown, &all);
+        // The projects the rights were read with are known to the lines: one read for both.
+        if let Some(read) = self
+            .evaluate_projects(reading.actor.person.id, &projects)
+            .await?
+        {
+            reading.maker.know_projects(&projects, &read);
         }
         Ok(())
     }
