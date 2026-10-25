@@ -256,6 +256,11 @@
       <li><b>Change in place:</b> click a status, person, priority or date to change it right there; it says <i>Saved</i> with <i>Undo</i> (R7).</li>
       <li><b>Ticked issues:</b> a bar at the bottom says <i>"2 issues ticked"</i> and offers <i>Change 2 issues</i>, <i>Move</i> and <i>Delete 2 issues</i>. Before applying, it says what will happen and which issues will be skipped (principle 6).</li>
       <li>The list loads more while you scroll. Very long lists stay fast because only the visible rows are drawn.</li>
+      <li><b>Tick all results</b> (M5): the tick box in the head of the list ticks the rows shown; when more issues match, the bar offers <i>"Tick all 302 results"</i>. Up to 5,000 issues can be ticked this way; above that the bar says <i>"Narrow the search to 5,000 issues or fewer to change them together"</i>.</li>
+      <li><b>Customize → Columns</b> (M5): a panel beside the list with every field you may see as a checklist; ticked columns are on top in their order, dragged (or moved with <i>Up</i> and <i>Down</i>) to reorder. <i>Back to the project's columns</i> undoes your changes. The ID and the title cannot be taken away.</li>
+      <li><b>The Search page</b> (M5): <i>Search</i> in the sidebar opens the same list over every project you can see, with a <i>Project</i> column. A project's list is this page with <i>Project: Website</i> filled in; removing that filter widens it to all projects.</li>
+      <li><b>Empty and error states</b> (M5): no issue matches → <i>"No issues match this search."</i> with <i>Remove all filters</i>; the search took too long → <i>"This search takes too long. Add a filter, for example a project or a status."</i>; a mistake in Advanced search → the list keeps the last results, dimmed, until the search is fixed.</li>
+      <li><b>On a phone</b> (M5): the list shows one card per issue (status icon, ID, title, priority, assigned person); columns are not offered, <i>Group by</i> and <i>Spacing</i> stay.</li>
     </ul>
 
     <h3 id="s4-3"><button type="button" class="sec" data-sec>§4.3</button>Search bar: Simple and Advanced <span class="ids">QRY</span></h3>
@@ -285,6 +290,10 @@ sort by priority, highest first</div>
       <li><i>Help</i> opens a short cheat sheet with examples.</li>
       <li><b>Ask in your own words</b> (only if the assistant is switched on): type a normal sentence. The assistant shows the search it made, and it only runs after you click <i>Use this search</i>.</li>
       <li><b>Saving:</b> <i>Save search</i> stores the filters together with how results are shown (columns, grouping, board, timeline, calendar or map). <i>Share</i> lists only the groups and projects you are allowed to share with.</li>
+      <li><b>Saved searches in the sidebar</b> (M5): <i>Saved searches</i> lists yours first, then those shared with you, each with who made it. A saved search opens at its own address. Changing an open saved search shows <i>Save</i> (yours) or <i>Save a copy</i> (someone else's) next to its name; leaving without saving keeps the saved search as it was.</li>
+      <li><b>The Share window</b> (M5, ADR-0034): a name, then two lists to tick, <i>Groups</i> and <i>Projects</i>, only those you may share with. Under them: <i>"Everyone sees only the issues and fields they are allowed to see."</i> A project lead also finds <i>Use as the project's list</i> there.</li>
+      <li><b>The help sheet</b> (M5): a side panel with the words of the search language in groups (fields, comparing, time, relations, text, order), each with one example that can be put into the search with one click, and the fields you may see with their words.</li>
+      <li><b>On a phone</b> (M5): the search bar shows one button, <i>Filters (3)</i>, which opens the filter buttons in a sheet from the bottom; Advanced search is a text box in the same sheet.</li>
     </ul>
 
     <h3 id="s4-4"><button type="button" class="sec" data-sec>§4.4</button>Issue page <span class="ids">ISS-04</span></h3>
@@ -885,7 +894,7 @@ sort by priority, highest first</div>
     </ul>
 
     <h3 id="s6-2"><button type="button" class="sec" data-sec>§6.2</button>Quick search and shortcuts <span class="ids">CFG-08, UX-05</span></h3>
-    <p><kbd>Ctrl K</kbd> (or the search box) finds issues by number or title, documents, saved searches, projects, settings and actions (<i>"create issue"</i>, <i>"start timer"</i>). All shortcuts are optional (principle 9) and listed under <kbd>?</kbd> and in My settings.</p>
+    <p><kbd>Ctrl K</kbd> (or the search box) finds issues by number or title, documents, saved searches, projects, settings and actions (<i>"create issue"</i>, <i>"start timer"</i>). In M5 it finds issues, saved searches, projects and settings pages, and offers <i>Create issue</i>, <i>Go to …</i>, <i>Notification settings</i> and <i>Sign out</i>; results are in groups with their kind, issues first when the text looks like an ID. All shortcuts are optional (principle 9) and listed under <kbd>?</kbd> and in My settings.</p>
     <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Keys</th><th>Action</th><th>Keys</th><th>Action</th></tr></thead><tbody>
       <tr><td><kbd>Ctrl K</kbd></td><td>Quick search</td><td><kbd>j</kbd> / <kbd>k</kbd></td><td>Next / previous issue</td></tr>
       <tr><td><kbd>c</kbd></td><td>New issue</td><td><kbd>Enter</kbd></td><td>Open</td></tr>
