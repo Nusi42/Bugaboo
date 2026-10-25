@@ -14,13 +14,12 @@ use bb_core::readable_id::IssueCode;
 use bb_core::version::FIRST_VERSION;
 use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
-use serde_json::json;
 
-use super::fields::{Given, clean_title, ensure_may_change, member};
+use super::fields::{Given, clean_title, ensure_may_change};
 use super::ids::{code_plan_in, new_code_in};
 use super::types::{CreateIssue, IssueView};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
@@ -231,25 +230,8 @@ pub async fn create_issue<S: AuthStore>(
     let (id, people) = (new.issue.id, new.people());
     let own_writes = new.own.writes();
     let own_changes = new.own.changes();
-    let mut changes = vec![
-        set_to(member::PROJECT, json!(new.project.id.to_string())),
-        set_to(member::ISSUE_TYPE, json!(new.issue.issue_type.to_string())),
-        set_to(member::TITLE, json!(new.issue.title)),
-        set_to(member::DESCRIPTION, json!(new.issue.description)),
-        set_to(member::STATUS, json!(new.issue.status.as_str())),
-        set_to(member::PRIORITY, json!(new.issue.priority.code())),
-        set_to(member::REPORTED_BY, json!(actor.person.id.to_string())),
-        set_to(
-            member::ASSIGNED_TO,
-            json!(
-                new.assigned_people
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>()
-            ),
-        ),
-    ];
-    changes.extend(own_changes);
+    let changes =
+        crate::dataset_events::issue_created(&new.issue, &new.assigned_people, own_changes);
     let event = ctx.event(by(actor.person.id), entity(RecordKind::Issue, id), changes)?;
     let mut tried = 0;
     loop {

@@ -9,19 +9,16 @@
 use std::collections::HashMap;
 
 use bb_core::ErrorCode;
-use bb_core::event::{FieldChange, RecordKind};
+use bb_core::event::RecordKind;
 use bb_core::id::IssueId;
 use bb_core::issue::Issue;
 use bb_core::relation::{IssueParent, SUB_ISSUE_DEPTH_MAX, SUB_ISSUES_MAX, check_parent};
-use bb_core::version::counted_up;
 use bb_policy::{Authorized, Place};
-use serde_json::json;
 
 use super::types::{IssueRelations, SetParent};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::issues::InTrash;
-use crate::issues::member as issue_member;
 use crate::projects::Why;
 
 /// The chain above `parent` as it is now, read inside the lock, so two changes at the same moment
@@ -115,18 +112,10 @@ pub async fn set_parent<S: AuthStore>(
         let view = ctx.standing(&actor, &held, &child).await?.header;
         return Ok(held.authorize(view));
     }
-    let shown = |id: Option<IssueId>| id.map(|id| json!(id.to_string()));
     let event = ctx.event(
         by(actor.person.id),
         record.clone(),
-        vec![
-            FieldChange {
-                field: issue_member::PARENT.to_owned(),
-                before: shown(current),
-                after: shown(wanted),
-            },
-            counted_up(child.version),
-        ],
+        crate::dataset_events::parent_changed(current, wanted, child.version),
     )?;
     let (child_id, version, by_whom) = (child.id, child.version, actor.person.id);
     let why = Why::default();

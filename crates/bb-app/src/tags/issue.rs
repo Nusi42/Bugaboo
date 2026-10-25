@@ -38,7 +38,7 @@ use crate::offers::group_offers_in;
 use crate::projects::Why;
 
 /// What a change of the tags or the labels says in the event of the issue.
-fn names_changed(field: &str, before: &[String], after: &[String]) -> FieldChange {
+pub(crate) fn names_changed(field: &str, before: &[String], after: &[String]) -> FieldChange {
     FieldChange {
         field: field.to_owned(),
         before: Some(json!(before)),

@@ -17,17 +17,15 @@ use bb_core::id::{AttachmentId, CommentId, JobId, ProjectId, UploadId};
 use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Evaluation};
 use jiff::Timestamp;
-use serde_json::json;
 
 use super::file_store::{Inspected, PartError};
-use super::member;
 use super::rights::may_add;
 use super::types::{
     AttachmentView, CancelUploadQuery, FinishUpload, SendPartQuery, StartUploadQuery,
     UploadStateQuery, UploadView,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::jobs::JobKind;
 use crate::projects::Why;
 
@@ -403,22 +401,10 @@ pub async fn finish_upload<S: AuthStore>(
     };
     let job = JobId::generate(&mut ids).map_err(|error| AppError::Internal(error.to_string()))?;
     let file = stored_file_of(inspected, now);
-    let mut changes = vec![
-        set_to(member::ISSUE, json!(issue.id.to_string())),
-        set_to(member::NAME, json!(attachment.name)),
-        set_to(
-            member::FILE,
-            json!(bb_core::hex::encode(file.hash.as_bytes())),
-        ),
-        set_to(member::MEDIA_TYPE, json!(file.media_type.as_str())),
-    ];
-    if let Some(comment) = attachment.comment {
-        changes.push(set_to(member::COMMENT, json!(comment.to_string())));
-    }
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Attachment, attachment.id),
-        changes,
+        crate::dataset_events::attachment_added(&attachment, &file),
     )?;
     let (stored_attachment, stored_file, upload_id) = (attachment.clone(), file.clone(), upload.id);
     let issue_id = issue.id;

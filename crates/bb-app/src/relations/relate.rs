@@ -31,7 +31,7 @@ fn named(field: &str, was: Option<String>, now: Option<String>) -> FieldChange {
 
 /// The three members of the event of a relation, as they were added (`adding`) or as they were
 /// taken away.
-fn relation_changes(relation: &Relation, adding: bool) -> Vec<FieldChange> {
+pub(crate) fn relation_changes(relation: &Relation, adding: bool) -> Vec<FieldChange> {
     let shown = |text: String| {
         if adding {
             (None, Some(text))

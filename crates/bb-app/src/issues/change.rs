@@ -48,13 +48,7 @@ impl Plan {
         let (before, after) = (&self.current, &self.next);
         let mut changes = Vec::new();
         let mut add = |name: &str, was: Value, now: Value| {
-            if was != now {
-                changes.push(FieldChange {
-                    field: name.to_owned(),
-                    before: Some(was),
-                    after: Some(now),
-                });
-            }
+            changes.extend(crate::dataset_events::difference(name, was, now));
         };
         add(
             member::ISSUE_TYPE,

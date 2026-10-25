@@ -20,6 +20,7 @@ pub use kinds::{
 };
 pub use parents::set_parent;
 pub use read::{issue_relations, related_issues, sub_issues};
+pub(crate) use relate::relation_changes;
 pub use relate::{add_relation, remove_relation};
 pub use store::RelationStore;
 pub use types::*;

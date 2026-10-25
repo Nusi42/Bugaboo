@@ -14,6 +14,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
+use crate::dataset_events::own_change;
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::access::PeopleLevel;
@@ -144,11 +145,7 @@ impl PlannedValues {
         self.sets
             .iter()
             .filter(|set| set.old != set.new)
-            .map(|set| FieldChange {
-                field: FieldKey::Own(set.field).code().into_owned(),
-                before: set.old.as_ref().and_then(|value| value.to_json(set.kind)),
-                after: set.new.as_ref().and_then(|value| value.to_json(set.kind)),
-            })
+            .map(|set| own_change(set.field, set.kind, set.old.as_ref(), set.new.as_ref()))
             .collect()
     }
 

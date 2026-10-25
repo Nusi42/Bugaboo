@@ -6,6 +6,7 @@ pub mod access;
 pub mod auth;
 pub mod comments;
 pub mod context;
+pub mod dataset_events;
 pub mod editing;
 pub mod fields;
 pub mod files;
