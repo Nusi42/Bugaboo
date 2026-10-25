@@ -4,26 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { queryKeys } from "../../shared/query-keys.ts";
 import type { IssueBlockProps } from "../issues/index.ts";
-import type { OwnField } from "./fields.ts";
-
-/** An own field of issues that applies everywhere. */
-function field(id: string, name: string): OwnField {
-  return {
-    applies_to: "issues",
-    choices: [],
-    help: "",
-    id,
-    kind: "text",
-    look: "plain-text",
-    may_manage: true,
-    name,
-    never_to_assistant: false,
-    retired: false,
-    rules: {},
-    scope: { whole_organization: true, projects: [], issue_types: [] },
-    version: 1,
-  };
-}
+import { field } from "./fields-testing.ts";
 
 // The page the rows belong to reads a stored choice when it is loaded; there is no browser here.
 vi.stubGlobal("localStorage", {
@@ -32,13 +13,14 @@ vi.stubGlobal("localStorage", {
 });
 
 const { OwnFieldRows } = await import("./blocks.tsx");
+const { formViewOf } = await import("../layouts/index.ts");
 
 describe("cfg_01 the own fields in the Details", () => {
   it("are drawn for an issue with no project, where no layout places them", () => {
     // The fields of the organization are in the cache, as when the page has read them.
     const cache = new QueryClient();
     cache.setQueryData(queryKeys.fields.list({}), {
-      fields: [field("f1", "Alpha"), field("f2", "Beta")],
+      fields: [field({ id: "f1", name: "Alpha" }), field({ id: "f2", name: "Beta" })],
     });
     const props: IssueBlockProps = {
       issue: { id: "i1", own_fields: {} },
@@ -46,7 +28,7 @@ describe("cfg_01 the own fields in the Details", () => {
       readableId: "WEB-1",
       ownFieldsHtml: [],
       mask: { sees: () => true, changes: () => false },
-      form: { ready: true, failed: false, sections: [], shows: () => true },
+      form: formViewOf({ data: undefined, isError: false }, false),
       version: 1,
       onChange: () => Promise.resolve(),
       rowStatus: vi.fn<IssueBlockProps["rowStatus"]>(),
