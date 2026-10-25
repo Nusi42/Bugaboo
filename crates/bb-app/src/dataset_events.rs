@@ -3,6 +3,7 @@
 //! the use cases build their events with these same functions, so an event of the dataset says what
 //! the event of a person says (ADR-0007), and the history and the notifications read both alike.
 
+use bb_core::access::{Assignment, Group};
 use bb_core::event::FieldChange;
 use bb_core::fields::FieldKey;
 use bb_core::files::{Attachment, StoredFile};
@@ -11,6 +12,7 @@ use bb_core::id::{IssueId, UserId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::FieldValue;
+use bb_core::project::Project;
 use bb_core::relation::Relation;
 use bb_core::version::counted_up;
 use bb_core::workflow::StatusKey;
@@ -186,4 +188,47 @@ pub(crate) fn own_change(
 #[must_use]
 pub fn own_value_set(field: FieldId, kind: FieldType, value: &FieldValue) -> FieldChange {
     own_change(field, kind, None, Some(value))
+}
+
+/// A person who joined: the account was made.
+#[must_use]
+pub fn person_joined() -> Vec<FieldChange> {
+    vec![crate::auth::changed("account")]
+}
+
+/// A new project.
+#[must_use]
+pub fn project_created(project: &Project) -> Vec<FieldChange> {
+    vec![
+        set_to(
+            crate::member::project::SHORT_NAME,
+            json!(project.short_name.as_str()),
+        ),
+        set_to(crate::member::project::NAME, json!(project.name)),
+        set_to(
+            "parent",
+            json!(project.parent.map(|parent| parent.to_string())),
+        ),
+    ]
+}
+
+/// A new group.
+#[must_use]
+pub fn group_created(group: &Group) -> Vec<FieldChange> {
+    vec![set_to(crate::member::group::NAME, json!(group.name))]
+}
+
+/// A person put into a group.
+#[must_use]
+pub fn group_member_added() -> Vec<FieldChange> {
+    vec![crate::auth::changed("member")]
+}
+
+/// A role given to a person or a group, with where it counts.
+#[must_use]
+pub fn assignment_given(row: &Assignment) -> Vec<FieldChange> {
+    vec![
+        set_to("role", json!(row.role.map(|role| role.to_string()))),
+        set_to("applies_to", json!(row.applies_to.code())),
+    ]
 }

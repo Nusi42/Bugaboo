@@ -7,13 +7,11 @@ use bb_core::project::{Project, ShortName};
 use bb_core::sign_in::SecurityAction;
 use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Permission, Place};
-use serde_json::json;
 
 use super::Why;
 use super::types::{CreateProject, ProjectView};
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::input::clean_name;
-use crate::member;
 
 /// Creates a project. Top level takes *Create projects*; a sub-project takes *Create sub-projects* in
 /// its parent.
@@ -73,17 +71,7 @@ pub async fn create_project<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Project, project.id),
-        vec![
-            set_to(
-                member::project::SHORT_NAME,
-                json!(project.short_name.as_str()),
-            ),
-            set_to(member::project::NAME, json!(project.name)),
-            set_to(
-                "parent",
-                json!(project.parent.map(|parent| parent.to_string())),
-            ),
-        ],
+        crate::dataset_events::project_created(&project),
     )?;
     let stored = project.clone();
     let why = Why::default();
