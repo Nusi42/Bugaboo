@@ -67,11 +67,15 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
 fn line_findings(file: &ThemeFile) -> Vec<Finding> {
     let mut findings = Vec::new();
     for lines in &file.contrast.plain_lines {
-        let opacity = lines
-            .faded_by
-            .as_deref()
-            .and_then(|name| file.token(name)?.same.as_deref()?.parse::<f64>().ok())
-            .unwrap_or(1.0);
+        // The theme file is valid, so a name here is an opacity (`ThemeFile::opacity`); a line with no
+        // `faded-by` is seen as it is.
+        let opacity = match lines.faded_by.as_deref() {
+            None => 1.0,
+            Some(name) => match file.opacity(name) {
+                Some(opacity) => opacity,
+                None => continue,
+            },
+        };
         for theme in &file.themes {
             for line in &lines.colors {
                 for surface in &lines.on {
@@ -353,9 +357,11 @@ mod tests {
 
     #[test]
     fn the_edge_of_a_disabled_button_is_checked_as_it_is_seen() {
-        // The edge is the color of quiet words faded by the opacity of a disabled control: a
-        // quiet-words color that is close to the page in Dusk leaves no edge once it is faded.
-        let findings = evaluate(&with_value("fg-muted", "dusk", "#2a2e38"));
+        // The edge is the color of quiet words faded by the opacity of a disabled control: this
+        // color reaches 2:1 on the raised surface of Dusk as it is (2.56:1) and no longer once it is
+        // faded (1.76:1), so only the fade makes the check find it.
+        assert!(contrast_ratio("#686f80", "#2d323c") >= 2.0);
+        let findings = evaluate(&with_value("fg-muted", "dusk", "#686f80"));
         assert!(
             findings
                 .iter()

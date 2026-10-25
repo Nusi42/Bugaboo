@@ -135,3 +135,49 @@ fn a_bad_file_names_the_line() {
             .unwrap_or_default();
     assert!(error.contains("line 6"), "{error}");
 }
+
+/// The theme file of the repository with one piece of text replaced: the error, or nothing.
+fn problem_replacing(from: &str, to: &str) -> Option<String> {
+    let repo = Repo::discover().unwrap();
+    let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+    assert!(text.contains(from), "{from} is not in the theme file");
+    ThemeFile::parse(&text.replacen(from, to, 1))
+        .err()
+        .map(|error| format!("{error:#}"))
+}
+
+#[test]
+fn an_opacity_is_read_once_and_only_from_an_opacity_token() {
+    let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+    assert_eq!(file.opacity("opacity-disabled"), Some(0.6));
+    assert_eq!(file.opacity("fg-muted"), None);
+    assert_eq!(file.opacity("no-such-token"), None);
+}
+
+#[test]
+fn a_line_faded_by_a_color_or_an_unknown_token_is_rejected() {
+    for name in ["fg-muted", "no-such-token"] {
+        let problem = problem_replacing(
+            "faded-by=\"opacity-disabled\"",
+            &format!("faded-by=\"{name}\""),
+        );
+        assert!(
+            problem.is_some_and(|text| text.contains("not an opacity token")),
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn an_opacity_outside_zero_to_one_is_rejected() {
+    for value in ["1.5", "-0.2"] {
+        let problem = problem_replacing(
+            "opacity \"opacity-disabled\" 0.6",
+            &format!("opacity \"opacity-disabled\" {value}"),
+        );
+        assert!(
+            problem.is_some_and(|text| text.contains("not an opacity token")),
+            "{value}"
+        );
+    }
+}

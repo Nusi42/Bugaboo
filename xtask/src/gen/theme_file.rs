@@ -281,6 +281,20 @@ impl ThemeFile {
             .find(|token| token.name == name)
     }
 
+    /// The value of an opacity token (0 to 1, the same in every theme); `None` for a name that is no
+    /// opacity token or whose value is not a number from 0 to 1.
+    pub(crate) fn opacity(&self, name: &str) -> Option<f64> {
+        let token = self
+            .token(name)
+            .filter(|token| token.kind == TokenKind::Opacity)?;
+        token
+            .same
+            .as_deref()?
+            .parse::<f64>()
+            .ok()
+            .filter(|opacity| (0.0..=1.0).contains(opacity))
+    }
+
     /// The rules of the app and of the design pages, for a check that reads every value.
     pub(crate) fn every_rule(&self) -> impl Iterator<Item = &Rule> {
         self.rules
@@ -402,14 +416,7 @@ impl ThemeFile {
             .iter()
             .filter_map(|lines| lines.faded_by.as_deref())
         {
-            if self.token(fading).is_none_or(|token| {
-                token.kind != TokenKind::Opacity
-                    || token
-                        .same
-                        .as_deref()
-                        .and_then(|v| v.parse::<f64>().ok())
-                        .is_none()
-            }) {
+            if self.opacity(fading).is_none() {
                 bail!("a contrast rule is faded by `{fading}`, which is not an opacity token");
             }
         }
