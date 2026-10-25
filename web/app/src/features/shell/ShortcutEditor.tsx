@@ -27,9 +27,11 @@ function KeyRow({ label, keys }: { readonly label: string; readonly keys: readon
   return (
     <p {...partOf(part.shortcutEditorRow)}>
       <span {...partOf(part.shortcutEditorLabel)}>{label}</span>
-      {keys.map((sequence) => (
-        <Keys key={sequence} sequence={sequence} />
-      ))}
+      <span {...partOf(part.shortcutEditorKeys)}>
+        {keys.map((sequence) => (
+          <Keys key={sequence} sequence={sequence} />
+        ))}
+      </span>
     </p>
   );
 }
@@ -85,8 +87,10 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
   };
   return (
     <>
-      <KeyRow label={t("shortcuts.now")} keys={keysOf(id, overrides)} />
-      <KeyRow label={t("shortcuts.usual")} keys={definition.keys} />
+      <div {...partOf(part.shortcutEditorRows)}>
+        <KeyRow label={t("shortcuts.now")} keys={keysOf(id, overrides)} />
+        <KeyRow label={t("shortcuts.usual")} keys={definition.keys} />
+      </div>
       <div {...partOf(part.column, { variants: ["snug"] })}>
         <KeyCaptureField
           value={recorded}

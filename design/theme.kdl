@@ -4272,18 +4272,31 @@ part "shell-overlays" {
     padding "$space-2"
 }
 
+// The rows *Keys now* and *Usual keys* share one column for their labels, as wide as the longer of the
+// two in the font and the size the person has, so the keys of both rows start on one edge.
+part "shortcut-editor.rows" {
+    display grid
+    grid-template-columns "max-content minmax(0, 1fr)"
+    align-items center
+    gap "$space-2"
+}
+
 part "shortcut-editor.row" {
+    display grid
+    grid-column "1 / -1"
+    grid-template-columns subgrid
+    align-items center
+    margin 0
+}
+
+part "shortcut-editor.keys" {
     display flex
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    margin 0
 }
 
-// Wide enough for the longer of the two labels, so the keys of both rows start on one edge.
 part "shortcut-editor.label" {
-    min-width "calc($size-control * 2.5)"
-    margin-inline-end "$space-2"
     font-weight "$weight-bold"
 }
 

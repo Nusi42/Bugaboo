@@ -79,3 +79,21 @@ test("ux_04 the note follows the matrix when the region or the table changes siz
   }, wider);
   await expect(note).toBeVisible();
 });
+
+for (const size of ["14px", "32px"]) {
+  test(`ux_04 no level in the matrix is cut in ${size} type`, async ({ page }) => {
+    await signIn(page, ada);
+    await page.goto(addressInProject(paths.projectFields, "ACME"));
+    await expect(
+      await levelList(page, t("issue-field.cost-center"), roleName.contributor),
+    ).toBeVisible();
+    await partIn(page, "access.matrix").evaluate((node, value) => {
+      node.style.fontSize = value;
+    }, size);
+    const cut = await partIn(page, "access.matrix-cell").evaluateAll(
+      (nodes: readonly HTMLElement[]) =>
+        nodes.filter((node) => node.scrollWidth > node.clientWidth).length,
+    );
+    expect(cut).toBe(0);
+  });
+}
