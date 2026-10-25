@@ -81,7 +81,7 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
                     ) else {
                         continue;
                     };
-                    let ratio = contrast_ratio(&fade(a, b, opacity), b);
+                    let ratio = ratio_of(luminance_of(fade(a, b, opacity)), luminance(b));
                     if ratio < lines.min {
                         findings.push(Finding::at(
                             THEME_PATH,
@@ -98,17 +98,11 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
     findings
 }
 
-/// A `#RRGGBB` color as it is seen when it is drawn with `opacity` over `behind`.
-fn fade(color: &str, behind: &str, opacity: f64) -> String {
-    let channel = |hex: &str, at: usize| {
-        let digits = hex.get(at..at + 2).unwrap_or("00");
-        f64::from(u8::from_str_radix(digits, 16).unwrap_or(0))
-    };
-    let mixed = |at: usize| {
-        let value = channel(color, at).mul_add(opacity, channel(behind, at) * (1.0 - opacity));
-        format!("{:02x}", value.round().clamp(0.0, 255.0) as u8)
-    };
-    format!("#{}{}{}", mixed(1), mixed(3), mixed(5))
+/// A `#RRGGBB` color as it is seen when it is drawn with `opacity` over `behind`: its three channels,
+/// from 0 to 255.
+fn fade(color: &str, behind: &str, opacity: f64) -> [f64; 3] {
+    let (over, under) = (channels(color), channels(behind));
+    std::array::from_fn(|at| over[at].mul_add(opacity, under[at] * (1.0 - opacity)))
 }
 
 /// For people whose device asks for more contrast (THM-06): the listed text reaches the higher
@@ -196,21 +190,37 @@ fn distinct_findings_of(file: &ThemeFile, spec: &DistinctSpec) -> Vec<Finding> {
 
 /// WCAG 2.2 contrast ratio between two `#RRGGBB` colors.
 fn contrast_ratio(first: &str, second: &str) -> f64 {
-    let (a, b) = (luminance(first), luminance(second));
+    ratio_of(luminance(first), luminance(second))
+}
+
+/// The contrast ratio of two luminances.
+fn ratio_of(a: f64, b: f64) -> f64 {
     (a.max(b) + 0.05) / (a.min(b) + 0.05)
 }
 
+/// The three channels of a `#RRGGBB` color, from 0 to 255.
+fn channels(hex: &str) -> [f64; 3] {
+    std::array::from_fn(|at| {
+        let digits = hex.get(1 + at * 2..3 + at * 2).unwrap_or("00");
+        f64::from(u8::from_str_radix(digits, 16).unwrap_or(0))
+    })
+}
+
 fn luminance(hex: &str) -> f64 {
-    let channel = |range: std::ops::Range<usize>| {
-        let digits = hex.get(range).unwrap_or("00");
-        let value = f64::from(u8::from_str_radix(digits, 16).unwrap_or(0)) / 255.0;
+    luminance_of(channels(hex))
+}
+
+/// How bright a color of three channels (0 to 255) is, by the formula of WCAG.
+fn luminance_of(color: [f64; 3]) -> f64 {
+    let [red, green, blue] = color.map(|channel| {
+        let value = channel / 255.0;
         if value <= 0.03928 {
             value / 12.92
         } else {
             ((value + 0.055) / 1.055).powf(2.4)
         }
-    };
-    0.2126 * channel(1..3) + 0.7152 * channel(3..5) + 0.0722 * channel(5..7)
+    });
+    0.2126 * red + 0.7152 * green + 0.0722 * blue
 }
 
 #[cfg(test)]
@@ -357,8 +367,11 @@ mod tests {
 
     #[test]
     fn a_color_fades_toward_the_surface_behind_it() {
-        assert_eq!(fade("#ffffff", "#000000", 0.5), "#808080");
-        assert_eq!(fade("#123456", "#000000", 1.0), "#123456");
+        let near = |seen: [f64; 3], wanted: [f64; 3]| {
+            seen.iter().zip(wanted).all(|(a, b)| (a - b).abs() < 1e-9)
+        };
+        assert!(near(fade("#ffffff", "#000000", 0.5), [127.5; 3]));
+        assert!(near(fade("#123456", "#000000", 1.0), [18.0, 52.0, 86.0]));
     }
 
     #[test]
