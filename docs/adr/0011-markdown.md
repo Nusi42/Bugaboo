@@ -14,7 +14,7 @@ Issue descriptions, comments and documents are Markdown written by people, so th
 
 - One allow list (SSOT), in the writer; no client-side HTML rendering library.
 - Nothing is parsed back and cleaned, so there is no gap between what the writer meant and what a sanitizer's HTML parser reads (mutation XSS has no place to start).
-- The WebAssembly module stays small: the budget of the module is in `tools/checks/perf-bundle.toml` (architecture §8, PERF-04), and the search language shares it.
+- The WebAssembly module stays small: the budget of the module is in `tools/checks/perf-bundle.toml` (architecture §8, PERF-04), and the search language has a module and a budget of its own (ADR-0005, amendment M5).
 - The browser shows the HTML with one Trusted Types policy, `bugaboo-markdown`, in the one component `MarkdownView` (SEC-RICHTEXT).
 - The document editor (Tiptap) stores Markdown; its schema is limited to what `bb-markdown` renders.
 

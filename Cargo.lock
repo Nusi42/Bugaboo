@@ -739,6 +739,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bb-wasm-search"
+version = "0.0.0"
+dependencies = [
+ "bb-searchlang",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5566,6 +5576,7 @@ dependencies = [
  "bb-core",
  "bb-dev-words",
  "bb-policy",
+ "bb-searchlang",
  "brotli 9.0.0",
  "clap",
  "ctrlc",

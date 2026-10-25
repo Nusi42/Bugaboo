@@ -379,20 +379,38 @@ Consumers are idempotent and resume from their last position after a restart.
 
 ## Search language (ADR-0005)
 
-Grammar sketch (the final grammar is written by M5 WP-02, within the amendment M5 of ADR-0005):
+One grammar, written once in Rust (`bb-searchlang`) and used by the server and, as its own WebAssembly module (`bb-wasm-search`), by the browser. The words are English and the same in every language of the app, so a shared search works for everyone. A field is written as on screen in one word, in lower camel case (`assignedTo`, `statusGroup`); the caller passes the **field catalogue** (the fields this person may read), and a field outside it is as unknown as one that does not exist.
 
 ```text
-search     = [ expr ] [ "sort by" sort ("," sort)* ]
-expr       = term ( ("and" | "or") term )*
-term       = "not" term | "(" expr ")" | condition
-condition  = field op value | field "contains" text | helper
-op         = "is" | "is not" | "<" | ">" | "<=" | ">=" | "in" | "within"
-helper     = "connected to" key [ "within" n "steps" ] | "under" key | "blocks" key | …
-value      = word | quoted | number | date | "me" | "today" | "in last" n unit
+search      = [ or ] [ sort ]
+or          = and { "or" and }
+and         = unary { "and" unary }
+unary       = "not" unary | "(" or ")" | filter
+filter      = helper | field test
+helper      = "under" id | "blocks" id | "blocked" "by" id
+            | "connected" "to" id [ "within" count ( "step" | "steps" ) ]
+test        = "is" [ "not" ] value | "is" [ "not" ] "empty"
+            | ( "<" | ">" | "<=" | ">=" ) value
+            | "in" "(" value { "," value } ")" | "in" "last" count unit
+            | "contains" text | "member" "of" text | "within" short-name
+value       = word | quoted | number | day | id | "me" | time
+time        = "today" | "yesterday" | "this week" | "last week" | "this month"
+sort        = "sort" "by" key { "," key }
+key         = field [ [ "," ] direction ]
+direction   = "highest first" | "lowest first" | "newest first" | "oldest first" | "A to Z" | "Z to A"
+field       = word | quoted
+unit        = "day" | "days" | "week" | "weeks" | "month" | "months"
 ```
 
-- The printer writes a **canonical** form; `parse(print(tree)) == tree` is a property test.
-- Simple search edits the same tree; anything without a picker becomes an editable text button.
+- **Words.** A *word* is letters, digits and the underscore, starting with a letter. A *number* is `12`, `-3` or `1.25`, at most 15 digits. A *day* is written `2026-10-25`; a day that the calendar does not have is a mistake. An *id* is an Issue ID of either kind (`WEB-142`, `WEB-K7Q2X`, ADR-0021); a *short name* is the capital letters of a project (`WEB`). A *quoted* text is in double quotes; `\"` and `\` are the only escapes. A *count* is a whole number of 1 or more.
+- **Words of the language** (`and`, `or`, `not`, `is`, `in`, `contains`, `empty`, `member`, `of`, `within`, `last`, `this`, `today`, `yesterday`, `me`, `sort`, `by`, `under`, `blocks`, `blocked`, `connected`, `to`, the units, `step`, `steps`, `first` and the four directions) are read in any case and written in lower case. A field that is one of them is written in quotes. A value is written in quotes only when it would be read as the language: `and`, `or`, `not`, `is`, `in`, `contains`, `empty`, `member`, `within`, `last`, `this`, `today`, `yesterday`, `me` and `sort`. A status *Blocked* and a priority *highest* need no quotes. The word of an own field is made from its name by one rule (`own_field_word`): *Story points* is `storyPoints`; a name that cannot be one word stays as it is and is written in quotes.
+- **Helpers.** `project within WEB` is a project and everything below it, `assignedTo member of "Backend"` a group, `under WEB-7` the sub-issues, `blocks WEB-1` and `blocked by WEB-1` the two ends of a relation, `connected to WEB-7 within 3 steps` any chain of relations (as far as the limit allows without `within`). Time words stay relative in the tree; the server turns them into moments in the zone of the person's region.
+- **The tree.** Every node has the bytes it covers, so the browser can mark a word. `and` and `or` are lists of at least two items with no same kind directly inside: `(a and b) and c` is `a and b and c`. A text is a plain word, a number, a day or an ID by how it is written, so a text value that looks like one is quoted (`"404"`).
+- **Canonical text.** The printer writes one spelling of each word, one space between words, quotes only where needed, brackets only where the meaning needs them (`or` inside `and`, `and` or `or` inside `not`), `contains` and `member of` always with quotes, `sort by` with commas as in `sort by priority, highest first, dueDate, oldest first`, and the unit and `step` in the singular for one. `parse(print(tree)) == tree` for every tree (the property test of TEST-SEARCH-ROUNDTRIP) and `print(parse(text))` is the canonical text of any accepted text. The canonical text is what the address, the API and a saved search carry; the tree never crosses the wire.
+- **Limits** (named once, `limits.rs`): at most 50 filters (`in (a, b)` counts as one), `within N steps` at most 5, brackets and `not` at most 32 deep.
+- **Mistakes** have the bytes they stand on, a message key `search.mistake.*` with the words for its placeholders, and what may be meant (the closest field or choice). The parser stops at its first mistake; the checker returns all of them. The message texts are in the catalog; no sentence is written in Rust or TypeScript.
+- **Suggestions** for a text and a cursor: the fields, the operators a field allows, the choices of its list, `me` and the time words, and the words of the language that may come next. What only the server knows comes back as a request of its kind (`ask` people, groups, projects or issues starting with what is typed), which the search bar sends to the server.
+- **In the browser.** `bb-wasm-search` takes and gives JSON (the text, the tree, the catalogue, the mistakes, the suggestions) with byte offsets; `@bugaboo/wasm-search` loads it when a search bar first opens and turns the offsets into positions in the string. Its types are generated from the Rust types (`cargo xtask gen search-types`), and the vectors of texts, canonical texts, mistakes and suggestions come from the same code (`cargo xtask gen search-vectors`); the unit tests of the browser run the module on them.
 
 ## Settings and configuration (ADR-0018)
 

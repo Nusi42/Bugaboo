@@ -73,7 +73,7 @@ enum Command {
         #[arg(long)]
         target: Option<String>,
     },
-    /// Build the WebAssembly module of the browser (`bb-wasm`, with `wasm-bindgen` and `wasm-opt`).
+    /// Build the WebAssembly modules of the browser (`bb-wasm` and `bb-wasm-search`, with `wasm-bindgen` and `wasm-opt`).
     Wasm,
     /// Everything CI runs: checks, tests, browser build, browser tests.
     Ci,

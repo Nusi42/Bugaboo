@@ -49,6 +49,13 @@
       "rules": { "max-lines": "off", "import/max-dependencies": "off" }
     },
     {
+      // `cargo xtask gen search-types` writes the types of the search language into this one file,
+      // longer with every kind of filter. Nobody edits it, and a file over about 400 lines needs a
+      // reason (coding-standards section 2): this is it.
+      "files": ["web/packages/wasm-search/src/types.generated.ts"],
+      "rules": { "max-lines": "off" }
+    },
+    {
       // `cargo xtask gen theme` writes the names of the tokens, the parts and the words of each
       // part into this one file, longer with every component. Nobody edits it, and a file over
       // about 400 lines needs a reason (coding-standards section 2): this is it.

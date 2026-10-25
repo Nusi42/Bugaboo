@@ -8,7 +8,8 @@
 //! What is understood (anything else is an error that names the type, so a new shape is never
 //! mapped wrongly in silence):
 //!
-//! - `String` is `string`, the integers and floats are `number`, `bool` is `boolean`;
+//! - `String` is `string`, the integers and floats are `number`, `bool` is `boolean`, a `Box<T>` is
+//!   the `T` it holds;
 //! - `Vec<T>` is `readonly T[]`;
 //! - `Option<T>` is `T | null`; with `#[serde(default)]` the key may be missing too (`?:`), and
 //!   with `skip_serializing_if` it is never written as `null`;
@@ -171,6 +172,7 @@ fn ts_type(ty: &Type, known: &mut Vec<String>) -> anyhow::Result<(String, bool)>
         "i8" | "i16" | "i32" | "i64" | "isize" | "u8" | "u16" | "u32" | "u64" | "usize" | "f32"
         | "f64" => ("number".to_owned(), false),
         "Option" => (argument(known)?.0, true),
+        "Box" => (argument(known)?.0, false),
         "Value" => ("unknown".to_owned(), false),
         "BTreeMap" | "HashMap" => {
             let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments else {
