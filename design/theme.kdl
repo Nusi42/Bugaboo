@@ -3779,6 +3779,18 @@ part "undo-host" {
     pointer-events none
 }
 
+// On a computer the offers stand between the sidebar and the column of the Details of an issue, so a
+// long sentence wraps inside that room and never reaches over the Details (the review of WP-18).
+part "app-layout[variant=side] undo-host" {
+    right "calc($size-details + $space-5 * 2)"
+    left "calc($size-sidebar + $space-4)"
+}
+
+part "app-layout[variant=side-narrow] undo-host" {
+    right "calc($size-details + $space-5 * 2)"
+    left "calc($size-sidebar-narrow + $space-4)"
+}
+
 part "undo-host.offer" {
     display flex
     flex-wrap wrap
