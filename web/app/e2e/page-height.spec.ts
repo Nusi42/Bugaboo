@@ -4,7 +4,7 @@ import { type Page } from "@playwright/test";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { onThisLayout } from "./support/layout.ts";
+import { nothing, onThisLayout } from "./support/layout.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // The page is as tall as the window (M4, the final check): the app scrolls inside its frame, so a
@@ -35,6 +35,6 @@ test("ux_01 a long page does not make the page itself taller than the window", a
   await onThisLayout(page, {
     phone: expectPageAsTallAsWindow,
     tablet: expectPageAsTallAsWindow,
-    computer: () => Promise.resolve(),
+    computer: nothing,
   });
 });

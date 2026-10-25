@@ -481,6 +481,19 @@ mixin "menu-text" {
     text-decoration none
 }
 
+// The column the pages are drawn in, centered; what is drawn at its bottom (the offers to undo) uses it too.
+mixin "page-column" {
+    width "100%"
+    max-width "$size-page"
+    min-width 0
+    margin 0 auto
+}
+
+// The focus view takes the whole width that the narrowed sidebar leaves.
+mixin "page-column-wide" {
+    max-width none
+}
+
 // What floats over or stands out of the page: a card, a sheet, a panel, an offer.
 mixin "floating-box" {
     box-sizing border-box
@@ -3352,18 +3365,15 @@ part "app-layout.main:focus" {
 }
 
 part "app-layout.inner" {
+    use "page-column"
     display flex
     flex-direction column
     gap "$space-4"
-    width "100%"
-    max-width "$size-page"
-    min-width 0
-    margin 0 auto
 }
 
 // The focus view (M2C-F81) takes the whole width that the narrowed sidebar leaves.
 part "app-layout.inner[variant=wide]" {
-    max-width none
+    use "page-column-wide"
 }
 
 // The link that jumps to the content, in the app and before sign-in: out of sight until it has the focus.
@@ -3764,14 +3774,12 @@ part "settings-frame.heading" {
     font-weight "$weight-bold"
 }
 
-// The offers float over the page at the bottom, in the middle of the window: the end is where the
-// Details of an issue end, and a corner is where the menu ends.
+// The offers stand over the page at the bottom of the column the page is drawn in, in the middle of
+// it, so they follow the sidebar and the window by themselves (the re-check of WP-18). The host is
+// the last thing in the column of the page, as high as nothing: it sticks to the bottom of the
+// window, and the offers rise from it. What an offer may cover is the page at the bottom of that
+// column for its ten seconds; the Details of an issue it never covers.
 part "undo-host" {
-    position fixed
-    right "$space-4"
-    bottom "$space-4"
-    left "$space-4"
-    z-index "$z-panel"
     display flex
     flex-direction column
     align-items center
@@ -3779,16 +3787,22 @@ part "undo-host" {
     pointer-events none
 }
 
-// On a computer the offers stand between the sidebar and the column of the Details of an issue, so a
-// long sentence wraps inside that room and never reaches over the Details (the review of WP-18).
-part "app-layout[variant=side] undo-host" {
-    right "calc($size-details + $space-5 * 2)"
-    left "calc($size-sidebar + $space-4)"
+part "undo-host[variant=over-page]" {
+    use "page-column"
+    position sticky
+    bottom "$space-4"
+    z-index "$z-panel"
+    justify-content flex-end
+    height 0
+    margin-top auto
 }
 
-part "app-layout[variant=side-narrow] undo-host" {
-    right "calc($size-details + $space-5 * 2)"
-    left "calc($size-sidebar-narrow + $space-4)"
+// The focus view of an issue has its Details at the end of the column: the offers stand in the room
+// the text has, so a long sentence wraps there and never reaches over them.
+part "undo-host[variant=wide]" {
+    use "page-column-wide"
+    padding-inline-end "calc($size-details + $space-5)"
+    box-sizing border-box
 }
 
 part "undo-host.offer" {

@@ -934,7 +934,7 @@ export const partWords = {
   "settings-frame.groups": { variant: [], state: [] },
   "settings-frame.topics": { variant: [], state: [] },
   "settings-frame.heading": { variant: [], state: [] },
-  "undo-host": { variant: ["in-flow"], state: [] },
+  "undo-host": { variant: ["over-page", "wide", "in-flow"], state: [] },
   "undo-host.offer": { variant: [], state: [] },
   "focus-view": { variant: [], state: [] },
   "focus-view.list": { variant: [], state: [] },

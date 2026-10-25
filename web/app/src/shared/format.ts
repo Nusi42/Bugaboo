@@ -30,20 +30,52 @@ export function plainWords(text: string): string {
   return text.replaceAll(NO_BREAK_SPACE, " ").replaceAll(NO_BREAK_HYPHEN, "-");
 }
 
-/** A day as numbers in the order the person chose: `31.12.2026`, `12/31/2026` or `2026-12-31`. */
-function numeric(moment: number, region: Region): string {
+/** The clock of a region at a moment, as numbers: the year, the month (1 to 12), the day, and the time on a 24 hour clock. */
+export interface ClockParts {
+  readonly year: number;
+  readonly month: number;
+  readonly day: number;
+  readonly hour: number;
+  readonly minute: number;
+  readonly second: number;
+}
+
+/** What the clock and the calendar of the region say at a moment (milliseconds since 1970). */
+export function clockPartsOf(moment: number, region: Region = currentRegion()): ClockParts {
   const parts = new Intl.DateTimeFormat("en-US", {
     ...zoneOf(region),
+    hourCycle: "h23",
     year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
   }).formatToParts(moment);
-  const values = new Map<string, string>();
+  const values = new Map<string, number>();
   for (const found of parts) {
-    values.set(found.type, found.value);
+    values.set(found.type, Number(found.value));
   }
-  const part = (type: string): string => values.get(type) ?? "";
-  const [year, month, day] = [part("year"), part("month"), part("day")];
+  const part = (type: string): number => values.get(type) ?? 0;
+  return {
+    year: part("year"),
+    month: part("month"),
+    day: part("day"),
+    hour: part("hour"),
+    minute: part("minute"),
+    second: part("second"),
+  };
+}
+
+const TWO_DIGITS = 2;
+const YEAR_DIGITS = 4;
+
+/** A day as numbers in the order the person chose: `31.12.2026`, `12/31/2026` or `2026-12-31`. */
+function numeric(moment: number, region: Region): string {
+  const clock = clockPartsOf(moment, region);
+  const year = String(clock.year).padStart(YEAR_DIGITS, "0");
+  const month = String(clock.month).padStart(TWO_DIGITS, "0");
+  const day = String(clock.day).padStart(TWO_DIGITS, "0");
   switch (region.dateFormat) {
     case "day-month-year":
       return `${day}.${month}.${year}`;
@@ -54,6 +86,28 @@ function numeric(moment: number, region: Region): string {
       break;
   }
   return `${year}-${month}-${day}`;
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/u;
+
+/** The year, month and day of a day the date field wrote (`2027-03-01`). */
+export function dayNumbersOf(day: string): readonly [number, number, number] {
+  const [year = 0, month = 1, date = 1] = day.split("-").map(Number);
+  return [year, month, date];
+}
+
+/** The day `days` after a day (`2027-02-28` and 1 give `2027-03-01`). */
+export function addDays(day: string, days: number): string {
+  const [year, month, date] = dayNumbersOf(day);
+  return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, day.length);
+}
+
+/** A day that exists on the calendar: "2026-02-30" does not, and the browser would roll it over. */
+export function isCalendarDay(value: string): boolean {
+  const moment = new Date(`${value}T00:00:00Z`);
+  return (
+    DAY.test(value) && !Number.isNaN(moment.getTime()) && moment.toISOString().startsWith(value)
+  );
 }
 
 /** A moment from the server (ISO 8601 text) as people write it: "Oct 5, 2026, 9:30 AM". */

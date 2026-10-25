@@ -5,6 +5,7 @@ import {
   MarkdownView,
   partOf,
   part,
+  longestNameIn,
   SentenceWithName,
   Skeleton,
 } from "@bugaboo/ui";
@@ -136,10 +137,7 @@ function Sentences({
     <ul {...partOf(part.notificationSentences)}>
       {sentences.map((sentence) => (
         <li key={sentence}>
-          <SentenceWithName
-            sentence={sentence}
-            name={fileNames.find((name) => sentence.includes(name))}
-          />
+          <SentenceWithName sentence={sentence} name={longestNameIn(sentence, fileNames)} />
         </li>
       ))}
     </ul>

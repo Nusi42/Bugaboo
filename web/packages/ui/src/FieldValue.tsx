@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { IssueTypeIcon, type IssueTypeIconName } from "./IssueTypeIcon.tsx";
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
+import { wordsOnly } from "./words.ts";
 
 /** The color of a choice: one of the category tokens of the theme (`cat1` … `cat12`). */
 export type ChoiceColorName = (typeof choiceColorWords)[number];
@@ -25,9 +26,7 @@ export interface FieldValueProps {
 
 /** The first letters of the first two words of a name: what an avatar without a picture shows. */
 function initialsOf(name: string): string {
-  return name
-    .split(/\s+/u)
-    .filter((word) => word !== "")
+  return wordsOnly(name)
     .slice(0, 2)
     .map((word) => Array.from(word)[0] ?? "")
     .join("")

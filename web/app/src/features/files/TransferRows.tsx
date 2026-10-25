@@ -50,12 +50,10 @@ function NotAdded({ transfer }: { readonly transfer: Transfer }) {
   return (
     <Alert tone={alertTone.danger}>
       <div {...partOf(part.filesRefusal)}>
-        <span>
-          <SentenceWithName
-            sentence={t("files.not-added", { name: transfer.name, reason })}
-            name={transfer.name}
-          />
-        </span>
+        <SentenceWithName
+          sentence={t("files.not-added", { name: transfer.name, reason })}
+          name={transfer.name}
+        />
         <div {...partOf(part.filesActions)}>
           {transfer.canRetry ? (
             <Button

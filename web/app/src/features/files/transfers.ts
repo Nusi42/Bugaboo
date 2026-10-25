@@ -2,6 +2,7 @@ import { ApiError } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 
+import { doNothing } from "../../shared/do-nothing.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshIssueFiles } from "../../shared/query-keys.ts";
 import { connection } from "./connection.ts";
@@ -67,15 +68,10 @@ function transferOf(id: number, target: TransferTarget, file: File): Transfer {
   };
 }
 
-/** What a call that does not matter to anybody does when it fails: nothing. */
-function ignored(): void {
-  // The server does not mind an upload that is gone, and neither does the person.
-}
-
 /** Throws an upload away, if there is one. */
 function throwAway(deps: Dependencies, upload: string | null): void {
   if (upload !== null) {
-    deps.transport.cancel(upload).catch(ignored);
+    deps.transport.cancel(upload).catch(doNothing);
   }
 }
 

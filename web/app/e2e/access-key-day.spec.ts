@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
+import { addDays } from "../src/shared/format.ts";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
@@ -28,13 +29,6 @@ function written(day: string): string {
   );
 }
 
-/** The day after a day in the box (`2027-01-23` gives `2027-01-24`). */
-function dayAfter(day: string): string {
-  const next = new Date(`${day}T12:00:00Z`);
-  next.setUTCDate(next.getUTCDate() + 1);
-  return next.toISOString().slice(0, "2027-01-24".length);
-}
-
 /** Makes a key as a person does and returns the day in the box, and whether the day was typed in. */
 async function createKeyLikeAPerson(
   page: Page,
@@ -53,7 +47,7 @@ async function createKeyLikeAPerson(
   const box = form.getByLabel(t("access-keys.expires"), { exact: true });
   const preset = await box.inputValue();
   // A day typed in is another day than the one filled in: the same text would change nothing.
-  const day = typed ? dayAfter(preset) : preset;
+  const day = typed ? addDays(preset, 1) : preset;
   if (typed) {
     await box.fill(day);
   }
@@ -66,7 +60,8 @@ async function createKeyLikeAPerson(
   return day;
 }
 
-for (const timezoneId of ["Pacific/Kiritimati", "Pacific/Pago_Pago"]) {
+// Europe/Berlin is the zone with summer time: its days are not all 24 hours long.
+for (const timezoneId of ["Pacific/Kiritimati", "Pacific/Pago_Pago", "Europe/Berlin"]) {
   test.describe(`in ${timezoneId}`, () => {
     test.use({ timezoneId });
 
