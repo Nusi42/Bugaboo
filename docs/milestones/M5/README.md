@@ -21,15 +21,15 @@ M5 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | 1 | WP-01 | Decision records, words, the security chapter, the UX gaps, the maintainer's answers | Lead | `bugaboo.win1` / `WIN1` |
 | 1 | [WP-02](WP-02-search-language.md) | The search language: grammar, parser, printer, checker, suggestions, WebAssembly | Builder | `bugaboo.win2` / `WIN2` |
 | 1 | [WP-03](WP-03-large-dataset-and-nightly-benchmarks.md) | The large dataset, the benchmarks and the nightly run | Builder | `bugaboo.win3` / `WIN3` |
-| 2 | WP-04 | Searching on the server: the compiler, permissions, limits, the search routes | Builder | `bugaboo.win2` / `WIN2` |
-| 2 | WP-05 | Full-text search on both databases | Builder | `bugaboo.win3` / `WIN3` |
-| 2 | WP-06 | Saved searches on the server: stored, shared, a stable address | Builder | `bugaboo.win4` / `WIN4` |
-| 3 | WP-07 | The search bar: Simple and Advanced, suggestions, mistakes, *Save search* and *Share* | Builder | `bugaboo.win2` / `WIN2` |
-| 3 | WP-08 | The issue list: columns, sorting, grouping, spacing, the count line, long lists | Builder | `bugaboo.win3` / `WIN3` |
-| 3 | WP-09 | *Quick search*: issues, saved searches, projects, pages and actions | Builder | `bugaboo.win4` / `WIN4` |
-| 4 | WP-10 | Sample organization part 4, people searching while others change, speed on 1 M issues, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
+| 2 | [WP-04](WP-04-searching-on-the-server.md) | Searching on the server: the compiler, permissions, limits, the search routes | Builder | `bugaboo.win2` / `WIN2` |
+| 2 | [WP-05](WP-05-full-text-search.md) | Full-text search on both databases | Builder | `bugaboo.win3` / `WIN3` |
+| 2 | [WP-06](WP-06-saved-searches-on-the-server.md) | Saved searches on the server: stored, shared, a stable address | Builder | `bugaboo.win4` / `WIN4` |
+| 3 | [WP-07](WP-07-search-bar.md) | The search bar: Simple and Advanced, suggestions, mistakes, *Save search* and *Share* | Builder | `bugaboo.win2` / `WIN2` |
+| 3 | [WP-08](WP-08-issue-list.md) | The issue list: columns, sorting, grouping, spacing, the count line, long lists | Builder | `bugaboo.win3` / `WIN3` |
+| 3 | [WP-09](WP-09-quick-search.md) | *Quick search*: issues, saved searches, projects, pages and actions | Builder | `bugaboo.win4` / `WIN4` |
+| 4 | [WP-10](WP-10-sample-speed-and-exit-demo.md) | Sample organization part 4, people searching while others change, speed on 1 M issues, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
 
-Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files are written in WP-01, after the maintainer's answers; WP-02 and WP-03 first, so wave 1 starts while the lead writes the rest.
+Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files are written in WP-01, after the maintainer's answers; WP-02 and WP-03 first, so wave 1 started while the lead wrote the rest.
 
 ## The packages in short
 
