@@ -23,6 +23,10 @@ use clap as _;
 use getrandom as _;
 use h2 as _;
 use jiff as _;
+#[cfg(windows)]
+use known_folders as _;
+#[cfg(unix)]
+use nix as _;
 use rustls as _;
 use serde_json as _;
 use tokio_rustls as _;

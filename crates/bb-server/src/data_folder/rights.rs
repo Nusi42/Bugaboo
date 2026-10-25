@@ -127,7 +127,7 @@ fn file_access(path: &Path) -> Access {
 fn access_list(path: &Path) -> Option<String> {
     let folder = tempfile::tempdir().ok()?;
     let saved = folder.path().join("access-list.txt");
-    let output = std::process::Command::new(super::system_tool("icacls.exe"))
+    let output = std::process::Command::new(crate::system::system_tool("icacls.exe").ok()?)
         .arg(path)
         .arg("/save")
         .arg(&saved)

@@ -295,11 +295,6 @@ fn sec_16_a_secret_file_is_for_its_owner_and_the_administrators_on_windows() {
 #[cfg(target_os = "linux")]
 #[test]
 fn sec_16_the_owner_of_a_folder_is_found_by_user_number() {
-    let passwd =
-        "root:x:0:0:root:/root:/bin/bash\nbugaboo:x:998:998::/nonexistent:/usr/sbin/nologin\n";
-    assert_eq!(name_in_passwd(passwd, 998).as_deref(), Some("bugaboo"));
-    assert_eq!(name_in_passwd(passwd, 0).as_deref(), Some("root"));
-    assert_eq!(name_in_passwd(passwd, 5), None);
     // A folder this test made belongs to the account that runs the test.
     let temp = tempfile::tempdir().unwrap();
     assert_eq!(other_owner(temp.path()), None);
