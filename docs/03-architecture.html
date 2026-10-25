@@ -1194,6 +1194,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>FMT-MD</code></td><td>Markdown docs follow one style</td><td>coding-standards §2</td><td>rumdl</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-RUST</code></td><td>Clippy finds no warnings (selected pedantic lints on), for the Windows and the Linux code</td><td>coding-standards §3</td><td>cargo clippy -D warnings</td><td>push · ci</td></tr>
 <tr><td><code>LINT-FILE-SIZE</code></td><td>A Rust file has at most 800 lines unless it is named with a reason and the follow-up that splits it</td><td>coding-standards §2</td><td>xtask (counts the lines of every Rust file; tools/checks/size-exemptions.toml names the files over the ceiling, each with the most lines it may have)</td><td>commit · ci</td></tr>
+<tr><td><code>LINT-PATHS</code></td><td>No path of the system is written down: code and tools ask the operating system</td><td>coding-standards §2</td><td>xtask (a string that starts with a folder of the system or a drive in Rust, tooling and scripts; tests and fixtures are left out by one list in the check)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-TS</code></td><td>oxlint finds no problems, including type-aware rules (TypeScript 7)</td><td>coding-standards §4</td><td>oxlint + oxlint-tsgolint</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-CSS</code></td><td>Styles use only token variables; no raw colors, sizes or !important</td><td>ADR-0010, ADR-0026</td><td>stylelint (the compiled rules of design/theme.kdl)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-HTML</code></td><td>Hand-written HTML pages are valid and accessible</td><td>coding-standards §7</td><td>html-validate (recommended and a11y presets)</td><td>edit · commit · ci</td></tr>
@@ -1281,7 +1282,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>93 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>94 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>
