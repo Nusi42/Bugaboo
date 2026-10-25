@@ -269,15 +269,16 @@ status = "active"
 
 [[check]]
 id = "ARCH-WASM"
-title = "The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) and bb-wasm still build for WebAssembly, and the wasm-bindgen program is the version of the library"
+title = "The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) and the crates of the modules (bb-wasm, bb-wasm-search) still build for WebAssembly, and the wasm-bindgen program is the version of the library"
 rule = "ADR-0001, ADR-0005, ADR-0011"
-tool = "xtask (cargo check --target wasm32-unknown-unknown; compares the wasm-bindgen version in tools/dev/tools.toml with Cargo.lock). The size of the module, PERF-04, is measured in the browser build by PERF-BUNDLE"
+tool = "xtask (cargo check --target wasm32-unknown-unknown; compares the wasm-bindgen version in tools/dev/tools.toml with Cargo.lock). The size of each module, PERF-04, is measured by PERF-BUNDLE"
 when = ["push", "ci"]
 files = [
   "crates/bb-core/**",
   "crates/bb-searchlang/**",
   "crates/bb-markdown/**",
   "crates/bb-wasm/**",
+  "crates/bb-wasm-search/**",
   "Cargo.toml",
 ]
 status = "active"
@@ -723,7 +724,7 @@ status = "active"
 id = "PERF-BUNDLE"
 title = "Initial JavaScript stays within its budget (Brotli)"
 rule = "PERF-04"
-tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly modules of the build, together, have their own budget there)"
+tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; each WebAssembly module, found in the build or made by `cargo xtask wasm`, has a budget of its own there, by the name of its file without the hash; a module without a line fails)"
 when = ["ci"]
 files = ["web/**", "tools/checks/perf-bundle.toml", "tools/dev/compression.json"]
 status = "active"
