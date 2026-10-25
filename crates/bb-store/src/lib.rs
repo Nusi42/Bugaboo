@@ -37,6 +37,7 @@ mod paging;
 mod policy;
 mod projects;
 mod relations;
+mod saved_searches;
 mod schema;
 mod secrets;
 mod security_log;

@@ -39,6 +39,7 @@ use crate::offers::OfferStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
+use crate::saved_searches::SavedSearchStore;
 use crate::settings::SettingsStore;
 use crate::store_macros::{reads, writes};
 use crate::tags::TagStore;
@@ -340,6 +341,7 @@ pub trait AuthStore:
     + LayoutStore
     + WorkflowStore
     + SettingsStore
+    + SavedSearchStore
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of

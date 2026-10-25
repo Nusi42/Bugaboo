@@ -7,6 +7,7 @@
 //! column and the grouping name a field by its search word, so that a screen needs no second list.
 
 use jiff::Timestamp;
+use serde::Serialize;
 
 use crate::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use crate::personal::{Entity, NotPersonal};
@@ -54,7 +55,7 @@ words! {
 words_in_api!(Spacing, "How close together the rows of a list are.");
 
 /// One column of a list: the field by its search word and, when the person dragged it, its width.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Column {
     /// The search word of the field (`assignedTo`).
     pub field: String,
@@ -64,7 +65,7 @@ pub struct Column {
 
 /// How a saved search is shown (*presentation*, ADR-0034, decision 1). No columns at all means the
 /// columns of the project's list.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Presentation {
     /// The kind of view.
     pub view: ViewKind,
@@ -112,6 +113,40 @@ impl Presentation {
                         .any(|earlier| earlier.field == column.field)
             })
             && self.group_by.as_deref().is_none_or(is_word)
+    }
+
+    /// The presentation of `search` with its `columns` (in any order).
+    #[must_use]
+    pub fn of(search: &SavedSearch, columns: &[SearchColumn]) -> Self {
+        let mut ordered: Vec<&SearchColumn> = columns.iter().collect();
+        ordered.sort_by_key(|column| column.position);
+        Self {
+            view: search.view,
+            columns: ordered
+                .into_iter()
+                .map(|column| Column {
+                    field: column.field.clone(),
+                    width: column.width.and_then(|width| u32::try_from(width).ok()),
+                })
+                .collect(),
+            spacing: search.spacing,
+            group_by: search.group_by.clone(),
+        }
+    }
+
+    /// The columns as the rows of the saved search `search`, counted from 0.
+    #[must_use]
+    pub fn rows(&self, search: SavedSearchId) -> Vec<SearchColumn> {
+        self.columns
+            .iter()
+            .zip(0_i64..)
+            .map(|(column, position)| SearchColumn {
+                search,
+                position,
+                field: column.field.clone(),
+                width: column.width.map(i64::from),
+            })
+            .collect()
     }
 
     /// The search words of every field the presentation names: the columns and the grouping.
@@ -192,6 +227,31 @@ pub enum ShareTarget {
 // An ID of a group or a project, nothing a person wrote.
 impl NotPersonal for ShareTarget {}
 
+impl ShareTarget {
+    /// The word of a share with a group, as stored and as written in an event.
+    pub const GROUP: &'static str = "group";
+    /// The word of a share with a project.
+    pub const PROJECT: &'static str = "project";
+
+    /// The word that tells a group from a project.
+    #[must_use]
+    pub const fn kind(self) -> &'static str {
+        match self {
+            Self::Group(_) => Self::GROUP,
+            Self::Project(_) => Self::PROJECT,
+        }
+    }
+
+    /// The ID of the group or the project, as text.
+    #[must_use]
+    pub fn id_text(self) -> String {
+        match self {
+            Self::Group(group) => group.to_string(),
+            Self::Project(project) => project.to_string(),
+        }
+    }
+}
+
 /// A saved search that is shared with a group or a project.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct SearchShare {
@@ -235,6 +295,49 @@ mod tests {
         assert_eq!(starting.spacing, Spacing::Comfortable);
         assert!(starting.columns.is_empty() && starting.group_by.is_none());
         assert!(starting.is_valid());
+    }
+
+    #[test]
+    fn qry_06_a_share_tells_a_group_from_a_project_by_a_word_and_an_id() {
+        let mut ids = crate::id::SequentialIds::default();
+        let group = GroupId::generate(&mut ids).unwrap();
+        let project = ProjectId::generate(&mut ids).unwrap();
+        assert_eq!(ShareTarget::Group(group).kind(), "group");
+        assert_eq!(ShareTarget::Project(project).kind(), "project");
+        assert_eq!(ShareTarget::Group(group).id_text(), group.to_string());
+        assert_eq!(ShareTarget::Project(project).id_text(), project.to_string());
+    }
+
+    #[test]
+    fn qry_06_a_presentation_is_kept_as_rows_and_read_back_in_order() {
+        let presentation = Presentation {
+            columns: vec![column("title", Some(300)), column("status", None)],
+            spacing: Spacing::Compact,
+            group_by: Some("statusGroup".to_owned()),
+            ..Presentation::default()
+        };
+        let mut ids = crate::id::SequentialIds::default();
+        let id = SavedSearchId::generate(&mut ids).unwrap();
+        let mut rows = presentation.rows(id);
+        assert_eq!(
+            rows.iter().map(|row| row.position).collect::<Vec<_>>(),
+            [0, 1]
+        );
+        rows.reverse();
+        let search = SavedSearch {
+            id,
+            name: "Mine".to_owned(),
+            text: String::new(),
+            maker: UserId::generate(&mut ids),
+            view: presentation.view,
+            spacing: presentation.spacing,
+            group_by: presentation.group_by.clone(),
+            created_at: Timestamp::UNIX_EPOCH,
+            updated_at: Timestamp::UNIX_EPOCH,
+            deleted_at: None,
+            version: 1,
+        };
+        assert_eq!(Presentation::of(&search, &rows), presentation);
     }
 
     #[test]

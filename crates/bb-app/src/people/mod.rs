@@ -328,6 +328,8 @@ pub async fn delete_group<S: AuthStore>(
                 if !S::delete_group(transaction, id).await? {
                     return Err(S::aborted());
                 }
+                // A saved search is no longer shared with a group that is gone.
+                S::delete_shares_with_group(transaction, id).await?;
                 let after = S::organization_state_in(transaction).await?;
                 ensure_a_manager_remains(&before, &after).map_err(S::refused)
             })

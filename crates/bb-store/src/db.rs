@@ -17,7 +17,7 @@ use bb_core::id::{
     AccessKeyId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId, EventId,
     FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
     LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId,
-    RelationKindId, RoleId, SessionId, TagId, UploadId, UserId, WorkflowId,
+    RelationKindId, RoleId, SavedSearchId, SessionId, TagId, UploadId, UserId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -692,6 +692,7 @@ stored_ids!(
     RelationId => "a relation ID",
     RelationKindId => "a kind of relation ID",
     RoleId => "a role ID",
+    SavedSearchId => "a saved search ID",
     SessionId => "a session ID",
     UserId => "a person ID",
     WorkflowId => "a workflow ID",

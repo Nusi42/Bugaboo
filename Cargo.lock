@@ -477,6 +477,7 @@ dependencies = [
  "bb-dev-words",
  "bb-markdown",
  "bb-policy",
+ "bb-searchlang",
  "getrandom 0.4.3",
  "jiff",
  "proptest",
