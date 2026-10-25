@@ -65,9 +65,12 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         seed: args.seed,
         start,
     };
+    let mut checked = None;
     let sample = if args.large {
         let mut large = Large::new(args.issues)?;
-        create(&options, &output.data_folder(), &target, &mut large).await?
+        let sample = create(&options, &output.data_folder(), &target, &mut large).await?;
+        checked = Some(sample.check_large(large.facts()).await?);
+        sample
     } else {
         let mut everything = match args.issues {
             Some(issues) => Everything::new(issues)?,
@@ -76,7 +79,23 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         create(&options, &output.data_folder(), &target, &mut everything).await?
     };
     sample.verify_security_log().await?;
-    output.write_dump(&sample.dump().await?.to_json()?)?;
+    if let Some(report) = checked {
+        // The dump of the sample names its own projects; the large dataset has the check instead.
+        let said = message::sample_large_checked(
+            format!("{:016x}", report.fingerprint),
+            report.issues,
+            report.sampled,
+        );
+        let _ = writeln!(std::io::stdout(), "{}", said.render());
+        if let Some(problem) = report.problems.first() {
+            return Err(SampleError::Large(format!(
+                "{} problems, the first: {problem}",
+                report.problems.len()
+            )));
+        }
+    } else {
+        output.write_dump(&sample.dump().await?.to_json()?)?;
+    }
     output.write_sign_in(&sample.sign_in_text())?;
     let done = message::sample_done(
         output.sign_in_file().display(),
@@ -101,7 +120,7 @@ fn arguments(layout: &Layout) -> Args {
 /// Reads the layout, takes the arguments and makes the sample.
 async fn start() -> Result<String, SampleError> {
     let layout = Layout::bundled()?;
-    run(&arguments(&layout), &layout).await
+    Box::pin(run(&arguments(&layout), &layout)).await
 }
 
 #[tokio::main]

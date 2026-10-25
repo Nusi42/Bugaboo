@@ -165,6 +165,10 @@
   "large": {
     "$comment": "The large dataset of PERF-01 (architecture §11, 'Large dataset', cargo xtask dataset large): the sample's kinds of things at the scale the budgets are measured on. 'people' and 'projects' count the sample's too. A share is in percent of the issues, the projects or the events; 'notifiedPercent' is how many of the newest events the notification reader makes notifications for.",
     "issues": 1000000,
+    "checkIssues": 3000,
+    "out": ".work/dataset",
+    "checkOut": ".work/dataset/check",
+    "database": "bblarge",
     "people": 500,
     "projects": 500,
     "subProjectsEach": 4,

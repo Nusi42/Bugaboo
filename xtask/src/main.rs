@@ -11,6 +11,7 @@ mod catalog;
 mod checks;
 mod ci;
 mod dataset;
+mod dataset_large;
 mod db;
 mod dev;
 mod docs;
@@ -137,6 +138,23 @@ enum DatasetKind {
         #[arg(long)]
         check: bool,
     },
+    /// The large dataset of PERF-01: 500 people, 500 projects and a million issues, written in
+    /// bulk (architecture §11, "Large dataset"). On both databases unless one is named.
+    Large {
+        /// The number the dataset is made from (default 42).
+        #[arg(long)]
+        seed: Option<u64>,
+        /// Only this database (default: both).
+        #[arg(long, conflicts_with = "check", value_parser = parse_database)]
+        database: Option<DatabaseKind>,
+        /// How many issues (default: the number of tools/dev/sample.json).
+        #[arg(long, conflicts_with = "check")]
+        issues: Option<u32>,
+        /// Instead: make a small one twice on each database and check that it holds the rules
+        /// of bulk data and is the same both times.
+        #[arg(long)]
+        check: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -240,25 +258,7 @@ fn run() -> anyhow::Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Command::Dev { sample } => Ok(steps::exit_code(dev::run(repo.root(), sample)?)),
-        Command::Dataset {
-            kind:
-                DatasetKind::Sample {
-                    seed,
-                    database,
-                    issues,
-                    out,
-                    check,
-                },
-        } => {
-            let request = dataset::Request {
-                seed,
-                issues,
-                database: database.unwrap_or(DatabaseKind::Sqlite),
-                out,
-                check,
-            };
-            Ok(steps::exit_code(dataset::run(&repo, &request)?))
-        }
+        Command::Dataset { kind } => Ok(steps::exit_code(dataset::run(&repo, &request_of(kind))?)),
         Command::Load(arguments) => Ok(steps::exit_code(load::run(&repo, &arguments.request())?)),
         Command::Build { target } => Ok(steps::exit_code(build::run(
             repo.root(),
@@ -299,6 +299,41 @@ fn run() -> anyhow::Result<ExitCode> {
                 ExitCode::FAILURE
             })
         }
+    }
+}
+
+/// What `cargo xtask dataset …` was asked to do.
+fn request_of(kind: DatasetKind) -> dataset::Request {
+    match kind {
+        DatasetKind::Sample {
+            seed,
+            database,
+            issues,
+            out,
+            check,
+        } => dataset::Request {
+            seed,
+            issues,
+            database: database.unwrap_or(DatabaseKind::Sqlite),
+            out,
+            check,
+            large: false,
+            databases: Vec::new(),
+        },
+        DatasetKind::Large {
+            seed,
+            database,
+            issues,
+            check,
+        } => dataset::Request {
+            seed,
+            issues,
+            database: database.unwrap_or(DatabaseKind::Sqlite),
+            out: None,
+            check,
+            large: true,
+            databases: database.into_iter().collect(),
+        },
     }
 }
 

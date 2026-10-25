@@ -19,6 +19,7 @@ use bb_dev_words::sample::{FieldPlan, IssuePlan, Layout};
 use crate::error::{SampleError, Step};
 use crate::generate::{Later, World};
 use crate::issues_setup::{Setup, create_one_field, project_ids};
+use crate::large_check::Facts;
 use crate::organization::Organization;
 
 /// The number of days in a month the history is counted in.
@@ -33,6 +34,7 @@ const COST_CENTER: &str = "Cost center";
 pub struct Large {
     issues: u32,
     layout: Layout,
+    facts: Facts,
 }
 
 impl Large {
@@ -45,7 +47,14 @@ impl Large {
         Ok(Self {
             issues: issues.unwrap_or(layout.large.issues),
             layout,
+            facts: Facts::default(),
         })
+    }
+
+    /// What the check of the dataset needs to know; filled when the dataset is made.
+    #[must_use]
+    pub const fn facts(&self) -> &Facts {
+        &self.facts
     }
 
     /// How many issues the dataset is made with.
@@ -70,6 +79,12 @@ impl Later for Large {
         let begin = world.clock.now().as_second() + 3600;
         let end = world.start.as_second() - END_ROOM;
         let org = crate::large_org::grow(world, &plan, &self.layout).await?;
+        let (guests, contributors) = Facts::people(&org.folk);
+        self.facts = Facts {
+            guests,
+            contributors,
+            cost_center: Some(cost_center),
+        };
         let bank = crate::large_state::read(
             world,
             &setup,

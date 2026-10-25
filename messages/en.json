@@ -858,6 +858,8 @@
   "sample.error.secret-not-stored": "The secret of the code app was not stored.",
   "sample.error.person-missing": "A person of the plan has no account in the database.",
   "sample.error.log-not-anchored": "Nothing vouches for the end of the security log: its anchor file is missing.",
+  "sample.large-checked": "Checked the large dataset: {issues} issues, {sampled} of them held against their events and history. Fingerprint {fingerprint}",
+  "sample.error.large": "The large dataset does not hold: {reason}",
   "sample.error.layout": "The file tools/dev/sample.json is not usable: {reason}",
   "sample.error.link-missing": "The answer to an invitation does not say where to open it.",
   "sample.error.key-missing": "The answer to a new access key does not hold the key.",

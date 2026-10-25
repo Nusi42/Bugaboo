@@ -39,6 +39,7 @@ mod issues_time;
 mod issues_words;
 mod large;
 mod large_build;
+mod large_check;
 mod large_files;
 mod large_ids;
 mod large_org;
@@ -70,6 +71,7 @@ pub use generate::{
 };
 pub use issues::Everything;
 pub use large::Large;
+pub use large_check::{Facts, Report};
 pub use names::NameList;
 pub use organization::Organization;
 pub use people_plan::{

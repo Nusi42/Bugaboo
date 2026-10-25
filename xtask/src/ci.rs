@@ -59,6 +59,13 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
             xtask.to_string_lossy(),
             &["dataset", "sample", "--check"],
         ),
+        // A small large dataset is made twice on each database, holds the rules of bulk data and
+        // is the same both times (PERF-BENCH, architecture section 11).
+        Step::new(
+            "large dataset",
+            xtask.to_string_lossy(),
+            &["dataset", "large", "--check"],
+        ),
         Step::web(root, "browser unit tests", &["test"]),
         // The end-to-end tests start the program themselves (ADR-0023), some of them on a copy of
         // a fresh sample organization.
@@ -107,6 +114,7 @@ mod tests {
                 "all checks",
                 "Rust tests",
                 "sample organization",
+                "large dataset",
                 "browser unit tests",
                 "build the bugaboo program",
                 "create the sample organization",
@@ -130,7 +138,8 @@ mod tests {
         assert_eq!(
             skipped,
             [
-                true, false, false, false, true, false, false, true, true, on_linux, on_linux
+                true, false, false, false, false, true, false, false, true, true, on_linux,
+                on_linux
             ]
         );
     }

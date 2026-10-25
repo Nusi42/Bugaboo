@@ -8507,6 +8507,15 @@ pub fn sample_error_folder(
     )
 }
 
+/// The message `sample.error.large`.
+#[must_use]
+pub fn sample_error_large(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.large"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
 /// The message `sample.error.layout`.
 #[must_use]
 pub fn sample_error_layout(reason: impl std::fmt::Display) -> Message {
@@ -8603,6 +8612,23 @@ pub fn sample_error_too_few_names(people: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("sample.error.too-few-names"),
         vec![("people", Value::Text(people.to_string()))],
+    )
+}
+
+/// The message `sample.large-checked`.
+#[must_use]
+pub fn sample_large_checked(
+    fingerprint: impl std::fmt::Display,
+    issues: impl std::fmt::Display,
+    sampled: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.large-checked"),
+        vec![
+            ("fingerprint", Value::Text(fingerprint.to_string())),
+            ("issues", Value::Text(issues.to_string())),
+            ("sampled", Value::Text(sampled.to_string())),
+        ],
     )
 }
 
@@ -12578,6 +12604,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The answer to a new access key does not hold the key.",
     ),
     (
+        "sample.error.large",
+        "The large dataset does not hold: {reason}",
+    ),
+    (
         "sample.error.layout",
         "The file tools/dev/sample.json is not usable: {reason}",
     ),
@@ -12641,6 +12671,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "sample.error.too-few-names",
         "The list of names is too short for {people} different people.",
+    ),
+    (
+        "sample.large-checked",
+        "Checked the large dataset: {issues} issues, {sampled} of them held against their events and history. Fingerprint {fingerprint}",
     ),
     (
         "sample.sign-in-header",

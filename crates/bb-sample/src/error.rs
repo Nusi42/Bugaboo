@@ -182,6 +182,8 @@ pub enum SampleError {
     DatabaseUrl(String),
     /// `tools/dev/sample.json` is not usable.
     Layout(String),
+    /// The large dataset does not hold a rule the check holds it against.
+    Large(String),
 }
 
 impl From<LayoutError> for SampleError {
@@ -220,6 +222,7 @@ impl SampleError {
             Self::Start(start) => message::sample_error_start(start),
             Self::DatabaseUrl(variable) => message::sample_error_database_url(variable),
             Self::Layout(reason) => message::sample_error_layout(reason),
+            Self::Large(reason) => message::sample_error_large(reason),
         }
     }
 

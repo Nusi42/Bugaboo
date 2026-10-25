@@ -13,6 +13,15 @@ use crate::sample::LayoutError;
 pub struct LargePlan {
     /// How many issues `cargo xtask dataset large` makes when no number is given.
     pub issues: u32,
+    /// How many issues the runs of `cargo xtask dataset large --check` make.
+    pub check_issues: u32,
+    /// The folder the datasets are kept in, relative to the work folder (`/` as separator): one
+    /// folder for each database.
+    pub out: String,
+    /// The folder of the runs of `--check`.
+    pub check_out: String,
+    /// The name of the PostgreSQL database that holds the large dataset.
+    pub database: String,
     /// How many people there are in all: the sample's people and the rest.
     pub people: u32,
     /// How many projects there are in all: the sample's and the rest.
@@ -81,6 +90,7 @@ impl LargePlan {
         }
         let positive = [
             ("issues", self.issues),
+            ("checkIssues", self.check_issues),
             ("people", self.people),
             ("projects", self.projects),
             ("months", self.months),
