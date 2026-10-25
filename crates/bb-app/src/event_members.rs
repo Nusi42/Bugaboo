@@ -67,6 +67,26 @@ pub fn issue_created(
     changes
 }
 
+/// The members of a change of an issue that had `version_before`: the ones that changed, then the
+/// version counted up. The one place that puts the version after them, for the use cases that
+/// change an issue and for the dataset.
+#[must_use]
+pub(crate) fn issue_counted_up(
+    changed: impl IntoIterator<Item = FieldChange>,
+    version_before: i64,
+) -> Vec<FieldChange> {
+    changed
+        .into_iter()
+        .chain(std::iter::once(counted_up(version_before)))
+        .collect()
+}
+
+/// The change of the status of an issue; none when it stayed.
+#[must_use]
+pub(crate) fn status_member(before: &StatusKey, after: &StatusKey) -> Option<FieldChange> {
+    (before != after).then(|| issue_member::status_change(before, after))
+}
+
 /// A status change of an issue that had `version_before`.
 #[must_use]
 pub fn status_changed(
@@ -74,14 +94,7 @@ pub fn status_changed(
     after: &StatusKey,
     version_before: i64,
 ) -> Vec<FieldChange> {
-    difference(
-        issue_member::STATUS,
-        json!(before.as_str()),
-        json!(after.as_str()),
-    )
-    .into_iter()
-    .chain(std::iter::once(counted_up(version_before)))
-    .collect()
+    issue_counted_up(status_member(before, after), version_before)
 }
 
 /// A new comment under an issue.
@@ -96,20 +109,24 @@ pub fn comment_written(issue: IssueId, text: &str) -> Vec<FieldChange> {
 /// A tag put on an issue that had `version_before`, with the names of the tags before and after.
 #[must_use]
 pub fn tag_put_on(before: &[String], after: &[String], version_before: i64) -> Vec<FieldChange> {
-    vec![
-        crate::tags::names_changed(issue_member::TAGS, before, after),
-        counted_up(version_before),
-    ]
+    issue_counted_up(
+        [crate::tags::names_changed(
+            issue_member::TAGS,
+            before,
+            after,
+        )],
+        version_before,
+    )
 }
 
 /// A label put on an issue that had `version_before`, with the labels before and after.
 #[must_use]
 pub fn label_put_on(before: &[Label], after: &[Label], version_before: i64) -> Vec<FieldChange> {
     let refs = |labels: &[Label]| labels.iter().map(NameRef::from).collect::<Vec<_>>();
-    vec![
-        labels_changed(&refs(before), &refs(after)),
-        counted_up(version_before),
-    ]
+    issue_counted_up(
+        [labels_changed(&refs(before), &refs(after))],
+        version_before,
+    )
 }
 
 /// An issue put under another one, taken out from under it or moved, when it had
@@ -121,14 +138,14 @@ pub fn parent_changed(
     version_before: i64,
 ) -> Vec<FieldChange> {
     let shown = |id: Option<IssueId>| id.map(|id| json!(id.to_string()));
-    vec![
-        FieldChange {
+    issue_counted_up(
+        [FieldChange {
             field: issue_member::PARENT.to_owned(),
             before: shown(before),
             after: shown(after),
-        },
-        counted_up(version_before),
-    ]
+        }],
+        version_before,
+    )
 }
 
 /// A relation between two issues, as it was added.

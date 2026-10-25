@@ -19,7 +19,6 @@ use bb_core::id::{IssueId, LabelId, TagId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::ChoiceColor;
 use bb_core::tags::{IssueLabel, IssueTag, Label, Tag, tag_allowed_in};
-use bb_core::version::counted_up;
 use bb_policy::{Authorized, Evaluation};
 use jiff::Timestamp;
 use serde_json::json;
@@ -247,7 +246,7 @@ async fn count_up_and_record<S: AuthStore>(
     let event = maker
         .create(
             entity(RecordKind::Issue, issue),
-            vec![names, counted_up(version - 1)],
+            crate::event_members::issue_counted_up([names], version - 1),
         )
         .map_err(|_| stopped.stop::<S>(ErrorCode::Internal))?;
     S::append_follow_up_event(transaction, &event).await?;
