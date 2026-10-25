@@ -649,6 +649,11 @@ dependencies = [
 [[package]]
 name = "bb-searchlang"
 version = "0.0.0"
+dependencies = [
+ "proptest",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "bb-server"

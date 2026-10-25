@@ -1,0 +1,238 @@
+//! The test vectors of the search language: texts, their canonical texts, their mistakes and their
+//! suggestions, all made by the Rust code the server runs. `cargo xtask gen search-vectors` writes
+//! them to a file, and the unit tests of the browser run the WebAssembly module on the same texts,
+//! so both sides prove the same results (QRY-03; the files are held to the code by DOC-GENERATED).
+//! The sample catalogue is also what the tests of this crate use.
+
+use serde::Serialize;
+
+use crate::catalogue::{Field, FieldCatalogue, FieldKind};
+use crate::checker::check;
+use crate::mistake::Mistake;
+use crate::printer::print;
+use crate::suggest::{Suggestions, suggest};
+use crate::syntax::Search;
+
+/// The fields of the vectors, as a person who may read all of them would get them.
+#[must_use]
+pub fn sample_catalogue() -> FieldCatalogue {
+    let priority = ["lowest", "low", "normal", "high", "highest"];
+    FieldCatalogue {
+        fields: vec![
+            Field::new("project", FieldKind::Project),
+            Field::new("title", FieldKind::Text),
+            Field::new("description", FieldKind::Text),
+            Field::new("status", FieldKind::Choice).with_choices(&["Open", "In progress", "Done"]),
+            Field::new("statusGroup", FieldKind::Choice).with_choices(&[
+                "To do",
+                "In progress",
+                "Done",
+            ]),
+            Field::new("priority", FieldKind::Choice).with_choices(&priority),
+            Field::new("assignedTo", FieldKind::Person),
+            Field::new("reportedBy", FieldKind::Person),
+            Field::new("parent", FieldKind::Issue),
+            Field::new("created", FieldKind::Date),
+            Field::new("changed", FieldKind::Date),
+            Field::new("due", FieldKind::Date),
+            Field::new("estimate", FieldKind::Number),
+            Field::new("storyPoints", FieldKind::Number),
+        ],
+    }
+}
+
+/// Texts that are searches: each parses, checks against the sample catalogue and prints to its
+/// canonical text (the first example is the one of QRY-01).
+pub const ACCEPTED: &[&str] = &[
+    "project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first",
+    "",
+    "sort by due, oldest first, title, A to Z",
+    "status is Open",
+    "status IS NOT \"In progress\"",
+    "status in (Open, \"In progress\")",
+    "priority >= high",
+    "estimate <= 2.50 or estimate > 10",
+    "title contains \"crash on save\"",
+    "title contains crash",
+    "assignedTo member of \"Backend\"",
+    "assignedTo is empty",
+    "reportedBy is not empty",
+    "created is today or created is yesterday",
+    "changed is this week and due is last week and due is this month",
+    "due < 2026-12-31",
+    "changed in last 1 day",
+    "changed in last 2 weeks",
+    "changed in last 6 months",
+    "project within WEB",
+    "parent is WEB-142",
+    "parent is WEB-K7Q2X",
+    "under WEB-7",
+    "blocks WEB-1",
+    "blocked by WEB-1",
+    "connected to WEB-7",
+    "connected to WEB-7 within 3 steps",
+    "connected to WEB-7 within 1 step",
+    "not (status is Done or status is Open)",
+    "(status is Open and priority is high) or assignedTo is me",
+    "(status is Open and (priority is high))",
+    "not not status is Open",
+    "status is Open and (priority is high and assignedTo is me)",
+    "storyPoints > 5 sort by storyPoints",
+];
+
+/// Texts that are not accepted, each for a different reason.
+pub const REFUSED: &[&str] = &[
+    "prio is high",
+    "priority < 3",
+    "status is",
+    "status is Finished",
+    "status is Donee",
+    "status",
+    "status is Open and",
+    "status is Open or or",
+    "(status is Open",
+    "status is Open)",
+    "title contains",
+    "title contains \"unfinished",
+    "title < 5",
+    "estimate is high",
+    "estimate is \"5\"",
+    "due is soon",
+    "due is 2026-13-40",
+    "assignedTo is WEB-1",
+    "parent is WEB",
+    "status is week",
+    "changed in last 0 days",
+    "changed in last 3 hours",
+    "changed in",
+    "project within web",
+    "under 12",
+    "blocked WEB-1",
+    "connected to WEB-7 within 6 steps",
+    "connected to WEB-7 within three steps",
+    "sort priority",
+    "sort by",
+    "sort by priority, sideways first",
+    "sort by nothing",
+    "status = Open",
+    "status is Open, priority is high",
+];
+
+/// Where the cursor is in a text, marked with a bar that is not part of the text.
+pub const SUGGESTED: &[&str] = &[
+    "|",
+    "assi|",
+    "assignedTo |",
+    "priority is |",
+    "priority is not |",
+    "priority is hi|",
+    "priority is \"hi|",
+    "status is \"In pr|\" and",
+    "assignedTo is |",
+    "assignedTo member of |",
+    "assignedTo member of \"Bac|",
+    "created is |",
+    "created |",
+    "changed in |",
+    "changed in last 3 |",
+    "status is Open |",
+    "(status is Open |",
+    "status in (Open |",
+    "status in (Open, |",
+    "not |",
+    "blocked |",
+    "connected to |",
+    "connected to WEB-7 within 3 |",
+    "project within |",
+    "parent is |",
+    "status is Open sort |",
+    "status is Open sort by |",
+    "status is Open sort by priority |",
+    "status is Open sort by priority, high|",
+    "status is Open sort by priority, highest |",
+    "sort by priority, |",
+    "nothing |",
+];
+
+/// One text and what the code makes of it.
+#[derive(Serialize)]
+struct Case {
+    text: String,
+    /// The canonical text; `null` when the text has mistakes.
+    canonical: Option<String>,
+    /// The tree of a text that parses; `null` otherwise.
+    search: Option<Search>,
+    /// The mistakes of the parser or of the checker, in the order of the text.
+    mistakes: Vec<Mistake>,
+}
+
+/// One cursor place and what is offered there.
+#[derive(Serialize)]
+struct Place {
+    text: String,
+    cursor: usize,
+    suggestions: Suggestions,
+}
+
+/// The whole file.
+#[derive(Serialize)]
+struct File {
+    catalogue: FieldCatalogue,
+    cases: Vec<Case>,
+    places: Vec<Place>,
+}
+
+/// What a text comes to: parse, check, print.
+fn case(text: &str, catalogue: &FieldCatalogue) -> Case {
+    let parsed = crate::parse(text);
+    let (search, mistakes) = match parsed {
+        Ok(search) => match check(search.clone(), catalogue) {
+            Ok(_) => (Some(search), Vec::new()),
+            Err(mistakes) => (Some(search), mistakes),
+        },
+        Err(mistake) => (None, vec![mistake]),
+    };
+    Case {
+        text: text.to_owned(),
+        canonical: search.as_ref().filter(|_| mistakes.is_empty()).map(print),
+        search,
+        mistakes,
+    }
+}
+
+/// A text with the cursor bar taken out, and where the bar stood.
+fn cursor_in(marked: &str) -> (String, usize) {
+    let at = marked.find('|').unwrap_or(marked.len());
+    (marked.replacen('|', "", 1), at)
+}
+
+/// The text of the vectors file.
+///
+/// # Errors
+/// The vectors cannot be written as JSON.
+pub fn file() -> Result<String, serde_json::Error> {
+    let catalogue = sample_catalogue();
+    let cases = ACCEPTED
+        .iter()
+        .chain(REFUSED)
+        .map(|text| case(text, &catalogue))
+        .collect();
+    let places = SUGGESTED
+        .iter()
+        .map(|marked| {
+            let (text, cursor) = cursor_in(marked);
+            Place {
+                suggestions: suggest(&text, cursor, &catalogue),
+                text,
+                cursor,
+            }
+        })
+        .collect();
+    let mut text = serde_json::to_string_pretty(&File {
+        catalogue,
+        cases,
+        places,
+    })?;
+    text.push('\n');
+    Ok(text)
+}

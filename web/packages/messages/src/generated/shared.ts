@@ -207,6 +207,53 @@ export const messages = {
   "nav.projects": "Projects",
   "nav.group.work": "Work",
   "search.clear": "Clear the search",
+  "search.mistake.expected-condition":
+    "A filter is missing here. Start it with the name of a field, like “priority”.",
+  "search.mistake.expected-operator":
+    "What should be true of “{field}”? Write for example “{is}”, “{contains}” or “{in}”.",
+  "search.mistake.expected-value": "Write the value for “{field}” here.",
+  "search.mistake.expected-in":
+    "After “{in}” write “{last}” and a number, or a list of values in brackets.",
+  "search.mistake.expected-list-next":
+    "Write a comma and the next value, or close the list with a bracket.",
+  "search.mistake.expected-count": "Write a whole number of 1 or more here.",
+  "search.mistake.expected-unit": "Write a unit of time here: {units}.",
+  "search.mistake.expected-steps-word": "Write “{step}” or “{steps}” after the number.",
+  "search.mistake.expected-text": "Write the text to look for here, in quotes.",
+  "search.mistake.expected-member-of": "Write “{of}” after “{member}”.",
+  "search.mistake.expected-short-name":
+    "Write the short name of a project here, in capital letters, like WEB.",
+  "search.mistake.expected-issue-id": "Write an Issue ID here, like WEB-142.",
+  "search.mistake.expected-blocked-by": "Write “{by}” after “{blocked}”.",
+  "search.mistake.expected-connected-to": "Write “{to}” after “{connected}”.",
+  "search.mistake.expected-continue":
+    "After a filter you can write “{and}”, “{or}” or “{sort} {by}”.",
+  "search.mistake.expected-continue-closing":
+    "After a filter you can write “{and}” or “{or}”, or close the bracket.",
+  "search.mistake.expected-sort-by": "Write “{by}” after “{sort}”.",
+  "search.mistake.expected-sort-field": "Write the field to sort by here.",
+  "search.mistake.expected-direction": "Write how to sort here: {directions}.",
+  "search.mistake.reserved-word":
+    "“{word}” is a word of the search language. To search for it, put it in quotes.",
+  "search.mistake.unclosed-quote": "This text in quotes does not end. Add the closing quote.",
+  "search.mistake.not-a-date":
+    "“{text}” is not a day in the calendar. Write a day like 2026-10-25.",
+  "search.mistake.unreadable": "“{text}” is not understood here.",
+  "search.mistake.too-deep": "There are too many brackets inside brackets.",
+  "search.mistake.unknown-field": "There is no field called “{field}”.",
+  "search.mistake.unknown-field-did-you-mean":
+    "There is no field called “{field}”. Did you mean “{suggestion}”?",
+  "search.mistake.operator-not-allowed": "“{operator}” cannot be used with “{field}”.",
+  "search.mistake.unknown-choice": "“{field}” has no choice called “{value}”.",
+  "search.mistake.unknown-choice-did-you-mean":
+    "“{field}” has no choice called “{value}”. Did you mean “{suggestion}”?",
+  "search.mistake.wrong-number": "“{field}” needs a number here.",
+  "search.mistake.wrong-date": "“{field}” needs a day like 2026-10-25, or a word like today.",
+  "search.mistake.wrong-text": "“{field}” needs a text here. Put it in quotes.",
+  "search.mistake.wrong-person": "“{field}” needs the name of a person here, or “{me}”.",
+  "search.mistake.wrong-issue": "“{field}” needs an Issue ID here, like WEB-142.",
+  "search.mistake.too-many-conditions": "A search can have at most {limit} filters.",
+  "search.mistake.too-many-steps": "A search can look at most {limit} steps away.",
   "shortcut.quick-search": "Open quick search",
   "shortcut.show-shortcuts": "Show all keyboard shortcuts",
   "shortcut.go-home": "Go to the start page",

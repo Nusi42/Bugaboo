@@ -3765,6 +3765,41 @@ pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
 /// The message `search.label`.
 pub const SEARCH_LABEL: MessageKey = MessageKey::new("search.label");
 
+/// The message `search.mistake.expected-condition`.
+pub const SEARCH_MISTAKE_EXPECTED_CONDITION: MessageKey =
+    MessageKey::new("search.mistake.expected-condition");
+
+/// The message `search.mistake.expected-count`.
+pub const SEARCH_MISTAKE_EXPECTED_COUNT: MessageKey =
+    MessageKey::new("search.mistake.expected-count");
+
+/// The message `search.mistake.expected-issue-id`.
+pub const SEARCH_MISTAKE_EXPECTED_ISSUE_ID: MessageKey =
+    MessageKey::new("search.mistake.expected-issue-id");
+
+/// The message `search.mistake.expected-list-next`.
+pub const SEARCH_MISTAKE_EXPECTED_LIST_NEXT: MessageKey =
+    MessageKey::new("search.mistake.expected-list-next");
+
+/// The message `search.mistake.expected-short-name`.
+pub const SEARCH_MISTAKE_EXPECTED_SHORT_NAME: MessageKey =
+    MessageKey::new("search.mistake.expected-short-name");
+
+/// The message `search.mistake.expected-sort-field`.
+pub const SEARCH_MISTAKE_EXPECTED_SORT_FIELD: MessageKey =
+    MessageKey::new("search.mistake.expected-sort-field");
+
+/// The message `search.mistake.expected-text`.
+pub const SEARCH_MISTAKE_EXPECTED_TEXT: MessageKey =
+    MessageKey::new("search.mistake.expected-text");
+
+/// The message `search.mistake.too-deep`.
+pub const SEARCH_MISTAKE_TOO_DEEP: MessageKey = MessageKey::new("search.mistake.too-deep");
+
+/// The message `search.mistake.unclosed-quote`.
+pub const SEARCH_MISTAKE_UNCLOSED_QUOTE: MessageKey =
+    MessageKey::new("search.mistake.unclosed-quote");
+
 /// The message `search.nothing`.
 pub const SEARCH_NOTHING: MessageKey = MessageKey::new("search.nothing");
 
@@ -8609,6 +8644,343 @@ pub fn save_saved_at(time: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search.mistake.expected-blocked-by`.
+#[must_use]
+pub fn search_mistake_expected_blocked_by(
+    blocked: impl std::fmt::Display,
+    by: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-blocked-by"),
+        vec![
+            ("blocked", Value::Text(blocked.to_string())),
+            ("by", Value::Text(by.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-connected-to`.
+#[must_use]
+pub fn search_mistake_expected_connected_to(
+    connected: impl std::fmt::Display,
+    to: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-connected-to"),
+        vec![
+            ("connected", Value::Text(connected.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-continue`.
+#[must_use]
+pub fn search_mistake_expected_continue(
+    and: impl std::fmt::Display,
+    by: impl std::fmt::Display,
+    or: impl std::fmt::Display,
+    sort: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-continue"),
+        vec![
+            ("and", Value::Text(and.to_string())),
+            ("by", Value::Text(by.to_string())),
+            ("or", Value::Text(or.to_string())),
+            ("sort", Value::Text(sort.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-continue-closing`.
+#[must_use]
+pub fn search_mistake_expected_continue_closing(
+    and: impl std::fmt::Display,
+    or: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-continue-closing"),
+        vec![
+            ("and", Value::Text(and.to_string())),
+            ("or", Value::Text(or.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-direction`.
+#[must_use]
+pub fn search_mistake_expected_direction(directions: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-direction"),
+        vec![("directions", Value::Text(directions.to_string()))],
+    )
+}
+
+/// The message `search.mistake.expected-in`.
+#[must_use]
+pub fn search_mistake_expected_in(
+    in_: impl std::fmt::Display,
+    last: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-in"),
+        vec![
+            ("in", Value::Text(in_.to_string())),
+            ("last", Value::Text(last.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-member-of`.
+#[must_use]
+pub fn search_mistake_expected_member_of(
+    member: impl std::fmt::Display,
+    of: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-member-of"),
+        vec![
+            ("member", Value::Text(member.to_string())),
+            ("of", Value::Text(of.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-operator`.
+#[must_use]
+pub fn search_mistake_expected_operator(
+    contains: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+    in_: impl std::fmt::Display,
+    is: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-operator"),
+        vec![
+            ("contains", Value::Text(contains.to_string())),
+            ("field", Value::Text(field.to_string())),
+            ("in", Value::Text(in_.to_string())),
+            ("is", Value::Text(is.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-sort-by`.
+#[must_use]
+pub fn search_mistake_expected_sort_by(
+    by: impl std::fmt::Display,
+    sort: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-sort-by"),
+        vec![
+            ("by", Value::Text(by.to_string())),
+            ("sort", Value::Text(sort.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-steps-word`.
+#[must_use]
+pub fn search_mistake_expected_steps_word(
+    step: impl std::fmt::Display,
+    steps: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-steps-word"),
+        vec![
+            ("step", Value::Text(step.to_string())),
+            ("steps", Value::Text(steps.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.expected-unit`.
+#[must_use]
+pub fn search_mistake_expected_unit(units: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-unit"),
+        vec![("units", Value::Text(units.to_string()))],
+    )
+}
+
+/// The message `search.mistake.expected-value`.
+#[must_use]
+pub fn search_mistake_expected_value(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-value"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.mistake.not-a-date`.
+#[must_use]
+pub fn search_mistake_not_a_date(text: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.not-a-date"),
+        vec![("text", Value::Text(text.to_string()))],
+    )
+}
+
+/// The message `search.mistake.operator-not-allowed`.
+#[must_use]
+pub fn search_mistake_operator_not_allowed(
+    field: impl std::fmt::Display,
+    operator: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.operator-not-allowed"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("operator", Value::Text(operator.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.reserved-word`.
+#[must_use]
+pub fn search_mistake_reserved_word(word: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.reserved-word"),
+        vec![("word", Value::Text(word.to_string()))],
+    )
+}
+
+/// The message `search.mistake.too-many-conditions`.
+#[must_use]
+pub fn search_mistake_too_many_conditions(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.too-many-conditions"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `search.mistake.too-many-steps`.
+#[must_use]
+pub fn search_mistake_too_many_steps(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.too-many-steps"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `search.mistake.unknown-choice`.
+#[must_use]
+pub fn search_mistake_unknown_choice(
+    field: impl std::fmt::Display,
+    value: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.unknown-choice"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("value", Value::Text(value.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.unknown-choice-did-you-mean`.
+#[must_use]
+pub fn search_mistake_unknown_choice_did_you_mean(
+    field: impl std::fmt::Display,
+    suggestion: impl std::fmt::Display,
+    value: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.unknown-choice-did-you-mean"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("suggestion", Value::Text(suggestion.to_string())),
+            ("value", Value::Text(value.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.unknown-field`.
+#[must_use]
+pub fn search_mistake_unknown_field(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.unknown-field"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.mistake.unknown-field-did-you-mean`.
+#[must_use]
+pub fn search_mistake_unknown_field_did_you_mean(
+    field: impl std::fmt::Display,
+    suggestion: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.unknown-field-did-you-mean"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("suggestion", Value::Text(suggestion.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.unreadable`.
+#[must_use]
+pub fn search_mistake_unreadable(text: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.unreadable"),
+        vec![("text", Value::Text(text.to_string()))],
+    )
+}
+
+/// The message `search.mistake.wrong-date`.
+#[must_use]
+pub fn search_mistake_wrong_date(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.wrong-date"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.mistake.wrong-issue`.
+#[must_use]
+pub fn search_mistake_wrong_issue(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.wrong-issue"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.mistake.wrong-number`.
+#[must_use]
+pub fn search_mistake_wrong_number(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.wrong-number"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.mistake.wrong-person`.
+#[must_use]
+pub fn search_mistake_wrong_person(
+    field: impl std::fmt::Display,
+    me: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.wrong-person"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("me", Value::Text(me.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mistake.wrong-text`.
+#[must_use]
+pub fn search_mistake_wrong_text(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.wrong-text"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
 /// The message `security-log.broken`.
 #[must_use]
 pub fn security_log_broken(reason: impl std::fmt::Display, seq: impl std::fmt::Display) -> Message {
@@ -12708,6 +13080,150 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("save.saving", "Saving…"),
     ("search.clear", "Clear the search"),
     ("search.label", "Search"),
+    (
+        "search.mistake.expected-blocked-by",
+        "Write “{by}” after “{blocked}”.",
+    ),
+    (
+        "search.mistake.expected-condition",
+        "A filter is missing here. Start it with the name of a field, like “priority”.",
+    ),
+    (
+        "search.mistake.expected-connected-to",
+        "Write “{to}” after “{connected}”.",
+    ),
+    (
+        "search.mistake.expected-continue",
+        "After a filter you can write “{and}”, “{or}” or “{sort} {by}”.",
+    ),
+    (
+        "search.mistake.expected-continue-closing",
+        "After a filter you can write “{and}” or “{or}”, or close the bracket.",
+    ),
+    (
+        "search.mistake.expected-count",
+        "Write a whole number of 1 or more here.",
+    ),
+    (
+        "search.mistake.expected-direction",
+        "Write how to sort here: {directions}.",
+    ),
+    (
+        "search.mistake.expected-in",
+        "After “{in}” write “{last}” and a number, or a list of values in brackets.",
+    ),
+    (
+        "search.mistake.expected-issue-id",
+        "Write an Issue ID here, like WEB-142.",
+    ),
+    (
+        "search.mistake.expected-list-next",
+        "Write a comma and the next value, or close the list with a bracket.",
+    ),
+    (
+        "search.mistake.expected-member-of",
+        "Write “{of}” after “{member}”.",
+    ),
+    (
+        "search.mistake.expected-operator",
+        "What should be true of “{field}”? Write for example “{is}”, “{contains}” or “{in}”.",
+    ),
+    (
+        "search.mistake.expected-short-name",
+        "Write the short name of a project here, in capital letters, like WEB.",
+    ),
+    (
+        "search.mistake.expected-sort-by",
+        "Write “{by}” after “{sort}”.",
+    ),
+    (
+        "search.mistake.expected-sort-field",
+        "Write the field to sort by here.",
+    ),
+    (
+        "search.mistake.expected-steps-word",
+        "Write “{step}” or “{steps}” after the number.",
+    ),
+    (
+        "search.mistake.expected-text",
+        "Write the text to look for here, in quotes.",
+    ),
+    (
+        "search.mistake.expected-unit",
+        "Write a unit of time here: {units}.",
+    ),
+    (
+        "search.mistake.expected-value",
+        "Write the value for “{field}” here.",
+    ),
+    (
+        "search.mistake.not-a-date",
+        "“{text}” is not a day in the calendar. Write a day like 2026-10-25.",
+    ),
+    (
+        "search.mistake.operator-not-allowed",
+        "“{operator}” cannot be used with “{field}”.",
+    ),
+    (
+        "search.mistake.reserved-word",
+        "“{word}” is a word of the search language. To search for it, put it in quotes.",
+    ),
+    (
+        "search.mistake.too-deep",
+        "There are too many brackets inside brackets.",
+    ),
+    (
+        "search.mistake.too-many-conditions",
+        "A search can have at most {limit} filters.",
+    ),
+    (
+        "search.mistake.too-many-steps",
+        "A search can look at most {limit} steps away.",
+    ),
+    (
+        "search.mistake.unclosed-quote",
+        "This text in quotes does not end. Add the closing quote.",
+    ),
+    (
+        "search.mistake.unknown-choice",
+        "“{field}” has no choice called “{value}”.",
+    ),
+    (
+        "search.mistake.unknown-choice-did-you-mean",
+        "“{field}” has no choice called “{value}”. Did you mean “{suggestion}”?",
+    ),
+    (
+        "search.mistake.unknown-field",
+        "There is no field called “{field}”.",
+    ),
+    (
+        "search.mistake.unknown-field-did-you-mean",
+        "There is no field called “{field}”. Did you mean “{suggestion}”?",
+    ),
+    (
+        "search.mistake.unreadable",
+        "“{text}” is not understood here.",
+    ),
+    (
+        "search.mistake.wrong-date",
+        "“{field}” needs a day like 2026-10-25, or a word like today.",
+    ),
+    (
+        "search.mistake.wrong-issue",
+        "“{field}” needs an Issue ID here, like WEB-142.",
+    ),
+    (
+        "search.mistake.wrong-number",
+        "“{field}” needs a number here.",
+    ),
+    (
+        "search.mistake.wrong-person",
+        "“{field}” needs the name of a person here, or “{me}”.",
+    ),
+    (
+        "search.mistake.wrong-text",
+        "“{field}” needs a text here. Put it in quotes.",
+    ),
     ("search.nothing", "Nothing found. Try another word."),
     ("search.pages", "Pages"),
     ("search.partial", "Some results could not be loaded."),

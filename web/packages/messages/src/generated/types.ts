@@ -407,6 +407,50 @@ export interface MessageArguments {
   "roles.used-by-nobody": { places: string | number };
   "roles.used-projects": { count: number };
   "save.saved-at": { time: string | number };
+  "search.mistake.expected-blocked-by": { blocked: string | number; by: string | number };
+  "search.mistake.expected-connected-to": { connected: string | number; to: string | number };
+  "search.mistake.expected-continue": {
+    and: string | number;
+    by: string | number;
+    or: string | number;
+    sort: string | number;
+  };
+  "search.mistake.expected-continue-closing": { and: string | number; or: string | number };
+  "search.mistake.expected-direction": { directions: string | number };
+  "search.mistake.expected-in": { in: string | number; last: string | number };
+  "search.mistake.expected-member-of": { member: string | number; of: string | number };
+  "search.mistake.expected-operator": {
+    contains: string | number;
+    field: string | number;
+    in: string | number;
+    is: string | number;
+  };
+  "search.mistake.expected-sort-by": { by: string | number; sort: string | number };
+  "search.mistake.expected-steps-word": { step: string | number; steps: string | number };
+  "search.mistake.expected-unit": { units: string | number };
+  "search.mistake.expected-value": { field: string | number };
+  "search.mistake.not-a-date": { text: string | number };
+  "search.mistake.operator-not-allowed": { field: string | number; operator: string | number };
+  "search.mistake.reserved-word": { word: string | number };
+  "search.mistake.too-many-conditions": { limit: string | number };
+  "search.mistake.too-many-steps": { limit: string | number };
+  "search.mistake.unknown-choice": { field: string | number; value: string | number };
+  "search.mistake.unknown-choice-did-you-mean": {
+    field: string | number;
+    suggestion: string | number;
+    value: string | number;
+  };
+  "search.mistake.unknown-field": { field: string | number };
+  "search.mistake.unknown-field-did-you-mean": {
+    field: string | number;
+    suggestion: string | number;
+  };
+  "search.mistake.unreadable": { text: string | number };
+  "search.mistake.wrong-date": { field: string | number };
+  "search.mistake.wrong-issue": { field: string | number };
+  "search.mistake.wrong-number": { field: string | number };
+  "search.mistake.wrong-person": { field: string | number; me: string | number };
+  "search.mistake.wrong-text": { field: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };
