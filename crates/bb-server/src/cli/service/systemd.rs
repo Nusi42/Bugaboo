@@ -9,15 +9,34 @@ use std::path::{Path, PathBuf};
 use bb_core::message::{self, Message};
 
 use crate::data_folder::SUB_FOLDERS;
+#[cfg(unix)]
+use crate::system::{answer_of, program_on_path};
 
 /// The name of the unit, and so the name of the service for `systemctl`.
 pub(super) const UNIT: &str = "bugaboo.service";
 /// The account that runs Bugaboo: no password, no shell, no home folder.
 pub(super) const USER: &str = "bugaboo";
-/// Where systemd looks for units that an administrator installs.
-pub(super) const UNIT_FOLDER: &str = "/etc/systemd/system";
-/// The shell of an account that cannot sign in.
-const NO_LOGIN: &str = "/usr/sbin/nologin";
+/// The program that tells where systemd looks for the units an administrator installs.
+#[cfg(unix)]
+const PATH_PROGRAM: &str = "systemd-path";
+#[cfg(unix)]
+const PATH_ARGUMENT: &str = "systemd-system-conf";
+/// The same answer from the development files of systemd, when `systemd-path` is not there.
+#[cfg(unix)]
+const PKG_CONFIG: (&str, [&str; 2]) =
+    ("pkg-config", ["--variable=systemdsystemconfdir", "systemd"]);
+/// The program that is the shell of an account that cannot sign in.
+#[cfg(unix)]
+const NO_LOGIN_PROGRAM: &str = "nologin";
+/// What `systemctl is-system-running` prints when systemd runs the computer, in any state.
+const RUNNING_STATES: [&str; 6] = [
+    "initializing",
+    "starting",
+    "running",
+    "degraded",
+    "maintenance",
+    "stopping",
+];
 
 /// One thing to do, in order.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -39,6 +58,8 @@ pub(super) struct Installation<'a> {
     pub(super) program: &'a Path,
     /// The settings file, in full.
     pub(super) config: &'a Path,
+    /// The folder for the units that an administrator installs, as systemd names it.
+    pub(super) unit_folder: &'a Path,
     /// The data folder, in full.
     pub(super) data_dir: &'a Path,
     /// The files directly in the data folder that Bugaboo made, which the account takes over.
@@ -167,14 +188,70 @@ pub(super) fn check_settings_file(config: &Path, data_dir: &Path) -> Result<(), 
     }
 }
 
-/// The steps that install the service. The account is made only when it does not exist yet.
-pub(super) fn plan(installation: &Installation<'_>, user_exists: bool) -> Vec<Step> {
+/// A folder named by a program: one absolute path in the text it printed.
+fn named_folder(answer: &str) -> Option<PathBuf> {
+    let mut lines = answer
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty());
+    let folder = PathBuf::from(lines.next()?);
+    (lines.next().is_none() && folder.is_absolute()).then_some(folder)
+}
+
+/// The folder for the units that an administrator installs, as systemd names it (`systemd-path`,
+/// or else `pkg-config`). A folder that does not exist is no answer: the program stops with a
+/// message and never guesses.
+#[cfg(unix)]
+pub(super) fn unit_folder() -> Result<PathBuf, Message> {
+    let (pkg_program, pkg_arguments) = PKG_CONFIG;
+    [
+        answer_of(PATH_PROGRAM, &[PATH_ARGUMENT]),
+        answer_of(pkg_program, &pkg_arguments),
+    ]
+    .into_iter()
+    .flatten()
+    .filter_map(|answer| named_folder(&answer))
+    .find(|folder| folder.is_dir())
+    .ok_or_else(|| Message::from(message::SERVICE_UNIT_FOLDER_UNKNOWN))
+}
+
+/// The shell of an account that cannot sign in, found on the search path.
+#[cfg(unix)]
+pub(super) fn no_login() -> Result<PathBuf, Message> {
+    program_on_path(NO_LOGIN_PROGRAM)
+        .ok_or_else(|| message::service_program_not_found(NO_LOGIN_PROGRAM))
+}
+
+/// Whether the text `systemctl is-system-running` printed says that systemd runs the computer.
+fn is_running(answer: &str) -> bool {
+    RUNNING_STATES.contains(&answer.trim())
+}
+
+/// Whether systemd runs this computer. `systemctl is-system-running` ends with an error in the
+/// state `degraded`, so what it printed counts, not how it ended.
+#[cfg(unix)]
+pub(super) fn runs_this_computer() -> bool {
+    std::process::Command::new("systemctl")
+        .arg("is-system-running")
+        .output()
+        .is_ok_and(|output| is_running(&String::from_utf8_lossy(&output.stdout)))
+}
+
+/// The steps that install the service. The account is made only when `new_account_shell` is
+/// given, which is the shell of an account that cannot sign in; `None` when it exists already.
+pub(super) fn plan(installation: &Installation<'_>, new_account_shell: Option<&Path>) -> Vec<Step> {
     let owner = format!("{USER}:{USER}");
     let mut steps = Vec::new();
-    if !user_exists {
+    if let Some(shell) = new_account_shell {
         steps.push(run(
             "useradd",
-            &["--system", "--no-create-home", "--shell", NO_LOGIN, USER],
+            &[
+                "--system",
+                "--no-create-home",
+                "--shell",
+                &path_argument(shell),
+                USER,
+            ],
         ));
     }
     let data = path_argument(installation.data_dir);
@@ -198,7 +275,7 @@ pub(super) fn plan(installation: &Installation<'_>, user_exists: bool) -> Vec<St
     steps.push(run("chown", &["-h", "root:bugaboo", &config]));
     steps.push(run("chmod", &["640", &config]));
     steps.push(Step::Write {
-        path: Path::new(UNIT_FOLDER).join(UNIT),
+        path: installation.unit_folder.join(UNIT),
         contents: unit(installation),
     });
     steps.push(run("systemctl", &["daemon-reload"]));
@@ -207,12 +284,12 @@ pub(super) fn plan(installation: &Installation<'_>, user_exists: bool) -> Vec<St
 }
 
 /// The steps that remove the service. The account and the data stay.
-pub(super) fn removal() -> Vec<Step> {
+pub(super) fn removal(unit_folder: &Path) -> Vec<Step> {
     vec![
         run("systemctl", &["disable", "--now", UNIT]),
         Step::Run {
             program: "rm",
-            arguments: vec![path_argument(&Path::new(UNIT_FOLDER).join(UNIT))],
+            arguments: vec![path_argument(&unit_folder.join(UNIT))],
         },
         run("systemctl", &["daemon-reload"]),
     ]
@@ -226,6 +303,7 @@ mod tests {
         Installation {
             program: Path::new("/opt/bugaboo/bugaboo"),
             config: Path::new("/etc/bugaboo/bugaboo.toml"),
+            unit_folder: Path::new("/etc/units"),
             data_dir: Path::new("/var/lib/bugaboo"),
             known_files: &[],
         }
@@ -264,7 +342,7 @@ mod tests {
     #[test]
     fn ops_04_installing_makes_the_user_the_folder_the_unit_and_starts_it_in_that_order() {
         let installation = installation();
-        let steps = plan(&installation, false);
+        let steps = plan(&installation, Some(Path::new("/shells/nologin")));
         let kinds: Vec<String> = steps
             .iter()
             .map(|step| match step {
@@ -276,7 +354,7 @@ mod tests {
         assert_eq!(
             kinds,
             [
-                "useradd --system --no-create-home --shell /usr/sbin/nologin bugaboo",
+                "useradd --system --no-create-home --shell /shells/nologin bugaboo",
                 "prepare /var/lib/bugaboo",
                 "chown -h bugaboo:bugaboo /var/lib/bugaboo",
                 "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/files",
@@ -286,7 +364,7 @@ mod tests {
                 "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/logs",
                 "chown -h root:bugaboo /etc/bugaboo/bugaboo.toml",
                 "chmod 640 /etc/bugaboo/bugaboo.toml",
-                &format!("write {}", Path::new(UNIT_FOLDER).join(UNIT).display()),
+                &format!("write {}", installation.unit_folder.join(UNIT).display()),
                 "systemctl daemon-reload",
                 "systemctl enable --now bugaboo.service",
             ]
@@ -300,7 +378,7 @@ mod tests {
             known_files: &files,
             ..installation()
         };
-        let chowns: Vec<String> = plan(&installation, true)
+        let chowns: Vec<String> = plan(&installation, None)
             .iter()
             .filter_map(|step| match step {
                 Step::Run {
@@ -338,7 +416,7 @@ mod tests {
             known_files: &files,
             ..installation()
         };
-        for step in plan(&installation, true) {
+        for step in plan(&installation, None) {
             if let Step::Run {
                 program: "chown",
                 arguments,
@@ -492,7 +570,7 @@ mod tests {
 
     #[test]
     fn ops_04_an_account_that_exists_is_not_made_again() {
-        let steps = plan(&installation(), true);
+        let steps = plan(&installation(), None);
         assert!(!steps.iter().any(|step| matches!(
             step,
             Step::Run {
@@ -504,7 +582,7 @@ mod tests {
 
     #[test]
     fn ops_04_removing_stops_and_forgets_the_unit_and_leaves_the_data() {
-        let steps = removal();
+        let steps = removal(Path::new("/etc/units"));
         assert_eq!(steps.len(), 3);
         assert!(matches!(
             &steps[0],
@@ -515,5 +593,54 @@ mod tests {
                 .iter()
                 .all(|step| !matches!(step, Step::PrepareDataFolder(_)))
         );
+    }
+
+    #[test]
+    fn ops_04_the_unit_goes_into_the_folder_systemd_names() {
+        let folder = std::env::temp_dir();
+        let installation = Installation {
+            unit_folder: &folder,
+            ..installation()
+        };
+        let written = plan(&installation, None)
+            .into_iter()
+            .find_map(|step| match step {
+                Step::Write { path, .. } => Some(path),
+                _ => None,
+            });
+        assert_eq!(written, Some(folder.join(UNIT)));
+        let removed = removal(&folder);
+        assert!(matches!(
+            &removed[1],
+            Step::Run { program: "rm", arguments } if arguments == &[path_argument(&folder.join(UNIT))]
+        ));
+    }
+
+    #[test]
+    fn ops_04_a_folder_is_taken_from_an_answer_only_when_it_is_one_full_path() {
+        let folder = std::env::temp_dir();
+        let said = format!("  {}\n", folder.display());
+        assert_eq!(named_folder(&said), Some(folder));
+        assert_eq!(named_folder(""), None);
+        assert_eq!(named_folder("units"), None, "a relative path is no answer");
+        let two = format!("{0}\n{0}\n", std::env::temp_dir().display());
+        assert_eq!(named_folder(&two), None, "two lines are no answer");
+    }
+
+    #[test]
+    fn ops_04_systemd_runs_the_computer_in_any_state_but_off_or_unknown() {
+        for state in ["running\n", "degraded\n", "starting\n", "maintenance\n"] {
+            assert!(is_running(state), "{state}");
+        }
+        for state in ["offline\n", "unknown\n", "", "Failed to connect to bus\n"] {
+            assert!(!is_running(state), "{state}");
+        }
+    }
+
+    #[test]
+    fn ops_04_when_systemd_names_no_folder_the_message_says_so_and_does_not_guess() {
+        let said = Message::from(message::SERVICE_UNIT_FOLDER_UNKNOWN).render();
+        assert!(said.contains("does not guess"), "{said}");
+        assert!(said.contains("systemd-path"), "{said}");
     }
 }

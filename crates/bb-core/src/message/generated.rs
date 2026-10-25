@@ -3966,6 +3966,9 @@ pub const SERVICE_NEEDS_ADMIN: MessageKey = MessageKey::new("service.needs-admin
 /// The message `service.not-a-service`.
 pub const SERVICE_NOT_A_SERVICE: MessageKey = MessageKey::new("service.not-a-service");
 
+/// The message `service.unit-folder-unknown`.
+pub const SERVICE_UNIT_FOLDER_UNKNOWN: MessageKey = MessageKey::new("service.unit-folder-unknown");
+
 /// The message `service.unsupported`.
 pub const SERVICE_UNSUPPORTED: MessageKey = MessageKey::new("service.unsupported");
 
@@ -8856,6 +8859,15 @@ pub fn service_not_installed(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `service.program-not-found`.
+#[must_use]
+pub fn service_program_not_found(program: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.program-not-found"),
+        vec![("program", Value::Text(program.to_string()))],
+    )
+}
+
 /// The message `service.removed`.
 #[must_use]
 pub fn service_removed(name: impl std::fmt::Display) -> Message {
@@ -9171,6 +9183,15 @@ pub fn sub_issues_take_out_short(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("sub-issues.take-out-short"),
         vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `system.folder-unknown`.
+#[must_use]
+pub fn system_folder_unknown(program: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("system.folder-unknown"),
+        vec![("program", Value::Text(program.to_string()))],
     )
 }
 
@@ -12934,6 +12955,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The service {name} is not installed.",
     ),
     (
+        "service.program-not-found",
+        "The program {program} was not found on the search path (PATH). Install it, or add its folder to the search path, and run the command again.",
+    ),
+    (
         "service.removed",
         "The service {name} is removed. Your data stays where it is.",
     ),
@@ -12960,6 +12985,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "service.stop-timeout",
         "The service {name} did not stop in time. Stop it in the Services window and try again.",
+    ),
+    (
+        "service.unit-folder-unknown",
+        "systemd did not say where the units belong that an administrator installs, and Bugaboo does not guess it. Ask your system: systemd-path systemd-system-conf",
     ),
     (
         "service.unsupported",
@@ -13610,6 +13639,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sub-issues.take-out", "Take {key} out of the sub-issues"),
     ("sub-issues.take-out-short", "Take {key} out"),
     ("sub-issues.title", "Sub-issues"),
+    (
+        "system.folder-unknown",
+        "Windows did not say where its system folder is, and Bugaboo does not guess it, so it cannot start {program}.",
+    ),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),
     ("theme.device-resolved", "{device} ({theme})"),

@@ -6,7 +6,6 @@
 //! then talks to the service manager: it says when it runs and stops cleanly when asked to.
 
 use std::ffi::OsString;
-use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -28,6 +27,7 @@ use windows_service::service_manager::{ServiceManager, ServiceManagerAccess};
 use super::{Found, NAME, refused, tell_about_setup_code};
 use crate::cli::{ConfigArgs, load_settings, serve};
 use crate::data_folder::{ADMINISTRATORS_SID, DataFolder, OwnFiles, check_for_service};
+use crate::system::system_tool;
 use crate::{log, output};
 
 /// The Windows error numbers that are answered with a plain sentence.
@@ -88,8 +88,7 @@ fn explain(error: &ServiceError) -> anyhow::Error {
 /// in it (the setup code of the first start, which a service cannot print). The folders with
 /// secrets (`keys`, `tls`, `logs`) are made private to the service account again at every start.
 fn grant(data_dir: &std::path::Path) -> anyhow::Result<()> {
-    let system = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_owned());
-    let icacls = PathBuf::from(system).join("System32").join("icacls.exe");
+    let icacls = system_tool("icacls.exe").map_err(|said| refused(&said.render()))?;
     for permission in [
         format!("{}:(OI)(CI)F", account()),
         format!("*{ADMINISTRATORS_SID}:(OI)(CI)R"),
