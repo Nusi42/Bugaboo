@@ -5,7 +5,7 @@ use serde_json::{Map, Value as Json};
 use crate::fields::{Field, FieldKind, Operator, ReadableFields};
 use crate::span::Span;
 use crate::syntax::{
-    Comparison, Date, Decimal, Direction, Expr, FieldRef, Operand, ReadableId, Search, ShortName,
+    Comparison, Date, Decimal, Direction, Expr, FieldRef, IssueRef, Operand, ProjectRef, Search,
     SortKey, Steps, Test, Text, TimeWord, Unit,
 };
 
@@ -96,19 +96,19 @@ pub(super) fn read_expr(json: &Json) -> Read<Expr> {
             span: read_span(member(object, "span")?)?,
         }),
         "under" => Ok(Expr::Under {
-            id: read_readable_id(member(object, "id")?)?,
+            id: read_issue_ref(member(object, "id")?)?,
             span: read_span(member(object, "span")?)?,
         }),
         "blocks" => Ok(Expr::Blocks {
-            id: read_readable_id(member(object, "id")?)?,
+            id: read_issue_ref(member(object, "id")?)?,
             span: read_span(member(object, "span")?)?,
         }),
         "blocked_by" => Ok(Expr::BlockedBy {
-            id: read_readable_id(member(object, "id")?)?,
+            id: read_issue_ref(member(object, "id")?)?,
             span: read_span(member(object, "span")?)?,
         }),
         "connected_to" => Ok(Expr::ConnectedTo {
-            id: read_readable_id(member(object, "id")?)?,
+            id: read_issue_ref(member(object, "id")?)?,
             steps: option(member(object, "steps")?, read_steps)?,
             span: read_span(member(object, "span")?)?,
         }),
@@ -156,7 +156,7 @@ pub(super) fn read_test(json: &Json) -> Read<Test> {
             span: read_span(member(object, "span")?)?,
         }),
         "within" => Ok(Test::Within {
-            project: read_short_name(member(object, "project")?)?,
+            project: read_project_ref(member(object, "project")?)?,
             span: read_span(member(object, "span")?)?,
         }),
         other => unknown("Test", other),
@@ -189,7 +189,7 @@ pub(super) fn read_operand(json: &Json) -> Read<Operand> {
             span: read_span(member(object, "span")?)?,
         }),
         "issue" => Ok(Operand::Issue {
-            id: read_readable_id(member(object, "id")?)?,
+            id: read_issue_ref(member(object, "id")?)?,
             span: read_span(member(object, "span")?)?,
         }),
         "me" => Ok(Operand::Me {
@@ -219,17 +219,17 @@ pub(super) fn read_field_ref(json: &Json) -> Read<FieldRef> {
     })
 }
 
-pub(super) fn read_readable_id(json: &Json) -> Read<ReadableId> {
-    let object = object(json, "ReadableId")?;
-    Ok(ReadableId {
+pub(super) fn read_issue_ref(json: &Json) -> Read<IssueRef> {
+    let object = object(json, "IssueRef")?;
+    Ok(IssueRef {
         text: text(member(object, "text")?)?,
         span: read_span(member(object, "span")?)?,
     })
 }
 
-pub(super) fn read_short_name(json: &Json) -> Read<ShortName> {
-    let object = object(json, "ShortName")?;
-    Ok(ShortName {
+pub(super) fn read_project_ref(json: &Json) -> Read<ProjectRef> {
+    let object = object(json, "ProjectRef")?;
+    Ok(ProjectRef {
         text: text(member(object, "text")?)?,
         span: read_span(member(object, "span")?)?,
     })

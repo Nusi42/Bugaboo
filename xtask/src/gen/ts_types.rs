@@ -40,10 +40,10 @@ use crate::source::read_text;
 pub(crate) struct Serde {
     pub(crate) rename: Option<String>,
     pub(crate) rename_all: Option<String>,
-    default: bool,
-    skip_serializing_if: bool,
+    pub(crate) default: bool,
+    pub(crate) skip_serializing_if: bool,
     pub(crate) tag: Option<String>,
-    untagged: bool,
+    pub(crate) untagged: bool,
 }
 
 pub(crate) fn serde_of(attributes: &[Attribute]) -> anyhow::Result<Serde> {

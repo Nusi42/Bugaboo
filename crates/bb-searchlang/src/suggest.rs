@@ -220,8 +220,8 @@ fn items(
         Situation::MemberOf => vec![keyword(Keyword::Of, WordKind::Keyword)],
         Situation::BlockedBy | Situation::SortBy => vec![keyword(Keyword::By, WordKind::Keyword)],
         Situation::ConnectedTo => vec![keyword(Keyword::To, WordKind::Keyword)],
-        Situation::ShortName => vec![ask(AskKind::Projects, typed)],
-        Situation::ReadableId => vec![ask(AskKind::Issues, typed)],
+        Situation::ProjectRef => vec![ask(AskKind::Projects, typed)],
+        Situation::IssueRef => vec![ask(AskKind::Issues, typed)],
         Situation::Group => vec![ask(AskKind::Groups, typed)],
         Situation::Continue { closing } => {
             let mut next = vec![

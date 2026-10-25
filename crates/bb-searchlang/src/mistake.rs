@@ -113,8 +113,8 @@ fn expected(span: Span, situation: &Situation) -> Mistake {
             key::EXPECTED_MEMBER_OF,
             &[("of", word(Keyword::Of)), ("member", word(Keyword::Member))],
         ),
-        Situation::ShortName => with(key::EXPECTED_SHORT_NAME, &[]),
-        Situation::ReadableId => with(key::EXPECTED_ISSUE_ID, &[]),
+        Situation::ProjectRef => with(key::EXPECTED_SHORT_NAME, &[]),
+        Situation::IssueRef => with(key::EXPECTED_ISSUE_ID, &[]),
         Situation::BlockedBy => with(
             key::EXPECTED_BLOCKED_BY,
             &[

@@ -53,28 +53,28 @@ export type Expr =
   | {
       readonly type: "under";
       /** The issue. */
-      readonly id: ReadableId;
+      readonly id: IssueRef;
       /** The whole filter. */
       readonly span: Span;
     }
   | {
       readonly type: "blocks";
       /** The issue. */
-      readonly id: ReadableId;
+      readonly id: IssueRef;
       /** The whole filter. */
       readonly span: Span;
     }
   | {
       readonly type: "blocked_by";
       /** The issue. */
-      readonly id: ReadableId;
+      readonly id: IssueRef;
       /** The whole filter. */
       readonly span: Span;
     }
   | {
       readonly type: "connected_to";
       /** The issue. */
-      readonly id: ReadableId;
+      readonly id: IssueRef;
       /** How far the chain may go; `null` for as far as the limit allows. */
       readonly steps: Steps | null;
       /** The whole filter. */
@@ -149,7 +149,7 @@ export type Test =
   | {
       readonly type: "within";
       /** The short name of the project. */
-      readonly project: ShortName;
+      readonly project: ProjectRef;
       /** The whole test. */
       readonly span: Span;
     };
@@ -183,7 +183,7 @@ export type Operand =
   | {
       readonly type: "issue";
       /** The issue. */
-      readonly id: ReadableId;
+      readonly id: IssueRef;
       /** Where it stands. */
       readonly span: Span;
     }
@@ -217,7 +217,7 @@ export interface FieldRef {
 }
 
 /** An Issue ID: the short name of a project and a code (`WEB-142`, `WEB-K7Q2X`). */
-export interface ReadableId {
+export interface IssueRef {
   /** The ID. */
   readonly text: string;
   /** Where it stands. */
@@ -225,7 +225,7 @@ export interface ReadableId {
 }
 
 /** The short name of a project (`WEB`). */
-export interface ShortName {
+export interface ProjectRef {
   /** The short name. */
   readonly text: string;
   /** Where it stands. */

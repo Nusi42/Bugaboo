@@ -12,7 +12,7 @@ use crate::literal::is_short_name;
 use crate::situation::{ParseError, Reason, Situation};
 use crate::span::Span;
 use crate::syntax::{
-    Comparison, Direction, Expr, FieldRef, Operand, ReadableId, Search, ShortName, SortKey, Steps,
+    Comparison, Direction, Expr, FieldRef, IssueRef, Operand, ProjectRef, Search, SortKey, Steps,
     Test, Text, TimeWord,
 };
 use crate::words::{Keyword, Part, direction_phrase, starts_phrase, time_phrase, unit_of};
@@ -309,13 +309,13 @@ impl Parser<'_> {
         })
     }
 
-    fn readable_id(&mut self) -> Step<ReadableId> {
+    fn readable_id(&mut self) -> Step<IssueRef> {
         if let Some(TokenKind::Id(text)) = self.peek_kind(0) {
             let text = text.clone();
             let span = self.advance();
-            return Ok(ReadableId { text, span });
+            return Ok(IssueRef { text, span });
         }
-        self.fail(Situation::ReadableId)
+        self.fail(Situation::IssueRef)
     }
 
     /// A field: a plain word or a quoted text.
@@ -483,15 +483,15 @@ impl Parser<'_> {
         self.fail(Situation::Count)
     }
 
-    fn short_name(&mut self) -> Step<ShortName> {
+    fn short_name(&mut self) -> Step<ProjectRef> {
         if let Some(TokenKind::Word(text)) = self.peek_kind(0)
             && is_short_name(text)
         {
             let text = text.clone();
             let span = self.advance();
-            return Ok(ShortName { text, span });
+            return Ok(ProjectRef { text, span });
         }
-        self.fail(Situation::ShortName)
+        self.fail(Situation::ProjectRef)
     }
 
     /// The text of `contains` or the group of `member of`: quoted, or one word, number, day or ID.
@@ -538,7 +538,7 @@ impl Parser<'_> {
             Some(TokenKind::Id(text)) => {
                 let span = self.advance();
                 Operand::Issue {
-                    id: ReadableId { text, span },
+                    id: IssueRef { text, span },
                     span,
                 }
             }

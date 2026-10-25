@@ -62,28 +62,28 @@ pub enum Expr {
     /// The issues below an issue (`under WEB-7`).
     Under {
         /// The issue.
-        id: ReadableId,
+        id: IssueRef,
         /// The whole filter.
         span: Span,
     },
     /// The issues that an issue blocks (`blocks WEB-1`).
     Blocks {
         /// The issue.
-        id: ReadableId,
+        id: IssueRef,
         /// The whole filter.
         span: Span,
     },
     /// The issues that block an issue (`blocked by WEB-1`).
     BlockedBy {
         /// The issue.
-        id: ReadableId,
+        id: IssueRef,
         /// The whole filter.
         span: Span,
     },
     /// Every issue on a chain of relations from an issue (`connected to WEB-7 within 3 steps`).
     ConnectedTo {
         /// The issue.
-        id: ReadableId,
+        id: IssueRef,
         /// How far the chain may go; `null` for as far as the limit allows.
         steps: Option<Steps>,
         /// The whole filter.
@@ -161,7 +161,7 @@ pub enum Test {
     /// `within WEB`: the project and everything below it.
     Within {
         /// The short name of the project.
-        project: ShortName,
+        project: ProjectRef,
         /// The whole test.
         span: Span,
     },
@@ -209,7 +209,7 @@ pub enum Operand {
     /// An issue (`WEB-142`).
     Issue {
         /// The issue.
-        id: ReadableId,
+        id: IssueRef,
         /// Where it stands.
         span: Span,
     },
@@ -248,7 +248,7 @@ pub struct FieldRef {
 
 /// An Issue ID: the short name of a project and a code (`WEB-142`, `WEB-K7Q2X`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct ReadableId {
+pub struct IssueRef {
     /// The ID.
     pub text: String,
     /// Where it stands.
@@ -257,7 +257,7 @@ pub struct ReadableId {
 
 /// The short name of a project (`WEB`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct ShortName {
+pub struct ProjectRef {
     /// The short name.
     pub text: String,
     /// Where it stands.

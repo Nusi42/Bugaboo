@@ -11,8 +11,8 @@ use proptest::prelude::*;
 use serde as _;
 
 use bb_searchlang::{
-    Comparison, Date, Decimal, Direction, Expr, FieldRef, MAX_DEPTH, MAX_TEXT_BYTES, Operand,
-    ReadableId, Search, ShortName, SortKey, Span, Steps, Test, Text, TimeWord, Unit, parse, print,
+    Comparison, Date, Decimal, Direction, Expr, FieldRef, IssueRef, MAX_DEPTH, MAX_TEXT_BYTES,
+    Operand, ProjectRef, Search, SortKey, Span, Steps, Test, Text, TimeWord, Unit, parse, print,
     print_from_json, search_from_json,
 };
 
@@ -40,12 +40,12 @@ fn field() -> impl Strategy<Value = FieldRef> {
 
 /// An Issue ID by the rules of `bb-core`: a short name of 2 to 10 symbols, and a counting number or
 /// a random code of 4 to 8 symbols without I, L, O and U, with a letter.
-fn readable_id() -> impl Strategy<Value = ReadableId> {
+fn readable_id() -> impl Strategy<Value = IssueRef> {
     prop_oneof![
         "[A-Z][A-Z0-9]{1,9}-[1-9][0-9]{0,8}",
         "[A-Z][A-Z0-9]{1,9}-[A-HJKMNP-TV-Z][0-9A-HJKMNP-TV-Z]{3,7}",
     ]
-    .prop_map(|text| ReadableId { text, span: span() })
+    .prop_map(|text| IssueRef { text, span: span() })
 }
 
 fn number() -> impl Strategy<Value = Decimal> {
@@ -142,7 +142,7 @@ fn test() -> impl Strategy<Value = Test> {
             span: span()
         }),
         "[A-Z][A-Z0-9]{1,9}".prop_map(|text| Test::Within {
-            project: ShortName { text, span: span() },
+            project: ProjectRef { text, span: span() },
             span: span()
         }),
     ]
@@ -194,7 +194,7 @@ fn expression() -> impl Strategy<Value = Expr> {
 
 fn placeholder() -> Expr {
     Expr::Under {
-        id: ReadableId {
+        id: IssueRef {
             text: "AB-1".to_owned(),
             span: span(),
         },
@@ -295,7 +295,7 @@ fn around(filter: Expr) -> Search {
 /// `under` the issue with this ID, written as it is (a defect in it is the point).
 fn under(text: &str) -> Search {
     around(Expr::Under {
-        id: ReadableId {
+        id: IssueRef {
             text: text.to_owned(),
             span: span(),
         },
@@ -362,7 +362,7 @@ fn broken_combinations(good: &Expr) -> Vec<(&'static str, Search)> {
 fn broken_names() -> Vec<(&'static str, Search)> {
     let steps = |count| {
         around(Expr::ConnectedTo {
-            id: ReadableId {
+            id: IssueRef {
                 text: "AB-1".to_owned(),
                 span: span(),
             },
@@ -384,7 +384,7 @@ fn broken_names() -> Vec<(&'static str, Search)> {
         (
             "a project in lower case",
             due(Test::Within {
-                project: ShortName {
+                project: ProjectRef {
                     text: "web".to_owned(),
                     span: span(),
                 },
@@ -553,7 +553,7 @@ fn qry_03_a_tree_nested_deeper_than_the_parser_reads_has_no_text() {
 #[test]
 fn qry_03_a_tree_whose_text_is_too_long_has_no_text() {
     let filter = || Expr::Under {
-        id: ReadableId {
+        id: IssueRef {
             text: "AB-1".to_owned(),
             span: span(),
         },

@@ -36,9 +36,9 @@ pub(crate) enum Situation {
     /// After `member`: `of`.
     MemberOf,
     /// The short name of a project.
-    ShortName,
+    ProjectRef,
     /// An Issue ID.
-    ReadableId,
+    IssueRef,
     /// After `blocked`: `by`.
     BlockedBy,
     /// After `connected`: `to`.

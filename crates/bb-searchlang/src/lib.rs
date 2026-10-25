@@ -45,7 +45,7 @@ pub use printer::print;
 pub use span::Span;
 pub use suggest::{AskKind, Suggestion, Suggestions, WordKind, suggest};
 pub use syntax::{
-    Comparison, Date, Decimal, Direction, Expr, FieldRef, Operand, ReadableId, Search, ShortName,
+    Comparison, Date, Decimal, Direction, Expr, FieldRef, IssueRef, Operand, ProjectRef, Search,
     SortKey, Steps, Test, Text, TimeWord, Unit,
 };
 

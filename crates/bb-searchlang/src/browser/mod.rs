@@ -17,7 +17,7 @@ mod reader;
 
 use crate::fields::ReadableFields;
 use crate::literal::{is_short_name, issue_id};
-use crate::syntax::{Date, Decimal, Expr, Operand, ReadableId, Search, ShortName, Test};
+use crate::syntax::{Date, Decimal, Expr, IssueRef, Operand, ProjectRef, Search, Test};
 
 /// What is wrong with the JSON: in plain words, for the developer of the browser (a defect, never
 /// something a person caused).
@@ -137,7 +137,7 @@ fn decimal(number: Decimal) -> Result<(), Problem> {
     }
 }
 
-fn issue(id: &ReadableId) -> Result<(), Problem> {
+fn issue(id: &IssueRef) -> Result<(), Problem> {
     if issue_id(&id.text).as_deref() == Some(id.text.as_str()) {
         Ok(())
     } else {
@@ -145,7 +145,7 @@ fn issue(id: &ReadableId) -> Result<(), Problem> {
     }
 }
 
-fn short_name(name: &ShortName) -> Result<(), Problem> {
+fn short_name(name: &ProjectRef) -> Result<(), Problem> {
     if is_short_name(&name.text) {
         Ok(())
     } else {
