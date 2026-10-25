@@ -155,6 +155,10 @@ tokens {
     size "size-icon-small" "16px"
     size "size-list" "300px"
     size "size-details" "340px"
+    // The gap between the text of an issue and its Details, and the room both take at the end of the
+    // column: the offers to undo keep out of it (one rule for the page and for the offers).
+    size "gap-details" "$space-5"
+    size "size-details-room" "calc($size-details + $gap-details)"
     size "size-reading" "75ch"
     size "size-main" "780px"
     size "size-sheet-share" "85%"
@@ -3798,10 +3802,11 @@ part "undo-host[variant=over-page]" {
 }
 
 // The focus view of an issue has its Details at the end of the column: the offers stand in the room
-// the text has, so a long sentence wraps there and never reaches over them.
+// the text has (the column less the room of the Details, the same room the page leaves them), so a
+// long sentence wraps there and never reaches over them.
 part "undo-host[variant=wide]" {
     use "page-column-wide"
-    padding-inline-end "calc($size-details + $space-5)"
+    padding-inline-end "$size-details-room"
     box-sizing border-box
 }
 
@@ -3991,7 +3996,7 @@ part "issue-details-summary" {
 part "issue-body" {
     display flex
     align-items flex-start
-    gap "$space-5"
+    gap "$gap-details"
 }
 
 part "issue-body[variant=stacked]" {

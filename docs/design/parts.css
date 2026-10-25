@@ -3246,7 +3246,7 @@ body {
 
 [data-part="undo-host"][data-variant~="wide"] {
   max-width: none;
-  padding-inline-end: calc(var(--size-details) + var(--space-5));
+  padding-inline-end: var(--size-details-room);
   box-sizing: border-box;
 }
 
@@ -3442,7 +3442,7 @@ body {
 [data-part="issue-body"] {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-5);
+  gap: var(--gap-details);
 }
 
 [data-part="issue-body"][data-variant~="stacked"] {
