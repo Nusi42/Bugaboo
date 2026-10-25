@@ -3,7 +3,7 @@
 //!
 //! `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O, so a clock, a random source or a file
 //! read that sneaks in breaks the build for `wasm32-unknown-unknown`. This check builds them, and
-//! `bb-wasm`, which is the module itself. It also holds the `wasm-bindgen` program of
+//! the crates of the modules (`bb-wasm`, `bb-wasm-search`). It also holds the `wasm-bindgen` program of
 //! `tools/dev/tools.toml` to the version of the `wasm-bindgen` library in `Cargo.lock`: the two
 //! must be the same, or the glue does not fit the module. The size of the module (PERF-04) is
 //! measured in the browser build by PERF-BUNDLE.
@@ -15,10 +15,10 @@ use serde::Deserialize;
 
 use super::{Check, Context, Finding};
 use crate::tools::{self, TOOLS_PATH};
-use crate::wasm::{BINDGEN as LIBRARY, CRATE as MODULE_CRATE, TARGET};
+use crate::wasm::{BINDGEN as LIBRARY, MODULES, TARGET};
 
-/// The crates that must build for the browser.
-const CRATES: [&str; 4] = ["bb-core", "bb-searchlang", "bb-markdown", MODULE_CRATE];
+/// The crates that must build for the browser besides the crates of the modules.
+const CRATES: [&str; 3] = ["bb-core", "bb-searchlang", "bb-markdown"];
 
 /// The lockfile.
 const LOCK_PATH: &str = "Cargo.lock";
@@ -38,7 +38,9 @@ impl Check for ArchWasm {
             &std::fs::read_to_string(root.join(LOCK_PATH))
                 .with_context(|| format!("could not read {LOCK_PATH}"))?,
         )?;
-        findings.extend(check_packages(root, &CRATES)?);
+        let modules = MODULES.map(|module| module.crate_name);
+        let packages: Vec<&str> = CRATES.iter().copied().chain(modules).collect();
+        findings.extend(check_packages(root, &packages)?);
         Ok(findings)
     }
 }

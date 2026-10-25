@@ -1,0 +1,299 @@
+//! Suggestions: given the text and the place of the cursor, what may come next. The parser says
+//! what the grammar wants at that place (its `Situation`); this module turns that into words: the
+//! readable fields, the operators a field allows, the choices it offers and the words of
+//! the language. What only the server knows (people, groups, projects, issues) comes back as a
+//! request of its kind, which the search bar sends to the server (M5 WP-07).
+
+use serde::Serialize;
+
+use crate::fields::{Field, FieldKind, ReadableFields};
+use crate::lexer::{TokenKind, tokens};
+use crate::literal::{value_or_quoted, word_or_quoted};
+use crate::parser::{excess, parse};
+use crate::situation::Situation;
+use crate::span::Span;
+use crate::syntax::{Direction, TimeWord, Unit};
+use crate::words::{Keyword, direction_phrase, starts_phrase, unit_word};
+
+/// What to offer for the place of the cursor.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Suggestions {
+    /// The part of the text that a chosen word replaces: what is typed of the word, or the whole
+    /// quoted text the cursor stands in. Empty (start equals end) when nothing is typed yet.
+    pub replace: Span,
+    /// What may come, in the order to show it.
+    pub items: Vec<Suggestion>,
+}
+
+/// One offer.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Suggestion {
+    /// A word to put in the text, written the way the printer writes it (in quotes when it needs
+    /// them).
+    Word {
+        /// The text that replaces what is typed.
+        text: String,
+        /// What it is.
+        kind: WordKind,
+    },
+    /// A kind of value that only the server knows: the search bar asks for the ones that start
+    /// with what is typed.
+    Ask {
+        /// What to ask for.
+        what: AskKind,
+        /// What the names start with; empty for all.
+        starting_with: String,
+    },
+}
+
+/// What a suggested word is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WordKind {
+    /// A field.
+    Field,
+    /// What to ask of a field (`is not`, `contains`).
+    Operator,
+    /// A value of a field.
+    Value,
+    /// A word of the language that joins, orders or ends.
+    Keyword,
+    /// A helper (`under`, `blocks`, `connected to`).
+    Helper,
+    /// A direction of `sort by`.
+    Direction,
+    /// A sign: a bracket or a comma.
+    Sign,
+}
+
+/// What the server is asked for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AskKind {
+    /// People.
+    People,
+    /// Groups.
+    Groups,
+    /// Projects.
+    Projects,
+    /// Issues.
+    Issues,
+}
+
+/// The suggestions for `text` with the cursor at byte `cursor`.
+#[must_use]
+pub fn suggest(text: &str, cursor: usize, readable: &ReadableFields) -> Suggestions {
+    let mut cursor = cursor.min(text.len());
+    if excess(text).is_some() {
+        return Suggestions {
+            replace: Span::new(cursor, cursor),
+            items: Vec::new(),
+        };
+    }
+    while !text.is_char_boundary(cursor) {
+        cursor -= 1;
+    }
+    let found = tokens(text);
+    let quote = found.iter().find(|token| {
+        matches!(&token.kind, TokenKind::Quoted { closed, .. }
+            if token.span.start < cursor && (cursor < token.span.end || (!closed && cursor <= token.span.end)))
+    });
+    if let Some(quote) = quote {
+        let typed = &text[quote.span.start + 1..cursor];
+        return Suggestions {
+            replace: quote.span,
+            items: items(
+                parse(&text[..quote.span.start]).next,
+                typed,
+                readable,
+                Quoted::Yes,
+            ),
+        };
+    }
+    let partial = found.iter().find(|token| {
+        token.kind.is_chunk() && token.span.start < cursor && cursor <= token.span.end
+    });
+    let (start, replace) = partial.map_or((cursor, Span::new(cursor, cursor)), |token| {
+        (token.span.start, token.span)
+    });
+    Suggestions {
+        replace,
+        items: items(
+            parse(&text[..start]).next,
+            &text[start..cursor],
+            readable,
+            Quoted::No,
+        ),
+    }
+}
+
+/// Whether the cursor stands inside quotes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Quoted {
+    Yes,
+    No,
+}
+
+/// Whether `word` starts with `typed`, in any case.
+fn starts_with(word: &str, typed: &str) -> bool {
+    word.to_lowercase().starts_with(&typed.to_lowercase())
+}
+
+fn word(text: String, kind: WordKind) -> Suggestion {
+    Suggestion::Word { text, kind }
+}
+
+/// The offers for a situation. `typed` is what is typed of the word already.
+fn items(
+    situation: Option<Situation>,
+    typed: &str,
+    readable: &ReadableFields,
+    quoted: Quoted,
+) -> Vec<Suggestion> {
+    let Some(situation) = situation else {
+        return Vec::new();
+    };
+    let keyword = |keyword: Keyword, kind| word(keyword.text().to_owned(), kind);
+    let sign = |text: &str| word(text.to_owned(), WordKind::Sign);
+    let fields = || {
+        readable
+            .fields
+            .iter()
+            .map(|field| word(word_or_quoted(&field.word), WordKind::Field))
+    };
+    let helpers = || {
+        [
+            word(Keyword::Under.text().to_owned(), WordKind::Helper),
+            word(Keyword::Blocks.text().to_owned(), WordKind::Helper),
+            word(
+                format!("{} {}", Keyword::Blocked.text(), Keyword::By.text()),
+                WordKind::Helper,
+            ),
+            word(
+                format!("{} {}", Keyword::Connected.text(), Keyword::To.text()),
+                WordKind::Helper,
+            ),
+        ]
+    };
+    let sort = || {
+        word(
+            format!("{} {}", Keyword::Sort.text(), Keyword::By.text()),
+            WordKind::Keyword,
+        )
+    };
+    let offered: Vec<Suggestion> = match situation {
+        Situation::Start => fields()
+            .chain([keyword(Keyword::Not, WordKind::Keyword), sign("(")])
+            .chain(helpers())
+            .chain([sort()])
+            .collect(),
+        Situation::Filter => fields()
+            .chain([keyword(Keyword::Not, WordKind::Keyword), sign("(")])
+            .chain(helpers())
+            .collect(),
+        Situation::Operator { field } => readable.field(&field).map_or_else(Vec::new, |field| {
+            field
+                .operators
+                .iter()
+                .map(|operator| word(operator.text(), WordKind::Operator))
+                .collect()
+        }),
+        Situation::IsRest { field } => [
+            keyword(Keyword::Not, WordKind::Operator),
+            keyword(Keyword::Empty, WordKind::Operator),
+        ]
+        .into_iter()
+        .chain(values(readable.field(&field), typed))
+        .collect(),
+        Situation::IsNotRest { field } => [keyword(Keyword::Empty, WordKind::Operator)]
+            .into_iter()
+            .chain(values(readable.field(&field), typed))
+            .collect(),
+        Situation::Value { field } => values(readable.field(&field), typed),
+        Situation::InRest => vec![keyword(Keyword::Last, WordKind::Operator), sign("(")],
+        Situation::ListNext => vec![sign(","), sign(")")],
+        Situation::Unit => [Unit::Day, Unit::Week, Unit::Month]
+            .map(|unit| keyword(unit_word(unit, 2), WordKind::Keyword))
+            .into(),
+        Situation::StepsWord => vec![keyword(Keyword::Steps, WordKind::Keyword)],
+        Situation::MemberOf => vec![keyword(Keyword::Of, WordKind::Keyword)],
+        Situation::BlockedBy | Situation::SortBy => vec![keyword(Keyword::By, WordKind::Keyword)],
+        Situation::ConnectedTo => vec![keyword(Keyword::To, WordKind::Keyword)],
+        Situation::ProjectRef => vec![ask(AskKind::Projects, typed)],
+        Situation::IssueRef => vec![ask(AskKind::Issues, typed)],
+        Situation::Group => vec![ask(AskKind::Groups, typed)],
+        Situation::Continue { closing } => {
+            let mut next = vec![
+                keyword(Keyword::And, WordKind::Keyword),
+                keyword(Keyword::Or, WordKind::Keyword),
+            ];
+            next.push(if closing { sign(")") } else { sort() });
+            next
+        }
+        Situation::SortField => fields().collect(),
+        Situation::SortAfterField => Direction::ALL
+            .map(|direction| word(direction.text(), WordKind::Direction))
+            .into_iter()
+            .chain([sign(",")])
+            .collect(),
+        Situation::SortAfterKey => vec![sign(",")],
+        Situation::Direction { typed: words } => next_direction_words(&words),
+        Situation::Count | Situation::Text => Vec::new(),
+    };
+    offered
+        .into_iter()
+        .filter(|offer| match offer {
+            // Inside quotes only the values fit; their quotes belong to what replaces the text.
+            Suggestion::Word { text, kind } => {
+                (quoted == Quoted::No || *kind == WordKind::Value)
+                    && starts_with(text.trim_matches('"'), typed)
+            }
+            Suggestion::Ask { .. } => true,
+        })
+        .collect()
+}
+
+fn ask(what: AskKind, typed: &str) -> Suggestion {
+    Suggestion::Ask {
+        what,
+        starting_with: typed.to_owned(),
+    }
+}
+
+/// The values a field offers: the choices of its list, `me`, the time words, or a request of the
+/// server.
+fn values(field: Option<&Field>, typed: &str) -> Vec<Suggestion> {
+    let Some(field) = field else {
+        return Vec::new();
+    };
+    let value = |text: String| word(text, WordKind::Value);
+    match field.kind {
+        FieldKind::Choice => field
+            .choices
+            .iter()
+            .map(|choice| value(value_or_quoted(choice)))
+            .collect(),
+        FieldKind::Person => vec![
+            value(Keyword::Me.text().to_owned()),
+            ask(AskKind::People, typed),
+        ],
+        FieldKind::Project => vec![ask(AskKind::Projects, typed)],
+        FieldKind::Issue => vec![ask(AskKind::Issues, typed)],
+        FieldKind::Date => TimeWord::ALL.map(|word| value(word.text())).into(),
+        FieldKind::Text | FieldKind::Number => Vec::new(),
+    }
+}
+
+/// The next word of each direction that starts with the words typed so far.
+fn next_direction_words(typed: &[String]) -> Vec<Suggestion> {
+    let typed: Vec<&str> = typed.iter().map(String::as_str).collect();
+    Direction::ALL
+        .iter()
+        .filter_map(|direction| {
+            let phrase = direction_phrase(*direction);
+            (starts_phrase(phrase, &typed) && phrase.len() > typed.len())
+                .then(|| word(phrase[typed.len()].text(), WordKind::Direction))
+        })
+        .collect()
+}

@@ -130,10 +130,9 @@ impl Repo {
         link_directory(&self.root.join("node_modules"), &dir.join("node_modules"));
         // The browser code imports the WebAssembly glue that `cargo xtask wasm` makes; Git does not
         // hold it, so the export links it like `node_modules`.
-        link_directory(
-            &crate::wasm::out_dir(&self.root),
-            &crate::wasm::out_dir(&dir),
-        );
+        for module in crate::wasm::MODULES {
+            link_directory(&module.dir(&self.root), &module.dir(&dir));
+        }
         // Tools that look for `.git` to find the root of the project (rumdl and others) must
         // find the export, not the real repository above `target/`, or their path rules would
         // see `target/staged-tree/...` (M1-F17). An empty folder is enough for that; Git itself

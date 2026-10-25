@@ -14,9 +14,13 @@ pub(crate) mod messages;
 pub(crate) mod messages_rust;
 pub(crate) mod privacy;
 pub(crate) mod roles;
+pub(crate) mod search_reader;
+pub(crate) mod search_types;
+pub(crate) mod search_vectors;
 pub(crate) mod theme;
 pub(crate) mod theme_file;
 pub(crate) mod theme_selector;
+pub(crate) mod ts_types;
 pub(crate) mod word_types;
 pub(crate) mod word_vectors;
 
@@ -57,7 +61,7 @@ pub(crate) const DOCS: &str = "docs";
 /// Every generator, once. A generated file in the repository is written by one of these;
 /// DOC-GENERATED compares all of them with the disk, `cargo xtask gen <name>` writes one, and
 /// META-COVERAGE counts their paths as generated.
-pub(crate) const GENERATORS: [Generator; 10] = [
+pub(crate) const GENERATORS: [Generator; 13] = [
     Generator {
         name: DOCS,
         help: "The commentable HTML pages from the Markdown sources and the check catalogue.",
@@ -111,6 +115,24 @@ pub(crate) const GENERATORS: [Generator; 10] = [
         help: "The test vectors of the wording of values (tools/testdata/value-words.json), from the code of bb-core that the server runs.",
         paths: || vec![word_vectors::OUTPUT],
         generate: |_, _| word_vectors::generate(),
+    },
+    Generator {
+        name: "search-types",
+        help: "The TypeScript types of the input and the output of the search language in bb-wasm-search, from the Rust types of bb-searchlang.",
+        paths: || vec![search_types::OUTPUT],
+        generate: |repo, _| search_types::generate(repo),
+    },
+    Generator {
+        name: "search-reader",
+        help: "The Rust code that reads a tree and the readable fields of bb-searchlang from JSON in the module of the browser, from the types themselves.",
+        paths: || vec![search_reader::OUTPUT],
+        generate: |repo, _| search_reader::generate(repo),
+    },
+    Generator {
+        name: "search-vectors",
+        help: "The test vectors of the search language (tools/testdata/search-vectors.json), from the code of bb-searchlang that the server runs.",
+        paths: || vec![search_vectors::OUTPUT],
+        generate: |repo, _| search_vectors::generate(repo),
     },
     Generator {
         name: "load-book",

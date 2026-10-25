@@ -12,6 +12,7 @@ bb-api-words = { path = "../crates/bb-api-words" }
 bb-core = { path = "../crates/bb-core", features = ["zone-data"] }
 bb-dev-words = { path = "../crates/bb-dev-words" }
 bb-policy = { path = "../crates/bb-policy" }
+bb-searchlang = { path = "../crates/bb-searchlang" }
 brotli = { workspace = true }
 clap = { workspace = true }
 ctrlc = { workspace = true }

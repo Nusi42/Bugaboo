@@ -13,7 +13,7 @@ A search typed by a person becomes one parameterized statement that finds exactl
 
 ## Tasks
 
-1. **The field catalogue for a person** (`bb-app`): built from the field definitions, the person's field levels (`Authorized<T>`, `field_level`) and *Who sees people*. It is the catalogue the checker of WP-02 gets, built once per request; the browser asks for the same catalogue through a route, so both sides check against the same fields.
+1. **The readable fields of a person** (`bb-app`): built from the field definitions, the person's field levels (`Authorized<T>`, `field_level`) and *Who sees people*. They are the fields the checker of WP-02 gets, built once per request; the browser asks for the same fields through a route, so both sides check against the same fields.
 2. **The compiler** (`bb-store`): the checked tree → one statement through the query builder, with the visibility predicate of ADR-0004 in it (sees the project, and *See issues* or reported it), a join per own field used (ADR-0006), relative times turned into moments in the person's region zone, the helpers (`member of`, `within`, `under`, `blocks`, `blocked by`, `connected to … within N steps` as a recursive query with the step limit), and `contains` through the port of WP-05 (task 6).
 3. **Sorting and paging:** `sort by` any readable field, with the ID as the last key, so issues with the same value keep one order and a cursor never skips or repeats one (M3-F24). The cursor is opaque and carries the sort values. Without `sort by`: newest first, or with text the order of ADR-0016 (amendment M5).
 4. **Counts and groups:** the count line and the count per group (UX §4.2) come from the same compiled search; a group by a field the person may not read is refused like the field.

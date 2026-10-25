@@ -196,13 +196,10 @@ impl FromStr for ReadableId {
     fn from_str(text: &str) -> Result<Self, InvalidReadableId> {
         let (short_name, code) = text.split_once(KEY_SEPARATOR).ok_or(InvalidReadableId)?;
         let capitals = text.to_ascii_uppercase();
-        let (short_name_capitals, code_capitals) = (
-            &capitals[..short_name.len()],
-            &capitals[short_name.len() + KEY_SEPARATOR.len_utf8()..],
-        );
+        let code_capitals = &capitals[short_name.len() + KEY_SEPARATOR.len_utf8()..];
         debug_assert_eq!(code.len(), code_capitals.len());
         Ok(Self {
-            short_name: ShortName::new(short_name_capitals).map_err(|_| InvalidReadableId)?,
+            short_name: short_name.parse().map_err(|_| InvalidReadableId)?,
             code: IssueCode::new(code_capitals).map_err(|_| InvalidReadableId)?,
         })
     }

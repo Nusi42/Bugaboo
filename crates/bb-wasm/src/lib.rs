@@ -1,4 +1,6 @@
-//! WebAssembly bindings for the search language, Markdown and validation (ADR-0005, ADR-0011).
+//! WebAssembly bindings for Markdown, the wording of changes and notifications and the rule of the
+//! same name (ADR-0011, ADR-0033). The search language has a module of its own, `bb-wasm-search`
+//! (ADR-0005, amendment M5).
 //!
 //! This crate only passes calls through to the pure crates, so the browser runs the very code the
 //! server runs. It holds no rule of its own. The browser loads the built module (`cargo xtask

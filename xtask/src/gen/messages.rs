@@ -225,7 +225,12 @@ pub(crate) fn source_pairs(repo: &Repo) -> anyhow::Result<Vec<(String, String)>>
 
 /// The paths [`generate`] writes.
 pub(crate) fn output_paths() -> Vec<&'static str> {
-    let mut paths = vec![TYPES_OUTPUT, ALL_OUTPUT, messages_rust::OUTPUT];
+    let mut paths = vec![
+        TYPES_OUTPUT,
+        ALL_OUTPUT,
+        messages_rust::OUTPUT,
+        messages_rust::SEARCH_OUTPUT,
+    ];
     paths.extend(PARTS.iter().map(|part| part.path));
     paths
 }
@@ -430,6 +435,10 @@ fn generate_from(
         Generated::new(
             messages_rust::OUTPUT,
             messages_rust::generate(repo, &all_messages)?,
+        ),
+        Generated::new(
+            messages_rust::SEARCH_OUTPUT,
+            messages_rust::generate_search_keys(repo, &all_messages)?,
         ),
     ];
     for part in &PARTS {

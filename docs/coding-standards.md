@@ -18,7 +18,7 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
 |-------------------------------|----------------------------------|------------------------------------------------------|
 | API types & endpoints         | Rust handler/DTO definitions     | OpenAPI spec → generated TypeScript client & types   |
 | Permissions catalogue         | One Rust module                  | API, admin UI, docs, policy tests                    |
-| BQL grammar                   | Rust parser crate                | Server + WebAssembly build for the editor            |
+| Search language               | Rust parser crate                | Server + WebAssembly build for the editor            |
 | Validation rules              | Server-side field/schema definitions | Exported schema drives instant client-side feedback (the server still decides) |
 | Design tokens                 | Token schema                     | CSS variables, TS types, theme editor, contrast checker |
 | User-facing strings           | One message catalog              | UI and server messages, all looked up by key         |

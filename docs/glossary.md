@@ -285,6 +285,7 @@ Rules:
 | Assignment          | One row of *Who has which role*: a person or group, a role or *No access*, and where it counts. Screens say "Ana has the role Team member in Website" |
 | Permission catalogue | The one list of permissions in `bb-policy`, each with its sentence, topic, where it counts and kind |
 | Field catalogue     | The one list of built-in fields in `bb-core` that field permissions apply to |
+| Readable fields     | The fields one person may read, which the caller passes to the search language (`ReadableFields`); a field outside them is as unknown as one that does not exist. Not the *field catalogue* (the built-in fields of `bb-core`) |
 | `PersonRef`         | How every person in an answer is shown, worked out for the viewer: name, role label, *Someone* or *Former user* |
 | Readable ID         | The code name (`ReadableId`) of the *Issue ID* people see (`WEB-142`); `IssueId` is the stored key that never changes |
 | Edit notice         | The code name (`EditNotice`, `EditNotices`) of the note a person gets about their text: *Ask … to finish*, *Edit anyway*, given back |

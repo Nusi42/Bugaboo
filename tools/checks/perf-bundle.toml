@@ -8,7 +8,12 @@ manifest = ".vite/manifest.json"
 # quality is the server's (tools/dev/compression.json).
 budget_bytes = 250000
 
-# The most the WebAssembly modules of the build may have together, after Brotli at the same quality
-# (architecture §8: for the search language and Markdown together). The browser fetches them only
-# when a preview or an editor opens.
-wasm_budget_bytes = 150000
+# The most each WebAssembly module of the build may have, after Brotli at the same quality, by the
+# name of its file without the hash (a list should not fetch the module of Markdown, nor an editor
+# the search language: each module has its own line, ADR-0005 amendment M5). The browser fetches a
+# module only when its feature first opens. A module without a line here fails the check.
+[wasm_budget_bytes]
+# Markdown, the wording of changes and notifications, the rule of the same name (architecture §8).
+bb_wasm_bg = 150000
+# The search language, measured at 88.9 KB (M5 WP-02, with the Issue ID rules of bb-core); ADR-0005 allows at most 100 KB.
+bb_wasm_search_bg = 90000

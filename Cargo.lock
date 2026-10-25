@@ -649,6 +649,13 @@ dependencies = [
 [[package]]
 name = "bb-searchlang"
 version = "0.0.0"
+dependencies = [
+ "bb-core",
+ "bb-searchlang",
+ "proptest",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "bb-server"
@@ -730,6 +737,16 @@ version = "0.0.0"
 dependencies = [
  "bb-core",
  "bb-markdown",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "bb-wasm-search"
+version = "0.0.0"
+dependencies = [
+ "bb-searchlang",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -5572,6 +5589,7 @@ dependencies = [
  "bb-core",
  "bb-dev-words",
  "bb-policy",
+ "bb-searchlang",
  "brotli 9.0.0",
  "clap",
  "ctrlc",

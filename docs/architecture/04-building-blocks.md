@@ -22,7 +22,8 @@ bugaboo/
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-dev-words/       the words the developer tools, the tests and xtask share: databases, test variables, the sample layout
-│   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation, the wording of changes and notifications and the rule of the same name (bb-core)
+│   ├── bb-wasm/            WebAssembly bindings for markdown, the wording of changes and notifications and the rule of the same name (bb-core); a module of its own
+│   ├── bb-wasm-search/     WebAssembly bindings for searchlang; a module of its own, fetched when a search bar first opens (ADR-0005, amendment M5)
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
 │   ├── bb-load-check/      the invariants after a run of many people at once, written once; developer tool and test support (never shipped)
@@ -36,7 +37,8 @@ bugaboo/
 │   └── packages/
 │       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
 │       ├── ui/             shared components on React Aria + the generated style sheet; depends on api-client for the generated choices and defaults of the settings (the look of a person), and loads `wasm` when a Markdown preview opens
-│       ├── wasm/           loads the module of bb-wasm (Markdown preview; the rule of the same name for the draft of a workflow) (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
+│       ├── wasm/           loads the module of bb-wasm (Markdown preview; the wording of changes; the rule of the same name for the draft of a workflow) (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
+│       ├── wasm-search/    loads the module of bb-wasm-search (the search bar: parse, print, check and suggest; places counted in the units of the string; the types are generated from the Rust types, `cargo xtask gen search-types`)
 │       └── messages/       generated, typed message keys
 ├── docs/                   development docs (this)
 └── userDocs/               user and admin docs
@@ -64,6 +66,7 @@ flowchart TB
   notify["bb-notify"]
   jobs["bb-jobs"]
   wasm["bb-wasm"]
+  wasmsearch["bb-wasm-search"]
   testing["bb-testing<br/>database test harness"]
   sample["bb-sample<br/>sample organization"]
   loadcheck["bb-load-check<br/>invariants after a run"]
@@ -77,6 +80,7 @@ flowchart TB
   policy --> core
   core -.-> macros
   policy -.-> macros
+  search --> core
   store -. implements ports .-> app
   files -. implements ports .-> app
   ai -. implements ports .-> app
@@ -84,7 +88,8 @@ flowchart TB
   store --> search & policy & core
   files --> core
   notify --> core
-  wasm --> search & md & core
+  wasm --> md & core
+  wasmsearch --> search
   store -. tests only .-> testing
   server -. tests only .-> words
   testing --> devwords
@@ -100,7 +105,7 @@ flowchart TB
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
 
-1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that; `bb-core` and `bb-policy` use `bb-macros` for derives at compile time only), so they compile to WebAssembly.
+1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (markdown not even that; `bb-searchlang` does, for the rules of an Issue ID and of a short name, which are defined once in `bb-core` and which the server reads the same way; `bb-core` and `bb-policy` use `bb-macros` for derives at compile time only), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
 4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample`; the developer program `bb-load-check` (M3 WP-10) depends on `bb-store` to read the database of a load run, and wires no use case (`cargo xtask check only ARCH-HTTP-EDGE`).
@@ -124,7 +129,11 @@ Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like 
 
 ### bb-searchlang
 
-Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes a **field catalogue** (the fields this person may read), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree.
+Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes the **readable fields** (the fields this person may read, not to be mixed up with the field catalogue of `bb-core`), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree. The final grammar, the limits and the canonical text are in [§7, Search language](07-cross-cutting.md#search-language-adr-0005). It depends on `bb-core` for the rules of an Issue ID and of a short name. The tree and the readable fields cross into the browser module as JSON, which the feature `browser` (only the module turns it on) reads with a reader that is written from the Rust types (`cargo xtask gen search-reader`): deriving `Deserialize` made the module bigger than its budget, and a reader written by hand would be a second definition of the tree. The test vectors (`vectors.rs`) are what the browser's unit tests run the module on.
+
+### bb-wasm and bb-wasm-search
+
+Two modules, one way: each has its own crate (the bindings only pass calls through to the pure crates, they hold no rule), its own package in `web/packages/` that loads it when its feature first opens, and its own budget in `tools/checks/perf-bundle.toml` (PERF-BUNDLE, by the name of the file without the hash). A list should not fetch the module of Markdown, nor an editor the search language. `cargo xtask wasm` builds both (the list `MODULES` in `xtask/src/wasm.rs`).
 
 ### bb-app — use cases by feature
 

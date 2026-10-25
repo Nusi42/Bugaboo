@@ -88,6 +88,7 @@ mod test_connections;
 mod test_edit_locks;
 mod test_issue_ids;
 pub(crate) mod test_sample_data;
+mod test_search_roundtrip;
 mod test_uploads;
 mod test_workflows;
 mod theme_only;
@@ -252,6 +253,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(test_connections::TestConnections),
         Box::new(test_edit_locks::TestEditLocks),
         Box::new(test_issue_ids::TestIssueIds),
+        Box::new(test_search_roundtrip::TestSearchRoundtrip),
         Box::new(test_sample_data::TestSampleData),
         Box::new(test_uploads::TestUploads),
         Box::new(perf_n1::PerfN1),

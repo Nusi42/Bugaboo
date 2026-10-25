@@ -48,3 +48,4 @@ desktop.ini
 
 # The WebAssembly module and its glue, made by `cargo xtask wasm` (ADR-0011)
 /web/packages/wasm/generated/
+/web/packages/wasm-search/generated/

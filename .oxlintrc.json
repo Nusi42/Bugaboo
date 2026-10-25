@@ -49,6 +49,14 @@
       "rules": { "max-lines": "off", "import/max-dependencies": "off" }
     },
     {
+      // The generators of `cargo xtask gen` write the types of the Rust code into files called
+      // `*.generated.ts` (the search language, the wording, the book of a load run), longer with
+      // every type. Nobody edits them, and a file over about 400 lines needs a reason
+      // (coding-standards section 2): this is it.
+      "files": ["**/*.generated.ts"],
+      "rules": { "max-lines": "off" }
+    },
+    {
       // `cargo xtask gen theme` writes the names of the tokens, the parts and the words of each
       // part into this one file, longer with every component. Nobody edits it, and a file over
       // about 400 lines needs a reason (coding-standards section 2): this is it.

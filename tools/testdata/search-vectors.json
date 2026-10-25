@@ -1,0 +1,5085 @@
+{
+  "readable_fields": {
+    "fields": [
+      {
+        "word": "project",
+        "kind": "project",
+        "operators": ["is", "is_not", "in", "within", "is_empty", "is_not_empty"],
+        "choices": []
+      },
+      {
+        "word": "title",
+        "kind": "text",
+        "operators": ["is", "is_not", "contains", "is_empty", "is_not_empty"],
+        "choices": []
+      },
+      {
+        "word": "description",
+        "kind": "text",
+        "operators": ["is", "is_not", "contains", "is_empty", "is_not_empty"],
+        "choices": []
+      },
+      {
+        "word": "status",
+        "kind": "choice",
+        "operators": [
+          "is",
+          "is_not",
+          "in",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": ["Open", "In progress", "Done"]
+      },
+      {
+        "word": "statusGroup",
+        "kind": "choice",
+        "operators": [
+          "is",
+          "is_not",
+          "in",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": ["To do", "In progress", "Done"]
+      },
+      {
+        "word": "priority",
+        "kind": "choice",
+        "operators": [
+          "is",
+          "is_not",
+          "in",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": ["lowest", "low", "normal", "high", "highest"]
+      },
+      {
+        "word": "tag",
+        "kind": "choice",
+        "operators": [
+          "is",
+          "is_not",
+          "in",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": []
+      },
+      {
+        "word": "assignedTo",
+        "kind": "person",
+        "operators": ["is", "is_not", "in", "member_of", "is_empty", "is_not_empty"],
+        "choices": []
+      },
+      {
+        "word": "reportedBy",
+        "kind": "person",
+        "operators": ["is", "is_not", "in", "member_of", "is_empty", "is_not_empty"],
+        "choices": []
+      },
+      {
+        "word": "parent",
+        "kind": "issue",
+        "operators": ["is", "is_not", "in", "is_empty", "is_not_empty"],
+        "choices": []
+      },
+      {
+        "word": "created",
+        "kind": "date",
+        "operators": [
+          "is",
+          "is_not",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "in_last",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": []
+      },
+      {
+        "word": "changed",
+        "kind": "date",
+        "operators": [
+          "is",
+          "is_not",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "in_last",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": []
+      },
+      {
+        "word": "due",
+        "kind": "date",
+        "operators": [
+          "is",
+          "is_not",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "in_last",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": []
+      },
+      {
+        "word": "estimate",
+        "kind": "number",
+        "operators": [
+          "is",
+          "is_not",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": []
+      },
+      {
+        "word": "storyPoints",
+        "kind": "number",
+        "operators": [
+          "is",
+          "is_not",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "text": "project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "project",
+                  "span": {
+                    "start": 0,
+                    "end": 7
+                  }
+                },
+                "test": {
+                  "type": "within",
+                  "project": {
+                    "text": "WEB",
+                    "span": {
+                      "start": 15,
+                      "end": 18
+                    }
+                  },
+                  "span": {
+                    "start": 8,
+                    "end": 18
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 18
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "statusGroup",
+                  "span": {
+                    "start": 23,
+                    "end": 34
+                  }
+                },
+                "test": {
+                  "type": "is_not",
+                  "value": {
+                    "type": "text",
+                    "text": "Done",
+                    "span": {
+                      "start": 42,
+                      "end": 46
+                    }
+                  },
+                  "span": {
+                    "start": 35,
+                    "end": 46
+                  }
+                },
+                "span": {
+                  "start": 23,
+                  "end": 46
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "assignedTo",
+                  "span": {
+                    "start": 51,
+                    "end": 61
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "me",
+                    "span": {
+                      "start": 65,
+                      "end": 67
+                    }
+                  },
+                  "span": {
+                    "start": 62,
+                    "end": 67
+                  }
+                },
+                "span": {
+                  "start": 51,
+                  "end": 67
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "changed",
+                  "span": {
+                    "start": 72,
+                    "end": 79
+                  }
+                },
+                "test": {
+                  "type": "in_last",
+                  "count": 7,
+                  "unit": "day",
+                  "span": {
+                    "start": 80,
+                    "end": 94
+                  }
+                },
+                "span": {
+                  "start": 72,
+                  "end": 94
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 94
+            }
+          },
+          "sort": [
+            {
+              "field": {
+                "word": "priority",
+                "span": {
+                  "start": 103,
+                  "end": 111
+                }
+              },
+              "direction": "highest_first",
+              "span": {
+                "start": 103,
+                "end": 126
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 126
+          }
+        },
+        "canonical": "project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "",
+      "answer": {
+        "search": {
+          "filter": null,
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 0
+          }
+        },
+        "canonical": "",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "sort by due, oldest first, title, A to Z",
+      "answer": {
+        "search": {
+          "filter": null,
+          "sort": [
+            {
+              "field": {
+                "word": "due",
+                "span": {
+                  "start": 8,
+                  "end": 11
+                }
+              },
+              "direction": "oldest_first",
+              "span": {
+                "start": 8,
+                "end": 25
+              }
+            },
+            {
+              "field": {
+                "word": "title",
+                "span": {
+                  "start": 27,
+                  "end": 32
+                }
+              },
+              "direction": "a_to_z",
+              "span": {
+                "start": 27,
+                "end": 40
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 40
+          }
+        },
+        "canonical": "sort by due, oldest first, title, A to Z",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "status is Open",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "Open",
+                "span": {
+                  "start": 10,
+                  "end": 14
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 14
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 14
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 14
+          }
+        },
+        "canonical": "status is Open",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "status IS NOT \"In progress\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is_not",
+              "value": {
+                "type": "text",
+                "text": "In progress",
+                "span": {
+                  "start": 14,
+                  "end": 27
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 27
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 27
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 27
+          }
+        },
+        "canonical": "status is not \"In progress\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "status in (Open, \"In progress\")",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "in",
+              "values": [
+                {
+                  "type": "text",
+                  "text": "Open",
+                  "span": {
+                    "start": 11,
+                    "end": 15
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "In progress",
+                  "span": {
+                    "start": 17,
+                    "end": 30
+                  }
+                }
+              ],
+              "span": {
+                "start": 7,
+                "end": 31
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 31
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 31
+          }
+        },
+        "canonical": "status in (Open, \"In progress\")",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "priority >= high",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "priority",
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "greater_or_equal",
+              "value": {
+                "type": "text",
+                "text": "high",
+                "span": {
+                  "start": 12,
+                  "end": 16
+                }
+              },
+              "span": {
+                "start": 9,
+                "end": 16
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 16
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 16
+          }
+        },
+        "canonical": "priority >= high",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "estimate <= 2.50 or estimate > 10",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "or",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "estimate",
+                  "span": {
+                    "start": 0,
+                    "end": 8
+                  }
+                },
+                "test": {
+                  "type": "compare",
+                  "operator": "less_or_equal",
+                  "value": {
+                    "type": "number",
+                    "number": {
+                      "value": 25,
+                      "scale": 1
+                    },
+                    "span": {
+                      "start": 12,
+                      "end": 16
+                    }
+                  },
+                  "span": {
+                    "start": 9,
+                    "end": 16
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 16
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "estimate",
+                  "span": {
+                    "start": 20,
+                    "end": 28
+                  }
+                },
+                "test": {
+                  "type": "compare",
+                  "operator": "greater",
+                  "value": {
+                    "type": "number",
+                    "number": {
+                      "value": 10,
+                      "scale": 0
+                    },
+                    "span": {
+                      "start": 31,
+                      "end": 33
+                    }
+                  },
+                  "span": {
+                    "start": 29,
+                    "end": 33
+                  }
+                },
+                "span": {
+                  "start": 20,
+                  "end": 33
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 33
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 33
+          }
+        },
+        "canonical": "estimate <= 2.5 or estimate > 10",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "title contains \"crash on save\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "title",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "contains",
+              "text": {
+                "text": "crash on save",
+                "span": {
+                  "start": 15,
+                  "end": 30
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 30
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 30
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 30
+          }
+        },
+        "canonical": "title contains \"crash on save\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "title contains crash",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "title",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "contains",
+              "text": {
+                "text": "crash",
+                "span": {
+                  "start": 15,
+                  "end": 20
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 20
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 20
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 20
+          }
+        },
+        "canonical": "title contains \"crash\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "assignedTo member of \"Backend\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "assignedTo",
+              "span": {
+                "start": 0,
+                "end": 10
+              }
+            },
+            "test": {
+              "type": "member_of",
+              "group": {
+                "text": "Backend",
+                "span": {
+                  "start": 21,
+                  "end": 30
+                }
+              },
+              "span": {
+                "start": 11,
+                "end": 30
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 30
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 30
+          }
+        },
+        "canonical": "assignedTo member of \"Backend\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "assignedTo is empty",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "assignedTo",
+              "span": {
+                "start": 0,
+                "end": 10
+              }
+            },
+            "test": {
+              "type": "is_empty",
+              "span": {
+                "start": 11,
+                "end": 19
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 19
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 19
+          }
+        },
+        "canonical": "assignedTo is empty",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "reportedBy is not empty",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "reportedBy",
+              "span": {
+                "start": 0,
+                "end": 10
+              }
+            },
+            "test": {
+              "type": "is_not_empty",
+              "span": {
+                "start": 11,
+                "end": 23
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 23
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 23
+          }
+        },
+        "canonical": "reportedBy is not empty",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "created is today or created is yesterday",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "or",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "created",
+                  "span": {
+                    "start": 0,
+                    "end": 7
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "time",
+                    "word": "today",
+                    "span": {
+                      "start": 11,
+                      "end": 16
+                    }
+                  },
+                  "span": {
+                    "start": 8,
+                    "end": 16
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 16
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "created",
+                  "span": {
+                    "start": 20,
+                    "end": 27
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "time",
+                    "word": "yesterday",
+                    "span": {
+                      "start": 31,
+                      "end": 40
+                    }
+                  },
+                  "span": {
+                    "start": 28,
+                    "end": 40
+                  }
+                },
+                "span": {
+                  "start": 20,
+                  "end": 40
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 40
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 40
+          }
+        },
+        "canonical": "created is today or created is yesterday",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "changed is this week and due is last week and due is this month",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "changed",
+                  "span": {
+                    "start": 0,
+                    "end": 7
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "time",
+                    "word": "this_week",
+                    "span": {
+                      "start": 11,
+                      "end": 20
+                    }
+                  },
+                  "span": {
+                    "start": 8,
+                    "end": 20
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 20
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "due",
+                  "span": {
+                    "start": 25,
+                    "end": 28
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "time",
+                    "word": "last_week",
+                    "span": {
+                      "start": 32,
+                      "end": 41
+                    }
+                  },
+                  "span": {
+                    "start": 29,
+                    "end": 41
+                  }
+                },
+                "span": {
+                  "start": 25,
+                  "end": 41
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "due",
+                  "span": {
+                    "start": 46,
+                    "end": 49
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "time",
+                    "word": "this_month",
+                    "span": {
+                      "start": 53,
+                      "end": 63
+                    }
+                  },
+                  "span": {
+                    "start": 50,
+                    "end": 63
+                  }
+                },
+                "span": {
+                  "start": 46,
+                  "end": 63
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 63
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 63
+          }
+        },
+        "canonical": "changed is this week and due is last week and due is this month",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "due < 2026-12-31",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "due",
+              "span": {
+                "start": 0,
+                "end": 3
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "less",
+              "value": {
+                "type": "date",
+                "date": {
+                  "year": 2026,
+                  "month": 12,
+                  "day": 31
+                },
+                "span": {
+                  "start": 6,
+                  "end": 16
+                }
+              },
+              "span": {
+                "start": 4,
+                "end": 16
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 16
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 16
+          }
+        },
+        "canonical": "due < 2026-12-31",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "changed in last 1 day",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "changed",
+              "span": {
+                "start": 0,
+                "end": 7
+              }
+            },
+            "test": {
+              "type": "in_last",
+              "count": 1,
+              "unit": "day",
+              "span": {
+                "start": 8,
+                "end": 21
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 21
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 21
+          }
+        },
+        "canonical": "changed in last 1 day",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "changed in last 2 weeks",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "changed",
+              "span": {
+                "start": 0,
+                "end": 7
+              }
+            },
+            "test": {
+              "type": "in_last",
+              "count": 2,
+              "unit": "week",
+              "span": {
+                "start": 8,
+                "end": 23
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 23
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 23
+          }
+        },
+        "canonical": "changed in last 2 weeks",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "changed in last 6 months",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "changed",
+              "span": {
+                "start": 0,
+                "end": 7
+              }
+            },
+            "test": {
+              "type": "in_last",
+              "count": 6,
+              "unit": "month",
+              "span": {
+                "start": 8,
+                "end": 24
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 24
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 24
+          }
+        },
+        "canonical": "changed in last 6 months",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "project within WEB",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "project",
+              "span": {
+                "start": 0,
+                "end": 7
+              }
+            },
+            "test": {
+              "type": "within",
+              "project": {
+                "text": "WEB",
+                "span": {
+                  "start": 15,
+                  "end": 18
+                }
+              },
+              "span": {
+                "start": 8,
+                "end": 18
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 18
+          }
+        },
+        "canonical": "project within WEB",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "parent is WEB-142",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "parent",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "issue",
+                "id": {
+                  "text": "WEB-142",
+                  "span": {
+                    "start": 10,
+                    "end": 17
+                  }
+                },
+                "span": {
+                  "start": 10,
+                  "end": 17
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 17
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 17
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 17
+          }
+        },
+        "canonical": "parent is WEB-142",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "parent is WEB-K7Q2X",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "parent",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "issue",
+                "id": {
+                  "text": "WEB-K7Q2X",
+                  "span": {
+                    "start": 10,
+                    "end": 19
+                  }
+                },
+                "span": {
+                  "start": 10,
+                  "end": 19
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 19
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 19
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 19
+          }
+        },
+        "canonical": "parent is WEB-K7Q2X",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "under WEB-7",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "under",
+            "id": {
+              "text": "WEB-7",
+              "span": {
+                "start": 6,
+                "end": 11
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 11
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 11
+          }
+        },
+        "canonical": "under WEB-7",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "blocks WEB-1",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "blocks",
+            "id": {
+              "text": "WEB-1",
+              "span": {
+                "start": 7,
+                "end": 12
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 12
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 12
+          }
+        },
+        "canonical": "blocks WEB-1",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "blocked by WEB-1",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "blocked_by",
+            "id": {
+              "text": "WEB-1",
+              "span": {
+                "start": 11,
+                "end": 16
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 16
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 16
+          }
+        },
+        "canonical": "blocked by WEB-1",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "connected to WEB-7",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "connected_to",
+            "id": {
+              "text": "WEB-7",
+              "span": {
+                "start": 13,
+                "end": 18
+              }
+            },
+            "steps": null,
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 18
+          }
+        },
+        "canonical": "connected to WEB-7",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "connected to WEB-7 within 3 steps",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "connected_to",
+            "id": {
+              "text": "WEB-7",
+              "span": {
+                "start": 13,
+                "end": 18
+              }
+            },
+            "steps": {
+              "count": 3,
+              "span": {
+                "start": 26,
+                "end": 33
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 33
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 33
+          }
+        },
+        "canonical": "connected to WEB-7 within 3 steps",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "connected to WEB-7 within 1 step",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "connected_to",
+            "id": {
+              "text": "WEB-7",
+              "span": {
+                "start": 13,
+                "end": 18
+              }
+            },
+            "steps": {
+              "count": 1,
+              "span": {
+                "start": 26,
+                "end": 32
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 32
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 32
+          }
+        },
+        "canonical": "connected to WEB-7 within 1 step",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "not (status is Done or status is Open)",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "not",
+            "item": {
+              "type": "or",
+              "items": [
+                {
+                  "type": "field",
+                  "field": {
+                    "word": "status",
+                    "span": {
+                      "start": 5,
+                      "end": 11
+                    }
+                  },
+                  "test": {
+                    "type": "is",
+                    "value": {
+                      "type": "text",
+                      "text": "Done",
+                      "span": {
+                        "start": 15,
+                        "end": 19
+                      }
+                    },
+                    "span": {
+                      "start": 12,
+                      "end": 19
+                    }
+                  },
+                  "span": {
+                    "start": 5,
+                    "end": 19
+                  }
+                },
+                {
+                  "type": "field",
+                  "field": {
+                    "word": "status",
+                    "span": {
+                      "start": 23,
+                      "end": 29
+                    }
+                  },
+                  "test": {
+                    "type": "is",
+                    "value": {
+                      "type": "text",
+                      "text": "Open",
+                      "span": {
+                        "start": 33,
+                        "end": 37
+                      }
+                    },
+                    "span": {
+                      "start": 30,
+                      "end": 37
+                    }
+                  },
+                  "span": {
+                    "start": 23,
+                    "end": 37
+                  }
+                }
+              ],
+              "span": {
+                "start": 4,
+                "end": 38
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 38
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 38
+          }
+        },
+        "canonical": "not (status is Done or status is Open)",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "(status is Open and priority is high) or assignedTo is me",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "or",
+            "items": [
+              {
+                "type": "and",
+                "items": [
+                  {
+                    "type": "field",
+                    "field": {
+                      "word": "status",
+                      "span": {
+                        "start": 1,
+                        "end": 7
+                      }
+                    },
+                    "test": {
+                      "type": "is",
+                      "value": {
+                        "type": "text",
+                        "text": "Open",
+                        "span": {
+                          "start": 11,
+                          "end": 15
+                        }
+                      },
+                      "span": {
+                        "start": 8,
+                        "end": 15
+                      }
+                    },
+                    "span": {
+                      "start": 1,
+                      "end": 15
+                    }
+                  },
+                  {
+                    "type": "field",
+                    "field": {
+                      "word": "priority",
+                      "span": {
+                        "start": 20,
+                        "end": 28
+                      }
+                    },
+                    "test": {
+                      "type": "is",
+                      "value": {
+                        "type": "text",
+                        "text": "high",
+                        "span": {
+                          "start": 32,
+                          "end": 36
+                        }
+                      },
+                      "span": {
+                        "start": 29,
+                        "end": 36
+                      }
+                    },
+                    "span": {
+                      "start": 20,
+                      "end": 36
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1,
+                  "end": 36
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "assignedTo",
+                  "span": {
+                    "start": 41,
+                    "end": 51
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "me",
+                    "span": {
+                      "start": 55,
+                      "end": 57
+                    }
+                  },
+                  "span": {
+                    "start": 52,
+                    "end": 57
+                  }
+                },
+                "span": {
+                  "start": 41,
+                  "end": 57
+                }
+              }
+            ],
+            "span": {
+              "start": 1,
+              "end": 57
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 57
+          }
+        },
+        "canonical": "status is Open and priority is high or assignedTo is me",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "(status is Open and (priority is high))",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "status",
+                  "span": {
+                    "start": 1,
+                    "end": 7
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "Open",
+                    "span": {
+                      "start": 11,
+                      "end": 15
+                    }
+                  },
+                  "span": {
+                    "start": 8,
+                    "end": 15
+                  }
+                },
+                "span": {
+                  "start": 1,
+                  "end": 15
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "priority",
+                  "span": {
+                    "start": 21,
+                    "end": 29
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "high",
+                    "span": {
+                      "start": 33,
+                      "end": 37
+                    }
+                  },
+                  "span": {
+                    "start": 30,
+                    "end": 37
+                  }
+                },
+                "span": {
+                  "start": 20,
+                  "end": 38
+                }
+              }
+            ],
+            "span": {
+              "start": 1,
+              "end": 38
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 39
+          }
+        },
+        "canonical": "status is Open and priority is high",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "not not status is Open",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "not",
+            "item": {
+              "type": "not",
+              "item": {
+                "type": "field",
+                "field": {
+                  "word": "status",
+                  "span": {
+                    "start": 8,
+                    "end": 14
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "Open",
+                    "span": {
+                      "start": 18,
+                      "end": 22
+                    }
+                  },
+                  "span": {
+                    "start": 15,
+                    "end": 22
+                  }
+                },
+                "span": {
+                  "start": 8,
+                  "end": 22
+                }
+              },
+              "span": {
+                "start": 4,
+                "end": 22
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 22
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 22
+          }
+        },
+        "canonical": "not not status is Open",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "status is Open and (priority is high and assignedTo is me)",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "status",
+                  "span": {
+                    "start": 0,
+                    "end": 6
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "Open",
+                    "span": {
+                      "start": 10,
+                      "end": 14
+                    }
+                  },
+                  "span": {
+                    "start": 7,
+                    "end": 14
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 14
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "priority",
+                  "span": {
+                    "start": 20,
+                    "end": 28
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "high",
+                    "span": {
+                      "start": 32,
+                      "end": 36
+                    }
+                  },
+                  "span": {
+                    "start": 29,
+                    "end": 36
+                  }
+                },
+                "span": {
+                  "start": 20,
+                  "end": 36
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "assignedTo",
+                  "span": {
+                    "start": 41,
+                    "end": 51
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "me",
+                    "span": {
+                      "start": 55,
+                      "end": 57
+                    }
+                  },
+                  "span": {
+                    "start": 52,
+                    "end": 57
+                  }
+                },
+                "span": {
+                  "start": 41,
+                  "end": 57
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 57
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 58
+          }
+        },
+        "canonical": "status is Open and priority is high and assignedTo is me",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "storyPoints > 5 sort by storyPoints",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "storyPoints",
+              "span": {
+                "start": 0,
+                "end": 11
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "greater",
+              "value": {
+                "type": "number",
+                "number": {
+                  "value": 5,
+                  "scale": 0
+                },
+                "span": {
+                  "start": 14,
+                  "end": 15
+                }
+              },
+              "span": {
+                "start": 12,
+                "end": 15
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 15
+            }
+          },
+          "sort": [
+            {
+              "field": {
+                "word": "storyPoints",
+                "span": {
+                  "start": 24,
+                  "end": 35
+                }
+              },
+              "direction": null,
+              "span": {
+                "start": 24,
+                "end": 35
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 35
+          }
+        },
+        "canonical": "storyPoints > 5 sort by storyPoints",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "tag is re-test",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "tag",
+              "span": {
+                "start": 0,
+                "end": 3
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "re-test",
+                "span": {
+                  "start": 7,
+                  "end": 14
+                }
+              },
+              "span": {
+                "start": 4,
+                "end": 14
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 14
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 14
+          }
+        },
+        "canonical": "tag is \"re-test\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "tag in (re-test, WEB-1)",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "tag",
+              "span": {
+                "start": 0,
+                "end": 3
+              }
+            },
+            "test": {
+              "type": "in",
+              "values": [
+                {
+                  "type": "text",
+                  "text": "re-test",
+                  "span": {
+                    "start": 8,
+                    "end": 15
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "WEB-1",
+                  "span": {
+                    "start": 17,
+                    "end": 22
+                  }
+                }
+              ],
+              "span": {
+                "start": 4,
+                "end": 23
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 23
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 23
+          }
+        },
+        "canonical": "tag in (\"re-test\", \"WEB-1\")",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "parent is web-142",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "parent",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "issue",
+                "id": {
+                  "text": "WEB-142",
+                  "span": {
+                    "start": 10,
+                    "end": 17
+                  }
+                },
+                "span": {
+                  "start": 10,
+                  "end": 17
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 17
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 17
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 17
+          }
+        },
+        "canonical": "parent is WEB-142",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "project within web",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "project",
+              "span": {
+                "start": 0,
+                "end": 7
+              }
+            },
+            "test": {
+              "type": "within",
+              "project": {
+                "text": "WEB",
+                "span": {
+                  "start": 15,
+                  "end": 18
+                }
+              },
+              "span": {
+                "start": 8,
+                "end": 18
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 18
+          }
+        },
+        "canonical": "project within WEB",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "under web-7",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "under",
+            "id": {
+              "text": "WEB-7",
+              "span": {
+                "start": 6,
+                "end": 11
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 11
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 11
+          }
+        },
+        "canonical": "under WEB-7",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "title contains \"Größe\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "title",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "contains",
+              "text": {
+                "text": "Größe",
+                "span": {
+                  "start": 15,
+                  "end": 24
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 24
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 24
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 24
+          }
+        },
+        "canonical": "title contains \"Größe\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "title is \"ünï 😀\" and description contains \"naïve café\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "title",
+                  "span": {
+                    "start": 0,
+                    "end": 5
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "ünï 😀",
+                    "span": {
+                      "start": 9,
+                      "end": 21
+                    }
+                  },
+                  "span": {
+                    "start": 6,
+                    "end": 21
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 21
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "description",
+                  "span": {
+                    "start": 26,
+                    "end": 37
+                  }
+                },
+                "test": {
+                  "type": "contains",
+                  "text": {
+                    "text": "naïve café",
+                    "span": {
+                      "start": 47,
+                      "end": 61
+                    }
+                  },
+                  "span": {
+                    "start": 38,
+                    "end": 61
+                  }
+                },
+                "span": {
+                  "start": 26,
+                  "end": 61
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 61
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 61
+          }
+        },
+        "canonical": "title is \"ünï 😀\" and description contains \"naïve café\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "prio is high",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "prio",
+              "span": {
+                "start": 0,
+                "end": 4
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "high",
+                "span": {
+                  "start": 8,
+                  "end": 12
+                }
+              },
+              "span": {
+                "start": 5,
+                "end": 12
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 12
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 12
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 0,
+              "end": 4
+            },
+            "key": "search.mistake.unknown-field-did-you-mean",
+            "args": {
+              "field": "prio",
+              "suggestion": "priority"
+            },
+            "suggestions": ["priority"]
+          }
+        ]
+      }
+    },
+    {
+      "text": "priority < 3",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "priority",
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "less",
+              "value": {
+                "type": "number",
+                "number": {
+                  "value": 3,
+                  "scale": 0
+                },
+                "span": {
+                  "start": 11,
+                  "end": 12
+                }
+              },
+              "span": {
+                "start": 9,
+                "end": 12
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 12
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 12
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 11,
+              "end": 12
+            },
+            "key": "search.mistake.unknown-choice",
+            "args": {
+              "field": "priority",
+              "value": "3"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 9,
+              "end": 9
+            },
+            "key": "search.mistake.expected-value",
+            "args": {
+              "field": "status"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Finished",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "Finished",
+                "span": {
+                  "start": 10,
+                  "end": 18
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 18
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 18
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 10,
+              "end": 18
+            },
+            "key": "search.mistake.unknown-choice",
+            "args": {
+              "field": "status",
+              "value": "Finished"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Donee",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "Donee",
+                "span": {
+                  "start": 10,
+                  "end": 15
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 15
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 15
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 15
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 10,
+              "end": 15
+            },
+            "key": "search.mistake.unknown-choice-did-you-mean",
+            "args": {
+              "field": "status",
+              "suggestion": "Done",
+              "value": "Donee"
+            },
+            "suggestions": ["Done"]
+          }
+        ]
+      }
+    },
+    {
+      "text": "status",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 6,
+              "end": 6
+            },
+            "key": "search.mistake.expected-operator",
+            "args": {
+              "contains": "contains",
+              "field": "status",
+              "in": "in",
+              "is": "is"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open and",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 18,
+              "end": 18
+            },
+            "key": "search.mistake.expected-filter",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open or or",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 18,
+              "end": 20
+            },
+            "key": "search.mistake.expected-filter",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "(status is Open",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 15,
+              "end": 15
+            },
+            "key": "search.mistake.expected-continue-closing",
+            "args": {
+              "and": "and",
+              "by": "by",
+              "or": "or",
+              "sort": "sort"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open)",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 14,
+              "end": 15
+            },
+            "key": "search.mistake.expected-continue",
+            "args": {
+              "and": "and",
+              "by": "by",
+              "or": "or",
+              "sort": "sort"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "title contains",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 14,
+              "end": 14
+            },
+            "key": "search.mistake.expected-text",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "title contains \"unfinished",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 15,
+              "end": 26
+            },
+            "key": "search.mistake.unclosed-quote",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "title < 5",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "title",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "less",
+              "value": {
+                "type": "number",
+                "number": {
+                  "value": 5,
+                  "scale": 0
+                },
+                "span": {
+                  "start": 8,
+                  "end": 9
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 9
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 9
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 9
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 6,
+              "end": 9
+            },
+            "key": "search.mistake.operator-not-allowed",
+            "args": {
+              "field": "title",
+              "operator": "<"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "estimate is high",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "estimate",
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "high",
+                "span": {
+                  "start": 12,
+                  "end": 16
+                }
+              },
+              "span": {
+                "start": 9,
+                "end": 16
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 16
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 16
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 12,
+              "end": 16
+            },
+            "key": "search.mistake.wrong-number",
+            "args": {
+              "field": "estimate"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "estimate is \"5\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "estimate",
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "5",
+                "span": {
+                  "start": 12,
+                  "end": 15
+                }
+              },
+              "span": {
+                "start": 9,
+                "end": 15
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 15
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 15
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 12,
+              "end": 15
+            },
+            "key": "search.mistake.wrong-number",
+            "args": {
+              "field": "estimate"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "due is soon",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "due",
+              "span": {
+                "start": 0,
+                "end": 3
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "soon",
+                "span": {
+                  "start": 7,
+                  "end": 11
+                }
+              },
+              "span": {
+                "start": 4,
+                "end": 11
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 11
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 11
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 7,
+              "end": 11
+            },
+            "key": "search.mistake.wrong-date",
+            "args": {
+              "field": "due"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "due is 2026-13-40",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 7,
+              "end": 17
+            },
+            "key": "search.mistake.not-a-date",
+            "args": {
+              "text": "2026-13-40"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "assignedTo is 5",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "assignedTo",
+              "span": {
+                "start": 0,
+                "end": 10
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "number",
+                "number": {
+                  "value": 5,
+                  "scale": 0
+                },
+                "span": {
+                  "start": 14,
+                  "end": 15
+                }
+              },
+              "span": {
+                "start": 11,
+                "end": 15
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 15
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 15
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 14,
+              "end": 15
+            },
+            "key": "search.mistake.wrong-person",
+            "args": {
+              "field": "assignedTo",
+              "me": "me"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "parent is WEB",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "parent",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "WEB",
+                "span": {
+                  "start": 10,
+                  "end": 13
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 13
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 13
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 13
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 10,
+              "end": 13
+            },
+            "key": "search.mistake.wrong-issue",
+            "args": {
+              "field": "parent"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is week",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "week",
+                "span": {
+                  "start": 10,
+                  "end": 14
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 14
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 14
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 14
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 10,
+              "end": 14
+            },
+            "key": "search.mistake.unknown-choice",
+            "args": {
+              "field": "status",
+              "value": "week"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "changed in last 0 days",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 16,
+              "end": 17
+            },
+            "key": "search.mistake.expected-count",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "changed in last 3 hours",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 18,
+              "end": 23
+            },
+            "key": "search.mistake.expected-unit",
+            "args": {
+              "units": "days, weeks, months"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "changed in",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 10,
+              "end": 10
+            },
+            "key": "search.mistake.expected-in",
+            "args": {
+              "in": "in",
+              "last": "last"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "under 12",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 6,
+              "end": 8
+            },
+            "key": "search.mistake.expected-issue-id",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "project within and",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 15,
+              "end": 18
+            },
+            "key": "search.mistake.expected-short-name",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "blocked WEB-1",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 8,
+              "end": 13
+            },
+            "key": "search.mistake.expected-blocked-by",
+            "args": {
+              "blocked": "blocked",
+              "by": "by"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "connected to WEB-7 within 6 steps",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "connected_to",
+            "id": {
+              "text": "WEB-7",
+              "span": {
+                "start": 13,
+                "end": 18
+              }
+            },
+            "steps": {
+              "count": 6,
+              "span": {
+                "start": 26,
+                "end": 33
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 33
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 33
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 26,
+              "end": 33
+            },
+            "key": "search.mistake.too-many-steps",
+            "args": {
+              "limit": "5"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "connected to WEB-7 within three steps",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 26,
+              "end": 31
+            },
+            "key": "search.mistake.expected-count",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "sort priority",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 5,
+              "end": 13
+            },
+            "key": "search.mistake.expected-sort-by",
+            "args": {
+              "by": "by",
+              "sort": "sort"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "sort by",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 7,
+              "end": 7
+            },
+            "key": "search.mistake.expected-sort-field",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "sort by priority, sideways first",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 27,
+              "end": 32
+            },
+            "key": "search.mistake.expected-continue",
+            "args": {
+              "and": "and",
+              "by": "by",
+              "or": "or",
+              "sort": "sort"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "sort by nothing",
+      "answer": {
+        "search": {
+          "filter": null,
+          "sort": [
+            {
+              "field": {
+                "word": "nothing",
+                "span": {
+                  "start": 8,
+                  "end": 15
+                }
+              },
+              "direction": null,
+              "span": {
+                "start": 8,
+                "end": 15
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 15
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 8,
+              "end": 15
+            },
+            "key": "search.mistake.unknown-field",
+            "args": {
+              "field": "nothing"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status = Open",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 7,
+              "end": 8
+            },
+            "key": "search.mistake.unreadable",
+            "args": {
+              "text": "="
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open, priority is high",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 14,
+              "end": 15
+            },
+            "key": "search.mistake.expected-continue",
+            "args": {
+              "and": "and",
+              "by": "by",
+              "or": "or",
+              "sort": "sort"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "ünï is Open",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "ünï",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "Open",
+                "span": {
+                  "start": 9,
+                  "end": 13
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 13
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 13
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 13
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 0,
+              "end": 5
+            },
+            "key": "search.mistake.unknown-field",
+            "args": {
+              "field": "ünï"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "title contains \"Größe\" and ünï < 3",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "title",
+                  "span": {
+                    "start": 0,
+                    "end": 5
+                  }
+                },
+                "test": {
+                  "type": "contains",
+                  "text": {
+                    "text": "Größe",
+                    "span": {
+                      "start": 15,
+                      "end": 24
+                    }
+                  },
+                  "span": {
+                    "start": 6,
+                    "end": 24
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 24
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "ünï",
+                  "span": {
+                    "start": 29,
+                    "end": 34
+                  }
+                },
+                "test": {
+                  "type": "compare",
+                  "operator": "less",
+                  "value": {
+                    "type": "number",
+                    "number": {
+                      "value": 3,
+                      "scale": 0
+                    },
+                    "span": {
+                      "start": 37,
+                      "end": 38
+                    }
+                  },
+                  "span": {
+                    "start": 35,
+                    "end": 38
+                  }
+                },
+                "span": {
+                  "start": 29,
+                  "end": 38
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 38
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 38
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 29,
+              "end": 34
+            },
+            "key": "search.mistake.unknown-field",
+            "args": {
+              "field": "ünï"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "title is 😀",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 9,
+              "end": 13
+            },
+            "key": "search.mistake.unreadable",
+            "args": {
+              "text": "😀"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Öpen",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "Öpen",
+                "span": {
+                  "start": 10,
+                  "end": 15
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 15
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 15
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 15
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 10,
+              "end": 15
+            },
+            "key": "search.mistake.unknown-choice-did-you-mean",
+            "args": {
+              "field": "status",
+              "suggestion": "Open",
+              "value": "Öpen"
+            },
+            "suggestions": ["Open"]
+          }
+        ]
+      }
+    },
+    {
+      "text": "title contains \"Größe and",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 15,
+              "end": 27
+            },
+            "key": "search.mistake.unclosed-quote",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    }
+  ],
+  "places": [
+    {
+      "text": "",
+      "cursor": 0,
+      "suggestions": {
+        "replace": {
+          "start": 0,
+          "end": 0
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "project",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "title",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "description",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "status",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "statusGroup",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "priority",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "tag",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "reportedBy",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "parent",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "created",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "changed",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "due",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "estimate",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "storyPoints",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "not",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "(",
+            "kind": "sign"
+          },
+          {
+            "type": "word",
+            "text": "under",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "blocks",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "blocked by",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "connected to",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "sort by",
+            "kind": "keyword"
+          }
+        ]
+      }
+    },
+    {
+      "text": "assi",
+      "cursor": 4,
+      "suggestions": {
+        "replace": {
+          "start": 0,
+          "end": 4
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "assignedTo ",
+      "cursor": 11,
+      "suggestions": {
+        "replace": {
+          "start": 11,
+          "end": 11
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "is",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is not",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "in",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "member of",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is empty",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is not empty",
+            "kind": "operator"
+          }
+        ]
+      }
+    },
+    {
+      "text": "priority is ",
+      "cursor": 12,
+      "suggestions": {
+        "replace": {
+          "start": 12,
+          "end": 12
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "not",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "empty",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "lowest",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "low",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "normal",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "high",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "highest",
+            "kind": "value"
+          }
+        ]
+      }
+    },
+    {
+      "text": "priority is not ",
+      "cursor": 16,
+      "suggestions": {
+        "replace": {
+          "start": 16,
+          "end": 16
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "empty",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "lowest",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "low",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "normal",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "high",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "highest",
+            "kind": "value"
+          }
+        ]
+      }
+    },
+    {
+      "text": "priority is hi",
+      "cursor": 14,
+      "suggestions": {
+        "replace": {
+          "start": 12,
+          "end": 14
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "high",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "highest",
+            "kind": "value"
+          }
+        ]
+      }
+    },
+    {
+      "text": "priority is \"hi",
+      "cursor": 15,
+      "suggestions": {
+        "replace": {
+          "start": 12,
+          "end": 15
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "high",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "highest",
+            "kind": "value"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is \"In pr\" and",
+      "cursor": 16,
+      "suggestions": {
+        "replace": {
+          "start": 10,
+          "end": 17
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "\"In progress\"",
+            "kind": "value"
+          }
+        ]
+      }
+    },
+    {
+      "text": "assignedTo is ",
+      "cursor": 14,
+      "suggestions": {
+        "replace": {
+          "start": 14,
+          "end": 14
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "not",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "empty",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "me",
+            "kind": "value"
+          },
+          {
+            "type": "ask",
+            "what": "people",
+            "starting_with": ""
+          }
+        ]
+      }
+    },
+    {
+      "text": "assignedTo member of ",
+      "cursor": 21,
+      "suggestions": {
+        "replace": {
+          "start": 21,
+          "end": 21
+        },
+        "items": [
+          {
+            "type": "ask",
+            "what": "groups",
+            "starting_with": ""
+          }
+        ]
+      }
+    },
+    {
+      "text": "assignedTo member of \"Bac",
+      "cursor": 25,
+      "suggestions": {
+        "replace": {
+          "start": 21,
+          "end": 25
+        },
+        "items": [
+          {
+            "type": "ask",
+            "what": "groups",
+            "starting_with": "Bac"
+          }
+        ]
+      }
+    },
+    {
+      "text": "created is ",
+      "cursor": 11,
+      "suggestions": {
+        "replace": {
+          "start": 11,
+          "end": 11
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "not",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "empty",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "today",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "yesterday",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "this week",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "last week",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "this month",
+            "kind": "value"
+          }
+        ]
+      }
+    },
+    {
+      "text": "created ",
+      "cursor": 8,
+      "suggestions": {
+        "replace": {
+          "start": 8,
+          "end": 8
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "is",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is not",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "<",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": ">",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "<=",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": ">=",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "in last",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is empty",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is not empty",
+            "kind": "operator"
+          }
+        ]
+      }
+    },
+    {
+      "text": "changed in ",
+      "cursor": 11,
+      "suggestions": {
+        "replace": {
+          "start": 11,
+          "end": 11
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "last",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "(",
+            "kind": "sign"
+          }
+        ]
+      }
+    },
+    {
+      "text": "changed in last 3 ",
+      "cursor": 18,
+      "suggestions": {
+        "replace": {
+          "start": 18,
+          "end": 18
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "days",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "weeks",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "months",
+            "kind": "keyword"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open ",
+      "cursor": 15,
+      "suggestions": {
+        "replace": {
+          "start": 15,
+          "end": 15
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "and",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "or",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "sort by",
+            "kind": "keyword"
+          }
+        ]
+      }
+    },
+    {
+      "text": "(status is Open ",
+      "cursor": 16,
+      "suggestions": {
+        "replace": {
+          "start": 16,
+          "end": 16
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "and",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "or",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": ")",
+            "kind": "sign"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status in (Open ",
+      "cursor": 16,
+      "suggestions": {
+        "replace": {
+          "start": 16,
+          "end": 16
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": ",",
+            "kind": "sign"
+          },
+          {
+            "type": "word",
+            "text": ")",
+            "kind": "sign"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status in (Open, ",
+      "cursor": 17,
+      "suggestions": {
+        "replace": {
+          "start": 17,
+          "end": 17
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "Open",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "\"In progress\"",
+            "kind": "value"
+          },
+          {
+            "type": "word",
+            "text": "Done",
+            "kind": "value"
+          }
+        ]
+      }
+    },
+    {
+      "text": "not ",
+      "cursor": 4,
+      "suggestions": {
+        "replace": {
+          "start": 4,
+          "end": 4
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "project",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "title",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "description",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "status",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "statusGroup",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "priority",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "tag",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "reportedBy",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "parent",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "created",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "changed",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "due",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "estimate",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "storyPoints",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "not",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "(",
+            "kind": "sign"
+          },
+          {
+            "type": "word",
+            "text": "under",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "blocks",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "blocked by",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "connected to",
+            "kind": "helper"
+          }
+        ]
+      }
+    },
+    {
+      "text": "blocked ",
+      "cursor": 8,
+      "suggestions": {
+        "replace": {
+          "start": 8,
+          "end": 8
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "by",
+            "kind": "keyword"
+          }
+        ]
+      }
+    },
+    {
+      "text": "connected to ",
+      "cursor": 13,
+      "suggestions": {
+        "replace": {
+          "start": 13,
+          "end": 13
+        },
+        "items": [
+          {
+            "type": "ask",
+            "what": "issues",
+            "starting_with": ""
+          }
+        ]
+      }
+    },
+    {
+      "text": "connected to WEB-7 within 3 ",
+      "cursor": 28,
+      "suggestions": {
+        "replace": {
+          "start": 28,
+          "end": 28
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "steps",
+            "kind": "keyword"
+          }
+        ]
+      }
+    },
+    {
+      "text": "project within ",
+      "cursor": 15,
+      "suggestions": {
+        "replace": {
+          "start": 15,
+          "end": 15
+        },
+        "items": [
+          {
+            "type": "ask",
+            "what": "projects",
+            "starting_with": ""
+          }
+        ]
+      }
+    },
+    {
+      "text": "parent is ",
+      "cursor": 10,
+      "suggestions": {
+        "replace": {
+          "start": 10,
+          "end": 10
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "not",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "empty",
+            "kind": "operator"
+          },
+          {
+            "type": "ask",
+            "what": "issues",
+            "starting_with": ""
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open sort ",
+      "cursor": 20,
+      "suggestions": {
+        "replace": {
+          "start": 20,
+          "end": 20
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "by",
+            "kind": "keyword"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open sort by ",
+      "cursor": 23,
+      "suggestions": {
+        "replace": {
+          "start": 23,
+          "end": 23
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "project",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "title",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "description",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "status",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "statusGroup",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "priority",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "tag",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "reportedBy",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "parent",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "created",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "changed",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "due",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "estimate",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "storyPoints",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open sort by priority ",
+      "cursor": 32,
+      "suggestions": {
+        "replace": {
+          "start": 32,
+          "end": 32
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "highest first",
+            "kind": "direction"
+          },
+          {
+            "type": "word",
+            "text": "lowest first",
+            "kind": "direction"
+          },
+          {
+            "type": "word",
+            "text": "newest first",
+            "kind": "direction"
+          },
+          {
+            "type": "word",
+            "text": "oldest first",
+            "kind": "direction"
+          },
+          {
+            "type": "word",
+            "text": "A to Z",
+            "kind": "direction"
+          },
+          {
+            "type": "word",
+            "text": "Z to A",
+            "kind": "direction"
+          },
+          {
+            "type": "word",
+            "text": ",",
+            "kind": "sign"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open sort by priority, high",
+      "cursor": 37,
+      "suggestions": {
+        "replace": {
+          "start": 33,
+          "end": 37
+        },
+        "items": []
+      }
+    },
+    {
+      "text": "status is Open sort by priority, highest ",
+      "cursor": 41,
+      "suggestions": {
+        "replace": {
+          "start": 41,
+          "end": 41
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "first",
+            "kind": "direction"
+          }
+        ]
+      }
+    },
+    {
+      "text": "sort by priority, ",
+      "cursor": 18,
+      "suggestions": {
+        "replace": {
+          "start": 18,
+          "end": 18
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "project",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "title",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "description",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "status",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "statusGroup",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "priority",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "tag",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "reportedBy",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "parent",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "created",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "changed",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "due",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "estimate",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "storyPoints",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "nothing ",
+      "cursor": 8,
+      "suggestions": {
+        "replace": {
+          "start": 8,
+          "end": 8
+        },
+        "items": []
+      }
+    },
+    {
+      "text": "title contains \"Grö",
+      "cursor": 20,
+      "suggestions": {
+        "replace": {
+          "start": 15,
+          "end": 20
+        },
+        "items": []
+      }
+    },
+    {
+      "text": "ünï",
+      "cursor": 5,
+      "suggestions": {
+        "replace": {
+          "start": 0,
+          "end": 5
+        },
+        "items": []
+      }
+    },
+    {
+      "text": "title contains \"Größe\" and assi",
+      "cursor": 33,
+      "suggestions": {
+        "replace": {
+          "start": 29,
+          "end": 33
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "description contains \"😀\" and sta",
+      "cursor": 35,
+      "suggestions": {
+        "replace": {
+          "start": 32,
+          "end": 35
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "status",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "statusGroup",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "title is \"Größe\" and ",
+      "cursor": 23,
+      "suggestions": {
+        "replace": {
+          "start": 23,
+          "end": 23
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "project",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "title",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "description",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "status",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "statusGroup",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "priority",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "tag",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "assignedTo",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "reportedBy",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "parent",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "created",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "changed",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "due",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "estimate",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "storyPoints",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "not",
+            "kind": "keyword"
+          },
+          {
+            "type": "word",
+            "text": "(",
+            "kind": "sign"
+          },
+          {
+            "type": "word",
+            "text": "under",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "blocks",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "blocked by",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
+            "text": "connected to",
+            "kind": "helper"
+          }
+        ]
+      }
+    }
+  ]
+}
