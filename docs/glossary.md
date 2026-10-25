@@ -268,7 +268,7 @@ Rules:
 | **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |
 | **Notifications**        | Messages about things you follow or that involve you               | inbox, alerts                      |
 | **Mark as read**         | Take a notification off the unread ones                            | dismiss, acknowledge (in UI)       |
-| **Customize**            | On *Notifications*: opens *Notification settings*. On a workflow or a layout: create a copy for this place that you can change | subscription settings (in UI) |
+| **Customize**            | On *Notifications*: opens *Notification settings*. On a workflow or a layout: create a copy for this place that you can change. On a list: choose its columns | subscription settings (in UI) |
 | **Notification settings** | The page under *My settings* where you choose, for each kind of event, whether you hear of it in the app, by e-mail, in both or not at all | subscriptions, alert settings (in UI) |
 | **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
 | **E-mail & notifications** | The organization settings page where an administrator enters the mail server, sends a test e-mail and switches e-mail on | mail settings, SMTP (in UI) |

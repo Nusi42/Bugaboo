@@ -4,11 +4,11 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M4 built)
+## Scope (status: M4 built, M5 planned)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
-| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3) | Attachments, mail and workflows (M4; threats below), search language (M5), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
+| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3) | Attachments, mail and workflows (M4; threats below), search and lists (M5; threats below, planned), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
 
 ## Attack surface
 
@@ -179,6 +179,22 @@ M4 takes files from people, sends mail out of the server for the first time, and
 | Denial of service | Signing up from many networks sends mail to strangers without a limit for the server | At most `ADDRESSES_PER_HOUR_MAX` addresses get a sign-up e-mail an hour for the whole server; the job drops the rest (the answer is the same for every address) | `sec_the_server_sends_to_only_so_many_addresses_in_an_hour_while_anybody_may_sign_up` (WP-12) |
 | Information disclosure | Adding a file to an issue tells nobody although the texts promise it, or tells people who may not see the issue | The notifications reader reads the event of a file added to an issue like any other: only followers who see the issue hear of it, with the name of the file as the file has it now; the match on every kind of record is exhaustive, so a new kind is either read or listed as ignored | `ntf_01_adding_a_file_tells_the_followers_and_not_the_one_who_added_it`; TEST-UPLOADS (WP-12) |
 | Denial of service | The reader of notifications judges the rights of every follower of every event, however little they want to hear | What a person wants is decided before their rights are looked at, and their rights on an issue are judged once for a round | `perf_05_the_reader_runs_as_many_statements_for_many_followers_who_want_nothing_as_for_few` (WP-12) |
+
+### Search and lists (M5)
+
+M5 lets people type searches that become database queries, search the text of issues, and share saved searches. Each row names the check that proves it; the packages add the test names ([M5 plan](../milestones/M5/README.md)).
+
+| STRIDE | Threat | Mitigation | Proven by |
+|--------|--------|------------|-----------|
+| Information disclosure | A search filters, sorts or groups by a field the person may not read, and the results or their order tell its values | The checker gets only the fields the person may read (ADR-0005, amendment M5); the server parses and checks every search again and never relies on the browser | SEC-MATRIX (the `search` entry point, a hidden field used to filter, sort and group); the tests of WP-02 and WP-04 |
+| Information disclosure | A hidden field gives another message, error code or time than an unknown field, so a person learns that it exists (QRY-05) | One mistake for both, from one place in the checker; the same work is done for both before the answer | the tests of WP-02 (the same mistake) and WP-04 (no difference in time on the server) |
+| Information disclosure | A text search finds an issue through a comment, a file or a long-text field the reader may not see | Each indexed text is a row with its source; the compiled search leaves out every source the reader may not see, in the same statement as the visibility predicates (ADR-0016, amendment M5) | SEC-MATRIX (`search`), ARCH-DB-PARITY; the tests of WP-05 |
+| Information disclosure | A count, a group heading or a *Tick all results* tells how many hidden issues exist (PRIV-13) | Counts and groups are computed on the issues the person sees, by the same compiled search | the tests of WP-04 and WP-08 |
+| Information disclosure | A shared saved search shows its receivers a hidden field, a hidden person or an issue they may not see | It runs with the rights of the person who opens it; a receiver sees it only when its text checks cleanly against their own rights, otherwise its address answers like one that does not exist (ADR-0034) | SEC-MATRIX (saved searches); the tests of WP-06 |
+| Elevation of privilege | A person shares a search with a project or a group they may not share with, or changes someone else's search | *Share searches* at the place of the share, being in the group, and only the maker changes it (ADR-0034, decisions 2 and 5) | ARCH-PERMS, SEC-MATRIX; the tests of WP-06 |
+| Tampering | A search text becomes SQL | The compiler builds parameterized statements through the query builder, never by joining text (SEC-17) | SEC-PATTERNS, the tests of WP-04 (texts with quotes, comment marks and statement ends) |
+| Denial of service | A search with many conditions, deep chains of relations or a text that matches everything slows the server for everyone | At most 2 seconds, 50 conditions, 5 steps, pages of 100, and 60 searches a minute per person (architecture §7, "Search limits") | the tests of WP-02 and WP-04; PERF-BENCH |
+| Information disclosure | *Quick search* finds an issue, a project or a saved search the person may not see | It asks the same search routes with the same rights | SEC-MATRIX (`search`); the tests of WP-09 |
 
 ### Boundary 4 (operator ↔ data) and the host
 

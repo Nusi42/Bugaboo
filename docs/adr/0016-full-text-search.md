@@ -19,6 +19,18 @@ Use **SQLite FTS5** and **PostgreSQL text search** (tsvector with GIN index) beh
 
 - **tantivy or an external search server:** better ranking, but permission filtering outside SQL and another store to protect. Rejected for 1.0.
 
+## Amendment M5: words, what is indexed, the order of results
+
+The M5 proposals (M5-Q5, Q6) were accepted. Decided:
+
+1. **No stemming, the same on both databases.** Texts are made comparable once, in Rust: lower case, accents removed, split into words by one rule (`bb-core`). The index and the words of a search go through the same function; SQLite FTS5 and PostgreSQL (`simple` configuration) only store and match the prepared words. German and English text behave alike, and both databases find the same issues. A word ending in `*` matches every word that starts with it.
+2. **What is indexed:** the title, the description, each comment, the names of attached files, and the own long-text fields. Each text is a row of its own with its source (title, description, a comment, a file, a field), so the search can leave out every source the reader may not see: a field they may not read, a comment or a file on an issue they do not see. A hit never comes from a hidden text.
+3. **`contains` on its own** searches the title, the description and the comments; `<field> contains "…"` searches one long-text field, only if the reader may read it. What is inside a file is not searched.
+4. **The order of results** when a search has text and no `sort by`: issues whose title has the words first, then the newest.
+5. **The index is a reader of the outbox** (ADR-0007): it keeps its place, catches up after a restart, and `cargo xtask` can rebuild it from the stored texts.
+
+Enforced by: ARCH-DB-PARITY (the same issues in the same order on both databases), SEC-MATRIX (the `search` entry point with a hidden field, comment and file), and the tests of M5 WP-05.
+
 ## Enforced by
 
 SEC-MATRIX (search entry point), ARCH-DB-PARITY (see `tools/checks/catalog.toml`).
