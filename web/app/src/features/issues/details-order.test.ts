@@ -17,7 +17,7 @@ function groups(): readonly RowGroup<string>[] {
 }
 
 describe("cfg_01 the Details follow the layout", () => {
-  it("keeps the order the rows came in before the layout is read", () => {
+  it("keeps the order the rows came in when the layout places none of them", () => {
     expect(inLayoutOrder([], groups())).toEqual([
       "assigned",
       "priority",
