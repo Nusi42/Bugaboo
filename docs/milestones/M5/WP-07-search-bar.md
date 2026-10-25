@@ -20,7 +20,8 @@ One search bar above every list. Simple search and Advanced search show the same
 5. **Save, change, share:** *Save search*, *Save* or *Save a copy* next to an open saved search's name, the *Share* window with only the groups and projects the person may share with, and *Use as the project's list* for those who may.
 6. **The help sheet** (UX §4.3).
 7. **On a phone:** *Filters (n)* opens the sheet (UX §4.3).
-8. **Pictures:** every new screen in the four themes on computer and phone, looked at against UX §1.1 before you push; the report names the pictures you looked at.
+8. **Mistakes as text** (WP-02 review): a mistake's arguments are the person's own text; render them as text, never as HTML.
+9. **Pictures:** every new screen in the four themes on computer and phone, looked at against UX §1.1 before you push; the report names the pictures you looked at.
 
 ## Acceptance tests (write first)
 
