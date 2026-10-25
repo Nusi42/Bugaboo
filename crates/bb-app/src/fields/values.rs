@@ -21,7 +21,7 @@ use bb_core::access::PeopleLevel;
 use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{ChoiceId, EntityId, FieldId, GroupId, IssueId, IssueTypeId, ProjectId, UserId};
-use bb_core::own_fields::{FieldFor, FieldType};
+use bb_core::own_fields::{FieldFor, FieldType, GROUP_FIELD_KIND, PERSON_FIELD_KIND};
 use bb_core::own_fields_value::{Cell, FieldValue, OwnValues};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
@@ -376,7 +376,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         people: &mut HashMap<(PeopleKind, UserId), PersonRef>,
         person: UserId,
     ) -> Result<Value, AppError> {
-        let key = (PeopleKind::AssignedTo, person);
+        let key = (PERSON_FIELD_KIND, person);
         let to_json = |shown: &PersonRef| {
             serde_json::to_value(shown).map_err(|error| AppError::Internal(error.to_string()))
         };
@@ -384,12 +384,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return to_json(shown);
         }
         let shown = self
-            .person_ref(
-                viewer,
-                PeopleKind::AssignedTo,
-                PeopleContext::Ordinary,
-                person,
-            )
+            .person_ref(viewer, PERSON_FIELD_KIND, PeopleContext::Ordinary, person)
             .await?;
         let json = to_json(&shown);
         people.insert(key, shown);
@@ -425,13 +420,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             (FieldType::Group, Value::String(id)) => {
                 let name = match id.parse::<GroupId>() {
-                    Ok(group) if viewer.kind_level(PeopleKind::Mentions) == PeopleLevel::Names => {
-                        self.store()
-                            .group(group)
-                            .await
-                            .map_err(|error| internal::<S>(&error))?
-                            .map(|found| found.name)
-                    }
+                    Ok(group) if viewer.kind_level(GROUP_FIELD_KIND) == PeopleLevel::Names => self
+                        .store()
+                        .group(group)
+                        .await
+                        .map_err(|error| internal::<S>(&error))?
+                        .map(|found| found.name),
                     _ => None,
                 };
                 Ok(serde_json::json!({ "id": id, "name": name }))
@@ -582,7 +576,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             FieldType::Group => match GroupId::from_bytes(bytes) {
                 Ok(group) => {
-                    viewer.kind_level(PeopleKind::Mentions) == PeopleLevel::Names
+                    viewer.kind_level(GROUP_FIELD_KIND) == PeopleLevel::Names
                         && self.store().group(group).await.map_err(failed)?.is_some()
                 }
                 Err(_) => false,

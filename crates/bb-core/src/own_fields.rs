@@ -11,6 +11,7 @@ use jiff::Timestamp;
 use crate::fields::FieldKey;
 use crate::id::{ChoiceId, FieldId, IssueTypeId, ProjectId};
 use crate::issue::IssueIcon;
+use crate::people_kinds::PeopleKind;
 use crate::personal::Entity;
 use crate::technical::{InvalidTechnicalName, TechnicalName};
 
@@ -118,6 +119,27 @@ words! {
     }
     messages name = "field-type.";
     messages example = "field-example."
+}
+
+/// The kind of people information that a person in an own field is shown as.
+pub const PERSON_FIELD_KIND: PeopleKind = PeopleKind::AssignedTo;
+
+/// The kind of people information that a group in an own field is named by.
+pub const GROUP_FIELD_KIND: PeopleKind = PeopleKind::Mentions;
+
+impl FieldType {
+    /// The kind of people information a value of this type is, when it holds people or a group: a
+    /// person in the field is shown by the rules of *Who sees people* for that kind, and a person
+    /// who cannot see the names cannot search, sort or group by the field either (ADR-0022). The
+    /// one place that says it, for showing a value and for searching.
+    #[must_use]
+    pub const fn people_kind(self) -> Option<PeopleKind> {
+        match self {
+            Self::Person | Self::People => Some(PERSON_FIELD_KIND),
+            Self::Group => Some(GROUP_FIELD_KIND),
+            _ => None,
+        }
+    }
 }
 
 words_in_api!(FieldType, "What kind of information an own field holds.");
@@ -586,6 +608,18 @@ impl OwnField {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn qry_05_only_people_and_groups_are_a_kind_of_people_information() {
+        for kind in FieldType::ALL {
+            let expected = match kind {
+                FieldType::Person | FieldType::People => Some(PERSON_FIELD_KIND),
+                FieldType::Group => Some(GROUP_FIELD_KIND),
+                _ => None,
+            };
+            assert_eq!(kind.people_kind(), expected, "{kind:?}");
+        }
+    }
 
     #[test]
     fn cf_01_every_type_has_a_column_and_the_looks_fit_somewhere() {

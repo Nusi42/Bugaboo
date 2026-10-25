@@ -54,6 +54,31 @@ words! {
     messages name = "issue-field.";
 }
 
+/// Parts of a name written as one word in lower camel case: the first part in lower case at its
+/// start, each next part with a capital at its start, the rest of every part as it is. The one
+/// rule for the word of a built-in field (`assigned-to` is `assignedTo`) and of an own field
+/// (`Story points` is `storyPoints`).
+#[must_use]
+pub fn lower_camel<'a>(parts: impl IntoIterator<Item = &'a str>) -> String {
+    let mut word = String::new();
+    for (at, part) in parts
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .enumerate()
+    {
+        let mut letters = part.chars();
+        if let Some(first) = letters.next() {
+            if at == 0 {
+                word.extend(first.to_lowercase());
+            } else {
+                word.extend(first.to_uppercase());
+            }
+        }
+        word.push_str(letters.as_str());
+    }
+    word
+}
+
 words_in_api!(
     Field,
     "A built-in field of the field catalogue, by its key."
@@ -198,19 +223,7 @@ impl Field {
     /// second list of words can disagree with the catalogue.
     #[must_use]
     pub fn search_word(self) -> String {
-        let mut word = String::new();
-        let mut upper = false;
-        for letter in self.code().chars() {
-            if letter == '-' {
-                upper = true;
-            } else if upper {
-                word.extend(letter.to_uppercase());
-                upper = false;
-            } else {
-                word.push(letter);
-            }
-        }
-        word
+        lower_camel(self.code().split('-'))
     }
 
     /// The kind of people information the field holds, when it holds a person: a person in the
@@ -263,6 +276,14 @@ mod tests {
         let words: std::collections::HashSet<String> =
             Field::ALL.iter().map(|field| field.search_word()).collect();
         assert_eq!(words.len(), Field::ALL.len());
+    }
+
+    #[test]
+    fn lower_camel_joins_parts_in_one_word() {
+        assert_eq!(lower_camel(["Story", "points"]), "storyPoints");
+        assert_eq!(lower_camel(["assigned", "to"]), "assignedTo");
+        assert_eq!(lower_camel(["", "a", "b"]), "aB");
+        assert_eq!(lower_camel([]), "");
     }
 
     #[test]
