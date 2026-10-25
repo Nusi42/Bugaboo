@@ -163,6 +163,16 @@ async fn owner_in(
         .transpose()
 }
 
+/// The rows of a person and every project, without levels, on one transaction.
+async fn policy_and_tree_in(
+    transaction: &mut Transaction,
+    person: UserId,
+) -> Result<(Policy, Vec<Project>), StoreError> {
+    let policy = load_policy(transaction, Wanted::Person(person)).await?;
+    let projects = tree_in(transaction).await?;
+    Ok((policy, projects))
+}
+
 impl ProjectStore for AuthStorage {
     async fn project_tree_in(transaction: &mut Transaction) -> Result<Vec<Project>, StoreError> {
         tree_in(transaction).await
@@ -177,9 +187,7 @@ impl ProjectStore for AuthStorage {
         person: UserId,
     ) -> Result<(Policy, Vec<Project>), StoreError> {
         let mut transaction = self.database().begin_read().await?;
-        let policy = load_policy(&mut transaction, Wanted::Person(person)).await?;
-        let projects = tree_in(&mut transaction).await?;
-        Ok((policy, projects))
+        policy_and_tree_in(&mut transaction, person).await
     }
 
     async fn leveled_policy_and_tree_of(
@@ -187,10 +195,9 @@ impl ProjectStore for AuthStorage {
         person: UserId,
     ) -> Result<(Policy, Vec<Project>), StoreError> {
         let mut transaction = self.database().begin_read().await?;
-        let mut policy = load_policy(&mut transaction, Wanted::Person(person)).await?;
+        let (mut policy, projects) = policy_and_tree_in(&mut transaction, person).await?;
         let roles = policy.roles.iter().map(|role| role.id).collect();
         policy.rules = level_rules_of_roles_in(&mut transaction, roles).await?;
-        let projects = tree_in(&mut transaction).await?;
         Ok((policy, projects))
     }
 
