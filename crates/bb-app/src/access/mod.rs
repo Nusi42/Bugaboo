@@ -43,7 +43,7 @@ pub use visibility::{
 use serde::Serialize;
 
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal, locked};
-use crate::projects::{Shown, sub_projects_in};
+use crate::projects::{Leveled, sub_projects_in};
 
 /// Who asks: the signed-in person behind a session, or the owner of the access key a script
 /// came with.
@@ -226,7 +226,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         person: UserId,
         projects: &[ProjectId],
-    ) -> Result<Option<Shown>, AppError> {
+    ) -> Result<Option<Leveled>, AppError> {
         let mut wanted: Vec<ProjectId> = projects
             .iter()
             .copied()

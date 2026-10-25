@@ -112,6 +112,8 @@ fn table(kind: LevelKind, in_project: bool, typed: bool) -> Result<Table, StoreE
 pub(crate) enum Which<'a> {
     /// Every level of every role.
     All,
+    /// Every level these roles have set, for the organization and for all projects.
+    Roles(&'a [RoleId]),
     /// The levels of these roles that apply at a place: their own, and those set for a project of
     /// `chain` (the projects from the top down to the place).
     At {
@@ -194,14 +196,20 @@ async fn read_rows(
     if let Some(issue_type) = table.issue_type {
         select.column(issue_type);
     }
-    if let Which::At { roles, chain } = which {
-        if in_project && chain.is_empty() {
-            // The organization has no project: nothing is set for it.
-            return Ok(Vec::new());
+    match which {
+        Which::All => {}
+        Which::Roles(roles) => {
+            select.and_where(Expr::col(table.role).is_in(super::in_list(roles)));
         }
-        select.and_where(Expr::col(table.role).is_in(super::in_list(roles)));
-        if let Some(project) = table.project {
-            select.and_where(Expr::col(project).is_in(super::in_list(chain)));
+        Which::At { roles, chain } => {
+            if in_project && chain.is_empty() {
+                // The organization has no project: nothing is set for it.
+                return Ok(Vec::new());
+            }
+            select.and_where(Expr::col(table.role).is_in(super::in_list(roles)));
+            if let Some(project) = table.project {
+                select.and_where(Expr::col(project).is_in(super::in_list(chain)));
+            }
         }
     }
     let mut rows = Vec::new();

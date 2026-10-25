@@ -356,7 +356,7 @@ pub async fn label_groups<S: AuthStore>(
 ) -> Result<Authorized<LabelGroupPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    let shown = ctx.shown_with_levels_to(&actor).await?;
+    let shown = ctx.shown_to(&actor).await?;
     let mut catalogue = ctx.label_catalogue().await?;
     let (groups, here) = ctx
         .listed_groups(&shown, &mut catalogue, input.project.as_deref())
@@ -389,7 +389,7 @@ pub async fn labels<S: AuthStore>(
 ) -> Result<Authorized<LabelPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    let shown = ctx.shown_with_levels_to(&actor).await?;
+    let shown = ctx.shown_to(&actor).await?;
     let mut catalogue = ctx.label_catalogue().await?;
     let (groups, _) = ctx
         .listed_groups(&shown, &mut catalogue, input.project.as_deref())

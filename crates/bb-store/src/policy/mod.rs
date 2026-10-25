@@ -71,9 +71,7 @@ pub(crate) async fn level_rules_of_roles_in(
     if roles.is_empty() {
         return Ok(LevelRules::default());
     }
-    Ok(loading::rules_of(reader, Which::All)
-        .await?
-        .of_roles(&roles.into_iter().collect()))
+    loading::rules_of(reader, Which::Roles(&roles)).await
 }
 
 impl PolicyStore for AuthStorage {
@@ -181,6 +179,11 @@ impl PolicyStore for AuthStorage {
             chain,
             rules: levels,
         }))
+    }
+
+    async fn level_rules_of_roles(&self, roles: Vec<RoleId>) -> Result<LevelRules, StoreError> {
+        let mut transaction = self.database().begin_read().await?;
+        level_rules_of_roles_in(&mut transaction, roles).await
     }
 
     async fn groups(&self) -> Result<Vec<Group>, StoreError> {

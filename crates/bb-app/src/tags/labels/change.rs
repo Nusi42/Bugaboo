@@ -33,7 +33,7 @@ pub async fn create_label<S: AuthStore>(
     input: CreateLabel,
 ) -> Result<Authorized<LabelView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let shown = ctx.shown_with_levels_to(&actor).await?;
+    let shown = ctx.shown_to(&actor).await?;
     let catalogue = ctx.label_catalogue().await?;
     let held = ctx
         .label_manager(&actor, &shown, &catalogue, input.group)
@@ -104,7 +104,7 @@ pub async fn label_change_preview<S: AuthStore>(
     input: LabelChangePreviewQuery,
 ) -> Result<Authorized<TagChangePreview>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let shown = ctx.shown_with_levels_to(&actor).await?;
+    let shown = ctx.shown_to(&actor).await?;
     let catalogue = ctx.label_catalogue().await?;
     let label = catalogue.label(input.label)?;
     let held = ctx
@@ -162,7 +162,7 @@ pub async fn change_label<S: AuthStore>(
     input: ChangeLabel,
 ) -> Result<Authorized<LabelView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let shown = ctx.shown_with_levels_to(&actor).await?;
+    let shown = ctx.shown_to(&actor).await?;
     let catalogue = ctx.label_catalogue().await?;
     let label = catalogue.label(input.label)?.clone();
     let held = ctx

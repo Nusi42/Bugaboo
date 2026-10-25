@@ -60,7 +60,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         value: &Value,
     ) -> Result<Option<ChangeValue>, AppError> {
         if reading.names.tags.is_none() {
-            let shown = self.shown_for(reading, false).await?.clone();
+            let shown = self.shown_for(reading).await?.clone();
             reading.names.tags = Some(self.known_tag_names(&shown).await?);
         }
         let known = reading.names.tags.clone().unwrap_or_default();
@@ -77,25 +77,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .then_some(ChangeValue::Names { names: shown_names }))
     }
 
-    /// What the reader sees of the tree of projects, read the first time it is asked for; with
-    /// the levels only when `levels` is set (the groups of labels in use need them), read again
-    /// if the view held so far has none.
-    async fn shown_for<'k>(
-        &self,
-        reading: &'k mut Reading<'_>,
-        levels: bool,
-    ) -> Result<&'k Shown, AppError> {
-        if reading
-            .names
-            .shown
-            .as_ref()
-            .is_none_or(|held| levels && !held.has_levels())
-        {
-            reading.names.shown = Some(if levels {
-                self.shown_with_levels_to(reading.actor).await?
-            } else {
-                self.shown_to(reading.actor).await?
-            });
+    /// What the reader sees of the tree of projects, read the first time it is asked for.
+    async fn shown_for<'k>(&self, reading: &'k mut Reading<'_>) -> Result<&'k Shown, AppError> {
+        if reading.names.shown.is_none() {
+            reading.names.shown = Some(self.shown_to(reading.actor).await?);
         }
         reading
             .names
@@ -127,7 +112,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .cloned();
             let known = match named {
                 Some(named) => {
-                    let shown = self.shown_for(reading, false).await?;
+                    let shown = self.shown_for(reading).await?;
                     self.known_types(shown, vec![named]).await?.pop()
                 }
                 None => None,
@@ -176,7 +161,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .find(|each| each.id == group);
         let known = match named {
             Some(named) => {
-                let shown = self.shown_for(reading, true).await?;
+                let shown = self.shown_for(reading).await?;
                 !self.known_groups(shown, vec![named]).await?.is_empty()
             }
             None => false,
@@ -197,7 +182,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         let groups = self.all_groups(reading).await?;
         let every = groups.len();
-        let shown = self.shown_for(reading, true).await?;
+        let shown = self.shown_for(reading).await?;
         let known_groups = self.known_groups(shown, groups).await?;
         let (seen, unseen): (Vec<_>, Vec<_>) = held
             .into_iter()

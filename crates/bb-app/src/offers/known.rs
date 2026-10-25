@@ -72,18 +72,13 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The groups of labels in use on the issues whose labels the person may see, read once for a
-    /// request.
+    /// request; the levels of their roles are read only now, for this.
     async fn used_groups(&self, shown: &Shown) -> Result<Arc<Vec<LabelGroupId>>, AppError> {
         if let Some(known) = locked(&self.known.used_groups)
             .get(&shown.person())
             .cloned()
         {
             return Ok(known);
-        }
-        if !shown.has_levels() {
-            return Err(AppError::Internal(
-                "the groups of labels in use need a view with the levels".into(),
-            ));
         }
         let failed = |error| internal::<S>(&error);
         let types: Vec<IssueTypeId> = self
@@ -92,9 +87,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .map(|found| found.id)
             .collect();
+        let leveled = self.leveled(shown).await?;
         let found = Arc::new(
             self.store()
-                .used_label_groups(&shown.label_sight(&types))
+                .used_label_groups(&leveled.label_sight(&types))
                 .await
                 .map_err(failed)?,
         );
@@ -238,7 +234,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if found.project.is_none() {
             return Ok(found);
         }
-        let shown = self.shown_with_levels_to(actor).await?;
+        let shown = self.shown_to(actor).await?;
         self.known_groups(&shown, vec![found])
             .await?
             .pop()

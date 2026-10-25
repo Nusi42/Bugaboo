@@ -28,8 +28,6 @@ pub(crate) struct Shown {
     /// in everything below, so a key for one project sees that project and what is inside it, and
     /// its trail stops there (M2-F27).
     key: Option<Narrowing>,
-    /// Whether the policy holds the levels of the roles ([`Ctx::shown_with_levels`]).
-    levels: bool,
     policy: Policy,
     tree: Tree,
     projects: BTreeMap<ProjectId, Project>,
@@ -50,7 +48,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             actor.key_scope().cloned(),
             policy,
             projects,
-            false,
         ))
     }
 
@@ -58,14 +55,15 @@ impl<S: AuthStore> Ctx<'_, S> {
     ///
     /// # Errors
     /// An internal error when the store fails.
-    pub(crate) async fn shown_with_levels_to(&self, actor: &Actor) -> Result<Shown, AppError> {
+    pub(crate) async fn shown_with_levels_to(&self, actor: &Actor) -> Result<Leveled, AppError> {
         self.shown_with_levels(actor.person.id, actor.key_scope().cloned())
             .await
     }
 
-    /// The same view of `person` (narrowed to `key`), with the levels of their roles, so that a decision about a field
-    /// can be made for every project in memory. For what can need them: the tags to offer, the
-    /// groups of labels in use. The rows, the levels and the projects come from one read.
+    /// The same view of `person` (narrowed to `key`), with the levels of their roles, so that a
+    /// decision about a field can be made for every project in memory (the tags to offer, the
+    /// rights in the projects of a page). The rows, the levels and the projects come from one
+    /// read.
     ///
     /// # Errors
     /// An internal error when the store fails.
@@ -73,66 +71,52 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         person: UserId,
         key: Option<Narrowing>,
-    ) -> Result<Shown, AppError> {
+    ) -> Result<Leveled, AppError> {
         let (policy, projects) = self
             .store()
             .leveled_policy_and_tree_of(person)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        Ok(Shown::of(person, key, policy, projects, true))
+        Ok(Leveled(Shown::of(person, key, policy, projects)))
+    }
+
+    /// The view `shown` with the levels of the roles of its person added: for what is needed only
+    /// now and then (the groups of labels in use), so the view is not read again, only the
+    /// levels.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn leveled(&self, shown: &Shown) -> Result<Leveled, AppError> {
+        let roles = shown.policy.roles.iter().map(|role| role.id).collect();
+        let rules = self
+            .store()
+            .level_rules_of_roles(roles)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let mut leveled = shown.clone();
+        leveled.policy.rules = rules;
+        Ok(Leveled(leveled))
     }
 }
 
-impl Shown {
-    fn of(
-        person: UserId,
-        key: Option<Narrowing>,
-        policy: Policy,
-        projects: Vec<Project>,
-        levels: bool,
-    ) -> Self {
-        let tree = Tree::of(&projects);
-        Self {
-            visible: policy.visible_as(person, key.as_ref(), &tree),
-            person,
-            key,
-            levels,
-            policy,
-            tree,
-            projects: projects
-                .into_iter()
-                .map(|project| (project.id, project))
-                .collect(),
-        }
-    }
+/// A [`Shown`] whose policy holds the levels of the roles, so that a decision about a field can be
+/// made for every project in memory. Only this type can judge it: a view without the levels
+/// cannot be given where they are needed.
+#[derive(Clone)]
+pub(crate) struct Leveled(Shown);
 
-    /// The person it is the view of.
-    pub(crate) const fn person(&self) -> UserId {
-        self.person
-    }
+impl std::ops::Deref for Leveled {
+    type Target = Shown;
 
-    /// Whether the view holds the levels of the roles, which the decisions about fields need.
-    pub(crate) const fn has_levels(&self) -> bool {
-        self.levels
+    fn deref(&self) -> &Shown {
+        &self.0
     }
+}
 
-    /// What the person themselves may do in each of `projects` (not narrowed to a key), decided in
-    /// memory from the rows and the tree read once; a project that is not stored is left out.
-    pub(crate) fn evaluations_in(&self, projects: &[ProjectId]) -> Vec<(ProjectId, Evaluation)> {
-        self.policy
-            .evaluations_in(self.person, &self.tree, projects)
-    }
-
-    /// A project as it is stored, whether the person sees it or not: only for what is shown after
-    /// the rights were judged, never to be named on its own.
-    pub(crate) fn stored(&self, project: ProjectId) -> Option<&Project> {
-        self.projects.get(&project)
-    }
-
+impl Leveled {
     /// Which issues the person reads where their role lets them see `field` (SEC-06), judged for
     /// every project and issue type in memory: a project where the field is hidden for every type is
-    /// left out, and the types for which it is hidden in the others are named in `hidden`. Needs
-    /// the levels ([`Ctx::shown_with_levels`]).
+    /// left out, and the types for which it is hidden in the others are named in `hidden`.
     pub(crate) fn issue_sight_with(&self, field: Field, types: &[IssueTypeId]) -> IssueSight {
         let mut sight = self.issue_sight();
         let mut kept = Vec::new();
@@ -157,6 +141,47 @@ impl Shown {
         }
         sight.hidden = kept;
         sight
+    }
+
+    /// Which issues the person reads where their role lets them see the labels (SEC-06), judged in
+    /// memory; for the groups of labels in use.
+    pub(crate) fn label_sight(&self, types: &[IssueTypeId]) -> IssueSight {
+        self.issue_sight_with(Field::Labels, types)
+    }
+}
+
+impl Shown {
+    fn of(person: UserId, key: Option<Narrowing>, policy: Policy, projects: Vec<Project>) -> Self {
+        let tree = Tree::of(&projects);
+        Self {
+            visible: policy.visible_as(person, key.as_ref(), &tree),
+            person,
+            key,
+            policy,
+            tree,
+            projects: projects
+                .into_iter()
+                .map(|project| (project.id, project))
+                .collect(),
+        }
+    }
+
+    /// The person it is the view of.
+    pub(crate) const fn person(&self) -> UserId {
+        self.person
+    }
+
+    /// What the person themselves may do in each of `projects` (not narrowed to a key), decided in
+    /// memory from the rows and the tree read once; a project that is not stored is left out.
+    pub(crate) fn evaluations_in(&self, projects: &[ProjectId]) -> Vec<(ProjectId, Evaluation)> {
+        self.policy
+            .evaluations_in(self.person, &self.tree, projects)
+    }
+
+    /// A project as it is stored, whether the person sees it or not: only for what is shown after
+    /// the rights were judged, never to be named on its own.
+    pub(crate) fn stored(&self, project: ProjectId) -> Option<&Project> {
+        self.projects.get(&project)
     }
 
     /// Which issues the person reads in the projects they see (SEC-06): every issue where they hold
@@ -260,12 +285,6 @@ impl Shown {
                 .filter(|found| self.knows(found.id))
                 .map_or(ProjectLabel::Hidden, ProjectLabel::of)
         })
-    }
-
-    /// Which issues the person reads where their role lets them see the labels (SEC-06), judged in
-    /// memory; for the groups of labels in use. Needs the levels ([`Ctx::shown_with_levels`]).
-    pub(crate) fn label_sight(&self, types: &[IssueTypeId]) -> IssueSight {
-        self.issue_sight_with(Field::Labels, types)
     }
 
     /// The parent a stored project has, whether the person sees it or not: only for comparing
