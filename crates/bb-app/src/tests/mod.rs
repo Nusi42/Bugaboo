@@ -4,6 +4,7 @@
 
 mod check_access_types;
 mod editing;
+mod event_members;
 mod events;
 mod failures;
 mod fake;
