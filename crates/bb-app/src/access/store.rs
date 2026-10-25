@@ -110,9 +110,6 @@ pub trait PolicyStore: ChangeStore + 'static {
         /// Every level the roles have set, their own and those for the projects from the top down
         /// to `project`; `None` when the project does not exist.
         fn level_rules(roles: Vec<RoleId>, project: Option<ProjectId>) -> Option<PlaceLevels>;
-        /// Every level these roles have set, for the organization and for all projects: what a
-        /// decision over many projects at once (the tags to offer) is made from, in memory.
-        fn level_rules_of_roles(roles: Vec<RoleId>) -> LevelRules;
     }
 
     writes! {
