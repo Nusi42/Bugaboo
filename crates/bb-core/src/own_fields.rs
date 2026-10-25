@@ -122,10 +122,10 @@ words! {
 }
 
 /// The kind of people information that a person in an own field is shown as.
-pub const PERSON_FIELD_KIND: PeopleKind = PeopleKind::AssignedTo;
+const PERSON_FIELD_KIND: PeopleKind = PeopleKind::AssignedTo;
 
 /// The kind of people information that a group in an own field is named by.
-pub const GROUP_FIELD_KIND: PeopleKind = PeopleKind::Mentions;
+const GROUP_FIELD_KIND: PeopleKind = PeopleKind::Mentions;
 
 impl FieldType {
     /// The kind of people information a value of this type is, when it holds people or a group: a

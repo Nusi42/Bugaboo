@@ -7,7 +7,7 @@ use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::access_key::KeyChoice;
 use bb_core::fields::{Field, FieldKey};
 use bb_core::issue::{IssueIcon, StatusGroup};
-use bb_core::own_fields::{FieldType, GROUP_FIELD_KIND, PERSON_FIELD_KIND, Scope};
+use bb_core::own_fields::{FieldType, Scope};
 use bb_core::workflow::starter::OPEN;
 use bb_core::workflow::{ChangeDraft, StatusDraft, StatusRules};
 
@@ -66,27 +66,33 @@ fn offers(names: &[String], name: &str) -> bool {
 async fn qry_05_the_types_offered_are_those_the_person_may_know() -> Outcome {
     let g = groups().await?;
     let sam = lead_of(&g.world, "sam@example.test", g.other).await?;
-    create_issue_type(
-        &g.world.ctx(),
-        CreateIssueType {
-            session_token: g.admin.clone(),
-            project: Some("OTHER".to_owned()),
-            name: "Secret kind".to_owned(),
-            icon: IssueIcon::CircleHelp,
-        },
-    )
-    .await?;
-    // The lead of ACME does not know OTHER, so a type made there is not among the choices.
-    let hidden = choices_of(&g.world, &g.lead, SearchScope::Everywhere, "type").await?;
-    let known = choices_of(
-        &g.world,
-        &sam.session_token,
-        SearchScope::Everywhere,
-        "type",
-    )
-    .await?;
+    // A person who leads only SUB works inside ACME, so they know the types made in ACME
+    // (`sees_inside`). That is why no case exists where `known_types` drops a type that reaches a
+    // place the person sees: reaching a seen place already means knowing the project it was made
+    // in. `known_types` stays in the helper as the one rule of what a person knows (the same
+    // helper answers `project_statuses`); this test pins the two answers together.
+    let sub = lead_of(&g.world, "sue@example.test", g.sub).await?;
+    for (project, name) in [("OTHER", "Secret kind"), ("ACME", "Parent kind")] {
+        create_issue_type(
+            &g.world.ctx(),
+            CreateIssueType {
+                session_token: g.admin.clone(),
+                project: Some(project.to_owned()),
+                name: name.to_owned(),
+                icon: IssueIcon::CircleHelp,
+            },
+        )
+        .await?;
+    }
+    let asked =
+        async |session: &str| choices_of(&g.world, session, SearchScope::Everywhere, "type").await;
+    let (hidden, known) = (asked(&g.lead).await?, asked(&sam.session_token).await?);
+    let below = asked(&sub.session_token).await?;
     assert!(!offers(&hidden, "Secret kind"), "{hidden:?}");
     assert!(offers(&known, "Secret kind"), "{known:?}");
+    assert!(offers(&below, "Parent kind"), "{below:?}");
+    assert!(!offers(&below, "Secret kind"), "{below:?}");
+    assert!(offers(&hidden, "Parent kind"));
     Ok(())
 }
 
@@ -132,14 +138,24 @@ async fn qry_05_a_field_of_people_follows_who_sees_people_like_the_built_in_ones
     let mut shown = every_field();
     shown.extend([FieldKey::Own(reviewer.id), FieldKey::Own(team.id)]);
     let (bob, role) = bob_with_a_role(&world, &shown).await?;
-    set_people(&world, role, GROUP_FIELD_KIND, PeopleLevel::Names).await?;
+    let person = FieldType::Person
+        .people_kind()
+        .ok_or("a person field has a kind")?;
+    let group = FieldType::Group
+        .people_kind()
+        .ok_or("a group field has a kind")?;
+    set_people(&world, role, group, PeopleLevel::Names).await?;
     let names = words_of(&world, &bob, SearchScope::Everywhere).await?;
     assert!(has(&names, "reviewer") && has(&names, "team"), "{names:?}");
-    set_people(&world, role, PERSON_FIELD_KIND, PeopleLevel::RoleOnly).await?;
-    set_people(&world, role, GROUP_FIELD_KIND, PeopleLevel::RoleOnly).await?;
-    let hidden = words_of(&world, &bob, SearchScope::Everywhere).await?;
-    assert!(!has(&hidden, "reviewer"), "{hidden:?}");
-    assert!(!has(&hidden, "team"), "{hidden:?}");
+    // One kind at a time: lowering the one of people takes only the person field away.
+    set_people(&world, role, person, PeopleLevel::RoleOnly).await?;
+    let names = words_of(&world, &bob, SearchScope::Everywhere).await?;
+    assert!(!has(&names, "reviewer") && has(&names, "team"), "{names:?}");
+    // And lowering the one of groups takes only the group field away.
+    set_people(&world, role, person, PeopleLevel::Names).await?;
+    set_people(&world, role, group, PeopleLevel::RoleOnly).await?;
+    let names = words_of(&world, &bob, SearchScope::Everywhere).await?;
+    assert!(has(&names, "reviewer") && !has(&names, "team"), "{names:?}");
     Ok(())
 }
 

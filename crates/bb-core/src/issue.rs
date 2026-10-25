@@ -32,6 +32,17 @@ words! {
 words_in_api!(StatusGroup, "The group of a status.");
 
 impl StatusGroup {
+    /// The word of the group in the search language: one English word, the same in every language
+    /// of the app (ADR-0005 amendment M5, decision 9), defined here next to the group.
+    #[must_use]
+    pub const fn search_word(self) -> &'static str {
+        match self {
+            Self::NotStarted => "notStarted",
+            Self::InProgress => "inProgress",
+            Self::Done => "done",
+        }
+    }
+
     /// The closed date after an issue enters a status of this group, given the date it had: the
     /// group *Done* sets it (an issue that is in the group already keeps the date it had), every
     /// other group has none (ADR-0027 decision 5, ADR-0031 decision 5).
@@ -59,6 +70,18 @@ words! {
 words_in_api!(Priority, "How important an issue is.");
 
 impl Priority {
+    /// The word of the priority in the search language: one English word, the same in every
+    /// language of the app (ADR-0005 amendment M5, decision 9), defined here next to the priority.
+    #[must_use]
+    pub const fn search_word(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Normal => "normal",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
+
     /// The priority of a new issue.
     pub const NEW: Self = Self::Normal;
 }
@@ -267,6 +290,24 @@ pub struct IssueCounter {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn qry_05_the_search_words_of_priorities_and_status_groups_are_one_word_each_and_different() {
+        let mut words: Vec<&str> = Priority::ALL
+            .iter()
+            .map(|each| each.search_word())
+            .collect();
+        words.extend(StatusGroup::ALL.iter().map(|each| each.search_word()));
+        let all = words.len();
+        assert!(
+            words
+                .iter()
+                .all(|word| word.chars().all(char::is_alphanumeric))
+        );
+        words.sort_unstable();
+        words.dedup();
+        assert_eq!(words.len(), all);
+    }
+
     use super::*;
 
     fn at(second: i64) -> Timestamp {

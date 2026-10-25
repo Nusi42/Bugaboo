@@ -1,12 +1,18 @@
 //! Seeing the statuses a project offers.
 
+use std::sync::Arc;
+
 use bb_core::ErrorCode;
+use bb_core::id::ProjectId;
+use bb_core::issue::IssueType;
 use bb_core::offer::reaches;
+use bb_core::workflow::WorkflowContent;
 use bb_policy::{Authorized, Masked};
 use serde::Serialize;
 
 use super::types::StatusView;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx};
+use crate::projects::Shown;
 
 /// Ask which statuses the issues of a project can have.
 pub struct ProjectStatusesQuery {
@@ -54,22 +60,16 @@ pub async fn project_statuses<S: AuthStore>(
         return Err(AppError::Refused(ErrorCode::NotFound));
     };
     let chain = ctx.chain_of(found.project.id).await?;
-    let types = ctx
-        .store()
-        .issue_types()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    // Only the types the person may know (`offers/known.rs`).
     let shown = ctx.shown_to(&actor).await?;
-    let types = ctx.known_types(&shown, types).await?;
     let mut changes: Vec<ProjectChange> = Vec::new();
-    // Only the types that can reach the project: the statuses of a type created in another project
-    // are no business of this one (and nothing about that type is told).
-    for issue_type in types
+    // Only the types the person may know that can reach the project: the statuses of a type created
+    // in another project are no business of this one (and nothing about that type is told).
+    for (_, workflow) in ctx
+        .workflows_reaching(&shown, &chain)
+        .await?
         .iter()
-        .filter(|each| each.retired_at.is_none() && reaches(each.project, &chain))
+        .filter(|(issue_type, _)| issue_type.retired_at.is_none())
     {
-        let workflow = ctx.workflow_in_force(&chain, Some(issue_type.id)).await?;
         for change in &workflow.changes {
             let Some(to) = workflow.status(&change.to) else {
                 continue;
@@ -84,4 +84,29 @@ pub async fn project_statuses<S: AuthStore>(
         }
     }
     Ok(held.authorize(ProjectStatuses { changes }))
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The issue types that the person may know and that can reach a place whose projects from the
+    /// top down are `chain`, each with the workflow in force there: the one answer to "which
+    /// statuses can an issue here have", for the statuses of a project and for the choices of a
+    /// search.
+    pub(crate) async fn workflows_reaching(
+        &self,
+        shown: &Shown,
+        chain: &[ProjectId],
+    ) -> Result<Vec<(IssueType, Arc<WorkflowContent>)>, AppError> {
+        let directory = self.workflow_directory().await?;
+        let types = self
+            .known_types(shown, self.all_issue_types().await?.to_vec())
+            .await?;
+        Ok(types
+            .into_iter()
+            .filter(|found| reaches(found.project, chain))
+            .map(|found| {
+                let workflow = directory.in_force(chain, Some(found.id));
+                (found, workflow)
+            })
+            .collect())
+    }
 }

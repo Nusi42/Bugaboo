@@ -25,12 +25,11 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::access::FieldLevel;
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::ProjectId;
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
-use bb_core::offer::reaches;
 use bb_core::own_fields::{FieldFor, FieldType};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, FieldMask, Masked, Place as Where};
@@ -120,30 +119,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             .into_iter()
             .map(|(chain, held)| Place::of(chain, held))
             .collect();
-        let types = self
-            .known_types(&seen, self.all_issue_types().await?.to_vec())
-            .await?
-            .into_iter()
-            .filter(|found| {
-                places
-                    .iter()
-                    .any(|place| reaches(found.project, &place.chain))
-            })
-            .collect::<Vec<_>>();
-        let directory = self.workflow_directory().await?;
+        let mut types: Vec<IssueType> = Vec::new();
         let mut statuses: Vec<String> = Vec::new();
         for place in &places {
-            for found in types
-                .iter()
-                .filter(|found| reaches(found.project, &place.chain))
-            {
-                let content = directory.in_force(&place.chain, Some(found.id));
-                statuses.extend(content.statuses.iter().map(|status| status.name.clone()));
+            for (found, workflow) in self.workflows_reaching(&seen, &place.chain).await? {
+                statuses.extend(workflow.statuses.iter().map(|status| status.name.clone()));
+                types.push(found);
             }
         }
         let sources = Sources {
             statuses: once_each(statuses),
-            issue_types: once_each(types.iter().map(|found: &IssueType| found.name.clone())),
+            issue_types: once_each(types.iter().map(|found| found.name.clone())),
             own: self
                 .store()
                 .field_definitions()
@@ -196,7 +182,7 @@ impl Place {
     /// they see the names (ADR-0022: a kind whose names are hidden cannot be searched).
     fn may_use(&self, field: FieldKey, people: Option<PeopleKind>) -> bool {
         self.mask.level(field) >= FieldLevel::CanSee
-            && people.is_none_or(|kind| self.held.kind_level(kind) == PeopleLevel::Names)
+            && people.is_none_or(|kind| self.held.sees_names(kind))
     }
 }
 
@@ -246,7 +232,7 @@ fn catalogue_field(field: Field, kind: FieldKind, sources: &Sources) -> SearchFi
         Field::Status => sources.statuses.clone(),
         Field::Priority => Priority::ALL
             .iter()
-            .map(|each| each.name().template().to_owned())
+            .map(|each| each.search_word().to_owned())
             .collect(),
         _ => Vec::new(),
     };
@@ -292,7 +278,7 @@ fn own_words(own: &[Definition]) -> Vec<Option<String>> {
     own.iter()
         .map(|definition| {
             let word = own_field_word(&definition.field.name);
-            if taken.contains(&word) {
+            if definition.field.applies_to != FieldFor::Issues || taken.contains(&word) {
                 None
             } else {
                 taken.push(word.clone());
@@ -306,7 +292,7 @@ fn own_words(own: &[Definition]) -> Vec<Option<String>> {
 fn status_group_names() -> Vec<String> {
     StatusGroup::ALL
         .iter()
-        .map(|group| group.name().template().to_owned())
+        .map(|group| group.search_word().to_owned())
         .collect()
 }
 
