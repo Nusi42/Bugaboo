@@ -2,5 +2,7 @@
 //! routes of the search build on this module.
 
 mod readable;
+mod target;
 
 pub use readable::{ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
+pub use target::{FieldTarget, Searchable, target_of};

@@ -1,45 +1,47 @@
-//! The readable fields of a person (QRY-05, ADR-0005 amendment M5, decision 5): the fields the
-//! checker of `bb-searchlang` gets, built once per request from the field definitions, the levels
-//! of the person's roles and *Who sees people*. The browser asks for the same fields through a
-//! route, so both sides check a search against the same fields.
+//! The readable fields of a person (QRY-05, ADR-0005 amendment M5, decisions 5 and 9): the fields
+//! the checker of `bb-searchlang` gets, built once per request from the field definitions, the
+//! levels of the person's roles and *Who sees people*. The browser asks for the same fields through
+//! a route, so both sides check a search against the same fields.
 //!
 //! A search looks at many projects at once and a role may set another level in each, so a field is
 //! readable only when it is readable in **every** project the search looks at (and, for a field of
 //! an issue type, for every type: the lowest level counts, as for a view that does not say its
 //! type). A field that is hidden in one project is then as unknown as one that does not exist, and
 //! no filter, sort or group can find out what lies in a project that hides it. An own field counts
-//! only in the projects it is used in.
+//! only in the projects it is used in. A field that holds people is readable only where the person
+//! sees their names (ADR-0022).
+//!
+//! **A word belongs to one field for everyone** (decision 9): the words of the built-in fields and
+//! of the fields every issue has are reserved, also those the person may not read or that cannot
+//! be searched yet, and between own fields the first in the order they are kept in owns a word.
+//! This is decided before the rights of the person, so one canonical text means the same field for
+//! every person it is shared with.
+//!
+//! **Values are written by their name as shown** (decision 9): the choices of a field are names,
+//! each once, and only those the person may know: the types they may know (`known_types`) that can
+//! reach a place the search looks at, and the statuses of the workflows in force there for those
+//! types.
 
 use std::sync::Arc;
 
+use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::ProjectId;
-use bb_core::issue::{Priority, StatusGroup};
+use bb_core::issue::{IssueType, Priority, StatusGroup};
+use bb_core::names::name_key;
+use bb_core::offer::reaches;
 use bb_core::own_fields::{FieldFor, FieldType};
+use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, FieldMask, Masked, Place as Where};
 use bb_searchlang::Field as SearchField;
-use bb_searchlang::{FieldKind, Operator, ReadableFields, own_field_word};
+use bb_searchlang::{FieldKind, IssueField, ReadableFields, own_field_word};
 use serde::Serialize;
 
+use super::target::{FieldTarget, Searchable};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::Definition;
-
-/// The words of the fields every issue has and that no role can hide: they are not in the field
-/// catalogue (what lets a person see them is seeing the issue), and the two values of a yes-no
-/// field.
-mod words {
-    pub(super) const PROJECT: &str = "project";
-    pub(super) const TYPE: &str = "type";
-    pub(super) const STATUS_GROUP: &str = "statusGroup";
-    pub(super) const PARENT: &str = "parent";
-    pub(super) const CREATED: &str = "created";
-    pub(super) const CHANGED: &str = "changed";
-    pub(super) const CLOSED: &str = "closed";
-    pub(super) const YES: &str = "yes";
-    pub(super) const NO: &str = "no";
-}
 
 /// Where a search looks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -68,7 +70,8 @@ impl Masked for SearchFields {}
 /// The fields the person may search by, where a search looks.
 ///
 /// # Errors
-/// An internal error when the store fails.
+/// `resource.not-found` for a project that the person does not see (as one that does not exist);
+/// an internal error when the store fails.
 pub async fn readable_fields<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     query: ReadableFieldsQuery,
@@ -84,38 +87,63 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// input of the checker, for a search that is typed, saved or sent.
     ///
     /// # Errors
-    /// An internal error when the store fails.
+    /// `resource.not-found` for a project that the actor does not see; an internal error when the
+    /// store fails.
     pub(crate) async fn readable_fields_of(
         &self,
         actor: &Actor,
         scope: SearchScope,
     ) -> Result<ReadableFields, AppError> {
+        Ok(readable_of(&self.searchables_of(actor, scope).await?))
+    }
+
+    /// The same fields with what each one stands for, which the compiler needs: the one list the
+    /// checker and the compiler both start from, so they cannot disagree about a word.
+    ///
+    /// # Errors
+    /// `resource.not-found` for a project that the actor does not see; an internal error when the
+    /// store fails.
+    pub(crate) async fn searchables_of(
+        &self,
+        actor: &Actor,
+        scope: SearchScope,
+    ) -> Result<Vec<Searchable>, AppError> {
         let seen = self.shown_with_levels_to(actor).await?;
         let within = match scope {
             SearchScope::Everywhere => None,
-            SearchScope::Within(project) => Some(project),
+            SearchScope::Within(project) if seen.sees(project) => Some(project),
+            // A project the person does not see is answered as one that does not exist.
+            SearchScope::Within(_) => return Err(AppError::Refused(ErrorCode::NotFound)),
         };
         let places: Vec<Place> = seen
             .seen_places(within)
             .into_iter()
-            .map(|(chain, held)| Place::of(chain, &held))
+            .map(|(chain, held)| Place::of(chain, held))
             .collect();
-        let sources = Sources {
-            statuses: self
-                .workflow_directory()
-                .await?
-                .status_keys()
+        let types = self
+            .known_types(&seen, self.all_issue_types().await?.to_vec())
+            .await?
+            .into_iter()
+            .filter(|found| {
+                places
+                    .iter()
+                    .any(|place| reaches(found.project, &place.chain))
+            })
+            .collect::<Vec<_>>();
+        let directory = self.workflow_directory().await?;
+        let mut statuses: Vec<String> = Vec::new();
+        for place in &places {
+            for found in types
                 .iter()
-                .map(ToString::to_string)
-                .collect(),
-            issue_types: self
-                .store()
-                .issue_types()
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .into_iter()
-                .map(|issue_type| issue_type.name)
-                .collect(),
+                .filter(|found| reaches(found.project, &place.chain))
+            {
+                let content = directory.in_force(&place.chain, Some(found.id));
+                statuses.extend(content.statuses.iter().map(|status| status.name.clone()));
+            }
+        }
+        let sources = Sources {
+            statuses: once_each(statuses),
+            issue_types: once_each(types.iter().map(|found: &IssueType| found.name.clone())),
             own: self
                 .store()
                 .field_definitions()
@@ -126,60 +154,75 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// The names, each once (names that are the same name are one), in the order they come.
+fn once_each(names: impl IntoIterator<Item = String>) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    names
+        .into_iter()
+        .filter(|name| seen.insert(name_key(name)))
+        .collect()
+}
+
+/// The fields of the language, from the fields with their targets.
+pub(crate) fn readable_of(searchables: &[Searchable]) -> ReadableFields {
+    ReadableFields {
+        fields: searchables
+            .iter()
+            .map(|searchable| searchable.field.clone())
+            .collect(),
+    }
+}
+
 /// What a person may do in one project a search looks at.
 struct Place {
     /// The projects from the top down to it.
     chain: Vec<ProjectId>,
     /// What the person may do with each field, at the lowest level over the issue types.
     mask: FieldMask,
-    /// Whether the person sees the names of the people in *Assigned to* and *Reported by*.
-    sees_names: [bool; 2],
+    /// What the person may do here.
+    held: Arc<Evaluation>,
 }
 
 impl Place {
-    fn of(chain: Vec<ProjectId>, held: &Arc<Evaluation>) -> Self {
-        let names = |field: Field| {
-            field
-                .person_kind()
-                .is_some_and(|kind| held.kind_level(kind) == PeopleLevel::Names)
-        };
+    fn of(chain: Vec<ProjectId>, held: Arc<Evaluation>) -> Self {
         Self {
             chain,
             mask: held.field_mask_for(None),
-            sees_names: [names(Field::AssignedTo), names(Field::ReportedBy)],
+            held,
         }
     }
 
     /// Whether the person may use the field here: they see it, and for a field that holds people
     /// they see the names (ADR-0022: a kind whose names are hidden cannot be searched).
-    fn may_use(&self, field: FieldKey) -> bool {
+    fn may_use(&self, field: FieldKey, people: Option<PeopleKind>) -> bool {
         self.mask.level(field) >= FieldLevel::CanSee
-            && match field {
-                FieldKey::BuiltIn(Field::AssignedTo) => self.sees_names[0],
-                FieldKey::BuiltIn(Field::ReportedBy) => self.sees_names[1],
-                FieldKey::BuiltIn(_) | FieldKey::Own(_) => true,
-            }
+            && people.is_none_or(|kind| self.held.kind_level(kind) == PeopleLevel::Names)
     }
 }
 
 /// What the fields of a search are made of besides the person's rights.
 struct Sources {
-    /// The keys of the statuses.
+    /// The names of the statuses the issues can have in the places.
     statuses: Vec<String>,
-    /// The names of the issue types.
+    /// The names of the issue types the person may know in the places.
     issue_types: Vec<String>,
-    /// The own fields, with their choices.
+    /// Every own field, with its choices, in the order they are kept in.
     own: Vec<Definition>,
 }
 
-/// The kind of value of a field of the catalogue that a search can ask about; `None` for a field
-/// whose values the issues do not hold yet (a later milestone adds its line here, and the compiler
-/// its join).
-const fn catalogue_kind(field: Field) -> Option<FieldKind> {
+/// What a field of the catalogue that a search can ask about stands for, with the kind of its
+/// values; `None` for a field whose values the issues do not hold yet (a later milestone adds its
+/// line here, and the compiler its join). Its word is reserved all the same.
+const fn catalogue_target(field: Field) -> Option<(FieldTarget, FieldKind)> {
     match field {
-        Field::Title | Field::Description => Some(FieldKind::Text),
-        Field::Status | Field::Priority | Field::Labels | Field::Tags => Some(FieldKind::Choice),
-        Field::AssignedTo | Field::ReportedBy => Some(FieldKind::Person),
+        Field::Title => Some((FieldTarget::Title, FieldKind::Text)),
+        Field::Description => Some((FieldTarget::Description, FieldKind::Text)),
+        Field::Status => Some((FieldTarget::Status, FieldKind::Choice)),
+        Field::Priority => Some((FieldTarget::Priority, FieldKind::Choice)),
+        Field::Labels => Some((FieldTarget::Labels, FieldKind::Choice)),
+        Field::Tags => Some((FieldTarget::Tags, FieldKind::Choice)),
+        Field::AssignedTo => Some((FieldTarget::AssignedTo, FieldKind::Person)),
+        Field::ReportedBy => Some((FieldTarget::ReportedBy, FieldKind::Person)),
         Field::DueDate
         | Field::PlannedForRelease
         | Field::FoundInRelease
@@ -191,132 +234,150 @@ const fn catalogue_kind(field: Field) -> Option<FieldKind> {
     }
 }
 
-/// The values of a catalogue field with a fixed list, in their order.
-fn catalogue_choices(field: Field, sources: &Sources) -> Vec<String> {
-    match field {
+/// The field of the language for a field of the catalogue, with the names of its values.
+fn catalogue_field(field: Field, kind: FieldKind, sources: &Sources) -> SearchField {
+    let word = field.search_word();
+    let found = match field {
+        // A status, tags and labels: any number of values with no order among them.
+        Field::Status | Field::Labels | Field::Tags => SearchField::unordered(&word),
+        _ => SearchField::new(&word, kind),
+    };
+    let choices = match field {
         Field::Status => sources.statuses.clone(),
         Field::Priority => Priority::ALL
             .iter()
-            .map(|each| each.code().to_owned())
+            .map(|each| each.name().template().to_owned())
             .collect(),
         _ => Vec::new(),
-    }
-}
-
-/// The field of a search for an own field: its kind, what may be asked of it, and its choices.
-fn own_search_field(word: &str, definition: &Definition) -> SearchField {
-    let kind = match definition.field.kind {
-        FieldType::Text | FieldType::LongText | FieldType::WebAddress => FieldKind::Text,
-        FieldType::WholeNumber | FieldType::Decimal | FieldType::Duration => FieldKind::Number,
-        FieldType::Date | FieldType::DateTime => FieldKind::Date,
-        FieldType::PickOne | FieldType::PickSeveral | FieldType::YesNo | FieldType::Group => {
-            FieldKind::Choice
-        }
-        FieldType::Person | FieldType::People => FieldKind::Person,
-        FieldType::Issue => FieldKind::Issue,
     };
-    let mut field = SearchField::new(word, kind);
-    match definition.field.kind {
-        FieldType::PickOne | FieldType::PickSeveral => {
-            field.choices = definition
-                .choices
-                .iter()
-                .map(|choice| choice.name.clone())
-                .collect();
-        }
-        FieldType::YesNo => {
-            field.choices = vec![words::YES.to_owned(), words::NO.to_owned()];
-            field.operators = vec![
-                Operator::Is,
-                Operator::IsNot,
-                Operator::IsEmpty,
-                Operator::IsNotEmpty,
-            ];
-        }
-        FieldType::Group => {
-            field.operators = vec![
-                Operator::Is,
-                Operator::IsNot,
-                Operator::In,
-                Operator::IsEmpty,
-                Operator::IsNotEmpty,
-            ];
-        }
-        _ => {}
-    }
-    field
+    SearchField { choices, ..found }
 }
 
-/// A field with a fixed list of values.
-fn listed(word: &str, kind: FieldKind, choices: Vec<String>) -> SearchField {
-    let mut field = SearchField::new(word, kind);
-    field.choices = choices;
-    field
+/// The field of the language for an own field: its kind, what may be asked of it, and the names
+/// of its choices.
+fn own_search_field(word: &str, definition: &Definition) -> SearchField {
+    match definition.field.kind {
+        FieldType::Text | FieldType::LongText | FieldType::WebAddress => {
+            SearchField::new(word, FieldKind::Text)
+        }
+        FieldType::WholeNumber | FieldType::Decimal | FieldType::Duration => {
+            SearchField::new(word, FieldKind::Number)
+        }
+        FieldType::Date | FieldType::DateTime => SearchField::new(word, FieldKind::Date),
+        FieldType::PickOne | FieldType::PickSeveral => SearchField {
+            choices: once_each(definition.choices.iter().map(|choice| choice.name.clone())),
+            ..SearchField::new(word, FieldKind::Choice)
+        },
+        FieldType::YesNo => SearchField::yes_no(word),
+        FieldType::Group => SearchField::unordered(word),
+        FieldType::Person | FieldType::People => SearchField::new(word, FieldKind::Person),
+        FieldType::Issue => SearchField::new(word, FieldKind::Issue),
+    }
+}
+
+/// The words that belong to the built-in fields for everyone: those of the catalogue (also the
+/// ones that cannot be searched yet) and those of the fields every issue has.
+fn reserved_words() -> Vec<String> {
+    Field::ALL
+        .iter()
+        .map(|field| field.search_word())
+        .chain(IssueField::ALL.iter().map(|each| each.word().to_owned()))
+        .collect()
+}
+
+/// The word each own field is searched by, `None` for one that lost its word to a built-in field or
+/// to an own field before it. Decided from the definitions alone, so it is the same for everybody.
+fn own_words(own: &[Definition]) -> Vec<Option<String>> {
+    let mut taken = reserved_words();
+    own.iter()
+        .map(|definition| {
+            let word = own_field_word(&definition.field.name);
+            if taken.contains(&word) {
+                None
+            } else {
+                taken.push(word.clone());
+                Some(word)
+            }
+        })
+        .collect()
+}
+
+/// The names of the status groups, as shown.
+fn status_group_names() -> Vec<String> {
+    StatusGroup::ALL
+        .iter()
+        .map(|group| group.name().template().to_owned())
+        .collect()
 }
 
 /// The fields a search may use in these places: those of the catalogue and the own fields that
-/// are readable in every place they apply to, and the fields every issue has. A word that is
-/// already taken (an own field named like another field) stays with the first field that has it:
-/// the built-in ones first.
-fn fields_in(places: &[Place], sources: &Sources) -> ReadableFields {
-    let mut fields: Vec<SearchField> = Vec::new();
+/// are readable in every place they apply to, and the fields every issue has.
+fn fields_in(places: &[Place], sources: &Sources) -> Vec<Searchable> {
+    let mut found: Vec<Searchable> = Vec::new();
     if places.is_empty() {
-        return ReadableFields { fields };
+        return found;
     }
-    let mut push = |field: SearchField| {
-        if fields.iter().all(|taken| taken.word != field.word) {
-            fields.push(field);
-        }
-    };
     for field in Field::ALL {
-        let Some(kind) = catalogue_kind(*field) else {
+        let Some((target, kind)) = catalogue_target(*field) else {
             continue;
         };
         if places
             .iter()
-            .all(|place| place.may_use(FieldKey::from(*field)))
+            .all(|place| place.may_use(FieldKey::from(*field), field.person_kind()))
         {
-            push(listed(
-                &field.search_word(),
-                kind,
-                catalogue_choices(*field, sources),
-            ));
+            found.push(Searchable {
+                field: catalogue_field(*field, kind, sources),
+                target,
+            });
         }
     }
-    push(listed(words::PROJECT, FieldKind::Project, Vec::new()));
-    push(listed(
-        words::TYPE,
-        FieldKind::Choice,
-        sources.issue_types.clone(),
-    ));
-    push(listed(
-        words::STATUS_GROUP,
-        FieldKind::Choice,
-        StatusGroup::ALL
-            .iter()
-            .map(|group| group.code().to_owned())
-            .collect(),
-    ));
-    push(listed(words::PARENT, FieldKind::Issue, Vec::new()));
-    for word in [words::CREATED, words::CHANGED, words::CLOSED] {
-        push(listed(word, FieldKind::Date, Vec::new()));
+    for (each, target, choices) in [
+        (IssueField::Project, FieldTarget::Project, Vec::new()),
+        (
+            IssueField::Type,
+            FieldTarget::Type,
+            sources.issue_types.clone(),
+        ),
+        (
+            IssueField::StatusGroup,
+            FieldTarget::StatusGroup,
+            status_group_names(),
+        ),
+        (IssueField::Parent, FieldTarget::Parent, Vec::new()),
+        (IssueField::Created, FieldTarget::Created, Vec::new()),
+        (IssueField::Changed, FieldTarget::Changed, Vec::new()),
+        (IssueField::Closed, FieldTarget::Closed, Vec::new()),
+    ] {
+        found.push(Searchable {
+            field: each.field(choices),
+            target,
+        });
     }
-    for definition in &sources.own {
+    for (definition, word) in sources.own.iter().zip(own_words(&sources.own)) {
+        let Some(word) = word else {
+            continue;
+        };
         let reached: Vec<&Place> = places
             .iter()
             .filter(|place| definition.scope.reaches_project(&place.chain))
             .collect();
         let readable = definition.field.applies_to == FieldFor::Issues
             && !reached.is_empty()
-            && reached
-                .iter()
-                .all(|place| place.may_use(FieldKey::Own(definition.field.id)));
+            && reached.iter().all(|place| {
+                place.may_use(
+                    FieldKey::Own(definition.field.id),
+                    definition.field.kind.people_kind(),
+                )
+            });
         if readable {
-            push(own_search_field(
-                &own_field_word(&definition.field.name),
-                definition,
-            ));
+            found.push(Searchable {
+                field: own_search_field(&word, definition),
+                target: FieldTarget::Own {
+                    field: definition.field.id,
+                    kind: definition.field.kind,
+                },
+            });
         }
     }
-    ReadableFields { fields }
+    found
 }

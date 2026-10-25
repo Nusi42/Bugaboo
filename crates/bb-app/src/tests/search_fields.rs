@@ -21,7 +21,10 @@ use crate::search::{ReadableFieldsQuery, SearchScope, readable_fields};
 
 /// Bob sees every project and its issues. His role can see every field and every kind of people
 /// by name, except what the test changes afterwards.
-async fn bob_with_a_role(world: &World, fields: &[FieldKey]) -> Result<(String, RoleId), String> {
+pub(super) async fn bob_with_a_role(
+    world: &World,
+    fields: &[FieldKey],
+) -> Result<(String, RoleId), String> {
     let admin = token(world);
     let role = create_role(
         &world.ctx(),
@@ -61,7 +64,7 @@ async fn bob_with_a_role(world: &World, fields: &[FieldKey]) -> Result<(String, 
     Ok((bob.session_token, role))
 }
 
-async fn set_field(
+pub(super) async fn set_field(
     world: &World,
     role: RoleId,
     project: Option<ProjectId>,
@@ -84,7 +87,7 @@ async fn set_field(
     Ok(())
 }
 
-async fn set_people(
+pub(super) async fn set_people(
     world: &World,
     role: RoleId,
     kind: PeopleKind,
@@ -105,11 +108,15 @@ async fn set_people(
     Ok(())
 }
 
-fn every_field() -> Vec<FieldKey> {
+pub(super) fn every_field() -> Vec<FieldKey> {
     Field::ALL.iter().map(|field| (*field).into()).collect()
 }
 
-async fn words_of(world: &World, session: &str, scope: SearchScope) -> Result<Vec<String>, String> {
+pub(super) async fn words_of(
+    world: &World,
+    session: &str,
+    scope: SearchScope,
+) -> Result<Vec<String>, String> {
     let fields = readable_fields(
         &world.ctx(),
         ReadableFieldsQuery {
@@ -124,7 +131,7 @@ async fn words_of(world: &World, session: &str, scope: SearchScope) -> Result<Ve
     Ok(fields.fields.into_iter().map(|field| field.word).collect())
 }
 
-fn has(words: &[String], word: &str) -> bool {
+pub(super) fn has(words: &[String], word: &str) -> bool {
     words.iter().any(|each| each == word)
 }
 
