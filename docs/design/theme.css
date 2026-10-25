@@ -76,6 +76,8 @@
   --size-icon-small: 16px;
   --size-list: 300px;
   --size-details: 340px;
+  --gap-details: var(--space-5);
+  --size-details-room: calc(var(--size-details) + var(--gap-details));
   --size-reading: 75ch;
   --size-main: 780px;
   --size-sheet-share: 85%;

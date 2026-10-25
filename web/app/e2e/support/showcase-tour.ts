@@ -4,7 +4,7 @@ import { type Browser, type Page } from "@playwright/test";
 import { chooseTheme, type Theme } from "./checks.ts";
 import { signIn } from "./flows.ts";
 import { type Instance } from "./server.ts";
-import { inOrder } from "./sequence.ts";
+import { inOrder, nothing } from "./sequence.ts";
 import { personOf, showcaseIds, type ShowcaseIds, type Who } from "./showcase-sample.ts";
 import { screens } from "./showcase-screens.ts";
 import {
@@ -48,14 +48,14 @@ interface Way {
  */
 function wayOf(who: Who, page: Page, theme: Theme): Way {
   if (who === "nobody") {
-    return { start: () => Promise.resolve(), show: () => chooseTheme(page, theme) };
+    return { start: nothing, show: () => chooseTheme(page, theme) };
   }
   return {
     start: async () => {
       await signIn(page, personOf[who]());
       await showTheme(page, theme, paths.appearance);
     },
-    show: () => Promise.resolve(),
+    show: nothing,
   };
 }
 

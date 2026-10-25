@@ -36,11 +36,6 @@ export function nextTick(): Promise<void> {
   });
 }
 
-/** What an undo does when the test does not look at it. */
-export const doNothing = (): void => {
-  // Nothing to take back in this test.
-};
-
 /** Timers that only move when the test says so. */
 export function manualClock() {
   let now = 0;

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { EditLockSession, type SessionDeps } from "./edit-lock-session.ts";
-import { nothing, rig } from "./edit-lock-testing.ts";
+import { doNothing } from "../do-nothing.ts";
+import { rig } from "./edit-lock-testing.ts";
 import { LockServer } from "./lock-server-testing.ts";
 import { heldBy, settle, stillHeld, taken } from "./long-text-testing.ts";
 
@@ -108,10 +109,10 @@ describe("iss_17 an ask and the releases on their way", () => {
       askToFinish: () => Promise.resolve(),
       heartbeat: () => Promise.resolve(stillHeld),
       release: server.release,
-      startHeartbeats: () => nothing,
+      startHeartbeats: () => doNothing,
       newEditorId: () => "editor-1",
     };
-    const session = new EditLockSession(deps, { onRanOut: "lost", onLost: nothing });
+    const session = new EditLockSession(deps, { onRanOut: "lost", onLost: doNothing });
     expect((await session.take()).kind).toBe("mine");
     // Asking again lets the lock go first; the release is still on its way.
     const again = session.take();

@@ -14,9 +14,10 @@ import {
 } from "@bugaboo/ui";
 
 import { formatCalendarDay } from "../../../shared/format.ts";
+import { useNow } from "../../../shared/use-now.ts";
 import { choiceHelp, choiceName, plainChoices } from "./choice.ts";
 import type { Draft } from "./draft.ts";
-import { earliestDay, latestDay, presetDay } from "./expiry-day.ts";
+import { defaultDaysOf, earliestDay, latestDay, presetDay } from "./expiry-day.ts";
 
 export interface PartProps {
   readonly draft: Draft;
@@ -55,11 +56,14 @@ export interface ExpiryProps extends PartProps {
 
 /** The day the key runs out: the default, or a day of the person's own, up to the longest time. */
 export function Expiry({ draft, rules, wrongDay }: ExpiryProps) {
+  // The days below are read from the clock: the form follows it, so one left open past midnight
+  // shows the day the key would run out on now, which is the day the server counts from.
+  useNow();
   return (
     <TextField
       label={t("access-keys.expires")}
       description={t("access-keys.expires-help", {
-        days: rules.default_days,
+        days: defaultDaysOf(rules),
         latest: formatCalendarDay(latestDay(rules)),
       })}
       requiredMessage={t("error.field.required")}

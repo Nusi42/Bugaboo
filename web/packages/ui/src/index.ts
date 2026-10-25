@@ -80,6 +80,7 @@ export {
   type MarkdownEditorProps,
 } from "./markdown/MarkdownEditor.tsx";
 export { MarkdownView, type MarkdownViewProps } from "./markdown/MarkdownView.tsx";
+export { doNothing } from "./do-nothing.ts";
 export { Listeners } from "./listeners.ts";
 export {
   NameValueList,

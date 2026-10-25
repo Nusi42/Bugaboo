@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { addDays } from "../src/shared/format.ts";
+import { addDays, formatCalendarDay } from "../src/shared/format.ts";
+import { deviceRegion } from "../src/shared/region.ts";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
@@ -24,10 +25,15 @@ test.describe.configure({ mode: "serial" });
 
 /** The day as the list of keys writes it, for a day in the box (`2027-01-23`). */
 function written(day: string): string {
-  return new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" }).format(
-    new Date(`${day}T12:00:00Z`),
-  );
+  return formatCalendarDay(day, deviceRegion);
 }
+
+/**
+ * The clock of the page for a day that was typed: 23:30 in Berlin on the eve of the first day of
+ * summer time in 2027, so that the default time of a key crosses the change of the clocks whatever
+ * day the test runs on. A day 90 days on is still inside what the server allows for a key.
+ */
+const eveOfSummerTime = new Date("2027-03-27T22:30:00Z");
 
 /** Makes a key as a person does and returns the day in the box, and whether the day was typed in. */
 async function createKeyLikeAPerson(
@@ -36,6 +42,10 @@ async function createKeyLikeAPerson(
   typed: boolean,
   regionZone?: string,
 ): Promise<string> {
+  if (typed) {
+    // The server counts the default from its own clock, so only a day that was typed can have the clock of the page.
+    await page.clock.install({ time: eveOfSummerTime });
+  }
   await signIn(page, ada);
   if (regionZone !== undefined) {
     await chooseTimeZone(page, regionZone);
@@ -103,4 +113,30 @@ test.describe("with a region zone other than the zone of the device", () => {
       ).toBeVisible();
     });
   }
+});
+
+/** Opens the form *Create an access key*, in the region zone given, and returns its box for the day. */
+async function openForm(page: Page, regionZone: string) {
+  await signIn(page, ada);
+  // The person keeps the zone of an earlier test: the days here are counted by the zone chosen now.
+  await chooseTimeZone(page, regionZone);
+  await openFromMenu(page, t("nav.access-keys"));
+  await page.getByRole("button", { name: t("access-keys.create"), exact: true }).click();
+  const form = page.getByRole("region", { name: t("access-keys.create"), exact: true });
+  return { form, box: form.getByLabel(t("access-keys.expires"), { exact: true }) };
+}
+
+test.describe("in Europe/Berlin, with the clock of the page", () => {
+  test.use({ timezoneId: "Europe/Berlin" });
+
+  test("auth_07 a form left open past midnight shows the day of now, not the day it was opened", async ({
+    page,
+  }) => {
+    // One minute before midnight in Berlin (summer time).
+    await page.clock.install({ time: new Date("2027-05-10T21:59:00Z") });
+    const { box } = await openForm(page, "Europe/Berlin");
+    const opened = await box.inputValue();
+    await page.clock.runFor(120_000);
+    await expect(box).toHaveValue(addDays(opened, 1));
+  });
 });

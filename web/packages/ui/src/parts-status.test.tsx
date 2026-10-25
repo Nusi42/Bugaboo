@@ -2,20 +2,15 @@ import { priorityWords, statusGroupWords } from "@bugaboo/api-client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { partOf } from "./parts.ts";
 import { Priority } from "./Priority.tsx";
-import { rowStates } from "./row-state.ts";
 import { StatusButton } from "./StatusButton.tsx";
 import { StatusIcon } from "./StatusIcon.tsx";
 import { StatusPill } from "./StatusPill.tsx";
-import { part, partWords } from "./tokens.ts";
+import { doNothing } from "./do-nothing.ts";
 
 /** Words of the tests, not text for people. */
 const text = { inProgress: "In progress", critical: "Critical" } as const;
-const group = { notStarted: "not-started", inProgress: "in-progress", done: "done" } as const;
-const priority = { low: "low", normal: "normal", high: "high", critical: "critical" } as const;
-
-const nothing = (): void => undefined;
+const group = { inProgress: "in-progress", done: "done" } as const;
 
 describe("ux_r5 a status and a priority are never color alone", () => {
   it("the icon of every status group has its own part word and a name when it stands alone", () => {
@@ -40,7 +35,7 @@ describe("ux_r5 a status and a priority are never color alone", () => {
     expect(pill).toContain('data-part="status-icon"');
     expect(pill).toContain(text.inProgress);
     const button = renderToStaticMarkup(
-      <StatusButton group={group.done} label={text.inProgress} onPress={nothing} />,
+      <StatusButton group={group.done} label={text.inProgress} onPress={doNothing} />,
     );
     expect(button).toContain('data-part="status-button"');
     expect(button).toContain('data-variant="done"');
@@ -63,36 +58,5 @@ describe("ux_r5 a status and a priority are never color alone", () => {
       expect(iconOnly).toContain('role="img"');
       expect(iconOnly).toContain(`aria-label="${text.critical}"`);
     }
-  });
-});
-
-describe("ux_r4 a row carries the state of its status group and of its priority", () => {
-  it("only the groups in progress and done are tinted, only critical and high are edged", () => {
-    expect(rowStates({ group: group.notStarted, priority: priority.normal })).toEqual([]);
-    expect(rowStates({ group: group.inProgress, priority: priority.low })).toEqual([
-      "group-in-progress",
-    ]);
-    expect(rowStates({ group: group.done, priority: priority.high })).toEqual([
-      "group-done",
-      "priority-high",
-    ]);
-    expect(rowStates({ group: group.inProgress, priority: priority.critical })).toEqual([
-      "group-in-progress",
-      "priority-critical",
-    ]);
-  });
-
-  it("every row that can carry them has the words in the theme file", () => {
-    const words = rowStates({ group: group.done, priority: priority.critical });
-    const rows = [partWords[part.listRow], partWords[part.issueRow], partWords[part.timelineBar]];
-    for (const row of rows) {
-      for (const word of words) {
-        expect(row.state).toContain(word);
-      }
-    }
-    const attributes = partOf(part.listRow, {
-      states: rowStates({ group: group.done, priority: priority.high }),
-    });
-    expect(attributes["data-state"]).toBe("group-done priority-high");
   });
 });

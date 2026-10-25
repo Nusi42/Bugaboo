@@ -3,6 +3,8 @@ import { type Locator, type Page } from "@playwright/test";
 import { layoutForWidth, type LayoutMode } from "../../../packages/ui/src/layout.ts";
 import { viewports } from "../../../tooling/viewports.ts";
 
+export { nothing } from "./sequence.ts";
+
 /** Which layout the window of this page has. */
 export function layoutOf(page: Page): LayoutMode {
   return layoutForWidth(page.viewportSize()?.width ?? viewports.computer.width);
@@ -10,9 +12,6 @@ export function layoutOf(page: Page): LayoutMode {
 
 /** What to do on a screen of each size: the test runs once per size and does what fits it. */
 export type PerLayout = Readonly<Record<LayoutMode, (page: Page) => Promise<void>>>;
-
-/** A step that has nothing to do (a layout where there is nothing to look at, a preparation that needs none). */
-export const nothing = (): Promise<void> => Promise.resolve();
 
 /** Does the step of the layout this page has. */
 export function onThisLayout(page: Page, steps: PerLayout): Promise<void> {

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { undoWindowMs } from "./optimistic.ts";
 import { createUndoStore } from "./optimistic-undo.ts";
-import { doNothing, manualClock } from "./optimistic-testing.ts";
+import { doNothing } from "./do-nothing.ts";
+import { manualClock } from "./optimistic-testing.ts";
 
 describe("ux_06 undo for 10 seconds", () => {
   it("takes an action back while it is on offer, once", () => {

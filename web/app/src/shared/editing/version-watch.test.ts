@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { doNothing } from "../do-nothing.ts";
 import { checkedJustNow, newerThan, startWatching, type WatchEnv } from "./version-watch.ts";
 
 const issue = { kind: "issue", id: "i1" } as const;
@@ -60,11 +61,6 @@ class Bus {
   }
 }
 
-/** Does nothing, for the way to stop a timer that never runs. */
-function nothing(): void {
-  // The fake timer has nothing to stop.
-}
-
 /** A browser made of two event targets and a clock the test moves. */
 function fakeBrowser(): {
   readonly env: WatchEnv;
@@ -81,7 +77,7 @@ function fakeBrowser(): {
     onWindow: window.on,
     onDocument: document.on,
     hidden: () => false,
-    repeat: () => nothing,
+    repeat: () => doNothing,
     now: () => time.now,
     ask: () => {
       asked.requests += 1;
@@ -94,7 +90,7 @@ function fakeBrowser(): {
 describe("adr_0019 coming back to a tab sends one request", () => {
   it("answers focus and visibilitychange together with one request", () => {
     const b = fakeBrowser();
-    const stop = startWatching(b.env, [{ record: issue, version: 1 }], 30, nothing);
+    const stop = startWatching(b.env, [{ record: issue, version: 1 }], 30, doNothing);
     b.window.happens("focus");
     b.document.happens("visibilitychange");
     expect(b.asked.requests).toBe(1);
@@ -108,7 +104,7 @@ describe("adr_0019 coming back to a tab sends one request", () => {
 
   it("asks nothing when there is nothing to watch", () => {
     const b = fakeBrowser();
-    startWatching(b.env, [], 30, nothing);
+    startWatching(b.env, [], 30, doNothing);
     b.window.happens("focus");
     expect(b.asked.requests).toBe(0);
   });

@@ -1,6 +1,7 @@
 import type { Heartbeat, LockOutcome } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
+import { doNothing } from "../do-nothing.ts";
 import { LockServer } from "./lock-server-testing.ts";
 import type { SessionDeps } from "./edit-lock-session.ts";
 import { EditLockController } from "./edit-lock-state.ts";
@@ -128,11 +129,6 @@ function orderRig() {
   };
 }
 
-/** The way to stop a heartbeat that nothing started. */
-function stopNothing(): void {
-  // Nothing runs, so nothing to stop.
-}
-
 /** Lets the answers of the doubles arrive. */
 async function settle(): Promise<void> {
   await new Promise<void>((done) => {
@@ -236,7 +232,7 @@ describe("iss_17 a refused save of a layout", () => {
       ...quiet,
       take: server.take,
       release: server.release,
-      startHeartbeats: () => stopNothing,
+      startHeartbeats: () => doNothing,
     });
     lock.start();
     await settle();
@@ -259,7 +255,7 @@ describe("iss_17 a refused save of a layout", () => {
       ...quiet,
       take: server.take,
       release: server.release,
-      startHeartbeats: () => stopNothing,
+      startHeartbeats: () => doNothing,
     });
     lock.start();
     await settle();

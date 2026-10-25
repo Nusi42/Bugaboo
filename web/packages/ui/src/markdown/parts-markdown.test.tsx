@@ -5,8 +5,7 @@ import { markSafeHtml } from "@bugaboo/api-client";
 
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
 import { MarkdownView } from "./MarkdownView.tsx";
-
-const nothing = (): void => undefined;
+import { doNothing } from "../do-nothing.ts";
 
 /** Markup of the tests, not text for people. */
 const view = { html: "<p>Hi</p>", value: "text" } as const;
@@ -41,7 +40,7 @@ describe("thm_12 the Markdown components carry no styles", () => {
         label={words.label}
         labels={words}
         value={view.value}
-        onChange={nothing}
+        onChange={doNothing}
         imageHosts={[]}
       />,
     );

@@ -4,7 +4,7 @@ import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
-import { withManyFollowers } from "./support/followers.ts";
+import { pageOfFollowers, withManyFollowers } from "./support/followers.ts";
 import { detailRow, prepareWeb, savedNote } from "./support/issues.ts";
 import { boxOf } from "./support/windows.ts";
 import { addRelation, addSubIssue } from "./support/relate.ts";
@@ -13,9 +13,6 @@ import { issueAddress } from "../src/shared/paths.ts";
 // The parts of the issue page that sub-issues, relations, comments, history and following add
 // (ISS-03 to ISS-07, M3 WP-07): each is put into the page through the slots of WP-06, and what a
 // person does there is kept and shows in the history.
-
-/** How many followers the long count has: a whole short page. */
-const pageOfFollowers = 20;
 
 test.use({ preparation: { run: prepareWeb } });
 test.describe.configure({ mode: "serial" });

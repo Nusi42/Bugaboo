@@ -1,19 +1,38 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { partIn } from "./parts.ts";
 import { inOrder } from "./sequence.ts";
 import { boxOf } from "./windows.ts";
 
+type Box = Readonly<Awaited<ReturnType<typeof boxOf>>>;
+
+/** The two boxes lie apart: one ends before the other starts, across or down. */
+function lieApart(a: Box, b: Box): boolean {
+  return (
+    a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y
+  );
+}
+
 /** The offer to undo does not cover the Details: the two boxes lie apart. */
 export async function expectOfferApartFromDetails(page: Page): Promise<void> {
   const offer = await boxOf(partIn(page, "undo-host.offer"));
   const details = await boxOf(partIn(page, "name-values"));
-  const apart =
-    offer.x + offer.width <= details.x ||
-    details.x + details.width <= offer.x ||
-    offer.y + offer.height <= details.y ||
-    details.y + details.height <= offer.y;
-  expect(apart).toBe(true);
+  expect(lieApart(offer, details)).toBe(true);
+}
+
+/** The offer to undo covers no button or box of the panel: each control of it lies apart from the offer. */
+export async function expectOfferClearOfControls(page: Page, panel: Locator): Promise<void> {
+  const offer = await boxOf(partIn(page, "undo-host.offer"));
+  const controls = await panel.locator("button, input, select, textarea").all();
+  expect(controls.length).toBeGreaterThan(0);
+  const shown = await Promise.all(
+    controls.map(async (control) => ((await control.isVisible()) ? boxOf(control) : null)),
+  );
+  for (const box of shown) {
+    if (box !== null) {
+      expect(lieApart(offer, box)).toBe(true);
+    }
+  }
 }
 
 /**

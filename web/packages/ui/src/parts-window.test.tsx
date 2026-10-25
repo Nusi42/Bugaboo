@@ -7,8 +7,7 @@ import { WindowDock } from "./WindowDock.tsx";
 import { WindowFrame, type WindowLabels, type WindowResize } from "./WindowFrame.tsx";
 import { WindowLayout } from "./WindowLayout.tsx";
 import { windowEdges } from "./window-size.ts";
-
-const nothing = (): void => undefined;
+import { doNothing } from "./do-nothing.ts";
 
 /** Words of the tests, not text for people. */
 const labels = {
@@ -23,7 +22,7 @@ const labels = {
   steps: { wider: "Wider", narrower: "Narrower", taller: "Taller", shorter: "Shorter" },
 } as const satisfies WindowLabels;
 const text = { title: "New issue", body: "Fields", footer: "Create" } as const;
-const resize: WindowResize = { handlers: () => ({}), onKeyDown: nothing, step: nothing };
+const resize: WindowResize = { handlers: () => ({}), onKeyDown: doNothing, step: doNothing };
 
 /** A window in one of its states, as markup. */
 function frame(state: WindowState, footer?: ReactNode): string {
@@ -33,9 +32,9 @@ function frame(state: WindowState, footer?: ReactNode): string {
       labels={labels}
       state={state}
       footer={footer}
-      onMinimize={nothing}
-      onToggleMaximize={nothing}
-      onClose={nothing}
+      onMinimize={doNothing}
+      onToggleMaximize={doNothing}
+      onClose={doNothing}
       resize={resize}
     >
       {text.body}
@@ -111,7 +110,7 @@ describe("ux_04 a window can be resized at every edge and corner, also with the 
 describe("ux_6_3 a minimized window is a bar at the bottom", () => {
   it("shows the title and what it keeps, and opens the window again when it is pressed", () => {
     const markup = renderToStaticMarkup(
-      <WindowDock title={text.title} note={labels.draftKept} onRestore={nothing} />,
+      <WindowDock title={text.title} note={labels.draftKept} onRestore={doNothing} />,
     );
     expect(markup).toContain('data-part="window-dock"');
     expect(markup).toContain(text.title);

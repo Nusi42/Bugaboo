@@ -54,67 +54,77 @@ for (const [name, address, subject] of [
 test("ux_04 the note follows the matrix when the region or the table changes size, and the region is described by it", async ({
   page,
 }) => {
-  await signIn(page, ada);
-  await page.goto(addressInProject(paths.projectFields, "ACME"));
-  await expect(
-    await levelList(page, t("issue-field.cost-center"), roleName.contributor),
-  ).toBeVisible();
-  const region = partIn(page, "access.scroll");
-  const note = page.getByText(t("access.scrolls"), { exact: true });
-  /** Gives the region a width (or none) the way a narrow column would. */
-  const widthOfRegion = (width: string) =>
-    region.evaluate((node, value) => {
-      node.style.width = value;
-    }, width);
+  // Only a computer draws the matrix; a phone and a tablet choose a role and show its lists.
+  await onThisLayout(page, {
+    phone: nothing,
+    tablet: nothing,
+    computer: async () => {
+      await signIn(page, ada);
+      await page.goto(addressInProject(paths.projectFields, "ACME"));
+      await expect(
+        await levelList(page, t("issue-field.cost-center"), roleName.contributor),
+      ).toBeVisible();
+      const region = partIn(page, "access.scroll");
+      const note = page.getByText(t("access.scrolls"), { exact: true });
+      /** Gives the region a width (or none) the way a narrow column would. */
+      const widthOfRegion = (width: string) =>
+        region.evaluate((node, value) => {
+          node.style.width = value;
+        }, width);
 
-  // The region is narrower than the table: it scrolls, it says so, and the note describes it.
-  await widthOfRegion(narrow);
-  await expect(note).toBeVisible();
-  await expect(region).toHaveAccessibleDescription(t("access.scrolls"));
-  // The region becomes wider than the table: the note goes, and so does the description.
-  await widthOfRegion(wide);
-  await expect(note).toHaveCount(0);
-  await expect(region).toHaveAccessibleDescription("");
-  // The table grows by itself, inside a region that did not change: the note is back.
-  await region.locator("table").evaluate((node, value) => {
-    node.style.minWidth = value;
-  }, wider);
-  await expect(note).toBeVisible();
+      // The region is narrower than the table: it scrolls, it says so, and the note describes it.
+      await widthOfRegion(narrow);
+      await expect(note).toBeVisible();
+      await expect(region).toHaveAccessibleDescription(t("access.scrolls"));
+      // The region becomes wider than the table: the note goes, and so does the description.
+      await widthOfRegion(wide);
+      await expect(note).toHaveCount(0);
+      await expect(region).toHaveAccessibleDescription("");
+      // The table grows by itself, inside a region that did not change: the note is back.
+      await region.locator("table").evaluate((node, value) => {
+        node.style.minWidth = value;
+      }, wider);
+      await expect(note).toBeVisible();
+    },
+  });
 });
 
 const levelLists = '[data-part="access.matrix-cell"] select';
 
 /**
- * For each level list in the matrix: the width the chosen level needs in the list's own type, and
- * the width inside the list that it has for it. The words are measured with the list's own font.
- * It runs in the page, so it takes what it needs as an argument.
+ * For each level list in the matrix: the width the list needs to show its chosen level whole, and
+ * the width it has. The need is read from a copy of the list that holds only that level and takes
+ * the width it wants, so the room of the list's own padding and of the arrow of a native list is
+ * counted without being known. It runs in the page, so it takes what it needs as an argument.
  */
-function roomForLevels(selector: string): { needed: number; available: number }[] {
+function roomForLevels(selector: string): Readonly<{ needed: number; available: number }>[] {
   const rooms: { needed: number; available: number }[] = [];
   for (const list of document.querySelectorAll<HTMLSelectElement>(selector)) {
-    const style = getComputedStyle(list);
-    const ruler = document.createElement("span");
-    ruler.style.font = style.font;
-    ruler.style.whiteSpace = "nowrap";
-    ruler.style.position = "absolute";
-    ruler.style.visibility = "hidden";
-    ruler.textContent = list.selectedOptions[0]?.text ?? "";
-    document.body.append(ruler);
-    const needed = ruler.getBoundingClientRect().width;
-    ruler.remove();
-    // A computed padding is always in pixels ("12px").
-    const padding =
-      Number(style.paddingLeft.slice(0, -2)) + Number(style.paddingRight.slice(0, -2));
-    const available = list.clientWidth - padding;
-    rooms.push({ needed, available });
+    const copy = document.createElement("select");
+    // The look comes from the theme, by the attributes; the style the test put on the list is not copied.
+    for (const name of list.getAttributeNames().filter((one) => one !== "style")) {
+      copy.setAttribute(name, list.getAttribute(name) ?? "");
+    }
+    copy.add(new Option(list.selectedOptions[0]?.text ?? ""));
+    copy.style.position = "absolute";
+    copy.style.visibility = "hidden";
+    copy.style.width = "auto";
+    list.after(copy);
+    const needed = copy.getBoundingClientRect().width;
+    copy.remove();
+    rooms.push({ needed, available: list.getBoundingClientRect().width });
   }
   return rooms;
 }
 
-/** Makes every level list of the matrix as narrow as a list can be squeezed. */
-function squeezeLevels(selector: string): void {
-  for (const list of document.querySelectorAll<HTMLSelectElement>(selector)) {
-    list.style.width = "20px";
+/** Makes each level list of the matrix as wide as it needs, less a little: cut under its arrow, where the text itself would still fit. */
+function cutLevels({
+  selector,
+  widths,
+}: Readonly<{ selector: string; widths: readonly number[] }>): void {
+  const underTheArrow = 4;
+  for (const [at, list] of document.querySelectorAll<HTMLSelectElement>(selector).entries()) {
+    list.style.width = `${(widths[at] ?? 0) - underTheArrow}px`;
   }
 }
 
@@ -137,11 +147,14 @@ test("ux_04 no level in the matrix is cut with Larger text on, and the measure c
       for (const room of rooms) {
         expect(room.needed).toBeLessThanOrEqual(room.available);
       }
-      // The same measure finds lists that are too narrow for their level: the check can fail.
-      await page.evaluate(squeezeLevels, levelLists);
-      const squeezed = await page.evaluate(roomForLevels, levelLists);
-      expect(squeezed.length).toBe(rooms.length);
-      for (const room of squeezed) {
+      // The same measure finds a list that is cut a little, under its arrow: the check can fail.
+      await page.evaluate(cutLevels, {
+        selector: levelLists,
+        widths: rooms.map((room) => room.needed),
+      });
+      const cut = await page.evaluate(roomForLevels, levelLists);
+      expect(cut.length).toBe(rooms.length);
+      for (const room of cut) {
         expect(room.needed).toBeGreaterThan(room.available);
       }
     },
