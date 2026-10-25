@@ -64,7 +64,6 @@ Exact license strings are confirmed by `cargo deny` and recorded in the third-pa
 | Build | vite | 8.3.2 | MIT |
 | Routing | @tanstack/react-router | 1.170.41 | MIT |
 | Server data | @tanstack/react-query | 5.104.1 | MIT |
-| Long lists | @tanstack/react-virtual | 3.14.13 | MIT |
 | Accessible components | react-aria-components | 1.21.1 | Apache-2.0 |
 | Document editor | @tiptap/react (ProseMirror) | 3.31.4 | MIT |
 | Relation map layout | d3-force | 3.0.0 | ISC |
