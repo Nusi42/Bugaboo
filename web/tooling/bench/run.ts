@@ -6,6 +6,7 @@ import { peopleIn } from "../../app/e2e/support/sample.ts";
 import { inOrder } from "../../app/e2e/support/sequence.ts";
 import { type Instance } from "../../app/e2e/support/server.ts";
 import { measure } from "./measure.ts";
+import { bigAndSmall } from "./projects.ts";
 import { someIssues } from "./reads.ts";
 import { type Context, scenarios } from "./scenarios.ts";
 
@@ -23,8 +24,7 @@ export async function run(folder: string, database: string, server: Instance): P
   const context: Context = {
     session,
     issues: await someIssues(session, projects),
-    big: projects[0] ?? "",
-    small: projects.at(-1) ?? "",
+    ...(await bigAndSmall(session, projects)),
   };
   const measured: Record<string, unknown> = {};
   await inOrder(
