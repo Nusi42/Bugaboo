@@ -97,6 +97,9 @@ test("iss_17_three_people_edit_one_description_and_the_first_text_is_kept", asyn
   await expect(holder.getByText("Ada's text, taken over").first()).toBeVisible();
   await holder.getByRole("button", { name: t("issues.compare-save-mine"), exact: true }).click();
   await expect(holder.getByText("Ben's text, written first").first()).toBeVisible();
+  // The text shows in the comparison already, so the save is waited for before the third person
+  // reads the issue again.
+  await expect(savedNote(holder)).toBeVisible();
   // The third person, who only watched, reads the text that was kept.
   await watcher.reload();
   await expect(watcher.getByText("Ben's text, written first").first()).toBeVisible();
