@@ -88,7 +88,7 @@ mod tests {
     }
 
     #[test]
-    fn the_browser_gets_the_answer_of_the_server() {
+    fn qry_03_the_browser_gets_the_answer_of_the_server() {
         let text = "status is Open sort by priority, highest first";
         let fields = bb_searchlang::readable_fields_from_json(&fields_json());
         let json = write_json(&bb_searchlang::read(text, fields.as_ref().ok())).unwrap_or_default();
@@ -99,7 +99,7 @@ mod tests {
     }
 
     #[test]
-    fn a_tree_comes_back_to_its_canonical_text() {
+    fn qry_03_a_tree_comes_back_to_its_canonical_text() {
         let answer = bb_searchlang::read("status  is Open", None);
         let tree = serde_json::to_string(&answer.search).unwrap_or_default();
         assert_eq!(
@@ -109,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn the_suggestions_are_those_of_the_server() {
+    fn qry_03_the_suggestions_are_those_of_the_server() {
         let fields = bb_searchlang::readable_fields_from_json(&fields_json()).unwrap_or_default();
         let json = write_json(&bb_searchlang::suggest("assi", 4, &fields)).unwrap_or_default();
         let found: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
@@ -117,13 +117,13 @@ mod tests {
     }
 
     #[test]
-    fn a_text_that_is_no_input_is_an_error_that_says_so() {
+    fn qry_03_a_text_that_is_no_input_is_an_error_that_says_so() {
         assert!(bb_searchlang::readable_fields_from_json("not json").is_err());
         assert!(bb_searchlang::print_from_json("{}").is_err());
     }
 
     #[test]
-    fn the_word_of_an_own_field_is_the_rule_of_the_language() {
+    fn qry_03_the_word_of_an_own_field_is_the_rule_of_the_language() {
         assert_eq!(own_field_word("Story points"), "storyPoints");
     }
 }

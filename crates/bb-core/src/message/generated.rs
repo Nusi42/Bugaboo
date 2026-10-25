@@ -13190,7 +13190,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "search.mistake.too-many-filters",
-        "A search can have at most {limit} filters.",
+        "A search can have at most {limit} filters; each value in a list counts as one.",
     ),
     (
         "search.mistake.too-many-sort-keys",

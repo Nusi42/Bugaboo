@@ -510,7 +510,7 @@
   "search.mistake.wrong-text": "“{field}” needs a text here. Put it in quotes.",
   "search.mistake.wrong-person": "“{field}” needs the name of a person here, or “{me}”.",
   "search.mistake.wrong-issue": "“{field}” needs an Issue ID here, like WEB-142.",
-  "search.mistake.too-many-filters": "A search can have at most {limit} filters.",
+  "search.mistake.too-many-filters": "A search can have at most {limit} filters; each value in a list counts as one.",
   "search.mistake.too-many-sort-keys": "A search can be sorted by at most {limit} fields.",
   "search.mistake.too-long": "This search is too long. Please shorten it.",
   "search.mistake.too-many-steps": "A search can look at most {limit} steps away.",
