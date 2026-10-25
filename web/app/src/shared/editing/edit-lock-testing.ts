@@ -3,11 +3,6 @@ import type { Heartbeat, LockOutcome } from "@bugaboo/api-client";
 import { EditLockSession, type SessionDeps, type SessionOptions } from "./edit-lock-session.ts";
 import { stillHeld } from "./long-text-testing.ts";
 
-/** Neither a heartbeat nor a loss is of interest to the test. */
-export function nothing(): void {
-  // Nothing to do.
-}
-
 /** A heartbeat that nobody started. */
 function idle(): Promise<unknown> {
   return Promise.resolve();

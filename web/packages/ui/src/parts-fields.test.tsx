@@ -5,8 +5,7 @@ import { ChoiceGroup } from "./ChoiceGroup.tsx";
 import { Link } from "./Link.tsx";
 import { SelectField } from "./SelectField.tsx";
 import { TextField } from "./TextField.tsx";
-
-const nothing = (): void => undefined;
+import { doNothing } from "./do-nothing.ts";
 
 /** Words of the tests, not text for people. */
 const text = { name: "Name", pick: "Pick", a: "A", b: "B", open: "Open", address: "/a" } as const;
@@ -14,7 +13,7 @@ const text = { name: "Name", pick: "Pick", a: "A", b: "B", open: "Open", address
 describe("thm_12 the fields of packages/ui carry no class names and no styles", () => {
   it("a text field emits the parts of a field", () => {
     const markup = renderToStaticMarkup(
-      <TextField label={text.name} value={text.address} onChange={nothing} />,
+      <TextField label={text.name} value={text.address} onChange={doNothing} />,
     );
     for (const name of ["field", "field.label", "field.input"]) {
       expect(markup).toContain(`data-part="${name}"`);
@@ -28,7 +27,7 @@ describe("thm_12 a label that is only read is hidden in one way", () => {
     const choices = [{ value: text.a, label: text.a }];
     const hidden = [
       renderToStaticMarkup(
-        <TextField hideLabel label={text.name} value={text.address} onChange={nothing} />,
+        <TextField hideLabel label={text.name} value={text.address} onChange={doNothing} />,
       ),
       renderToStaticMarkup(
         <SelectField
@@ -36,7 +35,7 @@ describe("thm_12 a label that is only read is hidden in one way", () => {
           label={text.name}
           choices={choices}
           value={text.a}
-          onChange={nothing}
+          onChange={doNothing}
         />,
       ),
     ];
@@ -56,7 +55,7 @@ describe("thm_12 a label that is only read is hidden in one way", () => {
           { value: text.b, label: text.b },
         ]}
         value={text.a}
-        onChange={nothing}
+        onChange={doNothing}
       />,
     );
     for (const name of ["choice-group", "choice-group.input", "choice-group.label"]) {

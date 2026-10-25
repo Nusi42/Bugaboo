@@ -6,8 +6,7 @@ import { Button } from "./Button.tsx";
 import { Checkbox } from "./Checkbox.tsx";
 import { alertTone, buttonLook } from "./props.ts";
 import { Switch } from "./Switch.tsx";
-
-const nothing = (): void => undefined;
+import { doNothing } from "./do-nothing.ts";
 
 /** Words of the tests, not text for people. */
 const text = { save: "Save", wrong: "Wrong", on: "On", yes: "Yes" } as const;
@@ -22,7 +21,7 @@ function ownClasses(markup: string): string[] {
 describe("ux_4_4 a switch in a row of the Details keeps its name for screen readers only", () => {
   it("hides the label with the part for hidden text", () => {
     const markup = renderToStaticMarkup(
-      <Switch hideLabel label={text.on} isSelected onChange={nothing} />,
+      <Switch hideLabel label={text.on} isSelected onChange={doNothing} />,
     );
     expect(markup).toContain(`data-part="visually-hidden">${text.on}<`);
   });
@@ -50,14 +49,14 @@ describe("thm_11 the controls of packages/ui carry no class names and no styles"
   });
 
   it("a switch and a checkbox emit the parts they are made of", () => {
-    const toggle = renderToStaticMarkup(<Switch label={text.on} isSelected onChange={nothing} />);
+    const toggle = renderToStaticMarkup(<Switch label={text.on} isSelected onChange={doNothing} />);
     for (const name of ["switch", "switch.track", "switch.thumb"]) {
       expect(toggle).toContain(`data-part="${name}"`);
     }
     // A real switch: assistive technology says "on" and "off", not "checked".
     expect(toggle).toContain('role="switch"');
     const box = renderToStaticMarkup(
-      <Checkbox label={text.yes} isSelected={false} onChange={nothing} />,
+      <Checkbox label={text.yes} isSelected={false} onChange={doNothing} />,
     );
     for (const name of ["checkbox", "checkbox.box", "checkbox.label"]) {
       expect(box).toContain(`data-part="${name}"`);

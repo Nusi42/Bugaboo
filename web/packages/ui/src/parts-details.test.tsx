@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { Legend, LegendItem } from "./Legend.tsx";
 import { NameValueList, NameValueRow } from "./NameValueRow.tsx";
-
-const nothing = (): void => undefined;
+import { doNothing } from "./do-nothing.ts";
 
 /** Words of the tests, not text for people. */
 const text = {
@@ -38,7 +37,7 @@ describe("ux_4_4 Details are name-and-value rows", () => {
         status={{
           state: "saved",
           labels: { saving: "Saving", saved: text.saved, "not-saved": "Not saved" },
-          undo: { label: text.undo, onUndo: nothing },
+          undo: { label: text.undo, onUndo: doNothing },
         }}
       >
         {text.value}

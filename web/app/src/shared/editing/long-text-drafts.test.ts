@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { doNothing } from "../do-nothing.ts";
 import type { OfferedDraft } from "./long-text-model.ts";
 import { settle, world } from "./long-text-testing.ts";
 
@@ -8,12 +9,8 @@ const draft = (text: string, savedAt: string): OfferedDraft => ({ text, savedAt,
 /** The browser keeps nothing in these tests: they look at what the box shows. */
 const keepsNothing = {
   read: () => null,
-  write: () => {
-    // Nothing is kept.
-  },
-  forget: () => {
-    // Nothing is kept, so there is nothing to forget.
-  },
+  write: doNothing,
+  forget: doNothing,
 };
 
 describe("iss_11 a draft is offered when the box opens", () => {

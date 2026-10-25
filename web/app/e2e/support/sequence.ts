@@ -9,3 +9,6 @@ export async function inOrder(steps: readonly (() => Promise<unknown>)[]): Promi
     await inOrder(rest);
   }
 }
+
+/** A step that has nothing to do (a layout where there is nothing to look at, a preparation that needs none). */
+export const nothing = (): Promise<void> => Promise.resolve();
