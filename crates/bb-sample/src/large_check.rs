@@ -42,6 +42,14 @@ const SAMPLED_AT_MOST: usize = 20_000;
 const NOTIFICATIONS_AT_MOST: u64 = 200;
 /// The most events and history rows read for one issue.
 const ROWS_AT_MOST: u64 = 500;
+/// What a tag or a label with no name in the dataset counts as in the fingerprint, so that one the
+/// check cannot name still changes it.
+const UNKNOWN_NAME: &str = "<unknown>";
+
+/// The name of a tag or a label for the fingerprint: its own, or [`UNKNOWN_NAME`].
+fn name_or_marker(name: Option<&String>) -> String {
+    name.map_or_else(|| UNKNOWN_NAME.to_owned(), Clone::clone)
+}
 
 /// What the check needs to know of the dataset that the database cannot say.
 #[derive(Clone, Debug, Default)]
@@ -214,14 +222,14 @@ impl Sample {
             .issue_tags(issue)
             .await?
             .iter()
-            .filter_map(|each| tag_names.get(&each.tag).cloned())
+            .map(|each| name_or_marker(tag_names.get(&each.tag)))
             .collect();
         tags.sort();
         let mut labels: Vec<_> = storage
             .issue_labels(issue)
             .await?
             .iter()
-            .filter_map(|each| label_names.get(&each.label).cloned())
+            .map(|each| name_or_marker(label_names.get(&each.label)))
             .collect();
         labels.sort();
         (tags, labels).hash(hasher);
