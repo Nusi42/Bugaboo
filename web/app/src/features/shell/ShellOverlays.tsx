@@ -17,7 +17,6 @@ import { useOverlayHosts } from "./overlay-hosts.ts";
 import { QuickSearch } from "./QuickSearch.tsx";
 import { ShortcutHelp } from "./ShortcutHelp.tsx";
 import { Sidebar, type SidebarProps } from "./Sidebar.tsx";
-import { UndoHost } from "./UndoHost.tsx";
 
 export interface ShellOverlaysProps extends Pick<
   SidebarProps,
@@ -41,7 +40,7 @@ function Drawer(props: Omit<ShellOverlaysProps, "layout">) {
 
 /**
  * Everything that opens over the page: the menu of a tablet, the *More* sheet of a phone, quick
- * search, the list of shortcuts, and the offers to undo what was just done.
+ * search and the list of shortcuts.
  */
 export function ShellOverlays({ layout, ...person }: ShellOverlaysProps) {
   const tablet = layout === "tablet";
@@ -63,7 +62,6 @@ export function ShellOverlays({ layout, ...person }: ShellOverlaysProps) {
       ))}
       <QuickSearch />
       <ShortcutHelp />
-      {phone ? null : <UndoHost />}
     </>
   );
 }

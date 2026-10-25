@@ -50,9 +50,18 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
 /**
  * Where *Undo* shows (UX §6): every reversible action offers to be taken back for 10 seconds, here,
  * instead of asking "Are you sure?". The region always exists, so screen readers announce a new
- * offer when it appears. The shortcut takes back the latest one.
+ * offer when it appears. The shortcut takes back the latest one. On a computer and a tablet it is
+ * the last thing in the column of the page (`ShellColumn`), so the offers follow the column.
  */
-export function UndoHost({ inFlow = false }: { readonly inFlow?: boolean }) {
+export function UndoHost({
+  inFlow = false,
+  wide = false,
+}: {
+  /** On a phone the offers stand in the column of the app, under the page. */
+  readonly inFlow?: boolean;
+  /** The page is the focus view, whose Details stand at the end of the column. */
+  readonly wide?: boolean;
+}) {
   const offers = useUndoOffers();
   useShortcuts(
     offers.length === 0
@@ -67,7 +76,10 @@ export function UndoHost({ inFlow = false }: { readonly inFlow?: boolean }) {
         },
   );
   return (
-    <div {...partOf(part.undoHost, { variants: [inFlow && "in-flow"] })} role={politeStatus}>
+    <div
+      {...partOf(part.undoHost, { variants: [inFlow ? "in-flow" : "over-page", wide && "wide"] })}
+      role={politeStatus}
+    >
       {offers
         .filter((offer) => offer.inline !== true)
         .map((offer) => (
