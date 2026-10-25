@@ -34,6 +34,18 @@ pub(crate) struct LineMaker {
     workflows: HashMap<(ProjectId, IssueTypeId), Arc<WorkflowContent>>,
 }
 
+impl LineMaker {
+    /// Takes the projects of `wanted` that are not known yet from `all`, the projects as they are
+    /// stored, which one read gave: so a page over many projects does not read them one by one.
+    pub(crate) fn know_projects(&mut self, wanted: &[ProjectId], all: &[Project]) {
+        for id in wanted {
+            if let Entry::Vacant(slot) = self.projects.entry(*id) {
+                slot.insert(all.iter().find(|each| each.id == *id).cloned());
+            }
+        }
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The maker of lines for a request.
     pub(crate) async fn line_maker(&self) -> Result<LineMaker, AppError> {

@@ -212,6 +212,55 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(evaluation)
     }
 
+    /// Keeps the evaluation of `person` at each of `projects` for the rest of the request, from
+    /// one read of their rows, the levels of their roles and the tree of the projects. Each
+    /// `evaluate` of a place reads all of that again (some fifteen statements), which a page of
+    /// notifications in many projects pays for every project; the decision is the same
+    /// ([`Policy::evaluate_with`] is what a preview of a move asks too). Nothing is read when
+    /// fewer than two of the places are not kept yet.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn evaluate_projects(
+        &self,
+        person: UserId,
+        projects: &[ProjectId],
+    ) -> Result<(), AppError> {
+        let mut wanted: Vec<ProjectId> = projects
+            .iter()
+            .copied()
+            .filter(|project| {
+                self.cached_evaluation(person, Place::Project(*project))
+                    .is_none()
+            })
+            .collect();
+        wanted.sort();
+        wanted.dedup();
+        if wanted.len() < 2 {
+            return Ok(());
+        }
+        let mut policy = self
+            .store()
+            .policy_of(person)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let roles: Vec<_> = policy.roles.iter().map(|role| role.id).collect();
+        policy.rules = self
+            .store()
+            .level_rules_of_roles(roles)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let tree = self.project_tree_now().await?;
+        let rows = policy.rows_of(person);
+        for project in wanted {
+            let place = Place::Project(project);
+            if let Some(found) = policy.evaluate_with(person, &rows, &tree, place) {
+                self.remember_evaluation(person, place, &Arc::new(found));
+            }
+        }
+        Ok(())
+    }
+
     fn cached_evaluation(&self, person: UserId, place: Place) -> Option<Arc<Evaluation>> {
         // A lock that a panic poisoned still holds a map that is whole: it only ever gets whole
         // insertions.

@@ -151,6 +151,26 @@ impl<S: AuthStore> Ctx<'_, S> {
                 reading.comments.insert(comment.id, comment);
             }
         }
+        // The rights in every project the rows name, from one read and not one for each project.
+        let projects: Vec<_> = rows
+            .iter()
+            .filter_map(|row| row.issue)
+            .filter_map(|id| reading.issues.get(&id))
+            .map(|issue| issue.project)
+            .collect();
+        self.evaluate_projects(reading.actor.person.id, &projects)
+            .await?;
+        let mut unknown = projects;
+        unknown.sort();
+        unknown.dedup();
+        if unknown.len() > 1 {
+            let all = self
+                .store()
+                .project_tree()
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            reading.maker.know_projects(&unknown, &all);
+        }
         Ok(())
     }
 
