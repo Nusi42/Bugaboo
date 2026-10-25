@@ -67,13 +67,22 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
 fn line_findings(file: &ThemeFile) -> Vec<Finding> {
     let mut findings = Vec::new();
     for lines in &file.contrast.plain_lines {
-        // The theme file is valid, so a name here is an opacity (`ThemeFile::opacity`); a line with no
-        // `faded-by` is seen as it is.
+        // A line with no `faded-by` is seen as it is. Loading the file checks that a name here is an
+        // opacity (`ThemeFile::opacity`); a file that was not loaded that way gets a finding, not a skip.
         let opacity = match lines.faded_by.as_deref() {
             None => 1.0,
             Some(name) => match file.opacity(name) {
                 Some(opacity) => opacity,
-                None => continue,
+                None => {
+                    findings.push(Finding::at(
+                        THEME_PATH,
+                        format!(
+                            "The lines {:?} fade by `{name}`, which is no opacity of the theme file, so their contrast is not checked. Name an opacity.",
+                            lines.colors
+                        ),
+                    ));
+                    continue;
+                }
             },
         };
         for theme in &file.themes {
@@ -360,12 +369,34 @@ mod tests {
         // The edge is the color of quiet words faded by the opacity of a disabled control: this
         // color reaches 2:1 on the raised surface of Dusk as it is (2.56:1) and no longer once it is
         // faded (1.76:1), so only the fade makes the check find it.
-        assert!(contrast_ratio("#686f80", "#2d323c") >= 2.0);
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        let raised = color(&file, "bg-raised", "dusk").expect("the token has a color");
+        assert!(contrast_ratio("#686f80", raised) >= 2.0);
         let findings = evaluate(&with_value("fg-muted", "dusk", "#686f80"));
         assert!(
             findings
                 .iter()
                 .any(|f| f.message.contains("the line `fg-muted`")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
+    fn a_line_faded_by_something_that_is_no_opacity_is_a_finding_not_a_skip() {
+        let mut file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        let lines = file
+            .contrast
+            .plain_lines
+            .iter_mut()
+            .find(|lines| lines.faded_by.is_some())
+            .expect("a group of lines is faded");
+        lines.faded_by = Some("no-such-opacity".to_owned());
+        let findings = evaluate(&file);
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("no-such-opacity")),
             "{:?}",
             messages(&findings)
         );
