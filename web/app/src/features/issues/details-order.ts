@@ -32,7 +32,8 @@ function rankOf(layout: readonly string[], places: Places): number {
 /**
  * The groups of rows in the order the layout puts their fields (CFG-01, M3-F102): the layout is
  * the one that the form uses (`FormView.sections`), so there is no second order. Groups the layout
- * does not place, and the groups before the layout is read, keep the order they came in.
+ * does not place keep the order they came in. The panel calls it once the layout is read, so
+ * no row stands in a fallback order and moves when the layout arrives.
  */
 export function inLayoutOrder<Node>(
   layout: readonly string[],

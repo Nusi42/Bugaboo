@@ -46,7 +46,8 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
 /**
  * The *Details* column (UX §3.4, §4.4): the fields as name-and-value rows of one list, the own
  * fields, following, tags and labels among them (rows that other packages put below the built-in
- * ones), then what cannot be a row of that list.
+ * ones), then what cannot be a row of that list. The rows are drawn when the layout is read, so
+ * they stand once in the order of the layout and never move when it arrives (CFG-01, M3-F102).
  */
 export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
   return (
@@ -55,12 +56,14 @@ export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
       aria-label={t("issues.details")}
     >
       <h2 {...partOf(part.issueDetailsHeading)}>{t("issues.details")}</h2>
-      <NameValueList>
-        {inLayoutOrder(
-          blocks.form.sections.flatMap((section) => section.fields),
-          groupsOf({ blocks, changes }),
-        )}
-      </NameValueList>
+      {blocks.form.ready ? (
+        <NameValueList>
+          {inLayoutOrder(
+            blocks.form.sections.flatMap((section) => section.fields),
+            groupsOf({ blocks, changes }),
+          )}
+        </NameValueList>
+      ) : null}
       <SlotBlocks slot={issueSlots.detailSections} blocks={blocks} />
     </aside>
   );

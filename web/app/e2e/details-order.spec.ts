@@ -58,6 +58,15 @@ async function prepareDetailsOrder(server: Instance): Promise<void> {
   await admin.dispose();
 }
 
+/** The rows that the layout of the test orders, in its order. */
+const order = [
+  t("labels.tags-heading"),
+  t("labels.labels-heading"),
+  t("issue-field.assigned-to"),
+  t("issue-field.priority"),
+  t("issue-field.reported-by"),
+];
+
 test("cfg_01 the rows of the Details stand in the order of the layout (M3-F102)", async ({
   page,
 }) => {
@@ -70,12 +79,23 @@ test("cfg_01 the rows of the Details stand in the order of the layout (M3-F102)"
   await expect(rows.filter({ hasText: t("followers.name") })).toBeVisible();
   await expect(rows.filter({ hasText: t("labels.labels-heading") })).toBeVisible();
   const names = await rows.allInnerTexts();
-  const order = [
-    t("labels.tags-heading"),
-    t("labels.labels-heading"),
-    t("issue-field.assigned-to"),
-    t("issue-field.priority"),
-    t("issue-field.reported-by"),
-  ];
+  expect(names.filter((name) => order.includes(name))).toEqual(order);
+});
+
+test("cfg_01 the Details draw no row before the layout is read, so no row moves when it arrives (M3-F102)", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  // The layout comes late: the rows must not stand in a fallback order until it comes.
+  await page.route("**/api/v1/layouts/form*", async (route) => {
+    await new Promise((done) => {
+      setTimeout(done, 1500);
+    });
+    await route.continue();
+  });
+  await openIssueWithDetails(page, "WEB-1");
+  const rows = partIn(page, "name-value.name");
+  await expect(rows.filter({ hasText: t("labels.labels-heading") })).toBeVisible();
+  const names = await rows.allInnerTexts();
   expect(names.filter((name) => order.includes(name))).toEqual(order);
 });
