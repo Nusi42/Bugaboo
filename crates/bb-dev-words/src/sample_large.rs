@@ -72,9 +72,40 @@ pub struct LargePlan {
     pub big_projects_share: u32,
 }
 
+/// The folder every folder of the large dataset is inside of, relative to the work folder: the
+/// datasets are thrown away and made again there, so nothing else may be named.
+const WORK_FOLDER: &str = ".work";
+
+/// Whether `folder` is a folder inside `.work/`: written with `/`, not empty, not absolute and
+/// without `..` (`xtask` removes `<out>/<database>` before it makes a dataset).
+fn inside_work_folder(folder: &str) -> bool {
+    folder
+        .strip_prefix(WORK_FOLDER)
+        .and_then(|rest| rest.strip_prefix('/'))
+        .is_some_and(|rest| {
+            !rest.is_empty()
+                && !rest.contains(['\\', ':'])
+                && rest.split('/').all(|part| !part.is_empty() && part != "..")
+        })
+}
+
 impl LargePlan {
     /// What is wrong with the plan, in a sentence, if anything.
     pub(crate) fn check(&self) -> Result<(), LayoutError> {
+        let folders = [
+            ("out", &self.out),
+            ("checkOut", &self.check_out),
+            ("benchOut", &self.bench_out),
+            ("nightlyOut", &self.nightly_out),
+        ];
+        if let Some((name, _)) = folders
+            .iter()
+            .find(|(_, folder)| !inside_work_folder(folder))
+        {
+            return Err(LayoutError::new(format!(
+                "large.{name} must be a folder inside {WORK_FOLDER}/ (relative, with /, without ..)"
+            )));
+        }
         let percents = [
             ("germanPercent", self.german_percent),
             ("subIssuePercent", self.sub_issue_percent),
@@ -125,5 +156,32 @@ mod tests {
         assert!(Layout::parse(&broken).is_err());
         let broken = text.replace("\"batch\": 2000", "\"batch\": 0");
         assert!(Layout::parse(&broken).is_err());
+    }
+
+    #[test]
+    fn a_folder_of_the_large_dataset_must_be_inside_the_work_folder() {
+        let text = include_str!("../../../tools/dev/sample.json");
+        for name in ["out", "checkOut", "benchOut", "nightlyOut"] {
+            let line = text
+                .lines()
+                .find(|line| {
+                    line.trim_start()
+                        .starts_with(&format!("\"{name}\": \".work/"))
+                })
+                .unwrap();
+            for bad in [
+                "",
+                "target/x",
+                "/x",
+                "C:/x",
+                ".work",
+                ".work/",
+                ".work/../x",
+                ".work//x",
+            ] {
+                let broken = text.replace(line, &format!("    \"{name}\": \"{bad}\","));
+                assert!(Layout::parse(&broken).is_err(), "{name} = {bad:?}");
+            }
+        }
     }
 }
