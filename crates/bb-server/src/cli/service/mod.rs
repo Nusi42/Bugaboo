@@ -141,7 +141,7 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     require_systemd()?;
     // What the system names is asked before anything is changed.
     let unit_folder = systemd::unit_folder().map_err(|said| anyhow!(said.render()))?;
-    let new_account_shell = if succeeds("id", &["-u", USER]) {
+    let new_account_shell = if crate::system::account_exists(USER) {
         None
     } else {
         Some(systemd::no_login().map_err(|said| anyhow!(said.render()))?)
@@ -225,14 +225,6 @@ fn require_systemd() -> anyhow::Result<()> {
             Message::from(message::SERVICE_NEEDS_ADMIN).render()
         ))
     }
-}
-
-#[cfg(unix)]
-fn succeeds(program: &str, arguments: &[&str]) -> bool {
-    std::process::Command::new(program)
-        .args(arguments)
-        .output()
-        .is_ok_and(|output| output.status.success())
 }
 
 #[cfg(unix)]

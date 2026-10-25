@@ -95,6 +95,7 @@ files = [
   "crates/**/*.rs",
   "xtask/**/*.rs",
   "web/tooling/**/*.{ts,mjs,js,cmd,sh}",
+  "web/packages/**/scripts/**/*.{ts,mjs,js,cmd,sh}",
   "tools/**/*.{cmd,sh,ps1,toml}",
   "lefthook.yml",
   ".claude/settings.json",

@@ -7,6 +7,8 @@
 use std::path::{Path, PathBuf};
 
 use bb_core::message::{self, Message};
+#[cfg(unix)]
+use bb_core::system_answer::folder_in_answer;
 
 use crate::data_folder::SUB_FOLDERS;
 #[cfg(unix)]
@@ -188,38 +190,42 @@ pub(super) fn check_settings_file(config: &Path, data_dir: &Path) -> Result<(), 
     }
 }
 
-/// A folder named by a program: one absolute path in the text it printed.
-fn named_folder(answer: &str) -> Option<PathBuf> {
-    let mut lines = answer
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty());
-    let folder = PathBuf::from(lines.next()?);
-    (lines.next().is_none() && folder.is_absolute()).then_some(folder)
+/// Refuses an answer of the system that somebody but root could have changed: it is used as root
+/// (the shell of an account, the folder of a unit), so it must belong to root and not be writable
+/// by the group or by everybody. `path` is the real path, with every link followed.
+#[cfg(unix)]
+fn trusted(path: PathBuf) -> Result<PathBuf, Message> {
+    match untrusted(&path) {
+        None => Ok(path),
+        Some(_) => Err(message::service_answer_not_trusted(path.display())),
+    }
 }
 
 /// The folder for the units that an administrator installs, as systemd names it (`systemd-path`,
-/// or else `pkg-config`). A folder that does not exist is no answer: the program stops with a
-/// message and never guesses.
+/// or else `pkg-config`). A folder that does not exist is no answer, and neither is one that
+/// root does not own alone: the program stops with a message and never guesses.
 #[cfg(unix)]
 pub(super) fn unit_folder() -> Result<PathBuf, Message> {
     let (pkg_program, pkg_arguments) = PKG_CONFIG;
-    [
+    let folder = [
         answer_of(PATH_PROGRAM, &[PATH_ARGUMENT]),
         answer_of(pkg_program, &pkg_arguments),
     ]
     .into_iter()
     .flatten()
-    .filter_map(|answer| named_folder(&answer))
+    .filter_map(|answer| folder_in_answer(&answer))
     .find(|folder| folder.is_dir())
-    .ok_or_else(|| Message::from(message::SERVICE_UNIT_FOLDER_UNKNOWN))
+    .ok_or_else(|| Message::from(message::SERVICE_UNIT_FOLDER_UNKNOWN))?;
+    trusted(real_path(&folder))
 }
 
-/// The shell of an account that cannot sign in, found on the search path.
+/// The shell of an account that cannot sign in, found on the search path, as its real path, and
+/// only when root owns it alone.
 #[cfg(unix)]
 pub(super) fn no_login() -> Result<PathBuf, Message> {
-    program_on_path(NO_LOGIN_PROGRAM)
-        .ok_or_else(|| message::service_program_not_found(NO_LOGIN_PROGRAM))
+    let found = program_on_path(NO_LOGIN_PROGRAM)
+        .ok_or_else(|| message::service_program_not_found(NO_LOGIN_PROGRAM))?;
+    trusted(real_path(&found))
 }
 
 /// Whether the text `systemctl is-system-running` printed says that systemd runs the computer.
@@ -617,17 +623,6 @@ mod tests {
     }
 
     #[test]
-    fn ops_04_a_folder_is_taken_from_an_answer_only_when_it_is_one_full_path() {
-        let folder = std::env::temp_dir();
-        let said = format!("  {}\n", folder.display());
-        assert_eq!(named_folder(&said), Some(folder));
-        assert_eq!(named_folder(""), None);
-        assert_eq!(named_folder("units"), None, "a relative path is no answer");
-        let two = format!("{0}\n{0}\n", std::env::temp_dir().display());
-        assert_eq!(named_folder(&two), None, "two lines are no answer");
-    }
-
-    #[test]
     fn ops_04_systemd_runs_the_computer_in_any_state_but_off_or_unknown() {
         for state in ["running\n", "degraded\n", "starting\n", "maintenance\n"] {
             assert!(is_running(state), "{state}");
@@ -642,5 +637,19 @@ mod tests {
         let said = Message::from(message::SERVICE_UNIT_FOLDER_UNKNOWN).render();
         assert!(said.contains("does not guess"), "{said}");
         assert!(said.contains("systemd-path"), "{said}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sec_16_an_answer_that_root_does_not_own_alone_is_refused() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let temp = tempfile::tempdir().unwrap();
+        let folder = temp.path().join("units");
+        std::fs::create_dir(&folder).unwrap();
+        // Open to the group: refused for every account, root included.
+        std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o775)).unwrap();
+        let said = trusted(folder.clone()).unwrap_err().render();
+        assert!(said.contains("does not use it"), "{said}");
+        assert!(said.contains(&folder.display().to_string()), "{said}");
     }
 }

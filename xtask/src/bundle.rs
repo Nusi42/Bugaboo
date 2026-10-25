@@ -8,6 +8,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context as _, bail};
 
+use bb_core::system_answer;
+
 use crate::output;
 use crate::setup;
 use crate::tools::{self, Tool};
@@ -198,25 +200,16 @@ fn folder_named_by_system(tool: &Tool, root: &Path) -> Option<PathBuf> {
     output
         .status
         .success()
-        .then(|| folder_in_answer(&String::from_utf8_lossy(&output.stdout)))
+        .then(|| system_answer::folder_in_answer(&String::from_utf8_lossy(&output.stdout)))
         .flatten()
+        .filter(|folder| folder.is_dir())
 }
 
-/// The one existing, absolute folder in the text a command printed.
-fn folder_in_answer(answer: &str) -> Option<PathBuf> {
-    let mut lines = answer
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty());
-    let folder = PathBuf::from(lines.next()?);
-    (lines.next().is_none() && folder.is_absolute() && folder.is_dir()).then_some(folder)
-}
-
-/// The file `file` in the first folder of the search path that holds it.
+/// The file `file` in the first absolute folder of the search path that holds it.
 fn find_on_path(file: &str) -> Option<PathBuf> {
-    std::env::split_paths(&std::env::var_os("PATH")?)
-        .map(|folder| folder.join(tools::exe(file)))
-        .find(|candidate| candidate.is_file())
+    system_answer::find_in(&std::env::var_os("PATH")?, &tools::exe(file), |candidate| {
+        candidate.is_file()
+    })
 }
 
 fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
@@ -301,32 +294,6 @@ mod tests {
         );
         let error = install_with(temp.path(), &entry, &|_, _| Ok(())).unwrap_err();
         assert!(error.to_string().contains("Install it somehow."), "{error}");
-    }
-
-    #[test]
-    fn the_folder_the_system_names_is_one_existing_absolute_folder() {
-        let temp = TempDir::new("bundle-named");
-        let said = format!(
-            "  {}
-",
-            temp.path().display()
-        );
-        assert_eq!(folder_in_answer(&said), Some(temp.path().to_path_buf()));
-        assert_eq!(folder_in_answer(""), None);
-        assert_eq!(
-            folder_in_answer("bin"),
-            None,
-            "a relative folder is no answer"
-        );
-        let missing = temp.path().join("not-there");
-        assert_eq!(folder_in_answer(&missing.display().to_string()), None);
-        let two = format!(
-            "{0}
-{0}
-",
-            temp.path().display()
-        );
-        assert_eq!(folder_in_answer(&two), None, "two lines are no answer");
     }
 
     #[test]

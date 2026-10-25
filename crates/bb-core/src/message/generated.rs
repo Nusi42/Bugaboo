@@ -8796,6 +8796,15 @@ pub fn server_warning(message: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `service.answer-not-trusted`.
+#[must_use]
+pub fn service_answer_not_trusted(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.answer-not-trusted"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `service.data-folder-real`.
 #[must_use]
 pub fn service_data_folder_real(
@@ -12924,6 +12933,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.web-app-missing",
         "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
+    ),
+    (
+        "service.answer-not-trusted",
+        "The system named {path}, but root does not own it alone or other accounts can change it, so Bugaboo does not use it.",
     ),
     (
         "service.data-folder-real",

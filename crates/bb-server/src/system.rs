@@ -3,8 +3,10 @@
 //! writes down a path of the system; when the system does not answer, the caller gets a plain
 //! message and stops, and never guesses.
 
-#[cfg(any(unix, test))]
+#[cfg(unix)]
 use std::ffi::OsStr;
+#[cfg(unix)]
+use std::path::Path;
 use std::path::PathBuf;
 
 #[cfg(any(windows, test))]
@@ -36,7 +38,7 @@ pub(crate) fn account_number() -> u32 {
 }
 
 /// The name of the account with this number, from the account database of the system.
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 pub(crate) fn account_name(number: u32) -> Option<String> {
     nix::unistd::User::from_uid(nix::unistd::Uid::from_raw(number))
         .ok()
@@ -44,18 +46,30 @@ pub(crate) fn account_name(number: u32) -> Option<String> {
         .map(|account| account.name)
 }
 
-/// The program `name` in the first folder of the search path (`PATH`) that holds it, or `None`
-/// when the search path is not set or holds no such file.
+/// Whether the account database of the system has an account with this name.
 #[cfg(unix)]
-pub(crate) fn program_on_path(name: &str) -> Option<PathBuf> {
-    find_in(&std::env::var_os("PATH")?, name)
+pub(crate) fn account_exists(name: &str) -> bool {
+    nix::unistd::User::from_name(name).is_ok_and(|account| account.is_some())
 }
 
-#[cfg(any(unix, test))]
-fn find_in(search_path: &OsStr, name: &str) -> Option<PathBuf> {
-    std::env::split_paths(search_path)
-        .map(|folder| folder.join(name))
-        .find(|candidate| candidate.is_file())
+/// The program `name` in the first absolute folder of the search path (`PATH`) that holds a file
+/// of that name which can run, or `None` when there is none.
+#[cfg(unix)]
+pub(crate) fn program_on_path(name: &str) -> Option<PathBuf> {
+    program_in(&std::env::var_os("PATH")?, name)
+}
+
+#[cfg(unix)]
+fn program_in(search_path: &OsStr, name: &str) -> Option<PathBuf> {
+    bb_core::system_answer::find_in(search_path, name, is_runnable)
+}
+
+/// Whether `path` is a file that somebody may run (an execute bit is set).
+#[cfg(unix)]
+fn is_runnable(path: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt as _;
+    std::fs::metadata(path)
+        .is_ok_and(|data| data.is_file() && data.permissions().mode() & 0o111 != 0)
 }
 
 /// What a program printed when it ended well, or `None` when it could not be started or failed.
@@ -93,18 +107,23 @@ mod tests {
         assert!(in_system_folder(Some(PathBuf::from("System32")), "icacls.exe").is_err());
     }
 
+    #[cfg(unix)]
     #[test]
-    fn ops_04_a_program_is_found_in_the_first_folder_of_the_search_path_that_holds_it() {
+    fn ops_04_only_a_file_that_can_run_in_an_absolute_folder_is_a_program() {
+        use std::os::unix::fs::PermissionsExt as _;
         let temp = tempfile::tempdir().unwrap();
-        let (first, second) = (temp.path().join("a"), temp.path().join("b"));
-        for folder in [&first, &second] {
-            std::fs::create_dir(folder).unwrap();
-        }
-        std::fs::write(second.join("tool"), "").unwrap();
-        let search = std::env::join_paths([&first, &second]).unwrap();
-        assert_eq!(find_in(&search, "tool"), Some(second.join("tool")));
-        assert_eq!(find_in(&search, "other"), None);
-        assert_eq!(find_in(OsStr::new(""), "tool"), None);
+        let folder = temp.path().join("bin");
+        std::fs::create_dir(&folder).unwrap();
+        let tool = folder.join("tool");
+        std::fs::write(&tool, "").unwrap();
+        let search =
+            std::env::join_paths([OsStr::new(""), OsStr::new("."), folder.as_os_str()]).unwrap();
+        std::fs::set_permissions(&tool, std::fs::Permissions::from_mode(0o644)).unwrap();
+        assert_eq!(program_in(&search, "tool"), None, "no execute bit");
+        std::fs::set_permissions(&tool, std::fs::Permissions::from_mode(0o755)).unwrap();
+        assert_eq!(program_in(&search, "tool"), Some(tool));
+        // An empty entry first, as in ":/x", is the folder the program runs in and is skipped.
+        assert_eq!(program_in(OsStr::new(":/nowhere"), "tool"), None);
     }
 
     #[cfg(unix)]
@@ -116,6 +135,12 @@ mod tests {
             std::fs::metadata(temp.path()).unwrap().uid(),
             account_number()
         );
-        assert!(account_name(account_number()).is_some());
+        #[cfg(target_os = "linux")]
+        {
+            assert!(account_name(account_number()).is_some());
+            assert_eq!(account_name(0).as_deref(), Some("root"));
+            assert!(account_exists("root"));
+        }
+        assert!(!account_exists("bb-no-such-account-x"));
     }
 }

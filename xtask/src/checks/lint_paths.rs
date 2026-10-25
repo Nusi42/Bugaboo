@@ -2,9 +2,14 @@
 //! (coding-standards §2, "No fixed paths").
 //!
 //! A string that starts with a folder of the system (`/etc/…`, `/usr/…`, `/proc/…`, a drive such
-//! as `C:\…`) is a guess about this computer. The program asks the operating system instead, or
-//! stops with a plain message. Comments, the code behind `#[cfg(test)]`, and the files named in
-//! [`LEFT_OUT`] are not read: a test may use such a path as data for a pure function.
+//! as `C:\…` or `\\?\C:\…`) is a guess about this computer. The program asks the operating system
+//! instead, or stops with a plain message. In scripts (`.sh`, `.cmd`, `.ps1`) a path also counts
+//! after a space, `=` or `(`, because a script writes paths without quotes. Comments, the code
+//! behind `#[cfg(test)]`, and the files named in [`LEFT_OUT`] are not read: a test may use such a
+//! path as data for a pure function.
+//!
+//! What it does not see: a path built from parts (`Path::new("/").join("etc")`, `concat!`), since
+//! it reads the start of one text. Review catches those.
 
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
@@ -12,22 +17,51 @@ use crate::docs::text::has_extension;
 use crate::rust_source::{is_test_module_file, without_tests};
 use crate::source::read_text;
 
-/// The folders directly under the root of a Unix system. A string that starts with a slash and
-/// one of these names is a path of the system.
-const SYSTEM_ROOTS: [&str; 20] = [
-    "bin", "boot", "dev", "etc", "home", "lib", "lib64", "mnt", "opt", "proc", "root", "run",
-    "sbin", "srv", "sys", "tmp", "usr", "var", "Users", "Windows",
+/// The folders directly under the root of a Unix system (and of macOS). A text that starts with
+/// a slash and one of these names is a path of the system.
+const SYSTEM_ROOTS: [&str; 27] = [
+    "bin",
+    "boot",
+    "dev",
+    "etc",
+    "home",
+    "lib",
+    "lib64",
+    "mnt",
+    "opt",
+    "proc",
+    "root",
+    "run",
+    "sbin",
+    "srv",
+    "sys",
+    "tmp",
+    "usr",
+    "var",
+    "media",
+    "nix",
+    "snap",
+    "Users",
+    "Windows",
+    "Library",
+    "System",
+    "private",
+    "Applications",
 ];
 
-/// The one list of files that are not read: tests, their fixtures and data. A part of a path.
-const LEFT_OUT: [&str; 7] = [
-    "/tests/",
-    "/fixtures/",
-    "/testdata/",
-    "/e2e/",
-    ".test.",
-    ".spec.",
-    "/testutil.rs",
+/// The one list of files that are not read, each with why. A part of a path.
+const LEFT_OUT: [(&str, &str); 8] = [
+    ("/tests/", "tests use paths as data"),
+    ("/fixtures/", "examples of the checks"),
+    ("/testdata/", "test data"),
+    ("/e2e/", "browser tests"),
+    (".test.", "tests use paths as data"),
+    (".spec.", "tests use paths as data"),
+    ("/testutil.rs", "helpers of tests"),
+    (
+        "/sec_private/patterns.rs",
+        "SEC-PRIVATE searches text for the start of a profile path of a person: a detection pattern, not a path that is used",
+    ),
 ];
 
 pub(crate) struct LintPaths;
@@ -50,11 +84,16 @@ impl Check for LintPaths {
 
 fn is_left_out(path: &str) -> bool {
     let slashed = format!("/{path}");
-    is_test_module_file(path) || LEFT_OUT.iter().any(|part| slashed.contains(part))
+    is_test_module_file(path) || LEFT_OUT.iter().any(|(part, _)| slashed.contains(part))
 }
 
-/// Whether the text after an opening quote starts with a path of the system.
+/// Whether the text starts with a path of the system.
 fn starts_with_system_path(rest: &str) -> bool {
+    // `\\?\C:\…`, the long form of a drive path.
+    let rest = match rest.trim_start_matches('\\').strip_prefix('?') {
+        Some(long) => long.trim_start_matches(['\\', '?']),
+        None => rest,
+    };
     let mut characters = rest.chars();
     match (characters.next(), characters.next()) {
         (Some('/'), _) => {
@@ -65,7 +104,7 @@ fn starts_with_system_path(rest: &str) -> bool {
             SYSTEM_ROOTS.contains(&name.as_str())
                 && matches!(
                     rest[1 + name.len()..].chars().next(),
-                    None | Some('/' | '"' | '\'' | '`')
+                    None | Some('/' | '"' | '\'' | '`' | ' ' | ')')
                 )
         }
         (Some(drive), Some(':')) if drive.is_ascii_alphabetic() => {
@@ -75,6 +114,38 @@ fn starts_with_system_path(rest: &str) -> bool {
     }
 }
 
+/// Whether the file is a script, where paths are written without quotes.
+fn is_script(path: &str) -> bool {
+    ["sh", "cmd", "ps1"]
+        .iter()
+        .any(|ending| has_extension(path, ending))
+}
+
+/// Whether a line of a script is a comment (`#`, `rem`, `::`).
+fn is_script_comment(line: &str) -> bool {
+    let line = line.trim_start();
+    line.starts_with('#')
+        || line.starts_with("::")
+        || line
+            .get(..4)
+            .is_some_and(|word| word.eq_ignore_ascii_case("rem "))
+}
+
+/// The places in a line where a path may start: after a quote, and in a script also at the start
+/// and after a space, `=` or `(`.
+fn starts_in(code: &str, script: bool) -> Vec<usize> {
+    let mut starts = Vec::new();
+    if script {
+        starts.push(0);
+    }
+    for (at, c) in code.char_indices() {
+        if matches!(c, '"' | '\'' | '`') || (script && matches!(c, ' ' | '\t' | '=' | '(')) {
+            starts.push(at + c.len_utf8());
+        }
+    }
+    starts
+}
+
 /// The problems in one file. In Rust the code behind `#[cfg(test)]` is blanked out first.
 fn findings_in(path: &str, text: &str) -> Vec<Finding> {
     let text = if has_extension(path, "rs") {
@@ -82,16 +153,21 @@ fn findings_in(path: &str, text: &str) -> Vec<Finding> {
     } else {
         text.to_owned()
     };
+    let script = is_script(path);
     let mut findings = Vec::new();
     for (number, line) in text.lines().enumerate() {
+        if script && is_script_comment(line) {
+            continue;
+        }
         let code = code_of(line);
-        for (at, quote) in code
-            .char_indices()
-            .filter(|(_, c)| matches!(c, '"' | '\'' | '`'))
-        {
-            let rest = &code[at + quote.len_utf8()..];
+        for at in starts_in(code, script) {
+            let rest = &code[at..];
             if starts_with_system_path(rest) {
-                let shown: String = rest.chars().take_while(|c| *c != quote).take(40).collect();
+                let shown: String = rest
+                    .chars()
+                    .take_while(|c| !matches!(c, '"' | '\'' | '`' | ' ' | ')'))
+                    .take(40)
+                    .collect();
                 findings.push(Finding::at(
                     format!("{path}:{}", number + 1),
                     format!(
@@ -135,6 +211,32 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_more_roots_and_the_long_form_of_a_drive() {
+        assert_eq!(bad("crates/a/src/lib.rs", "let p = \"/Library/x\";\n"), 1);
+        assert_eq!(bad("crates/a/src/lib.rs", "let p = \"/snap/bin\";\n"), 1);
+        assert_eq!(bad("crates/a/src/lib.rs", "let p = \"/nix/store\";\n"), 1);
+        let long = format!("let p = \"{0}{0}?{0}C:{0}x\";", '\\');
+        assert_eq!(bad("crates/a/src/lib.rs", &long), 1);
+    }
+
+    #[test]
+    fn bad_example_a_script_writes_a_path_without_quotes() {
+        assert_eq!(bad("tools/dev/a.sh", "cp x /usr/local/bin\n"), 1);
+        assert_eq!(bad("tools/dev/a.sh", "DIR=/var/lib/x\n"), 1);
+        assert_eq!(bad("tools/dev/a.sh", "(cd /opt/x && ls)\n"), 1);
+        assert_eq!(bad("tools/dev/a.cmd", "set P=C:\\Windows\\System32\n"), 1);
+        assert_eq!(bad("tools/dev/a.cmd", "call D:\\x\\y.bat\n"), 1);
+        assert_eq!(bad("tools/dev/a.ps1", "$p = (Get-Item C:/data)\n"), 1);
+        assert_eq!(bad("tools/dev/a.ps1", "& /usr/bin/pwsh -c x\n"), 1);
+    }
+
+    #[test]
+    fn good_example_a_script_with_comments_and_paths_of_the_repository() {
+        let script = "# cp x /usr/local/bin\nrem set P=C:\\Windows\n:: /etc/x\ncd tools/dev\necho see /about\n";
+        assert_eq!(bad("tools/dev/a.sh", script), 0);
+    }
+
+    #[test]
     fn good_example_asking_the_system_and_paths_that_are_not_the_systems() {
         let good = "let folder = known_folders::get_known_folder_path(KnownFolder::System);\n\
                     let url = \"/api/issues\";\n\
@@ -157,6 +259,15 @@ mod tests {
         assert!(is_left_out("tools/checks/fixtures/LINT-PATHS/bad/a.rs"));
         assert!(is_left_out("web/tooling/a.test.ts"));
         assert!(!is_left_out("crates/a/src/lib.rs"));
+    }
+
+    #[test]
+    fn a_detection_pattern_is_on_the_one_left_out_list_and_nowhere_else() {
+        assert!(is_left_out("xtask/src/checks/sec_private/patterns.rs"));
+        assert_eq!(
+            bad("crates/a/src/lib.rs", "if p.ends_with(\"/var\") {}\n"),
+            1
+        );
     }
 
     #[test]
