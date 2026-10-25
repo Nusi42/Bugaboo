@@ -46,12 +46,13 @@ const R: PeopleLevel = PeopleLevel::RoleOnly;
 const O: PeopleLevel = PeopleLevel::Hidden;
 
 /// The permissions of a Contributor, which every role above it has too (M3-Q6).
-const CONTRIBUTOR: [Permission; 5] = [
+const CONTRIBUTOR: [Permission; 6] = [
     Permission::SeeProjects,
     Permission::SeeIssues,
     Permission::CreateIssues,
     Permission::ChangeOwnIssues,
     Permission::Comment,
+    Permission::ShareSearches,
 ];
 
 /// What a Team member has beyond a Contributor.
@@ -75,8 +76,12 @@ const PROJECT_LEAD: [Permission; 10] = [
     Permission::ManageWorkflows,
 ];
 
-/// A Viewer only looks.
-const VIEWER: [Permission; 2] = [Permission::SeeProjects, Permission::SeeIssues];
+/// A Viewer only looks, and shares what they found (ADR-0034, decision 2).
+const VIEWER: [Permission; 3] = [
+    Permission::SeeProjects,
+    Permission::SeeIssues,
+    Permission::ShareSearches,
+];
 
 /// A Guest sees only the issues they reported (no *See issues*), makes issues, changes their own
 /// and comments on them.
@@ -193,6 +198,7 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
+    use crate::catalogue::Counts;
 
     #[test]
     fn the_roles_come_in_the_starting_order_with_their_own_keys_and_names() {
@@ -251,6 +257,19 @@ mod tests {
         assert!(held(StartingRole::Administrator).contains(&"create-projects"));
         assert!(held(StartingRole::ProjectLead).contains(&"create-sub-projects"));
         assert!(held(StartingRole::Guest).contains(&"create-issues"));
+    }
+
+    #[test]
+    fn qry_06_every_starting_role_but_guest_starts_with_share_searches_and_it_counts_in_projects() {
+        for role in StartingRole::ALL.iter().copied() {
+            assert_eq!(
+                role.permissions().contains(&Permission::ShareSearches),
+                role != StartingRole::Guest,
+                "{role:?}"
+            );
+        }
+        assert_eq!(Permission::ShareSearches.counts(), Counts::Project);
+        assert!(Permission::ShareSearches.keys_may_hold());
     }
 
     #[test]

@@ -86,6 +86,7 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `comment` | Issues | project | Change | Write comments on the issues they see |
 | `delete-issues` | Issues | project | Change | Delete issues into the trash |
 | `move-issues` | Issues | project | Change | Move issues into or out of the project |
+| `share-searches` | Issues | project | Change | Share saved searches with the project, or with a group they are in |
 | `edit-anyway` | Issues | project | Manage | Take over text someone else is editing; their text is kept |
 | `manage-issue-types` | Work settings | project | Manage | Manage issue types, kinds of relation and layouts |
 | `manage-workflows` | Work settings | project | Manage | Manage workflows: change statuses and status changes, and publish them |
@@ -156,6 +157,7 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Write comments on the issues they see | ✓ | ✓ | ✓ | ✓ | – | ✓ |
 | Delete issues into the trash | ✓ | ✓ | ✓ | – | – | – |
 | Move issues into or out of the project | ✓ | ✓ | ✓ | – | – | – |
+| Share saved searches with the project, or with a group they are in | ✓ | ✓ | ✓ | ✓ | ✓ | – |
 | Take over text someone else is editing; their text is kept | ✓ | ✓ | – | – | – | – |
 | Manage issue types, kinds of relation and layouts | ✓ | ✓ | – | – | – | – |
 | Manage workflows: change statuses and status changes, and publish them | ✓ | ✓ | – | – | – | – |

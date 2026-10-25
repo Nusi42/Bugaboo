@@ -3132,6 +3132,9 @@ pub const PERMISSION_SEE_PROJECTS: MessageKey = MessageKey::new("permission.see-
 /// The message `permission.see-status`.
 pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-status");
 
+/// The message `permission.share-searches`.
+pub const PERMISSION_SHARE_SEARCHES: MessageKey = MessageKey::new("permission.share-searches");
+
 /// The message `person.back`.
 pub const PERSON_BACK: MessageKey = MessageKey::new("person.back");
 
@@ -12611,6 +12614,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "See the project and what is in it",
     ),
     ("permission.see-status", "See how the server is doing"),
+    (
+        "permission.share-searches",
+        "Share saved searches with the project, or with a group they are in",
+    ),
     ("person.back", "All people"),
     ("person.bugaboo", "Bugaboo"),
     ("person.email", "E-mail address"),

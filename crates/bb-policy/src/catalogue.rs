@@ -102,6 +102,8 @@ permissions! {
     DeleteIssues => ("delete-issues", Issues, Project, Change),
     /// Move issues into or out of the project.
     MoveIssues => ("move-issues", Issues, Project, Change),
+    /// Share saved searches with the project, or with a group the person is in.
+    ShareSearches => ("share-searches", Issues, Project, Change),
     /// Take over long text that somebody else is editing; their text is kept.
     EditAnyway => ("edit-anyway", Issues, Project, Manage),
     /// Manage issue types, kinds of relation and layouts.
