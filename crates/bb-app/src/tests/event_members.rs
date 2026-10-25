@@ -4,8 +4,9 @@
 
 use bb_core::event::FieldChange;
 use bb_core::files::{Attachment, MediaType, PreviewStatus, StoredFile};
-use bb_core::id::{AttachmentId, CommentId, IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::id::{AttachmentId, CommentId, IssueId, IssueTypeId, LabelId, ProjectId, UserId};
 use bb_core::issue::{Issue, Priority};
+use bb_core::own_fields::ChoiceColor;
 use bb_core::readable_id::IssueCode;
 use bb_core::security_log::Digest;
 use bb_core::tags::Label;
@@ -105,10 +106,23 @@ fn tag_01_a_tag_put_on_gives_the_names_then_the_counted_up_version() {
 
 #[test]
 fn tag_02_a_label_put_on_gives_the_labels_then_the_counted_up_version() {
-    let none: [Label; 0] = [];
-    let labels = members::label_put_on(&none, &none, 5);
+    let label = Label {
+        id: LabelId::generate(&mut SystemIds).unwrap(),
+        group: None,
+        name: "urgent".to_owned(),
+        color: ChoiceColor::Cat5,
+        position: 0,
+        retired_at: None,
+        version: 1,
+    };
+    let labels = members::label_put_on(&[], std::slice::from_ref(&label), 5);
     assert_eq!(names(&labels), ["labels", "version"]);
+    assert_eq!(
+        after(&labels, "labels"),
+        &json!([{"group": null, "name": "urgent"}])
+    );
     assert_eq!(labels[1].before, Some(json!(5)));
+    assert_eq!(labels[1].after, Some(json!(6)));
 }
 
 #[test]
