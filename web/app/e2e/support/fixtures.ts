@@ -1,6 +1,7 @@
 import { type Browser, type BrowserContext, expect, test as base } from "@playwright/test";
 
 import { readPorts } from "../../../tooling/ports.ts";
+import { nothing } from "./layout.ts";
 import { type Instance, type Settings, startServer } from "./server.ts";
 import { Tolerances } from "./tolerance.ts";
 
@@ -170,7 +171,7 @@ export const test = base.extend<
   ],
   serverSettings: [{}, { option: true }],
   sample: [false, { option: true }],
-  preparation: [{ run: () => Promise.resolve() }, { option: true }],
+  preparation: [{ run: nothing }, { option: true }],
   freshData: ["", { option: true }],
   server: async ({ pool, serverSettings, sample, preparation, freshData }, provide, testInfo) => {
     const data = freshData === "" ? testInfo.file : `${testInfo.file}#${freshData}`;

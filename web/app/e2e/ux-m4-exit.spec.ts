@@ -4,7 +4,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 import { signIn } from "./support/flows.ts";
 import { newIssueDialog, openNewIssueDialog, prepareWeb } from "./support/issues.ts";
-import { onThisLayout } from "./support/layout.ts";
+import { nothing, onThisLayout } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { openAction, tickIssues } from "./support/many-changes-pages.ts";
 import { boxOf, expectInsideTheScreen, footerButtons, linesOf } from "./support/windows.ts";
@@ -18,7 +18,7 @@ import { boxOf, expectInsideTheScreen, footerButtons, linesOf } from "./support/
 function together(check: () => void): () => Promise<void> {
   return () => {
     check();
-    return Promise.resolve();
+    return nothing();
   };
 }
 
@@ -47,7 +47,7 @@ test("ux_a1 the new-issue window stays inside the screen, with its main button a
       expect(create.y).toBeLessThan(another.y);
       expect(another.y).toBeLessThan(cancel.y);
       expect(Math.abs(create.width - cancel.width)).toBeLessThanOrEqual(1);
-      return Promise.resolve();
+      return nothing();
     },
   });
 });
@@ -75,7 +75,7 @@ test("ux_a2 a question of many changes is inside the screen, and its filled butt
     tablet: together(startsFirst),
     phone: () => {
       expect(mainBox.y).toBeLessThan(cancelBox.y);
-      return Promise.resolve();
+      return nothing();
     },
   });
 });

@@ -4,7 +4,7 @@ import { type Page } from "@playwright/test";
 import { createAdmin, forgetChoices } from "./support/accounts.ts";
 import { openAppearance, setSwitch } from "./support/appearance.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { onThisLayout } from "./support/layout.ts";
+import { nothing, onThisLayout } from "./support/layout.ts";
 import { inEveryTheme } from "./support/shots-themes.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -43,8 +43,8 @@ test("ux_01 the bar of a phone fits 360 px with Larger text and the page does no
   await setSwitch(page, t("appearance.larger-text"), true);
   await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
   await onThisLayout(page, {
-    computer: () => Promise.resolve(),
-    tablet: () => Promise.resolve(),
+    computer: nothing,
+    tablet: nothing,
     phone: phoneBarFits,
   });
 });
