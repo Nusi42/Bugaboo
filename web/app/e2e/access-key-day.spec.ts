@@ -158,9 +158,11 @@ test.describe("in Europe/Berlin, with the clock of the page", () => {
     page,
   }) => {
     // Signing in takes the time it takes, so the clock starts well before midnight in Berlin (summer
-    // time) and is stopped one minute before it once the form is open.
+    // time) and is stopped one minute before it once the form shows its day: the page reads its data
+    // on timers, which a stopped clock would hold back.
     await page.clock.install({ time: new Date("2027-05-10T21:50:00Z") });
     const { box } = await openForm(page, "Europe/Berlin");
+    await expect(box).toBeVisible();
     await page.clock.pauseAt(new Date("2027-05-10T21:59:00Z"));
     const opened = await box.inputValue();
     await page.clock.runFor(120_000);
