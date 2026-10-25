@@ -71,9 +71,8 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
         // opacity (`ThemeFile::opacity`); a file that was not loaded that way gets a finding, not a skip.
         let opacity = match lines.faded_by.as_deref() {
             None => 1.0,
-            Some(name) => match file.opacity(name) {
-                Some(opacity) => opacity,
-                None => {
+            Some(name) => {
+                let Some(opacity) = file.opacity(name) else {
                     findings.push(Finding::at(
                         THEME_PATH,
                         format!(
@@ -82,8 +81,9 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
                         ),
                     ));
                     continue;
-                }
-            },
+                };
+                opacity
+            }
         };
         for theme in &file.themes {
             for line in &lines.colors {
