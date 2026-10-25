@@ -4,7 +4,7 @@
 
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, IssueId, ProjectId};
+use bb_core::id::{AssignmentId, IssueId, ProjectId, RoleId};
 use bb_core::issue::Priority;
 use bb_core::notification::NotificationKind;
 use bb_policy::Permission;
@@ -86,13 +86,20 @@ async fn unread_of(crew: &Crew, reader: &Started) -> Result<usize, String> {
     .unread)
 }
 
-/// Dave reads three projects: A through a group's role, B through his own, and C inside A.
-/// Afterwards B is taken from him and his role hides the priority in C. His page and his count,
-/// each from one request over the three projects, must show A whole, C without the priority, and
-/// nothing of B.
-#[tokio::test]
-async fn sec_06_a_page_over_two_projects_shows_only_the_one_the_reader_sees() -> Outcome {
-    let crew = Crew::new().await?;
+/// Who and what the test below reads: Dave's role, the projects B and C, their issues, and the
+/// row that gives Dave his role in B.
+struct Three {
+    reader: RoleId,
+    dave: Started,
+    c: ProjectId,
+    dave_in_b: AssignmentId,
+    issue_b: IssueId,
+    issue_c: IssueId,
+}
+
+/// Dave reads three projects: A (the project of the crew) through a group's role, B through his
+/// own, and C inside A; he follows an issue in each.
+async fn dave_reads_three_projects(crew: &Crew) -> Result<Three, String> {
     let ctx = || crew.world.ctx();
     let ada = token(&crew.world);
     let reader = create_role(
@@ -155,9 +162,9 @@ async fn sec_06_a_page_over_two_projects_shows_only_the_one_the_reader_sees() ->
     .map_err(text)?
     .into_value()
     .id;
-    assign(&crew, Subject::Group(group), Given::Role(reader), a).await?;
+    assign(crew, Subject::Group(group), Given::Role(reader), a).await?;
     let dave_in_b = assign(
-        &crew,
+        crew,
         Subject::Person(dave.person.id),
         Given::Role(reader),
         b,
@@ -178,20 +185,24 @@ async fn sec_06_a_page_over_two_projects_shows_only_the_one_the_reader_sees() ->
         .await
         .map_err(text)?;
     }
-    crew.switch_on(NotificationKind::FollowedFields).await?;
-    crew.world.clock.advance(1);
-    for issue in [crew.issue, issue_b, issue_c] {
-        bob_changes(&crew, issue, "A new title", Some(Priority::Critical)).await?;
-    }
-    // The new issues of B and C told Dave of their activity too, so there are five.
-    assert_eq!(crew.heard(&dave.session_token).await?.len(), 5);
-    assert_eq!(unread_of(&crew, &dave).await?, 5);
-    // Now the role in B is taken from Dave, and the role hides the priority inside C.
+    Ok(Three {
+        reader,
+        dave,
+        c,
+        dave_in_b,
+        issue_b,
+        issue_c,
+    })
+}
+
+/// The role in B is taken from Dave, and his role hides the priority inside C.
+async fn take_away_b_and_hide_priority_in_c(crew: &Crew, three: &Three) -> Result<(), String> {
+    let ctx = || crew.world.ctx();
     remove_assignment(
         &ctx(),
         RemoveAssignment {
             session_token: token(&crew.world),
-            assignment: dave_in_b,
+            assignment: three.dave_in_b,
         },
     )
     .await
@@ -199,16 +210,36 @@ async fn sec_06_a_page_over_two_projects_shows_only_the_one_the_reader_sees() ->
     set_level(
         &ctx(),
         SetFieldLevel {
-            session_token: ada,
-            role: reader,
-            project: Some(c),
+            session_token: token(&crew.world),
+            role: three.reader,
+            project: Some(three.c),
             issue_type: None,
             field: Field::Priority.into(),
             level: Some(FieldLevel::Hidden),
         },
     )
     .await
-    .map_err(text)?;
+    .map(|_| ())
+    .map_err(text)
+}
+
+/// Afterwards B is taken from him and his role hides the priority in C. His page and his count,
+/// each from one request over the three projects, must show A whole, C without the priority, and
+/// nothing of B.
+#[tokio::test]
+async fn sec_06_a_page_over_two_projects_shows_only_the_one_the_reader_sees() -> Outcome {
+    let crew = Crew::new().await?;
+    let three = dave_reads_three_projects(&crew).await?;
+    let (dave, issue_b, issue_c) = (&three.dave, three.issue_b, three.issue_c);
+    crew.switch_on(NotificationKind::FollowedFields).await?;
+    crew.world.clock.advance(1);
+    for issue in [crew.issue, issue_b, issue_c] {
+        bob_changes(&crew, issue, "A new title", Some(Priority::Critical)).await?;
+    }
+    // The new issues of B and C told Dave of their activity too, so there are five.
+    assert_eq!(crew.heard(&dave.session_token).await?.len(), 5);
+    assert_eq!(unread_of(&crew, dave).await?, 5);
+    take_away_b_and_hide_priority_in_c(&crew, &three).await?;
     let page = crew.heard(&dave.session_token).await?;
     let by_issue = |wanted: IssueId| {
         page.iter()
@@ -239,7 +270,7 @@ async fn sec_06_a_page_over_two_projects_shows_only_the_one_the_reader_sees() ->
     );
     assert_eq!(page.len(), 3, "A, and C with its activity");
     assert_eq!(
-        unread_of(&crew, &dave).await?,
+        unread_of(&crew, dave).await?,
         page.len(),
         "the count is the length of the page"
     );
