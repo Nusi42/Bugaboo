@@ -14,6 +14,8 @@ use std::process::Command;
 
 use anyhow::Context as _;
 use bb_dev_words::database::DatabaseKind;
+use jiff::Timestamp;
+use jiff::tz::TimeZone;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -38,29 +40,9 @@ struct DriverResult {
     scenarios: BTreeMap<String, Measured>,
 }
 
-/// The day of `seconds` since 1970 as `YYYY-MM-DD` (the civil date of the proleptic Gregorian
-/// calendar, in UTC).
-fn day_of(seconds: i64) -> String {
-    let days = seconds.div_euclid(86_400) + 719_468;
-    let era = days.div_euclid(146_097);
-    let day_of_era = days.rem_euclid(146_097);
-    let year_of_era =
-        (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let month_part = (5 * day_of_year + 2) / 153;
-    let day = day_of_year - (153 * month_part + 2) / 5 + 1;
-    let month = if month_part < 10 {
-        month_part + 3
-    } else {
-        month_part - 9
-    };
-    let year = year_of_era + era * 400 + i64::from(month <= 2);
-    format!("{year:04}-{month:02}-{day:02}")
-}
-
-pub(crate) fn today() -> anyhow::Result<String> {
-    let seconds = crate::dataset::now()?;
-    Ok(day_of(seconds))
+/// Today as `YYYY-MM-DD`, in UTC.
+pub(crate) fn today() -> String {
+    Timestamp::now().to_zoned(TimeZone::UTC).date().to_string()
 }
 
 fn run_driver(
@@ -170,7 +152,7 @@ pub(crate) fn run(repo: &Repo, databases: &[DatabaseKind]) -> anyhow::Result<boo
         }
         kept.insert(database.code().to_owned(), serde_json::from_str(&text)?);
     }
-    let file = bench_folder.join(format!("{}.json", today()?));
+    let file = bench_folder.join(format!("{}.json", today()));
     fs::write(
         &file,
         format!(
@@ -180,16 +162,4 @@ pub(crate) fn run(repo: &Repo, databases: &[DatabaseKind]) -> anyhow::Result<boo
     )?;
     output::info(&format!("bench: the numbers are in {}.", file.display()));
     Ok(all_held)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_day_is_written_as_year_month_day() {
-        assert_eq!(day_of(0), "1970-01-01");
-        assert_eq!(day_of(1_800_000_000), "2027-01-15");
-        assert_eq!(day_of(951_782_400), "2000-02-29");
-    }
 }

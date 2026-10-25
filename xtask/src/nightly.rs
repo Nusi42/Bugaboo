@@ -160,7 +160,7 @@ fn step(root: &Path, log: &File, name: &str, arguments: &[&str]) -> anyhow::Resu
 fn log_file(root: &Path, layout: &bb_dev_words::sample::Layout) -> anyhow::Result<(File, PathBuf)> {
     let folder = in_folder(root, &layout.large.nightly_out);
     fs::create_dir_all(&folder)?;
-    let path = folder.join(format!("{}.log", crate::bench::today()?));
+    let path = folder.join(format!("{}.log", crate::bench::today()));
     Ok((File::create(&path)?, path))
 }
 
