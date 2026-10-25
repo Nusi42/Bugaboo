@@ -131,6 +131,8 @@ struct Run<'a> {
     out: &'a Path,
     start: i64,
     issues: Option<u32>,
+    /// A run of `--check`.
+    check: bool,
 }
 
 fn run_program(
@@ -145,6 +147,7 @@ fn run_program(
         repo.root(),
         &Arguments {
             large: true,
+            check: run.check,
             seed: request.seed,
             start: run.start,
             database,
@@ -181,6 +184,7 @@ fn build_on(
         out: &out,
         start: now()?,
         issues: request.issues,
+        check: false,
     };
     let both = (request, layout);
     let (made, size) = match database {
@@ -254,6 +258,7 @@ fn twice(
             out: &out,
             start: CHECK_START,
             issues,
+            check: true,
         };
         let made = run_program(
             repo,
@@ -268,8 +273,7 @@ fn twice(
         fs::remove_dir_all(&out)?;
         if !made.status.success() {
             bail!(
-                "The large dataset did not hold its rules on {}:
-{}",
+                "The large dataset did not hold its rules on {}:\n{}",
                 database.code(),
                 said(&made)
             );

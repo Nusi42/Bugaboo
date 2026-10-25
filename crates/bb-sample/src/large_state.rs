@@ -22,20 +22,14 @@ use crate::error::SampleError;
 use crate::issues_setup::{MadeField, Setup};
 use crate::issues_words::IssueWords;
 use crate::large_ids::{ordered, rng_for};
-use crate::large_org::{Org, WORDS};
+use crate::large_org::{Org, Words};
 
 /// How many different file records the dataset has: a file record is one row; issues share them.
 pub(crate) const FILE_RECORDS: usize = 64;
 
 #[derive(Deserialize)]
-struct Words {
-    english: Comments,
-    german: German,
-}
-
-#[derive(Deserialize)]
-struct Comments {
-    comments: Vec<String>,
+pub(crate) struct Comments {
+    pub(crate) comments: Vec<String>,
 }
 
 /// The German words of the dataset.
@@ -155,13 +149,10 @@ pub(crate) async fn read(
     setup: &Setup,
     cost_center: FieldId,
     org: &Org,
-    plan: &LargePlan,
-    names: &IssuePlan,
-    at: Timestamp,
+    (plan, names): (&LargePlan, &IssuePlan),
+    (at, words): (Timestamp, &Words),
 ) -> Result<Bank, SampleError> {
     let storage = world.storage;
-    let words: Words =
-        toml::from_str(WORDS).map_err(|error| SampleError::Names(error.to_string()))?;
     let uses = storage.workflow_uses().await?;
     let mut workflows: Vec<(bb_core::id::WorkflowId, Ladder)> = Vec::new();
     for used in &uses {
@@ -235,8 +226,8 @@ pub(crate) async fn read(
         plan: plan.clone(),
         names: names.clone(),
         words: IssueWords::bundled()?,
-        english: words.english.comments,
-        german: words.german,
+        english: words.english.comments.clone(),
+        german: words.german.clone(),
         types: setup.types.clone(),
         kinds: setup.kinds.clone(),
         fields: names

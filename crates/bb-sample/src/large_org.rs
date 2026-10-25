@@ -38,7 +38,7 @@ use crate::random::SeededRandom;
 
 /// The words of the large dataset (`data/large.toml`): the names of projects and teams, the name of
 /// the own field, and the comments in both languages. Every file that reads them reads this text.
-pub(crate) const WORDS: &str = include_str!("../data/large.toml");
+const WORDS: &str = include_str!("../data/large.toml");
 
 /// How many of 100 Team members of the rest work in the whole organization (the others hold
 /// their role in a few projects, directly or through a group).
@@ -54,6 +54,18 @@ const AREAS: [&str; 4] = ["app", "web", "ops", "doc"];
 pub(crate) struct Words {
     pub(crate) projects: ProjectWords,
     pub(crate) fields: FieldWords,
+    pub(crate) english: crate::large_state::Comments,
+    pub(crate) german: crate::large_state::German,
+}
+
+impl Words {
+    /// The words of `data/large.toml`, read once for the whole dataset.
+    ///
+    /// # Errors
+    /// [`SampleError::Names`] when the file is unusable.
+    pub(crate) fn read() -> Result<Self, SampleError> {
+        toml::from_str(WORDS).map_err(|error| SampleError::Names(error.to_string()))
+    }
 }
 
 /// The names of the own fields that the dataset adds.
@@ -585,9 +597,8 @@ pub(crate) async fn grow(
     world: &World<'_>,
     plan: &LargePlan,
     layout: &Layout,
+    words: &Words,
 ) -> Result<Org, SampleError> {
-    let words: Words =
-        toml::from_str(WORDS).map_err(|error| SampleError::Names(error.to_string()))?;
     let mut random = SeededRandom::new(world.seed ^ 0x004C_4152_4745);
     let storage = world.storage;
     let at = world.clock.now();

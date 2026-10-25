@@ -8,8 +8,9 @@
 //!   version up.
 //! - **History:** every event about an issue has its row in the history of the issue.
 //! - **What people are told:** a Guest is told only about issues they reported; neither a Guest
-//!   nor a Contributor is told the value of *Cost center*. The rule counts the notifications it
-//!   read and fails when it read none for a kind of person, so it cannot pass without looking.
+//!   nor a Contributor is told the value of *Cost center*. Every notification read is
+//!   held against it; in a run of `--check` (every event makes its notifications) the rule also
+//!   fails when it read none for a kind of person, so it cannot pass without looking.
 //!
 //! Every issue is read when there are few; with many, every n-th, so the check stays a matter of
 //! minutes.
@@ -78,11 +79,12 @@ pub struct Report {
 }
 
 impl Sample {
-    /// Holds the large dataset against the rules that apply to the large dataset.
+    /// Holds the large dataset against the rules that apply to the large dataset; `check` is a run
+    /// of `--check`, where the told-rules must have notifications to look at.
     ///
     /// # Errors
     /// [`SampleError`] when the database cannot be read.
-    pub async fn check_large(&self, facts: &Facts) -> Result<Report, SampleError> {
+    pub async fn check_large(&self, facts: &Facts, check: bool) -> Result<Report, SampleError> {
         let storage = &self.storage;
         let database = storage.database();
         let mut problems = Vec::new();
@@ -171,7 +173,8 @@ impl Sample {
             self.hash_around(issue.id, (&tag_names, &label_names), &mut hasher)
                 .await?;
         }
-        self.check_told(facts, &issues, &mut problems).await?;
+        self.check_told(facts, &issues, check, &mut problems)
+            .await?;
         Ok(Report {
             problems,
             fingerprint: hasher.finish(),
@@ -229,6 +232,7 @@ impl Sample {
         &self,
         facts: &Facts,
         issues: &[bb_core::issue::Issue],
+        check: bool,
         problems: &mut Vec<String>,
     ) -> Result<(), SampleError> {
         let reporters: BTreeMap<_, _> = issues
@@ -269,7 +273,7 @@ impl Sample {
                     }
                 }
             }
-            if !people.is_empty() && read == 0 {
+            if check && !people.is_empty() && read == 0 {
                 problems.push(format!(
                     "no notification of the {} was read, so the rules of what they are told were not checked",
                     if only_own { "Guests" } else { "Contributors" }

@@ -92,6 +92,7 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
             repo.root(),
             &Arguments {
                 large: false,
+                check: false,
                 seed: request.seed,
                 start: now()?,
                 database: request.database,
@@ -148,6 +149,7 @@ pub(crate) fn create_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
         root,
         &Arguments {
             large: false,
+            check: false,
             seed: None,
             start: now()?,
             database: DatabaseKind::Sqlite,
@@ -180,6 +182,8 @@ pub(crate) fn now() -> anyhow::Result<i64> {
 /// What the program is told.
 pub(crate) struct Arguments<'a> {
     pub(crate) large: bool,
+    /// A run of `dataset large --check`: the program is told `--check`.
+    pub(crate) check: bool,
     pub(crate) seed: Option<u64>,
     pub(crate) start: i64,
     pub(crate) database: DatabaseKind,
@@ -209,6 +213,9 @@ pub(crate) fn program_command(
         .arg(arguments.out);
     if arguments.large {
         command.arg("--large");
+    }
+    if arguments.check {
+        command.arg("--check");
     }
     if let Some(issues) = arguments.issues {
         command.arg("--issues").arg(issues.to_string());
@@ -247,6 +254,7 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
                 root,
                 &Arguments {
                     large: false,
+                    check: false,
                     seed,
                     start: CHECK_START,
                     database,
@@ -372,6 +380,7 @@ mod tests {
             Path::new("."),
             &Arguments {
                 large: false,
+                check: false,
                 seed: Some(7),
                 start: 1_800_000_000,
                 database: DatabaseKind::Postgres,
@@ -411,6 +420,7 @@ mod tests {
             Path::new("."),
             &Arguments {
                 large: false,
+                check: false,
                 seed: None,
                 start: 1,
                 database: DatabaseKind::Sqlite,

@@ -275,7 +275,7 @@ mod tests {
         assert!(stale(None, Some("m0002.rs")));
         assert!(stale(Some("m0001.rs"), Some("m0002.rs")));
         assert!(!stale(Some("m0002.rs"), Some("m0002.rs")));
-        // A newer file time alone changes nothing; only the name counts.
+        // The names decide; without a newest migration there is nothing the dataset matches.
         assert!(stale(Some("m0002.rs"), None));
     }
 

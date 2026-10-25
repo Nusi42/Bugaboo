@@ -20,7 +20,7 @@ use crate::error::{SampleError, Step};
 use crate::generate::{Later, World};
 use crate::issues_setup::{Setup, create_one_field, project_ids};
 use crate::large_check::Facts;
-use crate::large_org::{WORDS, Words};
+use crate::large_org::Words;
 use crate::organization::Organization;
 
 /// The number of days in a month the history is counted in.
@@ -34,19 +34,24 @@ pub struct Large {
     issues: u32,
     layout: Layout,
     facts: Facts,
+    /// A run of `--check`: every event makes its notifications, and the check fails when it found
+    /// nothing to look at in what Guests and Contributors are told.
+    check: bool,
 }
 
 impl Large {
-    /// The large dataset with `issues` issues, or the number of `tools/dev/sample.json`.
+    /// The large dataset with `issues` issues, or the number of `tools/dev/sample.json`; `check`
+    /// is a run of `--check`.
     ///
     /// # Errors
     /// [`SampleError::Layout`] when `tools/dev/sample.json` is not usable.
-    pub fn new(issues: Option<u32>) -> Result<Self, SampleError> {
+    pub fn new(issues: Option<u32>, check: bool) -> Result<Self, SampleError> {
         let layout = Layout::bundled()?;
         Ok(Self {
             issues: issues.unwrap_or(layout.large.issues),
             layout,
             facts: Facts::default(),
+            check,
         })
     }
 
@@ -54,6 +59,12 @@ impl Large {
     #[must_use]
     pub const fn facts(&self) -> &Facts {
         &self.facts
+    }
+
+    /// Whether this is a run of `--check`.
+    #[must_use]
+    pub const fn is_check(&self) -> bool {
+        self.check
     }
 
     /// How many issues the dataset is made with.
@@ -72,18 +83,17 @@ impl Later for Large {
         Organization.after_people(world).await?;
         let names = self.layout.issues.clone();
         let mut plan = self.layout.large.clone();
-        if self.issues <= plan.check_issues {
+        if self.check {
             plan.notified_percent = plan.check_notified_percent;
         }
         let token = world.administrator_session.to_owned();
         let setup = Setup::create(world, &token, &names).await?;
-        let words: Words =
-            toml::from_str(WORDS).map_err(|error| SampleError::Names(error.to_string()))?;
+        let words = Words::read()?;
         let cost_center =
             cost_center(world, &token, &words.fields.cost_center, &names, &setup).await?;
         let begin = world.clock.now().as_second() + 3600;
         let end = world.start.as_second() - END_ROOM;
-        let org = crate::large_org::grow(world, &plan, &self.layout).await?;
+        let org = crate::large_org::grow(world, &plan, &self.layout, &words).await?;
         let (guests, contributors) = Facts::people(&org.folk);
         self.facts = Facts {
             guests,
@@ -95,9 +105,8 @@ impl Later for Large {
             &setup,
             cost_center,
             &org,
-            &plan,
-            &names,
-            world.clock.now(),
+            (&plan, &names),
+            (world.clock.now(), &words),
         )
         .await?;
         crate::large_write::run(

@@ -511,6 +511,9 @@ pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
 /// The message `cli.help.public-url`.
 pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
 
+/// The message `cli.help.sample-check`.
+pub const CLI_HELP_SAMPLE_CHECK: MessageKey = MessageKey::new("cli.help.sample-check");
+
 /// The message `cli.help.sample-issues`.
 pub const CLI_HELP_SAMPLE_ISSUES: MessageKey = MessageKey::new("cli.help.sample-issues");
 
@@ -10035,6 +10038,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "cli.help.public-url",
         "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
+    ),
+    (
+        "cli.help.sample-check",
+        "With --large: makes a small dataset for the check of its rules: every event makes its notifications, and the check fails when Guests or Contributors were told nothing to look at",
     ),
     (
         "cli.help.sample-database",
