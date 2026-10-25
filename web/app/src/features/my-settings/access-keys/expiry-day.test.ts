@@ -11,6 +11,7 @@ import {
   keyEndOf,
   latestDay,
   presetDay,
+  stillWrongDay,
 } from "./expiry-day.ts";
 
 const rules: Days = { default_days: 90, longest_days: 365 };
@@ -107,6 +108,16 @@ describe("the days a key may run out on", () => {
   it("cut a default that is longer than the longest time to it", () => {
     const rule = { default_days: 90, longest_days: 30 };
     expect(presetDay(rule, pagoPago)).toBe("2027-01-30");
+  });
+});
+
+describe("the telling that a day is no day", () => {
+  it("stays while the day in the box is the text that was refused, and goes when it changes", () => {
+    expect(stillWrongDay("", "")).toBe(true);
+    expect(stillWrongDay("", "2027-02-01")).toBe(false);
+    expect(stillWrongDay("2027-02-30", "2027-02-30")).toBe(true);
+    expect(stillWrongDay(null, "")).toBe(false);
+    expect(stillWrongDay(null, null)).toBe(false);
   });
 });
 

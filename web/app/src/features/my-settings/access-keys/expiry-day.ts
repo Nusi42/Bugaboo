@@ -100,3 +100,8 @@ export function defaultDaysOf(rules: Days): number {
 export function presetDay(rules: Days, region: Region = currentRegion()): string {
   return dayOfMomentIn(defaultDaysOf(rules), region);
 }
+
+/** Whether the day in the box is still the text that was refused as no day: changing the day ends the telling. */
+export function stillWrongDay(refused: string | null, shown: string | null): boolean {
+  return refused !== null && refused === shown;
+}

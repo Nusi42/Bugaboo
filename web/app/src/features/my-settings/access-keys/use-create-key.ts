@@ -5,7 +5,7 @@ import { api } from "../../../shared/api.ts";
 import { messageOf } from "../../../shared/errors.ts";
 import { refreshKeys } from "./access-keys.ts";
 import { bodyOf, type Draft } from "./draft.ts";
-import { keyEndOf } from "./expiry-day.ts";
+import { keyEndOf, stillWrongDay } from "./expiry-day.ts";
 
 /** Asking the server to make the key. */
 export interface CreateKey {
@@ -35,7 +35,7 @@ export function useCreateKey(
     },
   });
   return {
-    wrongDay: (day) => wrongText !== null && wrongText === day,
+    wrongDay: (day) => stillWrongDay(wrongText, day),
     send: (draft) => {
       const end = keyEndOf(draft.day, rules);
       setWrongText(end.valid ? null : draft.day);
