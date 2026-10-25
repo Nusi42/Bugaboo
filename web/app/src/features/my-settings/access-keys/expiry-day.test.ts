@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Region } from "../../../shared/region.ts";
 import { deviceRegion } from "../../../shared/region.ts";
 import { bodyOf } from "./draft.ts";
-import { earliestDay, endOfDay, latestDay, presetDay } from "./expiry-day.ts";
+import { earliestDay, endOfDay, endOfKey, keyEndOf, latestDay, presetDay } from "./expiry-day.ts";
 
 const rules = { default_days: 90, longest_days: 365 } as const;
 
@@ -54,9 +54,10 @@ describe("the end of the day a key runs out", () => {
   });
 
   it("is what is sent for the day the person picked, and none while the person picked none", () => {
-    const picked = bodyOf({ ...filledIn, day: "2027-01-23" }, berlin).expires_at;
+    const picked = endOfKey("2027-01-23", { default_days: 90, longest_days: 3650 }, berlin);
     expect(wallClock(picked, "Europe/Berlin")).toBe("2027-01-23 23:59:59");
-    expect(bodyOf({ ...filledIn, day: null }).expires_at).toBeNull();
+    expect(bodyOf(filledIn, picked).expires_at).toBe(picked);
+    expect(bodyOf(filledIn, null).expires_at).toBeNull();
   });
 });
 
@@ -75,11 +76,73 @@ describe("the days a key may run out on", () => {
     expect(earliestDay(pagoPago)).toBe("2027-01-01");
     expect(presetDay(rules, kiritimati)).toBe("2027-04-01");
     expect(presetDay(rules, pagoPago)).toBe("2027-03-31");
-    expect(latestDay(rules, kiritimati)).toBe("2027-12-31");
+    expect(latestDay(rules, kiritimati)).toBe("2028-01-01");
   });
 
-  it("never put the default later than the latest day, even when it is the longest time", () => {
-    const same = { default_days: 365, longest_days: 365 };
-    expect(presetDay(same, pagoPago)).toBe(latestDay(same, pagoPago));
+  it.each([
+    [30, "2027-01-31", "2027-01-30"],
+    [365, "2028-01-01", "2027-12-31"],
+  ])(
+    "put the default on the latest day, the day the server's moment falls on, when both are %i days",
+    (days, kiritimatiDay, pagoDay) => {
+      const same = { default_days: days, longest_days: days };
+      expect(presetDay(same, kiritimati)).toBe(kiritimatiDay);
+      expect(latestDay(same, kiritimati)).toBe(kiritimatiDay);
+      expect(presetDay(same, pagoPago)).toBe(pagoDay);
+      expect(latestDay(same, pagoPago)).toBe(pagoDay);
+    },
+  );
+
+  it("cut a default that is longer than the longest time to it", () => {
+    const rule = { default_days: 90, longest_days: 30 };
+    expect(presetDay(rule, pagoPago)).toBe("2027-01-30");
+  });
+});
+
+describe("the days around the change of summer time (Europe/Berlin)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("are the days of the moments 90 and 365 days on, not a day short", () => {
+    // 23:30 on the 1st of March 2027 in Berlin (CET); 90 days on it is 00:30 CEST on the 31st of May.
+    vi.useFakeTimers({ now: new Date("2027-03-01T22:30:00Z") });
+    expect(presetDay(rules, berlin)).toBe("2027-05-31");
+    expect(latestDay(rules, berlin)).toBe("2028-02-29");
+  });
+
+  it("keep the latest day from falling before tomorrow when the clocks go back", () => {
+    // 00:30 CEST on the 31st of October 2027, a day of 25 hours: 24 hours on is still that day.
+    vi.useFakeTimers({ now: new Date("2027-10-30T22:30:00Z") });
+    const one = { default_days: 1, longest_days: 1 };
+    expect(earliestDay(berlin)).toBe("2027-11-01");
+    expect(latestDay(one, berlin)).toBe("2027-11-01");
+    expect(presetDay(one, berlin)).toBe("2027-11-01");
+    expect(endOfKey("2027-11-01", one, berlin)).toBe("2027-10-31T22:30:00.000Z");
+  });
+
+  it("end a picked day at its last second, or at the longest time when that comes first", () => {
+    // 23:30 CET on the 27th of March 2027; the clocks go forward in the night to the 28th.
+    vi.useFakeTimers({ now: new Date("2027-03-27T22:30:00Z") });
+    const one = { default_days: 1, longest_days: 1 };
+    expect(latestDay(one, berlin)).toBe("2027-03-29");
+    expect(endOfKey("2027-03-28", one, berlin)).toBe("2027-03-28T21:59:59.000Z");
+    expect(endOfKey("2027-03-29", one, berlin)).toBe("2027-03-28T22:30:00.000Z");
+  });
+
+  it("take a day that is no day for a problem of the form, never for the default", () => {
+    vi.useFakeTimers({ now: new Date("2027-03-27T22:30:00Z") });
+    expect(keyEndOf(null, rules, berlin)).toEqual({ valid: true, expiresAt: null });
+    expect(keyEndOf("2027-02-30", rules, berlin)).toEqual({ valid: false, expiresAt: null });
+    expect(keyEndOf("2027-04-02", rules, berlin)).toEqual({
+      valid: true,
+      expiresAt: "2027-04-02T21:59:59.000Z",
+    });
+  });
+
+  it("send no moment for text that is no day", () => {
+    vi.useFakeTimers({ now: new Date("2027-03-27T22:30:00Z") });
+    expect(endOfKey("2027-02-30", rules, berlin)).toBeNull();
+    expect(endOfKey("", rules, berlin)).toBeNull();
   });
 });

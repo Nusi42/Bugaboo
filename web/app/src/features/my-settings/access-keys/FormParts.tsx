@@ -49,10 +49,12 @@ export function Basics({ draft }: PartProps) {
 
 export interface ExpiryProps extends PartProps {
   readonly rules: Schema<"AccessKeyRulesBody">;
+  /** The day that was filled in is no day: the field says so. */
+  readonly wrongDay: boolean;
 }
 
 /** The day the key runs out: the default, or a day of the person's own, up to the longest time. */
-export function Expiry({ draft, rules }: ExpiryProps) {
+export function Expiry({ draft, rules, wrongDay }: ExpiryProps) {
   return (
     <TextField
       label={t("access-keys.expires")}
@@ -61,6 +63,7 @@ export function Expiry({ draft, rules }: ExpiryProps) {
         latest: formatCalendarDay(latestDay(rules)),
       })}
       requiredMessage={t("error.field.required")}
+      errorMessage={wrongDay ? t("error.field.wrong-value") : undefined}
       date={{ min: earliestDay(), max: latestDay(rules) }}
       value={draft.day ?? presetDay(rules)}
       onChange={draft.setDay}

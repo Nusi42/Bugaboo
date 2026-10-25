@@ -1,9 +1,7 @@
 import { useState } from "react";
 
-import { currentRegion, type Region } from "../../../shared/region.ts";
 import type { PermissionKey } from "../../../shared/permissions.ts";
 import type { PlainChoice } from "./choice.ts";
-import { endOfDay } from "./expiry-day.ts";
 
 /** What the person has filled in so far, and how to change each part. */
 export interface Draft {
@@ -73,10 +71,10 @@ export function useDraft(): Draft {
   };
 }
 
-/** What the server is asked to make: the draft in the words of the API. */
+/** What the server is asked to make: the draft in the words of the API, and the moment the key ends (`null`: the server's default). */
 export function bodyOf(
-  draft: Pick<Draft, "name" | "choice" | "single" | "picked" | "projects" | "day" | "password">,
-  region: Region = currentRegion(),
+  draft: Pick<Draft, "name" | "choice" | "single" | "picked" | "projects" | "password">,
+  expiresAt: string | null,
 ) {
   return {
     password: draft.password,
@@ -84,8 +82,6 @@ export function bodyOf(
     choice: draft.single ? ("permissions" as const) : draft.choice,
     permissions: draft.single ? [...draft.picked] : [],
     projects: [...draft.projects],
-    // The key runs out at the end of the day the person picked, on the clock of the region; with
-    // no day picked, the organization's default stands and the server works it out.
-    expires_at: draft.day === null ? null : endOfDay(draft.day, region),
+    expires_at: expiresAt,
   };
 }

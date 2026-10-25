@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clockPartsOf,
   daysUntil,
   formatAgo,
   formatDate,
   formatDateTime,
   formatSince,
   formatTime,
+  isCalendarDay,
   splitUptime,
 } from "./format.ts";
 import { deviceRegion, type Region } from "./region.ts";
@@ -76,5 +78,30 @@ describe("ux_a4 a date or a time never wraps", () => {
     expect(formatDateTime("2026-10-18T01:16:00Z", region("year-month-day"))).toBe(
       "2026‑10‑18, 1:16 AM",
     );
+  });
+});
+
+describe("the clock and the calendar of a region", () => {
+  const berlin: Region = { ...deviceRegion, timeZone: "Europe/Berlin" };
+
+  it("say the numbers at a moment, on a 24 hour clock, with summer time", () => {
+    expect(clockPartsOf(Date.parse("2027-03-01T22:30:05Z"), berlin)).toEqual({
+      year: 2027,
+      month: 3,
+      day: 1,
+      hour: 23,
+      minute: 30,
+      second: 5,
+    });
+    expect(clockPartsOf(Date.parse("2027-03-30T22:00:00Z"), berlin)).toMatchObject({
+      day: 31,
+      hour: 0,
+    });
+  });
+
+  it("know a day on the calendar from text that only looks like one", () => {
+    expect(isCalendarDay("2028-02-29")).toBe(true);
+    expect(isCalendarDay("2027-02-29")).toBe(false);
+    expect(isCalendarDay("2027-2-1")).toBe(false);
   });
 });

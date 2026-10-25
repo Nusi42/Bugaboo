@@ -24,7 +24,7 @@ interface FieldsProps extends CreateKeyFormProps {
 function Fields({ rules, onMade, onCancel }: FieldsProps) {
   const draft = useDraft();
   const [needOne, setNeedOne] = useState(false);
-  const create = useCreateKey(onMade);
+  const create = useCreateKey(onMade, rules);
   return (
     <Form
       onSubmit={() => {
@@ -36,7 +36,7 @@ function Fields({ rules, onMade, onCancel }: FieldsProps) {
       }}
     >
       <Basics draft={draft} />
-      <Expiry draft={draft} rules={rules} />
+      <Expiry draft={draft} rules={rules} wrongDay={create.wrongDay} />
       <MoreOptions
         draft={draft}
         rules={rules}

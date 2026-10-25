@@ -8,7 +8,7 @@
 import { secondsPerHour, secondsPerMinute, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { formatCalendarDay, formatDateTime, formatNumber } from "./format.ts";
+import { formatCalendarDay, formatDateTime, formatNumber, isCalendarDay } from "./format.ts";
 import { currentRegion, type Region } from "./region.ts";
 
 /** Seconds as "2h 5m", "45m" or "0m"; whole minutes (a duration is typed in minutes at the least). */
@@ -28,16 +28,6 @@ function textOf(value: unknown): string | undefined {
 
 function numberTextOf(value: unknown, region: Region): string | undefined {
   return typeof value === "number" ? formatNumber(value, region) : textOf(value);
-}
-
-const DAY = /^\d{4}-\d{2}-\d{2}$/u;
-
-/** A day that exists on the calendar: "2026-02-30" does not, and the browser would roll it over. */
-function isCalendarDay(value: string): boolean {
-  const moment = new Date(`${value}T00:00:00Z`);
-  return (
-    DAY.test(value) && !Number.isNaN(moment.getTime()) && moment.toISOString().startsWith(value)
-  );
 }
 
 /** A moment from the server; text that is no moment has no words (the browser would throw). */
