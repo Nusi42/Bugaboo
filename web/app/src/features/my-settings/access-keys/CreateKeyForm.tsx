@@ -36,7 +36,7 @@ function Fields({ rules, onMade, onCancel }: FieldsProps) {
       }}
     >
       <Basics draft={draft} />
-      <Expiry draft={draft} rules={rules} wrongDay={create.wrongDay} />
+      <Expiry draft={draft} rules={rules} wrongDay={create.wrongDay(draft.day)} />
       <MoreOptions
         draft={draft}
         rules={rules}

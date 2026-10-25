@@ -1,8 +1,7 @@
-import { msPerSecond, secondsPerDay } from "@bugaboo/api-client";
+import { msPerDay, msPerSecond } from "@bugaboo/api-client";
 import type { Schema } from "@bugaboo/api-client";
 
 import {
-  addDays,
   calendarDayOf,
   clockPartsOf,
   dayNumbersOf,
@@ -11,11 +10,10 @@ import {
 import { currentRegion, type Region } from "../../../shared/region.ts";
 
 /** What the day of the key needs of the rules of the organization. */
-type Days = Pick<Schema<"AccessKeyRulesBody">, "default_days" | "longest_days">;
+export type Days = Pick<Schema<"AccessKeyRulesBody">, "default_days" | "longest_days">;
 
 const HOURS_BEFORE_MIDNIGHT = 23;
 const LAST_MINUTE = 59;
-const MS_PER_DAY = msPerSecond * secondsPerDay;
 
 // Every day here is the calendar day of the person's region (its time zone, or the device's when the
 // region says `device`) of a moment, written as the date field writes it (`2027-03-01`). The server
@@ -24,12 +22,7 @@ const MS_PER_DAY = msPerSecond * secondsPerDay;
 
 /** The day of the moment `days` from now, on the calendar of the region. */
 function dayOfMomentIn(days: number, region: Region): string {
-  return calendarDayOf(Date.now() + days * MS_PER_DAY, region);
-}
-
-/** The later of two days (the date field writes days so that text order is calendar order). */
-function later(a: string, b: string): string {
-  return a >= b ? a : b;
+  return calendarDayOf(Date.now() + days * msPerDay, region);
 }
 
 /** The clock of the region at a moment, read as if it were the clock of UTC. */
@@ -53,10 +46,9 @@ function endOfDayAt(day: string, region: Region): number | null {
   return asIfUtc - (wallClockAsUtc(guess, region) - guess);
 }
 
-/** The end of a day, as a moment in the words of the API; null when the text is no day. */
-export function endOfDay(day: string, region: Region = currentRegion()): string | null {
-  const end = endOfDayAt(day, region);
-  return end === null ? null : new Date(Math.trunc(end / msPerSecond) * msPerSecond).toISOString();
+/** A moment (milliseconds since 1970) in the words of the API, cut to a whole second. */
+function momentText(moment: number): string {
+  return new Date(Math.trunc(moment / msPerSecond) * msPerSecond).toISOString();
 }
 
 /**
@@ -72,8 +64,8 @@ export function endOfKey(
   if (end === null) {
     return null;
   }
-  const longest = Date.now() + rules.longest_days * MS_PER_DAY;
-  return new Date(Math.trunc(Math.min(end, longest) / msPerSecond) * msPerSecond).toISOString();
+  const longest = Date.now() + rules.longest_days * msPerDay;
+  return momentText(Math.min(end, longest));
 }
 
 /** What a key is made with for the day in the form: `null` until a day is picked (the default of the server); a day that is no day is not valid. */
@@ -89,18 +81,22 @@ export function keyEndOf(
   return { valid: expiresAt !== null, expiresAt };
 }
 
-/** The earliest day, tomorrow, as the date field writes it. */
+/** The earliest day: the day of the moment 24 hours from now (a day of 25 hours has it on the same day). */
 export function earliestDay(region: Region = currentRegion()): string {
-  return addDays(calendarDayOf(Date.now(), region), 1);
+  return dayOfMomentIn(1, region);
 }
 
-/** The latest day: the day of the moment the longest time from now ends on, never before tomorrow. */
+/** The latest day: the day of the moment the longest time from now ends on. */
 export function latestDay(rules: Days, region: Region = currentRegion()): string {
-  return later(dayOfMomentIn(rules.longest_days, region), earliestDay(region));
+  return dayOfMomentIn(rules.longest_days, region);
 }
 
-/** The day filled in before the person picks one: the day of the default, never later than the latest day. */
+/** The days a key runs for when the person picks no day: the default, at least one day, at most the longest time. */
+export function defaultDaysOf(rules: Days): number {
+  return Math.min(Math.max(rules.default_days, 1), rules.longest_days);
+}
+
+/** The day filled in before the person picks one: the day of the moment the default time from now ends on. */
 export function presetDay(rules: Days, region: Region = currentRegion()): string {
-  const days = Math.min(Math.max(rules.default_days, 1), rules.longest_days);
-  return later(dayOfMomentIn(days, region), earliestDay(region));
+  return dayOfMomentIn(defaultDaysOf(rules), region);
 }

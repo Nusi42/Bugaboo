@@ -1,4 +1,10 @@
-import { msPerSecond, secondsPerDay, secondsPerHour, secondsPerMinute } from "@bugaboo/api-client";
+import {
+  msPerDay,
+  msPerSecond,
+  secondsPerDay,
+  secondsPerHour,
+  secondsPerMinute,
+} from "@bugaboo/api-client";
 import { locale } from "@bugaboo/messages";
 
 import { currentRegion, type NumberFormat, type Region } from "./region.ts";
@@ -173,7 +179,7 @@ export function calendarDayOf(moment: number, region: Region = currentRegion()):
 
 /** Whole days from `nowMs` (milliseconds since 1970) to `moment`; negative when the moment has passed. */
 export function daysUntil(moment: string, nowMs: number): number {
-  return Math.floor((new Date(moment).getTime() - nowMs) / (msPerSecond * secondsPerDay));
+  return Math.floor((new Date(moment).getTime() - nowMs) / msPerDay);
 }
 
 /** A number of seconds split into whole days, hours and minutes. */

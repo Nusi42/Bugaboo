@@ -1,4 +1,4 @@
-import { draftKeepDays, msPerSecond, secondsPerDay, type DraftTarget } from "@bugaboo/api-client";
+import { draftKeepDays, msPerDay, type DraftTarget } from "@bugaboo/api-client";
 import {
   browserStorage,
   forgetStored,
@@ -55,7 +55,7 @@ function isDraft(value: unknown): value is BrowserDraft {
 /** Whether a draft is still within its keep period at `nowMs`. */
 function isKept(draft: BrowserDraft, nowMs: number): boolean {
   const savedAt = Date.parse(draft.savedAt);
-  return !Number.isNaN(savedAt) && nowMs - savedAt < draftKeepDays * secondsPerDay * msPerSecond;
+  return !Number.isNaN(savedAt) && nowMs - savedAt < draftKeepDays * msPerDay;
 }
 
 /** The drafts that are kept now; what is not a draft, or too old, is left out. */

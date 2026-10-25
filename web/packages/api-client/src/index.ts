@@ -76,7 +76,7 @@ export {
 } from "./fields.generated.ts";
 export { megabyte, partBytes } from "./files.generated.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
-export { minutesPerHour, msPerSecond, secondsPerHour, secondsPerMinute } from "./time.ts";
+export { minutesPerHour, msPerDay, msPerSecond, secondsPerHour, secondsPerMinute } from "./time.ts";
 export {
   choiceColorWords,
   fieldForWords,
