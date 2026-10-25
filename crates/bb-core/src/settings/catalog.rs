@@ -9,6 +9,7 @@ use super::{
 use crate::mail::MailSecurity;
 use crate::message;
 use crate::readable_id::IdMode;
+use crate::saved_search::Spacing;
 
 /// The choices of *Theme*: follow the device, or always light or always dark.
 const MODE_CHOICES: &[Choice] = &[
@@ -17,9 +18,13 @@ const MODE_CHOICES: &[Choice] = &[
     Choice::new("dark", message::APPEARANCE_MODE_DARK),
 ];
 
+/// The starting value of *Spacing*.
+const DEFAULT_SPACING: &str = Spacing::Comfortable.code();
+
+/// The choices of *Spacing*: the two words of `Spacing`, which a saved search stores as well.
 const SPACING_CHOICES: &[Choice] = &[
-    Choice::new("comfortable", message::APPEARANCE_SPACING_COMFORTABLE),
-    Choice::new("compact", message::APPEARANCE_SPACING_COMPACT),
+    Choice::new(Spacing::Comfortable.code(), Spacing::Comfortable.name()),
+    Choice::new(Spacing::Compact.code(), Spacing::Compact.name()),
 ];
 
 const ISSUE_VIEW_CHOICES: &[Choice] = &[
@@ -146,7 +151,7 @@ settings! {
     APPEARANCE_SPACING: Text = {
         key: "appearance.spacing",
         name: message::APPEARANCE_SPACING_LEGEND,
-        default: "comfortable",
+        default: DEFAULT_SPACING,
         levels: [Organization, Person],
         changed_by: EachPerson,
         help: message::SETTING_APPEARANCE_SPACING_HELP,
