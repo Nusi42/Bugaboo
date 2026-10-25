@@ -8,12 +8,12 @@
 //! A text that is a word of the language only stays a value when it is quoted, which the printer
 //! does.
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::span::Span;
 
 /// A whole search: the conditions and the order of the results.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Search {
     /// What the results must fulfil; `null` when the search asks for everything.
     pub filter: Option<Expr>,
@@ -24,7 +24,7 @@ pub struct Search {
 }
 
 /// A condition or a combination of conditions.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Expr {
     /// At least one of the items holds (`or`).
@@ -90,20 +90,20 @@ pub enum Expr {
 }
 
 /// What is asked of a field.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Test {
     /// `is value`.
     Is {
         /// The value.
-        value: Value,
+        value: Operand,
         /// The whole test.
         span: Span,
     },
     /// `is not value`.
     IsNot {
         /// The value.
-        value: Value,
+        value: Operand,
         /// The whole test.
         span: Span,
     },
@@ -112,14 +112,14 @@ pub enum Test {
         /// Which comparison.
         operator: Comparison,
         /// The value.
-        value: Value,
+        value: Operand,
         /// The whole test.
         span: Span,
     },
     /// `in (a, b)`.
     In {
         /// The values, at least one.
-        values: Vec<Value>,
+        values: Vec<Operand>,
         /// The whole test.
         span: Span,
     },
@@ -166,7 +166,7 @@ pub enum Test {
 }
 
 /// A comparison of a value with the one in the issue.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Comparison {
     /// `<`.
@@ -180,9 +180,9 @@ pub enum Comparison {
 }
 
 /// A value in a condition.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum Value {
+pub enum Operand {
     /// Words: a name, a choice, a text. Quoted when it is not one plain word.
     Text {
         /// The text, without quotes.
@@ -193,7 +193,7 @@ pub enum Value {
     /// A number.
     Number {
         /// The number.
-        number: Number,
+        number: Decimal,
         /// Where it stands.
         span: Span,
     },
@@ -227,7 +227,7 @@ pub enum Value {
 }
 
 /// A text in a condition that always asks for words (`contains`, `member of`).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Text {
     /// The text, without quotes.
     pub text: String,
@@ -236,7 +236,7 @@ pub struct Text {
 }
 
 /// A field, by its word.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct FieldRef {
     /// The word, without quotes.
     pub word: String,
@@ -245,7 +245,7 @@ pub struct FieldRef {
 }
 
 /// An Issue ID: the short name of a project and a code (`WEB-142`, `WEB-K7Q2X`).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ReadableId {
     /// The ID.
     pub text: String,
@@ -254,7 +254,7 @@ pub struct ReadableId {
 }
 
 /// The short name of a project (`WEB`).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ShortName {
     /// The short name.
     pub text: String,
@@ -263,7 +263,7 @@ pub struct ShortName {
 }
 
 /// How far a chain of relations may go (`within 3 steps`).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Steps {
     /// The number of steps, at least one.
     pub count: u32,
@@ -273,8 +273,8 @@ pub struct Steps {
 
 /// A number with a decimal point: `value` divided by ten to the power of `scale`. The shortest
 /// form is the only one: no zero ends the fraction, so `1.50` is 15 with scale 1.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Number {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct Decimal {
     /// The number without the point.
     pub value: i64,
     /// How many digits stand after the point.
@@ -282,7 +282,7 @@ pub struct Number {
 }
 
 /// A day in the calendar, written `2026-10-25`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct Date {
     /// The year, 1 to 9999.
     pub year: u16,
@@ -293,7 +293,7 @@ pub struct Date {
 }
 
 /// A time word, relative to the moment of the search.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TimeWord {
     /// `today`.
@@ -309,7 +309,7 @@ pub enum TimeWord {
 }
 
 /// The unit of `in last 7 days`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Unit {
     /// Days.
@@ -321,7 +321,7 @@ pub enum Unit {
 }
 
 /// One key of `sort by`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SortKey {
     /// The field.
     pub field: FieldRef,
@@ -332,7 +332,7 @@ pub struct SortKey {
 }
 
 /// The direction of a sort key, in plain words.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Direction {
     /// `highest first`.
@@ -418,4 +418,19 @@ impl Expr {
             condition => visit(condition),
         }
     }
+}
+
+impl Comparison {
+    /// Every comparison.
+    pub const ALL: [Self; 4] = [
+        Self::Less,
+        Self::Greater,
+        Self::LessOrEqual,
+        Self::GreaterOrEqual,
+    ];
+}
+
+impl Unit {
+    /// Every unit.
+    pub const ALL: [Self; 3] = [Self::Day, Self::Week, Self::Month];
 }

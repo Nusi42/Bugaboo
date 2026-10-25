@@ -14,7 +14,7 @@ use crate::mistake::Mistake;
 use crate::parser::value_span;
 use crate::similar::closest;
 use crate::span::Span;
-use crate::syntax::{Comparison, Expr, FieldRef, Search, Test, Value};
+use crate::syntax::{Comparison, Expr, FieldRef, Operand, Search, Test};
 use crate::words::Keyword;
 
 /// A search that the checker has accepted, for a catalogue. The compiler of the server takes this
@@ -137,7 +137,7 @@ impl<'a> Checker<'a> {
             ));
             return;
         }
-        let values: &[Value] = match test {
+        let values: &[Operand] = match test {
             Test::Is { value, .. } | Test::IsNot { value, .. } | Test::Compare { value, .. } => {
                 std::slice::from_ref(value)
             }
@@ -192,27 +192,27 @@ fn operator_of(test: &Test) -> (Operator, Span) {
 }
 
 /// The words of a value as the choices of a field spell them.
-fn spelled(value: &Value) -> String {
+fn spelled(value: &Operand) -> String {
     match value {
-        Value::Text { text, .. } => text.clone(),
-        Value::Number { number, .. } => number.text(),
-        Value::Date { date, .. } => date.text(),
-        Value::Issue { id, .. } => id.text.clone(),
-        Value::Me { .. } => Keyword::Me.text().to_owned(),
-        Value::Time { word, .. } => word.text(),
+        Operand::Text { text, .. } => text.clone(),
+        Operand::Number { number, .. } => number.text(),
+        Operand::Date { date, .. } => date.text(),
+        Operand::Issue { id, .. } => id.text.clone(),
+        Operand::Me { .. } => Keyword::Me.text().to_owned(),
+        Operand::Time { word, .. } => word.text(),
     }
 }
 
 /// What is wrong with a value for a field, if anything.
-fn value_mistake(field: &Field, value: &Value) -> Option<Mistake> {
+fn value_mistake(field: &Field, value: &Operand) -> Option<Mistake> {
     let span = value_span(value);
     let wrong = |message: &str| Some(Mistake::new(span, message, &[("field", &field.word)]));
     match (field.kind, value) {
-        (FieldKind::Text | FieldKind::Project, Value::Text { .. })
-        | (FieldKind::Number, Value::Number { .. })
-        | (FieldKind::Date, Value::Date { .. } | Value::Time { .. })
-        | (FieldKind::Person, Value::Text { .. } | Value::Me { .. })
-        | (FieldKind::Issue, Value::Issue { .. }) => None,
+        (FieldKind::Text | FieldKind::Project, Operand::Text { .. })
+        | (FieldKind::Number, Operand::Number { .. })
+        | (FieldKind::Date, Operand::Date { .. } | Operand::Time { .. })
+        | (FieldKind::Person, Operand::Text { .. } | Operand::Me { .. })
+        | (FieldKind::Issue, Operand::Issue { .. }) => None,
         (FieldKind::Choice, _) => unknown_choice(field, value, span),
         (FieldKind::Text | FieldKind::Project, _) => wrong(key::WRONG_TEXT),
         (FieldKind::Number, _) => wrong(key::WRONG_NUMBER),
@@ -227,7 +227,7 @@ fn value_mistake(field: &Field, value: &Value) -> Option<Mistake> {
 }
 
 /// The mistake of a value that is not among the choices of a field with a fixed list.
-fn unknown_choice(field: &Field, value: &Value, span: Span) -> Option<Mistake> {
+fn unknown_choice(field: &Field, value: &Operand, span: Span) -> Option<Mistake> {
     let wanted = spelled(value);
     if field.choices.is_empty()
         || field

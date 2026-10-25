@@ -11,8 +11,8 @@ use crate::limits::MAX_DEPTH;
 use crate::literal::is_short_name;
 use crate::span::Span;
 use crate::syntax::{
-    Comparison, Direction, Expr, FieldRef, ReadableId, Search, ShortName, SortKey, Steps, Test,
-    Text, TimeWord, Value,
+    Comparison, Direction, Expr, FieldRef, Operand, ReadableId, Search, ShortName, SortKey, Steps,
+    Test, Text, TimeWord,
 };
 use crate::words::{Keyword, Part, direction_phrase, starts_phrase, time_phrase, unit_of};
 
@@ -577,23 +577,23 @@ impl Parser<'_> {
         }
     }
 
-    fn value(&mut self, wanted: Situation) -> Step<Value> {
+    fn value(&mut self, wanted: Situation) -> Step<Operand> {
         let value = match self.peek_kind(0).cloned() {
             Some(TokenKind::Quoted { text, closed: true }) => {
                 let span = self.advance();
-                Value::Text { text, span }
+                Operand::Text { text, span }
             }
-            Some(TokenKind::Number(number)) => Value::Number {
+            Some(TokenKind::Number(number)) => Operand::Number {
                 number,
                 span: self.advance(),
             },
-            Some(TokenKind::Date(date)) => Value::Date {
+            Some(TokenKind::Date(date)) => Operand::Date {
                 date,
                 span: self.advance(),
             },
             Some(TokenKind::Id(text)) => {
                 let span = self.advance();
-                Value::Issue {
+                Operand::Issue {
                     id: ReadableId { text, span },
                     span,
                 }
@@ -605,21 +605,21 @@ impl Parser<'_> {
     }
 
     /// A value that is a word: `me`, a time word, or a plain word.
-    fn word_value(&mut self, word: &str, wanted: Situation) -> Step<Value> {
+    fn word_value(&mut self, word: &str, wanted: Situation) -> Step<Operand> {
         match Keyword::of(word) {
             None => {
                 let span = self.advance();
-                Ok(Value::Text {
+                Ok(Operand::Text {
                     text: word.to_owned(),
                     span,
                 })
             }
-            Some(Keyword::Me) => Ok(Value::Me {
+            Some(Keyword::Me) => Ok(Operand::Me {
                 span: self.advance(),
             }),
             Some(keyword) if !keyword.reserved_as_value() => {
                 let span = self.advance();
-                Ok(Value::Text {
+                Ok(Operand::Text {
                     text: word.to_owned(),
                     span,
                 })
@@ -637,7 +637,7 @@ impl Parser<'_> {
     }
 
     /// A time word at the next tokens.
-    fn time_value(&mut self) -> Option<Value> {
+    fn time_value(&mut self) -> Option<Operand> {
         for word in TimeWord::ALL {
             let phrase = time_phrase(word);
             let words: Vec<&str> = (0..phrase.len())
@@ -652,7 +652,7 @@ impl Parser<'_> {
                 for _ in 1..phrase.len() {
                     span = first.to(self.advance());
                 }
-                return Some(Value::Time { word, span });
+                return Some(Operand::Time { word, span });
             }
         }
         None
@@ -778,13 +778,13 @@ fn test_span(test: &Test) -> Span {
 }
 
 /// Where a value stands.
-pub(crate) fn value_span(value: &Value) -> Span {
+pub(crate) fn value_span(value: &Operand) -> Span {
     match value {
-        Value::Text { span, .. }
-        | Value::Number { span, .. }
-        | Value::Date { span, .. }
-        | Value::Issue { span, .. }
-        | Value::Me { span }
-        | Value::Time { span, .. } => *span,
+        Operand::Text { span, .. }
+        | Operand::Number { span, .. }
+        | Operand::Date { span, .. }
+        | Operand::Issue { span, .. }
+        | Operand::Me { span }
+        | Operand::Time { span, .. } => *span,
     }
 }

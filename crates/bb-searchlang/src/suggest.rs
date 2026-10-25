@@ -4,7 +4,7 @@
 //! the language. What only the server knows (people, groups, projects, issues) comes back as a
 //! request of its kind, which the search bar sends to the server (M5 WP-07).
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::catalogue::{Field, FieldCatalogue, FieldKind};
 use crate::lexer::{TokenKind, tokens};
@@ -15,7 +15,7 @@ use crate::syntax::{Direction, TimeWord, Unit};
 use crate::words::{Keyword, direction_phrase, starts_phrase, unit_word};
 
 /// What to offer for the place of the cursor.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Suggestions {
     /// The part of the text that a chosen word replaces: what is typed of the word, or the whole
     /// quoted text the cursor stands in. Empty (start equals end) when nothing is typed yet.
@@ -25,7 +25,7 @@ pub struct Suggestions {
 }
 
 /// One offer.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Suggestion {
     /// A word to put in the text, written the way the printer writes it (in quotes when it needs
@@ -47,7 +47,7 @@ pub enum Suggestion {
 }
 
 /// What a suggested word is.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum WordKind {
     /// A field.
@@ -67,7 +67,7 @@ pub enum WordKind {
 }
 
 /// What the server is asked for.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AskKind {
     /// People.

@@ -11,8 +11,10 @@
 
 #![forbid(unsafe_code)]
 
+mod answer;
 mod catalogue;
 mod checker;
+mod json;
 mod lexer;
 mod limits;
 mod literal;
@@ -27,16 +29,18 @@ mod syntax;
 pub mod vectors;
 mod words;
 
+pub use answer::{Answer, read};
 pub use catalogue::{Field, FieldCatalogue, FieldKind, Operator, own_field_word};
 pub use checker::{CheckedSearch, check};
+pub use json::{Problem, catalogue_from_json, search_from_json};
 pub use limits::{MAX_CONDITIONS, MAX_DEPTH, MAX_STEPS};
 pub use mistake::Mistake;
 pub use printer::print;
 pub use span::Span;
 pub use suggest::{AskKind, Suggestion, Suggestions, WordKind, suggest};
 pub use syntax::{
-    Comparison, Date, Direction, Expr, FieldRef, Number, ReadableId, Search, ShortName, SortKey,
-    Steps, Test, Text, TimeWord, Unit, Value,
+    Comparison, Date, Decimal, Direction, Expr, FieldRef, Operand, ReadableId, Search, ShortName,
+    SortKey, Steps, Test, Text, TimeWord, Unit,
 };
 
 /// Reads the text of a search into its tree.

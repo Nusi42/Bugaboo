@@ -3,7 +3,7 @@
 //! kept. The address, the API and a saved search carry this text (ADR-0005, amendment M5).
 
 use crate::literal::{quoted, value_or_quoted, word_or_quoted};
-use crate::syntax::{Comparison, Expr, Search, SortKey, Test, Text, Value};
+use crate::syntax::{Comparison, Expr, Operand, Search, SortKey, Test, Text};
 use crate::words::{Keyword, steps_word, unit_word};
 
 /// The canonical text of a search.
@@ -158,14 +158,14 @@ fn text_of(text: &Text) -> String {
     quoted(&text.text)
 }
 
-fn value_text(value: &Value) -> String {
+fn value_text(value: &Operand) -> String {
     match value {
-        Value::Text { text, .. } => value_or_quoted(text),
-        Value::Number { number, .. } => number.text(),
-        Value::Date { date, .. } => date.text(),
-        Value::Issue { id, .. } => id.text.clone(),
-        Value::Me { .. } => Keyword::Me.text().to_owned(),
-        Value::Time { word, .. } => word.text(),
+        Operand::Text { text, .. } => value_or_quoted(text),
+        Operand::Number { number, .. } => number.text(),
+        Operand::Date { date, .. } => date.text(),
+        Operand::Issue { id, .. } => id.text.clone(),
+        Operand::Me { .. } => Keyword::Me.text().to_owned(),
+        Operand::Time { word, .. } => word.text(),
     }
 }
 

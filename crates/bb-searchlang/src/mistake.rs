@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::messages as key;
 use crate::parser::{ParseError, Reason, Situation};
@@ -13,7 +13,7 @@ use crate::syntax::{Direction, Unit};
 use crate::words::Keyword;
 
 /// Something wrong in the text of a search.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Mistake {
     /// The bytes of the text it is about.
     pub span: Span,

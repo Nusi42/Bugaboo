@@ -1,11 +1,11 @@
 //! Where a node stands in the text.
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 /// A range of bytes in the text of a search, so the browser can mark a word. Comparing two spans
 /// always says they are equal: two trees are the same tree when their words are the same, wherever
 /// the words stood (`parse(print(tree)) == tree` holds although the printer moves everything).
-#[derive(Debug, Clone, Copy, Default, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Eq, Serialize)]
 pub struct Span {
     /// The first byte.
     pub start: usize,

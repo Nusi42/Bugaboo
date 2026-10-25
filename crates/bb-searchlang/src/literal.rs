@@ -2,7 +2,7 @@
 //! shape of an Issue ID. The lexer reads with these, the printer writes with these, so a value
 //! that is printed is read back as the same value.
 
-use crate::syntax::{Date, Number};
+use crate::syntax::{Date, Decimal};
 use crate::words::Keyword;
 
 /// The character between the short name of a project and the code of an issue.
@@ -16,7 +16,7 @@ const MAX_DIGITS: usize = 15;
 const FIRST_YEAR: u16 = 1;
 const LAST_YEAR: u16 = 9999;
 
-impl Number {
+impl Decimal {
     /// The number a text spells (`12`, `-3`, `1.25`), or `None` for any other text or for too many
     /// digits.
     #[must_use]
@@ -199,12 +199,12 @@ mod tests {
             ("7.0", 7, 0, "7"),
             ("-0", 0, 0, "0"),
         ] {
-            let number = Number::parse(text).unwrap();
+            let number = Decimal::parse(text).unwrap();
             assert_eq!((number.value, number.scale), (value, scale), "{text}");
             assert_eq!(number.text(), back, "{text}");
         }
         for text in ["", "-", "1.", ".5", "1.2.3", "12a", "1234567890123456"] {
-            assert_eq!(Number::parse(text), None, "{text}");
+            assert_eq!(Decimal::parse(text), None, "{text}");
         }
     }
 

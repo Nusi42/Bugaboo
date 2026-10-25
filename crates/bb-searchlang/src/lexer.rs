@@ -4,7 +4,7 @@
 
 use crate::literal::{ESCAPE, QUOTE, is_readable_id};
 use crate::span::Span;
-use crate::syntax::{Date, Number};
+use crate::syntax::{Date, Decimal};
 
 /// One piece of the text.
 #[derive(Debug, Clone, PartialEq)]
@@ -24,7 +24,7 @@ pub(crate) enum TokenKind {
         closed: bool,
     },
     /// A number.
-    Number(Number),
+    Number(Decimal),
     /// A day.
     Date(Date),
     /// An Issue ID.
@@ -149,7 +149,7 @@ fn quoted(
 /// What a run of letters, digits, dashes and decimal points is.
 fn chunk(text: &str) -> TokenKind {
     let first = text.chars().next().unwrap_or_default();
-    if let Some(number) = Number::parse(text) {
+    if let Some(number) = Decimal::parse(text) {
         TokenKind::Number(number)
     } else if let Some(date) = Date::parse(text) {
         TokenKind::Date(date)
@@ -188,7 +188,7 @@ mod tests {
         assert_eq!(found[1], TokenKind::GreaterOrEqual);
         assert!(matches!(
             found[2],
-            TokenKind::Number(Number {
+            TokenKind::Number(Decimal {
                 value: 25,
                 scale: 1
             })

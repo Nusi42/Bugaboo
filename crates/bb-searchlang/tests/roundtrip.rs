@@ -7,11 +7,10 @@
 
 use proptest::prelude::*;
 use serde as _;
-use serde_json as _;
 
 use bb_searchlang::{
-    Comparison, Date, Direction, Expr, FieldRef, Number, ReadableId, Search, ShortName, SortKey,
-    Span, Steps, Test, Text, TimeWord, Unit, Value, parse, print,
+    Comparison, Date, Decimal, Direction, Expr, FieldRef, Operand, ReadableId, Search, ShortName,
+    SortKey, Span, Steps, Test, Text, TimeWord, Unit, parse, print, search_from_json,
 };
 
 fn span() -> Span {
@@ -40,13 +39,13 @@ fn readable_id() -> impl Strategy<Value = ReadableId> {
     "[A-Z][A-Z0-9]{0,9}-[A-Z0-9]{1,8}".prop_map(|text| ReadableId { text, span: span() })
 }
 
-fn number() -> impl Strategy<Value = Number> {
+fn number() -> impl Strategy<Value = Decimal> {
     (-999_999_999_i64..999_999_999, 0_u8..5).prop_map(|(mut value, mut scale)| {
         while scale > 0 && value % 10 == 0 {
             value /= 10;
             scale -= 1;
         }
-        Number { value, scale }
+        Decimal { value, scale }
     })
 }
 
@@ -81,17 +80,17 @@ fn words() -> impl Strategy<Value = String> {
     ]
 }
 
-fn value() -> impl Strategy<Value = Value> {
+fn value() -> impl Strategy<Value = Operand> {
     prop_oneof![
-        words().prop_map(|text| Value::Text { text, span: span() }),
-        number().prop_map(|number| Value::Number {
+        words().prop_map(|text| Operand::Text { text, span: span() }),
+        number().prop_map(|number| Operand::Number {
             number,
             span: span()
         }),
-        date().prop_map(|date| Value::Date { date, span: span() }),
-        readable_id().prop_map(|id| Value::Issue { id, span: span() }),
-        Just(Value::Me { span: span() }),
-        time_word().prop_map(|word| Value::Time { word, span: span() }),
+        date().prop_map(|date| Operand::Date { date, span: span() }),
+        readable_id().prop_map(|id| Operand::Issue { id, span: span() }),
+        Just(Operand::Me { span: span() }),
+        time_word().prop_map(|word| Operand::Time { word, span: span() }),
     ]
 }
 
@@ -289,6 +288,14 @@ fn nearly_a_search() -> impl Strategy<Value = String> {
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(512))]
+
+    #[test]
+    fn search_roundtrip_the_json_of_a_tree_reads_back_as_the_tree(tree in search()) {
+        // The browser gives the tree back as JSON; the module reads it by hand (`json.rs`).
+        let json = serde_json::to_value(&tree).unwrap();
+        let read = search_from_json(&json);
+        prop_assert_eq!(read, Ok(tree));
+    }
 
     #[test]
     fn search_roundtrip_parse_of_print_is_the_tree(tree in search()) {

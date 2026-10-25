@@ -6,12 +6,9 @@
 
 use serde::Serialize;
 
+use crate::answer::{Answer, read};
 use crate::catalogue::{Field, FieldCatalogue, FieldKind};
-use crate::checker::check;
-use crate::mistake::Mistake;
-use crate::printer::print;
 use crate::suggest::{Suggestions, suggest};
-use crate::syntax::Search;
 
 /// The fields of the vectors, as a person who may read all of them would get them.
 #[must_use]
@@ -156,19 +153,14 @@ pub const SUGGESTED: &[&str] = &[
 
 /// One text and what the code makes of it.
 #[derive(Serialize)]
-struct Case {
+struct VectorCase {
     text: String,
-    /// The canonical text; `null` when the text has mistakes.
-    canonical: Option<String>,
-    /// The tree of a text that parses; `null` otherwise.
-    search: Option<Search>,
-    /// The mistakes of the parser or of the checker, in the order of the text.
-    mistakes: Vec<Mistake>,
+    answer: Answer,
 }
 
 /// One cursor place and what is offered there.
 #[derive(Serialize)]
-struct Place {
+struct VectorPlace {
     text: String,
     cursor: usize,
     suggestions: Suggestions,
@@ -176,28 +168,10 @@ struct Place {
 
 /// The whole file.
 #[derive(Serialize)]
-struct File {
+struct VectorFile {
     catalogue: FieldCatalogue,
-    cases: Vec<Case>,
-    places: Vec<Place>,
-}
-
-/// What a text comes to: parse, check, print.
-fn case(text: &str, catalogue: &FieldCatalogue) -> Case {
-    let parsed = crate::parse(text);
-    let (search, mistakes) = match parsed {
-        Ok(search) => match check(search.clone(), catalogue) {
-            Ok(_) => (Some(search), Vec::new()),
-            Err(mistakes) => (Some(search), mistakes),
-        },
-        Err(mistake) => (None, vec![mistake]),
-    };
-    Case {
-        text: text.to_owned(),
-        canonical: search.as_ref().filter(|_| mistakes.is_empty()).map(print),
-        search,
-        mistakes,
-    }
+    cases: Vec<VectorCase>,
+    places: Vec<VectorPlace>,
 }
 
 /// A text with the cursor bar taken out, and where the bar stood.
@@ -215,20 +189,23 @@ pub fn file() -> Result<String, serde_json::Error> {
     let cases = ACCEPTED
         .iter()
         .chain(REFUSED)
-        .map(|text| case(text, &catalogue))
+        .map(|text| VectorCase {
+            text: (*text).to_owned(),
+            answer: read(text, Some(&catalogue)),
+        })
         .collect();
     let places = SUGGESTED
         .iter()
         .map(|marked| {
             let (text, cursor) = cursor_in(marked);
-            Place {
+            VectorPlace {
                 suggestions: suggest(&text, cursor, &catalogue),
                 text,
                 cursor,
             }
         })
         .collect();
-    let mut text = serde_json::to_string_pretty(&File {
+    let mut text = serde_json::to_string_pretty(&VectorFile {
         catalogue,
         cases,
         places,

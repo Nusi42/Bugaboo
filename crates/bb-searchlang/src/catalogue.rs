@@ -3,19 +3,19 @@
 //! read is simply not in the catalogue, and is then as unknown as a field that does not exist
 //! (QRY-05, ADR-0005 amendment M5, decision 5).
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::words::Keyword;
 
 /// The fields a person may read, each with its word.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct FieldCatalogue {
     /// The fields, in the order they are offered.
     pub fields: Vec<Field>,
 }
 
 /// One field that may stand in a search.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Field {
     /// The word of the field: one word in lower camel case (`assignedTo`), or the name of an own
     /// field made by [`own_field_word`].
@@ -29,7 +29,7 @@ pub struct Field {
 }
 
 /// What kind of values a field holds.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FieldKind {
     /// Words: a title, a text.
@@ -49,7 +49,7 @@ pub enum FieldKind {
 }
 
 /// What may be asked of a field.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Operator {
     /// `is`.
@@ -81,6 +81,23 @@ pub enum Operator {
 }
 
 impl Operator {
+    /// Every operator.
+    pub const ALL: [Self; 13] = [
+        Self::Is,
+        Self::IsNot,
+        Self::Less,
+        Self::Greater,
+        Self::LessOrEqual,
+        Self::GreaterOrEqual,
+        Self::In,
+        Self::Contains,
+        Self::IsEmpty,
+        Self::IsNotEmpty,
+        Self::InLast,
+        Self::MemberOf,
+        Self::Within,
+    ];
+
     /// How the operator is written, the way a person is offered it.
     #[must_use]
     pub fn text(self) -> String {
@@ -109,6 +126,17 @@ impl Operator {
 }
 
 impl FieldKind {
+    /// Every kind.
+    pub const ALL: [Self; 7] = [
+        Self::Text,
+        Self::Number,
+        Self::Date,
+        Self::Choice,
+        Self::Person,
+        Self::Project,
+        Self::Issue,
+    ];
+
     /// What may be asked of a field of this kind, unless the field says otherwise.
     #[must_use]
     pub const fn operators(self) -> &'static [Operator] {
