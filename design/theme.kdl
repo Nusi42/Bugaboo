@@ -1834,10 +1834,12 @@ part "name-value.value > muted" {
 
 // The *Followers* row is one line on a computer and on a phone: the count (or the words *You follow it*
 // where there is no count) and the button for turning it round (the review of M4: *Stop following*
-// dropped under the words).
+// dropped under the words). Where even the longest count ("20 or more followers") and the button do
+// not fit the column, the button as a whole goes to the next line, as a last resort; it never breaks
+// its words and never runs out of the column (the review of WP-18).
 part "followers-line" {
     display flex
-    flex-wrap nowrap
+    flex-wrap wrap
     align-items center
     gap "$space-2"
     min-width 0
