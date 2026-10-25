@@ -166,7 +166,7 @@ fn check_system(root: &Path, tool: &Tool) -> anyhow::Result<()> {
 }
 
 /// Finds a program of a bundle tool: in the unpacked bundle, then on the PATH, then in the
-/// extra system folders.
+/// folder that the system names for it.
 pub(crate) fn find_program(root: &Path, tool: &Tool, program: &str) -> Option<PathBuf> {
     let file = tools::exe(program);
     let bundled = root
@@ -177,37 +177,46 @@ pub(crate) fn find_program(root: &Path, tool: &Tool, program: &str) -> Option<Pa
     if bundled.is_file() {
         return Some(bundled);
     }
-    let on_path = std::env::var_os("PATH")
-        .into_iter()
-        .flat_map(|path| std::env::split_paths(&path).collect::<Vec<_>>())
-        .map(|folder| folder.join(&file))
-        .find(|candidate| candidate.is_file());
-    on_path.or_else(|| {
-        tool.system_folders
-            .iter()
-            .flat_map(|pattern| expand_folder(pattern))
+    find_on_path(program).or_else(|| {
+        folder_named_by_system(tool, root)
             .map(|folder| folder.join(&file))
-            .find(|candidate| candidate.is_file())
+            .filter(|candidate| candidate.is_file())
     })
 }
 
-/// Expands one `*` in a folder pattern; the highest version number comes first.
-fn expand_folder(pattern: &str) -> Vec<PathBuf> {
-    let Some((before, after)) = pattern.split_once('*') else {
-        return vec![PathBuf::from(pattern)];
-    };
-    let Ok(entries) = fs::read_dir(before) else {
-        return Vec::new();
-    };
-    let mut names: Vec<String> = entries
+/// The folder of the programs that the system itself names: the output of the command the tool
+/// lists (`pg_config --bindir`), when it is one existing folder. The system answers; no folder of
+/// it is written down here (coding-standards §2, No fixed paths).
+fn folder_named_by_system(tool: &Tool, root: &Path) -> Option<PathBuf> {
+    let (program, arguments) = tool.system_folder_command.split_first()?;
+    let program = find_on_path(program)?;
+    let output = std::process::Command::new(program)
+        .args(arguments)
+        .current_dir(root)
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| folder_in_answer(&String::from_utf8_lossy(&output.stdout)))
         .flatten()
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .collect();
-    names.sort_by_key(|name| std::cmp::Reverse(name.parse::<u32>().unwrap_or(0)));
-    names
-        .into_iter()
-        .map(|name| PathBuf::from(format!("{before}{name}{after}")))
-        .collect()
+}
+
+/// The one existing, absolute folder in the text a command printed.
+fn folder_in_answer(answer: &str) -> Option<PathBuf> {
+    let mut lines = answer
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty());
+    let folder = PathBuf::from(lines.next()?);
+    (lines.next().is_none() && folder.is_absolute() && folder.is_dir()).then_some(folder)
+}
+
+/// The file `file` in the first folder of the search path that holds it.
+fn find_on_path(file: &str) -> Option<PathBuf> {
+    std::env::split_paths(&std::env::var_os("PATH")?)
+        .map(|folder| folder.join(tools::exe(file)))
+        .find(|candidate| candidate.is_file())
 }
 
 fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
@@ -295,14 +304,38 @@ mod tests {
     }
 
     #[test]
-    fn the_highest_version_folder_is_searched_first() {
-        let temp = TempDir::new("bundle-glob");
-        for version in ["9", "16", "18"] {
-            fs::create_dir_all(temp.path().join(version).join("bin")).unwrap();
-        }
-        let pattern = format!("{}/*/bin", temp.path().display());
-        let found = expand_folder(&pattern);
-        assert!(found[0].to_string_lossy().contains("18"), "{found:?}");
-        assert!(found[2].to_string_lossy().contains('9'), "{found:?}");
+    fn the_folder_the_system_names_is_one_existing_absolute_folder() {
+        let temp = TempDir::new("bundle-named");
+        let said = format!(
+            "  {}
+",
+            temp.path().display()
+        );
+        assert_eq!(folder_in_answer(&said), Some(temp.path().to_path_buf()));
+        assert_eq!(folder_in_answer(""), None);
+        assert_eq!(
+            folder_in_answer("bin"),
+            None,
+            "a relative folder is no answer"
+        );
+        let missing = temp.path().join("not-there");
+        assert_eq!(folder_in_answer(&missing.display().to_string()), None);
+        let two = format!(
+            "{0}
+{0}
+",
+            temp.path().display()
+        );
+        assert_eq!(folder_in_answer(&two), None, "two lines are no answer");
+    }
+
+    #[test]
+    fn a_tool_without_a_command_names_no_folder() {
+        let temp = TempDir::new("bundle-no-command");
+        let entry = tool(
+            "system-programs = [\"bb-no-such-program\"]
+",
+        );
+        assert_eq!(folder_named_by_system(&entry, temp.path()), None);
     }
 }

@@ -43,9 +43,10 @@ pub(crate) struct Tool {
     /// `bundle` tools: programs that must exist when the platform has no download.
     #[serde(default, rename = "system-programs")]
     pub(crate) system_programs: Vec<String>,
-    /// `bundle` tools: extra folders (one `*` allowed) searched besides the PATH.
-    #[serde(default, rename = "system-folders")]
-    pub(crate) system_folders: Vec<String>,
+    /// `bundle` tools: a command that prints the folder of the programs (`pg_config --bindir`),
+    /// asked when they are not on the PATH. The system names the folder; it is never written down.
+    #[serde(default, rename = "system-folder-command")]
+    pub(crate) system_folder_command: Vec<String>,
     /// `bundle` tools: how to install the system program, shown when it is missing.
     #[serde(rename = "system-hint")]
     pub(crate) system_hint: Option<String>,

@@ -52,7 +52,10 @@ pub(super) fn profile_path_at(
         .rsplit(|c: char| c.is_whitespace() || QUOTES.contains(&c))
         .next()
         .is_some_and(|token| token.starts_with("\\\\"));
-    let var_home = keyword == "home" && prefix.ends_with("/var");
+    let var_home = keyword == "home"
+        && prefix
+            .strip_suffix("var")
+            .is_some_and(|before_var| before_var.ends_with('/'));
     let alone = prefix.is_empty()
         || prefix.ends_with(|c: char| !is_word_char(c) && !matches!(c, '/' | '.' | '~'));
     // `C:\Users\…`, `/c/Users/…`, `\\host\c$\Users\…`, `\\wsl$\…\home\…`, `/var/home/…` and
