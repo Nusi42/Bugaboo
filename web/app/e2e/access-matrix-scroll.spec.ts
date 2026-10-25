@@ -5,6 +5,8 @@ import { ada, createAdmin } from "./support/accounts.ts";
 import { levelList, roleName } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { openAppearance, setSwitch } from "./support/appearance.ts";
+import { nothing, onThisLayout } from "./support/layout.ts";
 import { createProject } from "./support/projects.ts";
 import { partIn } from "./support/parts.ts";
 
@@ -80,20 +82,68 @@ test("ux_04 the note follows the matrix when the region or the table changes siz
   await expect(note).toBeVisible();
 });
 
-for (const size of ["14px", "32px"]) {
-  test(`ux_04 no level in the matrix is cut in ${size} type`, async ({ page }) => {
-    await signIn(page, ada);
-    await page.goto(addressInProject(paths.projectFields, "ACME"));
-    await expect(
-      await levelList(page, t("issue-field.cost-center"), roleName.contributor),
-    ).toBeVisible();
-    await partIn(page, "access.matrix").evaluate((node, value) => {
-      node.style.fontSize = value;
-    }, size);
-    const cut = await partIn(page, "access.matrix-cell").evaluateAll(
-      (nodes: readonly HTMLElement[]) =>
-        nodes.filter((node) => node.scrollWidth > node.clientWidth).length,
-    );
-    expect(cut).toBe(0);
-  });
+const levelLists = '[data-part="access.matrix-cell"] select';
+
+/**
+ * For each level list in the matrix: the width the chosen level needs in the list's own type, and
+ * the width inside the list that it has for it. The words are measured with the list's own font.
+ * It runs in the page, so it takes nothing from outside.
+ */
+function roomForLevels(): { needed: number; available: number }[] {
+  const rooms: { needed: number; available: number }[] = [];
+  for (const list of document.querySelectorAll<HTMLSelectElement>(levelLists)) {
+    const style = getComputedStyle(list);
+    const ruler = document.createElement("span");
+    ruler.style.font = style.font;
+    ruler.style.whiteSpace = "nowrap";
+    ruler.style.position = "absolute";
+    ruler.style.visibility = "hidden";
+    ruler.textContent = list.selectedOptions[0]?.text ?? "";
+    document.body.append(ruler);
+    const needed = ruler.getBoundingClientRect().width;
+    ruler.remove();
+    // A computed padding is always in pixels ("12px").
+    const padding =
+      Number(style.paddingLeft.slice(0, -2)) + Number(style.paddingRight.slice(0, -2));
+    const available = list.clientWidth - padding;
+    rooms.push({ needed, available });
+  }
+  return rooms;
 }
+
+/** Makes every level list of the matrix as narrow as a list can be squeezed. */
+function squeezeLevels(): void {
+  for (const list of document.querySelectorAll<HTMLSelectElement>(levelLists)) {
+    list.style.width = "20px";
+  }
+}
+
+test("ux_04 no level in the matrix is cut with Larger text on, and the measure can tell a cut one", async ({
+  page,
+}) => {
+  await onThisLayout(page, {
+    phone: nothing,
+    tablet: nothing,
+    computer: async () => {
+      await openAppearance(page);
+      await setSwitch(page, t("appearance.larger-text"), true);
+      await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
+      await page.goto(addressInProject(paths.projectFields, "ACME"));
+      await expect(
+        await levelList(page, t("issue-field.cost-center"), roleName.contributor),
+      ).toBeVisible();
+      const rooms = await page.evaluate(roomForLevels);
+      expect(rooms.length).toBeGreaterThan(0);
+      for (const room of rooms) {
+        expect(room.needed).toBeLessThanOrEqual(room.available);
+      }
+      // The same measure finds lists that are too narrow for their level: the check can fail.
+      await page.evaluate(squeezeLevels);
+      const squeezed = await page.evaluate(roomForLevels);
+      expect(squeezed.length).toBe(rooms.length);
+      for (const room of squeezed) {
+        expect(room.needed).toBeGreaterThan(room.available);
+      }
+    },
+  });
+});
