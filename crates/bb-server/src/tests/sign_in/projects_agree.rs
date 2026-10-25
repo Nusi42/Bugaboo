@@ -162,7 +162,7 @@ async fn prj_02_the_list_the_preview_and_a_request_decide_alike_for_every_person
         let policy = rig.storage.policy_all().await?;
         let mut compared = 0;
         for person in &people {
-            let own = rig.storage.policy_of(person.id).await?;
+            let (own, _) = rig.storage.policy_and_tree_of(person.id).await?;
             let sees = own.visible(person.id, &tree);
             for project in &projects {
                 let held = policy

@@ -38,14 +38,14 @@ pub trait ProjectStore: PolicyStore + 'static {
 
     reads! {
         /// What the engine needs to decide for one person anywhere: their rows and their groups'
-        /// rows and the roles those name. The levels of fields and people are left out (a list
-        /// of projects only needs permissions).
-        fn policy_of(person: UserId) -> Policy;
-        /// What the engine needs to decide for one person anywhere, with the levels their roles
-        /// set, and every project: one read, so the rows, the levels and the tree are of one
-        /// moment. What a decision over many projects at once (the rights in the projects of a
-        /// page, the tags to offer) is made from, in memory.
+        /// rows and the roles those name, and every project: one read, so the rows and the tree
+        /// are of one moment. The levels of fields and people are left out (a list of projects
+        /// only needs permissions).
         fn policy_and_tree_of(person: UserId) -> (Policy, Vec<Project>);
+        /// The same, with the levels their roles set: what a decision over many projects at once
+        /// (the rights in the projects of a page, the tags to offer, the groups of labels in use)
+        /// is made from, in memory.
+        fn leveled_policy_and_tree_of(person: UserId) -> (Policy, Vec<Project>);
         /// The project that has this short name, or had it once.
         fn project_by_address(name: &ShortName) -> Option<Found>;
     }

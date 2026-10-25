@@ -227,7 +227,7 @@ async fn take_away_b_and_hide_priority_in_c(crew: &Crew, three: &Three) -> Resul
 /// each from one request over the three projects, must show A whole, C without the priority, and
 /// nothing of B.
 #[tokio::test]
-async fn sec_06_a_page_over_two_projects_shows_only_the_one_the_reader_sees() -> Outcome {
+async fn sec_06_a_page_over_three_projects_shows_the_two_the_reader_sees() -> Outcome {
     let crew = Crew::new().await?;
     let three = dave_reads_three_projects(&crew).await?;
     let (dave, issue_b, issue_c) = (&three.dave, three.issue_b, three.issue_c);
@@ -240,7 +240,22 @@ async fn sec_06_a_page_over_two_projects_shows_only_the_one_the_reader_sees() ->
     assert_eq!(crew.heard(&dave.session_token).await?.len(), 5);
     assert_eq!(unread_of(&crew, dave).await?, 5);
     take_away_b_and_hide_priority_in_c(&crew, &three).await?;
+    let (before, loads) = (
+        crew.world.store.leveled_reads(),
+        crew.world.store.policy_loads(),
+    );
     let page = crew.heard(&dave.session_token).await?;
+    assert_eq!(
+        crew.world.store.leveled_reads() - before,
+        1,
+        "the rights in the three projects of the page come from one read"
+    );
+    assert_eq!(
+        crew.world.store.policy_loads(),
+        loads + 1,
+        "only the rights for the organization are loaded on their own, none for a project"
+    );
+
     let by_issue = |wanted: IssueId| {
         page.iter()
             .filter(|item| item.kind == NotificationKind::FollowedFields)

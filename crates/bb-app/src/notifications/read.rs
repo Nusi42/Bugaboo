@@ -158,7 +158,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .filter_map(|id| reading.issues.get(&id))
             .map(|issue| issue.project)
             .collect();
-        // The projects the rights were read with are known to the lines: one read for both.
+        // The projects the rights were read with are known to the lines: one read for both. The
+        // lines get them only when the rights were batched (two or more projects not kept yet);
+        // otherwise a line decides on its own for the project it names, which is the same
+        // decision. The kept rights live for one request, so neither can go stale.
         if let Some(read) = self
             .evaluate_projects(reading.actor.person.id, &projects)
             .await?

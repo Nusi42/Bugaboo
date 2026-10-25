@@ -71,24 +71,33 @@ fn owner_of(state: &State, name: &ShortName) -> Option<ProjectId> {
         })
 }
 
+/// The rows of a person and every project, without levels.
+fn policy_and_tree_of(state: &State, person: UserId) -> (Policy, Vec<Project>) {
+    (policy_of(state, Some(person)), tree_of(state))
+}
+
 impl ProjectStore for FakeStore {
     async fn project_tree(&self) -> Result<Vec<Project>, FakeError> {
         Ok(self.read(tree_of))
-    }
-
-    async fn policy_of(&self, person: UserId) -> Result<Policy, FakeError> {
-        Ok(self.read(|state| policy_of(state, Some(person))))
     }
 
     async fn policy_and_tree_of(
         &self,
         person: UserId,
     ) -> Result<(Policy, Vec<Project>), FakeError> {
+        Ok(self.read(|state| policy_and_tree_of(state, person)))
+    }
+
+    async fn leveled_policy_and_tree_of(
+        &self,
+        person: UserId,
+    ) -> Result<(Policy, Vec<Project>), FakeError> {
+        self.lock().leveled_reads += 1;
         Ok(self.read(|state| {
-            let mut policy = policy_of(state, Some(person));
-            let roles = policy.roles.iter().map(|role| role.id).collect();
+            let (mut policy, projects) = policy_and_tree_of(state, person);
+            let roles = policy.role_ids().into_iter().collect();
             policy.rules = state.rules.of_roles(&roles);
-            (policy, tree_of(state))
+            (policy, projects)
         }))
     }
 

@@ -72,7 +72,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The groups of labels in use on the issues whose labels the person may see, read once for a
-    /// request.
+    /// request; the levels of their roles are read only now, for this.
     async fn used_groups(&self, shown: &Shown) -> Result<Arc<Vec<LabelGroupId>>, AppError> {
         if let Some(known) = locked(&self.known.used_groups)
             .get(&shown.person())
@@ -87,9 +87,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .map(|found| found.id)
             .collect();
-        let leveled = self
-            .shown_with_levels(shown.person(), shown.key().cloned())
-            .await?;
+        let leveled = self.leveled(shown).await?;
         let found = Arc::new(
             self.store()
                 .used_label_groups(&leveled.label_sight(&types))
