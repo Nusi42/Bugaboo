@@ -6,6 +6,7 @@
 //! wants at that place. The mistakes in plain words and the suggestions are both made from it, so
 //! what the person is told and what is offered cannot disagree.
 
+use crate::fields::{FieldKind, ReadableFields};
 use crate::lexer::{Token, TokenKind, tokens};
 use crate::limits::{MAX_DEPTH, MAX_TEXT_BYTES};
 use crate::literal::is_short_name;
@@ -27,6 +28,12 @@ pub(crate) struct Parsed {
 
 /// Parses the text of a search.
 pub(crate) fn parse(text: &str) -> Parsed {
+    parse_for(text, None)
+}
+
+/// Parses the text of a search; a value is read by its field when the fields are given: a word
+/// that is written like an Issue ID (`re-test`) stays a text where the field is not an issue.
+pub(crate) fn parse_for(text: &str, fields: Option<&ReadableFields>) -> Parsed {
     if let Some(excess) = excess(text) {
         return Parsed {
             result: Err(ParseError {
@@ -39,6 +46,7 @@ pub(crate) fn parse(text: &str) -> Parsed {
     }
     let mut parser = Parser {
         text,
+        fields,
         tokens: tokens(text),
         at: 0,
         depth: 0,
@@ -73,6 +81,8 @@ type Step<T> = Result<T, ParseError>;
 
 struct Parser<'a> {
     text: &'a str,
+    /// The fields the person may read, when the value is to be read by its field.
+    fields: Option<&'a ReadableFields>,
     tokens: Vec<Token>,
     at: usize,
     depth: usize,
@@ -81,6 +91,20 @@ struct Parser<'a> {
 }
 
 impl Parser<'_> {
+    /// Whether a value of the field that `wanted` names may be an Issue. It may, unless the fields
+    /// are given and say that the field holds something else.
+    fn issue_expected(&self, wanted: &Situation) -> bool {
+        let word = match wanted {
+            Situation::Value { field }
+            | Situation::IsRest { field }
+            | Situation::IsNotRest { field } => field,
+            _ => return true,
+        };
+        self.fields
+            .and_then(|fields| fields.field(word))
+            .is_none_or(|field| field.kind == FieldKind::Issue)
+    }
+
     fn peek(&self) -> Option<&Token> {
         self.tokens.get(self.at)
     }
@@ -483,13 +507,16 @@ impl Parser<'_> {
         self.fail(Situation::Count)
     }
 
+    /// The short name of a project, written in any case and kept in capitals. A word of the
+    /// language is a short name only in capitals, so `within and` is not a project.
     fn short_name(&mut self) -> Step<ProjectRef> {
-        if let Some(TokenKind::Word(text)) = self.peek_kind(0)
-            && is_short_name(text)
-        {
-            let text = text.clone();
-            let span = self.advance();
-            return Ok(ProjectRef { text, span });
+        if let Some(TokenKind::Word(typed)) = self.peek_kind(0) {
+            let text = typed.to_ascii_uppercase();
+            let is_keyword = Keyword::of(typed).is_some() && *typed != text;
+            if !is_keyword && is_short_name(&text) {
+                let span = self.advance();
+                return Ok(ProjectRef { text, span });
+            }
         }
         self.fail(Situation::ProjectRef)
     }
@@ -536,10 +563,19 @@ impl Parser<'_> {
                 span: self.advance(),
             },
             Some(TokenKind::Id(text)) => {
+                let issue = self.issue_expected(&wanted);
                 let span = self.advance();
-                Operand::Issue {
-                    id: IssueRef { text, span },
-                    span,
+                if issue {
+                    Operand::Issue {
+                        id: IssueRef { text, span },
+                        span,
+                    }
+                } else {
+                    // Written like an ID but the field holds something else: it is the text as typed.
+                    Operand::Text {
+                        text: self.text[span.start..span.end].to_owned(),
+                        span,
+                    }
                 }
             }
             Some(TokenKind::Word(word)) => return self.word_value(&word, wanted),

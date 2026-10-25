@@ -12,12 +12,12 @@ use bb_searchlang::messages;
 use bb_searchlang::vectors::{ACCEPTED, REFUSED, sample_fields};
 use bb_searchlang::{
     Expr, Field, FieldKind, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES, Mistake,
-    ReadableFields, Suggestion, Test, check, parse, print, suggest,
+    Operand, ReadableFields, Suggestion, Test, check, parse, parse_with, print, suggest,
 };
 
 /// A text parsed and checked against the sample fields, printed.
 fn checked(text: &str) -> Result<String, Vec<Mistake>> {
-    let search = parse(text).map_err(|mistake| vec![mistake])?;
+    let search = parse_with(text, &sample_fields()).map_err(|mistake| vec![mistake])?;
     check(search, &sample_fields()).map(|search| print(search.search()))
 }
 
@@ -331,6 +331,85 @@ fn qry_03_the_tree_keeps_where_each_word_stands() {
         panic!("contains");
     };
     assert_eq!(&text[found.span.start..found.span.end], "\"x y\"");
+}
+
+#[test]
+fn qry_04_a_value_is_read_by_its_field() {
+    let fields = sample_fields();
+    let value_of = |text: &str, fields: Option<&ReadableFields>| {
+        let search = match fields {
+            Some(fields) => parse_with(text, fields),
+            None => parse(text),
+        }
+        .unwrap();
+        let Some(Expr::Field {
+            test: Test::Is { value, .. },
+            ..
+        }) = search.filter
+        else {
+            panic!("{text}: an `is` test");
+        };
+        value
+    };
+    // Where the field holds issues, an ID is an ID, in any case, written in capitals.
+    let Operand::Issue { id, .. } = value_of("parent is web-142", Some(&fields)) else {
+        panic!("an issue");
+    };
+    assert_eq!(id.text, "WEB-142");
+    assert_eq!(
+        checked("parent is web-142").as_deref(),
+        Ok("parent is WEB-142")
+    );
+    // Where it does not, a word that looks like an ID stays the text it is.
+    let Operand::Text { text, .. } = value_of("tag is re-test", Some(&fields)) else {
+        panic!("a text");
+    };
+    assert_eq!(text, "re-test");
+    assert_eq!(
+        checked("tag is re-test").as_deref(),
+        Ok("tag is \"re-test\"")
+    );
+    assert_eq!(
+        checked("tag in (re-test, WEB-1)").as_deref(),
+        Ok("tag in (\"re-test\", \"WEB-1\")")
+    );
+    // Without the fields nothing says what the field holds: the word is read as an ID.
+    assert!(matches!(
+        value_of("tag is re-test", None),
+        Operand::Issue { .. }
+    ));
+    // A field that is not known is read as an issue field would be; the checker names the field.
+    assert!(matches!(
+        value_of("nothing is re-test", Some(&fields)),
+        Operand::Issue { .. }
+    ));
+    // The helpers expect an issue, in any case.
+    assert_eq!(checked("under web-7").as_deref(), Ok("under WEB-7"));
+    assert_eq!(
+        checked("blocked by web-7").as_deref(),
+        Ok("blocked by WEB-7")
+    );
+}
+
+#[test]
+fn qry_04_a_short_name_is_read_in_any_case_and_written_in_capitals() {
+    assert_eq!(
+        checked("project within web").as_deref(),
+        Ok("project within WEB")
+    );
+    assert_eq!(
+        checked("project within Web2").as_deref(),
+        Ok("project within WEB2")
+    );
+    // A word of the language is a project only in capitals.
+    assert!(checked("project within and").is_err());
+    assert_eq!(
+        checked("project within AND").as_deref(),
+        Ok("project within AND")
+    );
+    // A name that is no short name is refused as before.
+    assert!(checked("project within 2web").is_err());
+    assert!(checked("project within w").is_err());
 }
 
 /// The words offered at the bar in `marked`, and the bytes they replace.

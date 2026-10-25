@@ -24,7 +24,11 @@ pub struct Answer {
 /// Parses `text`, checks it when the fields are given, and prints it.
 #[must_use]
 pub fn read(text: &str, readable: Option<&ReadableFields>) -> Answer {
-    let search = match crate::parse(text) {
+    let parsed = match readable {
+        Some(fields) => crate::parse_with(text, fields),
+        None => crate::parse(text),
+    };
+    let search = match parsed {
         Ok(search) => search,
         Err(mistake) => {
             return Answer {

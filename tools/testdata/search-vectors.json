@@ -68,6 +68,22 @@
         "choices": ["lowest", "low", "normal", "high", "highest"]
       },
       {
+        "word": "tag",
+        "kind": "choice",
+        "operators": [
+          "is",
+          "is_not",
+          "in",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": []
+      },
+      {
         "word": "assignedTo",
         "kind": "person",
         "operators": ["is", "is_not", "in", "member_of", "is_empty", "is_not_empty"],
@@ -2028,6 +2044,221 @@
       }
     },
     {
+      "text": "tag is re-test",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "tag",
+              "span": {
+                "start": 0,
+                "end": 3
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "text",
+                "text": "re-test",
+                "span": {
+                  "start": 7,
+                  "end": 14
+                }
+              },
+              "span": {
+                "start": 4,
+                "end": 14
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 14
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 14
+          }
+        },
+        "canonical": "tag is \"re-test\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "tag in (re-test, WEB-1)",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "tag",
+              "span": {
+                "start": 0,
+                "end": 3
+              }
+            },
+            "test": {
+              "type": "in",
+              "values": [
+                {
+                  "type": "text",
+                  "text": "re-test",
+                  "span": {
+                    "start": 8,
+                    "end": 15
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "WEB-1",
+                  "span": {
+                    "start": 17,
+                    "end": 22
+                  }
+                }
+              ],
+              "span": {
+                "start": 4,
+                "end": 23
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 23
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 23
+          }
+        },
+        "canonical": "tag in (\"re-test\", \"WEB-1\")",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "parent is web-142",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "parent",
+              "span": {
+                "start": 0,
+                "end": 6
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "issue",
+                "id": {
+                  "text": "WEB-142",
+                  "span": {
+                    "start": 10,
+                    "end": 17
+                  }
+                },
+                "span": {
+                  "start": 10,
+                  "end": 17
+                }
+              },
+              "span": {
+                "start": 7,
+                "end": 17
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 17
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 17
+          }
+        },
+        "canonical": "parent is WEB-142",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "project within web",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "project",
+              "span": {
+                "start": 0,
+                "end": 7
+              }
+            },
+            "test": {
+              "type": "within",
+              "project": {
+                "text": "WEB",
+                "span": {
+                  "start": 15,
+                  "end": 18
+                }
+              },
+              "span": {
+                "start": 8,
+                "end": 18
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 18
+          }
+        },
+        "canonical": "project within WEB",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "under web-7",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "under",
+            "id": {
+              "text": "WEB-7",
+              "span": {
+                "start": 6,
+                "end": 11
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 11
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 11
+          }
+        },
+        "canonical": "under WEB-7",
+        "mistakes": []
+      }
+    },
+    {
       "text": "title contains \"Größe\"",
       "answer": {
         "search": {
@@ -2785,7 +3016,7 @@
       }
     },
     {
-      "text": "assignedTo is WEB-1",
+      "text": "assignedTo is 5",
       "answer": {
         "search": {
           "filter": {
@@ -2800,33 +3031,30 @@
             "test": {
               "type": "is",
               "value": {
-                "type": "issue",
-                "id": {
-                  "text": "WEB-1",
-                  "span": {
-                    "start": 14,
-                    "end": 19
-                  }
+                "type": "number",
+                "number": {
+                  "value": 5,
+                  "scale": 0
                 },
                 "span": {
                   "start": 14,
-                  "end": 19
+                  "end": 15
                 }
               },
               "span": {
                 "start": 11,
-                "end": 19
+                "end": 15
               }
             },
             "span": {
               "start": 0,
-              "end": 19
+              "end": 15
             }
           },
           "sort": [],
           "span": {
             "start": 0,
-            "end": 19
+            "end": 15
           }
         },
         "canonical": null,
@@ -2834,7 +3062,7 @@
           {
             "span": {
               "start": 14,
-              "end": 19
+              "end": 15
             },
             "key": "search.mistake.wrong-person",
             "args": {
@@ -3017,24 +3245,6 @@
       }
     },
     {
-      "text": "project within web",
-      "answer": {
-        "search": null,
-        "canonical": null,
-        "mistakes": [
-          {
-            "span": {
-              "start": 15,
-              "end": 18
-            },
-            "key": "search.mistake.expected-short-name",
-            "args": {},
-            "suggestions": []
-          }
-        ]
-      }
-    },
-    {
       "text": "under 12",
       "answer": {
         "search": null,
@@ -3046,6 +3256,24 @@
               "end": 8
             },
             "key": "search.mistake.expected-issue-id",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "project within and",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 15,
+              "end": 18
+            },
+            "key": "search.mistake.expected-short-name",
             "args": {},
             "suggestions": []
           }
@@ -3570,6 +3798,11 @@
           {
             "type": "word",
             "text": "priority",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "tag",
             "kind": "field"
           },
           {
@@ -4222,6 +4455,11 @@
           },
           {
             "type": "word",
+            "text": "tag",
+            "kind": "field"
+          },
+          {
+            "type": "word",
             "text": "assignedTo",
             "kind": "field"
           },
@@ -4446,6 +4684,11 @@
           },
           {
             "type": "word",
+            "text": "tag",
+            "kind": "field"
+          },
+          {
+            "type": "word",
             "text": "assignedTo",
             "kind": "field"
           },
@@ -4603,6 +4846,11 @@
           },
           {
             "type": "word",
+            "text": "tag",
+            "kind": "field"
+          },
+          {
+            "type": "word",
             "text": "assignedTo",
             "kind": "field"
           },
@@ -4753,6 +5001,11 @@
           {
             "type": "word",
             "text": "priority",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "tag",
             "kind": "field"
           },
           {

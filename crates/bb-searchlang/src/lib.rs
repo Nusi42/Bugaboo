@@ -53,12 +53,27 @@ pub use syntax::{
 #[cfg(test)]
 use bb_searchlang as _;
 
-/// Reads the text of a search into its tree.
+/// Reads the text of a search into its tree. A word that is written like an Issue ID is read as one
+/// wherever a value stands, because without the fields nothing says what the field holds; see
+/// [`parse_with`].
 ///
 /// # Errors
 /// The first mistake of the text: where it is and what is wrong, in message keys.
 pub fn parse(text: &str) -> Result<Search, Mistake> {
     parser::parse(text)
+        .result
+        .map_err(|error| Mistake::from(&error))
+}
+
+/// Reads the text of a search into its tree, and reads a value by its field: an Issue ID is read
+/// only where the field holds issues (`parent is web-142`), and a word that is written like one
+/// stays the text it is where it does not (`tag is re-test`). The server and the browser read a
+/// search this way before they check it.
+///
+/// # Errors
+/// The first mistake of the text: where it is and what is wrong, in message keys.
+pub fn parse_with(text: &str, fields: &ReadableFields) -> Result<Search, Mistake> {
+    parser::parse_for(text, Some(fields))
         .result
         .map_err(|error| Mistake::from(&error))
 }
