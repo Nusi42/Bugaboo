@@ -37,6 +37,13 @@ mod issues_states;
 mod issues_text;
 mod issues_time;
 mod issues_words;
+mod large;
+mod large_build;
+mod large_files;
+mod large_ids;
+mod large_org;
+mod large_state;
+mod large_write;
 mod names;
 mod organization;
 mod own_workflow;
@@ -62,6 +69,7 @@ pub use generate::{
     Sample, Target, World, create,
 };
 pub use issues::Everything;
+pub use large::Large;
 pub use names::NameList;
 pub use organization::Organization;
 pub use people_plan::{

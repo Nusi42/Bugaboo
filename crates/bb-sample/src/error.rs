@@ -68,6 +68,8 @@ pub enum Step {
     Editing,
     /// Reading the history of the issues from the events.
     History,
+    /// Writing the large dataset.
+    Dataset,
     /// Creating the workflow of a project.
     Workflows,
     /// Adding a file to an issue or a comment.
@@ -111,6 +113,7 @@ impl Step {
             Self::Comment => message::SAMPLE_STEP_COMMENT,
             Self::Editing => message::SAMPLE_STEP_EDITING,
             Self::History => message::SAMPLE_STEP_HISTORY,
+            Self::Dataset => message::SAMPLE_STEP_DATASET,
             Self::Workflows => message::SAMPLE_STEP_WORKFLOWS,
             Self::Files => message::SAMPLE_STEP_FILES,
             Self::Following => message::SAMPLE_STEP_FOLLOWING,

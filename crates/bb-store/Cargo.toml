@@ -17,6 +17,9 @@ publish.workspace = true
 # crate, because cargo gives one crate the features that any member asks for; the program is built
 # with `cargo build -p bb-server` (`cargo xtask build`), which does not have them.
 testing = []
+# The one write that only the large dataset needs (`Transaction::set_issue_counter`). Only `bb-sample`
+# switches it on (ARCH-DEPS); the program is built without it.
+dataset = []
 
 [dependencies]
 bb-app = { path = "../bb-app" }

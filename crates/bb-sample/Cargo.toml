@@ -19,7 +19,7 @@ bb-dev-words = { path = "../bb-dev-words" }
 # The sample makes its files and their previews in its own process (`PreviewCommand::in_process`),
 # which the feature `testing` offers; a developer tool, not the product.
 bb-files = { path = "../bb-files", features = ["testing"] }
-bb-store = { path = "../bb-store" }
+bb-store = { path = "../bb-store", features = ["dataset"] }
 clap = { workspace = true }
 getrandom = { workspace = true }
 jiff = { workspace = true }
@@ -27,6 +27,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 toml = { workspace = true }
+zeroize = { workspace = true }
 
 [dev-dependencies]
 bb-testing = { path = "../bb-testing" }

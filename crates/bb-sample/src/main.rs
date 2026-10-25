@@ -9,7 +9,9 @@ use std::process::ExitCode;
 
 use bb_core::message::{self, Message, MessageKey};
 use bb_dev_words::database::{DatabaseKind, parse as parse_database};
-use bb_sample::{DEFAULT_SEED, Everything, Layout, Options, Output, SampleError, Target, create};
+use bb_sample::{
+    DEFAULT_SEED, Everything, Large, Layout, Options, Output, SampleError, Target, create,
+};
 use clap::{CommandFactory as _, FromArgMatches as _, Parser};
 use jiff::Timestamp;
 
@@ -23,6 +25,7 @@ use getrandom as _;
 use serde as _;
 use serde_json as _;
 use toml as _;
+use zeroize as _;
 
 /// The text of a message without placeholders, for the help texts of the command line.
 fn text(key: MessageKey) -> String {
@@ -41,6 +44,8 @@ struct Args {
     database: DatabaseKind,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_ISSUES))]
     issues: Option<u32>,
+    #[arg(long, help = text(message::CLI_HELP_SAMPLE_LARGE))]
+    large: bool,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_OUT))]
     out: PathBuf,
 }
@@ -60,11 +65,16 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         seed: args.seed,
         start,
     };
-    let mut everything = match args.issues {
-        Some(issues) => Everything::new(issues)?,
-        None => Everything::full()?,
+    let sample = if args.large {
+        let mut large = Large::new(args.issues)?;
+        create(&options, &output.data_folder(), &target, &mut large).await?
+    } else {
+        let mut everything = match args.issues {
+            Some(issues) => Everything::new(issues)?,
+            None => Everything::full()?,
+        };
+        create(&options, &output.data_folder(), &target, &mut everything).await?
     };
-    let sample = create(&options, &output.data_folder(), &target, &mut everything).await?;
     sample.verify_security_log().await?;
     output.write_dump(&sample.dump().await?.to_json()?)?;
     output.write_sign_in(&sample.sign_in_text())?;
