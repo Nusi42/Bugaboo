@@ -17,10 +17,10 @@ It does not touch `bb-store`, `bb-app`, `bb-api` or a screen.
 
 - A hand-written recursive descent parser; no parser generator.
 - English words; a field as on screen in one word, lower camel case (`assignedTo`, `statusGroup`); the word of each built-in field defined once, next to the field; an own field's word made from its name by one rule, quoted when the name is not one word. The same search text in every language of the app.
-- The language holds conditions and `sort by`. Columns, widths, spacing and grouping are not part of it.
+- The language holds filters and `sort by`. Columns, widths, spacing and grouping are not part of it.
 - The canonical text is what the address, the API and a saved search carry. The tree never crosses the wire.
-- The checker gets the fields the person may read (a **field catalogue** passed in by the caller). A hidden field is an unknown field: the same message, the same error code.
-- At most 50 conditions; `within N steps` at most 5. Both numbers are named constants in one place.
+- The checker gets the fields the person may read (the **readable fields**, passed in by the caller). A hidden field is an unknown field: the same message, the same error code.
+- At most 50 filters; `within N steps` at most 5. Both numbers are named constants in one place.
 - Its own WebAssembly module with its own budget (at most 100 KB after Brotli at the server's quality, `tools/dev/compression.json`).
 
 ## Tasks
@@ -34,7 +34,7 @@ It does not touch `bb-store`, `bb-app`, `bb-api` or a screen.
    Every word is in the glossary or added to it in this package (ask the lead first).
 2. **Lexer, parser and tree.** Positions (byte ranges) on every node, so the browser can mark a word. A parse never panics, on any input (fuzz it with proptest).
 3. **The printer.** One canonical text per tree: one spelling of each word, one way to quote, the order of `sort by` kept, brackets only where they are needed. `parse(print(tree)) == tree` for every tree, and `print(parse(text))` is the canonical text of any accepted text.
-4. **The checker.** Input: a tree and a field catalogue (each field: its word, its kind of value, the operators it allows, its choices if it has a fixed list). Output: the tree with each value checked against its field, or mistakes. A mistake has a range, a message key with its arguments, and suggestions ("There is no field called 'prio'. Did you mean 'priority'?"). The checker enforces the two limits. The field that does not exist and the field the catalogue leaves out give the same mistake, and a test proves it with the same text, key and arguments.
+4. **The checker.** Input: a tree and the readable fields (each field: its word, its kind of value, the operators it allows, its choices if it has a fixed list). Output: the tree with each value checked against its field, or mistakes. A mistake has a range, a message key with its arguments, and suggestions ("There is no field called 'prio'. Did you mean 'priority'?"). The checker enforces the two limits. The field that does not exist and the field the catalogue leaves out give the same mistake, and a test proves it with the same text, key and arguments.
 5. **Suggestions.** Given a text and the place of the cursor: what may come next (fields, operators, values from the catalogue's choices, helper words). Values that only the server knows (people, groups, projects, issues) come back as a request of their kind ("ask for people starting with 'an'"), which WP-07 sends to the server.
 6. **The browser module.** The bindings for parse, print, check and suggest; loaded only when a search bar first opens; its own budget line in `perf-bundle.toml` from your measurement, and PERF-BUNDLE checks each module against its own budget. Vectors generated from Rust (texts, canonical texts, mistakes) are run in the browser's unit tests, so both sides prove the same results.
 7. **Messages.** Every mistake is a message key in the catalog, in plain words, with the field's word as an argument; no literal text in Rust or TypeScript.
@@ -44,7 +44,7 @@ It does not touch `bb-store`, `bb-app`, `bb-api` or a screen.
 - TEST-SEARCH-ROUNDTRIP: proptest over generated trees, `parse(print(tree)) == tree`; and over generated texts, a parse never panics.
 - The QRY-01 example and every QRY-04 helper parse, check and print back to their canonical text.
 - `qry_05_a_hidden_field_and_an_unknown_field_give_the_same_mistake`.
-- The limits: 50 conditions pass, 51 fail; 5 steps pass, 6 fail, each with its message.
+- The limits: 50 filters pass, 51 fail; 5 steps pass, 6 fail, each with its message.
 - Suggestions after `assi`, after `assignedTo `, after `priority is `, inside quotes.
 - The generated vectors pass in the browser (Vitest, `npm test`).
 - PERF-BUNDLE: the search module within its own budget, the old module within 150 KB.

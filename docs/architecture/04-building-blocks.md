@@ -80,6 +80,7 @@ flowchart TB
   policy --> core
   core -.-> macros
   policy -.-> macros
+  search --> core
   store -. implements ports .-> app
   files -. implements ports .-> app
   ai -. implements ports .-> app
@@ -104,7 +105,7 @@ flowchart TB
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
 
-1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that; `bb-core` and `bb-policy` use `bb-macros` for derives at compile time only), so they compile to WebAssembly.
+1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (markdown not even that; `bb-searchlang` does, for the rules of an Issue ID and of a short name, which are defined once in `bb-core` and which the server reads the same way; `bb-core` and `bb-policy` use `bb-macros` for derives at compile time only), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
 4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample`; the developer program `bb-load-check` (M3 WP-10) depends on `bb-store` to read the database of a load run, and wires no use case (`cargo xtask check only ARCH-HTTP-EDGE`).
@@ -128,7 +129,7 @@ Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like 
 
 ### bb-searchlang
 
-Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes a **field catalogue** (the fields this person may read), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree. The final grammar, the limits and the canonical text are in [§7, Search language](07-cross-cutting.md#search-language-adr-0005). The tree and the catalogue cross into the browser module as JSON that is read by hand (`json.rs`): deriving the reading made the module a third bigger than its budget. The test vectors (`vectors.rs`) are what the browser's unit tests run the module on.
+Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes the **readable fields** (the fields this person may read, not to be mixed up with the field catalogue of `bb-core`), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree. The final grammar, the limits and the canonical text are in [§7, Search language](07-cross-cutting.md#search-language-adr-0005). It depends on `bb-core` for the rules of an Issue ID and of a short name. The tree and the readable fields cross into the browser module as JSON, which the feature `browser` (only the module turns it on) reads with a reader that is written from the Rust types (`cargo xtask gen search-reader`): deriving `Deserialize` made the module bigger than its budget, and a reader written by hand would be a second definition of the tree. The test vectors (`vectors.rs`) are what the browser's unit tests run the module on.
 
 ### bb-wasm and bb-wasm-search
 
