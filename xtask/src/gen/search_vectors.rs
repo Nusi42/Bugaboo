@@ -40,6 +40,6 @@ mod tests {
                 .as_array()
                 .is_some_and(|places| places.len() > 20)
         );
-        assert!(parsed["catalogue"]["fields"].as_array().is_some());
+        assert!(parsed["readable_fields"]["fields"].as_array().is_some());
     }
 }

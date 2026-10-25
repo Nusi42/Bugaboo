@@ -17,18 +17,20 @@ use super::{Check, Context, Finding};
 const SUITE: &str = "crates/bb-searchlang/tests";
 
 /// What the suite must prove, by the name of the test that proves it (M5 WP-02 names them).
-pub(super) const REQUIRED: [Required; 9] = [
-    Required::anywhere("search_roundtrip_parse_of_print_is_the_tree").within(SUITE),
-    Required::anywhere("search_roundtrip_a_parse_never_panics_on_any_text").within(SUITE),
-    Required::anywhere("search_roundtrip_the_canonical_text_of_an_accepted_text_is_stable")
-        .within(SUITE),
-    Required::anywhere("search_roundtrip_the_json_of_a_tree_reads_back_as_the_tree").within(SUITE),
+pub(super) const REQUIRED: [Required; 11] = [
+    Required::anywhere("qry_02_parse_of_print_is_the_tree").within(SUITE),
+    Required::anywhere("qry_01_a_parse_never_panics_on_any_text").within(SUITE),
+    Required::anywhere("qry_01_the_canonical_text_of_an_accepted_text_is_stable").within(SUITE),
+    Required::anywhere("qry_03_the_json_of_a_tree_reads_back_as_the_tree").within(SUITE),
+    Required::anywhere("qry_02_a_tree_that_breaks_a_rule_is_refused_when_read").within(SUITE),
     Required::anywhere("qry_01_the_example_parses_checks_and_prints_back").within(SUITE),
     Required::anywhere("qry_04_every_helper_parses_checks_and_prints_back").within(SUITE),
     Required::anywhere("qry_05_a_hidden_field_and_an_unknown_field_give_the_same_mistake")
         .within(SUITE),
-    Required::anywhere("the_limits_fifty_filters_pass_and_fifty_one_fail").within(SUITE),
-    Required::anywhere("the_limits_five_steps_pass_and_six_fail").within(SUITE),
+    Required::anywhere("qry_01_the_limits_fifty_filters_pass_and_fifty_one_fail").within(SUITE),
+    Required::anywhere("qry_01_the_limits_five_steps_pass_and_six_fail").within(SUITE),
+    Required::anywhere("qry_01_a_text_over_the_limit_is_refused_before_anything_is_read_of_it")
+        .within(SUITE),
 ];
 
 pub(crate) struct TestSearchRoundtrip;
