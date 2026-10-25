@@ -7,10 +7,12 @@
 //!
 //! The budget and the places to read are the settings in `tools/checks/perf-bundle.toml`, and
 //! nowhere else. A fixture folder holds its own settings file with a small budget, so the
-//! examples stay small. Every WebAssembly module has a budget of its own, found by the name of its
-//! file without the hash (`bb_wasm_search_bg-3f9a1c.wasm` is `bb_wasm_search_bg`): a list should not
-//! fetch the module of Markdown, nor an editor the search language (ADR-0005, amendment M5). A
-//! module without a line in the settings is a finding too, so a new module cannot slip in.
+//! examples stay small. Every WebAssembly module has a budget of its own, found by the name of the
+//! module (`out_name` of `MODULES`, then `_bg`) that its file starts with: `bb_wasm_search_bg-3f9-a1c.wasm`
+//! is `bb_wasm_search_bg`, whatever characters the hash holds. A list should not fetch the module of
+//! Markdown, nor an editor the search language (ADR-0005, amendment M5). A module of `MODULES`
+//! without a line in the settings is a finding, so a new module cannot slip in, and so is a line
+//! that names no module, so a budget cannot outlive its module.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -20,7 +22,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::{Check, Context, Finding};
-use crate::wasm::MODULES;
+use crate::wasm::{MODULES, Module};
 
 /// Where the settings are, relative to the repository root.
 const SETTINGS_PATH: &str = "tools/checks/perf-bundle.toml";
@@ -40,7 +42,9 @@ impl Check for PerfBundle {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let root = context.repo.root();
         let settings = Settings::load(&root.join(SETTINGS_PATH))?;
-        evaluate(root, &settings, compression_quality(root)?)
+        let mut findings = list_findings(&settings);
+        findings.extend(evaluate(root, &settings, compression_quality(root)?)?);
+        Ok(findings)
     }
 }
 
@@ -222,21 +226,50 @@ fn wasm_files(folder: &Path) -> anyhow::Result<Vec<PathBuf>> {
     Ok(found)
 }
 
-/// The name of a module in the settings: the name of its file without the extension and without
-/// the hash that the build adds after the last dash.
-fn module_name(path: &Path) -> String {
+/// The name a module of `MODULES` has in the settings: the name of its files without the hash.
+fn settings_name(module: &Module) -> String {
+    format!("{}_bg", module.out_name)
+}
+
+/// The names a file may have in the settings: those of the modules of `MODULES`, and the lines the
+/// settings have (the examples of this check hold modules of their own).
+fn known_names(settings: &Settings) -> BTreeSet<String> {
+    MODULES
+        .iter()
+        .map(settings_name)
+        .chain(settings.wasm_budget_bytes.keys().cloned())
+        .collect()
+}
+
+/// The name of a module in the settings: the known name that its file starts with, followed by the
+/// end of the name or by the dash before the hash the build adds. The hash is never cut at a dash
+/// of its own, because the dashes in it are not looked at. A file that no known name fits is named
+/// by its whole name, which then has no budget.
+fn module_name(path: &Path, known: &BTreeSet<String>) -> String {
     let stem = path
         .file_stem()
         .map_or_else(String::new, |stem| stem.to_string_lossy().into_owned());
-    stem.rsplit_once('-')
-        .map_or(stem.as_str(), |(name, _hash)| name)
-        .to_owned()
+    known
+        .iter()
+        .filter(|name| {
+            stem == **name
+                || stem
+                    .strip_prefix(name.as_str())
+                    .is_some_and(|rest| rest.starts_with('-'))
+        })
+        .max_by_key(|name| name.len())
+        .cloned()
+        .unwrap_or(stem)
 }
 
 /// The WebAssembly modules to measure: the files in the build of the browser app and, for a module
 /// that no page imports yet, the file `cargo xtask wasm` made, so a module is held to its budget
 /// from the day it exists.
-fn wasm_modules(root: &Path, settings: &Settings) -> anyhow::Result<Vec<PathBuf>> {
+fn wasm_modules(
+    root: &Path,
+    settings: &Settings,
+    known: &BTreeSet<String>,
+) -> anyhow::Result<Vec<PathBuf>> {
     let dist = root.join(&settings.dist);
     let mut found = if dist.is_dir() {
         wasm_files(&dist)?
@@ -245,30 +278,66 @@ fn wasm_modules(root: &Path, settings: &Settings) -> anyhow::Result<Vec<PathBuf>
     };
     for module in MODULES {
         let made = module.path(root);
-        let known = found
+        let measured = found
             .iter()
-            .any(|path| module_name(path) == module_name(&made));
-        if !known && made.is_file() {
+            .any(|path| module_name(path, known) == module_name(&made, known));
+        if !measured && made.is_file() {
             found.push(made);
         }
     }
     Ok(found)
 }
 
+/// Every module of `MODULES` has a line in the settings, and the settings have no other line than
+/// the lines of the modules that are built (told by `wasm_findings`): a new module cannot slip in
+/// without a budget.
+fn list_findings(settings: &Settings) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for module in &MODULES {
+        let name = settings_name(module);
+        if !settings.wasm_budget_bytes.contains_key(&name) {
+            findings.push(Finding::at(
+                SETTINGS_PATH,
+                format!(
+                    "The WebAssembly module {} (`{}` in `MODULES`) has no budget line: add `{name} = <bytes>` to [wasm_budget_bytes] in {SETTINGS_PATH}, from its measured size.",
+                    module.out_name, module.crate_name
+                ),
+            ));
+        }
+    }
+    findings
+}
+
 /// Each WebAssembly module stays within the budget it has in the settings. A module is fetched when
 /// its feature first opens, not with the first page, but every browser that opens the feature
 /// receives it (PERF-04).
 fn wasm_findings(root: &Path, settings: &Settings, quality: i32) -> anyhow::Result<Vec<Finding>> {
+    let known = known_names(settings);
     let mut findings = Vec::new();
-    for path in wasm_modules(root, settings)? {
+    let files = wasm_modules(root, settings, &known)?;
+    let measured: BTreeSet<String> = files.iter().map(|path| module_name(path, &known)).collect();
+    for name in settings.wasm_budget_bytes.keys() {
+        let is_a_module = MODULES.iter().any(|module| settings_name(module) == *name);
+        if !is_a_module && !measured.contains(name) {
+            findings.push(Finding::at(
+                SETTINGS_PATH,
+                format!(
+                    "The line `{name}` in [wasm_budget_bytes] names no WebAssembly module: take it out, or add the module to `MODULES` in xtask/src/wasm.rs."
+                ),
+            ));
+        }
+    }
+    for path in files {
         let bytes =
             std::fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
         let size = brotli_size(&bytes, quality)?;
         let file = path
             .file_name()
             .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
-        let name = module_name(&path);
+        let name = module_name(&path, &known);
         match settings.wasm_budget_bytes.get(&name) {
+            // A module of `MODULES` without a line is told above, once.
+            None if MODULES.iter().any(|module| settings_name(module) == name) => {}
             None => findings.push(Finding::at(
                 SETTINGS_PATH,
                 format!(
@@ -352,7 +421,7 @@ mod tests {
             found[0].message
         );
         assert!(
-            found[0].message.contains("`module = <bytes>`"),
+            found[0].message.contains("`module-dddd = <bytes>`"),
             "{}",
             found[0].message
         );
@@ -360,13 +429,75 @@ mod tests {
 
     #[test]
     fn a_module_is_known_by_its_name_without_the_hash() {
-        let name = |file: &str| module_name(Path::new(file));
+        let known: BTreeSet<String> = ["bb_wasm_bg", "bb_wasm_search_bg", "module"]
+            .map(str::to_owned)
+            .into();
+        let name = |file: &str| module_name(Path::new(file), &known);
         assert_eq!(
             name("assets/bb_wasm_search_bg-3f9a1c.wasm"),
             "bb_wasm_search_bg"
         );
+        // A hash can hold dashes (Vite writes base64url): the name is not cut at the last one.
+        assert_eq!(
+            name("assets/bb_wasm_search_bg-Q3-f_9a-1c.wasm"),
+            "bb_wasm_search_bg"
+        );
+        assert_eq!(name("assets/bb_wasm_bg-aB-cD.wasm"), "bb_wasm_bg");
+        assert_eq!(name("bb_wasm_search_bg.wasm"), "bb_wasm_search_bg");
         assert_eq!(name("module-dddd.wasm"), "module");
+        // A name that only starts like a known one is another module.
+        assert_eq!(name("bb_wasm_bgx-1.wasm"), "bb_wasm_bgx-1");
         assert_eq!(name("plain.wasm"), "plain");
+    }
+
+    #[test]
+    fn bad_example_a_module_of_the_list_without_a_budget_line() {
+        let mut settings = Settings::load(&repository().join(SETTINGS_PATH)).unwrap();
+        assert!(list_findings(&settings).is_empty());
+        let first = settings_name(&MODULES[0]);
+        settings.wasm_budget_bytes.remove(&first);
+        let found = list_findings(&settings);
+        assert_eq!(found.len(), 1);
+        assert!(
+            found[0]
+                .message
+                .contains(&format!("add `{first} = <bytes>`")),
+            "{}",
+            found[0].message
+        );
+    }
+
+    #[test]
+    fn bad_example_a_budget_line_that_names_no_module() {
+        let root = repository().join("tools/checks/fixtures/PERF-BUNDLE/good");
+        let mut settings = Settings::load(&root.join("perf-bundle.toml")).unwrap();
+        settings.wasm_budget_bytes.insert("gone".to_owned(), 1);
+        let found = wasm_findings(&root, &settings, server_quality()).unwrap();
+        assert_eq!(
+            found.len(),
+            1,
+            "{:?}",
+            found
+                .iter()
+                .map(|finding| &finding.message)
+                .collect::<Vec<_>>()
+        );
+        assert!(
+            found[0].message.contains("The line `gone`"),
+            "{:?}",
+            found
+                .iter()
+                .map(|finding| &finding.message)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn this_repository_has_a_budget_line_for_each_module_and_no_other() {
+        let settings = Settings::load(&repository().join(SETTINGS_PATH)).unwrap();
+        let lines: BTreeSet<&String> = settings.wasm_budget_bytes.keys().collect();
+        let modules: Vec<String> = MODULES.iter().map(settings_name).collect();
+        assert_eq!(lines, modules.iter().collect::<BTreeSet<_>>());
     }
 
     #[test]

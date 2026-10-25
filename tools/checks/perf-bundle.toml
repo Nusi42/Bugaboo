@@ -15,5 +15,5 @@ budget_bytes = 250000
 [wasm_budget_bytes]
 # Markdown, the wording of changes and notifications, the rule of the same name (architecture §8).
 bb_wasm_bg = 150000
-# The search language, measured at 83.0 KB (M5 WP-02); ADR-0005 allows at most 100 KB.
+# The search language, measured at 88.9 KB (M5 WP-02, with the Issue ID rules of bb-core); ADR-0005 allows at most 100 KB.
 bb_wasm_search_bg = 90000
