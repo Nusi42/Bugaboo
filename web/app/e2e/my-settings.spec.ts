@@ -4,6 +4,7 @@ import { type Locator, type Page } from "@playwright/test";
 import { ada, bob, forgetChoices, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook, expectLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { chooseTimeZone } from "./support/region.ts";
 import {
   addressEndingAt,
   chooseGoHomeKeys,
@@ -65,15 +66,6 @@ async function chooseMidnight(page: Page): Promise<void> {
   const group = page.getByRole("group", { name: t("appearance.dark"), exact: true });
   await choose(group.getByRole("radio", { name: t("theme.midnight"), exact: true }));
   await expectLook(page, "midnight");
-  await saved(page);
-}
-
-/** Chooses a time zone on *Region*. */
-async function chooseTimeZone(page: Page, zone: string): Promise<void> {
-  await page.goto(paths.region);
-  await page
-    .getByRole("combobox", { name: t("setting.region.time-zone.name"), exact: true })
-    .selectOption(zone);
   await saved(page);
 }
 

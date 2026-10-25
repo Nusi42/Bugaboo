@@ -13,7 +13,7 @@ import {
   blockOf,
   openSimple,
   openSimpleToChange,
-  requireFoundInVersion,
+  requireAskedForField,
   startWorkingArrow,
   tryMarkAsDone,
 } from "./support/workflows-pages.ts";
@@ -31,7 +31,7 @@ test("wf_02 a lead adds Testing to Simple with Must be filled in, publishes it, 
   await signIn(page, ada);
   await openSimpleToChange(page);
   await addSendToTesting(page);
-  await requireFoundInVersion(page);
+  await requireAskedForField(page);
   await expectGoodInEveryLook(page);
   await page.getByRole("button", { name: t("workflows.publish"), exact: true }).click();
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();

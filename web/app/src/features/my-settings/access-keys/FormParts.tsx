@@ -13,10 +13,10 @@ import {
   part,
 } from "@bugaboo/ui";
 
-import { formatDay } from "../../../shared/format.ts";
+import { formatCalendarDay } from "../../../shared/format.ts";
 import { choiceHelp, choiceName, plainChoices } from "./choice.ts";
 import type { Draft } from "./draft.ts";
-import { earliestDay, latestAt, latestDay, localDay } from "./expiry-day.ts";
+import { earliestDay, latestDay, presetDay } from "./expiry-day.ts";
 
 export interface PartProps {
   readonly draft: Draft;
@@ -58,11 +58,11 @@ export function Expiry({ draft, rules }: ExpiryProps) {
       label={t("access-keys.expires")}
       description={t("access-keys.expires-help", {
         days: rules.default_days,
-        latest: formatDay(localDay(latestAt(rules))),
+        latest: formatCalendarDay(latestDay(rules)),
       })}
       requiredMessage={t("error.field.required")}
       date={{ min: earliestDay(), max: latestDay(rules) }}
-      value={draft.day}
+      value={draft.day ?? presetDay(rules)}
       onChange={draft.setDay}
     />
   );

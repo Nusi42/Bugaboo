@@ -88,6 +88,18 @@ body {
   cursor: pointer;
 }
 
+[data-part="button"][data-disabled] {
+  opacity: var(--opacity-disabled);
+  border-color: var(--fg-muted);
+  cursor: default;
+}
+
+@media (forced-colors: active) {
+  [data-part="button"][data-disabled] {
+    border-color: GrayText;
+  }
+}
+
 [data-part="button"][data-variant~="wide"] {
   width: 100%;
 }
@@ -129,10 +141,6 @@ body {
   margin-inline-start: var(--size-phone-hang);
 }
 
-[data-part="followers-state"] [data-part="button"][data-variant~="quiet"] {
-  margin-inline-end: calc(-1 * var(--pad-control));
-}
-
 [data-part="button"][data-variant~="item"] {
   justify-content: flex-start;
   border-color: transparent;
@@ -152,18 +160,6 @@ body {
 
 [data-part="button"][data-pressed] {
   background: var(--bg-selected);
-}
-
-[data-part="button"][data-disabled] {
-  opacity: var(--opacity-disabled);
-  border-color: var(--fg-muted);
-  cursor: default;
-}
-
-@media (forced-colors: active) {
-  [data-part="button"][data-disabled] {
-    border-color: GrayText;
-  }
 }
 
 [data-part="button"][data-variant~="primary"][data-disabled] {
@@ -1252,7 +1248,7 @@ body {
 
 [data-part="followers-line"] {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
@@ -3240,6 +3236,16 @@ body {
   pointer-events: none;
 }
 
+[data-part="app-layout"][data-variant~="side"] [data-part="undo-host"] {
+  right: calc(var(--size-details) + var(--space-5) * 2);
+  left: calc(var(--size-sidebar) + var(--space-4));
+}
+
+[data-part="app-layout"][data-variant~="side-narrow"] [data-part="undo-host"] {
+  right: calc(var(--size-details) + var(--space-5) * 2);
+  left: calc(var(--size-sidebar-narrow) + var(--space-4));
+}
+
 [data-part="undo-host.offer"] {
   display: flex;
   flex-wrap: wrap;
@@ -3753,17 +3759,29 @@ body {
   padding: var(--space-2);
 }
 
+[data-part="shortcut-editor.rows"] {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
 [data-part="shortcut-editor.row"] {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  margin: 0;
+}
+
+[data-part="shortcut-editor.keys"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin: 0;
 }
 
 [data-part="shortcut-editor.label"] {
-  min-width: calc(var(--size-control) * 2.5);
-  margin-inline-end: var(--space-2);
   font-weight: var(--weight-bold);
 }
 

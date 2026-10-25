@@ -1,11 +1,9 @@
 import { expect, type Page } from "@playwright/test";
 
-import { onThisLayout } from "./layout.ts";
+import { nothing, onThisLayout } from "./layout.ts";
 import { menuEntry } from "./notifications.ts";
 import { partIn } from "./parts.ts";
 import { boxOf } from "./windows.ts";
-
-const nothing = (): Promise<void> => Promise.resolve();
 
 /**
  * In the narrow menu the number stands under the bell, whatever its width ("100+" is wider than the

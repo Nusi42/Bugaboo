@@ -129,15 +129,32 @@ export async function expectInsideTheScreen(page: Page, box: Locator): Promise<v
   expect(inside.y + inside.height).toBeLessThanOrEqual(screen.height);
 }
 
-/** How many lines the words of an element take: the different tops of the boxes of its text. */
-export function linesOf(element: Locator): Promise<number> {
+/**
+ * How many characters of the text of an element stand on each line, from the first line to the last:
+ * the characters are grouped by the top of their box, so a name inside the element counts too.
+ */
+export function lineLengths(element: Locator): Promise<readonly number[]> {
   return element.evaluate((node) => {
     const range = document.createRange();
-    range.selectNodeContents(node);
-    return new Set(
-      Array.from(range.getClientRects(), (rect: Readonly<Pick<DOMRect, "top">>) =>
-        Math.round(rect.top),
-      ),
-    ).size;
+    const counts = new Map<number, number>();
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
+      for (let at = 0; at < (text.textContent?.length ?? 0); at += 1) {
+        range.setStart(text, at);
+        range.setEnd(text, at + 1);
+        const box = range.getBoundingClientRect();
+        // A space that the line break swallowed has no box.
+        if (box.width > 0 || box.height > 0) {
+          const top = Math.round(box.top);
+          counts.set(top, (counts.get(top) ?? 0) + 1);
+        }
+      }
+    }
+    return [...counts.keys()].toSorted((a, b) => a - b).map((top) => counts.get(top) ?? 0);
   });
+}
+
+/** How many lines the words of an element take: the lines of [`lineLengths`]. */
+export async function linesOf(element: Locator): Promise<number> {
+  return (await lineLengths(element)).length;
 }

@@ -4,6 +4,7 @@ import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
+import { withManyFollowers } from "./support/followers.ts";
 import { detailRow, prepareWeb, savedNote } from "./support/issues.ts";
 import { boxOf } from "./support/windows.ts";
 import { addRelation, addSubIssue } from "./support/relate.ts";
@@ -12,6 +13,9 @@ import { issueAddress } from "../src/shared/paths.ts";
 // The parts of the issue page that sub-issues, relations, comments, history and following add
 // (ISS-03 to ISS-07, M3 WP-07): each is put into the page through the slots of WP-06, and what a
 // person does there is kept and shows in the history.
+
+/** How many followers the long count has: a whole short page. */
+const pageOfFollowers = 20;
 
 test.use({ preparation: { run: prepareWeb } });
 test.describe.configure({ mode: "serial" });
@@ -117,4 +121,21 @@ test("iss_07 following can be stopped and started again, and the server keeps it
   await started;
   await openIssueWithDetails(page, "WEB-1");
   await expect(stop()).toBeVisible();
+});
+
+test("iss_07 the reason for following is read with the button, and a long count does not run out of the column", async ({
+  page,
+}) => {
+  await withManyFollowers(page, "WEB-1", pageOfFollowers);
+  await signIn(page, ada);
+  await openIssueWithDetails(page, "WEB-1");
+  const row = detailRow(page, t("followers.name"));
+  const stop = row.getByRole("button", { name: t("followers.stop"), exact: true });
+  await expect(row.getByRole("button", { name: /or more followers/u })).toBeVisible();
+  // The reason is the description of the button that turns it round, not a hint on the count.
+  await expect(stop).toHaveAccessibleDescription(/you/iu);
+  await expect(row.locator("[title]")).toHaveCount(0);
+  // The button stays inside the column, wherever it stands.
+  const [inside, button] = [await boxOf(row), await boxOf(stop)];
+  expect(button.x + button.width).toBeLessThanOrEqual(inside.x + inside.width + 1);
 });

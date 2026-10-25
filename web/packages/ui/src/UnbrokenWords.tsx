@@ -2,8 +2,7 @@ import { Fragment, type ReactNode } from "react";
 
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
-
-const gaps = /(\s+)/u;
+import { isGap, wordsAndGaps } from "./words.ts";
 
 interface Piece {
   /** Where the piece starts in the text: no two pieces start at the same place, so it is the key. */
@@ -14,15 +13,12 @@ interface Piece {
 
 /** The words of a text and the gaps between them, each with where it starts. */
 function piecesOf(text: string): readonly Piece[] {
-  const pieces: Piece[] = [];
   let start = 0;
-  for (const piece of text.split(gaps)) {
-    if (piece !== "") {
-      pieces.push({ start, piece, isWord: !gaps.test(piece) });
-      start += piece.length;
-    }
-  }
-  return pieces;
+  return wordsAndGaps(text).map((piece) => {
+    const placed = { start, piece, isWord: !isGap(piece) };
+    start += piece.length;
+    return placed;
+  });
 }
 
 /**
@@ -45,9 +41,25 @@ export function UnbrokenWords({ text }: { readonly text: string }) {
   );
 }
 
+interface Placed {
+  readonly start: number;
+  readonly text: string;
+}
+
+/** The pieces of a sentence between the places a value stands, each with where the piece ends up in the sentence. */
+function placedAround(sentence: string, value: string): readonly Placed[] {
+  let start = 0;
+  return sentence.split(value).map((text) => {
+    const placed = { start, text };
+    start += text.length + value.length;
+    return placed;
+  });
+}
+
 /**
  * A sentence that has a value in it (the name of a file, the start of a key): the value is drawn by
- * `children`, as a part of its own, and the rest of the sentence flows around it.
+ * `children`, as a part of its own, every time the sentence has it, and the rest of the sentence flows
+ * around it.
  */
 export function SentenceWithValue({
   sentence,
@@ -58,16 +70,19 @@ export function SentenceWithValue({
   readonly value: string | null | undefined;
   readonly children: (value: string) => ReactNode;
 }) {
-  const at = value === null || value === undefined ? -1 : sentence.indexOf(value);
-  if (at < 0 || value === null || value === undefined) {
-    return sentence;
-  }
-  // One element, so that a list item that lays out its children (a flex box) keeps it in one line of words.
+  // One element from both ways, so that a list item that lays out its children (a flex box) keeps
+  // the sentence in one line of words.
+  const shown = value === null || value === undefined || value === "" ? null : value;
   return (
     <span>
-      {sentence.slice(0, at)}
-      {children(value)}
-      {sentence.slice(at + value.length)}
+      {shown === null
+        ? sentence
+        : placedAround(sentence, shown).map(({ start, text }) => (
+            <Fragment key={start}>
+              {start > 0 ? children(shown) : null}
+              {text}
+            </Fragment>
+          ))}
     </span>
   );
 }

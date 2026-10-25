@@ -31,6 +31,7 @@ function FileRow({ item, issue }: { readonly item: FileItem; readonly issue: str
       // A deleted file is in the trash: *Undo* is on offer where every *Undo* is (UX §6).
       undoStore.offer({
         message: t("files.deleted", { name: item.name }),
+        name: item.name,
         undo: () => {
           void bringBack(item);
         },

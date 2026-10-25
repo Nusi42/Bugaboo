@@ -3,8 +3,8 @@ import { t } from "@bugaboo/messages";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
-import { lineLengths } from "./support/line-lengths.ts";
 import { partIn } from "./support/parts.ts";
+import { lineLengths } from "./support/windows.ts";
 
 // The key that is shown once (the final check of M4): its lines are even, so that two letters never
 // stand alone on the last line; and in the list the words *Starts with* are plain words, with only

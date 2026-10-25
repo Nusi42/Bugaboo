@@ -18,7 +18,7 @@ import { addressInProject, issueAddress, issueTargetAddress, paths } from "../..
 import { RunProgress } from "../many-changes/index.ts";
 import {
   failedRenewalProjectOf,
-  fileNameOf,
+  fileNamesOf,
   sentencesOf,
   targetOf,
   type NotificationRow,
@@ -126,16 +126,20 @@ function NotificationActions({
 /** What one notification says, once the shared wording is there. */
 function Sentences({
   sentences,
-  fileName,
+  fileNames,
 }: {
   readonly sentences: readonly string[];
-  readonly fileName: string | undefined;
+  /** The files the notification is about: each sentence keeps the name it has in it whole. */
+  readonly fileNames: readonly string[];
 }) {
   return (
     <ul {...partOf(part.notificationSentences)}>
       {sentences.map((sentence) => (
         <li key={sentence}>
-          <SentenceWithName sentence={sentence} name={fileName} />
+          <SentenceWithName
+            sentence={sentence}
+            name={fileNames.find((name) => sentence.includes(name))}
+          />
         </li>
       ))}
     </ul>
@@ -161,7 +165,7 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
         <span {...partOf(part.historyWhen)}>{formatDateTime(row.at)}</span>
       </div>
       {loaded.state === "ready" ? (
-        <Sentences sentences={sentences} fileName={fileNameOf(row)} />
+        <Sentences sentences={sentences} fileNames={fileNamesOf(row)} />
       ) : null}
       {loaded.state === "loading" ? <Skeleton /> : null}
       <CommentText row={row} />

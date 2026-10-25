@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, Icon, iconName, iconSize, partOf, part } from "@bugaboo/ui";
+import { Button, Icon, iconName, iconSize, partOf, part, SentenceWithName } from "@bugaboo/ui";
 
 import { focusRestored } from "../../shared/focus.ts";
 import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
@@ -30,7 +30,9 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
   );
   return (
     <div ref={box} {...partOf(part.undoHostOffer)}>
-      <span {...partOf(part.wrap)}>{offer.message}</span>
+      <span {...partOf(part.wrap)}>
+        <SentenceWithName sentence={offer.message} name={offer.name} />
+      </span>
       {offer.undo === undefined ? null : (
         <Button
           onPress={() => {

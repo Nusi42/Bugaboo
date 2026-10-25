@@ -11,6 +11,9 @@ export function layoutOf(page: Page): LayoutMode {
 /** What to do on a screen of each size: the test runs once per size and does what fits it. */
 export type PerLayout = Readonly<Record<LayoutMode, (page: Page) => Promise<void>>>;
 
+/** The step of a layout where there is nothing to look at. */
+export const nothing = (): Promise<void> => Promise.resolve();
+
 /** Does the step of the layout this page has. */
 export function onThisLayout(page: Page, steps: PerLayout): Promise<void> {
   return steps[layoutOf(page)](page);

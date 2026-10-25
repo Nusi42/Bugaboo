@@ -105,9 +105,13 @@ export function failedRenewalProjectOf(row: NotificationRow): string | undefined
   return renewal?.shown === "visible" ? (renewal.short_name ?? undefined) : undefined;
 }
 
-/** The name of the file a notification is about, if it is about one the reader may name. */
-export function fileNameOf(row: NotificationRow): string | undefined {
-  return row.entries.find((entry) => entry.file_event !== undefined)?.file_name ?? undefined;
+/** The names of the files a notification is about, as many as the reader may name: one per file event. */
+export function fileNamesOf(row: NotificationRow): readonly string[] {
+  return row.entries.flatMap((entry) =>
+    entry.file_event !== undefined && entry.file_name !== undefined && entry.file_name !== null
+      ? [entry.file_name]
+      : [],
+  );
 }
 
 /** What a notification says, as the shared wording takes it (`bb-core`, `wording::Notice`). */

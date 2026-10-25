@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
+import { useOnResize } from "../../shared/use-on-resize.ts";
 import type { Box } from "./drawing-layout.ts";
 
 /** The boxes of the drawing by the ID of the status, measured from the top left corner of the drawing. */
@@ -39,15 +40,7 @@ export function useBoxes(prefix: string, statuses: readonly string[]) {
     }
     setPlaced((before) => (JSON.stringify(before) === JSON.stringify(next) ? before : next));
   }, [prefix, statuses]);
-  useEffect(() => {
-    measure();
-    const watch = new ResizeObserver(measure);
-    if (frame.current !== null) {
-      watch.observe(frame.current);
-    }
-    return () => {
-      watch.disconnect();
-    };
-  }, [measure]);
+  const watched = useCallback(() => [frame.current], []);
+  useOnResize(measure, watched);
   return { frame, placed };
 }
