@@ -901,7 +901,7 @@ Place  = "organization" | ProjectRef | "hidden"                                 
 <li><strong>Legal holds:</strong> working hours stay until their keep period ends, even after a person is removed.</li>
 </ul>
 <h3 id="s7-6"><button class="sec" data-sec>§7.6</button>Search language (ADR-0005)</h3>
-<p>Grammar sketch (final grammar is part of milestone work):</p>
+<p>Grammar sketch (the final grammar is written by M5 WP-02, within the amendment M5 of ADR-0005):</p>
 <pre><code>search     = [ expr ] [ "sort by" sort ("," sort)* ]
 expr       = term ( ("and" | "or") term )*
 term       = "not" term | "(" expr ")" | condition
@@ -960,7 +960,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>Compression quality:</strong> one number, in <code>tools/dev/compression.json</code>, read by the server and by the budget check, so the check measures what a browser receives. Enforced by: the tests <code>perf_04_the_server_compresses_with_the_quality_the_budget_is_measured_with</code> and <code>the_budget_is_measured_with_the_quality_the_server_compresses_with</code> (xtask).</li>
 <li><strong>First page budget (PERF-04):</strong> the JavaScript the first route loads (the entry and what it imports at once, read from the Vite manifest) stays within the budget in <code>tools/checks/perf-bundle.toml</code>, the only place the number is written. The WebAssembly modules of the build have a budget of their own in the same file, measured with the same Brotli quality (follow-up M2-F03), because every browser that opens a preview or an editor fetches them. Enforced by: PERF-BUNDLE.</li>
 <li><strong>SQLite:</strong> WAL mode, one writer task with a queue, many readers. <strong>PostgreSQL:</strong> a pool sized to CPU count.</li>
-<li>A dataset generator (<code>cargo xtask dataset --issues 1000000</code>) feeds benchmarks in CI; budgets from PERF-01…06 fail the build when exceeded.</li>
+<li>A dataset generator (<code>cargo xtask dataset large --issues 1000000</code>, architecture §11) feeds the nightly benchmarks; budgets from PERF-01…06 fail the build when exceeded.</li>
 </ul>
 <h3 id="s7-12"><button class="sec" data-sec>§7.12</button>AI (ADR-0013)</h3>
 <ul>
@@ -1878,13 +1878,25 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h4>Consequences</h4>
 <ul>
 <li>One grammar (SSOT). Property test: <code>parse(print(tree)) == tree</code>.</li>
-<li>WebAssembly adds download size; it's loaded only when search is first used, within the WebAssembly budget in <code>tools/checks/perf-bundle.toml</code>, shared with the Markdown renderer.</li>
+<li>WebAssembly adds download size; it's loaded only when search is first used, within its own WebAssembly budget in <code>tools/checks/perf-bundle.toml</code> (amendment M5, decision 7).</li>
 </ul>
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>A grammar written twice (Rust and TypeScript):</strong> drifts. Rejected.</li>
 <li><strong>Parser generators (pest, lalrpop):</strong> fine, but hand-written recursive descent gives better plain-language error messages. Decision left to the milestone, as long as the crate stays I/O-free.</li>
 </ul>
+<h4>Amendment M5 (2026-10-25): the words, the limits and what crosses the wire</h4>
+<p>The M5 proposals (M5-Q7, Q10) were accepted. Decided:</p>
+<ol>
+<li><strong>The parser is written by hand</strong> (recursive descent), for plain-language messages and a small WebAssembly module. No parser generator.</li>
+<li><strong>English words</strong> for the language (<code>and</code>, <code>or</code>, <code>not</code>, <code>is</code>, <code>is not</code>, <code>contains</code>, <code>in last</code>, <code>sort by</code> …). A field is written as on screen, as one word in lower camel case (<code>assignedTo</code>, <code>statusGroup</code>). The word of each built-in field is defined once, next to the field; an own field gets its word from its name by one rule, and a name that cannot be written as one word is written in quotes. The search text is the same in every language of the app, so a shared search works for everyone.</li>
+<li><strong>The language holds conditions and the order</strong> (<code>sort by</code>). How a search is shown (columns, widths, spacing, grouping) is not part of it; a saved search stores that beside the text.</li>
+<li><strong>The canonical text is what travels:</strong> the address, the API and a saved search carry the text the printer writes; the tree never crosses the wire. The server parses and checks every search again and never relies on the browser's check.</li>
+<li><strong>The checker is given the fields the person may read.</strong> A field outside that set is unknown: the same message, the same error code and no difference in time to a field that does not exist (QRY-05).</li>
+<li><strong>Limits the checker enforces:</strong> at most 50 conditions, and <code>within N steps</code> at most 5 (M5-Q10). The time, page and rate limits are the server's (SEC-17, M5 WP-04).</li>
+<li><strong>A module of its own</strong> (the lead): the search language is a WebAssembly module of its own, fetched when a search bar first opens, with its own budget in <code>tools/checks/perf-bundle.toml</code> (set by M5 WP-02 from its measurement, at most 100 KB with Brotli). The shared budget of 150 KB was planned for Markdown and the search language; the wording of changes and notifications (M4 WP-13) took it, the module is at 145.6 KB, and a list should not fetch Markdown, nor an editor the search language. Each module keeps a budget of its own.</li>
+</ol>
+<p>Enforced by: TEST-SEARCH-ROUNDTRIP (decisions 1 to 4, the printer and the parser), the tests of M5 WP-02 (decisions 5 and 6), SEC-MATRIX with the <code>search</code> entry point (decision 5 on the server), PERF-BUNDLE (decision 7).</p>
 <h4>Enforced by</h4>
 <p>ARCH-PURE, ARCH-WASM, TEST-SEARCH-ROUNDTRIP (see <code>tools/checks/catalog.toml</code>).</p>
 

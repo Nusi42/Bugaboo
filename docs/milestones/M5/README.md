@@ -19,8 +19,8 @@ M5 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | Wave | WP | Name | Who | Folder / branch |
 |------|----|------|-----|-----------------|
 | 1 | WP-01 | Decision records, words, the security chapter, the UX gaps, the maintainer's answers | Lead | `bugaboo.win1` / `WIN1` |
-| 1 | WP-02 | The search language: grammar, parser, printer, checker, suggestions, WebAssembly | Builder | `bugaboo.win2` / `WIN2` |
-| 1 | WP-03 | The large dataset, the benchmarks and the nightly run | Builder | `bugaboo.win3` / `WIN3` |
+| 1 | [WP-02](WP-02-search-language.md) | The search language: grammar, parser, printer, checker, suggestions, WebAssembly | Builder | `bugaboo.win2` / `WIN2` |
+| 1 | [WP-03](WP-03-large-dataset-and-nightly-benchmarks.md) | The large dataset, the benchmarks and the nightly run | Builder | `bugaboo.win3` / `WIN3` |
 | 2 | WP-04 | Searching on the server: the compiler, permissions, limits, the search routes | Builder | `bugaboo.win2` / `WIN2` |
 | 2 | WP-05 | Full-text search on both databases | Builder | `bugaboo.win3` / `WIN3` |
 | 2 | WP-06 | Saved searches on the server: stored, shared, a stable address | Builder | `bugaboo.win4` / `WIN4` |
@@ -29,7 +29,7 @@ M5 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | 3 | WP-09 | *Quick search*: issues, saved searches, projects, pages and actions | Builder | `bugaboo.win4` / `WIN4` |
 | 4 | WP-10 | Sample organization part 4, people searching while others change, speed on 1 M issues, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
 
-Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files are written in WP-01, after the maintainer's answers.
+Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files are written in WP-01, after the maintainer's answers; WP-02 and WP-03 first, so wave 1 starts while the lead writes the rest.
 
 ## The packages in short
 
@@ -131,6 +131,8 @@ Migrations get their numbers from the lead, in the order of merging.
 ## Questions for the maintainer
 
 Each question has a proposal. Accepting all of them takes every proposal as written.
+
+**Answered: every proposal was accepted.** WP-01 writes each answer where it belongs.
 
 - **M5-Q1: Who may share a saved search.**
   - A saved search is private when it is made.

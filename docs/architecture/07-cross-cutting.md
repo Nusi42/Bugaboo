@@ -378,7 +378,7 @@ Consumers are idempotent and resume from their last position after a restart.
 
 ## Search language (ADR-0005)
 
-Grammar sketch (final grammar is part of milestone work):
+Grammar sketch (the final grammar is written by M5 WP-02, within the amendment M5 of ADR-0005):
 
 ```text
 search     = [ expr ] [ "sort by" sort ("," sort)* ]
@@ -440,7 +440,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit
 - **Compression quality:** one number, in `tools/dev/compression.json`, read by the server and by the budget check, so the check measures what a browser receives. Enforced by: the tests `perf_04_the_server_compresses_with_the_quality_the_budget_is_measured_with` and `the_budget_is_measured_with_the_quality_the_server_compresses_with` (xtask).
 - **First page budget (PERF-04):** the JavaScript the first route loads (the entry and what it imports at once, read from the Vite manifest) stays within the budget in `tools/checks/perf-bundle.toml`, the only place the number is written. The WebAssembly modules of the build have a budget of their own in the same file, measured with the same Brotli quality (follow-up M2-F03), because every browser that opens a preview or an editor fetches them. Enforced by: PERF-BUNDLE.
 - **SQLite:** WAL mode, one writer task with a queue, many readers. **PostgreSQL:** a pool sized to CPU count.
-- A dataset generator (`cargo xtask dataset --issues 1000000`) feeds benchmarks in CI; budgets from PERF-01…06 fail the build when exceeded.
+- A dataset generator (`cargo xtask dataset large --issues 1000000`, architecture §11) feeds the nightly benchmarks; budgets from PERF-01…06 fail the build when exceeded.
 
 ## AI (ADR-0013)
 
