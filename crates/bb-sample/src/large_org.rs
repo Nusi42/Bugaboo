@@ -9,22 +9,27 @@ use std::collections::BTreeSet;
 use bb_app::access::{PolicyStore as _, StartingRole};
 use bb_app::auth::AccountStore as _;
 use bb_app::context::Clock as _;
+use bb_app::dataset_events;
 use bb_app::projects::ProjectStore as _;
 use bb_auth::PasswordHasher;
 use bb_core::access::{AppliesTo, Assignment, Group, GroupMember};
 use bb_core::comment::handle_of;
-use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
+use bb_core::event::{DomainEvent, RecordKind};
+use bb_core::id::{AssignmentId, EntityId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::person::Person;
 use bb_core::project::{Project, ShortName};
+use bb_core::technical::TechnicalName;
 use bb_core::version::FIRST_VERSION;
 use bb_dev_words::LargePlan;
 use bb_dev_words::sample::Layout;
 use bb_store::AuthStorage;
+use jiff::Timestamp;
 use serde::Deserialize;
 use zeroize::Zeroizing;
 
 use crate::error::{SampleError, Step};
 use crate::generate::World;
+use crate::large_build::event;
 use crate::large_ids::{ordered, random16};
 use crate::names::NameList;
 use crate::organization::workers;
@@ -101,6 +106,20 @@ struct Roles {
 }
 
 impl Roles {
+    async fn read(storage: &AuthStorage) -> Result<Self, SampleError> {
+        let mut ids = Vec::new();
+        for record in storage.roles().await? {
+            let starting = record.role.starting.as_ref();
+            let found = ROLE_MIX
+                .iter()
+                .find(|(role, _)| Some(role.code()) == starting.map(TechnicalName::as_str));
+            if let Some((role, _)) = found {
+                ids.push((*role, record.role.id));
+            }
+        }
+        Ok(Self { ids })
+    }
+
     fn of(&self, role: StartingRole) -> Result<RoleId, SampleError> {
         self.ids
             .iter()
@@ -123,137 +142,109 @@ fn rest_of_the_mix(people: u32) -> Vec<(StartingRole, usize)> {
 /// Splits `total` into the weights of `count` projects: the first tenth, the big ones, gets
 /// `big_share` percent, shared by 1 / rank; the rest shares what is left the same way.
 fn weights(count: usize, big_share: u32) -> Vec<u64> {
-    const WHOLE: f64 = 1_000_000.0;
+    const WHOLE: u64 = 1_000_000;
     let big = (count / 10).max(1);
-    let tier = |from: usize, to: usize, share: f64| -> Vec<u64> {
-        let harmonic: f64 = (from..to).map(|rank| 1.0 / (rank - from + 1) as f64).sum();
-        (from..to)
-            .map(|rank| (WHOLE * share / harmonic / (rank - from + 1) as f64).round() as u64)
-            .collect()
+    // The weight of the k-th project of a tier is 1 / k, in millionths.
+    let tier = |len: usize, share: u64| -> Vec<u64> {
+        let parts: Vec<u64> = (1..=len as u64).map(|rank| WHOLE / rank).collect();
+        let sum: u64 = parts.iter().sum::<u64>().max(1);
+        parts.iter().map(|part| share * part / sum).collect()
     };
-    let share = f64::from(big_share) / 100.0;
-    let mut found = tier(0, big, share);
+    let share = u64::from(big_share) * (WHOLE / 100);
+    let mut found = tier(big, share);
     if count > big {
-        found.extend(tier(big, count, 1.0 - share));
+        found.extend(tier(count - big, WHOLE - share));
     }
     found
 }
 
-/// Writes the rest of the people, groups and projects, and says who works where.
-///
-/// # Errors
-/// [`SampleError`] when a name list is unusable or a write fails.
-pub(crate) async fn grow(
-    world: &World<'_>,
-    plan: &LargePlan,
-    layout: &Layout,
-) -> Result<Org, SampleError> {
-    let words: Words =
-        toml::from_str(WORDS).map_err(|error| SampleError::Names(error.to_string()))?;
-    let names = NameList::bundled()?;
-    let mut random = SeededRandom::new(world.seed ^ 0x4C41_5247_45);
-    let storage = world.storage;
+/// Who holds which role where, as the rows to write.
+struct Rows {
+    /// A person, the role, and the family (its first project) the role counts in; none is the
+    /// whole organization.
+    direct: Vec<(usize, StartingRole, Option<usize>)>,
+    /// The Team members of each family, which a group of that family holds.
+    team_of_family: Vec<Vec<usize>>,
+}
 
-    let roles = Roles {
-        ids: {
-            let mut found = Vec::new();
-            for record in storage.roles().await? {
-                if let Some(starting) = record.role.starting.as_ref() {
-                    if let Some((role, _)) = ROLE_MIX
-                        .iter()
-                        .find(|(role, _)| role.code() == starting.as_str())
-                    {
-                        found.push((*role, record.role.id));
-                    }
-                }
+/// The projects the sample made, with what the layout says of their words and IDs.
+fn sample_places(tree: &[Project], layout: &Layout) -> Vec<Place> {
+    tree.iter()
+        .map(|project| {
+            let mut chain = vec![project.id];
+            let mut above = project.parent;
+            while let Some(parent) = above {
+                chain.push(parent);
+                above = tree
+                    .iter()
+                    .find(|each| each.id == parent)
+                    .and_then(|each| each.parent);
             }
-            found
-        },
-    };
-
-    // The sample's people keep their places; those who work everywhere are the first workers.
-    let mut folk: Vec<Folk> = world
-        .people
-        .iter()
-        .map(|made| Folk {
-            id: made.id,
-            role: made.person.role,
-        })
-        .collect();
-    let mut everywhere: Vec<usize> = workers(world)?;
-
-    // The projects the sample made.
-    let tree = storage.project_tree().await?;
-    let mut places: Vec<Place> = Vec::new();
-    for project in &tree {
-        let mut chain = vec![project.id];
-        let mut above = project.parent;
-        while let Some(parent) = above {
-            chain.push(parent);
-            above = tree
+            let family = chain.last().copied().unwrap_or(project.id);
+            let top = tree.iter().find(|each| each.id == family);
+            let top_name = top.map_or(project.short_name.as_str(), |top| top.short_name.as_str());
+            let issues = layout
+                .issues
+                .projects
                 .iter()
-                .find(|each| each.id == parent)
-                .and_then(|each| each.parent);
-        }
-        let family = chain.last().copied().unwrap_or(project.id);
-        let top = tree.iter().find(|each| each.id == family);
-        let top_name = top.map_or(project.short_name.as_str(), |top| top.short_name.as_str());
-        let issues = layout
-            .issues
-            .projects
-            .iter()
-            .find(|each| each.short_name == top_name);
-        places.push(Place {
-            id: project.id,
-            short_name: project.short_name.as_str().to_owned(),
-            name: project.name.clone(),
-            chain,
-            area: issues.map_or("app", |each| each.area.as_str()).to_owned(),
-            random_codes: issues.is_some_and(|each| each.id_mode == "random"),
-            german: false,
-            weight: 0,
-            team: Vec::new(),
-            outsiders: Vec::new(),
-        });
-    }
+                .find(|each| each.short_name == top_name);
+            Place {
+                id: project.id,
+                short_name: project.short_name.as_str().to_owned(),
+                name: project.name.clone(),
+                chain,
+                area: issues.map_or("app", |each| each.area.as_str()).to_owned(),
+                random_codes: issues.is_some_and(|each| each.id_mode == "random"),
+                german: false,
+                weight: 0,
+                team: Vec::new(),
+                outsiders: Vec::new(),
+            }
+        })
+        .collect()
+}
 
-    // The families of the rest.
-    let mut families: Vec<Family> = Vec::new();
+/// Adds families of projects up to the number the plan asks for; each is a project and up to
+/// `subProjectsEach` sub-projects of it.
+fn add_families(
+    places: &mut Vec<Place>,
+    plan: &LargePlan,
+    words: &ProjectWords,
+    random: &mut SeededRandom,
+    at: Timestamp,
+) -> Result<Vec<Family>, SampleError> {
     let wanted = usize::try_from(plan.projects).unwrap_or(0);
+    let most = usize::try_from(plan.sub_projects_each).unwrap_or(0) + 1;
+    let mut families = Vec::new();
     let mut family_no = 0_usize;
     while places.len() < wanted {
         family_no += 1;
         let area = AREAS[random.below(AREAS.len())];
         let german = random.chance(plan.german_percent);
         let parent = places.len();
-        let subs = random.below(usize::try_from(plan.sub_projects_each).unwrap_or(0) + 1);
-        let subs = subs.min(wanted - parent - 1);
-        let noun = random
-            .pick(&words.projects.nouns)
-            .cloned()
-            .unwrap_or_default();
-        let topic = random
-            .pick(&words.projects.topics)
-            .cloned()
-            .unwrap_or_default();
+        let subs = random.below(most).min(wanted - parent - 1);
+        let noun = random.pick(&words.nouns).cloned().unwrap_or_default();
+        let topic = random.pick(&words.topics).cloned().unwrap_or_default();
         families.push(Family { parent });
-        for at in 0..=subs {
-            let letter = char::from(b'A' + u8::try_from(at.saturating_sub(1)).unwrap_or(0));
-            let (short, name, above) = if at == 0 {
-                (format!("P{family_no:03}"), format!("{noun} {topic}"), None)
+        for number in 0..=subs {
+            let letter = char::from(b'A' + u8::try_from(number.saturating_sub(1)).unwrap_or(0));
+            let id = ordered(ProjectId::from_parts, at, random)?;
+            let (short_name, name, chain) = if number == 0 {
+                (
+                    format!("P{family_no:03}"),
+                    format!("{noun} {topic}"),
+                    vec![id],
+                )
             } else {
                 (
                     format!("P{family_no:03}{letter}"),
-                    format!("{noun} {topic} {at}"),
-                    Some(places[parent].id),
+                    format!("{noun} {topic} {number}"),
+                    vec![id, places[parent].id],
                 )
             };
-            let id = ordered(ProjectId::from_parts, world.clock.now(), &mut random)?;
-            let mut chain = vec![id];
-            chain.extend(above);
             places.push(Place {
                 id,
-                short_name: short,
+                short_name,
                 name,
                 chain,
                 area: area.to_owned(),
@@ -265,37 +256,25 @@ pub(crate) async fn grow(
             });
         }
     }
-    let new_from = tree.len();
-    let new_projects: Vec<Project> = places[new_from..]
-        .iter()
-        .map(|place| {
-            Ok(Project {
-                id: place.id,
-                parent: place.chain.get(1).copied(),
-                short_name: ShortName::new(&place.short_name)
-                    .map_err(|error| SampleError::step(Step::Dataset, &error))?,
-                name: place.name.clone(),
-                version: FIRST_VERSION,
-            })
-        })
-        .collect::<Result<_, SampleError>>()?;
+    Ok(families)
+}
 
-    // The people of the rest.
-    let rest = rest_of_the_mix(plan.people);
+/// The people of the rest: each a given and a family name of the list that nobody has yet.
+fn add_people(
+    world: &World<'_>,
+    plan: &LargePlan,
+    random: &mut SeededRandom,
+    at: Timestamp,
+) -> Result<Vec<(Person, StartingRole)>, SampleError> {
+    let names = NameList::bundled()?;
     let mut used: BTreeSet<String> = world
         .people
         .iter()
         .map(|made| made.person.name.clone())
         .collect();
-    let hash = PasswordHasher::new()
-        .map_err(|error| SampleError::step(Step::PasswordHasher, &error))?
-        .hash(Zeroizing::new(crate::password::random_password()?))
-        .await
-        .map_err(|error| SampleError::step(Step::PasswordHasher, &error))?;
-    let at = world.clock.now();
-    let mut new_people: Vec<Person> = Vec::new();
-    for (role, count) in &rest {
-        for _ in 0..*count {
+    let mut people = Vec::new();
+    for (role, count) in rest_of_the_mix(plan.people) {
+        for _ in 0..count {
             let (first, last) = loop {
                 let first = random.pick(names.first()).cloned().unwrap_or_default();
                 let last = random.pick(names.last()).cloned().unwrap_or_default();
@@ -303,56 +282,78 @@ pub(crate) async fn grow(
                     break (first, last);
                 }
             };
-            let person = Person {
-                id: UserId::from_random(random16(&mut random)),
-                display_name: format!("{first} {last}"),
-                email: format!(
-                    "{}.{}@{EMAIL_DOMAIN}",
-                    first.to_ascii_lowercase(),
-                    last.to_ascii_lowercase()
-                ),
-                created_at: at,
-            };
-            folk.push(Folk {
-                id: person.id,
-                role: *role,
-            });
-            new_people.push(person);
+            people.push((
+                Person {
+                    id: UserId::from_random(random16(random)),
+                    display_name: format!("{first} {last}"),
+                    email: format!(
+                        "{}.{}@{EMAIL_DOMAIN}",
+                        first.to_ascii_lowercase(),
+                        last.to_ascii_lowercase()
+                    ),
+                    created_at: at,
+                },
+                role,
+            ));
         }
     }
-    let first_new = world.people.len();
+    Ok(people)
+}
 
-    // Who works where.
-    let family_count = families.len();
-    let mut assignments: Vec<(usize, StartingRole, Option<usize>)> = Vec::new();
-    let mut team_of_group: Vec<Vec<usize>> = vec![Vec::new(); family_count.max(1)];
-    for index in first_new..folk.len() {
-        let role = folk[index].role;
+fn push_into(places: &mut [Place], parent: usize, index: usize, outsider: bool) {
+    let family = places[parent].id;
+    for place in places
+        .iter_mut()
+        .filter(|place| place.chain.last() == Some(&family))
+    {
+        let list = if outsider {
+            &mut place.outsiders
+        } else {
+            &mut place.team
+        };
+        if !list.contains(&index) {
+            list.push(index);
+        }
+    }
+}
+
+/// Says who holds which role where, for the people of the rest (from `first_new` on).
+fn assign(org: &mut Org, families: &[Family], first_new: usize, random: &mut SeededRandom) -> Rows {
+    let family_count = families.len().max(1);
+    let mut rows = Rows {
+        direct: Vec::new(),
+        team_of_family: vec![Vec::new(); family_count],
+    };
+    let family_of = |random: &mut SeededRandom| {
+        let at = random.below(family_count);
+        families.get(at).map(|family| (at, family.parent))
+    };
+    for index in first_new..org.folk.len() {
+        let role = org.folk[index].role;
         match role {
             StartingRole::Administrator => {
-                assignments.push((index, role, None));
-                everywhere.push(index);
+                rows.direct.push((index, role, None));
+                org.everywhere.push(index);
             }
-            StartingRole::Viewer => assignments.push((index, role, None)),
+            StartingRole::Viewer => rows.direct.push((index, role, None)),
             StartingRole::ProjectLead => {
-                let family = random.below(family_count.max(1));
-                if let Some(found) = families.get(family) {
-                    assignments.push((index, role, Some(found.parent)));
-                    push_team(&mut places, found.parent, index);
+                if let Some((_, parent)) = family_of(random) {
+                    rows.direct.push((index, role, Some(parent)));
+                    push_into(&mut org.places, parent, index, false);
                 }
             }
+            StartingRole::TeamMember
+                if random.chance(u32::try_from(TEAM_EVERYWHERE_PERCENT).unwrap_or(0)) =>
+            {
+                rows.direct.push((index, role, None));
+                org.everywhere.push(index);
+            }
             StartingRole::TeamMember => {
-                if random.chance(u32::try_from(TEAM_EVERYWHERE_PERCENT).unwrap_or(0)) {
-                    assignments.push((index, role, None));
-                    everywhere.push(index);
-                } else {
-                    for _ in 0..=random.below(FAMILIES_PER_TEAM_MEMBER) {
-                        let family = random.below(family_count.max(1));
-                        if let Some(found) = families.get(family) {
-                            team_of_group[family].push(index);
-                            assignments.push((index, role, Some(found.parent)));
-                            push_team(&mut places, found.parent, index);
-                        }
+                for _ in 0..=random.below(FAMILIES_PER_TEAM_MEMBER) {
+                    if let Some((at, parent)) = family_of(random) {
+                        rows.team_of_family[at].push(index);
+                        rows.direct.push((index, role, Some(parent)));
+                        push_into(&mut org.places, parent, index, false);
                     }
                 }
             }
@@ -363,22 +364,252 @@ pub(crate) async fn grow(
                     FAMILIES_PER_CONTRIBUTOR
                 };
                 for _ in 0..=random.below(most) {
-                    let family = random.below(family_count.max(1));
-                    if let Some(found) = families.get(family) {
-                        assignments.push((index, role, Some(found.parent)));
-                        push_outsider(&mut places, found.parent, index);
+                    if let Some((_, parent)) = family_of(random) {
+                        rows.direct.push((index, role, Some(parent)));
+                        push_into(&mut org.places, parent, index, true);
                     }
                 }
             }
         }
     }
+    rows
+}
 
-    // The groups: the rest of the groups of `large.groups`, each a team of one family.
-    let existing_groups = storage.groups().await?;
-    let group_count = usize::try_from(plan.groups)
-        .unwrap_or(0)
-        .saturating_sub(existing_groups.len());
-    let reserved: Vec<String> = existing_groups
+/// The weights of the projects: the sample's projects are among the biggest.
+fn rank(places: &mut [Place], sample: usize, plan: &LargePlan, random: &mut SeededRandom) {
+    let shares = weights(places.len(), plan.big_projects_share);
+    let mut order: Vec<usize> = (0..places.len()).collect();
+    random.shuffle(&mut order[sample..]);
+    for (rank, place) in order.into_iter().enumerate() {
+        places[place].weight = shares.get(rank).copied().unwrap_or(1);
+    }
+}
+
+/// Everything the transaction writes, with the events that go with it.
+struct Written {
+    people: Vec<Person>,
+    projects: Vec<Project>,
+    groups: Vec<(Group, Vec<GroupMember>, Assignment)>,
+    rows: Vec<Assignment>,
+}
+
+fn role_rows(
+    org: &Org,
+    rows: &Rows,
+    roles: &Roles,
+    given_at: Timestamp,
+    random: &mut SeededRandom,
+) -> Result<Vec<Assignment>, SampleError> {
+    rows.direct
+        .iter()
+        .map(|(index, role, family_parent)| {
+            let project = family_parent.map(|parent| org.places[parent].id);
+            Ok(Assignment {
+                id: ordered(AssignmentId::from_parts, given_at, random)?,
+                person: Some(org.folk[*index].id),
+                group: None,
+                role: Some(roles.of(*role)?),
+                project,
+                applies_to: if project.is_some() {
+                    AppliesTo::ProjectAndSubProjects
+                } else {
+                    AppliesTo::Organization
+                },
+                given_at,
+            })
+        })
+        .collect()
+}
+
+/// The rest of the groups: each is a team of one family, with the role *Team member* there.
+fn group_rows(
+    org: &Org,
+    rows: &Rows,
+    families: &[Family],
+    roles: &Roles,
+    count: usize,
+    (words, given_at): (&ProjectWords, Timestamp),
+    random: &mut SeededRandom,
+) -> Result<Vec<(Group, Vec<GroupMember>, Assignment)>, SampleError> {
+    let role = roles.of(StartingRole::TeamMember)?;
+    let family_count = families.len().max(1);
+    (0..count)
+        .map(|at_group| {
+            let team = random.pick(&words.teams).cloned().unwrap_or_default();
+            let group = Group {
+                id: ordered(GroupId::from_parts, given_at, random)?,
+                name: format!("Team {team} {}", at_group + 1),
+                version: FIRST_VERSION,
+            };
+            let family = at_group % family_count;
+            let members = rows.team_of_family[family]
+                .iter()
+                .map(|member| GroupMember {
+                    group: group.id,
+                    person: org.folk[*member].id,
+                    added_at: given_at,
+                })
+                .collect();
+            let project = families.get(family).map(|each| org.places[each.parent].id);
+            let assignment = Assignment {
+                id: ordered(AssignmentId::from_parts, given_at, random)?,
+                person: None,
+                group: Some(group.id),
+                role: Some(role),
+                project,
+                applies_to: AppliesTo::ProjectAndSubProjects,
+                given_at,
+            };
+            Ok((group, members, assignment))
+        })
+        .collect()
+}
+
+/// The events of everything that is written: who made it is the first administrator, and a person
+/// who joined made their own account.
+fn events_of(
+    written: &Written,
+    administrator: UserId,
+    at: Timestamp,
+    random: &mut SeededRandom,
+) -> Result<Vec<DomainEvent>, SampleError> {
+    let mut found = Vec::new();
+    for person in &written.people {
+        found.push(event(
+            random,
+            at,
+            person.id,
+            RecordKind::Person,
+            person.id,
+            dataset_events::person_joined(),
+        )?);
+    }
+    let mut add = |kind, id: EntityId, changes| -> Result<(), SampleError> {
+        found.push(event(random, at, administrator, kind, id, changes)?);
+        Ok(())
+    };
+    for project in &written.projects {
+        add(
+            RecordKind::Project,
+            project.id.into(),
+            dataset_events::project_created(project),
+        )?;
+    }
+    for (group, members, assignment) in &written.groups {
+        add(
+            RecordKind::Group,
+            group.id.into(),
+            dataset_events::group_created(group),
+        )?;
+        add(
+            RecordKind::Assignment,
+            assignment.id.into(),
+            dataset_events::assignment_given(assignment),
+        )?;
+        for member in members {
+            add(
+                RecordKind::Group,
+                member.group.into(),
+                dataset_events::group_member_added(),
+            )?;
+        }
+    }
+    for row in &written.rows {
+        add(
+            RecordKind::Assignment,
+            row.id.into(),
+            dataset_events::assignment_given(row),
+        )?;
+    }
+    Ok(found)
+}
+
+/// Writes everything in one transaction, with the events.
+async fn store(
+    storage: &AuthStorage,
+    written: &Written,
+    events: &[DomainEvent],
+    reserved: &[String],
+    at: Timestamp,
+) -> Result<(), SampleError> {
+    let hash = PasswordHasher::new()
+        .map_err(|error| SampleError::step(Step::PasswordHasher, &error))?
+        .hash(Zeroizing::new(crate::password::random_password()?))
+        .await
+        .map_err(|error| SampleError::step(Step::PasswordHasher, &error))?;
+    storage
+        .database()
+        .record_changes(events, async |transaction| {
+            for person in &written.people {
+                AuthStorage::insert_person(transaction, person, &hash, at).await?;
+                dataset_events::give_handle::<AuthStorage>(transaction, person, at, reserved)
+                    .await?;
+            }
+            for project in &written.projects {
+                AuthStorage::insert_project(transaction, project).await?;
+            }
+            for (group, members, assignment) in &written.groups {
+                AuthStorage::insert_group(transaction, group).await?;
+                AuthStorage::insert_assignment(transaction, assignment).await?;
+                for member in members {
+                    AuthStorage::insert_group_member(transaction, member).await?;
+                }
+            }
+            for row in &written.rows {
+                AuthStorage::insert_assignment(transaction, row).await?;
+            }
+            Ok(())
+        })
+        .await?;
+    Ok(())
+}
+
+/// Writes the rest of the people, groups and projects with their events, and says who works where.
+///
+/// # Errors
+/// [`SampleError`] when a name list is unusable or a write fails.
+pub(crate) async fn grow(
+    world: &World<'_>,
+    plan: &LargePlan,
+    layout: &Layout,
+) -> Result<Org, SampleError> {
+    let words: Words =
+        toml::from_str(WORDS).map_err(|error| SampleError::Names(error.to_string()))?;
+    let mut random = SeededRandom::new(world.seed ^ 0x004C_4152_4745);
+    let storage = world.storage;
+    let at = world.clock.now();
+    let roles = Roles::read(storage).await?;
+    let tree = storage.project_tree().await?;
+    let mut places = sample_places(&tree, layout);
+    let sample_projects = places.len();
+    let families = add_families(&mut places, plan, &words.projects, &mut random, at)?;
+    let people_and_roles = add_people(world, plan, &mut random, at)?;
+    let first_new = world.people.len();
+    let mut org = Org {
+        folk: world
+            .people
+            .iter()
+            .map(|made| Folk {
+                id: made.id,
+                role: made.person.role,
+            })
+            .collect(),
+        everywhere: workers(world)?,
+        places,
+    };
+    let mut new_people = Vec::new();
+    for (person, role) in people_and_roles {
+        org.folk.push(Folk {
+            id: person.id,
+            role,
+        });
+        new_people.push(person);
+    }
+    let rows = assign(&mut org, &families, first_new, &mut random);
+    rank(&mut org.places, sample_projects, plan, &mut random);
+
+    let existing = storage.groups().await?;
+    let reserved: Vec<String> = existing
         .iter()
         .map(|group| group.name.as_str())
         .chain(
@@ -390,144 +621,39 @@ pub(crate) async fn grow(
         )
         .filter_map(handle_of)
         .collect();
-    let mut groups: Vec<(Group, Vec<usize>)> = Vec::new();
-    for at_group in 0..group_count {
-        let team = random
-            .pick(&words.projects.teams)
-            .cloned()
-            .unwrap_or_default();
-        let name = format!("Team {team} {}", at_group + 1);
-        let id = ordered(GroupId::from_parts, at, &mut random)?;
-        let members: Vec<usize> = team_of_group
-            .get(at_group % family_count.max(1))
-            .cloned()
-            .unwrap_or_default();
-        groups.push((
-            Group {
-                id,
-                name,
-                version: FIRST_VERSION,
-            },
-            members,
-        ));
-    }
-
-    // The weights of the projects: the sample's four projects are among the biggest.
-    let shares = weights(places.len(), plan.big_projects_share);
-    let mut order: Vec<usize> = (0..places.len()).collect();
-    let (sample, others) = order.split_at_mut(new_from);
-    random.shuffle(others);
-    let ranked: Vec<usize> = sample.iter().chain(others.iter()).copied().collect();
-    for (rank, place) in ranked.into_iter().enumerate() {
-        places[place].weight = shares.get(rank).copied().unwrap_or(1);
-    }
-
-    // Writing.
-    let given_at = at;
-    let mut rows: Vec<Assignment> = Vec::new();
-    for (index, role, family_parent) in &assignments {
-        let project = family_parent.map(|parent| places[parent].id);
-        rows.push(Assignment {
-            id: ordered(AssignmentId::from_parts, given_at, &mut random)?,
-            person: Some(folk[*index].id),
-            group: None,
-            role: Some(roles.of(*role)?),
-            project,
-            applies_to: if project.is_some() {
-                AppliesTo::ProjectAndSubProjects
-            } else {
-                AppliesTo::Organization
-            },
-            given_at,
-        });
-    }
-    let group_role = roles.of(StartingRole::TeamMember)?;
-    let mut group_rows: Vec<(Assignment, Vec<GroupMember>)> = Vec::new();
-    for (at_group, (group, members)) in groups.iter().enumerate() {
-        let parent = families
-            .get(at_group % family_count.max(1))
-            .map(|family| family.parent);
-        let project = parent.map(|parent| places[parent].id);
-        group_rows.push((
-            Assignment {
-                id: ordered(AssignmentId::from_parts, given_at, &mut random)?,
-                person: None,
-                group: Some(group.id),
-                role: Some(group_role),
-                project,
-                applies_to: AppliesTo::ProjectAndSubProjects,
-                given_at,
-            },
-            members
-                .iter()
-                .map(|member| GroupMember {
-                    group: group.id,
-                    person: folk[*member].id,
-                    added_at: given_at,
+    let group_count = usize::try_from(plan.groups)
+        .unwrap_or(0)
+        .saturating_sub(existing.len());
+    let written = Written {
+        people: new_people,
+        projects: org.places[sample_projects..]
+            .iter()
+            .map(|place| {
+                Ok(Project {
+                    id: place.id,
+                    parent: place.chain.get(1).copied(),
+                    short_name: ShortName::new(&place.short_name)
+                        .map_err(|error| SampleError::step(Step::Dataset, &error))?,
+                    name: place.name.clone(),
+                    version: FIRST_VERSION,
                 })
-                .collect(),
-        ));
-    }
-    storage
-        .database()
-        .record_changes(&[], async |transaction| {
-            for person in &new_people {
-                AuthStorage::insert_person(transaction, person, &hash, at).await?;
-                bb_app::dataset_events::give_handle::<AuthStorage>(
-                    transaction,
-                    person,
-                    at,
-                    &reserved,
-                )
-                .await?;
-            }
-            for project in &new_projects {
-                AuthStorage::insert_project(transaction, project).await?;
-            }
-            for (group, _) in &groups {
-                AuthStorage::insert_group(transaction, group).await?;
-            }
-            for row in &rows {
-                AuthStorage::insert_assignment(transaction, row).await?;
-            }
-            for (row, members) in &group_rows {
-                AuthStorage::insert_assignment(transaction, row).await?;
-                for member in members {
-                    AuthStorage::insert_group_member(transaction, member).await?;
-                }
-            }
-            Ok(())
-        })
-        .await?;
-    everywhere.sort_unstable();
-    everywhere.dedup();
-    Ok(Org {
-        folk,
-        everywhere,
-        places,
-    })
-}
-
-fn push_team(places: &mut [Place], parent: usize, index: usize) {
-    let family = places[parent].id;
-    for place in places
-        .iter_mut()
-        .filter(|place| place.chain.last() == Some(&family))
-    {
-        if !place.team.contains(&index) {
-            place.team.push(index);
-        }
-    }
-}
-
-fn push_outsider(places: &mut [Place], parent: usize, index: usize) {
-    let family = places[parent].id;
-    for place in places
-        .iter_mut()
-        .filter(|place| place.chain.last() == Some(&family))
-    {
-        if !place.outsiders.contains(&index) {
-            place.outsiders.push(index);
-        }
-    }
+            })
+            .collect::<Result<_, SampleError>>()?,
+        groups: group_rows(
+            &org,
+            &rows,
+            &families,
+            &roles,
+            group_count,
+            (&words.projects, at),
+            &mut random,
+        )?,
+        rows: role_rows(&org, &rows, &roles, at, &mut random)?,
+    };
+    let administrator = world.people.first().map_or(org.folk[0].id, |made| made.id);
+    let events = events_of(&written, administrator, at, &mut random)?;
+    store(storage, &written, &events, &reserved, at).await?;
+    org.everywhere.sort_unstable();
+    org.everywhere.dedup();
+    Ok(org)
 }

@@ -167,10 +167,10 @@ pub(crate) async fn read(
     let uses = storage.workflow_uses().await?;
     let mut workflows: Vec<(bb_core::id::WorkflowId, Ladder)> = Vec::new();
     for used in &uses {
-        if workflows.iter().all(|(id, _)| *id != used.workflow) {
-            if let Some(found) = storage.stored_workflow(used.workflow).await? {
-                workflows.push((used.workflow, ladder_of(&found)));
-            }
+        if workflows.iter().all(|(id, _)| *id != used.workflow)
+            && let Some(found) = storage.stored_workflow(used.workflow).await?
+        {
+            workflows.push((used.workflow, ladder_of(&found)));
         }
     }
     let ladders = org
