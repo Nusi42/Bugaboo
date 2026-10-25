@@ -170,6 +170,11 @@ pub(crate) async fn run(
     ctx.catch_up_history()
         .await
         .map_err(|error| SampleError::step(Step::History, &error))?;
+    // The index of the text search is built from the stored texts in big steps: the events of a
+    // million issues would be read one by one.
+    ctx.rebuild_text_index()
+        .await
+        .map_err(|error| SampleError::step(Step::TextIndex, &error))?;
     let last = database.outbox_position(&head).await?;
     let window = (last - first) * i64::from(bank.plan.notified_percent) / 100;
     let consumer = TechnicalName::new(bb_core::notification::CONSUMER)

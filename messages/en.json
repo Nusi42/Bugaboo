@@ -888,6 +888,7 @@
   "sample.step.comment": "writing a comment",
   "sample.step.editing": "editing a text while others see that you are editing it, or keeping a draft",
   "sample.step.history": "reading the history of the issues from the events",
+  "sample.step.text-index": "building the index of the text search",
   "sample.step.workflows": "creating the workflow of a project",
   "sample.step.files": "adding a file to an issue or a comment",
   "sample.step.following": "following an issue",

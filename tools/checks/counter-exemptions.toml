@@ -178,3 +178,7 @@ reason = "Counts the issues in a status that publishing would drop, among them o
 [[counting]]
 folder = "crates/bb-store/src/dataset.rs"
 reason = "Says where the counter of the counting issue IDs of a project stands after the large dataset wrote its issues in one go; the same counter as in issues.rs, set once (ADR-0021)."
+
+[[counting]]
+folder = "crates/bb-store/src/migrations/m0022_text_index.rs"
+reason = "The row number of the index of the text search: a row number that stays when a file is compacted, which the external-content table of SQLite needs. It is never shown, never in an answer and names no public record (ADR-0016)."

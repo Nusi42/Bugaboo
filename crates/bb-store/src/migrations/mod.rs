@@ -24,7 +24,7 @@ use sea_query::{
 };
 use sha2::{Digest as _, Sha256};
 
-use crate::db::{Database, Row, Transaction, from_micros, to_micros};
+use crate::db::{Database, FixedSql, Row, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
 use crate::locks::LockClass;
 use crate::schema::Migration;
@@ -50,6 +50,7 @@ mod m0018_offers;
 mod m0019_layout_off_fields;
 mod m0020_mention_read_at;
 mod m0021_kebab_words;
+mod m0022_text_index;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -77,6 +78,8 @@ pub(crate) enum Step {
     /// Take an index away that a later rule no longer wants (a unique key that became a rule of
     /// the program).
     DropIndex(IndexDropStatement),
+    /// Statements that only one database knows (a virtual table, a generated column).
+    Sql(FixedSql),
 }
 
 /// One migration.
@@ -131,6 +134,7 @@ impl Definition {
                     statement.build(SqliteQueryBuilder),
                     statement.build(PostgresQueryBuilder),
                 ],
+                Step::Sql(sql) => sql.texts(),
             };
             for text in texts {
                 hasher.update(u64::try_from(text.len()).unwrap_or(u64::MAX).to_be_bytes());
@@ -247,6 +251,11 @@ const ALL: &[Definition] = &[
         version: 21,
         name: "kebab_words",
         steps: || Ok(m0021_kebab_words::steps()),
+    },
+    Definition {
+        version: 22,
+        name: "text_index",
+        steps: || Ok(m0022_text_index::steps()),
     },
 ];
 
@@ -365,6 +374,7 @@ impl Database {
                     }
                     Step::Rename(statement) => transaction.execute_schema(&statement).await?,
                     Step::DropIndex(statement) => transaction.execute_schema(&statement).await?,
+                    Step::Sql(sql) => transaction.execute_fixed(&sql).await?,
                 }
             }
             record(&mut transaction, next, now).await?;
@@ -461,7 +471,7 @@ mod tests {
     fn the_checksum_of_an_applied_migration_never_changes() {
         // By the number of the migration, not by place in the list: the numbers of other
         // migrations that are added later fall between these.
-        const APPLIED: [(i64, &str); 21] = [
+        const APPLIED: [(i64, &str); 22] = [
             (
                 1,
                 "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
@@ -545,6 +555,10 @@ mod tests {
             (
                 21,
                 "d80ffbf5d3a0b8999ffadcf0dbf1a9fe63bd1d1628f7973ce02aabc7368f816d",
+            ),
+            (
+                22,
+                "b93d7d6381a0eefdecc793ac4f0aae5b97c941b52cede0822a1361f2fe02cebf",
             ),
         ];
         for (version, wanted) in APPLIED {
