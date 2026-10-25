@@ -1,7 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
+
+import { useOnResize } from "../../shared/use-on-resize.ts";
 
 import { CellControl } from "./CellControl.tsx";
 import type { Change, LevelTable, Row } from "./levels.ts";
@@ -72,24 +74,20 @@ function MatrixRow<Subject extends string, Level extends string>({
   );
 }
 
-/** Whether the region has more to the side than it shows, kept up to date while the page is resized. */
+/**
+ * Whether the region has more to the side than it shows, kept up to date while the page is resized
+ * and while the table grows or shrinks inside the region (a role is added).
+ */
 function useScrollsSideways() {
   const region = useRef<HTMLElement>(null);
+  const table = useRef<HTMLTableElement>(null);
   const [scrolls, setScrolls] = useState(false);
-  useEffect(() => {
-    const measure = () => {
-      setScrolls((region.current?.scrollWidth ?? 0) > (region.current?.clientWidth ?? 0));
-    };
-    measure();
-    const watch = new ResizeObserver(measure);
-    if (region.current !== null) {
-      watch.observe(region.current);
-    }
-    return () => {
-      watch.disconnect();
-    };
+  const measure = useCallback(() => {
+    setScrolls((region.current?.scrollWidth ?? 0) > (region.current?.clientWidth ?? 0));
   }, []);
-  return { region, scrolls };
+  const watched = useCallback(() => [region.current, table.current], []);
+  useOnResize(measure, watched);
+  return { region, table, scrolls };
 }
 
 /**
@@ -103,12 +101,22 @@ export function LevelsMatrix<Subject extends string, Level extends string>({
   tableName,
   ...rest
 }: LevelsViewProps<Subject, Level>) {
-  const { region, scrolls } = useScrollsSideways();
+  const { region, table: tableElement, scrolls } = useScrollsSideways();
+  const noteId = useId();
   return (
     <>
-      {scrolls ? <p {...partOf(part.muted)}>{t("access.scrolls")}</p> : null}
-      <section ref={region} {...partOf(part.accessScroll)} aria-label={tableName}>
-        <table {...partOf(part.accessMatrix)}>
+      {scrolls ? (
+        <p id={noteId} {...partOf(part.muted)}>
+          {t("access.scrolls")}
+        </p>
+      ) : null}
+      <section
+        ref={region}
+        {...partOf(part.accessScroll)}
+        aria-label={tableName}
+        {...(scrolls ? { "aria-describedby": noteId } : {})}
+      >
+        <table ref={tableElement} {...partOf(part.accessMatrix)}>
           <thead>
             <tr {...partOf(part.accessMatrixRow)}>
               <th scope={column} {...partOf(part.accessMatrixCell, { variants: ["head"] })}>
