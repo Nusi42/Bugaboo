@@ -85,36 +85,35 @@ test("ux_04 the note follows the matrix when the region or the table changes siz
 const levelLists = '[data-part="access.matrix-cell"] select';
 
 /**
- * For each level list in the matrix: the width the chosen level needs in the list's own type, and
- * the width inside the list that it has for it. The words are measured with the list's own font.
- * It runs in the page, so it takes what it needs as an argument.
+ * For each level list in the matrix: the width the list needs to show its chosen level whole, and
+ * the width it has. The need is read from a copy of the list that holds only that level and takes
+ * the width it wants, so the room of the list's own padding and of the arrow of a native list is
+ * counted without being known. It runs in the page, so it takes what it needs as an argument.
  */
 function roomForLevels(selector: string): { needed: number; available: number }[] {
   const rooms: { needed: number; available: number }[] = [];
   for (const list of document.querySelectorAll<HTMLSelectElement>(selector)) {
-    const style = getComputedStyle(list);
-    const ruler = document.createElement("span");
-    ruler.style.font = style.font;
-    ruler.style.whiteSpace = "nowrap";
-    ruler.style.position = "absolute";
-    ruler.style.visibility = "hidden";
-    ruler.textContent = list.selectedOptions[0]?.text ?? "";
-    document.body.append(ruler);
-    const needed = ruler.getBoundingClientRect().width;
-    ruler.remove();
-    // A computed padding is always in pixels ("12px").
-    const padding =
-      Number(style.paddingLeft.slice(0, -2)) + Number(style.paddingRight.slice(0, -2));
-    const available = list.clientWidth - padding;
-    rooms.push({ needed, available });
+    const copy = document.createElement("select");
+    for (const name of list.getAttributeNames()) {
+      copy.setAttribute(name, list.getAttribute(name) ?? "");
+    }
+    copy.add(new Option(list.selectedOptions[0]?.text ?? ""));
+    copy.style.position = "absolute";
+    copy.style.visibility = "hidden";
+    copy.style.width = "auto";
+    list.after(copy);
+    const needed = copy.getBoundingClientRect().width;
+    copy.remove();
+    rooms.push({ needed, available: list.getBoundingClientRect().width });
   }
   return rooms;
 }
 
-/** Makes every level list of the matrix as narrow as a list can be squeezed. */
-function squeezeLevels(selector: string): void {
+/** Makes every level list of the matrix a little too narrow: cut under its arrow, where the text itself would still fit. */
+function cutLevels(selector: string): void {
+  const underTheArrow = 4;
   for (const list of document.querySelectorAll<HTMLSelectElement>(selector)) {
-    list.style.width = "20px";
+    list.style.width = `${list.getBoundingClientRect().width - underTheArrow}px`;
   }
 }
 
@@ -137,11 +136,11 @@ test("ux_04 no level in the matrix is cut with Larger text on, and the measure c
       for (const room of rooms) {
         expect(room.needed).toBeLessThanOrEqual(room.available);
       }
-      // The same measure finds lists that are too narrow for their level: the check can fail.
-      await page.evaluate(squeezeLevels, levelLists);
-      const squeezed = await page.evaluate(roomForLevels, levelLists);
-      expect(squeezed.length).toBe(rooms.length);
-      for (const room of squeezed) {
+      // The same measure finds a list that is cut a little, under its arrow: the check can fail.
+      await page.evaluate(cutLevels, levelLists);
+      const cut = await page.evaluate(roomForLevels, levelLists);
+      expect(cut.length).toBe(rooms.length);
+      for (const room of cut) {
         expect(room.needed).toBeGreaterThan(room.available);
       }
     },
