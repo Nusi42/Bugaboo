@@ -82,12 +82,14 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The view `shown` with the levels of the roles of its person added: for what is needed only
     /// now and then (the groups of labels in use), so the view is not read again, only the
-    /// levels.
+    /// levels. The levels come from a later transaction than the rows and the tree; that is
+    /// acceptable because they only decide whether the name of a group in a project the person
+    /// does not see is known to them, never what they see of the tree.
     ///
     /// # Errors
     /// An internal error when the store fails.
     pub(crate) async fn leveled(&self, shown: &Shown) -> Result<Leveled, AppError> {
-        let held = shown.policy.roles.iter().map(|role| role.id).collect();
+        let held = shown.policy.role_ids();
         let levels = self
             .store()
             .level_rules_of_roles(held)
@@ -115,8 +117,8 @@ impl std::ops::Deref for Leveled {
 
 impl Leveled {
     /// Which issues the person reads where their role lets them see `field` (SEC-06), judged for
-    /// every project and issue type in memory: a project where the field is hidden for every type is
-    /// left out, and the types for which it is hidden in the others are named in `hidden`.
+    /// every project and issue type in memory: a project where the field is hidden for every type
+    /// is left out, and the types for which it is hidden in the others are named in `hidden`.
     pub(crate) fn issue_sight_with(&self, field: Field, types: &[IssueTypeId]) -> IssueSight {
         let mut sight = self.issue_sight();
         let mut kept = Vec::new();
