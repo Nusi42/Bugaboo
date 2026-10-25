@@ -20,9 +20,9 @@ const LAST_MINUTE = 59;
 // ends a key at a moment, now plus a number of days, so the day in the box, the latest day and the
 // day the list shows afterwards are the day of that moment: one rule, the server's moments.
 
-/** The day of the moment `days` from now, on the calendar of the region. */
-function dayOfMomentIn(days: number, region: Region): string {
-  return calendarDayOf(Date.now() + days * msPerDay, region);
+/** The day of the moment `days` after `now`, on the calendar of the region. */
+function dayOfMomentIn(days: number, region: Region, now: number): string {
+  return calendarDayOf(now + days * msPerDay, region);
 }
 
 /** The clock of the region at a moment, read as if it were the clock of UTC. */
@@ -82,13 +82,17 @@ export function keyEndOf(
 }
 
 /** The earliest day: the day of the moment 24 hours from now (a day of 25 hours has it on the same day). */
-export function earliestDay(region: Region = currentRegion()): string {
-  return dayOfMomentIn(1, region);
+export function earliestDay(region: Region = currentRegion(), now: number = Date.now()): string {
+  return dayOfMomentIn(1, region, now);
 }
 
 /** The latest day: the day of the moment the longest time from now ends on. */
-export function latestDay(rules: Days, region: Region = currentRegion()): string {
-  return dayOfMomentIn(rules.longest_days, region);
+export function latestDay(
+  rules: Days,
+  region: Region = currentRegion(),
+  now: number = Date.now(),
+): string {
+  return dayOfMomentIn(rules.longest_days, region, now);
 }
 
 /** The days a key runs for when the person picks no day: the default, at least one day, at most the longest time. */
@@ -97,8 +101,12 @@ export function defaultDaysOf(rules: Days): number {
 }
 
 /** The day filled in before the person picks one: the day of the moment the default time from now ends on. */
-export function presetDay(rules: Days, region: Region = currentRegion()): string {
-  return dayOfMomentIn(defaultDaysOf(rules), region);
+export function presetDay(
+  rules: Days,
+  region: Region = currentRegion(),
+  now: number = Date.now(),
+): string {
+  return dayOfMomentIn(defaultDaysOf(rules), region, now);
 }
 
 /** Whether the day in the box is still the text that was refused as no day: changing the day ends the telling. */
