@@ -17,7 +17,7 @@ function groups(): readonly RowGroup<string>[] {
 }
 
 describe("cfg_01 the Details follow the layout", () => {
-  it("keeps the order the rows came in before the layout is read", () => {
+  it("keeps the order the rows came in when the layout places none of them", () => {
     expect(inLayoutOrder([], groups())).toEqual([
       "assigned",
       "priority",
@@ -46,5 +46,15 @@ describe("cfg_01 the Details follow the layout", () => {
       "tags",
       "followers",
     ]);
+  });
+
+  it("keeps own fields the layout does not place in the order they came in, as for an issue with no project", () => {
+    const [first, second, third] = ["f1", "f2", "f3"];
+    const fields: readonly RowGroup<string>[] = [first, second, third].map((id) => ({
+      places: [id],
+      node: id,
+    }));
+    expect(inLayoutOrder([], fields)).toEqual(["f1", "f2", "f3"]);
+    expect(inLayoutOrder([third], fields)).toEqual(["f3", "f1", "f2"]);
   });
 });

@@ -2,23 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import { boxWords, labelOf } from "./box-words.ts";
 import type { OwnField } from "./fields.ts";
+import { field as fieldOf } from "./fields-testing.ts";
 
+/** The field of these tests: a text field *Customer* with the rules of the test. */
 function field(rules: OwnField["rules"]): OwnField {
-  return {
-    applies_to: "issues",
-    choices: [],
-    help: "",
+  return fieldOf({
     id: "customer",
     kind: "text",
     look: "plain-text",
-    may_manage: true,
     name: "Customer",
-    never_to_assistant: false,
-    retired: false,
+    choices: [],
     rules,
-    scope: { whole_organization: true, projects: [], issue_types: [] },
-    version: 1,
-  };
+  });
 }
 
 describe("cf_03 a field that must be filled in says so in its name", () => {

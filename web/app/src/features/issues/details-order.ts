@@ -15,12 +15,13 @@ export type Places =
 
 /** A group of rows of the Details, and what it draws (a node with a key of its own). */
 export interface RowGroup<Node> {
-  readonly places: Places;
+  /** Or the IDs of own fields, for the rows that `OwnFieldRows` draws one by one. */
+  readonly places: Places | readonly string[];
   readonly node: Node;
 }
 
 /** The place of a group in the layout, as the position of its first field; none counts as last. */
-function rankOf(layout: readonly string[], places: Places): number {
+function rankOf(layout: readonly string[], places: RowGroup<unknown>["places"]): number {
   const found = layout.findIndex((key) =>
     places === "own-fields"
       ? !(fieldWords as readonly string[]).includes(key)
@@ -32,7 +33,8 @@ function rankOf(layout: readonly string[], places: Places): number {
 /**
  * The groups of rows in the order the layout puts their fields (CFG-01, M3-F102): the layout is
  * the one that the form uses (`FormView.sections`), so there is no second order. Groups the layout
- * does not place, and the groups before the layout is read, keep the order they came in.
+ * does not place keep the order they came in. The panel calls it once the layout is read, so
+ * no row stands in a fallback order and moves when the layout arrives.
  */
 export function inLayoutOrder<Node>(
   layout: readonly string[],

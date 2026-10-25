@@ -1,7 +1,7 @@
 import { Alert, alertTone, NameValueList, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
-import type { IssueBlockProps } from "../issues/index.ts";
+import { inLayoutOrder, type IssueBlockProps } from "../issues/index.ts";
 import { FormSections, isPlain, onlyFields } from "../layouts/index.ts";
 import { issueFieldsOf, useFields, type OwnField, type FieldValues } from "./fields.ts";
 import { FieldLine } from "./FieldLine.tsx";
@@ -37,7 +37,13 @@ function useOwnFieldLines({ issue, mask, form, rowStatus, onChange }: IssueBlock
     />
   );
   const sections = onlyFields(form.sections, (key) => shown.some((field) => field.id === key));
-  return { error: fields.isError ? fields.error : null, shown, line, sections, ready: form.ready };
+  return {
+    error: fields.isError ? fields.error : null,
+    shown,
+    line,
+    sections,
+    ready: form.ready,
+  };
 }
 
 /**
@@ -45,15 +51,17 @@ function useOwnFieldLines({ issue, mask, form, rowStatus, onChange }: IssueBlock
  * no titled sections and no tabs (the other case is `OwnFieldGroups`).
  */
 export function OwnFieldRows(props: IssueBlockProps) {
-  const { shown, line, sections, ready } = useOwnFieldLines(props);
-  if (ready && !isPlain(sections)) {
+  const { shown, line, sections } = useOwnFieldLines(props);
+  if (!isPlain(sections)) {
     return null;
   }
-  const order = ready ? sections.flatMap((section) => section.fields) : shown.map((f) => f.id);
-  return order.map((key) => {
-    const field = shown.find((each) => each.id === key);
-    return field === undefined ? null : line(field);
-  });
+  // As the layout places them; those it does not place (no layout was asked for, an issue without
+  // a project) follow in the order they came in, by the one rule of the Details.
+  const rows = shown.map((field) => ({ places: [field.id], node: line(field) }));
+  return inLayoutOrder(
+    sections.flatMap((section) => section.fields),
+    rows,
+  );
 }
 
 /**
