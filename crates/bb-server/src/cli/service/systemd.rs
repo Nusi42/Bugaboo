@@ -131,16 +131,21 @@ pub(super) fn real_path(path: &Path) -> PathBuf {
     std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }
 
-/// Why the folder of the settings file is not trusted.
+/// Why a path that root relies on is not trusted: the folder of the settings file, the folder for
+/// units, and the shell of the account with its folder.
 #[derive(Debug, PartialEq, Eq)]
 enum Untrusted {
-    /// The group or everybody may write in it, so they could replace the file.
+    /// The group or everybody may write to it, so they could replace what root relies on.
     OthersCanWrite,
-    /// It belongs to somebody but root, who could replace the file.
+    /// It belongs to somebody but root, who could replace it.
     NotRoots,
+    /// It cannot be looked at, so nothing is known about who may change it.
+    #[cfg(unix)]
+    Unreadable,
 }
 
-/// Whether a folder with this mode and owner (user number) may hold the settings file.
+/// Whether a path with this mode and owner (user number) is safe for root to rely on: root owns
+/// it and neither the group nor everybody may write to it.
 fn trust_of(mode: u32, owner: u32) -> Option<Untrusted> {
     if mode & 0o022 != 0 {
         Some(Untrusted::OthersCanWrite)
@@ -151,12 +156,15 @@ fn trust_of(mode: u32, owner: u32) -> Option<Untrusted> {
     }
 }
 
-/// Linux: the reason the folder is not trusted, if it is not.
+/// Linux: the reason the path is not trusted, if it is not. A path that cannot be looked at is
+/// not trusted either.
 #[cfg(unix)]
-fn untrusted(folder: &Path) -> Option<Untrusted> {
+fn untrusted(path: &Path) -> Option<Untrusted> {
     use std::os::unix::fs::MetadataExt as _;
-    let data = std::fs::metadata(folder).ok()?;
-    trust_of(data.mode(), data.uid())
+    match std::fs::metadata(path) {
+        Ok(data) => trust_of(data.mode(), data.uid()),
+        Err(_) => Some(Untrusted::Unreadable),
+    }
 }
 
 #[cfg(not(unix))]
@@ -186,6 +194,8 @@ pub(super) fn check_settings_file(config: &Path, data_dir: &Path) -> Result<(), 
             Err(message::service_settings_folder_open(folder.display()))
         }
         Some(Untrusted::NotRoots) => Err(message::service_settings_folder_owner(folder.display())),
+        #[cfg(unix)]
+        Some(Untrusted::Unreadable) => Err(message::service_answer_not_trusted(folder.display())),
         None => Ok(()),
     }
 }
@@ -220,12 +230,16 @@ pub(super) fn unit_folder() -> Result<PathBuf, Message> {
 }
 
 /// The shell of an account that cannot sign in, found on the search path, as its real path, and
-/// only when root owns it alone.
+/// only when root owns the file and the folder that holds it alone.
 #[cfg(unix)]
 pub(super) fn no_login() -> Result<PathBuf, Message> {
     let found = program_on_path(NO_LOGIN_PROGRAM)
         .ok_or_else(|| message::service_program_not_found(NO_LOGIN_PROGRAM))?;
-    trusted(real_path(&found))
+    let shell = trusted(real_path(&found))?;
+    if let Some(folder) = shell.parent() {
+        trusted(folder.to_path_buf())?;
+    }
+    Ok(shell)
 }
 
 /// Whether the text `systemctl is-system-running` printed says that systemd runs the computer.
@@ -641,7 +655,7 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn sec_16_an_answer_that_root_does_not_own_alone_is_refused() {
+    fn ops_04_an_answer_that_root_does_not_own_alone_is_refused() {
         use std::os::unix::fs::PermissionsExt as _;
         let temp = tempfile::tempdir().unwrap();
         let folder = temp.path().join("units");
@@ -651,5 +665,14 @@ mod tests {
         let said = trusted(folder.clone()).unwrap_err().render();
         assert!(said.contains("does not use it"), "{said}");
         assert!(said.contains(&folder.display().to_string()), "{said}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn ops_04_a_path_that_cannot_be_looked_at_is_not_trusted() {
+        let temp = tempfile::tempdir().unwrap();
+        let missing = temp.path().join("not-there");
+        assert_eq!(untrusted(&missing), Some(Untrusted::Unreadable));
+        assert!(trusted(missing).is_err());
     }
 }

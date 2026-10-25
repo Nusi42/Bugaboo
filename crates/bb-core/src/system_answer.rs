@@ -2,7 +2,6 @@
 //! program printed, and the search path. The two rules live here once; the caller does the
 //! looking at files (this crate does no I/O) and passes the question in.
 
-use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 /// The folder a program named: exactly one absolute path in the text it printed (blank lines and
@@ -17,16 +16,18 @@ pub fn folder_in_answer(answer: &str) -> Option<PathBuf> {
     (lines.next().is_none() && folder.is_absolute()).then_some(folder)
 }
 
-/// The file `name` in the first folder of the search path where `is_wanted` accepts it (the
-/// caller asks the file system: a file that can run, for a program). A folder that is not
-/// absolute (an empty entry, `.`) is skipped, so the answer never depends on the folder the
-/// program happens to run in.
+/// The file `name` in the first of the `folders` (the search path, split by the caller: the
+/// splitting depends on the platform) where `is_wanted` accepts it (the caller asks the file
+/// system: a file that can run, for a program). A folder that is not absolute (an empty entry,
+/// `.`) is skipped, so the answer never depends on the folder the program happens to run in.
+#[must_use]
 pub fn find_in(
-    search_path: &OsStr,
+    folders: impl IntoIterator<Item = PathBuf>,
     name: &str,
     is_wanted: impl Fn(&Path) -> bool,
 ) -> Option<PathBuf> {
-    std::env::split_paths(search_path)
+    folders
+        .into_iter()
         .filter(|folder| folder.is_absolute())
         .map(|folder| folder.join(name))
         .find(|candidate| is_wanted(candidate))
@@ -42,14 +43,14 @@ mod tests {
     }
 
     #[test]
-    fn one_absolute_folder_in_an_answer_is_the_answer() {
+    fn ops_04_one_absolute_folder_in_an_answer_is_the_answer() {
         let folder = absolute("units");
         let said = format!("  {}\n\n", folder.display());
         assert_eq!(folder_in_answer(&said), Some(folder));
     }
 
     #[test]
-    fn an_answer_that_is_empty_relative_or_several_lines_is_no_answer() {
+    fn ops_04_an_answer_that_is_empty_relative_or_several_lines_is_no_answer() {
         assert_eq!(folder_in_answer(""), None);
         assert_eq!(folder_in_answer("units"), None);
         let two = format!("{0}\n{0}\n", absolute("units").display());
@@ -57,36 +58,33 @@ mod tests {
     }
 
     #[test]
-    fn a_program_is_found_in_the_first_folder_that_has_it() {
+    fn ops_04_a_program_is_found_in_the_first_folder_that_has_it() {
         let (first, second) = (absolute("a"), absolute("b"));
-        let search = std::env::join_paths([&first, &second]).unwrap();
         let wanted = second.join("tool");
         assert_eq!(
-            find_in(&search, "tool", |candidate| candidate == wanted),
+            find_in([first.clone(), second], "tool", |candidate| candidate
+                == wanted),
             Some(wanted.clone())
         );
-        assert_eq!(find_in(&search, "other", |_| false), None);
+        assert_eq!(find_in([first], "other", |_| false), None);
     }
 
     #[test]
-    fn an_entry_that_is_empty_or_relative_is_never_searched() {
+    fn ops_04_an_entry_that_is_empty_or_relative_is_never_searched() {
         let real = absolute("x");
-        let search = std::env::join_paths([
-            OsStr::new(""),
-            OsStr::new("."),
-            OsStr::new("bin"),
-            real.as_os_str(),
-        ])
-        .unwrap();
+        let folders = ["", ".", "bin"]
+            .map(PathBuf::from)
+            .into_iter()
+            .chain([real.clone()]);
         // Every candidate is accepted: the first one asked is the first absolute folder.
         assert_eq!(
-            find_in(&search, "nologin", |_| true),
+            find_in(folders, "nologin", |_| true),
             Some(real.join("nologin"))
         );
         assert_eq!(
-            find_in(OsStr::new(""), "nologin", |_| true),
+            find_in([PathBuf::new()], "nologin", |_| true),
             None,
-            "an empty search path has no folder"
+            "an empty entry is no folder"
         );
     }
 }

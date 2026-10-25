@@ -202,14 +202,23 @@ fn folder_named_by_system(tool: &Tool, root: &Path) -> Option<PathBuf> {
         .success()
         .then(|| system_answer::folder_in_answer(&String::from_utf8_lossy(&output.stdout)))
         .flatten()
-        .filter(|folder| folder.is_dir())
+        .and_then(existing)
 }
 
-/// The file `file` in the first absolute folder of the search path that holds it.
+/// The folder, when it is there.
+fn existing(folder: PathBuf) -> Option<PathBuf> {
+    folder.is_dir().then_some(folder)
+}
+
+/// The file `file` in the first absolute folder of the search path that holds it. Only `is_file()`
+/// is asked on purpose: these are developer tools, started by a developer and never by root.
 fn find_on_path(file: &str) -> Option<PathBuf> {
-    system_answer::find_in(&std::env::var_os("PATH")?, &tools::exe(file), |candidate| {
-        candidate.is_file()
-    })
+    let search_path = std::env::var_os("PATH")?;
+    system_answer::find_in(
+        std::env::split_paths(&search_path),
+        &tools::exe(file),
+        Path::is_file,
+    )
 }
 
 fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
@@ -294,6 +303,16 @@ mod tests {
         );
         let error = install_with(temp.path(), &entry, &|_, _| Ok(())).unwrap_err();
         assert!(error.to_string().contains("Install it somehow."), "{error}");
+    }
+
+    #[test]
+    fn a_folder_the_system_names_but_that_is_not_there_is_no_answer() {
+        let temp = TempDir::new("bundle-named-missing");
+        assert_eq!(
+            existing(temp.path().to_path_buf()),
+            Some(temp.path().to_path_buf())
+        );
+        assert_eq!(existing(temp.path().join("not-there")), None);
     }
 
     #[test]

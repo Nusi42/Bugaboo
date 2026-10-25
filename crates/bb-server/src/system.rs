@@ -61,7 +61,7 @@ pub(crate) fn program_on_path(name: &str) -> Option<PathBuf> {
 
 #[cfg(unix)]
 fn program_in(search_path: &OsStr, name: &str) -> Option<PathBuf> {
-    bb_core::system_answer::find_in(search_path, name, is_runnable)
+    bb_core::system_answer::find_in(std::env::split_paths(search_path), name, is_runnable)
 }
 
 /// Whether `path` is a file that somebody may run (an execute bit is set).

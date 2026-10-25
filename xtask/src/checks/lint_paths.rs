@@ -131,6 +131,37 @@ fn is_script_comment(line: &str) -> bool {
             .is_some_and(|word| word.eq_ignore_ascii_case("rem "))
 }
 
+/// The line of a script without a trailing `#` comment (a `#` after a space, outside quotes).
+fn without_trailing_comment(line: &str) -> &str {
+    let mut quote: Option<char> = None;
+    let mut previous = ' ';
+    for (at, c) in line.char_indices() {
+        match quote {
+            Some(open) if c == open => quote = None,
+            None if matches!(c, '"' | '\'') => quote = Some(c),
+            None if c == '#' && previous.is_whitespace() => return &line[..at],
+            _ => {}
+        }
+        previous = c;
+    }
+    line
+}
+
+/// PowerShell text without its `<# … #>` blocks (new lines stay, so line numbers still fit).
+fn without_block_comments(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find("<#") {
+        out.push_str(&rest[..start]);
+        let after = &rest[start + 2..];
+        let end = after.find("#>").map_or(after.len(), |at| at + 2);
+        out.extend(after[..end].chars().filter(|c| *c == '\n'));
+        rest = &after[end..];
+    }
+    out.push_str(rest);
+    out
+}
+
 /// The places in a line where a path may start: after a quote, and in a script also at the start
 /// and after a space, `=` or `(`.
 fn starts_in(code: &str, script: bool) -> Vec<usize> {
@@ -153,13 +184,22 @@ fn findings_in(path: &str, text: &str) -> Vec<Finding> {
     } else {
         text.to_owned()
     };
+    let text = if has_extension(path, "ps1") {
+        without_block_comments(&text)
+    } else {
+        text
+    };
     let script = is_script(path);
     let mut findings = Vec::new();
     for (number, line) in text.lines().enumerate() {
         if script && is_script_comment(line) {
             continue;
         }
-        let code = code_of(line);
+        let code = if script && !has_extension(path, "cmd") {
+            without_trailing_comment(line)
+        } else {
+            code_of(line)
+        };
         for at in starts_in(code, script) {
             let rest = &code[at..];
             if starts_with_system_path(rest) {
@@ -234,6 +274,19 @@ mod tests {
     fn good_example_a_script_with_comments_and_paths_of_the_repository() {
         let script = "# cp x /usr/local/bin\nrem set P=C:\\Windows\n:: /etc/x\ncd tools/dev\necho see /about\n";
         assert_eq!(bad("tools/dev/a.sh", script), 0);
+    }
+
+    #[test]
+    fn good_example_trailing_and_block_comments_in_scripts() {
+        let sh = "cp x y # then /etc/x\nrun \"a # b\" ok\n";
+        assert_eq!(bad("tools/dev/a.sh", sh), 0);
+        let ps = "<#\n  Copies to /usr/local/bin\n  and C:/data\n#>\nGet-Item x # was /etc/y\n";
+        assert_eq!(bad("tools/dev/a.ps1", ps), 0);
+        // After the block, code counts again, with the right line.
+        let after = "<# note #>\nGet-Item /etc/x\n";
+        let found = findings_in("tools/dev/a.ps1", after);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].location.as_deref(), Some("tools/dev/a.ps1:2"));
     }
 
     #[test]
