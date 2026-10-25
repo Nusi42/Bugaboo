@@ -6,8 +6,8 @@ export type FieldWord = Schema<"Field">;
 
 /** Where a group of rows of the Details goes, among the fields of the layout. */
 export type Places =
-  /** The group draws these built-in fields: it stands where the first of them stands. */
-  | readonly FieldWord[]
+  /** The group draws these fields (words of built-in fields, IDs of own ones): it stands where the first of them stands. */
+  | readonly string[]
   /** The group draws the own fields: it stands where the first own field of the layout stands. */
   | "own-fields"
   /** The group is not a field of the layout (*Followers*): it comes after the rest. */
@@ -24,7 +24,7 @@ function rankOf(layout: readonly string[], places: Places): number {
   const found = layout.findIndex((key) =>
     places === "own-fields"
       ? !(fieldWords as readonly string[]).includes(key)
-      : places !== "end" && (places as readonly string[]).includes(key),
+      : places !== "end" && places.includes(key),
   );
   return found === -1 ? Number.POSITIVE_INFINITY : found;
 }

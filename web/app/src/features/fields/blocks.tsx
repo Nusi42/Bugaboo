@@ -1,7 +1,7 @@
 import { Alert, alertTone, NameValueList, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
-import type { IssueBlockProps } from "../issues/index.ts";
+import { inLayoutOrder, type IssueBlockProps } from "../issues/index.ts";
 import { FormSections, isPlain, onlyFields } from "../layouts/index.ts";
 import { issueFieldsOf, useFields, type OwnField, type FieldValues } from "./fields.ts";
 import { FieldLine } from "./FieldLine.tsx";
@@ -55,11 +55,13 @@ export function OwnFieldRows(props: IssueBlockProps) {
   if (!isPlain(sections)) {
     return null;
   }
-  const order = sections.flatMap((section) => section.fields);
-  return order.map((key) => {
-    const field = shown.find((each) => each.id === key);
-    return field === undefined ? null : line(field);
-  });
+  // As the layout places them; those it does not place (no layout was asked for, an issue without
+  // a project) follow in the order they came in, by the one rule of the Details.
+  const rows = shown.map((field) => ({ places: [field.id], node: line(field) }));
+  return inLayoutOrder(
+    sections.flatMap((section) => section.fields),
+    rows,
+  );
 }
 
 /**

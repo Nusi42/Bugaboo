@@ -47,4 +47,14 @@ describe("cfg_01 the Details follow the layout", () => {
       "followers",
     ]);
   });
+
+  it("keeps own fields the layout does not place in the order they came in, as for an issue with no project", () => {
+    const [first, second, third] = ["f1", "f2", "f3"];
+    const fields: readonly RowGroup<string>[] = [first, second, third].map((id) => ({
+      places: [id],
+      node: id,
+    }));
+    expect(inLayoutOrder([], fields)).toEqual(["f1", "f2", "f3"]);
+    expect(inLayoutOrder([third], fields)).toEqual(["f3", "f1", "f2"]);
+  });
 });
