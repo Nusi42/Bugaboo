@@ -36,7 +36,7 @@ async fn issue_of(
 ) -> Result<Option<IssueId>, StoreError> {
     let mut select = Query::select();
     match touched {
-        Touched::Issue(issue) => return Ok(Some(issue)),
+        Touched::Issue(issue) => Ok(Some(issue)),
         Touched::Comment(comment) => {
             select
                 .column(CommentRow::Issue)

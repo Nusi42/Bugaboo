@@ -26,6 +26,9 @@ use crate::schema::{AttachmentRow, CommentRow, FieldRow, FieldValueRow, IssueRow
 /// How many columns a row of the index binds when it is written.
 const WRITTEN_COLUMNS: usize = 4;
 
+/// The texts to index, by issue.
+type Texts = BTreeMap<[u8; 16], Vec<Text>>;
+
 /// One text to index, as a person typed it.
 struct Text {
     source: TextSource,
@@ -40,11 +43,8 @@ fn bound(issues: &[IssueId]) -> Vec<Vec<u8>> {
 
 /// The texts of these issues as they are stored now, by issue. An issue that is not there or is
 /// in the trash has no entry.
-async fn texts_of(
-    reader: &mut impl Reader,
-    issues: &[IssueId],
-) -> Result<BTreeMap<[u8; 16], Vec<Text>>, StoreError> {
-    let mut texts: BTreeMap<[u8; 16], Vec<Text>> = BTreeMap::new();
+async fn texts_of(reader: &mut impl Reader, issues: &[IssueId]) -> Result<Texts, StoreError> {
+    let mut texts = Texts::new();
     let mut select = Query::select();
     select
         .columns([IssueRow::Id, IssueRow::Title, IssueRow::Description])
@@ -76,17 +76,29 @@ async fn texts_of(
         return Ok(texts);
     }
 
+    comments_of(reader, &live, &mut texts).await?;
+    files_of(reader, &live, &mut texts).await?;
+    fields_of(reader, &live, &mut texts).await?;
+    Ok(texts)
+}
+
+/// The comments that are not in the trash.
+async fn comments_of(
+    reader: &mut impl Reader,
+    live: &[Vec<u8>],
+    texts: &mut Texts,
+) -> Result<(), StoreError> {
     let mut select = Query::select();
     select
         .columns([CommentRow::Issue, CommentRow::Id, CommentRow::Text])
         .from(CommentRow::Table)
-        .and_where(Expr::col(CommentRow::Issue).is_in(live.clone()))
+        .and_where(Expr::col(CommentRow::Issue).is_in(live.to_vec()))
         .and_where(Expr::col(CommentRow::DeletedAt).is_null())
         .order_by(CommentRow::Id, Order::Asc);
     for row in reader.fetch_all(&select).await? {
         let issue = row.id::<IssueId>(CommentRow::Issue)?;
         push(
-            &mut texts,
+            texts,
             issue,
             Text {
                 source: TextSource::Comment,
@@ -95,7 +107,15 @@ async fn texts_of(
             },
         );
     }
+    Ok(())
+}
 
+/// The names of the files that are not in the trash, unless their comment is.
+async fn files_of(
+    reader: &mut impl Reader,
+    live: &[Vec<u8>],
+    texts: &mut Texts,
+) -> Result<(), StoreError> {
     // A file on a comment in the trash is gone with the comment.
     let mut select = Query::select();
     select
@@ -110,13 +130,13 @@ async fn texts_of(
             Expr::col((CommentRow::Table, CommentRow::Id))
                 .equals((AttachmentRow::Table, AttachmentRow::Comment)),
         )
-        .and_where(Expr::col((AttachmentRow::Table, AttachmentRow::Issue)).is_in(live.clone()))
+        .and_where(Expr::col((AttachmentRow::Table, AttachmentRow::Issue)).is_in(live.to_vec()))
         .and_where(Expr::col((AttachmentRow::Table, AttachmentRow::DeletedAt)).is_null())
         .and_where(Expr::col((CommentRow::Table, CommentRow::DeletedAt)).is_null())
         .order_by((AttachmentRow::Table, AttachmentRow::Id), Order::Asc);
     for row in reader.fetch_all(&select).await? {
         push(
-            &mut texts,
+            texts,
             row.id::<IssueId>(AttachmentRow::Issue)?,
             Text {
                 source: TextSource::File,
@@ -125,7 +145,15 @@ async fn texts_of(
             },
         );
     }
+    Ok(())
+}
 
+/// The own long-text fields.
+async fn fields_of(
+    reader: &mut impl Reader,
+    live: &[Vec<u8>],
+    texts: &mut Texts,
+) -> Result<(), StoreError> {
     let mut select = Query::select();
     select
         .columns([
@@ -143,13 +171,13 @@ async fn texts_of(
             Expr::col((FieldValueRow::Table, FieldValueRow::EntityKind))
                 .eq(RecordKind::Issue.code()),
         )
-        .and_where(Expr::col((FieldValueRow::Table, FieldValueRow::EntityId)).is_in(live))
+        .and_where(Expr::col((FieldValueRow::Table, FieldValueRow::EntityId)).is_in(live.to_vec()))
         .and_where(Expr::col((FieldRow::Table, FieldRow::Kind)).eq(FieldType::LongText.code()))
         .and_where(Expr::col((FieldValueRow::Table, FieldValueRow::ValueText)).is_not_null())
         .order_by((FieldValueRow::Table, FieldValueRow::Field), Order::Asc);
     for row in reader.fetch_all(&select).await? {
         push(
-            &mut texts,
+            texts,
             row.id::<IssueId>(FieldValueRow::EntityId)?,
             Text {
                 source: TextSource::Field,
@@ -158,10 +186,10 @@ async fn texts_of(
             },
         );
     }
-    Ok(texts)
+    Ok(())
 }
 
-fn push(texts: &mut BTreeMap<[u8; 16], Vec<Text>>, issue: IssueId, text: Text) {
+fn push(texts: &mut Texts, issue: IssueId, text: Text) {
     if let Some(list) = texts.get_mut(&issue.to_stored()) {
         list.push(text);
     }

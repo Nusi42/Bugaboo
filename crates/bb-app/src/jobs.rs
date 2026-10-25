@@ -302,18 +302,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "the history could not catch up");
                 JobFailure::of(&error, FAILED, job)
             }),
-            JobKind::CatchUpTextIndex => {
-                Box::pin(self.run_daily(JobKind::CatchUpTextIndex, async {
-                    self.catch_up_text_index().await.map(|events| {
-                        tracing::info!(events, "the text index caught up with the events");
-                    })
-                }))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "the text index could not catch up");
-                    JobFailure::of(&error, FAILED, job)
-                })
-            }
+            JobKind::CatchUpTextIndex => self.text_index_job(job).await,
             JobKind::PurgeNotifications => {
                 Box::pin(self.run_daily(JobKind::PurgeNotifications, async {
                     self.purge_old_notifications().await.map(|purged| {
@@ -418,6 +407,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Err(error) = ended {
             tracing::error!(cause = %error, "the work of a dead job could not be ended");
         }
+    }
+
+    /// The daily round of the index of the full-text search catching up (`run_daily` queues the
+    /// next round first).
+    async fn text_index_job(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::CatchUpTextIndex, async {
+            self.catch_up_text_index().await.map(|events| {
+                tracing::info!(events, "the text index caught up with the events");
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "the text index could not catch up");
+            JobFailure::of(&error, FAILED, job)
+        })
     }
 
     /// Does the work of a job of a daily kind. Its next round is queued first, so a round that

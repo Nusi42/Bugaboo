@@ -63,19 +63,20 @@ async fn iss_13_the_port_finds_each_source_and_orders_title_hits_first() -> Test
         let fixture = fixture(db).await?;
         let mut source = ids();
         let world = world(&fixture.storage, &mut source, 5).await;
-        let (a, b, c, d, e) = (
-            world.issues[0].id,
-            world.issues[1].id,
-            world.issues[2].id,
-            world.issues[3].id,
-            world.issues[4].id,
-        );
+        let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
         let mut tx = fixture.storage.database().begin().await?;
         let comment = EntityId::from(IssueId::generate(&mut source)?);
-        index_text(&mut tx, a, TextSource::Title, a.into(), "Crash on save").await?;
         index_text(
             &mut tx,
-            b,
+            issue[0],
+            TextSource::Title,
+            issue[0].into(),
+            "Crash on save",
+        )
+        .await?;
+        index_text(
+            &mut tx,
+            issue[1],
             TextSource::Comment,
             comment,
             "It CRASHES, then crash on SAVE",
@@ -83,19 +84,26 @@ async fn iss_13_the_port_finds_each_source_and_orders_title_hits_first() -> Test
         .await?;
         index_text(
             &mut tx,
-            c,
+            issue[2],
             TextSource::Description,
-            c.into(),
+            issue[2].into(),
             "Absturz beim Speichern: Größe",
         )
         .await?;
-        index_text(&mut tx, d, TextSource::File, comment, "crash-log.txt").await?;
         index_text(
             &mut tx,
-            e,
+            issue[3],
+            TextSource::File,
+            comment,
+            "crash-log.txt",
+        )
+        .await?;
+        index_text(
+            &mut tx,
+            issue[4],
             TextSource::Field,
             comment,
-            "crash on save in a field",
+            "crash on save in issue[0] field",
         )
         .await?;
         tx.commit().await?;
@@ -143,7 +151,7 @@ async fn iss_13_a_search_in_one_field_reads_the_rows_of_that_field_only() -> Tes
         let fixture = fixture(db).await?;
         let mut source = ids();
         let world = world(&fixture.storage, &mut source, 3).await;
-        let (a, b, c) = (world.issues[0].id, world.issues[1].id, world.issues[2].id);
+        let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
         let (wanted, other) = (
             FieldId::generate(&mut source)?,
             FieldId::generate(&mut source)?,
@@ -151,7 +159,7 @@ async fn iss_13_a_search_in_one_field_reads_the_rows_of_that_field_only() -> Tes
         let mut tx = fixture.storage.database().begin().await?;
         index_text(
             &mut tx,
-            a,
+            issue[0],
             TextSource::Field,
             wanted.into(),
             "steps to reproduce",
@@ -159,7 +167,7 @@ async fn iss_13_a_search_in_one_field_reads_the_rows_of_that_field_only() -> Tes
         .await?;
         index_text(
             &mut tx,
-            b,
+            issue[1],
             TextSource::Field,
             other.into(),
             "steps to reproduce",
@@ -167,9 +175,9 @@ async fn iss_13_a_search_in_one_field_reads_the_rows_of_that_field_only() -> Tes
         .await?;
         index_text(
             &mut tx,
-            c,
+            issue[2],
             TextSource::Title,
-            c.into(),
+            issue[2].into(),
             "steps to reproduce",
         )
         .await?;
