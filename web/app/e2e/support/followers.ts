@@ -1,5 +1,10 @@
 import { type Page } from "@playwright/test";
 
+import { pageSize } from "../../src/shared/paged.ts";
+
+/** How many followers the long count has: a whole short page. */
+export const pageOfFollowers = pageSize.short;
+
 /**
  * Makes the server's list of followers of an issue look longer: the first follower repeated `count`
  * times, with a next page, so that the row says "20 or more followers".
