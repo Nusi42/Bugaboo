@@ -1,8 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { NameValueList, partOf, part } from "@bugaboo/ui";
+import { NameValueList, Skeleton, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { AssignedToRow, PriorityRow } from "./ChangeableRows.tsx";
+import { useAfterDelay } from "../../shared/use-optimistic.ts";
 import { inLayoutOrder, type FieldWord, type RowGroup } from "./details-order.ts";
 import { FixedRows } from "./FixedRows.tsx";
 import { SlotBlocks } from "./SlotBlocks.tsx";
@@ -34,7 +35,10 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
       places: [fields.priority],
       node: <PriorityRow key={fields.priority} blocks={blocks} changes={changes} />,
     },
-    { places: [fields.reportedBy], node: <FixedRows key={fields.reportedBy} blocks={blocks} /> },
+    {
+      places: [fields.reportedBy],
+      node: <FixedRows key={fields.reportedBy} blocks={blocks} />,
+    },
   ];
   const added = issueBlocks(issueSlots.details).map((entry) => ({
     places: entry.places ?? "end",
@@ -50,8 +54,10 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
  * they stand once in the order of the layout and never move when it arrives (CFG-01, M3-F102).
  */
 export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
+  const shapes = useAfterDelay(!blocks.form.ready);
   return (
     <aside
+      aria-busy={!blocks.form.ready}
       {...partOf(part.issueDetails, { variants: [stacked && "stacked"] })}
       aria-label={t("issues.details")}
     >
@@ -63,6 +69,8 @@ export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
             groupsOf({ blocks, changes }),
           )}
         </NameValueList>
+      ) : shapes ? (
+        <Skeleton />
       ) : null}
       <SlotBlocks slot={issueSlots.detailSections} blocks={blocks} />
     </aside>
