@@ -298,6 +298,14 @@ impl Parser<'_> {
                     })
                 }
                 Some(Keyword::Connected) => self.connected_to(start),
+                Some(Keyword::Contains) => {
+                    self.advance();
+                    let text = self.text_argument(Situation::Text)?;
+                    Ok(Expr::Contains {
+                        span: Span::new(start, text.span.end),
+                        text,
+                    })
+                }
                 Some(_) => self.fail(Situation::Filter),
                 None => self.field_filter(),
             },
@@ -734,6 +742,7 @@ fn with_span(expression: Expr, span: Span) -> Expr {
         Expr::And { items, .. } => Expr::And { items, span },
         Expr::Not { item, .. } => Expr::Not { item, span },
         Expr::Field { field, test, .. } => Expr::Field { field, test, span },
+        Expr::Contains { text, .. } => Expr::Contains { text, span },
         Expr::Under { id, .. } => Expr::Under { id, span },
         Expr::Blocks { id, .. } => Expr::Blocks { id, span },
         Expr::BlockedBy { id, .. } => Expr::BlockedBy { id, span },

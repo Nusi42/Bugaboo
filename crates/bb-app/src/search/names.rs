@@ -115,6 +115,7 @@ fn ask(node: &Node, looked: &Looked, asked: &mut Vec<Ask>) {
                 _ => {}
             }
         }
+        Node::Contains { .. } => {}
         Node::Under { id, .. }
         | Node::Blocks { id, .. }
         | Node::BlockedBy { id, .. }

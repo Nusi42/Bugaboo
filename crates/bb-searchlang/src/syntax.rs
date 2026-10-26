@@ -59,6 +59,14 @@ pub enum Expr {
         /// From the field to the end of the test.
         span: Span,
     },
+    /// The words are in some of the texts of the issue: its title, description, comments and the
+    /// names of its files (`contains "crash on save"`, on its own, no field before it).
+    Contains {
+        /// The text to find.
+        text: Text,
+        /// From `contains` to the end of the text.
+        span: Span,
+    },
     /// The issues below an issue (`under WEB-7`).
     Under {
         /// The issue.
@@ -399,6 +407,7 @@ impl Expr {
             | Self::And { span, .. }
             | Self::Not { span, .. }
             | Self::Field { span, .. }
+            | Self::Contains { span, .. }
             | Self::Under { span, .. }
             | Self::Blocks { span, .. }
             | Self::BlockedBy { span, .. }

@@ -1374,6 +1374,225 @@
       }
     },
     {
+      "text": "contains \"crash on save\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "contains",
+            "text": {
+              "text": "crash on save",
+              "span": {
+                "start": 9,
+                "end": 24
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 24
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 24
+          }
+        },
+        "canonical": "contains \"crash on save\"",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "contains crash and not contains \"login error\" and status is Open",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "contains",
+                "text": {
+                  "text": "crash",
+                  "span": {
+                    "start": 9,
+                    "end": 14
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 14
+                }
+              },
+              {
+                "type": "not",
+                "item": {
+                  "type": "contains",
+                  "text": {
+                    "text": "login error",
+                    "span": {
+                      "start": 32,
+                      "end": 45
+                    }
+                  },
+                  "span": {
+                    "start": 23,
+                    "end": 45
+                  }
+                },
+                "span": {
+                  "start": 19,
+                  "end": 45
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "status",
+                  "span": {
+                    "start": 50,
+                    "end": 56
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "Open",
+                    "span": {
+                      "start": 60,
+                      "end": 64
+                    }
+                  },
+                  "span": {
+                    "start": 57,
+                    "end": 64
+                  }
+                },
+                "span": {
+                  "start": 50,
+                  "end": 64
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 64
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 64
+          }
+        },
+        "canonical": "contains \"crash\" and not contains \"login error\" and status is Open",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "(contains crash or contains save) and priority is high sort by created",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "or",
+                "items": [
+                  {
+                    "type": "contains",
+                    "text": {
+                      "text": "crash",
+                      "span": {
+                        "start": 10,
+                        "end": 15
+                      }
+                    },
+                    "span": {
+                      "start": 1,
+                      "end": 15
+                    }
+                  },
+                  {
+                    "type": "contains",
+                    "text": {
+                      "text": "save",
+                      "span": {
+                        "start": 28,
+                        "end": 32
+                      }
+                    },
+                    "span": {
+                      "start": 19,
+                      "end": 32
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 0,
+                  "end": 33
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "priority",
+                  "span": {
+                    "start": 38,
+                    "end": 46
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "high",
+                    "span": {
+                      "start": 50,
+                      "end": 54
+                    }
+                  },
+                  "span": {
+                    "start": 47,
+                    "end": 54
+                  }
+                },
+                "span": {
+                  "start": 38,
+                  "end": 54
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 54
+            }
+          },
+          "sort": [
+            {
+              "field": {
+                "word": "created",
+                "span": {
+                  "start": 63,
+                  "end": 70
+                }
+              },
+              "direction": null,
+              "span": {
+                "start": 63,
+                "end": 70
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 70
+          }
+        },
+        "canonical": "(contains \"crash\" or contains \"save\") and priority is high sort by created",
+        "mistakes": []
+      }
+    },
+    {
       "text": "blocks WEB-1",
       "answer": {
         "search": {
@@ -2753,6 +2972,62 @@
       }
     },
     {
+      "text": "contains",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 8,
+              "end": 8
+            },
+            "key": "search.mistake.expected-text",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "contains and status is Open",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 9,
+              "end": 12
+            },
+            "key": "search.mistake.reserved-word",
+            "args": {
+              "word": "and"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "contains \"unfinished",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 9,
+              "end": 20
+            },
+            "key": "search.mistake.unclosed-quote",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
       "text": "title contains \"unfinished",
       "answer": {
         "search": null,
@@ -3857,6 +4132,11 @@
           },
           {
             "type": "word",
+            "text": "contains",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
             "text": "under",
             "kind": "helper"
           },
@@ -4510,6 +4790,11 @@
           },
           {
             "type": "word",
+            "text": "contains",
+            "kind": "helper"
+          },
+          {
+            "type": "word",
             "text": "under",
             "kind": "helper"
           },
@@ -5057,6 +5342,11 @@
             "type": "word",
             "text": "(",
             "kind": "sign"
+          },
+          {
+            "type": "word",
+            "text": "contains",
+            "kind": "helper"
           },
           {
             "type": "word",

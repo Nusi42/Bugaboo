@@ -586,3 +586,25 @@ fn empty_search() -> bb_searchlang::CheckedSearch {
     let parsed = bb_searchlang::parse_with("", &readable).unwrap();
     bb_searchlang::check(parsed, &readable).unwrap()
 }
+
+#[tokio::test]
+async fn qry_05_contains_on_its_own_needs_the_title_and_the_description_to_be_readable() -> Outcome
+{
+    let world = World::new().await?;
+    a_project(&world, "OPEN").await?;
+    let admin = token(&world);
+    search(&world.ctx(), asked(&admin, "contains crash"))
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(world.store.lock().searches.len(), 1);
+    // A role that hides the description: the search is told as a field that is not there.
+    let shown: Vec<_> = every_field()
+        .into_iter()
+        .filter(|field| *field != Field::Description.into())
+        .collect();
+    let (bob, _) = bob_with_a_role(&world, &shown).await?;
+    let refused = search(&world.ctx(), asked(&bob, "contains crash")).await;
+    assert!(matches!(refused, Err(AppError::Mistakes(ref found)) if found.len() == 1));
+    assert_eq!(world.store.lock().searches.len(), 1);
+    Ok(())
+}

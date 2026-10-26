@@ -164,17 +164,13 @@ fn items(
     };
     let helpers = || {
         [
-            word(Keyword::Under.text().to_owned(), WordKind::Helper),
-            word(Keyword::Blocks.text().to_owned(), WordKind::Helper),
-            word(
-                format!("{} {}", Keyword::Blocked.text(), Keyword::By.text()),
-                WordKind::Helper,
-            ),
-            word(
-                format!("{} {}", Keyword::Connected.text(), Keyword::To.text()),
-                WordKind::Helper,
-            ),
+            Keyword::Contains.text().to_owned(),
+            Keyword::Under.text().to_owned(),
+            Keyword::Blocks.text().to_owned(),
+            format!("{} {}", Keyword::Blocked.text(), Keyword::By.text()),
+            format!("{} {}", Keyword::Connected.text(), Keyword::To.text()),
         ]
+        .map(|text| word(text, WordKind::Helper))
     };
     let sort = || {
         word(
