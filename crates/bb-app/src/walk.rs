@@ -102,8 +102,6 @@ pub(crate) async fn fill_past_hidden<W: Walk>(
 
 #[cfg(test)]
 mod tests {
-    use bb_core::paging::SKIP_MAX;
-
     use super::*;
 
     /// A list of rows nobody may see, as long as anybody asks.
