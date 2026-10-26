@@ -50,9 +50,13 @@ pub(super) fn steps() -> Vec<Step> {
         // a whole project through the index of the project and sorts it, where the index of the
         // creation gives the newest page at once (2.9 s against 2 ms on 1 M issues). PostgreSQL
         // keeps its statistics itself.
-        // The index of the project and the ID (SQLite) is covered by the one with the creation, and
-        // with it SQLite looks every issue found by its words up in each of the 500 projects of a
-        // search instead of by its ID (17 s against 0.5 s on 1 M issues).
+        // SQLite only: the index of the project and the ID goes. Every read that has the project
+        // finds its rows by the other indexes that lead with the project (the code, the creation,
+        // the filters), so none loses its index; and with it SQLite looked every issue found by
+        // its words up in each of the 500 projects of a search instead of by its ID (17 s against
+        // 0.5 s on 1 M issues). It changes what is fast and never what is found, so the results
+        // stay the same on both databases (ARCH-DB-PARITY is about results). PostgreSQL plans from
+        // its own statistics and keeps the index.
         Step::Sql(FixedSql {
             sqlite: vec!["DROP INDEX IF EXISTS issue_by_project", "ANALYZE issue"],
             postgres: vec!["ANALYZE issue"],
