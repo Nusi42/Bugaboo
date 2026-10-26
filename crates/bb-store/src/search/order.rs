@@ -455,7 +455,7 @@ impl Compiler<'_> {
 
 /// The words of the first `contains` on its own that every issue found has to satisfy: one of the
 /// items of the `and`, not inside an `or` or a `not`.
-fn first_words(filter: &bb_searchlang::Expr) -> Option<&str> {
+pub(super) fn first_words(filter: &bb_searchlang::Expr) -> Option<&str> {
     match filter {
         bb_searchlang::Expr::Contains { text, .. } => Some(&text.text),
         bb_searchlang::Expr::And { items, .. } => items.iter().find_map(first_words),

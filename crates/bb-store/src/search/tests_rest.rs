@@ -675,3 +675,74 @@ async fn iss_13_a_comment_on_an_issue_the_reader_cannot_see_never_finds_it() -> 
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_the_sight_with_no_project_and_with_both_kinds_of_project() -> TestResult {
+    each_database("search_sight_branches", async |db| {
+        let fixture = fixture(db).await?;
+        let data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        let counted = async |ask: &bb_app::search::SearchRequest| -> Result<(usize, u64), String> {
+            let page = titles_of(storage, ask).await?.len();
+            let count = storage
+                .search_count(ask)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            Ok((page, count))
+        };
+        // No project at all: nothing is read, in the page and in the count.
+        let mut none = request(&data, "", None, 50);
+        none.sight.all.clear();
+        none.sight.own.clear();
+        assert_eq!(counted(&none).await?, (0, 0));
+        // The whole of one project and, in another, only what the person reported: ACME holds six
+        // issues (one of them by somebody else), the hidden project one, reported by the person.
+        let mut both = request(&data, "", None, 50);
+        both.sight.all = vec![data.project];
+        both.sight.own = vec![data.hidden.project];
+        assert_eq!(counted(&both).await?, (7, 7));
+        // The same for a person who reported nothing in the other project: only ACME is read.
+        both.sight.person = data.issues[5].reported_by;
+        assert_eq!(counted(&both).await?, (6, 6));
+        // Only own: the issues the person reported, in each project.
+        let mut own = request(&data, "", None, 50);
+        own.sight.all.clear();
+        own.sight.own = vec![data.project, data.hidden.project];
+        assert_eq!(counted(&own).await?, (6, 6));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_02_a_title_contains_in_front_does_not_decide_the_order() -> TestResult {
+    each_database("search_title_contains_order", async |db| {
+        let fixture = fixture(db).await?;
+        let data = seed(&fixture.storage).await;
+        // The words that decide the order are those of the first `contains` on its own that every
+        // issue found has to satisfy: never a `title contains`, never one under an `or`.
+        let words = |text: &str| {
+            let ask = request(&data, text, None, 20);
+            ask.search
+                .search()
+                .filter
+                .as_ref()
+                .and_then(super::order::first_words)
+                .map(str::to_owned)
+        };
+        assert_eq!(
+            words("title contains page and contains typo").as_deref(),
+            Some("typo")
+        );
+        assert_eq!(
+            words("contains typo and title contains page").as_deref(),
+            Some("typo")
+        );
+        assert_eq!(words("title contains page"), None);
+        assert_eq!(words("title contains page and title contains typo"), None);
+        assert_eq!(words("contains page or contains typo"), None);
+        assert_eq!(words("not contains page"), None);
+        Ok(())
+    })
+    .await
+}
