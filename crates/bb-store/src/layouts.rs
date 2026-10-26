@@ -11,6 +11,7 @@ use bb_core::layout::{
     Layout, LayoutContent, LayoutField, LayoutFieldRole, LayoutKind, LayoutOffField, LayoutRows,
     LayoutSection, StoredLayout,
 };
+use bb_core::version::Version;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use crate::auth::AuthStorage;
@@ -324,14 +325,14 @@ impl LayoutStore for AuthStorage {
         transaction: &mut Transaction,
         id: LayoutId,
         content: &LayoutContent,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
             .table(LayoutRow::Table)
             .value(LayoutRow::Version, Expr::col(LayoutRow::Version).add(1))
             .and_where(Expr::col(LayoutRow::Id).eq(id.stored()))
-            .and_where(Expr::col(LayoutRow::Version).eq(version));
+            .and_where(Expr::col(LayoutRow::Version).eq(version.get()));
         if transaction.execute(&update).await? == 0 {
             return Ok(false);
         }
@@ -343,12 +344,12 @@ impl LayoutStore for AuthStorage {
     async fn delete_layout(
         transaction: &mut Transaction,
         id: LayoutId,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut select = header_select();
         select
             .and_where(Expr::col(LayoutRow::Id).eq(id.stored()))
-            .and_where(Expr::col(LayoutRow::Version).eq(version));
+            .and_where(Expr::col(LayoutRow::Version).eq(version.get()));
         if transaction.fetch_optional(&select).await?.is_none() {
             return Ok(false);
         }

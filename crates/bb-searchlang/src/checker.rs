@@ -95,6 +95,23 @@ impl<'a> Checker<'a> {
                     self.test(found, test);
                 }
             }
+            Expr::Contains { text, span } => {
+                if !self.count(*span, 1) {
+                    return;
+                }
+                // A `contains` on its own looks in the title and in the description among other
+                // texts: a person who may read only one of them has no such search, told as a
+                // field that is not there (nothing tells a hidden field from a missing one).
+                if self.readable.allows_bare_contains() {
+                    self.words_mistakes(text);
+                } else {
+                    self.mistakes.push(Mistake::new(
+                        Span::new(span.start, span.start + "contains".len()),
+                        key::UNKNOWN_FIELD,
+                        &[("field", "contains")],
+                    ));
+                }
+            }
             Expr::Under { span, .. } | Expr::Blocks { span, .. } | Expr::BlockedBy { span, .. } => {
                 self.count(*span, 1);
             }

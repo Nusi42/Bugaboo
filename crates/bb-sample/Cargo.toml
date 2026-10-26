@@ -19,6 +19,7 @@ bb-dev-words = { path = "../bb-dev-words" }
 # The sample makes its files and their previews in its own process (`PreviewCommand::in_process`),
 # which the feature `testing` offers; a developer tool, not the product.
 bb-files = { path = "../bb-files", features = ["testing"] }
+bb-searchlang = { path = "../bb-searchlang" }
 bb-store = { path = "../bb-store", features = ["dataset"] }
 clap = { workspace = true }
 getrandom = { workspace = true }

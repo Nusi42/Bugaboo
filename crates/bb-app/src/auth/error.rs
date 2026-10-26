@@ -43,6 +43,9 @@ pub enum AppError {
         /// Seconds until the next try may work.
         retry_after: u64,
     },
+    /// The text of a search cannot be run: every mistake in it, with where it is and a message key
+    /// (`search.mistake.*`), for the person to read (ADR-0005).
+    Mistakes(Vec<bb_searchlang::Mistake>),
     /// Something failed inside the server. The text is for the log only.
     Internal(String),
 }
@@ -57,6 +60,7 @@ impl AppError {
             Self::SessionEnded => Some(ErrorCode::NotSignedIn),
             Self::Stale(_) | Self::Conflict(_) => Some(ErrorCode::VersionChanged),
             Self::TakenOver { .. } => Some(ErrorCode::EditTakenOver),
+            Self::Mistakes(_) => Some(ErrorCode::SearchInvalid),
             Self::Limited { .. } | Self::Internal(_) => None,
         }
     }
@@ -96,6 +100,11 @@ impl fmt::Display for AppError {
                 write!(formatter, "refused: {}", ErrorCode::VersionChanged)
             }
             Self::TakenOver { .. } => write!(formatter, "refused: {}", ErrorCode::EditTakenOver),
+            Self::Mistakes(found) => write!(
+                formatter,
+                "refused: the search has {} mistakes",
+                found.len()
+            ),
             Self::Limited { retry_after } => {
                 write!(formatter, "limited for {retry_after} seconds")
             }

@@ -2,6 +2,7 @@
 //! The closed date follows the status group *Done* (ADR-0027, decision 5).
 
 use bb_core::ErrorCode;
+use bb_core::version::Version;
 
 use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::Field;
@@ -429,7 +430,7 @@ pub async fn change_issue<S: AuthStore>(
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 ensure_type_and_status_in::<S>(transaction, &stored, &written, &stopped).await?;
-                if !S::update_issue(transaction, &written, version).await? {
+                if !S::update_issue(transaction, &written, Version::new(version)).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 S::replace_assigned_people(transaction, id, &new_people).await?;

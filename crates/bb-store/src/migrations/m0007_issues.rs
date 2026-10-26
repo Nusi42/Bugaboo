@@ -104,8 +104,9 @@ fn issues() -> Vec<Step> {
                 .unique()
                 .to_owned(),
         ),
-        // The pages of the list of a project, newest first, and the pages of the issues one
-        // person reported.
+        // The pages of the list of a project, and the pages of the issues one person reported. On
+        // SQLite the index of the project and the ID was dropped again by migration 23, which has
+        // the indexes the search needs instead (the one with the creation serves the list).
         Step::Index(
             Index::create()
                 .name("issue_by_project")

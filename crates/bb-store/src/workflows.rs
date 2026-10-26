@@ -7,6 +7,7 @@
 use bb_app::workflows::{DirectoryRows, StatusFilter, WorkflowStore};
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::{Issue, StatusGroup};
+use bb_core::version::Version;
 use bb_core::workflow::{
     StatusKey, StatusRules, StoredChange, StoredStatus, StoredWorkflow, Workflow, WorkflowContent,
     WorkflowPlace, WorkflowUse,
@@ -525,7 +526,7 @@ impl WorkflowStore for AuthStorage {
         id: WorkflowId,
         name: &str,
         content: &WorkflowContent,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -533,7 +534,7 @@ impl WorkflowStore for AuthStorage {
             .value(WorkflowRow::Name, name)
             .value(WorkflowRow::Version, Expr::col(WorkflowRow::Version).add(1))
             .and_where(Expr::col(WorkflowRow::Id).eq(id.stored()))
-            .and_where(Expr::col(WorkflowRow::Version).eq(version));
+            .and_where(Expr::col(WorkflowRow::Version).eq(version.get()));
         if transaction.execute(&update).await? == 0 {
             return Ok(false);
         }
@@ -545,12 +546,12 @@ impl WorkflowStore for AuthStorage {
     async fn delete_workflow(
         transaction: &mut Transaction,
         id: WorkflowId,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut select = header_select();
         select
             .and_where(Expr::col(WorkflowRow::Id).eq(id.stored()))
-            .and_where(Expr::col(WorkflowRow::Version).eq(version));
+            .and_where(Expr::col(WorkflowRow::Version).eq(version.get()));
         if transaction.fetch_optional(&select).await?.is_none() {
             return Ok(false);
         }

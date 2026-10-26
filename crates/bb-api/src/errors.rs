@@ -20,7 +20,7 @@ use bb_policy::PersonRef;
 use serde::de::DeserializeOwned;
 
 use crate::api::is_api;
-use crate::conflict::{ConflictBody, ConflictProblem};
+use crate::conflict::{ConflictBody, ConflictProblem, MistakeBody};
 use crate::cookies::Cookie;
 use crate::logging::RequestId;
 
@@ -41,6 +41,8 @@ pub struct ApiError {
     field: Option<String>,
     /// Who took the editing over, for `edit.taken-over` (M3-F176).
     taken_over_by: Option<Arc<PersonRef>>,
+    /// The mistakes of a search text, for `search.invalid`.
+    mistakes: Option<Arc<Vec<MistakeBody>>>,
 }
 
 /// Tells [`add_request_id`] which answers to rewrite, and with what.
@@ -52,6 +54,7 @@ struct ProblemOf(ErrorCode, Extras, Option<String>);
 pub(crate) struct Extras {
     pub(crate) conflict: Option<Arc<ConflictBody>>,
     pub(crate) taken_over_by: Option<Arc<PersonRef>>,
+    pub(crate) mistakes: Option<Arc<Vec<MistakeBody>>>,
 }
 
 impl ApiError {
@@ -65,6 +68,7 @@ impl ApiError {
             conflict: None,
             field: None,
             taken_over_by: None,
+            mistakes: None,
         }
     }
 
@@ -79,7 +83,15 @@ impl ApiError {
         Extras {
             conflict: self.conflict.clone(),
             taken_over_by: self.taken_over_by.clone(),
+            mistakes: self.mistakes.clone(),
         }
+    }
+
+    /// Lists the mistakes of the text of a search, on a `search.invalid` answer.
+    #[must_use]
+    pub(crate) fn with_mistakes(mut self, found: &[bb_app::search::Mistake]) -> Self {
+        self.mistakes = Some(Arc::new(found.iter().map(MistakeBody::from).collect()));
+        self
     }
 
     /// Names the field a `field.*` refusal is about.
@@ -154,6 +166,7 @@ fn problem_response(problem: &Problem, extras: &Extras) -> Response {
         problem.clone(),
         extras.conflict.as_deref().cloned(),
         extras.taken_over_by.as_deref().cloned(),
+        extras.mistakes.as_deref().cloned(),
     ))
     .unwrap_or_default();
     let mut response = Response::new(Body::from(body));

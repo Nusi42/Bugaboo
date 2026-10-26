@@ -68,6 +68,12 @@ fn chosen(layers: &Layers, setting: &Setting<Text>) -> Option<String> {
 }
 
 impl Region {
+    /// The time zone of the region: where a day begins for the person.
+    #[must_use]
+    pub const fn zone(&self) -> &TimeZone {
+        &self.zone
+    }
+
     /// What the layers of a person say.
     #[must_use]
     pub fn of(layers: &Layers) -> Self {

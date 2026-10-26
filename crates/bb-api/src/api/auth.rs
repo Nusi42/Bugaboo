@@ -118,6 +118,7 @@ impl From<AppError> for ApiError {
             AppError::TakenOver { by } => {
                 Self::new(ErrorCode::EditTakenOver).with_taken_over_by(by)
             }
+            AppError::Mistakes(found) => Self::new(ErrorCode::SearchInvalid).with_mistakes(&found),
             AppError::Limited { retry_after } => {
                 Self::new(ErrorCode::TooManyRequests).with_retry_after(retry_after)
             }

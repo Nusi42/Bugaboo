@@ -12,7 +12,6 @@ use bb_searchlang::MAX_TEXT_BYTES;
 use serde_json::json;
 
 use super::events;
-use super::judge::Groups;
 use super::reach::{Opened, Reaching, Stored};
 use super::types::{
     ChangeSearch, DeleteSearch, RestoreSearch, RestoredSearch, SaveCopy, SaveSearch,
@@ -120,7 +119,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         presentation: &Presentation,
     ) -> Result<String, AppError> {
         let text = clean_search_text(text)?;
-        let mut judge = self.judge(actor, reaching, Groups::WhenNamed).await?;
+        let mut judge = self.judge(actor, reaching).await?;
         self.canonical_text(&mut judge, &text, presentation)
             .await?
             .ok_or_else(|| ErrorCode::InvalidRequest.into())
@@ -217,7 +216,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map(|found| (found, reaching))
                 .ok_or(AppError::Refused(ErrorCode::NotFound));
         }
-        let mut judge = self.judge(actor, &reaching, Groups::Now).await?;
+        let mut judge = self.judge(actor, &reaching).await?;
         // Whoever does not see it, also because it does not check for them, is told nothing about
         // it, and nobody is told about the trash.
         let sees = if let Some(found) = &found {
@@ -420,7 +419,7 @@ pub async fn restore_search<S: AuthStore>(
     let opens = if restored.search.maker == actor.person.id {
         true
     } else {
-        let mut judge = ctx.judge(&actor, &reaching, Groups::WhenNamed).await?;
+        let mut judge = ctx.judge(&actor, &reaching).await?;
         ctx.may_open(&mut judge, &actor, &reaching, &restored)
             .await?
     };

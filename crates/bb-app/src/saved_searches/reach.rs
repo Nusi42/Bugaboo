@@ -7,7 +7,7 @@ use bb_core::id::{GroupId, ProjectId, SavedSearchId};
 use bb_core::saved_search::{Presentation, SavedSearch, SearchColumn, SearchShare, ShareTarget};
 use bb_policy::{Evaluation, Permission};
 
-use super::judge::{Groups, Judge};
+use super::judge::Judge;
 use super::store::Reach;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -114,7 +114,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Opened, AppError> {
         let stored = self.stored_search(id).await?;
         let reaching = self.reaching(actor).await?;
-        let mut judge = self.judge(actor, &reaching, Groups::Now).await?;
+        let mut judge = self.judge(actor, &reaching).await?;
         let mut clean = None;
         match stored {
             Some(found) if self.may_open(&mut judge, actor, &reaching, &found).await? => {

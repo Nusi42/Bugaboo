@@ -4,125 +4,39 @@
 //! group or a project the person may not see is as unknown as one that does not exist, so nothing
 //! of a search that does not check cleanly reaches them.
 
-use std::collections::HashMap;
-
-use bb_core::access::Group;
-use bb_core::names::same_name;
 use bb_core::saved_search::Presentation;
-use bb_policy::Permission;
-use bb_searchlang::{Expr, FieldKind, Operand, ReadableFields, Test, check, parse_with, print};
+use bb_searchlang::{ReadableFields, check, parse_with, print};
 
 use super::reach::Reaching;
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::search::SearchScope;
+use crate::auth::{AppError, AuthStore, Ctx};
+use crate::search::{Looked, SearchScope, readable_of};
 
-/// What a text names that stands outside the fields: groups by name, projects by short name.
-#[derive(Default)]
-struct Named {
-    groups: Vec<String>,
-    projects: Vec<String>,
-}
-
-/// The project a word names when it is written like an Issue ID (`WEB-142`): its short name.
-fn project_of_issue(id: &str) -> &str {
-    id.rsplit_once('-').map_or(id, |(project, _)| project)
-}
-
-/// Collects the groups and projects a filter names.
-fn named_in(filter: &Expr, fields: &ReadableFields) -> Named {
-    let mut named = Named::default();
-    filter.each_filter(&mut |each| match each {
-        Expr::Field { field, test, .. } => {
-            let is_project = fields
-                .field(&field.word)
-                .is_some_and(|found| found.kind == FieldKind::Project);
-            let operands: Vec<&Operand> = match test {
-                Test::Is { value, .. }
-                | Test::IsNot { value, .. }
-                | Test::Compare { value, .. } => vec![value],
-                Test::In { values, .. } => values.iter().collect(),
-                _ => Vec::new(),
-            };
-            for operand in operands {
-                match operand {
-                    Operand::Text { text, .. } if is_project => named.projects.push(text.clone()),
-                    Operand::Issue { id, .. } => {
-                        named.projects.push(project_of_issue(&id.text).to_owned());
-                    }
-                    _ => {}
-                }
-            }
-            match test {
-                Test::MemberOf { group, .. } => named.groups.push(group.text.clone()),
-                Test::Within { project, .. } => named.projects.push(project.text.clone()),
-                _ => {}
-            }
-        }
-        Expr::Under { id, .. }
-        | Expr::Blocks { id, .. }
-        | Expr::BlockedBy { id, .. }
-        | Expr::ConnectedTo { id, .. } => {
-            named.projects.push(project_of_issue(&id.text).to_owned());
-        }
-        Expr::Or { .. } | Expr::And { .. } | Expr::Not { .. } => {}
-    });
-    named
-}
-
-/// When the judge reads the groups: with the address of one search, at once; with a page of a
-/// list, when a text names one.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Groups {
-    /// Read them when the judge is made.
-    Now,
-    /// Read them when a text names a group.
-    WhenNamed,
-}
-
-/// Judges saved searches for one person, reading what it needs once for the request.
+/// Judges saved searches for one person, reading what it needs once for the request: what the
+/// person may search by and what the names of a text can stand for (`looked_at`, the same read as
+/// a search that is typed has).
 pub(crate) struct Judge<'a> {
-    reaching: &'a Reaching,
+    actor: &'a Actor,
+    looked: Looked,
     fields: ReadableFields,
-    manages_groups: bool,
-    groups: Option<Vec<Group>>,
-    projects: HashMap<String, bool>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    async fn every_group(&self) -> Result<Vec<Group>, AppError> {
-        self.store()
-            .groups()
-            .await
-            .map_err(|error| internal::<S>(&error))
-    }
-
-    /// A judge for the actor, with the fields they may read everywhere.
+    /// A judge for the actor, with the fields they may read everywhere, from the view of the tree
+    /// that `reaching` holds.
     pub(crate) async fn judge<'a>(
         &self,
-        actor: &Actor,
-        reaching: &'a Reaching,
-        groups: Groups,
+        actor: &'a Actor,
+        reaching: &Reaching,
     ) -> Result<Judge<'a>, AppError> {
-        let fields = self
-            .readable_fields_in(&reaching.shown, SearchScope::Everywhere)
+        let looked = self
+            .looked_in(reaching.shown.clone(), SearchScope::Everywhere)
             .await?;
-        // The address of one search reads the groups whatever the answer, so that a search that is
-        // there costs what one that is not does; a page of a list reads them when a text names one.
-        let groups = match groups {
-            Groups::Now => Some(self.every_group().await?),
-            Groups::WhenNamed => None,
-        };
-        let manages_groups = self
-            .evaluation_of(actor, bb_policy::Place::Organization)
-            .await?
-            .allows(Permission::ManageGroups);
+        let fields = readable_of(&looked.fields);
         Ok(Judge {
-            reaching,
+            actor,
+            looked,
             fields,
-            manages_groups,
-            groups,
-            projects: HashMap::new(),
         })
     }
 }
@@ -151,49 +65,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Ok(checked) = check(tree, &judge.fields) else {
             return Ok(None);
         };
-        let named = checked
-            .search()
-            .filter
-            .as_ref()
-            .map(|filter| named_in(filter, &judge.fields))
-            .unwrap_or_default();
-        if !named.groups.is_empty() && judge.groups.is_none() {
-            judge.groups = Some(self.every_group().await?);
-        }
-        for group in &named.groups {
-            if !sees_group(judge, group) {
-                return Ok(None);
-            }
-        }
-        for project in &named.projects {
-            if !self.sees_project(judge, project).await? {
-                return Ok(None);
-            }
+        // The names of the text (groups, projects, issues, people, statuses, ...) are resolved by
+        // the one rule of the search; a name the person cannot know is as unknown as a missing one.
+        let names = self
+            .search_names(judge.actor, &judge.looked, &checked)
+            .await?;
+        if names.names_unknown() {
+            return Ok(None);
         }
         Ok(Some(print(checked.search())))
     }
-
-    /// Whether the person sees a project with this short name (or an old one).
-    async fn sees_project(
-        &self,
-        judge: &mut Judge<'_>,
-        short_name: &str,
-    ) -> Result<bool, AppError> {
-        if let Some(known) = judge.projects.get(short_name) {
-            return Ok(*known);
-        }
-        let sees = self
-            .find_project(short_name)
-            .await?
-            .is_some_and(|found| judge.reaching.shown.sees(found.project.id));
-        judge.projects.insert(short_name.to_owned(), sees);
-        Ok(sees)
-    }
-}
-
-/// Whether the person sees a group of this name: they are in it, or may manage groups.
-fn sees_group(judge: &Judge<'_>, name: &str) -> bool {
-    judge.groups.iter().flatten().any(|group| {
-        same_name(&group.name, name) && (judge.manages_groups || judge.reaching.is_in(group.id))
-    })
 }

@@ -41,7 +41,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-const ISSUE_FIELDS: [FieldSpec; 16] = [
+pub(super) const ISSUE_FIELDS: [FieldSpec; 16] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
@@ -305,8 +305,10 @@ fn people_in_body(people: Option<&[String]>) -> Result<Option<Vec<UserId>>, ApiE
         .transpose()
 }
 
-/// The issues of a project the person sees, newest first, a page at a time. Without *See every
-/// issue of the project* the person sees the issues they reported.
+/// The issues of a project the person sees and of the projects below it that they see, newest first,
+/// a page at a time. Without *See every issue of the project* the person sees the issues they
+/// reported. Each issue carries the rights of its own project, so a `fields=` that names a field
+/// which some issue of the page hides is `request.unknown-field`, which an empty page cannot say.
 #[utoipa::path(
     get,
     path = "/api/v1/projects/{project}/issues",
@@ -340,12 +342,7 @@ async fn list_issues(
         .await
         .map_err(super::access_bodies::cursor_error)?;
     bad_cursor?;
-    let list = page.map(|page| Listed {
-        items: page.items.iter().map(IssueItem::from).collect(),
-        next: page.next_cursor,
-    });
-    let fields = params.fields_readable(&ISSUE_FIELDS, &list.hidden_properties())?;
-    Ok(answer(Page::of_authorized(ISSUES_LIST, &list, &fields)?))
+    super::search::issue_page_answer(ISSUES_LIST, page, &params)
 }
 
 /// What the list of people is for besides *Assigned to*.

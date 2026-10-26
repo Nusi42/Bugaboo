@@ -857,8 +857,8 @@ pub const LONG_TEXT_ROUTES: &[&str] =
 
 mod lookup;
 mod saved_searches;
-
-pub use lookup::{csrf_exempt, declared, rows};
-
+mod search_routes;
 #[cfg(test)]
 mod tests;
+
+pub use lookup::{csrf_exempt, declared, rows};

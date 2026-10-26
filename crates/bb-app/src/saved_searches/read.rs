@@ -7,11 +7,11 @@ use bb_core::paging::{Cut, SkipCursor, page_len, read_len, window};
 use bb_core::saved_search::{SearchSet, ShareKind};
 use bb_policy::{Authorized, Permission, Place};
 
-use super::judge::{Groups, Judge};
+use super::judge::Judge;
 use super::reach::{Reaching, Stored, may_share_with_group};
 use super::types::{
-    SavedSearchPage, SavedSearchView, SearchQuery, SearchesQuery, ShareChoice, ShareChoicePage,
-    ShareChoicesQuery,
+    SavedSearchPage, SavedSearchQuery, SavedSearchView, SearchesQuery, ShareChoice,
+    ShareChoicePage, ShareChoicesQuery,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -167,7 +167,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         start: &SkipCursor<SavedSearchId>,
         len: usize,
     ) -> Result<Found, AppError> {
-        let judge = self.judge(actor, reaching, Groups::WhenNamed).await?;
+        let judge = self.judge(actor, reaching).await?;
         let mut walk = SharedSearches {
             ctx: self,
             reaching,
@@ -195,7 +195,7 @@ fn take_where<T>(from: &mut Vec<T>, is: impl Fn(&T) -> bool) -> Vec<T> {
 /// nor shared with them: one answer for all three (ADR-0034, decision 4).
 pub async fn saved_search<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: SearchQuery,
+    input: SavedSearchQuery,
 ) -> Result<Authorized<SavedSearchView>, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let opened = ctx.open_search(&actor, input.search).await?;

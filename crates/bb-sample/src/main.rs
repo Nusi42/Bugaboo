@@ -20,6 +20,7 @@ use jiff::Timestamp;
 use bb_app as _;
 use bb_auth as _;
 use bb_files as _;
+use bb_searchlang as _;
 use bb_store as _;
 use getrandom as _;
 use serde as _;

@@ -4,45 +4,14 @@
 use bb_app::tags::{TagLimit, TagUse};
 use bb_core::id::ProjectId;
 use bb_core::tags::IssueSight;
-use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
+use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use super::{read_tag, tag_columns};
 use crate::auth::AuthStorage;
 use crate::db::StoredId as _;
 use crate::error::StoreError;
 use crate::schema::{IssueRow, IssueTagRow, TagProjectRow, TagRow};
-
-/// The condition that an issue (table `issue`) is one the person reads (SEC-06): in a project where
-/// they see every issue, or one they reported where they see only their own; not in the trash unless
-/// asked; and not of a type the sight hides in its project.
-pub(crate) fn sight_condition(sight: &IssueSight) -> Cond {
-    let readable = Cond::any()
-        .add(
-            Expr::col((IssueRow::Table, IssueRow::Project))
-                .is_in(sight.all.iter().map(|project| project.stored())),
-        )
-        .add(
-            Expr::col((IssueRow::Table, IssueRow::Project))
-                .is_in(sight.own.iter().map(|project| project.stored()))
-                .and(Expr::col((IssueRow::Table, IssueRow::ReportedBy)).eq(sight.person.stored())),
-        );
-    let visible = sight
-        .hidden
-        .iter()
-        .fold(Cond::all(), |cond, (project, issue_type)| {
-            cond.add(
-                Expr::col((IssueRow::Table, IssueRow::Project))
-                    .ne(project.stored())
-                    .or(Expr::col((IssueRow::Table, IssueRow::IssueType)).ne(issue_type.stored())),
-            )
-        });
-    let kept = if sight.with_trashed {
-        Cond::all()
-    } else {
-        Cond::all().add(Expr::col((IssueRow::Table, IssueRow::DeletedAt)).is_null())
-    };
-    Cond::all().add(kept).add(readable).add(visible)
-}
+use crate::sight::sight_condition;
 
 /// The columns of the question whether a tag is used.
 #[derive(Clone, Copy)]

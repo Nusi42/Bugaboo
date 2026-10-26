@@ -77,6 +77,7 @@ mod relations_priority;
 pub(crate) mod rig;
 mod roles_http;
 mod saved_searches_http;
+mod search_http;
 mod second_step;
 mod second_step_by_role;
 mod secrets;

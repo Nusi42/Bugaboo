@@ -96,7 +96,7 @@ pub struct SearchesQuery {
 }
 
 /// One saved search, opened.
-pub struct SearchQuery {
+pub struct SavedSearchQuery {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The saved search.

@@ -143,7 +143,7 @@ async fn cfg_01_a_guest_gets_the_short_form_and_a_team_member_the_full_one() -> 
         let due = id_in(
             &create_field(
                 &mut ada,
-                json!({"name": "Due date", "kind": "date", "applies_to": "issues"}),
+                json!({"name": "Review deadline", "kind": "date", "applies_to": "issues"}),
             )
             .await?,
         )?;
@@ -229,7 +229,7 @@ async fn cfg_01_a_layout_never_shows_a_field_the_role_cannot_see_and_the_editor_
         let cost = id_in(
             &create_field(
                 &mut ada,
-                json!({"name": "Cost center", "kind": "text", "applies_to": "issues"}),
+                json!({"name": "Cost code", "kind": "text", "applies_to": "issues"}),
             )
             .await?,
         )?;
@@ -267,7 +267,7 @@ async fn cfg_01_a_layout_never_shows_a_field_the_role_cannot_see_and_the_editor_
         let saved = ok(&saved)?;
         // The row is marked for the Guest (who may not see the field) and not for the Team member.
         let row = &saved["sections"][0]["fields"][0];
-        assert_eq!(row["name"], "Cost center");
+        assert_eq!(row["name"], "Cost code");
         let limited = row["limited_for"].as_array().ok_or("no marks")?;
         assert!(limited.contains(&json!(guest)));
         assert!(!limited.contains(&json!(team)));

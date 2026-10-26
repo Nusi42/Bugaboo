@@ -300,3 +300,13 @@ route = "GET /api/v1/saved-searches/{search}"
 property = "shared_with"
 whole_value = true
 reason = "A saved search is shared with at most 100 places, bounded when it is shared, and only its maker is told; paging it is M5-F60."
+
+[[exempt]]
+route = "GET /api/v1/search/issues/groups"
+property = "groups"
+reason = "The groups are the values of one field and the answer holds at most 200 of them; it says when it cut the list off (`truncated`); narrowing the search is the way to see the rest (M5-F44)."
+
+[[exempt]]
+route = "GET /api/v1/search/fields"
+property = "fields"
+reason = "The fields a person may search by are the fields of the organization, a few dozen; the answer is a menu of the editor and holds at most 500 and says when it cut the list off (`truncated`) (M5-F44)."

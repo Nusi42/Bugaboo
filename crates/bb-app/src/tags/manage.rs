@@ -7,6 +7,7 @@
 //! the version of the tag the person looked at, so a tag that somebody changed meanwhile asks for
 //! a new look.
 
+use bb_core::version::Version;
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
@@ -32,8 +33,8 @@ use crate::projects::{ProjectRef, Why};
 use std::sync::Arc;
 
 /// The tags with their limits, as the person who looks after them reads them.
-struct Catalogue {
-    tags: Vec<Tag>,
+pub(crate) struct Catalogue {
+    pub(crate) tags: Vec<Tag>,
     limits: Vec<TagProject>,
 }
 
@@ -83,7 +84,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
     }
 
-    async fn tag_catalogue(&self) -> Result<Catalogue, AppError> {
+    pub(crate) async fn tag_catalogue(&self) -> Result<Catalogue, AppError> {
         let tags = self
             .store()
             .tags()
@@ -119,7 +120,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The tags the person may know of: one limited to a project they see, one used on an issue they
     /// read, and an unlimited one no issue has any more, also none in the trash (so it can still be cleaned up). A tag that only issues
     /// or projects they do not see know is not there for them (SEC-06).
-    async fn known_tags(
+    pub(crate) async fn known_tags(
         &self,
         shown: &crate::projects::Shown,
     ) -> Result<BTreeSet<TagId>, AppError> {
@@ -149,6 +150,21 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?;
         Ok(uses.into_iter().filter(tag_is_known).collect())
+    }
+
+    /// The tags of the catalogue that the person may know of: the one answer for the lists of tags,
+    /// the names a search may use and the names it shows.
+    pub(crate) async fn tags_known<'a>(
+        &self,
+        catalogue: &'a Catalogue,
+        shown: &crate::projects::Shown,
+    ) -> Result<Vec<&'a Tag>, AppError> {
+        let known = self.known_tags(shown).await?;
+        Ok(catalogue
+            .tags
+            .iter()
+            .filter(|tag| known.contains(&tag.id))
+            .collect())
     }
 
     /// The names of the tags the person may know of, in one spelling (lower case): what the history
@@ -194,12 +210,7 @@ pub async fn tags<S: AuthStore>(
     let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.tag_catalogue().await?;
     let shown = ctx.shown_to(&actor).await?;
-    let known = ctx.known_tags(&shown).await?;
-    let listed: Vec<&Tag> = catalogue
-        .tags
-        .iter()
-        .filter(|tag| known.contains(&tag.id))
-        .collect();
+    let listed = ctx.tags_known(&catalogue, &shown).await?;
     let page = window(listed.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     Ok(held.authorize(TagPage {
@@ -383,7 +394,7 @@ pub async fn change_tag<S: AuthStore>(
                 if let Some(rewrite) = &rewrite {
                     rewrite.append_events::<S>(transaction, &events).await?;
                 }
-                if !S::update_tag(transaction, id, &written, color, version).await? {
+                if !S::update_tag(transaction, id, &written, color, Version::new(version)).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 if replace_projects {

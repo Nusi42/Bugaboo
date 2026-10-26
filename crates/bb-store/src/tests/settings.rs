@@ -6,7 +6,8 @@ use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldCh
 use bb_core::id::{EventId, IdSource, ProjectId, UserId};
 use bb_core::project::{Project, ShortName};
 use bb_core::settings::{
-    APPEARANCE_MODE, SECURITY_SESSION_IDLE_MINUTES, SECURITY_TWO_STEP_REQUIRED, Source,
+    APPEARANCE_MODE, SECURITY_SESSION_IDLE_MINUTES, SECURITY_TWO_STEP_REQUIRED, SettingDefinition,
+    Source, find,
     for_tests::{TEST_PROJECT_LIMIT, TEST_PROJECT_NOTE, TEST_SWITCH},
 };
 use bb_testing::{TestResult, each_database};
@@ -109,6 +110,11 @@ async fn create_project(
     Ok(id)
 }
 
+/// The definition of a setting by its key; a key nobody defined is refused as the store did.
+fn known(key: &str) -> Result<&'static SettingDefinition, StoreError> {
+    find(key).ok_or(StoreError::SettingRejected(SettingProblem::UnknownKey))
+}
+
 async fn put(
     storage: &AuthStorage,
     source: &mut impl IdSource,
@@ -116,8 +122,11 @@ async fn put(
     key: &'static str,
     value: SettingValue,
 ) -> Result<(), StoreError> {
+    let setting = known(key)?;
     changed(storage, source, move |tx| {
-        Box::pin(async move { AuthStorage::put_setting_value(tx, scope, key, &value, at(6)).await })
+        Box::pin(
+            async move { AuthStorage::put_setting_value(tx, scope, setting, &value, at(6)).await },
+        )
     })
     .await
 }
@@ -128,8 +137,9 @@ async fn clear(
     scope: Scope,
     key: &'static str,
 ) -> Result<bool, StoreError> {
+    let setting = known(key)?;
     changed(storage, source, move |tx| {
-        Box::pin(async move { AuthStorage::clear_setting_value(tx, scope, key).await })
+        Box::pin(async move { AuthStorage::clear_setting_value(tx, scope, setting).await })
     })
     .await
 }
@@ -140,8 +150,9 @@ async fn lock(
     key: &'static str,
     locked: bool,
 ) -> Result<(), StoreError> {
+    let setting = known(key)?;
     changed(storage, source, move |tx| {
-        Box::pin(async move { AuthStorage::put_setting_lock(tx, key, locked, at(7)).await })
+        Box::pin(async move { AuthStorage::put_setting_lock(tx, setting, locked, at(7)).await })
     })
     .await
 }

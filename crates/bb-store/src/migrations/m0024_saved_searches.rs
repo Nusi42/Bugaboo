@@ -1,4 +1,4 @@
-//! Migration 23: saved searches (QRY-06, ADR-0034).
+//! Migration 24: saved searches (QRY-06, ADR-0034).
 //!
 //! A saved search, its columns, the groups and projects it is shared with, and the saved search a
 //! project shows as its list. Nothing is written into the tables: a database that has none of them
@@ -196,15 +196,15 @@ mod tests {
         Ok(insert)
     }
 
-    // The tables come with migration 23 on an M4 database, hold a search with its columns and
+    // The tables come with migration 24 on an M4 database, hold a search with its columns and
     // shares, refuse a column or a share of a search that is not there, and refuse the same share
     // twice.
     #[tokio::test]
-    async fn qry_06_migration_23_makes_the_tables_of_saved_searches() -> TestResult {
-        each_database("migration_23_saved_searches", async |db| {
+    async fn qry_06_migration_24_makes_the_tables_of_saved_searches() -> TestResult {
+        each_database("migration_24_saved_searches", async |db| {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(21, at(0)).await?;
-            assert_eq!(database.migrate(at(1)).await?, [22, 23]);
+            assert_eq!(database.migrate(at(1)).await?, [22, 23, 24]);
             database.execute(&search_row(1)?).await?;
             let column = |search: u8, position: i64| {
                 let mut insert = Query::insert();

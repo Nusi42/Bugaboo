@@ -16,7 +16,7 @@ use super::{
     CHOICE_FIELDS, CHOICES_LIST, ChangeSavedSearchBody, ChangeSearch, CopyBody, DeleteSearch,
     KindParams, NewSavedSearchBody, OptionalSavedSearchBody, Presentation, RestoreSearch,
     SEARCH_FIELDS, SEARCHES_LIST, SaveCopy, SaveSearch, SavedSearchId, SavedSearchItem,
-    ScopeParams, SearchQuery, SearchSet, SearchesQuery, ShareBody, ShareChoiceItem,
+    SavedSearchQuery, ScopeParams, SearchSet, SearchesQuery, ShareBody, ShareChoiceItem,
     ShareChoicesQuery, ShareKind, ShareSearch, ShareTarget, StopSharingSearch,
 };
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
@@ -139,7 +139,7 @@ async fn get_saved_search(
         .api()?
         .saved_search(
             info,
-            SearchQuery {
+            SavedSearchQuery {
                 session_token,
                 search,
             },

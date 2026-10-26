@@ -18,6 +18,7 @@ use bb_core::settings::SettingValue;
 use bb_core::sign_in::{
     Invitation, SecurityAction, SetupCode, SignInSession, StoredPasskey, TotpStep, TwoStep,
 };
+use bb_core::version::Version;
 use bb_policy::Permission;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
@@ -40,6 +41,7 @@ use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
 use crate::saved_searches::SavedSearchStore;
+use crate::search::SearchStore;
 use crate::settings::SettingsStore;
 use crate::store_macros::{reads, writes};
 use crate::tags::TagStore;
@@ -154,6 +156,8 @@ pub trait AccountStore: ChangeStore + 'static {
         fn account_by_email(email: &str) -> Option<Account>;
         /// The person with this ID.
         fn person(id: UserId) -> Option<Person>;
+        /// The people with these IDs, in one read; an ID of nobody is left out.
+        fn people_of(ids: &[UserId]) -> Vec<Person>;
         /// People by name (without regard to capitals, then by ID), after the position `after`
         /// (the last one of the page before), at most `limit`. With `search`, only those whose
         /// name holds the words, or, when it looks at the names and the addresses, whose address does
@@ -344,6 +348,7 @@ pub trait AuthStore:
     + WorkflowStore
     + SettingsStore
     + SavedSearchStore
+    + SearchStore
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of
@@ -387,7 +392,7 @@ pub trait AuthStore:
     writes! {
         /// Counts the version of the sign-up policy up, after its two values were written, and
         /// says whether it was still at `version`.
-        fn count_sign_up_policy_up(version: i64) -> bool;
+        fn count_sign_up_policy_up(version: Version) -> bool;
         /// Stores the value of a setting of the whole organization.
         fn put_setting(key: &str, value: &SettingValue, at: Timestamp) -> ();
     }

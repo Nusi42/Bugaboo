@@ -46,9 +46,9 @@ use crate::offers::{Here, Standing, Subject};
 use crate::projects::{Shown, Why};
 
 /// The groups and the labels as they are stored.
-struct Catalogue {
+pub(crate) struct Catalogue {
     groups: Vec<LabelGroup>,
-    labels: Vec<Label>,
+    pub(crate) labels: Vec<Label>,
 }
 
 impl Catalogue {
@@ -256,7 +256,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
     }
 
-    async fn label_catalogue(&self) -> Result<Catalogue, AppError> {
+    pub(crate) async fn label_catalogue(&self) -> Result<Catalogue, AppError> {
         let store = self.store();
         Ok(Catalogue {
             groups: store
@@ -328,9 +328,27 @@ fn label_group_view(group: &LabelGroup, standing: Standing) -> LabelGroupView {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The labels of the catalogue that the person may know: those in a group they may know and
+    /// those in no group (about a project, when one is given). The one answer for the lists of
+    /// labels, the names a search may use and the names it shows.
+    pub(crate) async fn labels_known<'a>(
+        &self,
+        shown: &Shown,
+        catalogue: &'a mut Catalogue,
+        project: Option<&str>,
+    ) -> Result<Vec<&'a Label>, AppError> {
+        let (groups, _) = self.listed_groups(shown, catalogue, project).await?;
+        let catalogue: &'a Catalogue = catalogue;
+        Ok(catalogue
+            .labels
+            .iter()
+            .filter(|label| label_is_known(label.group, &groups))
+            .collect())
+    }
+
     /// The groups of labels the person may know that a list about the project holds, and the rows of
     /// that project.
-    async fn listed_groups(
+    pub(crate) async fn listed_groups(
         &self,
         shown: &Shown,
         catalogue: &mut Catalogue,
@@ -391,14 +409,9 @@ pub async fn labels<S: AuthStore>(
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     let shown = ctx.shown_to(&actor).await?;
     let mut catalogue = ctx.label_catalogue().await?;
-    let (groups, _) = ctx
-        .listed_groups(&shown, &mut catalogue, input.project.as_deref())
+    let listed = ctx
+        .labels_known(&shown, &mut catalogue, input.project.as_deref())
         .await?;
-    let listed: Vec<&Label> = catalogue
-        .labels
-        .iter()
-        .filter(|label| label_is_known(label.group, &groups))
-        .collect();
     let page = window(listed.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     Ok(held.authorize(LabelPage {

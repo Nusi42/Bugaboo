@@ -45,6 +45,34 @@ pub(crate) fn today() -> String {
     Timestamp::now().to_zoned(TimeZone::UTC).date().to_string()
 }
 
+/// The marker that the index of the text search was built for a dataset: the dataset writes its
+/// issues without the outbox, so the index is built once from the stored texts before the first run.
+const INDEX_BUILT: &str = "text-index.built";
+
+/// Builds the index of the text search of the dataset once (`bugaboo search-index rebuild`).
+fn ensure_text_index(server: &Path, folder: &Path, url: Option<&str>) -> anyhow::Result<bool> {
+    let marker = folder.join(INDEX_BUILT);
+    if marker.is_file() {
+        return Ok(true);
+    }
+    let mut command = Command::new(server);
+    command
+        .args(["search-index", "rebuild", "--data-dir"])
+        .arg(folder.join("data"))
+        .env_remove("BUGABOO_DATABASE_URL");
+    if let Some(url) = url {
+        command.env("BUGABOO_DATABASE_URL", url);
+    }
+    let built = command
+        .status()
+        .context("could not start the server program to build the text index")?
+        .success();
+    if built {
+        fs::write(&marker, "")?;
+    }
+    Ok(built)
+}
+
 fn run_driver(
     root: &Path,
     server: &Path,
@@ -131,11 +159,13 @@ pub(crate) fn run(repo: &Repo, databases: &[DatabaseKind]) -> anyhow::Result<boo
         let result_file: PathBuf = bench_folder.join(format!("run-{}.json", database.code()));
         let started = match database {
             DatabaseKind::Sqlite => {
-                run_driver(root, &server, &folder, database, &result_file, None)?
+                ensure_text_index(&server, &folder, None)?
+                    && run_driver(root, &server, &folder, database, &result_file, None)?
             }
             DatabaseKind::Postgres => db::with_postgres(repo, |postgres| {
                 let url = postgres.url_of(&layout.large.database)?;
-                run_driver(root, &server, &folder, database, &result_file, Some(&url))
+                Ok(ensure_text_index(&server, &folder, Some(&url))?
+                    && run_driver(root, &server, &folder, database, &result_file, Some(&url))?)
             })?,
         };
         if !started {

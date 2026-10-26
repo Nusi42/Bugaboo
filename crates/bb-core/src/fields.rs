@@ -60,7 +60,8 @@ words! {
 }
 
 /// The kind of people information that the people in *Assigned to* are shown as: what the
-/// field says ([`Field::person_kind`]), and what the places that choose or check a person for it ask.
+/// field says ([`Field::person_kind`]), and what the places that choose or check a person for it
+/// ask.
 pub const ASSIGNED_TO_PEOPLE: PeopleKind = PeopleKind::AssignedTo;
 
 /// The kind of people information that the person in *Reported by* is shown as: what the field

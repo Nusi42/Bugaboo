@@ -16,7 +16,9 @@ use super::scenarios::{a_project, token};
 use super::scenarios_fields::{a_field, new_field};
 use super::scenarios_issues::a_type;
 use super::scenarios_workflows::{a_workflow, published_with};
-use super::search_fields::{bob_with_a_role, every_field, has, set_field, set_people, words_of};
+use super::search_fields::{
+    a_legacy_field, bob_with_a_role, every_field, has, set_field, set_people, words_of,
+};
 use super::world::{Outcome, PASSWORD, World};
 use crate::auth::{AppError, CreateAccessKey, create_access_key};
 use crate::fields::create_field;
@@ -166,11 +168,11 @@ async fn qry_05_an_own_field_never_takes_the_word_of_a_built_in_field_not_even_a
     let closed = a_project(&world, "CLOSED").await?;
     // Three own fields named like built-in fields: one the person may not read in one project,
     // one that cannot be searched yet, and one that fits a word every issue has.
-    let priority = a_field(&world, "Priority", FieldType::Text, &[]).await?;
-    let due = a_field(&world, "Due date", FieldType::Date, &[]).await?;
-    let created = a_field(&world, "Created", FieldType::Date, &[]).await?;
+    let priority = a_legacy_field(&world, "Priority", FieldType::Text).await?;
+    let due = a_legacy_field(&world, "Due date", FieldType::Date).await?;
+    let created = a_legacy_field(&world, "Created", FieldType::Date).await?;
     let mut shown = every_field();
-    shown.extend([priority.id, due.id, created.id].map(FieldKey::Own));
+    shown.extend([priority, due, created].map(FieldKey::Own));
     let (bob, role) = bob_with_a_role(&world, &shown).await?;
     set_field(
         &world,
@@ -201,9 +203,9 @@ async fn qry_05_between_own_fields_the_first_keeps_the_word_for_every_person() -
     a_project(&world, "OPEN").await?;
     let first = a_field(&world, "Story points", FieldType::WholeNumber, &[]).await?;
     // Another name, the same word: the names are different names, the words are the same word.
-    let second = a_field(&world, "storyPoints", FieldType::WholeNumber, &[]).await?;
+    let second = a_legacy_field(&world, "storyPoints", FieldType::WholeNumber).await?;
     let mut shown = every_field();
-    shown.push(FieldKey::Own(second.id));
+    shown.push(FieldKey::Own(second));
     let (bob, _) = bob_with_a_role(&world, &shown).await?;
     let for_bob = targets_of(&world, &bob).await?;
     // The first field is hidden from Bob, so nobody takes its word in its place.
@@ -378,5 +380,86 @@ async fn qry_05_a_key_for_one_project_reads_the_fields_of_that_project_only() ->
     let with_key = words_of(&g.world, &key, SearchScope::Everywhere).await?;
     assert!(!has(&with_session, "priority"), "{with_session:?}");
     assert!(has(&with_key, "priority"), "{with_key:?}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_05_a_name_whose_word_is_taken_is_refused_when_a_field_is_made_or_renamed() -> Outcome {
+    use crate::fields::{ChangeField, change_field};
+    let world = World::new().await?;
+    a_project(&world, "OPEN").await?;
+    let made = async |name: &str| {
+        create_field(&world.ctx(), new_field(&world, name, FieldType::Text, &[])).await
+    };
+    // The word of a built-in field, of a field every issue has, and of one that cannot be searched yet.
+    for name in ["Priority", "Created", "Due date", "assigned To"] {
+        let refused = made(name).await.err();
+        assert_eq!(
+            refused,
+            Some(AppError::Refused(ErrorCode::NameTaken)),
+            "{name}"
+        );
+    }
+    made("Story points").await?;
+    // Another name, the same word.
+    let clash = made("storyPoints").await.err();
+    assert_eq!(clash, Some(AppError::Refused(ErrorCode::NameTaken)));
+    // The same for a rename.
+    let other = made("Customer").await?.into_value();
+    let renamed = change_field(
+        &world.ctx(),
+        ChangeField {
+            session_token: token(&world),
+            field: other.id,
+            version: other.version,
+            name: Some("storyPoints".to_owned()),
+            help: None,
+            rules: None,
+            default_value: bb_core::own_fields::Edit::Keep,
+            look: None,
+            never_to_assistant: None,
+            scope: None,
+            retired: None,
+        },
+    )
+    .await
+    .err();
+    assert_eq!(renamed, Some(AppError::Refused(ErrorCode::NameTaken)));
+    // Another name with another word is made.
+    assert!(made("Customer number").await.is_ok());
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_05_a_field_for_projects_owns_no_word_of_a_search() -> Outcome {
+    use bb_core::own_fields::FieldFor;
+    let world = World::new().await?;
+    a_project(&world, "OPEN").await?;
+    let for_projects = async |name: &str| {
+        let mut input = new_field(&world, name, FieldType::Text, &[]);
+        input.applies_to = FieldFor::Projects;
+        create_field(&world.ctx(), input).await
+    };
+    // A field for projects may be named like a word of the language or of a field for issues...
+    for_projects("Priority").await?;
+    for_projects("Story points").await?;
+    // ...and takes no word from the fields for issues: no search finds issues by it.
+    let issue = create_field(
+        &world.ctx(),
+        new_field(&world, "storyPoints", FieldType::Text, &[]),
+    )
+    .await;
+    assert!(issue.is_ok(), "{:?}", issue.err());
+    // But an issue field cannot take a word of the language, and not a word of an issue field.
+    for name in ["Priority", "story points"] {
+        let refused = create_field(&world.ctx(), new_field(&world, name, FieldType::Text, &[]))
+            .await
+            .err();
+        assert_eq!(
+            refused,
+            Some(AppError::Refused(ErrorCode::NameTaken)),
+            "{name}"
+        );
+    }
     Ok(())
 }

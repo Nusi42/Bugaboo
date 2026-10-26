@@ -224,6 +224,19 @@ impl ReadableFields {
     pub fn field(&self, word: &str) -> Option<&Field> {
         self.fields.iter().find(|field| field.word == word)
     }
+
+    /// Whether a `contains` on its own is a search for this person: it looks in the title and in
+    /// the description among other texts, so both have to be readable. The one rule, read by the
+    /// checker and by the suggestions.
+    #[must_use]
+    pub fn allows_bare_contains(&self) -> bool {
+        [
+            bb_core::fields::Field::Title,
+            bb_core::fields::Field::Description,
+        ]
+        .into_iter()
+        .all(|field| self.field(&field.search_word()).is_some())
+    }
 }
 
 /// The word of an own field, made from its name by one rule: a name of words and numbers becomes

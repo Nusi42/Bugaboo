@@ -51,6 +51,13 @@ export type Expr =
       readonly span: Span;
     }
   | {
+      readonly type: "contains";
+      /** The text to find. */
+      readonly text: Text;
+      /** From `contains` to the end of the text. */
+      readonly span: Span;
+    }
+  | {
       readonly type: "under";
       /** The issue. */
       readonly id: IssueRef;

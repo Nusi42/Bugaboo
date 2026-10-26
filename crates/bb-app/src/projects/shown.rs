@@ -159,6 +159,20 @@ impl Leveled {
             .collect()
     }
 
+    /// The projects as a search needs them to read a short name and a place in the tree, for those
+    /// among `projects` that the person sees.
+    pub(crate) fn links(&self, projects: &[ProjectId]) -> Vec<crate::search::ProjectLink> {
+        projects
+            .iter()
+            .filter_map(|project| self.stored(*project))
+            .map(|stored| crate::search::ProjectLink {
+                id: stored.id,
+                parent: stored.parent,
+                short_name: stored.short_name.clone(),
+            })
+            .collect()
+    }
+
     /// Which issues the person reads where their role lets them see the labels (SEC-06), judged in
     /// memory; for the groups of labels in use.
     pub(crate) fn label_sight(&self, types: &[IssueTypeId]) -> IssueSight {

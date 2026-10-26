@@ -224,6 +224,25 @@ pub(super) async fn issue_request(
                 .map_err(|error| error.to_string())?;
             ("POST", format!("/api/v1/issues/{key}/restore"), None)
         }
-        _ => return Ok(None),
+        _ => return Ok(search_request(operation)),
     }))
+}
+
+/// The requests of the search routes, which need nothing of the fixture.
+fn search_request(operation: &str) -> Option<Request> {
+    Some(match operation {
+        "searchIssues" => (
+            "GET",
+            "/api/v1/search/issues?q=priority%20is%20high".into(),
+            None,
+        ),
+        "countSearchedIssues" => ("GET", "/api/v1/search/issues/count".into(), None),
+        "groupSearchedIssues" => (
+            "GET",
+            "/api/v1/search/issues/groups?by=priority".into(),
+            None,
+        ),
+        "listSearchFields" => ("GET", "/api/v1/search/fields".into(), None),
+        _ => return None,
+    })
 }

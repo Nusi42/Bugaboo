@@ -2,9 +2,10 @@
 //! and the codes of their readable IDs.
 
 use bb_core::event::DomainEvent;
-use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
 use bb_core::readable_id::IssueCode;
+use bb_core::version::Version;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
@@ -109,31 +110,6 @@ impl IssueStore for FakeStore {
         }))
     }
 
-    async fn issues_page(
-        &self,
-        project: ProjectId,
-        reported_by: Option<UserId>,
-        before: Option<IssueId>,
-        limit: u64,
-    ) -> Result<Vec<Issue>, FakeError> {
-        Ok(self.read(|state| {
-            let mut found: Vec<Issue> = state
-                .issues
-                .iter()
-                .filter(|issue| {
-                    issue.project == project
-                        && issue.deleted_at.is_none()
-                        && reported_by.is_none_or(|person| issue.reported_by == person)
-                        && before.is_none_or(|before| issue.id < before)
-                })
-                .cloned()
-                .collect();
-            found.sort_by_key(|issue| std::cmp::Reverse(issue.id));
-            found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-            found
-        }))
-    }
-
     async fn assigned_people_of(
         &self,
         issues: &[IssueId],
@@ -152,13 +128,13 @@ impl IssueStore for FakeStore {
         name: &str,
         icon: IssueIcon,
         retired_at: Option<Timestamp>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .issue_types
             .iter_mut()
-            .find(|found| found.id == id && found.version == version)
+            .find(|found| found.id == id && found.version == version.get())
         else {
             return Ok(false);
         };
@@ -185,12 +161,12 @@ impl IssueStore for FakeStore {
         Ok(())
     }
 
-    async fn update_issue(tx: &mut Tx, issue: &Issue, version: i64) -> Result<bool, FakeError> {
+    async fn update_issue(tx: &mut Tx, issue: &Issue, version: Version) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .issues
             .iter_mut()
-            .find(|found| found.id == issue.id && found.version == version)
+            .find(|found| found.id == issue.id && found.version == version.get())
         else {
             return Ok(false);
         };
@@ -211,14 +187,12 @@ impl IssueStore for FakeStore {
         project: ProjectId,
         code: &IssueCode,
         moved: &MovedStatus,
-        version: i64,
+        version: Version,
         now: Timestamp,
     ) -> Result<bool, FakeError> {
-        let Some(found) =
-            tx.state.issues.iter_mut().find(|found| {
-                found.id == id && found.version == version && found.deleted_at.is_none()
-            })
-        else {
+        let Some(found) = tx.state.issues.iter_mut().find(|found| {
+            found.id == id && found.version == version.get() && found.deleted_at.is_none()
+        }) else {
             return Ok(false);
         };
         found.project = project;

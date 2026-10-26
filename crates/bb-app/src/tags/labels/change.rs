@@ -6,6 +6,7 @@ use bb_core::id::{LabelGroupId, LabelId};
 use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_core::tags::Label;
 use bb_core::version::FIRST_VERSION;
+use bb_core::version::Version;
 use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -347,7 +348,7 @@ impl LabelWrite {
             self.color,
             self.group,
             self.retired_at,
-            self.version,
+            Version::new(self.version),
         )
         .await?
         {

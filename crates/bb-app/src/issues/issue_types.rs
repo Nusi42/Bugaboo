@@ -16,6 +16,7 @@ use bb_core::message::Message;
 use bb_core::names::{Placed, is_new_or_changed, taken_where_they_meet};
 use bb_core::offer::has_room;
 use bb_core::paging::window;
+use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place, Tree};
 use jiff::Timestamp;
@@ -281,7 +282,7 @@ async fn write_in<S: AuthStore>(
         &written.name,
         written.icon,
         written.retired_at,
-        version,
+        Version::new(version),
     )
     .await?;
     if updated {

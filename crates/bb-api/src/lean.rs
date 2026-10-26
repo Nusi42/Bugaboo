@@ -258,6 +258,48 @@ impl Page<Value> {
     }
 }
 
+impl Page<Value> {
+    /// The answer for items that each came out of a use case with the rights of their own place
+    /// (a search over many projects): each is masked by its own mask first, the fields asked for
+    /// are those no item hides, and every item is cut to them.
+    ///
+    /// # Errors
+    /// `request.unknown-field` for a field that is not in `fields` or that some item hides; an
+    /// internal error when an item does not serialize or the cursor cannot be sealed.
+    pub(crate) fn of_authorized_items<V: Masked + Serialize>(
+        list: &str,
+        items: &[Authorized<V>],
+        next: Option<&str>,
+        params: &ListParams,
+        fields: &[FieldSpec],
+    ) -> Result<Self, ApiError> {
+        let mut hidden: Vec<&'static str> = Vec::new();
+        for item in items {
+            for name in item.hidden_properties() {
+                if !hidden.contains(&name) {
+                    hidden.push(name);
+                }
+            }
+        }
+        let chosen = params.fields_readable(fields, &hidden)?;
+        let items = items
+            .iter()
+            .map(|item| {
+                let masked = item
+                    .masked_value()
+                    .map_err(|error| ApiError::internal(&error))?;
+                chosen.project(&masked)
+            })
+            .collect::<Result<_, _>>()?;
+        Ok(Self {
+            items,
+            next_cursor: next
+                .map(|position| paging::seal(list, position))
+                .transpose()?,
+        })
+    }
+}
+
 impl<V> Listed<V> {
     /// The page of a list that the use case reads whole (it has a hard cap) and the route cuts: the
     /// items after the position `after` of the cursor, at most `limit` of them, and the position of

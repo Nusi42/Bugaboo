@@ -10,6 +10,7 @@
 //! Issues in the trash keep their status; when one comes back it starts again in the starting
 //! status.
 
+use bb_core::version::Version;
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
@@ -266,7 +267,7 @@ async fn restart_in<S: AuthStore>(
         updated_at: now,
         ..issue.clone()
     };
-    if !S::update_issue(transaction, &next, issue.version).await? {
+    if !S::update_issue(transaction, &next, Version::new(issue.version)).await? {
         return Err(S::aborted());
     }
     let followed = events

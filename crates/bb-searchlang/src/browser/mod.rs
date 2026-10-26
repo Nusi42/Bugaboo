@@ -81,6 +81,7 @@ fn expression(node: &Expr) -> Result<(), Problem> {
         }
         Expr::Not { item, .. } => expression(item),
         Expr::Field { test, .. } => check_test(test),
+        Expr::Contains { .. } => Ok(()),
         Expr::Under { id, .. } | Expr::Blocks { id, .. } | Expr::BlockedBy { id, .. } => issue(id),
         Expr::ConnectedTo { id, steps, .. } => {
             issue(id)?;

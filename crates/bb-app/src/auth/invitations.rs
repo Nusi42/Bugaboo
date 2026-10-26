@@ -9,6 +9,7 @@ use bb_core::id::InvitationId;
 use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
 use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SIGN_UP_POLICY, SettingValue};
 use bb_core::sign_in::{Invitation, SecurityAction};
+use bb_core::version::Version;
 use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
@@ -315,7 +316,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
                 )
                 .await?;
                 // Somebody changed the policy between the check above and this change.
-                if S::count_sign_up_policy_up(transaction, version).await? {
+                if S::count_sign_up_policy_up(transaction, Version::new(version)).await? {
                     Ok(())
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::VersionChanged))

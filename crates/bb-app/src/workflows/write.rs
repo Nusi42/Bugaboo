@@ -10,6 +10,7 @@ use bb_core::edit::{EditWhat, WORKFLOW_PART};
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::WorkflowId;
 use bb_core::technical::TechnicalName;
+use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up};
 use bb_core::workflow::{Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 use bb_policy::{Authorized, Permission};
@@ -296,7 +297,7 @@ pub async fn delete_workflow<S: AuthStore>(
                 // The places it is used at are read now, before the use is taken away with it.
                 let reach = reach_of_workflow_in::<S>(transaction, id).await?;
                 let_go_for_delete::<S>(transaction, &what, me, now, &stopped).await?;
-                if !S::delete_workflow(transaction, id, version).await? {
+                if !S::delete_workflow(transaction, id, Version::new(version)).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 // The places that used it follow their parent now: nothing is left in a status

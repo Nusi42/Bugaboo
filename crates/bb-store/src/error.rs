@@ -39,6 +39,8 @@ pub enum StoreError {
     Secret(SecretProblem),
     /// Another writer was faster too many times in a row; the caller may try again.
     Contended,
+    /// A read took longer than the time it was given and was stopped by the database (SEC-17).
+    TimedOut,
     /// A change decided not to go ahead (a check inside its transaction failed) and was undone.
     Aborted,
     /// A rule of the policy engine stopped a change (the last administrator, no escalation) and
@@ -100,6 +102,7 @@ impl fmt::Display for StoreError {
                 formatter,
                 "the recorded migration {version} is not the one this program has"
             ),
+            Self::TimedOut => formatter.write_str("the read took longer than it was given"),
             Self::Corrupt(what) => write!(formatter, "a stored value is unusable: {what}"),
             Self::Json(kind) => write!(formatter, "a JSON value is unusable ({kind:?})"),
             Self::InvalidInput(what) => write!(formatter, "not acceptable: {what}"),

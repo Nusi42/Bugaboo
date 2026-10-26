@@ -2584,8 +2584,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The issues of a project the person sees, newest first, a page at a time. Without *See every
-     *     issue of the project* the person sees the issues they reported.
+     * The issues of a project the person sees and of the projects below it that they see, newest first,
+     *     a page at a time. Without *See every issue of the project* the person sees the issues they
+     *     reported. Each issue carries the rights of its own project, so a `fields=` that names a field
+     *     which some issue of the page hides is `request.unknown-field`, which an empty page cannot say.
      */
     get: operations["listIssues"];
     put?: never;
@@ -3104,6 +3106,83 @@ export interface paths {
     post?: never;
     /** Stops sharing a saved search with a group or a project. Only its maker does. */
     delete: operations["stopSharingSavedSearch"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/search/fields": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The fields the person may search by where a search looks, the same the checker of the server
+     *     gets, so the editor of the browser checks a search against the same fields.
+     */
+    get: operations["listSearchFields"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/search/issues": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The issues a search finds, a page at a time, in the order of the search (newest first without
+     *     `sort by`). Each issue is shown with what the person may see of it in its own project.
+     */
+    get: operations["searchIssues"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/search/issues/count": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How many issues a search finds. */
+    get: operations["countSearchedIssues"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/search/issues/groups": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * How many issues a search finds in each group of a field. A field the person may not read is
+     *     refused like a field that does not exist.
+     */
+    get: operations["groupSearchedIssues"];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -4148,6 +4227,11 @@ export interface components {
      */
     ConflictProblem: components["schemas"]["Problem"] & {
       conflict?: components["schemas"]["ConflictBody"] | null;
+      /**
+       * @description The mistakes of the text of a search, each with the key of its message and the bytes it
+       *     stands on; only for `search.invalid`.
+       */
+      mistakes?: components["schemas"]["MistakeBody"][] | null;
       taken_over_by?: components["schemas"]["PersonRef"] | null;
     };
     /** @description The name of a copy. */
@@ -4418,6 +4502,8 @@ export interface components {
       | "edit.lock-lost"
       | "edit.taken-over"
       | "edit.in-progress"
+      | "search.invalid"
+      | "search.too-slow"
       | "rate-limit.exceeded"
       | "server.unavailable"
       | "server.internal";
@@ -5614,6 +5700,24 @@ export interface components {
      * @enum {string}
      */
     MentionTarget: "person" | "group" | "role";
+    /**
+     * @description One mistake in the text of a search: what the browser needs to write the message in
+     *     the language of the person and to mark the word.
+     */
+    MistakeBody: {
+      /** @description The words for the placeholders of the message, by name. */
+      args: {
+        [key: string]: string;
+      };
+      /** @description The byte after the last one. */
+      end: number;
+      /** @description The key of the message in the catalog (`search.mistake.*`). */
+      key: string;
+      /** @description The first byte of the text it is about. */
+      start: number;
+      /** @description What may have been meant, closest first. */
+      suggestions: string[];
+    };
     /** @description Where a project goes, and the version of the preview that was looked at. */
     MoveBody: {
       /** @description The `preview` of the answer to the preview that was looked at. */
@@ -7259,6 +7363,140 @@ export interface components {
        *     whole organization.
        */
       projects?: string[];
+    };
+    /** @description How many issues a search finds. */
+    SearchCountBody: {
+      /**
+       * Format: int64
+       * @description The number of issues the person may read that the search finds.
+       */
+      issues: number;
+    };
+    /** @description A field the person may search by. */
+    SearchFieldBody: {
+      /** @description The values of a fixed list; empty when anything goes. */
+      choices: string[];
+      /** @description What kind of values it holds. */
+      kind: string;
+      /** @description What may be asked of it. */
+      operators: string[];
+      /** @description The word of the field. */
+      word: string;
+    };
+    /** @description The fields the person may search by. */
+    SearchFieldsBody: {
+      /** @description The fields, in the order they are offered. */
+      fields: components["schemas"]["SearchFieldBody"][];
+      /** @description Whether the list was cut off at its cap. */
+      truncated: boolean;
+    };
+    /** @description One group of a search. */
+    SearchGroupBody: {
+      /**
+       * Format: int64
+       * @description How many issues the search finds in it. An issue with several values is in each group.
+       */
+      issues: number;
+      /** @description What the group is. */
+      key: components["schemas"]["SearchGroupKeyBody"];
+    };
+    /** @description The key of a group, by identity or word; a person as the viewer sees them. */
+    SearchGroupKeyBody:
+      | {
+          /** @enum {string} */
+          type: "empty";
+        }
+      | {
+          /** @enum {string} */
+          type: "text";
+          /** @description A text that is no person's: a status key, a text of an own field. */
+          value: string;
+        }
+      | {
+          /** @enum {string} */
+          type: "whole";
+          /**
+           * Format: int64
+           * @description A number or a moment.
+           */
+          value: number;
+        }
+      | {
+          /** @enum {string} */
+          type: "person";
+          /** @description A person, as the viewer sees them. */
+          value: components["schemas"]["PersonRef"];
+        }
+      | {
+          /** @enum {string} */
+          type: "group";
+          /** @description A group of people, by its ID. */
+          value: string;
+        }
+      | {
+          /** @enum {string} */
+          type: "issue";
+          /** @description An issue, by its ID. */
+          value: string;
+        }
+      | {
+          /** @enum {string} */
+          type: "project";
+          /** @description A project, by its ID. */
+          value: string;
+        }
+      | {
+          /** @enum {string} */
+          type: "issue-type";
+          /** @description An issue type, by its ID. */
+          value: string;
+        }
+      | {
+          /** @enum {string} */
+          type: "choice";
+          /** @description A choice of an own field, by its ID. */
+          value: string;
+        }
+      | {
+          /** @enum {string} */
+          type: "priority";
+          /** @description A priority. */
+          value: components["schemas"]["Priority"];
+        }
+      | {
+          /** @enum {string} */
+          type: "status-group";
+          /** @description A status group. */
+          value: components["schemas"]["StatusGroup"];
+        }
+      | {
+          /** @enum {string} */
+          type: "tag";
+          /** @description A tag, by its ID and its name. */
+          value: components["schemas"]["SearchNamedBody"];
+        }
+      | {
+          /** @enum {string} */
+          type: "label";
+          /** @description A label, by its ID and its name. */
+          value: components["schemas"]["SearchNamedBody"];
+        };
+    /** @description How many issues a search finds in each group of a field. */
+    SearchGroupsBody: {
+      /** @description The groups, the one without a value last. */
+      groups: components["schemas"]["SearchGroupBody"][];
+      /**
+       * @description Whether the list was cut off at its cap: over 200 groups the answer holds the first 199
+       *     and the group without a value.
+       */
+      truncated: boolean;
+    };
+    /** @description A thing with a name the person may know. */
+    SearchNamedBody: {
+      /** @description Its ID. */
+      id: string;
+      /** @description Its name; left out where the person may not know it. */
+      name?: string | null;
     };
     /**
      * @description Which set of saved searches a list shows: the person's own, or the ones shared with them.
@@ -14516,6 +14754,170 @@ export interface operations {
       };
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listSearchFields: {
+    parameters: {
+      query?: {
+        /**
+         * @description The search, as text of the search language (`priority is high and assignedTo is me`). Left
+         *     out or empty, every issue the person may read is found.
+         */
+        q?: string;
+        /**
+         * @description The ID of a project: the search looks in that project and the ones inside it that the person
+         *     sees. Left out, it looks in every project they see.
+         */
+        within?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The fields. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchFieldsBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  searchIssues: {
+    parameters: {
+      query?: {
+        /**
+         * @description The search, as text of the search language (`priority is high and assignedTo is me`). Left
+         *     out or empty, every issue the person may read is found.
+         */
+        q?: string;
+        /**
+         * @description The ID of a project: the search looks in that project and the ones inside it that the person
+         *     sees. Left out, it looks in every project they see.
+         */
+        within?: string;
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: components["parameters"]["Limit"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The issues found. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_IssueItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  countSearchedIssues: {
+    parameters: {
+      query?: {
+        /**
+         * @description The search, as text of the search language (`priority is high and assignedTo is me`). Left
+         *     out or empty, every issue the person may read is found.
+         */
+        q?: string;
+        /**
+         * @description The ID of a project: the search looks in that project and the ones inside it that the person
+         *     sees. Left out, it looks in every project they see.
+         */
+        within?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description How many issues the search finds. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchCountBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  groupSearchedIssues: {
+    parameters: {
+      query: {
+        /**
+         * @description The search, as text of the search language (`priority is high and assignedTo is me`). Left
+         *     out or empty, every issue the person may read is found.
+         */
+        q?: string;
+        /**
+         * @description The ID of a project: the search looks in that project and the ones inside it that the person
+         *     sees. Left out, it looks in every project they see.
+         */
+        within?: string;
+        /** @description The word of the field to group by (`status`, `assignedTo`, `tags`, …). */
+        by: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The groups and how many issues each holds. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchGroupsBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
       404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];

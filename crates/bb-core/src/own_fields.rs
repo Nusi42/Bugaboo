@@ -502,8 +502,15 @@ impl Scope {
     /// project.
     #[must_use]
     pub fn reaches_type(&self, issue_type: Option<IssueTypeId>) -> bool {
-        self.issue_types.is_empty()
-            || issue_type.is_some_and(|wanted| self.issue_types.contains(&wanted))
+        self.limited_types()
+            .is_none_or(|types| issue_type.is_some_and(|wanted| types.contains(&wanted)))
+    }
+
+    /// The issue types the field is limited to; `None` while it is used for all of them (an empty
+    /// list is how that is stored, and this is the one place that reads it so).
+    #[must_use]
+    pub fn limited_types(&self) -> Option<&[IssueTypeId]> {
+        (!self.issue_types.is_empty()).then_some(self.issue_types.as_slice())
     }
 }
 

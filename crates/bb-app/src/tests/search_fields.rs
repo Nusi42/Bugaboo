@@ -108,6 +108,25 @@ pub(super) async fn set_people(
     Ok(())
 }
 
+/// A field as old data can have it: made under another name, then given a name that is refused now
+/// (it makes the word of a built-in field or of another field). Searching must still read it.
+pub(super) async fn a_legacy_field(
+    world: &World,
+    name: &str,
+    kind: FieldType,
+) -> Result<bb_core::id::FieldId, String> {
+    let made = a_field(world, &format!("Legacy {name}"), kind, &[]).await?;
+    let mut shared = world.store.lock();
+    let found = shared
+        .state
+        .field_definitions
+        .iter_mut()
+        .find(|each| each.field.id == made.id)
+        .ok_or("the field is stored")?;
+    found.field.name = name.to_owned();
+    Ok(made.id)
+}
+
 pub(super) fn every_field() -> Vec<FieldKey> {
     Field::ALL.iter().map(|field| (*field).into()).collect()
 }
@@ -257,9 +276,9 @@ async fn qry_05_a_person_who_sees_no_project_reads_no_field() -> Outcome {
 async fn qry_05_an_own_field_named_like_a_built_in_word_keeps_the_built_in_one() -> Outcome {
     let world = World::new().await?;
     a_project(&world, "OPEN").await?;
-    let title = a_field(&world, "Title", FieldType::Text, &[]).await?;
+    let title = a_legacy_field(&world, "Title", FieldType::Text).await?;
     let mut shown = every_field();
-    shown.push(FieldKey::Own(title.id));
+    shown.push(FieldKey::Own(title));
     let (bob, _) = bob_with_a_role(&world, &shown).await?;
     let words = words_of(&world, &bob, SearchScope::Everywhere).await?;
     assert_eq!(words.iter().filter(|word| *word == "title").count(), 1);

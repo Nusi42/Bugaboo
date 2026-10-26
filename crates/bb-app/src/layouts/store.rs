@@ -5,6 +5,7 @@
 
 use bb_core::id::LayoutId;
 use bb_core::layout::{Layout, LayoutContent, LayoutKind, StoredLayout};
+use bb_core::version::Version;
 
 use crate::fields::FieldStore;
 use crate::store_macros::{queries, writes};
@@ -24,9 +25,9 @@ pub trait LayoutStore: FieldStore + 'static {
         fn insert_layout(layout: &Layout, content: &LayoutContent) -> ();
         /// Replaces the sections and fields of a layout, counts its version up, and says whether
         /// the layout was still at `version`.
-        fn replace_layout(id: LayoutId, content: &LayoutContent, version: i64) -> bool;
+        fn replace_layout(id: LayoutId, content: &LayoutContent, version: Version) -> bool;
         /// Takes a layout away (the place uses the layout it inherits again), and says whether
         /// the layout was still at `version`.
-        fn delete_layout(id: LayoutId, version: i64) -> bool;
+        fn delete_layout(id: LayoutId, version: Version) -> bool;
     }
 }

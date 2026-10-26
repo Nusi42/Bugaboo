@@ -155,6 +155,7 @@ fn filter() -> impl Strategy<Value = Expr> {
             test,
             span: span()
         }),
+        text().prop_map(|text| Expr::Contains { text, span: span() }),
         readable_id().prop_map(|id| Expr::Under { id, span: span() }),
         readable_id().prop_map(|id| Expr::Blocks { id, span: span() }),
         readable_id().prop_map(|id| Expr::BlockedBy { id, span: span() }),

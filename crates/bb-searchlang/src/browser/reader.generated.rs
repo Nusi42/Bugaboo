@@ -95,6 +95,10 @@ pub(super) fn read_expr(json: &Json) -> Read<Expr> {
             test: read_test(member(object, "test")?)?,
             span: read_span(member(object, "span")?)?,
         }),
+        "contains" => Ok(Expr::Contains {
+            text: read_text(member(object, "text")?)?,
+            span: read_span(member(object, "span")?)?,
+        }),
         "under" => Ok(Expr::Under {
             id: read_issue_ref(member(object, "id")?)?,
             span: read_span(member(object, "span")?)?,

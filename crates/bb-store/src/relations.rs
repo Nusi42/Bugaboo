@@ -9,6 +9,7 @@ use bb_app::relations::RelationStore;
 use bb_core::id::{IssueId, RelationId, RelationKindId, UserId};
 use bb_core::issue::Issue;
 use bb_core::relation::{IssueParent, Relation, RelationKind};
+use bb_core::version::Version;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement};
 
@@ -243,7 +244,7 @@ impl RelationStore for AuthStorage {
         forward: &str,
         backward: &str,
         retired_at: Option<Timestamp>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -256,7 +257,7 @@ impl RelationStore for AuthStorage {
                 Expr::col(RelationKindRow::Version).add(1),
             )
             .and_where(Expr::col(RelationKindRow::Id).eq(id.stored()))
-            .and_where(Expr::col(RelationKindRow::Version).eq(version));
+            .and_where(Expr::col(RelationKindRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 

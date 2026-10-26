@@ -10,8 +10,8 @@
 use bb_app::access::ProjectLabel;
 use bb_app::saved_searches::{
     ChangeSearch, DeleteSearch, ProjectList, ProjectListQuery, RestoreSearch, RestoredSearch,
-    SaveCopy, SaveSearch, SavedSearchView, SearchQuery, SearchesQuery, SetProjectList, ShareChoice,
-    ShareChoicesQuery, ShareSearch, ShareView, StopSharingSearch,
+    SaveCopy, SaveSearch, SavedSearchQuery, SavedSearchView, SearchesQuery, SetProjectList,
+    ShareChoice, ShareChoicesQuery, ShareSearch, ShareView, StopSharingSearch,
 };
 use bb_core::ErrorCode;
 use bb_core::id::SavedSearchId;
