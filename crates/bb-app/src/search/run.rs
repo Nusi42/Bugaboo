@@ -9,27 +9,24 @@
 //! rules of the person, and handed to the store as data.
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::event::RecordKind;
 use bb_core::id::{IssueId, ProjectId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::tags::IssueSight;
-use bb_policy::{Authorized, Masked, Place as Where};
+use bb_policy::{Authorized, Masked, PeopleContext, PersonRef, Place as Where};
 use bb_searchlang::{Mistake, check, parse_with};
 use jiff::tz::TimeZone;
 use serde::Serialize;
-use serde_json::{Value, json};
 
-use super::names::status_groups;
+use super::names::{people_kind_of, status_groups};
 use super::readable::{Looked, SearchScope, readable_of};
-use super::request::{
-    GroupCount, SearchFailure, SearchPosition, SearchRequest, SearchStore, SortValue,
-};
+use super::request::{GroupKey, SearchFailure, SearchRequest, SearchStore};
+use super::target::target_of;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::issues::IssueView;
+use crate::input::cursor_or_invalid;
+use crate::issues::{IssueView, PagePlace};
 
 /// Ask for a page of the issues a search finds.
 pub struct SearchQuery {
@@ -107,7 +104,27 @@ impl Masked for SearchCount {}
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct SearchGroups {
     /// The groups, with the issues without a value last.
-    pub groups: Vec<GroupCount>,
+    pub groups: Vec<GroupShown>,
+}
+
+/// One group of a search, the thing it stands for shown as the person may see it (ADR-0022): a
+/// person as a `PersonRef`, everything else by its identity or word.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct GroupShown {
+    /// What the group is.
+    pub key: ShownKey,
+    /// How many issues the search finds in it.
+    pub issues: u64,
+}
+
+/// The key of a group, as it is shown.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", content = "value", rename_all = "snake_case")]
+pub enum ShownKey {
+    /// A group of anything else than a person: the identity or the word.
+    Other(GroupKey),
+    /// A person, as the viewer sees them.
+    Person(PersonRef),
 }
 
 impl Masked for SearchGroups {}
@@ -154,6 +171,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             names,
             status_groups: status_groups(&looked),
             blocking_kinds: blocking,
+            own_reach: looked.own_reach.clone(),
             after: None,
             limit: 0,
         };
@@ -170,45 +188,9 @@ impl From<Vec<Mistake>> for SearchError {
 fn stopped(error: SearchFailure) -> AppError {
     match error {
         SearchFailure::TooSlow => AppError::Refused(ErrorCode::SearchTooSlow),
+        SearchFailure::BadCursor => AppError::Refused(ErrorCode::InvalidRequest),
         SearchFailure::Failed(reason) => AppError::Internal(reason),
     }
-}
-
-/// A position as the text a cursor carries (the API seals it): the values of the keys of the order,
-/// then the ID.
-fn position_text(position: &SearchPosition) -> String {
-    let values: Vec<Value> = position
-        .values
-        .iter()
-        .map(|value| match value {
-            SortValue::Empty => json!(null),
-            SortValue::Text(text) => json!({ "t": text }),
-            SortValue::Whole(number) => json!({ "w": number }),
-        })
-        .collect();
-    json!({ "v": values, "i": position.id.to_string() }).to_string()
-}
-
-/// The position [`position_text`] wrote; `None` for text that is not one.
-fn position_from(text: &str) -> Option<SearchPosition> {
-    let found: Value = serde_json::from_str(text).ok()?;
-    let values = found
-        .get("v")?
-        .as_array()?
-        .iter()
-        .map(|value| match value {
-            Value::Null => Some(SortValue::Empty),
-            other => other
-                .get("t")
-                .and_then(Value::as_str)
-                .map(|text| SortValue::Text(text.to_owned()))
-                .or_else(|| other.get("w")?.as_i64().map(SortValue::Whole)),
-        })
-        .collect::<Option<Vec<_>>>()?;
-    Some(SearchPosition {
-        values,
-        id: found.get("i")?.as_str()?.parse::<IssueId>().ok()?,
-    })
 }
 
 /// A page of the issues the search finds, in its order.
@@ -225,74 +207,42 @@ pub async fn search<S: AuthStore + SearchStore>(
     let mut prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
     let len = page_len(Some(query.limit));
     prepared.request.limit = read_len(len);
-    prepared.request.after = match query.cursor.as_deref() {
-        Some(text) => {
-            Some(position_from(text).ok_or(AppError::Refused(ErrorCode::InvalidRequest))?)
-        }
-        None => None,
-    };
+    // A cursor is the ID of the last issue of the page before: the store reads its place in the
+    // order itself, so no value of any issue is ever written into a cursor.
+    prepared.request.after =
+        cursor_or_invalid(query.cursor.as_deref(), |text| text.parse::<IssueId>().ok())?;
     let found = ctx
         .store()
         .search_page(&prepared.request)
         .await
         .map_err(stopped)?;
     let page = Cut::of(found, len);
-    let next_cursor = page.next_cursor(|hit| position_text(&hit.position));
-    let ids: Vec<IssueId> = page.items.iter().map(|hit| hit.issue.id).collect();
-    let assigned = ctx
-        .store()
-        .assigned_people_of(&ids)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    // Everything the views of the whole page need is read here once, whatever the number of
-    // projects the page spans: the rights and the chain of each project come from the tree the
-    // person's view already holds, the types and the workflows from the caches of the request, and
-    // the values of own fields of all the issues in one read (PERF-N1).
-    let values = ctx
-        .load_values(
-            RecordKind::Issue,
-            &ids.iter().map(|id| (*id).into()).collect::<Vec<_>>(),
-        )
-        .await?;
-    let places: HashMap<ProjectId, _> = prepared
-        .looked
-        .seen
+    let next_cursor = page.next_cursor(|hit| hit.issue.id.to_string());
+    // The rights and the chain of each project come from the tree the person's view already holds;
+    // everything else of the page is read once by the one way a page is made (PERF-N1).
+    let seen = &prepared.looked.seen;
+    let places: HashMap<ProjectId, PagePlace> = seen
         .seen_places(None)
         .into_iter()
-        .filter_map(|(chain, held)| Some((*chain.last()?, (chain, held))))
+        .filter_map(|(chain, held)| {
+            let project = *chain.last()?;
+            Some((
+                project,
+                PagePlace {
+                    chain,
+                    held,
+                    project: seen.stored(project)?.clone(),
+                },
+            ))
+        })
         .collect();
-    let mut views = HashMap::new();
-    let mut items = Vec::with_capacity(page.items.len());
-    for hit in &page.items {
-        let project = hit.issue.project;
-        if !views.contains_key(&project) {
-            let (chain, held) = places
-                .get(&project)
-                .cloned()
-                .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-            let stored = prepared
-                .looked
-                .seen
-                .stored(project)
-                .cloned()
-                .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-            let made = ctx
-                .issue_views(&actor, Arc::clone(&held), stored)
-                .await?
-                .with_page(chain, values.clone());
-            views.insert(project, (held, made));
-        }
-        let Some((held, shown)) = views.get_mut(&project) else {
-            continue;
-        };
-        let people: Vec<_> = assigned
-            .iter()
-            .filter(|each| each.issue == hit.issue.id)
-            .map(|each| each.person)
-            .collect();
-        let view = ctx.issue_view(shown, &hit.issue, &people).await?;
-        items.push(held.authorize(view));
-    }
+    let issues: Vec<_> = page.items.iter().map(|hit| hit.issue.clone()).collect();
+    let items = ctx
+        .issue_items(&actor, &issues, &places, true)
+        .await?
+        .into_iter()
+        .map(|(held, view)| held.authorize(view))
+        .collect();
     let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
     Ok(organization.authorize(SearchPage { items, next_cursor }))
 }
@@ -335,12 +285,28 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     {
         return Err(AppError::Refused(ErrorCode::InvalidRequest).into());
     }
-    let groups = ctx
+    let found = ctx
         .store()
         .search_groups(&prepared.request, &query.by)
         .await
         .map_err(stopped)?;
     let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
+    // The store names a group by identity; a person is shown as the viewer may see them.
+    let kind = target_of(&prepared.looked.fields, &query.by).and_then(people_kind_of);
+    let mut groups = Vec::with_capacity(found.len());
+    for group in found {
+        let key = match (group.key, kind) {
+            (GroupKey::Person(person), Some(kind)) => ShownKey::Person(
+                ctx.person_ref(&organization, kind, PeopleContext::Ordinary, person)
+                    .await?,
+            ),
+            (other, _) => ShownKey::Other(other),
+        };
+        groups.push(GroupShown {
+            key,
+            issues: group.issues,
+        });
+    }
     Ok(organization.authorize(SearchGroups { groups }))
 }
 

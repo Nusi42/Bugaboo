@@ -7,11 +7,12 @@ use bb_app::issues::IssueStore as _;
 use bb_app::ports::ChangeStore;
 use bb_app::relations::RelationStore as _;
 use bb_app::search::{
-    FieldTarget, Names, ProjectLink, SearchPosition, SearchRequest, SearchStore as _, Searchable,
+    FieldTarget, GroupKey, Names, ProjectLink, SearchRequest, SearchStore as _, Searchable,
 };
 use bb_app::tags::TagStore as _;
-use bb_core::id::{IssueTypeId, ProjectId, RelationId, RelationKindId, TagId, UserId};
+use bb_core::id::{IssueId, IssueTypeId, ProjectId, RelationId, RelationKindId, TagId, UserId};
 use bb_core::issue::{Issue, IssueIcon, IssueType, Priority, StatusGroup};
+use bb_core::names::name_key;
 use bb_core::own_fields::ChoiceColor;
 use bb_core::project::{Project, ShortName};
 use bb_core::relation::{IssueParent, Relation, RelationKind};
@@ -27,10 +28,16 @@ use crate::test_support::{at, event, fixture, ids, issue};
 
 /// What the tests search in: six issues of one project, with the people, tags and relations that
 /// the helpers follow.
-struct Data {
-    project: ProjectId,
-    me: UserId,
-    blocks: RelationKindId,
+pub(super) struct Data {
+    pub(super) tags: Vec<(String, TagId)>,
+    pub(super) project: ProjectId,
+    pub(super) me: UserId,
+    pub(super) blocks: RelationKindId,
+    /// The issue nobody in the tests reads: in a project the sight does not hold.
+    pub(super) hidden: Issue,
+    pub(super) issues: Vec<Issue>,
+    pub(super) issue_type: IssueTypeId,
+    pub(super) source: bb_core::id::SequentialIds,
 }
 
 /// Six issues of one project, by the person who asks except the last.
@@ -66,32 +73,98 @@ fn six_issues(
             made.reported_by = *reporter;
             if *closed {
                 made.closed_at = Some(at(20));
+                made.status = bb_core::workflow::StatusKey::new("done").unwrap();
             }
             made
         })
         .collect()
 }
 
-async fn seed(storage: &AuthStorage) -> Data {
+/// Everything the tests put in the database.
+struct Rows {
+    projects: Vec<Project>,
+    issue_type: IssueType,
+    issues: Vec<Issue>,
+    tags: Vec<Tag>,
+    tagged: Vec<IssueTag>,
+    kind: RelationKind,
+    relations: Vec<Relation>,
+    parents: Vec<IssueParent>,
+}
+
+fn project_row(id: ProjectId, short_name: &str) -> Project {
+    Project {
+        id,
+        parent: None,
+        short_name: ShortName::new(short_name).unwrap(),
+        name: short_name.to_owned(),
+        version: FIRST_VERSION,
+    }
+}
+
+/// The relations and the places in the tree of the issues: Printer jams blocks Login broken, which
+/// blocks Idea; Docs typo sits under Login broken and Crash on save under Docs typo. The hidden
+/// issue sits between readable ones, under Printer jams with Slow page under it, and in a chain of
+/// blocks from the first issue to the fourth.
+fn links(
+    source: &mut impl bb_core::id::IdSource,
+    issues: &[Issue],
+    hidden: &Issue,
+    blocks: RelationKindId,
+    me: UserId,
+) -> (Vec<Relation>, Vec<IssueParent>) {
+    let relations = [
+        (issues[0].id, issues[1].id),
+        (issues[1].id, issues[5].id),
+        (issues[0].id, hidden.id),
+        (hidden.id, issues[3].id),
+    ]
+    .map(|(from, to)| Relation {
+        id: RelationId::generate(source).unwrap(),
+        kind: blocks,
+        from,
+        to,
+        added_by: me,
+        added_at: at(0),
+    })
+    .to_vec();
+    let parents = [
+        (issues[2].id, issues[1].id),
+        (issues[4].id, issues[2].id),
+        (hidden.id, issues[0].id),
+        (issues[3].id, hidden.id),
+    ]
+    .map(|(child, parent)| IssueParent {
+        child,
+        parent,
+        set_by: me,
+        set_at: at(0),
+    })
+    .to_vec();
+    (relations, parents)
+}
+
+pub(super) async fn seed(storage: &AuthStorage) -> Data {
     let mut source = ids();
     let project = ProjectId::generate(&mut source).unwrap();
+    let secret = ProjectId::generate(&mut source).unwrap();
     let issue_type = IssueTypeId::generate(&mut source).unwrap();
     let me = UserId::generate(&mut source);
     let stranger = UserId::generate(&mut source);
-    let issues = six_issues(&mut source, project, issue_type, me, stranger);
-    let tag = Tag {
-        id: TagId::generate(&mut source).unwrap(),
-        name: "UI".to_owned(),
-        color: ChoiceColor::Cat1,
-        created_at: at(0),
-        version: FIRST_VERSION,
-    };
-    let second_tag = Tag {
-        id: TagId::generate(&mut source).unwrap(),
-        name: "Bug".to_owned(),
-        ..tag.clone()
-    };
-    let blocks = RelationKind {
+    let mut issues = six_issues(&mut source, project, issue_type, me, stranger);
+    let mut hidden = issue(&mut source, secret, issue_type, 1);
+    hidden.title = "Hidden one".to_owned();
+    hidden.reported_by = me;
+    let tags: Vec<Tag> = ["UI", "Bug"]
+        .map(|name| Tag {
+            id: TagId::generate(&mut source).unwrap(),
+            name: name.to_owned(),
+            color: ChoiceColor::Cat1,
+            created_at: at(0),
+            version: FIRST_VERSION,
+        })
+        .to_vec();
+    let kind = RelationKind {
         id: RelationKindId::generate(&mut source).unwrap(),
         forward: "blocks".to_owned(),
         backward: "is blocked by".to_owned(),
@@ -99,15 +172,25 @@ async fn seed(storage: &AuthStorage) -> Data {
         retired_at: None,
         version: FIRST_VERSION,
     };
-    let (row, kind, rows) = (
-        Project {
-            id: project,
-            parent: None,
-            short_name: ShortName::new("ACME").unwrap(),
-            name: "Acme".to_owned(),
-            version: FIRST_VERSION,
-        },
-        IssueType {
+    let (relations, parents) = links(&mut source, &issues, &hidden, kind.id, me);
+    // Printer jams has two tags, Login broken one, the rest none.
+    let tagged = [(0, 0), (1, 0), (0, 1)]
+        .map(|(at_issue, at_tag)| IssueTag {
+            issue: issues[at_issue].id,
+            tag: tags[at_tag].id,
+            added_by: me,
+            added_at: at(0),
+        })
+        .to_vec();
+    let names = tags
+        .iter()
+        .map(|tag| (name_key(&tag.name), tag.id))
+        .collect();
+    let listed = issues.clone();
+    issues.push(hidden.clone());
+    let rows = Rows {
+        projects: vec![project_row(project, "ACME"), project_row(secret, "SECRET")],
+        issue_type: IssueType {
             project: None,
             id: issue_type,
             name: "Bug".to_owned(),
@@ -116,50 +199,47 @@ async fn seed(storage: &AuthStorage) -> Data {
             retired_at: None,
             version: FIRST_VERSION,
         },
-        issues.clone(),
-    );
-    let (tagged, kind_row, block_from_to) = (
-        // Printer jams has two tags, Login broken one, the rest none.
-        [(0, tag.id), (1, tag.id), (0, second_tag.id)].map(|(at_issue, tag)| IssueTag {
-            issue: issues[at_issue].id,
-            tag,
-            added_by: me,
-            added_at: at(0),
-        }),
-        blocks.clone(),
-        [(0, 1), (1, 5)].map(|(from, to)| Relation {
-            id: RelationId::generate(&mut source).unwrap(),
-            kind: blocks.id,
-            from: issues[from].id,
-            to: issues[to].id,
-            added_by: me,
-            added_at: at(0),
-        }),
-    );
-    // Docs typo sits under Login broken, and Crash on save under Docs typo.
-    let parents = [(2, 1), (4, 2)].map(|(child, parent)| IssueParent {
-        child: issues[child].id,
-        parent: issues[parent].id,
-        set_by: me,
-        set_at: at(0),
-    });
-    ChangeStore::record_change(storage, &event(&mut source, 5), move |tx| {
+        issues,
+        tags,
+        tagged,
+        kind: kind.clone(),
+        relations,
+        parents,
+    };
+    store(storage, &mut source, rows).await;
+    Data {
+        tags: names,
+        project,
+        me,
+        blocks: kind.id,
+        hidden,
+        issues: listed,
+        issue_type,
+        source,
+    }
+}
+
+async fn store(storage: &AuthStorage, source: &mut impl bb_core::id::IdSource, rows: Rows) {
+    ChangeStore::record_change(storage, &event(source, 5), move |tx| {
         Box::pin(async move {
-            AuthStorage::insert_project(tx, &row).await?;
-            AuthStorage::insert_issue_type(tx, &kind).await?;
-            for each in &rows {
+            for each in &rows.projects {
+                AuthStorage::insert_project(tx, each).await?;
+            }
+            AuthStorage::insert_issue_type(tx, &rows.issue_type).await?;
+            for each in &rows.issues {
                 AuthStorage::insert_issue(tx, each, &[]).await?;
             }
-            AuthStorage::insert_tag(tx, &tag).await?;
-            AuthStorage::insert_tag(tx, &second_tag).await?;
-            for link in &tagged {
+            for each in &rows.tags {
+                AuthStorage::insert_tag(tx, each).await?;
+            }
+            for link in &rows.tagged {
                 AuthStorage::insert_issue_tag(tx, link).await?;
             }
-            AuthStorage::insert_relation_kind(tx, &kind_row).await?;
-            for relation in &block_from_to {
+            AuthStorage::insert_relation_kind(tx, &rows.kind).await?;
+            for relation in &rows.relations {
                 AuthStorage::insert_relation(tx, relation).await?;
             }
-            for parent in &parents {
+            for parent in &rows.parents {
                 AuthStorage::set_issue_parent(tx, parent).await?;
             }
             Ok(())
@@ -167,16 +247,11 @@ async fn seed(storage: &AuthStorage) -> Data {
     })
     .await
     .unwrap();
-    Data {
-        project,
-        me,
-        blocks: blocks.id,
-    }
 }
 
 /// The fields the tests may search by, with what each reads.
-fn searchables() -> Vec<Searchable> {
-    let status_names: Vec<String> = vec![starter::OPEN.to_owned()];
+pub(super) fn searchables() -> Vec<Searchable> {
+    let status_names: Vec<String> = vec![starter::OPEN.to_owned(), "done".to_owned()];
     let priorities: Vec<String> = Priority::ALL
         .iter()
         .map(|each| each.search_word())
@@ -200,6 +275,16 @@ fn searchables() -> Vec<Searchable> {
             Field::new("priority", FieldKind::Choice),
             priorities,
             FieldTarget::Priority,
+        ),
+        with(
+            IssueField::StatusGroup.field(
+                StatusGroup::ALL
+                    .iter()
+                    .map(|group| group.search_word())
+                    .collect(),
+            ),
+            vec![],
+            FieldTarget::StatusGroup,
         ),
         with(Field::unordered("tags"), vec![], FieldTarget::Tags),
         with(
@@ -231,8 +316,26 @@ fn searchables() -> Vec<Searchable> {
 }
 
 /// A request for a search text, for the person who reported most of the issues.
-fn request(data: &Data, text: &str, after: Option<SearchPosition>, limit: u64) -> SearchRequest {
-    let fields = searchables();
+pub(super) fn request(
+    data: &Data,
+    text: &str,
+    after: Option<IssueId>,
+    limit: u64,
+) -> SearchRequest {
+    request_with(data, text, after, limit, Vec::new(), Vec::new())
+}
+
+/// The same, with more fields the person may read and where their values count.
+pub(super) fn request_with(
+    data: &Data,
+    text: &str,
+    after: Option<IssueId>,
+    limit: u64,
+    more: Vec<Searchable>,
+    own_reach: Vec<bb_app::search::OwnReach>,
+) -> SearchRequest {
+    let mut fields = searchables();
+    fields.extend(more);
     let readable = ReadableFields {
         fields: fields.iter().map(|each| each.field.clone()).collect(),
     };
@@ -254,23 +357,33 @@ fn request(data: &Data, text: &str, after: Option<SearchPosition>, limit: u64) -
         projects: vec![ProjectLink {
             id: data.project,
             parent: None,
-            short_name: "ACME".to_owned(),
+            short_name: "ACME".parse().unwrap(),
         }],
         names: Names {
-            statuses: vec![("open".to_owned(), vec![starter::OPEN.to_owned()])],
+            tags: data
+                .tags
+                .iter()
+                .map(|(name, id)| (name.clone(), vec![*id]))
+                .collect(),
+            statuses: vec![
+                ("open".to_owned(), vec![starter::OPEN.to_owned()]),
+                ("done".to_owned(), vec!["done".to_owned()]),
+            ],
             ..Names::default()
         },
-        status_groups: StatusGroup::ALL
-            .iter()
-            .map(|group| (*group, Vec::new()))
-            .collect(),
+        status_groups: vec![
+            (StatusGroup::NotStarted, vec![starter::OPEN.to_owned()]),
+            (StatusGroup::InProgress, vec!["in-progress".to_owned()]),
+            (StatusGroup::Done, vec!["done".to_owned()]),
+        ],
         blocking_kinds: vec![data.blocks],
+        own_reach,
         after,
         limit,
     }
 }
 
-async fn titles(storage: &AuthStorage, data: &Data, text: &str) -> Vec<String> {
+pub(super) async fn titles(storage: &AuthStorage, data: &Data, text: &str) -> Vec<String> {
     let hits = storage
         .search_page(&request(data, text, None, 100))
         .await
@@ -279,7 +392,7 @@ async fn titles(storage: &AuthStorage, data: &Data, text: &str) -> Vec<String> {
 }
 
 /// The searches every database must answer alike: the text, and the titles in order.
-const TABLE: [(&str, &[&str]); 12] = [
+const TABLE: [(&str, &[&str]); 16] = [
     (
         "",
         &[
@@ -339,9 +452,21 @@ const TABLE: [(&str, &[&str]); 12] = [
             "Idea",
             "Login broken",
             "Printer jams",
-            "Slow page",
         ],
     ),
+    ("statusGroup is done", &["Slow page"]),
+    ("statusGroup >= inProgress", &["Slow page"]),
+    (
+        "statusGroup < done sort by title",
+        &[
+            "Crash on save",
+            "Docs typo",
+            "Idea",
+            "Login broken",
+            "Printer jams",
+        ],
+    ),
+    ("statusGroup is notStarted and status is done", &[]),
     (
         "priority is high or priority is critical sort by title, Z to A",
         &["Slow page", "Printer jams", "Login broken", "Crash on save"],
@@ -434,13 +559,13 @@ async fn perf_02_paging_walks_every_issue_once_in_every_order() -> TestResult {
             let mut after = None;
             loop {
                 let page = storage
-                    .search_page(&request(&data, text, after.clone(), 2))
+                    .search_page(&request(&data, text, after, 2))
                     .await
                     .map_err(|error| format!("{error:?}"))?;
                 if page.is_empty() {
                     break;
                 }
-                after = page.last().map(|hit| hit.position.clone());
+                after = page.last().map(|hit| hit.issue.id);
                 walked.extend(page.into_iter().map(|hit| hit.issue.title));
             }
             assert_eq!(walked, all, "{text}");
@@ -463,22 +588,31 @@ async fn qry_05_the_count_and_the_groups_come_from_the_same_search() -> TestResu
             .search_groups(&request(&data, "", None, 1), "priority")
             .await
             .unwrap();
-        let counts: Vec<(Option<&str>, u64)> = groups
-            .iter()
-            .map(|group| (group.value.as_deref(), group.issues))
-            .collect();
-        assert_eq!(counts.iter().map(|(_, n)| n).sum::<u64>(), 6);
+        // A priority is a word of the language, never a rank.
+        assert!(
+            groups
+                .iter()
+                .any(|group| group.key == GroupKey::Priority(Priority::High) && group.issues == 3)
+        );
+        assert_eq!(groups.iter().map(|group| group.issues).sum::<u64>(), 6);
         // An issue with two tags stands in the group of each; one with none in the group without a
         // value, which comes last. The count line is still the number of issues.
         let by_tag = storage
             .search_groups(&request(&data, "", None, 1), "tags")
             .await
             .unwrap();
-        let by_tag: Vec<(Option<&str>, u64)> = by_tag
-            .iter()
-            .map(|group| (group.value.as_deref(), group.issues))
+        let by_tag: Vec<(GroupKey, u64)> = by_tag
+            .into_iter()
+            .map(|group| (group.key, group.issues))
             .collect();
-        assert_eq!(by_tag, [(Some("bug"), 1), (Some("ui"), 2), (None, 4)]);
+        assert_eq!(
+            by_tag,
+            [
+                (GroupKey::Text("bug".to_owned()), 1),
+                (GroupKey::Text("ui".to_owned()), 2),
+                (GroupKey::Empty, 4)
+            ]
+        );
         assert_eq!(
             storage
                 .search_count(&request(&data, "", None, 1))
@@ -521,9 +655,10 @@ async fn sec_17_a_search_text_never_becomes_sql() -> TestResult {
         let escaped = nasty.replace('\\', "\\\\").replace('"', "\\\"");
         let text = format!("title is \"{escaped}\" or tags is \"{escaped}\"");
         let ask = request(&data, &text, None, 10);
-        let statement =
-            super::statements::page_statement(&ask, fixture.storage.database().dialect())
-                .map_err(|error| error.to_string())?;
+        let dialect = fixture.storage.database().dialect();
+        let plan = super::statements::SortPlan::of(&ask, dialect).map_err(|e| e.to_string())?;
+        let statement = super::statements::page_statement(&ask, dialect, &plan, None)
+            .map_err(|error| error.to_string())?;
         let super::statements::Built::Plain(select) = &statement else {
             return Err("a search without helpers has no walks".into());
         };

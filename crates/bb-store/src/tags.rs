@@ -19,10 +19,9 @@ use crate::error::StoreError;
 use crate::schema::{
     IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, TagProjectRow, TagRow,
 };
+use crate::sight::sight_condition;
 
 mod uses;
-
-pub(crate) use uses::sight_condition;
 
 fn read_color(row: &Row, column: impl sea_query::Iden + Copy) -> Result<ChoiceColor, StoreError> {
     ChoiceColor::from_code(&row.get::<String>(column)?)

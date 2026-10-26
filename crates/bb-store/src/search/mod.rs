@@ -17,12 +17,15 @@
 use std::cell::RefCell;
 
 use bb_app::search::{
-    FieldTarget, GroupCount, SearchFailure, SearchHit, SearchRequest, SearchStore, target_of,
+    FieldTarget, GroupCount, GroupKey, SearchFailure, SearchHit, SearchRequest, SearchStore,
+    target_of,
 };
+use bb_core::issue::{Priority, StatusGroup};
 use sea_query::{CommonTableExpression, Cond, Expr, ExprTrait as _};
 
 use self::statements::{
-    count_statement, groups_statement, kinds_of, page_statement, read_count, read_group, read_hit,
+    SortPlan, count_statement, groups_statement, page_statement, place_statement, read_count,
+    read_group, read_hit, read_place,
 };
 use crate::auth::AuthStorage;
 use crate::db::Dialect;
@@ -76,6 +79,11 @@ impl<'a> Compiler<'a> {
         target_of(&self.request.fields, word).ok_or(CompileError::UnknownField)
     }
 
+    /// What the target reads, with the sight and the reach of the own fields of this request.
+    fn subject_of(&self, target: FieldTarget) -> (source::Subject, source::Domain) {
+        source::subject_of(target, &self.request.sight, &self.request.own_reach)
+    }
+
     /// The number the next walk is named with (`walk0`, `walk1`, …).
     pub(crate) fn next_table(&self) -> usize {
         self.tables.borrow().len()
@@ -104,18 +112,30 @@ pub(crate) fn nothing() -> Cond {
 /// How long a search may run on the database (SEC-17, architecture §7 *Search limits*).
 const SEARCH_TIME: std::time::Duration = std::time::Duration::from_secs(2);
 
-/// The place of a group in the order: the groups with a value first, by the bytes of a text or the
-/// size of a number.
-fn group_order(kind: order::Kind, group: &GroupCount) -> (bool, Option<i64>, Option<String>) {
-    let number = match kind {
-        order::Kind::Whole => group.value.as_deref().and_then(|text| text.parse().ok()),
-        order::Kind::Text => None,
-    };
-    let text = match kind {
-        order::Kind::Text => group.value.clone(),
-        order::Kind::Whole => None,
-    };
-    (group.value.is_none(), number, text)
+/// The place of a word among all the words of its kind.
+fn place_in<T: PartialEq>(all: &[T], one: &T) -> i64 {
+    all.iter()
+        .position(|each| each == one)
+        .and_then(|place| i64::try_from(place).ok())
+        .unwrap_or(0)
+}
+
+/// The place of a group in the order: the group without a value last, the others by the bytes of
+/// their text or ID, or by the size of their number.
+fn group_order(group: &GroupCount) -> (bool, String, i64) {
+    match &group.key {
+        GroupKey::Empty => (true, String::new(), 0),
+        GroupKey::Whole(number) => (false, String::new(), *number),
+        GroupKey::Text(text) => (false, text.clone(), 0),
+        GroupKey::Person(id) => (false, id.to_string(), 0),
+        GroupKey::Group(id) => (false, id.to_string(), 0),
+        GroupKey::Issue(id) => (false, id.to_string(), 0),
+        GroupKey::Project(id) => (false, id.to_string(), 0),
+        GroupKey::IssueType(id) => (false, id.to_string(), 0),
+        GroupKey::Choice(id) => (false, id.to_string(), 0),
+        GroupKey::Priority(each) => (false, String::new(), place_in(Priority::ALL, each)),
+        GroupKey::StatusGroup(each) => (false, String::new(), place_in(StatusGroup::ALL, each)),
+    }
 }
 
 fn failed(error: impl std::fmt::Display) -> SearchFailure {
@@ -131,16 +151,31 @@ fn stopped(error: StoreError) -> SearchFailure {
 
 impl SearchStore for AuthStorage {
     async fn search_page(&self, request: &SearchRequest) -> Result<Vec<SearchHit>, SearchFailure> {
-        let dialect = self.database().dialect();
-        let kinds = kinds_of(request, dialect).map_err(failed)?;
-        let built = page_statement(request, dialect).map_err(failed)?;
-        let rows = self
-            .database()
+        let database = self.database();
+        let dialect = database.dialect();
+        let plan = SortPlan::of(request, dialect).map_err(failed)?;
+        // To continue after an issue the store reads where it stands in the order: a cursor holds
+        // nothing but its ID, so no value of any issue is ever written into one.
+        let place = match request.after {
+            Some(after) => {
+                let built = place_statement(request, &plan, after);
+                let rows = database
+                    .fetch_all_within(&built, SEARCH_TIME)
+                    .await
+                    .map_err(stopped)?;
+                let row = rows.first().ok_or(SearchFailure::BadCursor)?;
+                Some((read_place(row, plan.kinds()).map_err(failed)?, after))
+            }
+            None => None,
+        };
+        let last = place.as_ref().map(|(values, id)| (values.as_slice(), *id));
+        let built = page_statement(request, dialect, &plan, last).map_err(failed)?;
+        let rows = database
             .fetch_all_within(&built, SEARCH_TIME)
             .await
             .map_err(stopped)?;
         rows.iter()
-            .map(|row| read_hit(row, &kinds))
+            .map(read_hit)
             .collect::<Result<_, _>>()
             .map_err(failed)
     }
@@ -164,7 +199,7 @@ impl SearchStore for AuthStorage {
         request: &SearchRequest,
         by: &str,
     ) -> Result<Vec<GroupCount>, SearchFailure> {
-        let (built, kind) =
+        let (built, what) =
             groups_statement(request, self.database().dialect(), by).map_err(failed)?;
         let rows = self
             .database()
@@ -173,15 +208,17 @@ impl SearchStore for AuthStorage {
             .map_err(stopped)?;
         let mut groups: Vec<GroupCount> = rows
             .iter()
-            .map(|row| read_group(row, kind))
+            .map(|row| read_group(row, what))
             .collect::<Result<_, _>>()
             .map_err(failed)?;
         // The groups of a field with many values come from two reads put together, so they are
-        // put in order here: by their value as text or number, the group without a value last.
-        groups.sort_by(|one, other| group_order(kind, one).cmp(&group_order(kind, other)));
+        // put in order here: by their value, the group without a value last.
+        groups.sort_by_cached_key(group_order);
         Ok(groups)
     }
 }
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_more;

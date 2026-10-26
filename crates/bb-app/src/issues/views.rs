@@ -4,6 +4,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
+use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::{ASSIGNED_TO_PEOPLE, REPORTED_BY_PEOPLE};
 use bb_core::id::{EntityId, IssueId, IssueTypeId, ProjectId, UserId};
@@ -16,7 +17,7 @@ use bb_policy::{Evaluation, PeopleContext, PersonRef};
 
 use super::types::{IssueTypeRef, IssueView};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx};
+use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::ItemValues;
 use crate::projects::ProjectRef;
 use crate::workflows::{StatusChangeView, StatusCheck, StatusView};
@@ -40,6 +41,14 @@ pub(crate) struct IssueViews {
     show_people: bool,
 }
 
+/// A project that a page of issues has issues of: the projects from the top down to it, what the
+/// viewer may do there, and the project itself.
+pub(crate) struct PagePlace {
+    pub(crate) chain: Vec<ProjectId>,
+    pub(crate) held: Arc<Evaluation>,
+    pub(crate) project: Project,
+}
+
 impl IssueViews {
     /// Gives the views what the page has read already, so they read nothing of their own: the
     /// projects from the top down to the project, and the values of own fields of all the issues
@@ -59,6 +68,67 @@ impl IssueViews {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The views of a page of issues, each with what the viewer may do in its project. The one way
+    /// a page is made, for the list of a project and for a search: the people the issues are
+    /// assigned to, the values of own fields of all of them and the rights and the chain of every
+    /// project of the page are read once, however many projects the page spans (PERF-N1).
+    pub(crate) async fn issue_items(
+        &self,
+        actor: &Actor,
+        issues: &[Issue],
+        places: &HashMap<ProjectId, PagePlace>,
+        show_people: bool,
+    ) -> Result<Vec<(Arc<Evaluation>, IssueView)>, AppError> {
+        let ids: Vec<IssueId> = issues.iter().map(|issue| issue.id).collect();
+        let assigned = self
+            .store()
+            .assigned_people_of(&ids)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let values = self
+            .load_values(
+                RecordKind::Issue,
+                &ids.iter().map(|id| (*id).into()).collect::<Vec<EntityId>>(),
+            )
+            .await?;
+        let mut views: HashMap<ProjectId, IssueViews> = HashMap::new();
+        let mut projects: Vec<ProjectId> = issues.iter().map(|issue| issue.project).collect();
+        projects.sort_unstable();
+        projects.dedup();
+        for project in projects {
+            let place = places
+                .get(&project)
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+            let mut made = self
+                .issue_views(actor, Arc::clone(&place.held), place.project.clone())
+                .await?
+                .with_page(place.chain.clone(), values.clone());
+            if !show_people {
+                made = made.without_people();
+            }
+            views.insert(project, made);
+        }
+        let mut items = Vec::with_capacity(issues.len());
+        for issue in issues {
+            let place = places
+                .get(&issue.project)
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+            let Some(shown) = views.get_mut(&issue.project) else {
+                continue;
+            };
+            let people: Vec<UserId> = assigned
+                .iter()
+                .filter(|each| each.issue == issue.id)
+                .map(|each| each.person)
+                .collect();
+            items.push((
+                Arc::clone(&place.held),
+                self.issue_view(shown, issue, &people).await?,
+            ));
+        }
+        Ok(items)
+    }
+
     /// The views of the issues of `project` for the viewer, whose evaluation is the one at the
     /// project.
     pub(crate) async fn issue_views(
@@ -135,18 +205,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         self.status_changes_of(&check, workflow, &issue.status)
             .await
-    }
-
-    /// Reads the own-field values of these issues in one go, so a page of issues costs one read.
-    pub(crate) async fn preload_values(
-        &self,
-        views: &mut IssueViews,
-        issues: &[IssueId],
-    ) -> Result<(), AppError> {
-        let ids: Vec<EntityId> = issues.iter().map(|id| (*id).into()).collect();
-        let loaded = self.load_values(RecordKind::Issue, &ids).await?;
-        views.values.merge(loaded);
-        Ok(())
     }
 
     async fn person_once(

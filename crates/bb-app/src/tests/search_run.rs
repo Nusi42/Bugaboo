@@ -16,8 +16,8 @@ use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::issues::IssueStore as _;
 use crate::search::{
-    SearchCountQuery, SearchError, SearchFailure, SearchHit, SearchPosition, SearchQuery,
-    SearchScope, SortValue, search, search_count,
+    SearchCountQuery, SearchError, SearchFailure, SearchHit, SearchQuery, SearchScope, search,
+    search_count,
 };
 
 fn asked(session: &str, text: &str) -> SearchQuery {
@@ -41,14 +41,7 @@ async fn issue_of(world: &World, project: bb_core::id::ProjectId) -> Result<Issu
 }
 
 fn hit(issue: Issue) -> SearchHit {
-    let id = issue.id;
-    SearchHit {
-        issue,
-        position: SearchPosition {
-            values: vec![SortValue::Whole(5), SortValue::Text("a".to_owned())],
-            id,
-        },
-    }
+    SearchHit { issue }
 }
 
 #[tokio::test]
@@ -149,12 +142,8 @@ async fn perf_02_a_page_has_a_cursor_that_the_next_request_continues_from() -> O
         requests[0].limit, 2,
         "one more than the page, to know there is a next one"
     );
-    let after = requests[1]
-        .after
-        .clone()
-        .ok_or("the position is read back")?;
-    assert_eq!(after.id, first.id);
-    assert_eq!(after.values.len(), 2);
+    let after = requests[1].after.ok_or("the position is read back")?;
+    assert_eq!(after, first.id);
     let bad = SearchQuery {
         cursor: Some("not a cursor".to_owned()),
         ..asked(&admin, "")
@@ -281,5 +270,45 @@ async fn perf_n1_a_page_over_many_projects_reads_as_much_as_one_over_few() -> Ou
     let few = reads_for_a_page_over(2).await?;
     let many = reads_for_a_page_over(6).await?;
     assert_eq!(few, many, "reads grow with the projects of a page");
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_05_a_hidden_field_takes_as_long_as_an_unknown_field() -> Outcome {
+    use std::time::{Duration, Instant};
+
+    let world = World::new().await?;
+    a_project(&world, "OPEN").await?;
+    let shown: Vec<_> = every_field()
+        .into_iter()
+        .filter(|field| *field != Field::Priority.into())
+        .collect();
+    let (bob, _) = bob_with_a_role(&world, &shown).await?;
+    let spent = |text: &'static str| {
+        let (world, bob) = (&world, bob.clone());
+        async move {
+            let mut times: Vec<Duration> = Vec::new();
+            let mut reads = Vec::new();
+            for _ in 0..60 {
+                let before = world.store.reads();
+                let started = Instant::now();
+                let answer = search(&world.ctx(), asked(&bob, text)).await;
+                times.push(started.elapsed());
+                assert!(matches!(answer, Err(SearchError::Mistakes(_))));
+                reads.push(world.store.reads() - before);
+            }
+            times.sort();
+            (times[times.len() / 2], reads)
+        }
+    };
+    let (hidden, hidden_reads) = spent("priority is high").await;
+    let (unknown, unknown_reads) = spent("prioritx is high").await;
+    // The same reads for both, and the same time within the noise of a computer.
+    assert_eq!(hidden_reads, unknown_reads);
+    let (slow, fast) = (hidden.max(unknown), hidden.min(unknown));
+    assert!(
+        slow < fast * 3 + Duration::from_millis(2),
+        "{hidden:?} {unknown:?}"
+    );
     Ok(())
 }

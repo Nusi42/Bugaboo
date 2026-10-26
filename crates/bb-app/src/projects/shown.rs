@@ -168,7 +168,7 @@ impl Leveled {
             .map(|stored| crate::search::ProjectLink {
                 id: stored.id,
                 parent: stored.parent,
-                short_name: stored.short_name.to_string(),
+                short_name: stored.short_name.clone(),
             })
             .collect()
     }

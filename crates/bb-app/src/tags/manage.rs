@@ -32,8 +32,8 @@ use crate::projects::{ProjectRef, Why};
 use std::sync::Arc;
 
 /// The tags with their limits, as the person who looks after them reads them.
-struct Catalogue {
-    tags: Vec<Tag>,
+pub(crate) struct Catalogue {
+    pub(crate) tags: Vec<Tag>,
     limits: Vec<TagProject>,
 }
 
@@ -83,7 +83,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
     }
 
-    async fn tag_catalogue(&self) -> Result<Catalogue, AppError> {
+    pub(crate) async fn tag_catalogue(&self) -> Result<Catalogue, AppError> {
         let tags = self
             .store()
             .tags()
@@ -119,7 +119,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The tags the person may know of: one limited to a project they see, one used on an issue they
     /// read, and an unlimited one no issue has any more, also none in the trash (so it can still be cleaned up). A tag that only issues
     /// or projects they do not see know is not there for them (SEC-06).
-    async fn known_tags(
+    pub(crate) async fn known_tags(
         &self,
         shown: &crate::projects::Shown,
     ) -> Result<BTreeSet<TagId>, AppError> {

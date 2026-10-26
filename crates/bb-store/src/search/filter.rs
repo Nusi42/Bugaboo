@@ -8,7 +8,7 @@ use sea_query::{
     SelectStatement, UnionType,
 };
 
-use super::source::{Domain, Subject, subject_of};
+use super::source::{Domain, Subject};
 use super::{CompileError, Compiler, nothing};
 use crate::db::StoredId as _;
 use crate::schema::{GroupMemberRow, IssueParentRow, IssueRow, RelationRow};
@@ -36,7 +36,7 @@ impl Compiler<'_> {
     }
 
     fn field_test(&self, word: &str, test: &Test) -> Result<Cond, CompileError> {
-        let (subject, domain) = subject_of(self.target(word)?);
+        let (subject, domain) = self.subject_of(self.target(word)?);
         match test {
             Test::Is { value, .. } => self.equals_in(&subject, domain, value),
             Test::IsNot { value, .. } => self.is_not(&subject, domain, std::slice::from_ref(value)),
@@ -176,10 +176,10 @@ impl Compiler<'_> {
     /// The project with this short name and the projects below it that the person sees.
     fn subtree(&self, short_name: &str) -> Vec<bb_core::id::ProjectId> {
         let projects = &self.request.projects;
-        let mut found: Vec<_> = projects
-            .iter()
-            .filter(|project| project.short_name.eq_ignore_ascii_case(short_name))
-            .map(|project| project.id)
+        let mut found: Vec<_> = self
+            .project_named(short_name)
+            .map(|root| root.id)
+            .into_iter()
             .collect();
         let mut at = 0;
         while at < found.len() {
@@ -197,7 +197,7 @@ impl Compiler<'_> {
 
     /// Issues below the named one, at any depth, through issues the person reads.
     fn under(&self, reference: &str) -> Cond {
-        let read = crate::tags::sight_condition(&self.request.sight);
+        let read = crate::sight::sight_condition(&self.request.sight);
         let mut first = Query::select();
         first
             .column((IssueParentRow::Table, IssueParentRow::Child))
@@ -259,7 +259,7 @@ impl Compiler<'_> {
     /// Issues that a chain of relations of at most `limit` steps joins to the named one, through
     /// issues the person reads.
     fn connected(&self, reference: &str, limit: u32) -> Cond {
-        let read = crate::tags::sight_condition(&self.request.sight);
+        let read = crate::sight::sight_condition(&self.request.sight);
         let name = Alias::new(format!("walk{}", self.next_table()));
         let at = |column: &str| Expr::col((name.clone(), Alias::new(column.to_owned())));
         let mut first = Query::select();

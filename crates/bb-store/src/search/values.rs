@@ -6,8 +6,10 @@
 //! may know, which the use case put in the request (decision 9 of ADR-0005 amendment M5). No
 //! comparison uses `LOWER`, `ILIKE` or a collation, so both databases answer alike.
 
+use bb_app::search::ProjectLink;
 use bb_core::issue::Priority;
 use bb_core::names::name_key;
+use bb_core::project::ShortName;
 use bb_core::readable_id::ReadableId;
 use bb_searchlang::{Comparison, Operand};
 use sea_query::{Cond, Expr, ExprTrait as _, Query, Value};
@@ -16,7 +18,7 @@ use super::source::Domain;
 use super::time::{Clock, Range};
 use super::{CompileError, Compiler, nothing};
 use crate::db::StoredId as _;
-use crate::schema::{IssueAliasRow, IssueRow, LabelRow, TagRow};
+use crate::schema::{IssueAliasRow, IssueRow};
 
 /// The text of a value, for a field that holds text.
 fn operand_text(operand: &Operand) -> String {
@@ -60,7 +62,7 @@ impl Compiler<'_> {
 
     /// The things of a domain that an operand names, as the values their column holds, in the
     /// order the domain has them (a level for each, for the domains with an order).
-    fn levels(&self, domain: Domain) -> Result<Vec<Vec<Value>>, CompileError> {
+    pub(super) fn levels(&self, domain: Domain) -> Result<Vec<Vec<Value>>, CompileError> {
         Ok(match domain {
             Domain::Priority => Priority::ALL
                 .iter()
@@ -91,12 +93,12 @@ impl Compiler<'_> {
         match domain {
             Domain::Priority => Priority::ALL
                 .iter()
-                .position(|each| name_key(each.name().template()) == wanted),
+                .position(|each| name_key(&each.search_word()) == wanted),
             Domain::StatusGroup => self
                 .request
                 .status_groups
                 .iter()
-                .position(|(group, _)| name_key(group.name().template()) == wanted),
+                .position(|(group, _)| name_key(&group.search_word()) == wanted),
             Domain::Choice(field) => self
                 .request
                 .names
@@ -138,13 +140,7 @@ impl Compiler<'_> {
             ),
             Domain::Project => Self::among(
                 subject,
-                values(
-                    self.request
-                        .projects
-                        .iter()
-                        .filter(|project| project.short_name.eq_ignore_ascii_case(&text))
-                        .map(|project| project.id.stored()),
-                ),
+                values(self.project_named(&text).map(|project| project.id.stored())),
             ),
             Domain::Issue => match self.issues_named(&text) {
                 Some(found) => Cond::all().add(subject.in_subquery(found)),
@@ -175,22 +171,26 @@ impl Compiler<'_> {
                         .flat_map(|(_, ids)| ids.iter().map(|id| id.stored())),
                 ),
             ),
-            Domain::Tag => Cond::all().add(
-                subject.in_subquery(
-                    Query::select()
-                        .column(TagRow::Id)
-                        .from(TagRow::Table)
-                        .and_where(Expr::col(TagRow::NameKey).eq(key))
-                        .to_owned(),
+            Domain::Tag => Self::among(
+                subject,
+                values(
+                    self.request
+                        .names
+                        .tags
+                        .iter()
+                        .filter(|(name, _)| *name == key)
+                        .flat_map(|(_, ids)| ids.iter().map(|id| id.stored())),
                 ),
             ),
-            Domain::Label => Cond::all().add(
-                subject.in_subquery(
-                    Query::select()
-                        .column(LabelRow::Id)
-                        .from(LabelRow::Table)
-                        .and_where(Expr::col(LabelRow::NameKey).eq(key))
-                        .to_owned(),
+            Domain::Label => Self::among(
+                subject,
+                values(
+                    self.request
+                        .names
+                        .labels
+                        .iter()
+                        .filter(|(name, _)| *name == key)
+                        .flat_map(|(_, ids)| ids.iter().map(|id| id.stored())),
                 ),
             ),
             _ => nothing(),
@@ -312,25 +312,29 @@ impl Compiler<'_> {
         }
     }
 
+    /// The project of the person with this short name, as it is written in a search (in any case:
+    /// the one rule of `ShortName`).
+    pub(super) fn project_named(&self, text: &str) -> Option<&ProjectLink> {
+        self.project_link(&text.parse::<ShortName>().ok()?)
+    }
+
+    fn project_link(&self, short_name: &ShortName) -> Option<&ProjectLink> {
+        self.request
+            .projects
+            .iter()
+            .find(|project| project.short_name == *short_name)
+    }
+
     /// The issues a readable ID names, of the issues the person reads (the current ID or an old
     /// one): none for a project they do not see or a text that is no ID.
     pub(super) fn issues_named(&self, text: &str) -> Option<sea_query::SelectStatement> {
         let id: ReadableId = text.parse().ok()?;
-        let project = self
-            .request
-            .projects
-            .iter()
-            .find(|project| {
-                project
-                    .short_name
-                    .eq_ignore_ascii_case(&id.short_name.to_string())
-            })?
-            .id;
+        let project = self.project_link(&id.short_name)?.id;
         let mut found = Query::select();
         found
             .column((IssueRow::Table, IssueRow::Id))
             .from(IssueRow::Table)
-            .cond_where(crate::tags::sight_condition(&self.request.sight))
+            .cond_where(crate::sight::sight_condition(&self.request.sight))
             .and_where(
                 Expr::col((IssueRow::Table, IssueRow::Project))
                     .eq(project.stored())

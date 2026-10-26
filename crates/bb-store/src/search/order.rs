@@ -7,38 +7,76 @@
 //! on both databases (they differ in where they put a `NULL`). Text is ordered by its bytes on both
 //! (PostgreSQL's collation is set to `C`), so the same issues come in the same order everywhere.
 
-use bb_app::search::{FieldTarget, SearchPosition, SortValue};
-use bb_core::issue::Priority;
+use bb_app::search::FieldTarget;
+use bb_core::id::IssueId;
 use bb_searchlang::Direction;
 use sea_query::{
     Alias, Cond, DynIden, Expr, ExprTrait as _, Func, IntoIden as _, JoinType, Order, Query,
     SelectStatement,
 };
 
-use super::source::{Domain, Subject, subject_of};
+use super::source::{Domain, Subject};
 use super::{CompileError, Compiler, nothing};
 use crate::db::{Dialect, StoredId as _};
 use crate::schema::{
     FieldChoiceRow, GroupRow, IssueRow, IssueTypeRow, LabelRow, PersonRow, ProjectRow, TagRow,
 };
 
-/// What a key holds, which says how it is kept in a cursor.
+/// What a key holds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Kind {
     Text,
     Whole,
 }
 
+/// A value of a key of the order, as the last issue of the page before has it: read by the store
+/// from that issue, never written into a cursor.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) enum SortValue {
+    /// No value; such issues come last in either direction.
+    Empty,
+    /// A text, as written (compared by its bytes).
+    Text(String),
+    /// A whole number (a moment, a rank).
+    Whole(i64),
+}
+
+/// What a group is, which says how the value of a row is read.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum GroupValue {
+    /// A text that is no person's.
+    Text,
+    /// A number or a moment.
+    Whole,
+    /// The ID of a thing.
+    Id(IdOf),
+    /// The place of the priority.
+    Priority,
+    /// The place of the status group.
+    StatusGroup,
+}
+
+/// What an ID in a group is the ID of.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum IdOf {
+    Person,
+    Group,
+    Issue,
+    Project,
+    IssueType,
+    Choice,
+}
+
 /// How a field splits the issues into groups.
 pub(super) enum Grouping {
     /// One value for each issue.
-    One(Expr, Kind),
+    One(Expr, GroupValue),
     /// Any number of values: the rows of the values of the issue, the value as the group is named,
     /// and the condition of an issue that has none.
     Many {
-        rows: SelectStatement,
+        rows: Box<SelectStatement>,
         value: Expr,
-        kind: Kind,
+        what: GroupValue,
         without: Cond,
     },
 }
@@ -111,20 +149,29 @@ impl Compiler<'_> {
         }
     }
 
-    /// The value of a field that stands for an issue in the order, and what it holds.
-    fn sort_value(&self, target: FieldTarget) -> Result<(Expr, Kind), CompileError> {
-        let (subject, domain) = subject_of(target);
+    /// The value of a field that stands for an issue in the order, and what it holds. An issue with
+    /// many values is placed by its smallest, or by its largest when the key runs the other way
+    /// (`desc`), so it is where the best of its values would put it.
+    fn sort_value(&self, target: FieldTarget, desc: bool) -> Result<(Expr, Kind), CompileError> {
+        let (subject, domain) = self.subject_of(target);
+        let pick = |value: Expr| {
+            if desc {
+                Func::max(value)
+            } else {
+                Func::min(value)
+            }
+        };
         let first = |value: Expr| match &subject {
             Subject::Column(_) => value,
             Subject::Linked(rows, _) => {
                 let mut rows = (**rows).clone();
-                rows.clear_selects().expr(Func::min(value));
+                rows.clear_selects().expr(pick(value));
                 super::scalar(rows)
             }
         };
         match domain {
             Domain::Priority | Domain::StatusGroup => {
-                Ok((bigint(self.rank(&subject, domain)), Kind::Whole))
+                Ok((bigint(self.rank(&subject, domain)?), Kind::Whole))
             }
             Domain::Text | Domain::Status => {
                 Ok((self.bytes(Self::plain(&subject, first)), Kind::Text))
@@ -136,7 +183,7 @@ impl Compiler<'_> {
                 let (table, id, name) =
                     names_of(named).ok_or(CompileError::Unsupported("sorting by this field"))?;
                 Ok((
-                    self.bytes(Self::named(&subject, table, id, name)),
+                    self.bytes(Self::named(&subject, table, id, name, pick)),
                     Kind::Text,
                 ))
             }
@@ -151,7 +198,13 @@ impl Compiler<'_> {
     }
 
     /// The name of the thing the value is the ID of, by a join on the rows (or on the column).
-    fn named(subject: &Subject, table: DynIden, id: DynIden, name: DynIden) -> Expr {
+    fn named(
+        subject: &Subject,
+        table: DynIden,
+        id: DynIden,
+        name: DynIden,
+        pick: impl Fn(Expr) -> sea_query::FunctionCall,
+    ) -> Expr {
         let looked_up = Alias::new("named");
         let name_of = Expr::col((looked_up.clone(), name));
         match subject {
@@ -164,7 +217,7 @@ impl Compiler<'_> {
             }
             Subject::Linked(rows, value) => {
                 let mut rows = (**rows).clone();
-                rows.clear_selects().expr(Func::min(name_of)).join_as(
+                rows.clear_selects().expr(pick(name_of)).join_as(
                     JoinType::InnerJoin,
                     table,
                     looked_up.clone(),
@@ -177,24 +230,12 @@ impl Compiler<'_> {
 
     /// The place of the value among the levels of its domain (the priority, the status group), or
     /// nothing when it is in none.
-    fn rank(&self, subject: &Subject, domain: Domain) -> Expr {
+    fn rank(&self, subject: &Subject, domain: Domain) -> Result<Expr, CompileError> {
         let Subject::Column(value) = subject else {
-            return Expr::null();
-        };
-        let levels: Vec<Vec<sea_query::Value>> = match domain {
-            Domain::Priority => Priority::ALL
-                .iter()
-                .map(|each| vec![sea_query::Value::from(each.code())])
-                .collect(),
-            _ => self
-                .request
-                .status_groups
-                .iter()
-                .map(|(_, keys)| keys.iter().cloned().map(sea_query::Value::from).collect())
-                .collect(),
+            return Ok(Expr::null());
         };
         let mut ranked: Option<sea_query::CaseStatement> = None;
-        for (at, level) in levels.into_iter().enumerate() {
+        for (at, level) in self.levels(domain)?.into_iter().enumerate() {
             if level.is_empty() {
                 continue;
             }
@@ -205,47 +246,52 @@ impl Compiler<'_> {
                 Some(case) => case.case(when, rank),
             });
         }
-        ranked.map_or_else(Expr::null, |case| case.finally(Expr::null()).into())
+        Ok(ranked.map_or_else(Expr::null, |case| case.finally(Expr::null()).into()))
     }
 
     /// How a field groups the issues. A field with one value for an issue is a value of the
     /// issue; a field with many (tags, labels, assigned people, an own field with several
     /// values) puts the issue in the group of each of its values, and an issue with none in the
-    /// group of no value.
+    /// group of no value. A group is named by the identity of the thing (its ID, or the word of a
+    /// built-in choice), never by a name: the use case shows it as the person may see it.
     pub(super) fn grouping(&self, word: &str) -> Result<Grouping, CompileError> {
         let target = self.target(word)?;
-        let (subject, domain) = subject_of(target);
-        let Subject::Linked(rows, value) = subject.clone() else {
-            let (value, kind) = self.sort_value(target)?;
-            return Ok(Grouping::One(value, kind));
-        };
-        let looked_up = Alias::new("named");
-        let (value, kind, name_table) = match domain {
-            Domain::Text => (self.bytes(value), Kind::Text, None),
-            Domain::Number(_) | Domain::YesNo | Domain::Time(_) => {
-                (bigint(value), Kind::Whole, None)
+        let (subject, domain) = self.subject_of(target);
+        let what = group_value_of(domain);
+        match subject.clone() {
+            Subject::Column(value) => {
+                let value = match what {
+                    GroupValue::Id(_) | GroupValue::Whole => value,
+                    GroupValue::Text => self.bytes(value),
+                    GroupValue::Priority | GroupValue::StatusGroup => {
+                        bigint(self.rank(&subject, domain)?)
+                    }
+                };
+                Ok(Grouping::One(value, what))
             }
-            named => {
-                let (table, id, name) =
-                    names_of(named).ok_or(CompileError::Unsupported("grouping by this field"))?;
-                (
-                    self.bytes(Expr::col((looked_up.clone(), name))),
-                    Kind::Text,
-                    Some((table, Expr::col((looked_up.clone(), id)).eq(value))),
-                )
+            Subject::Linked(rows, value) => {
+                let mut rows = *rows;
+                rows.clear_selects();
+                let value = match (domain, what) {
+                    (Domain::Tag | Domain::Label, _) => {
+                        // Tags and labels are told apart by the key of their name: not personal.
+                        let (table, id, name) = names_of(domain)
+                            .ok_or(CompileError::Unsupported("grouping by this field"))?;
+                        let one = Subject::Column(value);
+                        self.bytes(Self::named(&one, table, id, name, Func::min))
+                    }
+                    (_, GroupValue::Text) => self.bytes(value),
+                    (_, GroupValue::Whole) => bigint(value),
+                    _ => value,
+                };
+                Ok(Grouping::Many {
+                    rows: Box::new(rows),
+                    value,
+                    what,
+                    without: subject.empty(),
+                })
             }
-        };
-        let mut rows = *rows;
-        rows.clear_selects();
-        if let Some((table, on)) = name_table {
-            rows.join_as(JoinType::InnerJoin, table, looked_up, on);
         }
-        Ok(Grouping::Many {
-            rows,
-            value,
-            kind,
-            without: subject.empty(),
-        })
     }
 
     /// The keys of the order of this search, the ID last.
@@ -260,21 +306,25 @@ impl Compiler<'_> {
         }
         sort.iter()
             .map(|key| {
-                let (value, kind) = self.sort_value(self.target(&key.field.word)?)?;
-                let order = match key.direction {
-                    Some(Direction::HighestFirst | Direction::NewestFirst | Direction::ZToA) => {
-                        Order::Desc
-                    }
-                    Some(Direction::LowestFirst | Direction::OldestFirst | Direction::AToZ) => {
-                        Order::Asc
-                    }
-                    // What reads first without a word: the newest, the highest, A to Z.
-                    None => match kind {
-                        Kind::Text => Order::Asc,
-                        Kind::Whole => Order::Desc,
-                    },
-                };
-                Ok(Key { value, kind, order })
+                let target = self.target(&key.field.word)?;
+                let down = matches!(
+                    key.direction,
+                    Some(Direction::HighestFirst | Direction::NewestFirst | Direction::ZToA)
+                );
+                let up = matches!(
+                    key.direction,
+                    Some(Direction::LowestFirst | Direction::OldestFirst | Direction::AToZ)
+                );
+                // Without a word: the newest, the highest, A to Z. What the key holds is found out
+                // first, as the direction it reads in without a word depends on it.
+                let (_, kind) = self.sort_value(target, false)?;
+                let desc = down || (!up && kind == Kind::Whole);
+                let (value, kind) = self.sort_value(target, desc)?;
+                Ok(Key {
+                    value,
+                    kind,
+                    order: if desc { Order::Desc } else { Order::Asc },
+                })
             })
             .collect()
     }
@@ -296,11 +346,8 @@ impl Compiler<'_> {
         );
     }
 
-    /// The issues after the last one of the page before.
-    pub(super) fn after(keys: &[Key], position: &SearchPosition) -> Result<Cond, CompileError> {
-        if position.values.len() != keys.len() {
-            return Err(CompileError::Unsupported("a cursor of another order"));
-        }
+    /// The issues after the last one of the page before, whose values of the keys are `last`.
+    pub(super) fn after(keys: &[Key], last: &[SortValue], id: IssueId) -> Cond {
         let later = |value: &Expr, order: &Order, than: sea_query::Value| {
             if matches!(order, Order::Desc) {
                 value.clone().lt(than)
@@ -314,12 +361,12 @@ impl Compiler<'_> {
             SortValue::Whole(number) => key.value.clone().eq(*number),
         };
         let mut any = Cond::any();
-        for (at, (key, last)) in keys.iter().zip(&position.values).enumerate() {
+        for (at, (key, value)) in keys.iter().zip(last).enumerate() {
             let mut all = Cond::all();
-            for (before, seen) in keys.iter().zip(&position.values).take(at) {
+            for (before, seen) in keys.iter().zip(last).take(at) {
                 all = all.add(same(before, seen));
             }
-            let after = match last {
+            let after = match value {
                 // Issues without a value are last, so none comes after one of them by this key.
                 SortValue::Empty => nothing(),
                 SortValue::Text(text) => Cond::any()
@@ -332,16 +379,31 @@ impl Compiler<'_> {
             any = any.add(all.add(after));
         }
         let mut all = Cond::all();
-        for (key, last) in keys.iter().zip(&position.values) {
-            all = all.add(same(key, last));
+        for (key, value) in keys.iter().zip(last) {
+            all = all.add(same(key, value));
         }
-        let id = Expr::col((IssueRow::Table, IssueRow::Id));
-        let bytes = position.id.stored();
+        let column = Expr::col((IssueRow::Table, IssueRow::Id));
         all = all.add(if matches!(Self::id_order(keys), Order::Desc) {
-            id.lt(bytes)
+            column.lt(id.stored())
         } else {
-            id.gt(bytes)
+            column.gt(id.stored())
         });
-        Ok(any.add(all))
+        any.add(all)
+    }
+}
+
+/// What the groups of a field are, by the domain of its values.
+const fn group_value_of(domain: Domain) -> GroupValue {
+    match domain {
+        Domain::Person => GroupValue::Id(IdOf::Person),
+        Domain::Group => GroupValue::Id(IdOf::Group),
+        Domain::Issue => GroupValue::Id(IdOf::Issue),
+        Domain::Project => GroupValue::Id(IdOf::Project),
+        Domain::Type => GroupValue::Id(IdOf::IssueType),
+        Domain::Choice(_) => GroupValue::Id(IdOf::Choice),
+        Domain::Priority => GroupValue::Priority,
+        Domain::StatusGroup => GroupValue::StatusGroup,
+        Domain::Number(_) | Domain::YesNo | Domain::Time(_) => GroupValue::Whole,
+        Domain::Text | Domain::Status | Domain::Tag | Domain::Label => GroupValue::Text,
     }
 }

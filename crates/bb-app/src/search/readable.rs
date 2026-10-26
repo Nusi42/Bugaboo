@@ -38,6 +38,7 @@ use bb_searchlang::Field as SearchField;
 use bb_searchlang::{FieldKind, IssueField, ReadableFields, own_field_word};
 use serde::Serialize;
 
+use super::request::OwnReach;
 use super::target::{FieldTarget, Searchable};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -155,8 +156,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             issue_types: once_each(types.iter().map(|found| found.name.clone())),
             own: own.clone(),
         };
+        let fields = fields_in(&places, &sources);
+        let own_reach = own
+            .iter()
+            .filter(|definition| {
+                fields.iter().any(|each| {
+                    matches!(each.target, FieldTarget::Own { field, .. } if field == definition.field.id)
+                })
+            })
+            .map(|definition| OwnReach {
+                field: definition.field.id,
+                projects: places
+                    .iter()
+                    .filter(|place| definition.scope.reaches_project(&place.chain))
+                    .filter_map(|place| place.chain.last().copied())
+                    .collect(),
+                issue_types: definition.scope.issue_types.clone(),
+            })
+            .collect();
         Ok(Looked {
-            fields: fields_in(&places, &sources),
+            fields,
+            own_reach,
             statuses,
             types,
             own,
@@ -180,6 +200,8 @@ pub(crate) struct Looked {
     pub(crate) types: Vec<IssueType>,
     /// Every own field, with its choices.
     pub(crate) own: Vec<Definition>,
+    /// Where the values of each own field the person may read count.
+    pub(crate) own_reach: Vec<OwnReach>,
     /// The projects the search looks at.
     pub(crate) projects: Vec<ProjectId>,
     /// The tree as the person sees it, with the levels.

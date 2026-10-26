@@ -4,9 +4,11 @@
 use std::future::Future;
 
 use bb_core::id::{
-    ChoiceId, FieldId, GroupId, IssueId, IssueTypeId, ProjectId, RelationKindId, UserId,
+    ChoiceId, FieldId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, RelationKindId, TagId,
+    UserId,
 };
-use bb_core::issue::{Issue, StatusGroup};
+use bb_core::issue::{Issue, Priority, StatusGroup};
+use bb_core::project::ShortName;
 use bb_core::tags::IssueSight;
 use bb_searchlang::CheckedSearch;
 use jiff::Timestamp;
@@ -23,7 +25,7 @@ pub struct ProjectLink {
     /// The project it sits in.
     pub parent: Option<ProjectId>,
     /// Its short name.
-    pub short_name: String,
+    pub short_name: ShortName,
 }
 
 /// What the names in a search stand for, resolved by the use case with the rules of the person
@@ -43,27 +45,22 @@ pub struct Names {
     pub groups: Vec<(String, Vec<GroupId>)>,
     /// The choices of each own field with a list, in the order of the list.
     pub choices: Vec<(FieldId, Vec<(String, ChoiceId)>)>,
+    /// The tags the person may know, by the key of their name.
+    pub tags: Vec<(String, Vec<TagId>)>,
+    /// The labels the person may know, by the key of their name.
+    pub labels: Vec<(String, Vec<LabelId>)>,
 }
 
-/// A value a search sorts by, as it is kept in a cursor.
+/// Where the values of an own field count: only in the projects the field reaches, and for the
+/// issue types it is used for. Rows that stay on an issue that moved elsewhere are no values.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum SortValue {
-    /// No value; such issues come last in either direction.
-    Empty,
-    /// A text, in lower case.
-    Text(String),
-    /// A whole number (a moment, a rank, a count).
-    Whole(i64),
-}
-
-/// Where a page ended: the sort values of its last issue and its ID, which is the last key so that
-/// issues with the same value keep one order (M3-F24).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SearchPosition {
-    /// The values of the keys of `sort by`, in order.
-    pub values: Vec<SortValue>,
-    /// The ID of the issue.
-    pub id: IssueId,
+pub struct OwnReach {
+    /// The field.
+    pub field: FieldId,
+    /// The projects of the search that the field reaches.
+    pub projects: Vec<ProjectId>,
+    /// The issue types the field is used for; empty for all.
+    pub issue_types: Vec<IssueTypeId>,
 }
 
 /// Everything a search is compiled from. The person's rights are in it as data (`sight`, the
@@ -91,26 +88,56 @@ pub struct SearchRequest {
     pub status_groups: Vec<(StatusGroup, Vec<String>)>,
     /// The kinds of relation that mean *blocks*.
     pub blocking_kinds: Vec<RelationKindId>,
-    /// The last issue of the page before.
-    pub after: Option<SearchPosition>,
+    /// Where the values of each own field count.
+    pub own_reach: Vec<OwnReach>,
+    /// The last issue of the page before. The store reads its place in the order itself, so a
+    /// cursor holds nothing but this ID.
+    pub after: Option<IssueId>,
     /// How many issues a page holds at most.
     pub limit: u64,
 }
 
-/// An issue found, with where it stands in the order.
+/// An issue found.
 #[derive(Clone, Debug)]
 pub struct SearchHit {
     /// The issue.
     pub issue: Issue,
-    /// Where it stands, for the cursor.
-    pub position: SearchPosition,
+}
+
+/// What a group of a search is, by identity: the store gives the ID or the word, never a name,
+/// and the use case shows the thing with the rights of the person (ADR-0022).
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(tag = "type", content = "value", rename_all = "snake_case")]
+pub enum GroupKey {
+    /// The issues without a value.
+    Empty,
+    /// A text that is no person's: a status key, a tag or a label, a text of an own field.
+    Text(String),
+    /// A number or a moment.
+    Whole(i64),
+    /// A person.
+    Person(UserId),
+    /// A group of people.
+    Group(GroupId),
+    /// An issue the person may read.
+    Issue(IssueId),
+    /// A project.
+    Project(ProjectId),
+    /// An issue type.
+    IssueType(IssueTypeId),
+    /// A choice of an own field.
+    Choice(ChoiceId),
+    /// A priority.
+    Priority(Priority),
+    /// A status group.
+    StatusGroup(StatusGroup),
 }
 
 /// How many issues a group of a search holds.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct GroupCount {
-    /// What the group is: the value of the field as text, `None` for the issues without one.
-    pub value: Option<String>,
+    /// What the group is.
+    pub key: GroupKey,
     /// How many issues the search finds in it.
     pub issues: u64,
 }
@@ -120,6 +147,8 @@ pub struct GroupCount {
 pub enum SearchFailure {
     /// It took longer than the limit (SEC-17).
     TooSlow,
+    /// The cursor names an issue that is not there (or not readable): not a cursor of this list.
+    BadCursor,
     /// The store failed, or the search cannot be compiled; the text is for the log.
     Failed(String),
 }

@@ -9,7 +9,7 @@
 use std::future::Future;
 use std::str::FromStr as _;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use bb_core::event::DomainEvent;
@@ -121,6 +121,16 @@ const SQLITE_INTERRUPT: &str = "9";
 
 /// How many steps of its virtual machine SQLite takes between two looks at the clock.
 const PROGRESS_STEPS: i32 = 1_000;
+
+/// Says that a timed read is over, when it is dropped: the progress handler of a read looks at it.
+#[derive(Default)]
+struct Over(Arc<AtomicBool>);
+
+impl Drop for Over {
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::Relaxed);
+    }
+}
 
 /// The two databases Bugaboo supports.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -320,13 +330,21 @@ impl Database {
                 let (sql, values) = statement.build(Dialect::Sqlite);
                 let mut connection = pool.acquire().await?;
                 let deadline = Instant::now() + limit;
+                // The handler stops nothing once the read is over for any reason, also when this
+                // future is dropped half way (a client that went away): the guard says so, and
+                // the connection goes back to the pool harmless even if the handler is still on.
+                let over = Over::default();
+                let watching = Arc::clone(&over.0);
                 connection
                     .lock_handle()
                     .await?
-                    .set_progress_handler(PROGRESS_STEPS, move || Instant::now() < deadline);
+                    .set_progress_handler(PROGRESS_STEPS, move || {
+                        watching.load(Ordering::Relaxed) || Instant::now() < deadline
+                    });
                 let rows = sqlx::query_with(AssertSqlSafe(sql), values)
                     .fetch_all(&mut *connection)
                     .await;
+                drop(over);
                 connection.lock_handle().await?.remove_progress_handler();
                 Ok(rows
                     .map_err(stopped)?

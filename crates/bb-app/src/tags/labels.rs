@@ -46,9 +46,9 @@ use crate::offers::{Here, Standing, Subject};
 use crate::projects::{Shown, Why};
 
 /// The groups and the labels as they are stored.
-struct Catalogue {
+pub(crate) struct Catalogue {
     groups: Vec<LabelGroup>,
-    labels: Vec<Label>,
+    pub(crate) labels: Vec<Label>,
 }
 
 impl Catalogue {
@@ -256,7 +256,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
     }
 
-    async fn label_catalogue(&self) -> Result<Catalogue, AppError> {
+    pub(crate) async fn label_catalogue(&self) -> Result<Catalogue, AppError> {
         let store = self.store();
         Ok(Catalogue {
             groups: store
@@ -330,7 +330,7 @@ fn label_group_view(group: &LabelGroup, standing: Standing) -> LabelGroupView {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The groups of labels the person may know that a list about the project holds, and the rows of
     /// that project.
-    async fn listed_groups(
+    pub(crate) async fn listed_groups(
         &self,
         shown: &Shown,
         catalogue: &mut Catalogue,

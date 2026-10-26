@@ -6,6 +6,9 @@
 //! *See issues* a person sees the issues they reported. No answer holds a count (PRIV-13): a page
 //! has a cursor, never a total.
 
+use std::collections::HashMap;
+use std::sync::Arc;
+
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
@@ -18,6 +21,7 @@ use jiff::Timestamp;
 use super::fields::CHANGEABLE;
 use super::store::IssueFound;
 use super::types::{IssueDetail, IssuePage, IssueQuery, IssuesQuery};
+use super::views::PagePlace;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::Item;
 use crate::input::cursor_or_invalid;
@@ -154,28 +158,21 @@ pub async fn issues<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let page = Cut::of(found, limit);
     let next_cursor = page.next_cursor(write_cursor);
+    let places = HashMap::from([(
+        project.id,
+        PagePlace {
+            chain: ctx.chain_of(project.id).await?,
+            held: Arc::clone(&held),
+            project,
+        },
+    )]);
     // Always read: a status change may name the person assigned. The people are in the answer only
     // when they were asked for.
-    let ids: Vec<IssueId> = page.items.iter().map(|issue| issue.id).collect();
-    let assigned_people = ctx
-        .store()
-        .assigned_people_of(&ids)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
-    if !input.assigned_to {
-        views = views.without_people();
-    }
-    let shown: Vec<IssueId> = page.items.iter().map(|issue| issue.id).collect();
-    ctx.preload_values(&mut views, &shown).await?;
-    let mut items = Vec::with_capacity(page.items.len());
-    for issue in &page.items {
-        let people: Vec<UserId> = assigned_people
-            .iter()
-            .filter(|assigned_person| assigned_person.issue == issue.id)
-            .map(|assigned_person| assigned_person.person)
-            .collect();
-        items.push(ctx.issue_view(&mut views, issue, &people).await?);
-    }
+    let items = ctx
+        .issue_items(&actor, &page.items, &places, input.assigned_to)
+        .await?
+        .into_iter()
+        .map(|(_, view)| view)
+        .collect();
     Ok(held.authorize(IssuePage { items, next_cursor }))
 }

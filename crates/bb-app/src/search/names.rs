@@ -18,6 +18,7 @@ use super::request::Names;
 use super::target::{FieldTarget, target_of};
 use crate::access::{Actor, names_other_people};
 use crate::auth::{AppError, AuthStore, Ctx, SearchIn, internal};
+use crate::offers::label_is_known;
 
 /// The most people read from the store for one name in a search.
 const PEOPLE_PER_NAME: u64 = 100;
@@ -26,9 +27,11 @@ const PEOPLE_PER_NAME: u64 = 100;
 struct Asked {
     people: Vec<(PeopleKind, String)>,
     groups: Vec<String>,
+    tags: Vec<String>,
+    labels: Vec<String>,
 }
 
-fn people_kind_of(target: FieldTarget) -> Option<PeopleKind> {
+pub(super) fn people_kind_of(target: FieldTarget) -> Option<PeopleKind> {
     match target {
         FieldTarget::AssignedTo => Some(ASSIGNED_TO_PEOPLE),
         FieldTarget::ReportedBy => Some(REPORTED_BY_PEOPLE),
@@ -131,10 +134,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut asked = Asked {
             people: Vec::new(),
             groups: Vec::new(),
+            tags: Vec::new(),
+            labels: Vec::new(),
         };
         if let Some(filter) = &checked.search().filter {
             ask(filter, looked, &mut asked);
         }
+        self.tags_and_labels_named(looked, &asked, &mut names)
+            .await?;
         let viewer = self.evaluation_of(actor, Where::Organization).await?;
         for (kind, text) in &asked.people {
             if names.people.iter().any(|(each, _)| *each == name_key(text)) {
@@ -162,6 +169,47 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         Ok(names)
+    }
+
+    /// The tags and labels the search names, among those the person may know (the same rule as the
+    /// lists of tags and labels): only read when the search names one.
+    async fn tags_and_labels_named(
+        &self,
+        looked: &Looked,
+        asked: &Asked,
+        names: &mut Names,
+    ) -> Result<(), AppError> {
+        if !asked.tags.is_empty() {
+            let catalogue = self.tag_catalogue().await?;
+            let known = self.known_tags(&looked.seen).await?;
+            for text in &asked.tags {
+                let ids = catalogue
+                    .tags
+                    .iter()
+                    .filter(|tag| known.contains(&tag.id) && same_name(&tag.name, text))
+                    .map(|tag| tag.id)
+                    .collect();
+                names.tags.push((name_key(text), ids));
+            }
+        }
+        if !asked.labels.is_empty() {
+            let mut catalogue = self.label_catalogue().await?;
+            let (groups, _) = self
+                .listed_groups(&looked.seen, &mut catalogue, None)
+                .await?;
+            for text in &asked.labels {
+                let ids = catalogue
+                    .labels
+                    .iter()
+                    .filter(|label| {
+                        label_is_known(label.group, &groups) && same_name(&label.name, text)
+                    })
+                    .map(|label| label.id)
+                    .collect();
+                names.labels.push((name_key(text), ids));
+            }
+        }
+        Ok(())
     }
 
     /// The people of this name whom the viewer may name: themselves, or anybody when they are

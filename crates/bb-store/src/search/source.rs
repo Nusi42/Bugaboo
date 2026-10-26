@@ -6,10 +6,12 @@
 //! tags, labels and the own fields alike (ADR-0006).
 
 use bb_app::search::FieldTarget;
+use bb_app::search::OwnReach;
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::id::FieldId;
 use bb_core::own_fields::FieldType;
-use sea_query::{Cond, Expr, ExprTrait as _, Query, SelectStatement};
+use bb_core::tags::IssueSight;
+use sea_query::{Alias, Cond, Expr, ExprTrait as _, Query, SelectStatement};
 
 use super::time::Clock;
 use crate::db::StoredId as _;
@@ -17,6 +19,7 @@ use crate::fields::kind_text;
 use crate::schema::{
     AssignedPersonRow, FieldValueRow, IssueLabelRow, IssueParentRow, IssueRow, IssueTagRow,
 };
+use crate::sight::sight_condition_as;
 
 /// Where the values of a field are.
 #[derive(Clone)]
@@ -101,8 +104,10 @@ fn issue_column(column: IssueRow) -> Expr {
     Expr::col((IssueRow::Table, column))
 }
 
-/// The values of an own field: the rows of the issue for the field that hold a value.
-fn own_values(field: FieldId, column: FieldValueRow) -> Subject {
+/// The values of an own field: the rows of the issue for the field that hold a value, only in the
+/// projects the field reaches and for the issue types it is used for (a row that stays on an issue
+/// that moved elsewhere is no value).
+fn own_values(field: FieldId, column: FieldValueRow, reach: &[OwnReach]) -> Subject {
     let mut rows = Query::select();
     rows.expr(Expr::val(1))
         .from(FieldValueRow::Table)
@@ -116,11 +121,52 @@ fn own_values(field: FieldId, column: FieldValueRow) -> Subject {
         )
         .and_where(Expr::col((FieldValueRow::Table, FieldValueRow::Field)).eq(field.stored()))
         .and_where(Expr::col((FieldValueRow::Table, column)).is_not_null());
+    match reach.iter().find(|each| each.field == field) {
+        Some(reached) => {
+            rows.and_where(
+                issue_column(IssueRow::Project)
+                    .is_in(reached.projects.iter().map(|project| project.stored())),
+            );
+            if !reached.issue_types.is_empty() {
+                rows.and_where(
+                    issue_column(IssueRow::IssueType)
+                        .is_in(reached.issue_types.iter().map(|kind| kind.stored())),
+                );
+            }
+        }
+        None => {
+            rows.and_where(Expr::val(1).eq(2));
+        }
+    }
     Subject::Linked(Box::new(rows), Expr::col((FieldValueRow::Table, column)))
 }
 
+/// The name the issue at the other end of a row has in the statement.
+const OTHER_END: &str = "other_end";
+
+/// A subject whose values are issues counts only the ones the person reads: a row that points to
+/// an issue they do not read is no value, so nothing about that issue (that it exists, its code, how
+/// many sit under it) can be found out by filtering, sorting or grouping (ADR-0004, PRIV-13).
+fn reading_the_other_end(subject: Subject, sight: &IssueSight) -> Subject {
+    let Subject::Linked(mut rows, value) = subject else {
+        return subject;
+    };
+    let mut reads = Query::select();
+    reads
+        .expr(Expr::val(1))
+        .from_as(IssueRow::Table, Alias::new(OTHER_END))
+        .and_where(Expr::col((Alias::new(OTHER_END), IssueRow::Id)).eq(value.clone()))
+        .cond_where(sight_condition_as(sight, OTHER_END));
+    rows.and_where(Expr::exists(reads));
+    Subject::Linked(rows, value)
+}
+
 /// What the target reads.
-pub(super) fn subject_of(target: FieldTarget) -> (Subject, Domain) {
+pub(super) fn subject_of(
+    target: FieldTarget,
+    sight: &IssueSight,
+    reach: &[OwnReach],
+) -> (Subject, Domain) {
     use FieldTarget as T;
     let linked = |rows, value| Subject::Linked(Box::new(rows), value);
     match target {
@@ -175,9 +221,12 @@ pub(super) fn subject_of(target: FieldTarget) -> (Subject, Domain) {
             Domain::Label,
         ),
         T::Parent => (
-            linked(
-                rows_of(IssueParentRow::Table, IssueParentRow::Child),
-                Expr::col((IssueParentRow::Table, IssueParentRow::Parent)),
+            reading_the_other_end(
+                linked(
+                    rows_of(IssueParentRow::Table, IssueParentRow::Child),
+                    Expr::col((IssueParentRow::Table, IssueParentRow::Parent)),
+                ),
+                sight,
             ),
             Domain::Issue,
         ),
@@ -193,41 +242,57 @@ pub(super) fn subject_of(target: FieldTarget) -> (Subject, Domain) {
             Subject::Column(issue_column(IssueRow::ClosedAt)),
             Domain::Time(Clock::Micros),
         ),
-        T::Own { field, kind } => own_subject(field, kind),
+        T::Own { field, kind } => own_subject(field, kind, reach, sight),
     }
 }
 
 /// What an own field of this kind reads: the column of its values that holds them.
-fn own_subject(field: FieldId, kind: FieldType) -> (Subject, Domain) {
+fn own_subject(
+    field: FieldId,
+    kind: FieldType,
+    reach: &[OwnReach],
+    sight: &IssueSight,
+) -> (Subject, Domain) {
     match kind {
-        FieldType::Text | FieldType::LongText | FieldType::WebAddress => {
-            (own_values(field, FieldValueRow::ValueText), Domain::Text)
-        }
+        FieldType::Text | FieldType::LongText | FieldType::WebAddress => (
+            own_values(field, FieldValueRow::ValueText, reach),
+            Domain::Text,
+        ),
         FieldType::WholeNumber | FieldType::Duration => (
-            own_values(field, FieldValueRow::ValueNumber),
+            own_values(field, FieldValueRow::ValueNumber, reach),
             Domain::Number(1),
         ),
         FieldType::Decimal => (
-            own_values(field, FieldValueRow::ValueNumber),
+            own_values(field, FieldValueRow::ValueNumber, reach),
             Domain::Number(bb_core::own_fields::DECIMAL_PARTS),
         ),
-        FieldType::YesNo => (own_values(field, FieldValueRow::ValueNumber), Domain::YesNo),
+        FieldType::YesNo => (
+            own_values(field, FieldValueRow::ValueNumber, reach),
+            Domain::YesNo,
+        ),
         FieldType::Date => (
-            own_values(field, FieldValueRow::ValueDate),
+            own_values(field, FieldValueRow::ValueDate, reach),
             Domain::Time(Clock::Days),
         ),
         FieldType::DateTime => (
-            own_values(field, FieldValueRow::ValueDate),
+            own_values(field, FieldValueRow::ValueDate, reach),
             Domain::Time(Clock::Micros),
         ),
         FieldType::PickOne | FieldType::PickSeveral => (
-            own_values(field, FieldValueRow::ValueRef),
+            own_values(field, FieldValueRow::ValueRef, reach),
             Domain::Choice(field),
         ),
-        FieldType::Person | FieldType::People => {
-            (own_values(field, FieldValueRow::ValueRef), Domain::Person)
-        }
-        FieldType::Group => (own_values(field, FieldValueRow::ValueRef), Domain::Group),
-        FieldType::Issue => (own_values(field, FieldValueRow::ValueRef), Domain::Issue),
+        FieldType::Person | FieldType::People => (
+            own_values(field, FieldValueRow::ValueRef, reach),
+            Domain::Person,
+        ),
+        FieldType::Group => (
+            own_values(field, FieldValueRow::ValueRef, reach),
+            Domain::Group,
+        ),
+        FieldType::Issue => (
+            reading_the_other_end(own_values(field, FieldValueRow::ValueRef, reach), sight),
+            Domain::Issue,
+        ),
     }
 }
