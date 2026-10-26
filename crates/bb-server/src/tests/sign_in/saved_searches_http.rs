@@ -546,7 +546,7 @@ async fn qry_06_the_shared_list_goes_on_past_a_walk_of_hidden_searches_on_both_d
 }
 
 #[tokio::test]
-async fn qry_06_a_cursor_with_a_skip_that_does_not_fit_answers_request_invalid() -> TestResult {
+async fn qry_06_a_cursor_with_a_skip_that_does_not_fit_answers_request_bad_cursor() -> TestResult {
     each_database("qry_06_saved_search_forged_cursor", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (_site, mut ada) = Site::start(&rig, &app).await?;
@@ -569,12 +569,20 @@ async fn perf_05_forty_different_makers_cost_no_more_statements_than_five_for_a_
 {
     each_database("perf_05_saved_searches_makers", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let (site, _ada) = Site::start(&rig, &app).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut dan, _) = site
             .person_called(StartingRole::Guest, "dan", "Dan Dyer")
             .await?;
-        // Forty people, each with a search of their own shared with ACME. A guest sees people by
-        // their role only, so each maker is shown by a role label.
+        // Forty people, each with a search of their own shared with ACME or with a second project.
+        // A guest sees people by their role only, so each maker is shown by a role label.
+        let beta = ada
+            .send(
+                "POST",
+                "/api/v1/projects",
+                Some(json!({"short_name": "BETA", "name": "Beta"})),
+            )
+            .await?;
+        let beta = id_of(&beta)?;
         for number in 0..40 {
             let (mut maker, _) = site
                 .person_called(
@@ -583,7 +591,9 @@ async fn perf_05_forty_different_makers_cost_no_more_statements_than_five_for_a_
                     &format!("Maker {number}"),
                 )
                 .await?;
-            ada_shares(&site, &mut maker, &format!("Search {number}"), "").await?;
+            let made = save(&mut maker, &format!("Search {number}")).await?;
+            let project = if number % 2 == 0 { &site.acme } else { &beta };
+            ok(&share_with_acme(&mut maker, &id_of(&made)?, project).await?)?;
         }
         let (on_five, on_forty) = five_and_forty(&mut dan, &rig.database, |limit| {
             format!("{SEARCHES}?scope=shared&limit={limit}&fields=name,maker")

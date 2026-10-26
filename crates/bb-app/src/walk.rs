@@ -98,3 +98,55 @@ pub(crate) async fn fill_past_hidden<W: Walk>(
     };
     Ok(Filled { rows, next })
 }
+
+#[cfg(test)]
+mod tests {
+    use bb_core::paging::SKIP_MAX;
+
+    use super::*;
+
+    /// A list of rows nobody may see, as long as anybody asks.
+    struct AllHidden;
+
+    impl Walk for AllHidden {
+        type Row = u64;
+        type Key = u64;
+
+        async fn fetch(
+            &mut self,
+            _after: Option<&u64>,
+            skip: u64,
+            limit: u64,
+        ) -> Result<Vec<u64>, AppError> {
+            Ok((skip..skip + limit).collect())
+        }
+
+        async fn keeps(&mut self, _row: &u64) -> Result<bool, AppError> {
+            Ok(false)
+        }
+
+        fn key_of(row: &u64) -> Result<u64, AppError> {
+            Ok(*row)
+        }
+    }
+
+    /// The skip of the cursor that the walk writes, read back as a client sends it.
+    async fn next_after_skipping(skip: u64) -> Result<Option<u64>, AppError> {
+        let start = SkipCursor { after: None, skip };
+        let filled = fill_past_hidden(&mut AllHidden, &start, 10).await?;
+        Ok(filled.next.map(|next| {
+            let read = SkipCursor::<u64>::read(Some(&next.write()));
+            read.map_or(u64::MAX, |read| read.skip)
+        }))
+    }
+
+    #[tokio::test]
+    async fn qry_06_a_walk_never_writes_a_cursor_that_the_reader_refuses() -> Result<(), AppError> {
+        // The last stretch that a cursor can say is written, and read back.
+        let last = SKIP_MAX - LOOKED_AT_MAX as u64;
+        assert_eq!(next_after_skipping(last).await?, Some(SKIP_MAX));
+        // The page after it ends the list: there is no cursor to write.
+        assert_eq!(next_after_skipping(SKIP_MAX).await?, None);
+        Ok(())
+    }
+}
