@@ -279,7 +279,7 @@ async fn perf_05_the_groups_by_a_person_field_run_as_many_statements_for_ten_peo
         let path = "/api/v1/search/issues/groups?by=reportedBy";
         let mut counter = Counter::on(&rig.database);
         let mut made = 0_u32;
-        let mut counted = async |until: u32, ada: &mut Browser| -> Result<usize, Failure> {
+        let mut measure = async |until: u32, ada: &mut Browser| -> Result<usize, Failure> {
             while made < until {
                 let (mut person, _) = site
                     .person(StartingRole::TeamMember, &format!("reporter{made}"))
@@ -297,9 +297,9 @@ async fn perf_05_the_groups_by_a_person_field_run_as_many_statements_for_ten_peo
             ok(&ada.send("GET", path, None).await?)?;
             Ok(counter.take())
         };
-        let on_three = counted(3, &mut ada).await?;
-        let on_ten = counted(10, &mut ada).await?;
-        assert_as_many_statements(on_three, on_ten, AT_MOST, "more people in the groups");
+        let few = measure(3, &mut ada).await?;
+        let many = measure(10, &mut ada).await?;
+        assert_as_many_statements(few, many, AT_MOST, "more people in the groups");
         Ok(())
     })
     .await

@@ -241,7 +241,7 @@
   auth -. tests only .-&gt; devwords
   app -. tests only .-&gt; devwords
   server -. tests only .-&gt; devwords
-  sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth &amp; devwords &amp; files
+  sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth &amp; devwords &amp; files &amp; search
   loadcheck --&gt; app &amp; store &amp; core
   server -. tests only .-&gt; loadcheck</pre>
 <h4>Dependency rules (checked by <code>cargo xtask check only ARCH-DEPS</code>)</h4>
@@ -318,7 +318,7 @@
 <h4>bb-sample</h4>
 <p>The sample-organization generator (architecture §11): a library and a small program that <code>cargo xtask dataset sample</code> runs as a process, so <code>xtask</code> does not link the store or the use cases (it imports only <code>bb-api-words</code>, <code>bb-core</code>, <code>bb-dev-words</code> and <code>bb-policy</code>, for the names its checks hold the code against). It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into <code>bugaboo</code> until <em>Try it out</em> (OPS-12), and never shipped before then.</p>
 <ul>
-<li><strong>May depend on:</strong> <code>bb-app</code>, <code>bb-store</code>, <code>bb-core</code>, <code>bb-policy</code>, <code>bb-auth</code>, <code>bb-dev-words</code>, and <code>bb-files</code> with its feature <code>testing</code> (M4 WP-10: the sample stores its files in the data folder and makes their previews in its own process; the program that would be the child of a preview is not this one), and <code>bb-testing</code> as a dev dependency only. Nothing depends on it except, from OPS-12 on, <code>bb-server</code>.</li>
+<li><strong>May depend on:</strong> <code>bb-app</code>, <code>bb-store</code>, <code>bb-core</code>, <code>bb-policy</code>, <code>bb-auth</code>, <code>bb-dev-words</code>, <code>bb-searchlang</code> (the dump of the sample data reads a whole project with the empty search, which only the sample program builds, so the app crate has no search without a person), and <code>bb-files</code> with its feature <code>testing</code> (M4 WP-10: the sample stores its files in the data folder and makes their previews in its own process; the program that would be the child of a preview is not this one), and <code>bb-testing</code> as a dev dependency only. Nothing depends on it except, from OPS-12 on, <code>bb-server</code>.</li>
 <li><strong>It wires an adapter:</strong> like <code>bb-server</code>, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (<code>bb-server</code>, <code>bb-sample</code>, <code>bb-load-check</code>) is in <code>xtask/src/checks/arch_http_edge.rs</code>.</li>
 <li><strong>In the layout and the diagram:</strong> ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.</li>
 </ul>
