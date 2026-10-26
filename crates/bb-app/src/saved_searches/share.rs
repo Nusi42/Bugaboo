@@ -10,9 +10,9 @@ use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::GroupId;
 use bb_core::saved_search::{SHARES_MAX, SearchShare, ShareTarget};
 use bb_policy::{Authorized, Permission, Place};
-use serde_json::{Value, json};
+use serde_json::Value;
 
-use super::events::target_json;
+use super::events::{default_list_change, target_json};
 use super::reach::{Opened, may_share_with_group};
 use super::types::{SavedSearchView, ShareSearch, StopSharingSearch};
 use crate::access::Actor;
@@ -133,13 +133,15 @@ pub async fn share_search<S: AuthStore>(
         entity(RecordKind::SavedSearch, share.search),
         vec![share_change(input.target, true)],
     )?;
-    let written = share.clone();
+    let (written, maker) = (share.clone(), stored.search.maker);
     let why = Why::default();
     let full = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                // Counted in the change, so two shares at once cannot pass the limit.
+                // Counted in the change, under the lock of the maker, so two shares at once cannot
+                // pass the limit.
+                S::lock_saved_searches_of(transaction, maker).await?;
                 let shared = S::search_shares_in(transaction, written.search).await?;
                 if shared.len() >= SHARES_MAX {
                     return Err(full.stop::<S>(ErrorCode::LimitReached));
@@ -150,7 +152,7 @@ pub async fn share_search<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::LimitReached))?;
+        .map_err(|error| why.said_or_failed::<S>(&error))?;
     stored.shares.push(share);
     ctx.authorized_view(&actor, &reaching, stored).await
 }
@@ -196,11 +198,7 @@ pub async fn stop_sharing_search<S: AuthStore>(
             events.push(ctx.event(
                 by(actor.person.id),
                 entity(RecordKind::Project, project),
-                vec![FieldChange {
-                    field: member::DEFAULT_LIST.to_owned(),
-                    before: Some(json!(search.to_string())),
-                    after: None,
-                }],
+                vec![default_list_change(Some(search), None)],
             )?);
         }
     }

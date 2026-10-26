@@ -6007,7 +6007,7 @@ export interface components {
      *     list) and what taking a search out of the trash answers (`null` for somebody who may only take
      *     it out and may not open it, who is told nothing of its name or text).
      */
-    OptionalSearchBody: {
+    OptionalSavedSearchBody: {
       search: components["schemas"]["SavedSearchItem"] | null;
     };
     /** @description The change that is about to be made. */
@@ -13423,7 +13423,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["OptionalSearchBody"];
+          "application/json": components["schemas"]["OptionalSavedSearchBody"];
         };
       };
       304: components["responses"]["NotModified"];
@@ -13456,7 +13456,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["OptionalSearchBody"];
+          "application/json": components["schemas"]["OptionalSavedSearchBody"];
         };
       };
       400: components["responses"]["BadRequest"];
@@ -14444,7 +14444,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["OptionalSearchBody"];
+          "application/json": components["schemas"]["OptionalSavedSearchBody"];
         };
       };
       401: components["responses"]["NotSignedIn"];

@@ -22,11 +22,17 @@ fn reaches(state: &State, search: SavedSearchId, reach: &Reach<'_>) -> bool {
 }
 
 /// The searches of `found` that come after `after`, by ID, at most `limit`.
-fn page(mut found: Vec<SavedSearch>, after: Option<SavedSearchId>, limit: u64) -> Vec<SavedSearch> {
+fn page(
+    mut found: Vec<SavedSearch>,
+    after: Option<SavedSearchId>,
+    skip: u64,
+    limit: u64,
+) -> Vec<SavedSearch> {
     found.sort_by_key(|search| search.id);
     found
         .into_iter()
         .filter(|search| after.is_none_or(|after| search.id > after))
+        .skip(usize::try_from(skip).unwrap_or(usize::MAX))
         .take(usize::try_from(limit).unwrap_or(usize::MAX))
         .collect()
 }
@@ -99,7 +105,7 @@ impl SavedSearchStore for FakeStore {
                 .filter(|search| search.maker == maker && search.deleted_at.is_none())
                 .cloned()
                 .collect();
-            page(made, after, limit)
+            page(made, after, 0, limit)
         }))
     }
 
@@ -107,6 +113,7 @@ impl SavedSearchStore for FakeStore {
         &self,
         reach: Reach<'_>,
         after: Option<SavedSearchId>,
+        skip: u64,
         limit: u64,
     ) -> Result<Vec<SavedSearch>, FakeError> {
         Ok(self.read(|state| {
@@ -120,7 +127,7 @@ impl SavedSearchStore for FakeStore {
                 })
                 .cloned()
                 .collect();
-            page(shared, after, limit)
+            page(shared, after, skip, limit)
         }))
     }
 
@@ -191,6 +198,10 @@ impl SavedSearchStore for FakeStore {
                 .map(|(person, _)| person.clone())
                 .collect()
         }))
+    }
+
+    async fn lock_saved_searches_of(_tx: &mut Tx, _maker: UserId) -> Result<(), FakeError> {
+        Ok(())
     }
 
     async fn insert_saved_search(

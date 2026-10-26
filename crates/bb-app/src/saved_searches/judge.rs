@@ -70,31 +70,49 @@ fn named_in(filter: &Expr, fields: &ReadableFields) -> Named {
     named
 }
 
+/// When the judge reads the groups: with the address of one search, at once; with a page of a
+/// list, when a text names one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Groups {
+    /// Read them when the judge is made.
+    Now,
+    /// Read them when a text names a group.
+    WhenNamed,
+}
+
 /// Judges saved searches for one person, reading what it needs once for the request.
 pub(crate) struct Judge<'a> {
     reaching: &'a Reaching,
     fields: ReadableFields,
     manages_groups: bool,
-    groups: Vec<Group>,
+    groups: Option<Vec<Group>>,
     projects: HashMap<String, bool>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    async fn every_group(&self) -> Result<Vec<Group>, AppError> {
+        self.store()
+            .groups()
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
     /// A judge for the actor, with the fields they may read everywhere.
     pub(crate) async fn judge<'a>(
         &self,
         actor: &Actor,
         reaching: &'a Reaching,
+        groups: Groups,
     ) -> Result<Judge<'a>, AppError> {
         let fields = self
             .readable_fields_in(&reaching.shown, SearchScope::Everywhere)
             .await?;
-        // Read whatever the answer, so that a search that is there costs what one that is not does.
-        let groups = self
-            .store()
-            .groups()
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+        // The address of one search reads the groups whatever the answer, so that a search that is
+        // there costs what one that is not does; a page of a list reads them when a text names one.
+        let groups = match groups {
+            Groups::Now => Some(self.every_group().await?),
+            Groups::WhenNamed => None,
+        };
         let manages_groups = self
             .evaluation_of(actor, bb_policy::Place::Organization)
             .await?
@@ -139,6 +157,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .as_ref()
             .map(|filter| named_in(filter, &judge.fields))
             .unwrap_or_default();
+        if !named.groups.is_empty() && judge.groups.is_none() {
+            judge.groups = Some(self.every_group().await?);
+        }
         for group in &named.groups {
             if !sees_group(judge, group) {
                 return Ok(None);
@@ -172,7 +193,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// Whether the person sees a group of this name: they are in it, or may manage groups.
 fn sees_group(judge: &Judge<'_>, name: &str) -> bool {
-    judge.groups.iter().any(|group| {
+    judge.groups.iter().flatten().any(|group| {
         same_name(&group.name, name) && (judge.manages_groups || judge.reaching.is_in(group.id))
     })
 }

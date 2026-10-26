@@ -11,7 +11,7 @@ use super::super::auth::{
 };
 use super::super::body_id;
 use super::{
-    OptionalSearchBody, ProjectListChoiceBody, ProjectListQuery, SavedSearchId, SetProjectList,
+    OptionalSavedSearchBody, ProjectListChoiceBody, ProjectListQuery, SavedSearchId, SetProjectList,
 };
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
@@ -24,7 +24,7 @@ use crate::errors::{ApiError, ApiJson, ApiPath};
     tag = "saved-searches",
     params(("project" = String, Path, description = "The ID or the short name of the project.")),
     responses(
-        (status = 200, description = "The list.", body = OptionalSearchBody),
+        (status = 200, description = "The list.", body = OptionalSavedSearchBody),
         NotSignedInAnswer,
         NotFoundAnswer
     )
@@ -45,7 +45,7 @@ async fn get_project_list(
             },
         )
         .await?;
-    answer_authorized(&list.map(|list| OptionalSearchBody::from(&list)))
+    answer_authorized(&list.map(|list| OptionalSavedSearchBody::from(&list)))
 }
 
 /// Chooses the saved search a project shows as its list, or none. Needs *Change project settings*;
@@ -58,7 +58,7 @@ async fn get_project_list(
     params(("project" = String, Path, description = "The ID or the short name of the project.")),
     request_body = ProjectListChoiceBody,
     responses(
-        (status = 200, description = "The list as it is now.", body = OptionalSearchBody),
+        (status = 200, description = "The list as it is now.", body = OptionalSavedSearchBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
@@ -88,7 +88,7 @@ async fn set_project_list(
             },
         )
         .await?;
-    answer_authorized(&list.map(|list| OptionalSearchBody::from(&list)))
+    answer_authorized(&list.map(|list| OptionalSavedSearchBody::from(&list)))
 }
 
 /// The routes of the list of a project.

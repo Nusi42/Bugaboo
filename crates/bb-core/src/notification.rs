@@ -50,12 +50,6 @@ pub const MAIL_ENTRIES_MAX: usize = 20;
 /// total ever includes it (ARCH-NO-COUNTERS); one *Mark as read* names this many at most.
 pub const AT_ONCE_MAX: usize = 100;
 
-/// The most rows one request for the list looks at. The rows the person may not see any more are
-/// skipped, so a person who lost access to an issue with thousands of notifications must not make
-/// one request read them all: when the limit is reached the page is shorter and the answer says
-/// there is more.
-pub const LOOKED_AT_MAX: usize = 500;
-
 /// How long a notification is kept.
 #[must_use]
 pub const fn keep() -> jiff::SignedDuration {

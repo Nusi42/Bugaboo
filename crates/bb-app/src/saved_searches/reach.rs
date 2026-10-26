@@ -7,7 +7,7 @@ use bb_core::id::{GroupId, ProjectId, SavedSearchId};
 use bb_core::saved_search::{Presentation, SavedSearch, SearchColumn, SearchShare, ShareTarget};
 use bb_policy::{Evaluation, Permission};
 
-use super::judge::Judge;
+use super::judge::{Groups, Judge};
 use super::store::Reach;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -114,28 +114,42 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Opened, AppError> {
         let stored = self.stored_search(id).await?;
         let reaching = self.reaching(actor).await?;
-        let mut judge = self.judge(actor, &reaching).await?;
-        let candidate = stored
-            .filter(|found| found.search.deleted_at.is_none())
-            .filter(|found| {
-                found.search.maker == actor.person.id || reaching.includes(&found.shares)
-            });
+        let mut judge = self.judge(actor, &reaching, Groups::Now).await?;
         let mut clean = None;
-        if candidate.is_none() {
-            // Nothing there: the same work is done on a text with no names, so the answer does not
-            // come sooner than one for a search that is there and does not check.
-            self.canonical_text(&mut judge, "", &Presentation::default())
-                .await?;
-        }
-        if let Some(found) = candidate
-            && (found.search.maker == actor.person.id
-                || self.reads_cleanly(&mut judge, &found).await?)
-        {
-            clean = Some(found);
+        match stored {
+            Some(found) if self.may_open(&mut judge, actor, &reaching, &found).await? => {
+                clean = Some(found);
+            }
+            Some(_) => {}
+            None => {
+                // Nothing there: the same work is done on a text with no names, so the answer
+                // does not come sooner than one for a search that is there and does not check.
+                self.canonical_text(&mut judge, "", &Presentation::default())
+                    .await?;
+            }
         }
         drop(judge);
         let stored = clean.ok_or(AppError::Refused(ErrorCode::NotFound))?;
         Ok(Opened { stored, reaching })
+    }
+
+    /// Whether the person may open a saved search: it is not in the trash, and it is theirs, or
+    /// it reaches them and checks cleanly for them. The one rule that open, copy, change, share,
+    /// delete and restore all ask (ADR-0034, decision 4).
+    pub(crate) async fn may_open(
+        &self,
+        judge: &mut Judge<'_>,
+        actor: &Actor,
+        reaching: &Reaching,
+        found: &Stored,
+    ) -> Result<bool, AppError> {
+        if found.search.deleted_at.is_some() {
+            return Ok(false);
+        }
+        if found.search.maker == actor.person.id {
+            return Ok(true);
+        }
+        Ok(reaching.includes(&found.shares) && self.reads_cleanly(judge, found).await?)
     }
 
     /// Whether a saved search of somebody else checks cleanly for the person `judge` is for.

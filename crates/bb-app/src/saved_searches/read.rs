@@ -3,10 +3,11 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::SavedSearchId;
-use bb_core::paging::{Cut, page_len, read_len, window};
+use bb_core::paging::{Cut, LOOKED_AT_MAX, PAGE_SIZE_MAX, page_len, read_len, window};
 use bb_core::saved_search::{SearchSet, ShareKind};
 use bb_policy::{Authorized, Permission, Place};
 
+use super::judge::Groups;
 use super::reach::{Reaching, Stored, may_share_with_group};
 use super::types::{
     SavedSearchPage, SavedSearchView, SearchQuery, SearchesQuery, ShareChoice, ShareChoicePage,
@@ -16,19 +17,61 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
 
-/// The most searches that one request for *Shared with me* looks at, kept or skipped: the work of
-/// a request does not depend on how many searches that do not check cleanly reach the person
-/// (PERF-05). A page that ends here is short and has a cursor that goes on after the last search
-/// looked at, which tells nothing about why it is short.
-const LOOKED_AT_MAX: u64 = 500;
+/// How many searches the store is asked for at a time while a page of *Shared with me* is filled
+/// (the most a page of any list holds).
+const READ_AT_A_TIME: u64 = PAGE_SIZE_MAX as u64;
 
-/// How many searches one read of *Shared with me* fetches at least.
-const LOOK_BATCH: u64 = 100;
-
-/// A page of searches with their columns, and where the next page starts.
+/// A page of searches with their columns, and the cursor of the next page.
 struct Found {
     items: Vec<Stored>,
-    next: Option<SavedSearchId>,
+    next: Option<String>,
+}
+
+/// Where a page of *Shared with me* starts: after a search the person was shown (or the start) and
+/// past a number of searches, always a multiple of [`LOOKED_AT_MAX`].
+///
+/// A cursor is readable, so it holds nothing a person may not know about: the ID is the last search
+/// of the page before, which the person has seen, and the number only counts whole stretches that
+/// were looked at without filling a page. It never holds the ID of a search that does not check
+/// for the person (the same rule as the cursor of the projects to choose from for an access key).
+struct Position {
+    after: Option<SavedSearchId>,
+    skip: u64,
+}
+
+impl Position {
+    /// What the cursor text says: `ID`, `ID+500`, `+500`, or nothing for the start.
+    fn read(cursor: Option<&str>) -> Result<Self, AppError> {
+        let invalid = || AppError::Refused(ErrorCode::InvalidRequest);
+        let Some(text) = cursor else {
+            return Ok(Self {
+                after: None,
+                skip: 0,
+            });
+        };
+        let (id, skip) = match text.split_once('+') {
+            Some((id, skip)) => (id, skip.parse::<u64>().map_err(|_| invalid())?),
+            None => (text, 0),
+        };
+        if skip % (LOOKED_AT_MAX as u64) != 0 {
+            return Err(invalid());
+        }
+        let after = if id.is_empty() {
+            None
+        } else {
+            Some(id.parse::<SavedSearchId>().map_err(|_| invalid())?)
+        };
+        Ok(Self { after, skip })
+    }
+
+    fn write(&self) -> String {
+        let id = self.after.map(|id| id.to_string()).unwrap_or_default();
+        if self.skip == 0 {
+            id
+        } else {
+            format!("{id}+{}", self.skip)
+        }
+    }
 }
 
 /// The saved searches of one scope, a page at a time: the ones the person made, or the ones other
@@ -41,15 +84,18 @@ pub async fn saved_searches<S: AuthStore>(
     input: SearchesQuery,
 ) -> Result<Authorized<SavedSearchPage>, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
-    let after = cursor_or_invalid(input.cursor.as_deref(), |text| {
-        text.parse::<SavedSearchId>().ok()
-    })?;
     let len = page_len(Some(input.limit));
     let reaching = ctx.reaching(&actor).await?;
     let found = match input.scope {
-        SearchSet::Mine => ctx.made_by_the_person(&actor, after, len).await?,
+        SearchSet::Mine => {
+            let after = cursor_or_invalid(input.cursor.as_deref(), |text| {
+                text.parse::<SavedSearchId>().ok()
+            })?;
+            ctx.made_by_the_person(&actor, after, len).await?
+        }
         SearchSet::Shared => {
-            ctx.shared_that_read_cleanly(&actor, &reaching, after, len)
+            let start = Position::read(input.cursor.as_deref())?;
+            ctx.shared_that_read_cleanly(&actor, &reaching, &start, len)
                 .await?
         }
     };
@@ -72,7 +118,7 @@ pub async fn saved_searches<S: AuthStore>(
     let organization = ctx.evaluation_of(&actor, Place::Organization).await?;
     Ok(organization.authorize(SavedSearchPage {
         items,
-        next_cursor: found.next.map(|id| id.to_string()),
+        next_cursor: found.next,
     }))
 }
 
@@ -108,30 +154,31 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
             })
             .collect();
-        Ok(Found {
-            items,
-            next: next.and_then(|text| text.parse().ok()),
-        })
+        Ok(Found { items, next })
     }
 
-    /// The searches shared with the person that check cleanly for them, after `after`, at most
-    /// `len`. A search that does not is skipped without a trace: the batches go on until the page
-    /// is full, the searches are used up or [`LOOKED_AT_MAX`] are looked at, so a short page never
-    /// tells that something was left out (ADR-0034, decision 4), and the work is bounded.
+    /// The searches shared with the person that check cleanly for them, from `start`, at most
+    /// `len`. A search that does not is skipped without a trace: searches are looked at until the
+    /// page is full, they are used up or [`LOOKED_AT_MAX`] are looked at, so the work is bounded
+    /// and a short page tells nothing (ADR-0034, decision 4).
     async fn shared_that_read_cleanly(
         &self,
         actor: &Actor,
         reaching: &Reaching,
-        after: Option<SavedSearchId>,
+        start: &Position,
         len: usize,
     ) -> Result<Found, AppError> {
-        let mut judge = self.judge(actor, reaching).await?;
+        let mut judge = self.judge(actor, reaching, Groups::WhenNamed).await?;
         let store = self.store();
-        let batch = read_len(len).max(LOOK_BATCH);
-        let (mut kept, mut from, mut looked_at): (Vec<Stored>, _, u64) = (Vec::new(), after, 0);
-        loop {
+        let (mut kept, mut looked_at, mut more): (Vec<Stored>, u64, bool) = (Vec::new(), 0, false);
+        'scan: while looked_at < LOOKED_AT_MAX as u64 {
             let found = store
-                .saved_searches_shared_with(reaching.reach(), from, batch)
+                .saved_searches_shared_with(
+                    reaching.reach(),
+                    start.after,
+                    start.skip + looked_at,
+                    READ_AT_A_TIME,
+                )
                 .await
                 .map_err(|error| internal::<S>(&error))?;
             let ids: Vec<SavedSearchId> = found.iter().map(|search| search.id).collect();
@@ -139,10 +186,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .columns_of_searches(&ids)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
-            let exhausted = u64::try_from(found.len()).is_ok_and(|count| count < batch);
+            let full = u64::try_from(found.len()).is_ok_and(|count| count == READ_AT_A_TIME);
             for search in found {
-                looked_at += 1;
-                from = Some(search.id);
                 let id = search.id;
                 let stored = Stored {
                     search,
@@ -150,31 +195,37 @@ impl<S: AuthStore> Ctx<'_, S> {
                     shares: Vec::new(),
                 };
                 if self.reads_cleanly(&mut judge, &stored).await? {
-                    kept.push(stored);
-                    if kept.len() > len {
-                        // One more than a page: the page is full and there is a next one.
-                        kept.truncate(len);
-                        let last = kept.last().map(|each| each.search.id);
-                        return Ok(Found {
-                            items: kept,
-                            next: last,
-                        });
+                    if kept.len() == len {
+                        more = true;
+                        break 'scan;
                     }
+                    kept.push(stored);
                 }
+                looked_at += 1;
             }
-            if exhausted {
-                return Ok(Found {
-                    items: kept,
-                    next: None,
-                });
-            }
-            if looked_at >= LOOKED_AT_MAX {
-                return Ok(Found {
-                    items: kept,
-                    next: from,
-                });
+            if !full {
+                break;
             }
         }
+        let next = if more {
+            // A full page continues after its last search, which the person has just been shown.
+            kept.last().map(|last| Position {
+                after: Some(last.search.id),
+                skip: 0,
+            })
+        } else if looked_at >= LOOKED_AT_MAX as u64 {
+            // A page that looked at enough searches continues past them.
+            Some(Position {
+                after: start.after,
+                skip: start.skip + LOOKED_AT_MAX as u64,
+            })
+        } else {
+            None
+        };
+        Ok(Found {
+            items: kept,
+            next: next.as_ref().map(Position::write),
+        })
     }
 }
 

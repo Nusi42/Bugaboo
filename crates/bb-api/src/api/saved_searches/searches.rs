@@ -14,10 +14,10 @@ use super::super::auth::{
 use super::super::path_id;
 use super::{
     CHOICE_FIELDS, CHOICES_LIST, ChangeSavedSearchBody, ChangeSearch, CopyBody, DeleteSearch,
-    KindParams, NewSavedSearchBody, OptionalSearchBody, Presentation, RestoreSearch, SEARCH_FIELDS,
-    SEARCHES_LIST, SaveCopy, SaveSearch, SavedSearchId, SavedSearchItem, ScopeParams, SearchQuery,
-    SearchSet, SearchesQuery, ShareBody, ShareChoiceItem, ShareChoicesQuery, ShareKind,
-    ShareSearch, ShareTarget, StopSharingSearch,
+    KindParams, NewSavedSearchBody, OptionalSavedSearchBody, Presentation, RestoreSearch,
+    SEARCH_FIELDS, SEARCHES_LIST, SaveCopy, SaveSearch, SavedSearchId, SavedSearchItem,
+    ScopeParams, SearchQuery, SearchSet, SearchesQuery, ShareBody, ShareChoiceItem,
+    ShareChoicesQuery, ShareKind, ShareSearch, ShareTarget, StopSharingSearch,
 };
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{ListParams, Listed, Page};
@@ -223,7 +223,7 @@ async fn delete_saved_search(
     tag = "saved-searches",
     params(("search" = String, Path, description = "The ID of the saved search.")),
     responses(
-        (status = 200, description = "The saved search is out of the trash; the search is in the answer when it is one the person may open.", body = OptionalSearchBody),
+        (status = 200, description = "The saved search is out of the trash; the search is in the answer when it is one the person may open.", body = OptionalSavedSearchBody),
         NotSignedInAnswer,
         NotFoundAnswer
     )
@@ -244,9 +244,7 @@ async fn restore_saved_search(
             },
         )
         .await?;
-    answer_authorized(&restored.map(|restored| OptionalSearchBody {
-        search: restored.search.as_ref().map(SavedSearchItem::from),
-    }))
+    answer_authorized(&restored.map(|restored| OptionalSavedSearchBody::from(&restored)))
 }
 
 /// *Save a copy*: a private saved search of the person with the text and the presentation of one

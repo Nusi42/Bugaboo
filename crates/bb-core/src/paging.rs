@@ -9,6 +9,13 @@ use jiff::Timestamp;
 
 /// The most items one page holds. A bigger request is cut to this.
 pub const PAGE_SIZE_MAX: u32 = 100;
+/// The most rows one request for a list looks at while it skips the ones the person may not see
+/// (any more): a person who lost access to thousands of rows must not make one request read them
+/// all. When the limit is reached the page is shorter and the answer says there is more. The
+/// notifications, the projects to choose from for an access key and the saved searches shared with
+/// a person all walk by this one rule.
+pub const LOOKED_AT_MAX: usize = 500;
+
 /// How many items a page holds when the request does not say.
 pub const PAGE_SIZE_DEFAULT: u32 = 50;
 

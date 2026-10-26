@@ -115,6 +115,16 @@ impl Why {
         self.answer_with::<S>(error, otherwise, otherwise)
     }
 
+    /// What to answer for a change that failed when no key can be used twice: the reason it stopped
+    /// itself, if it gave one; else the rule of the policy engine that stopped it, or an internal
+    /// failure.
+    pub(crate) fn said_or_failed<S: AuthStore>(&self, error: &S::Error) -> AppError {
+        match self.said() {
+            Some(code) => AppError::Refused(code),
+            None => change_failed::<S>(error, Stops::NONE),
+        }
+    }
+
     /// The reason the change gave for stopping itself, if it gave one.
     pub(crate) fn said(&self) -> Option<ErrorCode> {
         *locked(&self.0)

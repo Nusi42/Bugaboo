@@ -101,6 +101,7 @@ async fn shared_with(
                 projects,
             },
             after,
+            0,
             10,
         )
         .await
@@ -270,6 +271,7 @@ async fn qry_06_a_search_is_reached_through_a_group_or_a_project_and_never_by_it
                     projects: &projects,
                 },
                 None,
+                0,
                 10,
             )
             .await?;

@@ -4,16 +4,15 @@
 //! screen; the list is the search with `within KEY` filled in.
 
 use bb_core::ErrorCode;
-use bb_core::event::{FieldChange, RecordKind};
+use bb_core::event::RecordKind;
 use bb_core::id::ProjectId;
 use bb_core::saved_search::{ProjectDefaultList, ShareTarget};
 use bb_policy::{Authorized, Permission, Place};
-use serde_json::{Value, json};
 
+use super::events::default_list_change;
 use super::types::{ProjectList, ProjectListQuery, SetProjectList};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, if_there, internal};
-use crate::member::saved_search as member;
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The project an address names, as the actor may know it: `resource.not-found` for one that
@@ -121,17 +120,10 @@ pub async fn set_project_list<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .map(|list| list.search);
     if was != input.search {
-        let value = |search: Option<bb_core::id::SavedSearchId>| -> Option<Value> {
-            search.map(|search| json!(search.to_string()))
-        };
         let event = ctx.event(
             by(actor.person.id),
             entity(RecordKind::Project, project),
-            vec![FieldChange {
-                field: member::DEFAULT_LIST.to_owned(),
-                before: value(was),
-                after: value(input.search),
-            }],
+            vec![default_list_change(was, input.search)],
         )?;
         let chosen = input.search;
         ctx.store()

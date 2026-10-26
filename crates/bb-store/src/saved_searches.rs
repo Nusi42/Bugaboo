@@ -15,6 +15,7 @@ use crate::auth::AuthStorage;
 use crate::auth::{person_columns, read_person};
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::{LockClass, lock_key};
 use crate::schema::{
     PersonRow, ProjectDefaultListRow, SavedSearchRow, SearchColumnRow, SearchShareRow,
 };
@@ -244,6 +245,7 @@ impl SavedSearchStore for AuthStorage {
         &self,
         reach: Reach<'_>,
         after: Option<SavedSearchId>,
+        skip: u64,
         limit: u64,
     ) -> Result<Vec<SavedSearch>, StoreError> {
         if reach.groups.is_empty() && reach.projects.is_empty() {
@@ -255,6 +257,7 @@ impl SavedSearchStore for AuthStorage {
             .and_where(Expr::col(SavedSearchRow::DeletedAt).is_null())
             .and_where(Expr::col(SavedSearchRow::Id).in_subquery(shares_reaching(&reach)))
             .order_by(SavedSearchRow::Id, Order::Asc)
+            .offset(skip)
             .limit(limit);
         if let Some(after) = after {
             select.and_where(Expr::col(SavedSearchRow::Id).gt(after.stored()));
@@ -362,6 +365,15 @@ impl SavedSearchStore for AuthStorage {
             .iter()
             .map(read_person)
             .collect()
+    }
+
+    async fn lock_saved_searches_of(
+        transaction: &mut Transaction,
+        maker: UserId,
+    ) -> Result<(), StoreError> {
+        transaction
+            .advisory_lock(LockClass::SavedSearches, lock_key(maker.to_bytes()))
+            .await
     }
 
     async fn insert_saved_search(

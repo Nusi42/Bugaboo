@@ -24,7 +24,9 @@ use bb_core::ErrorCode;
 use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS};
 use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{AccessKeyId, ProjectId, UserId};
-use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
+use bb_core::paging::{
+    Cut, LOOKED_AT_MAX, page_len, read_len, read_time_cursor, write_time_cursor,
+};
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_core::time::SECONDS_PER_DAY;
 use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
@@ -473,9 +475,10 @@ pub async fn access_key_rules<S: AuthStore>(
     }))
 }
 
-/// How many projects are looked at to fill one page of the projects to choose from: a person who
-/// sees few of many projects gets a short page and a cursor, not a slow answer.
-const SCANNED_AT_MOST: u64 = 500;
+/// How many projects are looked at to fill one page of the projects to choose from
+/// ([`LOOKED_AT_MAX`]): a person who sees few of many projects gets a short page and a cursor, not a
+/// slow answer.
+const SCANNED_AT_MOST: u64 = LOOKED_AT_MAX as u64;
 
 /// How many projects the store is asked for at a time while a page is filled (the most a page of
 /// any list holds).

@@ -2,6 +2,7 @@
 //! longer shared, deleted. History and the security log read them by these names.
 
 use bb_core::event::FieldChange;
+use bb_core::id::SavedSearchId;
 use bb_core::saved_search::{SavedSearch, SearchColumn, ShareTarget};
 use bb_core::version::counted_up;
 use serde_json::{Value, json};
@@ -23,6 +24,20 @@ fn columns_json(columns: &[SearchColumn]) -> Value {
 /// The target of a share as one value of an event.
 pub(super) fn target_json(target: ShareTarget) -> Value {
     json!({ "kind": target.kind().code(), "id": target.id_text() })
+}
+
+/// The change of the list of a project, for the event about the project: the search it showed and
+/// the one it shows from now on.
+pub(super) fn default_list_change(
+    before: Option<SavedSearchId>,
+    after: Option<SavedSearchId>,
+) -> FieldChange {
+    let text = |search: Option<SavedSearchId>| search.map(|id| json!(id.to_string()));
+    FieldChange {
+        field: member::DEFAULT_LIST.to_owned(),
+        before: text(before),
+        after: text(after),
+    }
 }
 
 /// A new saved search: everything it holds.

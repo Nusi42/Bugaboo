@@ -9324,7 +9324,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OptionalSearchBody"
+                  "$ref": "#/components/schemas/OptionalSavedSearchBody"
                 }
               }
             }
@@ -9382,7 +9382,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OptionalSearchBody"
+                  "$ref": "#/components/schemas/OptionalSavedSearchBody"
                 }
               }
             }
@@ -11155,7 +11155,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OptionalSearchBody"
+                  "$ref": "#/components/schemas/OptionalSavedSearchBody"
                 }
               }
             }
@@ -17940,7 +17940,7 @@
         "description": "What a condition of a status change asks of a field.",
         "enum": ["filled", "empty"]
       },
-      "OptionalSearchBody": {
+      "OptionalSavedSearchBody": {
         "type": "object",
         "description": "A saved search that may be missing: the list a project shows (`null` for the built-in default\nlist) and what taking a search out of the trash answers (`null` for somebody who may only take\nit out and may not open it, who is told nothing of its name or text).",
         "required": ["search"],

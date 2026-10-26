@@ -52,14 +52,15 @@ pub trait SavedSearchStore: ChangeStore + 'static {
             limit: u64
         ) -> Vec<SavedSearch>;
         /// The saved searches of other people that are shared with a place that reaches the
-        /// person and are not in the trash, by ID, after `after`, at most `limit`. Whether a
-        /// search reads cleanly for the person is judged after (ADR-0034, decision 4).
+        /// person and are not in the trash, by ID, after `after`, leaving out the first `skip`,
+        /// at most `limit`. Whether a search reads cleanly for the person is judged after
+        /// (ADR-0034, decision 4).
         fn saved_searches_shared_with(
             reach: Reach<'_>,
             after: Option<SavedSearchId>,
+            skip: u64,
             limit: u64
         ) -> Vec<SavedSearch>;
-        /// How many saved searches a person has, the trash included.
         /// The columns of these saved searches, each search's in order.
         fn columns_of_searches(ids: &[SavedSearchId]) -> Vec<SearchColumn>;
         /// The shares of these saved searches.
@@ -71,6 +72,10 @@ pub trait SavedSearchStore: ChangeStore + 'static {
     }
 
     writes! {
+        /// Takes the lock of one person's saved searches, so that two changes of theirs at the same
+        /// moment cannot both pass the limits of searches and of shares; does nothing where writes
+        /// cannot overlap.
+        fn lock_saved_searches_of(maker: UserId) -> ();
         /// Adds a saved search with its columns.
         fn insert_saved_search(search: &SavedSearch, columns: &[SearchColumn]) -> ();
         /// Writes the name, text and presentation of a saved search and its columns, counts the

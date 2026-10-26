@@ -9,9 +9,9 @@
 
 use bb_app::access::ProjectLabel;
 use bb_app::saved_searches::{
-    ChangeSearch, DeleteSearch, ProjectList, ProjectListQuery, RestoreSearch, SaveCopy, SaveSearch,
-    SavedSearchView, SearchQuery, SearchesQuery, SetProjectList, ShareChoice, ShareChoicesQuery,
-    ShareSearch, ShareView, StopSharingSearch,
+    ChangeSearch, DeleteSearch, ProjectList, ProjectListQuery, RestoreSearch, RestoredSearch,
+    SaveCopy, SaveSearch, SavedSearchView, SearchQuery, SearchesQuery, SetProjectList, ShareChoice,
+    ShareChoicesQuery, ShareSearch, ShareView, StopSharingSearch,
 };
 use bb_core::ErrorCode;
 use bb_core::id::SavedSearchId;
@@ -226,18 +226,26 @@ impl From<&ShareChoice> for ShareChoiceItem {
 /// list) and what taking a search out of the trash answers (`null` for somebody who may only take
 /// it out and may not open it, who is told nothing of its name or text).
 #[derive(Serialize, ToSchema)]
-pub(crate) struct OptionalSearchBody {
+pub(crate) struct OptionalSavedSearchBody {
     /// The saved search, when the person may open it.
     #[schema(required = true)]
     search: Option<SavedSearchItem>,
 }
 
-impl Masked for OptionalSearchBody {}
+impl Masked for OptionalSavedSearchBody {}
 
-impl From<&ProjectList> for OptionalSearchBody {
+impl From<&ProjectList> for OptionalSavedSearchBody {
     fn from(list: &ProjectList) -> Self {
         Self {
             search: list.search.as_ref().map(SavedSearchItem::from),
+        }
+    }
+}
+
+impl From<&RestoredSearch> for OptionalSavedSearchBody {
+    fn from(restored: &RestoredSearch) -> Self {
+        Self {
+            search: restored.search.as_ref().map(SavedSearchItem::from),
         }
     }
 }

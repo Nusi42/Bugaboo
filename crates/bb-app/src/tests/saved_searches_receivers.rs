@@ -327,3 +327,91 @@ async fn qry_06_an_own_field_named_id_never_takes_the_word_of_the_id_column() ->
     assert_eq!(made.into_value().presentation.columns[0].field, "id");
     Ok(())
 }
+
+#[tokio::test]
+async fn qry_06_a_walk_past_more_than_five_hundred_hidden_searches_ends_short_with_a_cursor_that_names_none()
+-> Outcome {
+    use bb_core::paging::LOOKED_AT_MAX;
+    use bb_core::saved_search::SearchShare;
+    let crew = Crew::new().await?;
+    // Five hundred and twenty searches that Dan cannot read, shared with ACME, older than the one
+    // he can read.
+    {
+        let template = shared_with_acme(&crew, "Hidden", "assignedTo is \"Bob Baker\"").await?;
+        let mut shared = crew.world.store.lock();
+        let search = shared.state.saved_searches[0].clone();
+        let columns = shared.state.search_columns.clone();
+        let share = shared.state.search_shares[0].clone();
+        assert_eq!(template.id, search.id);
+        shared.state.saved_searches.clear();
+        shared.state.search_columns.clear();
+        shared.state.search_shares.clear();
+        for number in 0..LOOKED_AT_MAX + 20 {
+            let mut each = search.clone();
+            each.maker = bb_core::id::UserId::from_random([9; 16]);
+            each.id = SavedSearchId::from_parts(
+                jiff::Timestamp::UNIX_EPOCH,
+                [
+                    u8::try_from(number % 250)?,
+                    u8::try_from(number / 250)?,
+                    3,
+                    3,
+                    3,
+                    3,
+                    3,
+                    3,
+                    3,
+                    3,
+                ],
+            )?;
+            shared.state.search_shares.push(SearchShare {
+                search: each.id,
+                ..share.clone()
+            });
+            shared.state.saved_searches.push(each);
+        }
+        let _ = columns;
+    }
+    let seen = shared_with_acme(&crew, "Seen", "status is open").await?;
+    let ids: Vec<SavedSearchId> = crew
+        .world
+        .store
+        .lock()
+        .state
+        .saved_searches
+        .iter()
+        .map(|search| search.id)
+        .filter(|id| *id != seen.id)
+        .collect();
+    let page = |cursor: Option<String>| {
+        let crew = &crew;
+        async move {
+            crate::saved_searches::saved_searches(
+                &crew.world.ctx(),
+                crate::saved_searches::SearchesQuery {
+                    session_token: crew.dan.session_token.clone(),
+                    scope: SearchSet::Shared,
+                    cursor,
+                    limit: 5,
+                },
+            )
+            .await
+            .map(bb_policy::Authorized::into_value)
+        }
+    };
+    // The first page looked at the first five hundred and found nothing: short, with a cursor that
+    // is only a count, so it names no search.
+    let first = page(None).await?;
+    assert!(first.items.is_empty());
+    let cursor = first.next_cursor.ok_or("no cursor after the walk")?;
+    assert_eq!(cursor, format!("+{LOOKED_AT_MAX}"));
+    for id in &ids {
+        assert!(!cursor.contains(&id.to_string()));
+    }
+    // The next page goes on after them, with nothing lost or repeated.
+    let second = page(Some(cursor)).await?;
+    assert_eq!(second.items.len(), 1);
+    assert_eq!(second.items[0].id, seen.id);
+    assert_eq!(second.next_cursor, None);
+    Ok(())
+}
