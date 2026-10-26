@@ -17,7 +17,7 @@ use bb_core::tags::IssueSight;
 use bb_policy::{Evaluation, Narrowing, Permission, Place, Policy, Tree};
 
 use super::types::{ProjectItem, ProjectRef, TRAIL_MAX};
-use crate::access::{Actor, ProjectLabel, role_label};
+use crate::access::{Actor, ProjectLabel};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// The projects, and which of them one person sees.
@@ -182,22 +182,9 @@ impl Shown {
         }
     }
 
-    /// The label of the first role of `person` at `place`, decided in memory from the rows of
-    /// `policy` (which holds at least theirs and their groups') and the tree.
-    pub(crate) fn role_label_in(
-        &self,
-        policy: &Policy,
-        person: UserId,
-        place: Place,
-    ) -> Option<String> {
-        // Another person's label, not a judgment about the actor: no key narrows it. This is
-        // `Policy::evaluate_at`, written out because ARCH-AUTHZ-ONLY keeps that name for the
-        // access module (a call about the actor must pass the key).
-        role_label(
-            policy
-                .evaluate_with(person, &policy.rows_of(person), &self.tree, place)
-                .as_ref(),
-        )
+    /// The tree of projects the view was made with.
+    pub(crate) const fn tree(&self) -> &Tree {
+        &self.tree
     }
 
     /// The person it is the view of.

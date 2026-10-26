@@ -12,7 +12,6 @@ use super::scenarios::a_project;
 use super::scenarios_searches::{a_group_of, a_presentation, open, save, share, with_role};
 use super::world::Outcome;
 use crate::auth::{AppError, Started};
-use crate::saved_searches::SavedSearchStore as _;
 use crate::saved_searches::{ChangeSearch, SaveCopy, change_search, save_copy};
 
 /// Ada saves a search with this text and shares it with ACME.
@@ -516,28 +515,28 @@ async fn qry_06_the_label_of_a_role_read_for_many_people_is_the_one_of_their_eva
     let actor = ctx.actor(&crew.ada()).await?;
     let shown = ctx.shown_with_levels_to(&actor).await?;
     let people = [from_parent.person.id, from_group.person.id];
-    let policy = world
-        .store
-        .policy_of_people(&people)
-        .await
-        .map_err(|error| error.to_string())?;
-    for person in people {
-        for place in [
-            Place::Project(child),
-            Place::Project(parent),
-            Place::Organization,
-        ] {
-            let wanted = ctx
-                .evaluate(person, place)
-                .await?
-                .first_role_name()
-                .map(str::to_owned);
-            assert_eq!(shown.role_label_in(&policy, person, place), wanted);
-        }
+    let places = [
+        Place::Project(child),
+        Place::Project(parent),
+        Place::Organization,
+    ];
+    let wanted: Vec<_> = people
+        .iter()
+        .flat_map(|person| places.map(|place| (*person, place)))
+        .collect();
+    ctx.preload_role_labels(&shown, &wanted).await?;
+    // The labels come from the page's one read (the evaluation below is the fallback otherwise).
+    for (person, place) in wanted {
+        let evaluated = ctx
+            .evaluate(person, place)
+            .await?
+            .first_role_name()
+            .map(str::to_owned);
+        assert_eq!(ctx.role_label_of(person, place).await?, evaluated);
     }
     // The two cases are not empty: the inherited role and the one from a group both name a role.
-    let at_child = |person| shown.role_label_in(&policy, person, Place::Project(child));
-    assert_eq!(at_child(people[0]).as_deref(), Some("Contributor"));
-    assert_eq!(at_child(people[1]).as_deref(), Some("Viewer"));
+    let at_child = |person| ctx.role_label_of(person, Place::Project(child));
+    assert_eq!(at_child(people[0]).await?.as_deref(), Some("Contributor"));
+    assert_eq!(at_child(people[1]).await?.as_deref(), Some("Viewer"));
     Ok(())
 }

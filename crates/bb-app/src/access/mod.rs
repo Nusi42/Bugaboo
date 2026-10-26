@@ -348,7 +348,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The label of the first role of `person` at `place`: the one a page filled in one read
     /// (`known.role_labels`), else their evaluation there.
-    async fn role_label_of(
+    pub(crate) async fn role_label_of(
         &self,
         person: UserId,
         place: Place,
@@ -395,7 +395,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         let mut known = locked(&self.known.role_labels);
         for (person, place) in missing {
-            known.insert((person, place), shown.role_label_in(&policy, person, place));
+            // About another person, so no key narrows it: the evaluation is the one of `evaluate`.
+            let evaluation = policy.evaluate_at(person, shown.tree(), place);
+            known.insert((person, place), role_label(evaluation.as_ref()));
         }
         Ok(())
     }
