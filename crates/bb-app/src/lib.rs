@@ -30,6 +30,7 @@ pub mod projects;
 pub mod relations;
 pub mod roles;
 pub mod saved_searches;
+pub mod search;
 pub mod server_log;
 pub mod settings;
 pub mod status;

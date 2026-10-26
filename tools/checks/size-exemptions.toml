@@ -9,11 +9,6 @@ lines = 864
 reason = "The table of the permissions and what each route needs; it grew with the routes of M4. Split by area in M4-F130."
 
 [[exempt]]
-path = "crates/bb-app/src/fields/values.rs"
-lines = 808
-reason = "The values of own fields, one function per kind; only just over the ceiling. Split by kind in M4-F130."
-
-[[exempt]]
 path = "crates/bb-app/src/tests/fake_auth.rs"
 lines = 810
 reason = "The fake store of the sign-in tests; only just over the ceiling. Split by area in M4-F130."

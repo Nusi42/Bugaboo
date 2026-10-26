@@ -54,6 +54,47 @@ words! {
     messages name = "issue-field.";
 }
 
+/// The kind of people information that the people in *Assigned to* are shown as: what the
+/// field says ([`Field::person_kind`]), and what the places that choose or check a person for it ask.
+pub const ASSIGNED_TO_PEOPLE: PeopleKind = PeopleKind::AssignedTo;
+
+/// The kind of people information that the person in *Reported by* is shown as: what the field
+/// says ([`Field::person_kind`]), and what the views of an issue ask.
+pub const REPORTED_BY_PEOPLE: PeopleKind = PeopleKind::ReportedBy;
+
+/// The word of a stable code in the search language: the code in lower camel case (`assigned-to` is
+/// `assignedTo`). The one rule for the fields, the priorities and the status groups, so no second
+/// list of words can disagree with the codes.
+#[must_use]
+pub fn code_word(code: &str) -> String {
+    lower_camel(code.split('-'))
+}
+
+/// Parts of a name written as one word in lower camel case: the first part in lower case at its
+/// start, each next part with a capital at its start, the rest of every part as it is. The one
+/// rule for the word of a built-in field (`assigned-to` is `assignedTo`) and of an own field
+/// (`Story points` is `storyPoints`).
+#[must_use]
+pub fn lower_camel<'a>(parts: impl IntoIterator<Item = &'a str>) -> String {
+    let mut word = String::new();
+    for (at, part) in parts
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .enumerate()
+    {
+        let mut letters = part.chars();
+        if let Some(first) = letters.next() {
+            if at == 0 {
+                word.extend(first.to_lowercase());
+            } else {
+                word.extend(first.to_uppercase());
+            }
+        }
+        word.push_str(letters.as_str());
+    }
+    word
+}
+
 words_in_api!(
     Field,
     "A built-in field of the field catalogue, by its key."
@@ -193,13 +234,21 @@ impl Field {
         }
     }
 
+    /// The word of the field in the search language (ADR-0005): the key in lower camel case
+    /// (`assigned-to` is `assignedTo`), so the word is made from the key by one rule and no
+    /// second list of words can disagree with the catalogue.
+    #[must_use]
+    pub fn search_word(self) -> String {
+        code_word(self.code())
+    }
+
     /// The kind of people information the field holds, when it holds a person: a person in the
     /// field is shown only when the field is visible, and then as this kind says.
     #[must_use]
     pub const fn person_kind(self) -> Option<PeopleKind> {
         match self {
-            Self::AssignedTo => Some(PeopleKind::AssignedTo),
-            Self::ReportedBy => Some(PeopleKind::ReportedBy),
+            Self::AssignedTo => Some(ASSIGNED_TO_PEOPLE),
+            Self::ReportedBy => Some(REPORTED_BY_PEOPLE),
             _ => None,
         }
     }
@@ -233,6 +282,24 @@ mod tests {
                 "cost-center",
             ]
         );
+    }
+
+    #[test]
+    fn qry_05_the_search_word_of_a_field_is_its_key_in_lower_camel_case() {
+        assert_eq!(Field::AssignedTo.search_word(), "assignedTo");
+        assert_eq!(Field::PlannedForRelease.search_word(), "plannedForRelease");
+        assert_eq!(Field::Title.search_word(), "title");
+        let words: std::collections::HashSet<String> =
+            Field::ALL.iter().map(|field| field.search_word()).collect();
+        assert_eq!(words.len(), Field::ALL.len());
+    }
+
+    #[test]
+    fn lower_camel_joins_parts_in_one_word() {
+        assert_eq!(lower_camel(["Story", "points"]), "storyPoints");
+        assert_eq!(lower_camel(["assigned", "to"]), "assignedTo");
+        assert_eq!(lower_camel(["", "a", "b"]), "aB");
+        assert_eq!(lower_camel([]), "");
     }
 
     #[test]

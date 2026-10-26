@@ -236,25 +236,119 @@ pub fn own_field_word(name: &str) -> String {
         && parts
             .iter()
             .all(|part| part.chars().all(char::is_alphanumeric));
-    let camel: String = parts
-        .iter()
-        .enumerate()
-        .flat_map(|(at, part)| {
-            let mut letters = part.chars();
-            let first = letters.next().into_iter().flat_map(move |letter| {
-                if at == 0 {
-                    letter.to_lowercase().collect::<Vec<_>>()
-                } else {
-                    letter.to_uppercase().collect()
-                }
-            });
-            first.chain(letters).collect::<Vec<_>>()
-        })
-        .collect();
+    let camel = bb_core::fields::lower_camel(parts);
     if one_word && camel.chars().next().is_some_and(char::is_alphabetic) {
         camel
     } else {
         name.trim().to_owned()
+    }
+}
+
+/// The word of *yes* in a field that holds yes or no.
+pub const YES: &str = "yes";
+
+/// The word of *no* in a field that holds yes or no.
+pub const NO: &str = "no";
+
+/// A field every issue has, which no role can hide and which is not in the field catalogue of
+/// `bb-core` (seeing the issue is what lets a person read it). Its word is defined here, once, and
+/// reserved for it for everyone: an own field never takes it (ADR-0005 amendment M5, decision 9).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IssueField {
+    /// The project the issue is in.
+    Project,
+    /// The issue type, by its name.
+    Type,
+    /// The group of the status.
+    StatusGroup,
+    /// The issue it sits under.
+    Parent,
+    /// When it was made.
+    Created,
+    /// When it last changed.
+    Changed,
+    /// When it was closed.
+    Closed,
+}
+
+every!(
+    IssueField: Project,
+    Type,
+    StatusGroup,
+    Parent,
+    Created,
+    Changed,
+    Closed
+);
+
+impl IssueField {
+    /// The word of the field.
+    #[must_use]
+    pub const fn word(self) -> &'static str {
+        match self {
+            Self::Project => "project",
+            Self::Type => "type",
+            Self::StatusGroup => "statusGroup",
+            Self::Parent => "parent",
+            Self::Created => "created",
+            Self::Changed => "changed",
+            Self::Closed => "closed",
+        }
+    }
+
+    /// What kind of values it holds.
+    #[must_use]
+    pub const fn kind(self) -> FieldKind {
+        match self {
+            Self::Project => FieldKind::Project,
+            Self::Type | Self::StatusGroup => FieldKind::Choice,
+            Self::Parent => FieldKind::Issue,
+            Self::Created | Self::Changed | Self::Closed => FieldKind::Date,
+        }
+    }
+
+    /// The field of the search language, with the values of its fixed list.
+    #[must_use]
+    pub fn field(self, choices: Vec<String>) -> Field {
+        let field = match self {
+            // The types are not ordered: *less than Bug* means nothing.
+            Self::Type => Field::unordered(self.word()),
+            _ => Field::new(self.word(), self.kind()),
+        };
+        Field { choices, ..field }
+    }
+}
+
+impl Field {
+    /// A field with a list of values that have no order (a status, an issue type, a tag, a group):
+    /// it can be asked whether it is, is not or is one of them, and whether it is empty.
+    #[must_use]
+    pub fn unordered(word: &str) -> Self {
+        Self {
+            operators: vec![
+                Operator::Is,
+                Operator::IsNot,
+                Operator::In,
+                Operator::IsEmpty,
+                Operator::IsNotEmpty,
+            ],
+            ..Self::new(word, FieldKind::Choice)
+        }
+    }
+
+    /// A field that holds yes or no ([`YES`], [`NO`]).
+    #[must_use]
+    pub fn yes_no(word: &str) -> Self {
+        Self {
+            operators: vec![
+                Operator::Is,
+                Operator::IsNot,
+                Operator::IsEmpty,
+                Operator::IsNotEmpty,
+            ],
+            choices: vec![YES.to_owned(), NO.to_owned()],
+            ..Self::new(word, FieldKind::Choice)
+        }
     }
 }
 
@@ -270,6 +364,29 @@ mod tests {
         assert_eq!(own_field_word("Due-date (2)"), "Due-date (2)");
         assert_eq!(own_field_word("3D model"), "3D model");
         assert_eq!(own_field_word(""), "");
+    }
+
+    #[test]
+    fn the_words_of_the_built_in_fields_are_all_different() {
+        let mut words: Vec<String> = bb_core::fields::Field::ALL
+            .iter()
+            .map(|field| field.search_word())
+            .chain(IssueField::ALL.iter().map(|each| each.word().to_owned()))
+            .collect();
+        let all = words.len();
+        words.sort();
+        words.dedup();
+        assert_eq!(words.len(), all);
+    }
+
+    #[test]
+    fn a_list_without_order_allows_no_comparison() {
+        let field = Field::unordered("type");
+        assert!(!field.operators.contains(&Operator::Less));
+        assert!(field.operators.contains(&Operator::In));
+        let yes_no = Field::yes_no("urgent");
+        assert_eq!(yes_no.choices, [YES, NO]);
+        assert!(!yes_no.operators.contains(&Operator::In));
     }
 
     #[test]

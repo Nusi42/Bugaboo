@@ -10,11 +10,10 @@
 //! themselves, whose name they know.
 
 use bb_core::ErrorCode;
-use bb_core::fields::Field;
+use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field};
 use bb_core::id::{FieldId, IssueTypeId};
 use bb_core::own_fields::FieldFor;
 use bb_core::paging::{Cut, page_len};
-use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place};
 use serde::Serialize;
 
@@ -119,6 +118,7 @@ pub async fn assignable_people<S: AuthStore>(
     let members = Members::Naming {
         actor: you,
         viewer: &held,
+        kind: ASSIGNED_TO_PEOPLE,
         reported_by,
     };
     let people = ctx
@@ -131,7 +131,7 @@ pub async fn assignable_people<S: AuthStore>(
         items.push(
             ctx.person_ref(
                 &held,
-                PeopleKind::AssignedTo,
+                ASSIGNED_TO_PEOPLE,
                 PeopleContext::Ordinary,
                 person.id,
             )
