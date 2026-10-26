@@ -72,6 +72,7 @@ mod projects;
 mod projects_move;
 mod relations;
 mod roles;
+mod search;
 mod second_step_gap;
 mod settings;
 mod tags;
@@ -165,6 +166,7 @@ where
         .merge(layouts::routes())
         .merge(workflows::routes())
         .merge(issues::routes())
+        .merge(search::routes(limits))
         .merge(relations::routes())
         .merge(tags::routes())
         .merge(many_changes::routes())

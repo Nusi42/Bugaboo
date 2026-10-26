@@ -41,7 +41,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-const ISSUE_FIELDS: [FieldSpec; 16] = [
+pub(super) const ISSUE_FIELDS: [FieldSpec; 16] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),

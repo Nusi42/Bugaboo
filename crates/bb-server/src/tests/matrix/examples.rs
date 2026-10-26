@@ -367,6 +367,12 @@ pub(super) const EXAMPLES: &[Example] = &[
         ],
     ),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
+    // A search lets in whoever is signed in and shows what they read: nothing for a person who
+    // sees no project (SEC-MATRIX, the `search` entry point).
+    Example::with("searchIssues", &[]),
+    Example::with("countSearchedIssues", &[]),
+    Example::with("groupSearchedIssues", &[]),
+    Example::with("listSearchFields", &[]),
     Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),
     Example::with("createIssue", &[Quirk::NeedsToSeeTheProject]),
     Example::with("getIssue", &[Quirk::AnIssueOfTheTarget]),

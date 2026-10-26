@@ -31,8 +31,9 @@ use crate::source::{Kind, Source, is_word_char, name_uses};
 const EXEMPTIONS_PATH: &str = "tools/checks/api-out-exemptions.toml";
 /// The wrappers that take any value.
 const PLAIN: [&str; 2] = ["answer", "signed_in"];
-/// What a page of authorized items starts with: its argument is made from `Authorized<T>`.
-const AUTHORIZED_PAGE: &str = "Page::of_authorized(";
+/// What a page of authorized items starts with: its argument is made from `Authorized<T>`
+/// (one `Authorized` of a list, or a list of items that each carry their own).
+const AUTHORIZED_PAGES: [&str; 2] = ["Page::of_authorized(", "Page::of_authorized_items("];
 
 pub(crate) struct ArchApiOut;
 
@@ -223,7 +224,10 @@ fn evaluate(sources: &[Source], exemptions: &[Exemption]) -> Vec<Finding> {
             // value: a handler by its operation, a helper (and the wrappers themselves) by name.
             for word in PLAIN {
                 for at in calls(&function.code, word) {
-                    if argument_at(&function.code, at, word).starts_with(AUTHORIZED_PAGE) {
+                    if AUTHORIZED_PAGES
+                        .iter()
+                        .any(|page| argument_at(&function.code, at, word).starts_with(page))
+                    {
                         continue;
                     }
                     if allowed_operation(&mut used).is_some()
