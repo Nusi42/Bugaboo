@@ -16,13 +16,13 @@
 //! databases give the same order.
 //!
 //! The cost of one search is bounded here, for a caller that did not run the checker: a word that
-//! comes twice counts once, no more than [`MAX_CONTAINS_WORDS`] words are looked up, and a start
-//! of fewer than [`MIN_PREFIX_CHARS`] letters is looked up as the whole word.
+//! comes twice counts once (`search_words`), no more than [`MAX_CONTAINS_WORDS`] words are looked
+//! up, and a start of fewer than `MIN_PREFIX_CHARS` letters is looked up as the whole word.
 
 use bb_core::id::FieldId;
 use bb_core::text_index::TextSource;
 use bb_core::text_words::SearchWord;
-use bb_searchlang::{MAX_CONTAINS_WORDS, MIN_PREFIX_CHARS};
+use bb_searchlang::MAX_CONTAINS_WORDS;
 use sea_query::{
     Alias, BinOper, Condition, Expr, ExprTrait as _, Func, Query, SelectStatement, SimpleExpr,
 };
@@ -122,20 +122,14 @@ fn with_columns(mut select: SelectStatement, title_hit: SimpleExpr) -> SelectSta
     select
 }
 
-/// The words as they are looked up: each once, the first ten, a short start as a whole word.
+/// The words as they are looked up: the first ten (`search_words` has made each one once), a
+/// short start as a whole word.
 fn lookups(words: &[SearchWord]) -> Vec<Lookup<'_>> {
-    let mut found: Vec<Lookup<'_>> = Vec::new();
-    for word in words {
-        let lookup = (
-            word.text(),
-            word.is_prefix() && word.text().chars().count() >= MIN_PREFIX_CHARS,
-        );
-        if !found.contains(&lookup) {
-            found.push(lookup);
-        }
-    }
-    found.truncate(MAX_CONTAINS_WORDS);
-    found
+    words
+        .iter()
+        .take(MAX_CONTAINS_WORDS)
+        .map(|word| (word.text(), word.matches_by_start()))
+        .collect()
 }
 
 /// The condition that a row is from the scope.

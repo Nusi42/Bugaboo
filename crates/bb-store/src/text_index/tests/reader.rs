@@ -15,11 +15,13 @@ use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::FieldValue;
 use bb_core::security_log::Digest;
 use bb_core::version::FIRST_VERSION;
+use std::time::Duration;
 
 use super::*;
-use crate::db::Transaction;
+use crate::db::{Dialect, Transaction};
 use crate::schema::TextIndexRow;
 use crate::test_support::{at, definition, event, fixture, ids, world};
+use crate::text_index::write::reindex_issues;
 use crate::{AuthStorage, StoreError};
 
 /// Runs `write` as one change whose event is about the record `id` of this kind, the way a use
@@ -489,7 +491,7 @@ async fn iss_13_readers_at_the_same_moment_leave_the_index_as_the_stored_texts_s
             // One of two writers may be refused by a rule of the database; the next round of the
             // reader makes it good, so only the end state counts.
             let _ = (first, second, third);
-            // Trash every comment of the round while readers run.
+            // Trash every comment of the round, then let the readers go on.
             let trash: Vec<CommentId> = {
                 let mut select = Query::select();
                 select
@@ -523,6 +525,67 @@ async fn iss_13_readers_at_the_same_moment_leave_the_index_as_the_stored_texts_s
             catch_up(storage, at(50 + round)).await?;
         }
         // Everything is in the trash: no word of a comment is left.
+        assert!(
+            found(storage, "kept", TextScope::Everywhere)
+                .await?
+                .is_empty()
+        );
+        let left = rows(storage).await?;
+        assert!(left.iter().all(|(source, _)| source == "title"), "{left:?}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_a_second_writer_waits_for_the_first_and_then_reads_the_newest_texts() -> TestResult
+{
+    each_database("iss_13_writer_waits", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        // SQLite has one writer at a time: the second waits for the whole transaction there,
+        // and the change in the middle of this test could not be made. PostgreSQL has many.
+        if storage.database().dialect() != Dialect::Postgres {
+            return Ok(());
+        }
+        let mut source = ids();
+        let world = world(storage, &mut source, 1).await;
+        let id = world.issues[0].id;
+        let said = comment(&mut source, id, "kept in the index until the end");
+        let comment_id = said.id;
+        changed_issue(storage, &mut source, id, move |tx| {
+            Box::pin(async move { AuthStorage::insert_comment(tx, &said).await })
+        })
+        .await?;
+
+        // A reads the texts (the comment is there) and holds the lock until it commits.
+        let mut first = storage.database().begin().await?;
+        reindex_issues(&mut first, &[id]).await?;
+        // The comment goes to the trash after A has read it.
+        changed(
+            storage,
+            &mut source,
+            RecordKind::Comment,
+            comment_id.into(),
+            move |tx| {
+                Box::pin(async move {
+                    AuthStorage::set_comment_deleted(tx, comment_id, Some(at(10))).await?;
+                    Ok(())
+                })
+            },
+        )
+        .await?;
+        // B starts and must wait for A: it would otherwise read, write and commit now.
+        let touched = [Touched::Issue(id)];
+        let mut second = Box::pin(storage.store_text_index(&touched, 0, at(11)));
+        let waited = tokio::time::timeout(Duration::from_millis(500), second.as_mut()).await;
+        assert!(
+            waited.is_err(),
+            "the second writer did not wait for the first"
+        );
+        first.commit().await?;
+        second.await?;
+        // What B read after A committed is what the index holds: without the comment.
         assert!(
             found(storage, "kept", TextScope::Everywhere)
                 .await?

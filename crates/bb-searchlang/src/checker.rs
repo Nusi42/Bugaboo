@@ -157,7 +157,7 @@ impl<'a> Checker<'a> {
         }
         if words
             .iter()
-            .any(|word| word.is_prefix() && word.text().chars().count() < MIN_PREFIX_CHARS)
+            .any(|word| word.is_prefix() && !word.matches_by_start())
         {
             self.mistakes.push(Mistake::new(
                 text.span,

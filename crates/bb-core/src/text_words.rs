@@ -11,7 +11,19 @@ pub struct SearchWord {
     prefix: bool,
 }
 
+/// The fewest letters a word of a search needs before its `*` (`cra*` is fine, `c*` would match
+/// nearly every word), counted on the prepared word. The checker of the search language refuses
+/// a shorter start, and the search looks it up as the whole word: both ask [`SearchWord::matches_by_start`].
+pub const MIN_PREFIX_CHARS: usize = 2;
+
 impl SearchWord {
+    /// Whether the word is looked up by its start: it was typed with a `*` and has at least
+    /// [`MIN_PREFIX_CHARS`] letters. The one place that decides it.
+    #[must_use]
+    pub fn matches_by_start(&self) -> bool {
+        self.prefix && self.text.chars().count() >= MIN_PREFIX_CHARS
+    }
+
     /// The prepared word (lower case, no accents).
     #[must_use]
     pub fn text(&self) -> &str {
@@ -34,13 +46,17 @@ pub fn prepare(text: &str) -> Vec<String> {
 }
 
 /// The words of a search text, as [`prepare`] makes them, each with whether it ended in `*`. A
-/// word that is typed twice (the same word, both times whole or both times by its start) is
-/// returned once, so a repeated word costs the database nothing.
+/// word that is looked up twice (the same text, both times whole or both times by its start, as
+/// [`SearchWord::matches_by_start`] says) is returned once, so a repeated word costs the database
+/// nothing.
 #[must_use]
 pub fn search_words(text: &str) -> Vec<SearchWord> {
     let mut words: Vec<SearchWord> = Vec::new();
     for word in words_of(text) {
-        if !words.contains(&word) {
+        let same = |other: &SearchWord| {
+            other.text == word.text && other.matches_by_start() == word.matches_by_start()
+        };
+        if !words.iter().any(same) {
             words.push(word);
         }
     }

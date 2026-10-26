@@ -40,26 +40,14 @@ async fn issues_of(
             Touched::File(file) => files.push(file.stored()),
         }
     }
-    for chunk in comments.chunks(STATEMENT_ITEMS) {
-        let mut select = Query::select();
-        select
-            .column(CommentRow::Issue)
-            .from(CommentRow::Table)
-            .and_where(Expr::col(CommentRow::Id).is_in(chunk.to_vec()));
-        for row in transaction.fetch_all(&select).await? {
-            issues.insert(row.id::<IssueId>(CommentRow::Issue)?.to_stored());
-        }
-    }
-    for chunk in files.chunks(STATEMENT_ITEMS) {
-        let mut select = Query::select();
-        select
-            .column(AttachmentRow::Issue)
-            .from(AttachmentRow::Table)
-            .and_where(Expr::col(AttachmentRow::Id).is_in(chunk.to_vec()));
-        for row in transaction.fetch_all(&select).await? {
-            issues.insert(row.id::<IssueId>(AttachmentRow::Issue)?.to_stored());
-        }
-    }
+    let kinds = (CommentRow::Table, CommentRow::Id, CommentRow::Issue);
+    issues_of_records(transaction, kinds, &comments, &mut issues).await?;
+    let kinds = (
+        AttachmentRow::Table,
+        AttachmentRow::Id,
+        AttachmentRow::Issue,
+    );
+    issues_of_records(transaction, kinds, &files, &mut issues).await?;
     issues
         .into_iter()
         .map(|bytes| {
@@ -69,15 +57,32 @@ async fn issues_of(
         .collect()
 }
 
+/// The issues of the records with these IDs, from the table of one kind of record (comments or
+/// attachments; `columns` are its table, its ID and its issue): one statement for each chunk of
+/// the list, added to `issues`.
+async fn issues_of_records<C: sea_query::Iden + Copy + 'static>(
+    transaction: &mut Transaction,
+    columns: (C, C, C),
+    ids: &[Vec<u8>],
+    issues: &mut BTreeSet<[u8; 16]>,
+) -> Result<(), StoreError> {
+    let (table, id, issue) = columns;
+    for chunk in ids.chunks(STATEMENT_ITEMS) {
+        let mut select = Query::select();
+        select
+            .column(issue)
+            .from(table)
+            .and_where(Expr::col(id).is_in(chunk.to_vec()));
+        for row in transaction.fetch_all(&select).await? {
+            issues.insert(row.id::<IssueId>(issue)?.to_stored());
+        }
+    }
+    Ok(())
+}
+
 impl TextIndexStore for AuthStorage {
     async fn text_index_events(&self, limit: u64) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
-        Ok(self
-            .database()
-            .outbox_after(&consumer_name(CONSUMER)?, limit)
-            .await?
-            .into_iter()
-            .map(|(entry, event)| (entry.position, event))
-            .collect())
+        self.database().outbox_events(CONSUMER, limit).await
     }
 
     async fn store_text_index(

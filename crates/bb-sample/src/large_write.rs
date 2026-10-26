@@ -178,16 +178,16 @@ pub(crate) async fn run(
     let last = database.outbox_position(&head).await?;
     // Everything the rebuild read is in the index: the reader starts at the end, so the first
     // round of a server does not read the events of a million issues again.
-    let index = TechnicalName::new(bb_core::text_index::CONSUMER)
-        .map_err(|error| SampleError::step(Step::Dataset, &error))?;
     database
-        .outbox_done(&index, last, world.clock.now())
+        .outbox_set(bb_core::text_index::CONSUMER, last, world.clock.now())
         .await?;
     let window = (last - first) * i64::from(bank.plan.notified_percent) / 100;
-    let consumer = TechnicalName::new(bb_core::notification::CONSUMER)
-        .map_err(|error| SampleError::step(Step::Dataset, &error))?;
     database
-        .outbox_done(&consumer, last - window, world.clock.now())
+        .outbox_set(
+            bb_core::notification::CONSUMER,
+            last - window,
+            world.clock.now(),
+        )
         .await?;
     ctx.catch_up_notifications()
         .await

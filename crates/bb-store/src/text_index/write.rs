@@ -29,8 +29,8 @@ const WRITTEN_COLUMNS: usize = 4;
 
 /// How many issues one step reads and writes: the four reads and the delete of a step bind the
 /// issues once each, and the answers (comments, files, fields) are not bound, so a step is far
-/// below the limit of what a statement binds and still few enough to commit often. The reader
-/// of the outbox, the rebuild and the lock all work in steps of this size.
+/// below the limit of what a statement binds and still few enough to commit often. The reindex of
+/// the reader (at most one batch of events) and each step of the rebuild use it.
 pub(super) const ISSUES_PER_STEP: usize = 500;
 
 /// The texts to index, by issue.
