@@ -95,7 +95,10 @@ const APPLIED: [(i64, &str); 23] = [
         22,
         "b17ab3436cb24d81dcf609ca5ece9ade808ab32f0b8cbd03d00c3e4a2f650562",
     ),
-    (23, "0000"),
+    (
+        23,
+        "f2edf259cd592460880b36c715e5adca9047090d64da29cdc9d02f7c894a7522",
+    ),
 ];
 
 /// The checksum of every migration a database may have applied. If one fails after a rename in
