@@ -36,12 +36,17 @@ const PEOPLE_PER_NAME: u64 = 100;
 /// reads (the people past them are not found by that name).
 const PEOPLE_PAGES_PER_NAME: usize = 5;
 
-/// The most names that a request resolves with reads (a person, a group, a tag, a label, an
-/// issue): the texts of a list of saved searches are written by other people, so what they name
-/// has a bound (`LOOKED_AT_MAX` searches of up to 50 names each is 25,000 names otherwise). A name
-/// past it is as unknown as one that does not exist, for the rest of the request; a search the
-/// person runs holds far fewer.
+/// The most names that a request resolves with a read for each name (a person, an Issue ID): the
+/// texts of a list of saved searches are written by other people, so what they name is bounded
+/// (`LOOKED_AT_MAX` searches of up to `MAX_FILTERS` names each would be 25,000 reads otherwise). A
+/// name past it is never answered as unknown: the resolver says it is out of budget
+/// ([`NameCache::spent`]) and the list ends its page before that search, which the next request
+/// reads again with a budget of its own. The groups, the tags and the labels cost one read of the
+/// whole list or catalogue and are not counted.
 pub(crate) const NAME_RESOLUTIONS_MAX: usize = 200;
+
+// A search that a person runs (at most `MAX_FILTERS` names) is never out of budget.
+const _: () = assert!(NAME_RESOLUTIONS_MAX > bb_searchlang::MAX_FILTERS);
 
 /// What a name in a search is the name of.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -156,18 +161,39 @@ pub(crate) struct NameCache {
     tags_known: Option<Vec<(String, bb_core::id::TagId)>>,
     labels_known: Option<Vec<(String, bb_core::id::LabelId)>>,
     missing_issues: Vec<String>,
-    /// How many names were resolved with reads for the request, against [`NAME_RESOLUTIONS_MAX`].
+    /// How many names were resolved with a read each for the request, against
+    /// [`NAME_RESOLUTIONS_MAX`].
     resolutions: usize,
+    /// Whether the last text needed a name resolved past the bound: its answer is not an answer.
+    spent: bool,
+    /// Whether the bound is lifted: a page that has no search yet goes on to the first one it can
+    /// show, so a cursor never has to name a search that was left out.
+    lifted: bool,
 }
 
 impl NameCache {
-    /// Whether a name that has to be read may be: counts it, and says no past the bound.
+    /// Whether a name that has to be read may be: counts it, and says no past the bound (and
+    /// remembers that the text is out of budget), unless the bound is lifted.
     fn may_resolve(&mut self) -> bool {
+        if self.lifted {
+            return true;
+        }
         if self.resolutions >= NAME_RESOLUTIONS_MAX {
+            self.spent = true;
             return false;
         }
         self.resolutions += 1;
         true
+    }
+
+    /// Whether the last text needed a name past the bound, so that its answer cannot be used.
+    pub(crate) const fn spent(&self) -> bool {
+        self.spent
+    }
+
+    /// Lifts the bound for the rest of the request.
+    pub(crate) const fn lift(&mut self) {
+        self.lifted = true;
     }
 }
 
@@ -258,6 +284,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             cache.seeded = true;
         }
         cache.names.unknown.clear();
+        cache.spent = false;
         let mut asked: Vec<Ask> = Vec::new();
         if let Some(filter) = &checked.search().filter {
             ask(filter, looked, &mut asked);
@@ -305,7 +332,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Ok(!found.is_empty());
                 }
                 if !cache.may_resolve() {
-                    return Ok(false);
+                    return Ok(true);
                 }
                 let found = self.people_named(actor, viewer, kind, &each.text).await?;
                 let known = !found.is_empty();
@@ -322,9 +349,6 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .find(|(name, _)| *name == key)
                 {
                     return Ok(!found.is_empty());
-                }
-                if !cache.may_resolve() {
-                    return Ok(false);
                 }
                 let found = self
                     .groups_named(actor, viewer, &each.text, member_of, cache)
@@ -351,7 +375,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Ok(false);
                 }
                 if !cache.may_resolve() {
-                    return Ok(false);
+                    return Ok(true);
                 }
                 let found = self.issue_named(actor, looked, &id).await?;
                 match found {
@@ -446,9 +470,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             if let Some((_, found)) = cache.names.tags.iter().find(|(name, _)| *name == key) {
                 return Ok(!found.is_empty());
             }
-            if !cache.may_resolve() {
-                return Ok(false);
-            }
             if cache.tags_known.is_none() {
                 let catalogue = self.tag_catalogue().await?;
                 cache.tags_known = Some(
@@ -472,9 +493,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         if let Some((_, found)) = cache.names.labels.iter().find(|(name, _)| *name == key) {
             return Ok(!found.is_empty());
-        }
-        if !cache.may_resolve() {
-            return Ok(false);
         }
         if cache.labels_known.is_none() {
             let mut catalogue = self.label_catalogue().await?;
@@ -583,8 +601,12 @@ mod tests {
         for _ in 0..NAME_RESOLUTIONS_MAX {
             assert!(cache.may_resolve());
         }
-        // Past the bound a name is as unknown as one that does not exist, however many come.
+        assert!(!cache.spent());
+        // Past the bound the text is out of budget, whatever comes.
         assert!(!cache.may_resolve());
-        assert!(!cache.may_resolve());
+        assert!(cache.spent());
+        // Lifted, the page that has no search yet goes on.
+        cache.lift();
+        assert!(cache.may_resolve());
     }
 }

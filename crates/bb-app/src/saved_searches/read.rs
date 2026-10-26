@@ -65,6 +65,14 @@ impl<S: AuthStore> Walk for SharedSearches<'_, '_, S> {
             .collect())
     }
 
+    fn budget_spent(&self) -> bool {
+        self.judge.budget_spent()
+    }
+
+    fn lift_budget(&mut self) {
+        self.judge.lift_budget();
+    }
+
     async fn keeps(&mut self, stored: &Stored) -> Result<bool, AppError> {
         self.ctx.reads_cleanly(&mut self.judge, stored).await
     }

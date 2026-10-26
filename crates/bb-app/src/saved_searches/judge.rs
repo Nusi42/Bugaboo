@@ -45,6 +45,19 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl Judge<'_> {
+    /// Whether the last text needed a name past the bound of the request (see
+    /// `NAME_RESOLUTIONS_MAX`): its answer cannot be used.
+    pub(crate) const fn budget_spent(&self) -> bool {
+        self.names.spent()
+    }
+
+    /// Lifts the bound for the rest of the request.
+    pub(crate) const fn lift_budget(&mut self) {
+        self.names.lift();
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The text in its canonical spelling when the text and the presentation check cleanly for the
     /// person `judge` is for; `None` when they do not.

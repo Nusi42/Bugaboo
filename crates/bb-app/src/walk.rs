@@ -5,7 +5,9 @@
 //! stops when the page is full, the rows are used up or [`LOOKED_AT_MAX`] rows were looked at, so
 //! the work of a request does not depend on how many rows are hidden (PERF-05). A page that stops
 //! at the bound is short and has a cursor that goes on past the rows looked at; it never holds the
-//! key of a row that was skipped ([`SkipCursor`]).
+//! key of a row that was skipped ([`SkipCursor`]). A list whose rows cost a read for each name they
+//! hold can also end a page before a row that is more than the request may spend, and goes on
+//! after the last row shown.
 
 use std::future::Future;
 use std::str::FromStr;
@@ -31,6 +33,16 @@ pub(crate) trait Walk: Send {
 
     /// Whether the person may see the row.
     fn keeps(&mut self, row: &Self::Row) -> impl Future<Output = Result<bool, AppError>> + Send;
+
+    /// Whether the last row judged needed more work than the request may spend: its answer from
+    /// [`Walk::keeps`] is no answer, and the page ends before it (a list whose rows cost a read for
+    /// each name of their text). A walk whose rows cost the same says no.
+    fn budget_spent(&self) -> bool {
+        false
+    }
+
+    /// Lifts that limit for the rest of the request.
+    fn lift_budget(&mut self) {}
 
     /// The key of a row.
     ///
@@ -65,7 +77,22 @@ pub(crate) async fn fill_past_hidden<W: Walk>(
             .await?;
         let full = u64::try_from(found.len()).is_ok_and(|count| count == batch);
         for row in found {
-            if walk.keeps(&row).await? {
+            let mut kept = walk.keeps(&row).await?;
+            if walk.budget_spent() {
+                if rows.is_empty() {
+                    // No row to continue after, and a cursor may name only a row that was shown:
+                    // go on to the first row that can be, whatever it costs (bounded by the
+                    // rows looked at).
+                    walk.lift_budget();
+                    kept = walk.keeps(&row).await?;
+                } else {
+                    // The page ends before this row, and the next one starts after the last row
+                    // shown, with a budget of its own.
+                    more = true;
+                    break 'scan;
+                }
+            }
+            if kept {
                 if rows.len() == len {
                     more = true;
                     break 'scan;
