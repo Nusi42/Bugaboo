@@ -86,6 +86,9 @@ async fn open_sqlite_once(options: SqliteConnectOptions) -> Result<SqlitePool, s
     let options = options
         .create_if_missing(true)
         .journal_mode(SqliteJournalMode::Wal)
+        // What SQLite knows of the tables for its plans stays fresh as the data grows: a connection
+        // that closes looks at what changed (`PRAGMA optimize`).
+        .optimize_on_close(true, None)
         // FULL: a committed change survives a power cut (security first). It costs one
         // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
         .synchronous(SqliteSynchronous::Full)
