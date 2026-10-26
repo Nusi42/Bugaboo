@@ -340,7 +340,6 @@ async fn qry_06_a_walk_past_more_than_five_hundred_hidden_searches_ends_short_wi
         let template = shared_with_acme(&crew, "Hidden", "assignedTo is \"Bob Baker\"").await?;
         let mut shared = crew.world.store.lock();
         let search = shared.state.saved_searches[0].clone();
-        let columns = shared.state.search_columns.clone();
         let share = shared.state.search_shares[0].clone();
         assert_eq!(template.id, search.id);
         shared.state.saved_searches.clear();
@@ -370,7 +369,6 @@ async fn qry_06_a_walk_past_more_than_five_hundred_hidden_searches_ends_short_wi
             });
             shared.state.saved_searches.push(each);
         }
-        let _ = columns;
     }
     let seen = shared_with_acme(&crew, "Seen", "status is open").await?;
     let ids: Vec<SavedSearchId> = crew
@@ -413,5 +411,65 @@ async fn qry_06_a_walk_past_more_than_five_hundred_hidden_searches_ends_short_wi
     assert_eq!(second.items.len(), 1);
     assert_eq!(second.items[0].id, seen.id);
     assert_eq!(second.next_cursor, None);
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_a_cursor_with_a_skip_that_does_not_fit_is_refused_for_both_lists() -> Outcome {
+    let crew = Crew::new().await?;
+    for forged in ["+9223372036854776000", "+499", "+x", "not an id+500"] {
+        let saved = crate::saved_searches::saved_searches(
+            &crew.world.ctx(),
+            crate::saved_searches::SearchesQuery {
+                session_token: crew.dan.session_token.clone(),
+                scope: SearchSet::Shared,
+                cursor: Some(forged.to_owned()),
+                limit: 5,
+            },
+        )
+        .await;
+        assert!(refused(&saved, ErrorCode::InvalidRequest), "{forged}");
+        let choices = crate::auth::project_choices(
+            &crew.world.ctx(),
+            crate::auth::ProjectChoicesQuery {
+                session_token: crew.dan.session_token.clone(),
+                cursor: Some(forged.to_owned()),
+                limit: 5,
+            },
+        )
+        .await;
+        assert!(refused(&choices, ErrorCode::InvalidRequest), "{forged}");
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_a_search_is_shared_with_at_most_a_hundred_places_and_the_next_is_refused() -> Outcome
+{
+    use bb_core::saved_search::{SHARES_MAX, SearchShare};
+    let crew = Crew::new().await?;
+    let made = save(&crew.world, &crew.ben.session_token, "Wide", "").await?;
+    {
+        let mut shared = crew.world.store.lock();
+        for number in 0..SHARES_MAX {
+            let group = bb_core::id::GroupId::from_parts(
+                jiff::Timestamp::UNIX_EPOCH,
+                [u8::try_from(number)?, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+            )?;
+            shared.state.search_shares.push(SearchShare {
+                search: made.id,
+                target: ShareTarget::Group(group),
+                shared_at: jiff::Timestamp::UNIX_EPOCH,
+            });
+        }
+    }
+    let over = share(
+        &crew.world,
+        &crew.ben.session_token,
+        made.id,
+        ShareTarget::Project(crew.acme),
+    )
+    .await;
+    assert!(refused(&over, ErrorCode::LimitReached));
     Ok(())
 }

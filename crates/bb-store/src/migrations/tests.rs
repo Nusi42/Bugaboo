@@ -8,7 +8,7 @@ use crate::test_support::at;
 
 /// By the number of the migration, not by place in the list: the numbers of other migrations that
 /// are added later fall between these.
-const APPLIED: [(i64, &str); 22] = [
+const APPLIED: [(i64, &str); 23] = [
     (
         1,
         "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
@@ -96,6 +96,10 @@ const APPLIED: [(i64, &str); 22] = [
     (
         22,
         "b17ab3436cb24d81dcf609ca5ece9ade808ab32f0b8cbd03d00c3e4a2f650562",
+    ),
+    (
+        23,
+        "3a7adf3df0dd425c846d2ff19b75749407fd6d4602a090434ef51de2c9859940",
     ),
 ];
 
