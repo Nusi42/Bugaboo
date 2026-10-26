@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
-use bb_core::fields::{Field, FieldKey};
+use bb_core::fields::{Field, FieldKey, ID_WORD};
 use bb_core::id::ProjectId;
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
@@ -41,6 +41,7 @@ use super::target::{FieldTarget, Searchable};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::Definition;
+use crate::projects::Leveled;
 
 /// Where a search looks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -96,6 +97,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(readable_of(&self.searchables_of(actor, scope).await?))
     }
 
+    /// The fields the person may search by everywhere, from the tree and the levels that the
+    /// caller has read already.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn readable_fields_in(
+        &self,
+        seen: &Leveled,
+        scope: SearchScope,
+    ) -> Result<ReadableFields, AppError> {
+        Ok(readable_of(&self.searchables_in(seen, scope).await?))
+    }
+
     /// The same fields with what each one stands for, which the compiler needs: the one list the
     /// checker and the compiler both start from, so they cannot disagree about a word.
     ///
@@ -108,6 +122,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         scope: SearchScope,
     ) -> Result<Vec<Searchable>, AppError> {
         let seen = self.shown_with_levels_to(actor).await?;
+        self.searchables_in(&seen, scope).await
+    }
+
+    /// The same, from the tree and the levels of the person that the caller has read already.
+    ///
+    /// # Errors
+    /// `resource.not-found` for a project that the person does not see; an internal error when the
+    /// store fails.
+    pub(crate) async fn searchables_in(
+        &self,
+        seen: &Leveled,
+        scope: SearchScope,
+    ) -> Result<Vec<Searchable>, AppError> {
         let within = match scope {
             SearchScope::Everywhere => None,
             SearchScope::Within(project) if seen.sees(project) => Some(project),
@@ -122,7 +149,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut types: Vec<IssueType> = Vec::new();
         let mut statuses: Vec<String> = Vec::new();
         for place in &places {
-            for (found, workflow) in self.workflows_reaching(&seen, &place.chain).await? {
+            for (found, workflow) in self.workflows_reaching(seen, &place.chain).await? {
                 statuses.extend(workflow.statuses.iter().map(|status| status.name.clone()));
                 types.push(found);
             }
@@ -268,6 +295,7 @@ fn reserved_words() -> Vec<String> {
         .iter()
         .map(|field| field.search_word())
         .chain(IssueField::ALL.iter().map(|each| each.word().to_owned()))
+        .chain([ID_WORD.to_owned()])
         .collect()
 }
 

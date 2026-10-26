@@ -6,11 +6,11 @@
 //! share can still take a share back. Being shared with never adds a right to a receiver.
 
 use bb_core::ErrorCode;
-use bb_core::event::{FieldChange, RecordKind};
+use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::GroupId;
 use bb_core::saved_search::{SHARES_MAX, SearchShare, ShareTarget};
 use bb_policy::{Authorized, Permission, Place};
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use super::events::target_json;
 use super::reach::{Opened, may_share_with_group};
@@ -18,6 +18,7 @@ use super::types::{SavedSearchView, ShareSearch, StopSharingSearch};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity};
 use crate::member::saved_search as member;
+use crate::projects::Why;
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Whether the actor may share with the group or the project: *Share searches* in the
@@ -72,6 +73,32 @@ fn share_change(target: ShareTarget, shared: bool) -> FieldChange {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The events of the saved searches that stop being shared because the group is deleted: one
+    /// for each search, so that each one's history says it (ADR-0034, decision 7).
+    pub(crate) async fn events_of_a_deleted_group(
+        &self,
+        by_person: bb_core::id::UserId,
+        group: GroupId,
+    ) -> Result<Vec<DomainEvent>, AppError> {
+        let searches = self
+            .store()
+            .searches_shared_with_group(group)
+            .await
+            .map_err(|error| crate::auth::internal::<S>(&error))?;
+        searches
+            .into_iter()
+            .map(|search| {
+                self.event(
+                    by(by_person),
+                    entity(RecordKind::SavedSearch, search),
+                    vec![share_change(ShareTarget::Group(group), false)],
+                )
+            })
+            .collect()
+    }
+}
+
 /// Shares a saved search with a group or a project. Sharing it again changes nothing.
 ///
 /// # Errors
@@ -96,9 +123,6 @@ pub async fn share_search<S: AuthStore>(
     {
         return ctx.authorized_view(&actor, &reaching, stored).await;
     }
-    if stored.shares.len() >= SHARES_MAX {
-        return Err(ErrorCode::LimitReached.into());
-    }
     let share = SearchShare {
         search: stored.search.id,
         target: input.target,
@@ -110,12 +134,23 @@ pub async fn share_search<S: AuthStore>(
         vec![share_change(input.target, true)],
     )?;
     let written = share.clone();
+    let why = Why::default();
+    let full = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move { S::insert_search_share(transaction, &written).await })
+            Box::pin(async move {
+                // Counted in the change, so two shares at once cannot pass the limit.
+                let shared = S::search_shares_in(transaction, written.search).await?;
+                if shared.len() >= SHARES_MAX {
+                    return Err(full.stop::<S>(ErrorCode::LimitReached));
+                }
+                S::insert_search_share(transaction, &written)
+                    .await
+                    .map(|_| ())
+            })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        .map_err(|error| why.answer::<S>(&error, ErrorCode::LimitReached))?;
     stored.shares.push(share);
     ctx.authorized_view(&actor, &reaching, stored).await
 }
@@ -148,8 +183,29 @@ pub async fn stop_sharing_search<S: AuthStore>(
         entity(RecordKind::SavedSearch, search),
         vec![share_change(target, false)],
     )?;
+    // A project that had the search as its list shows the built-in default from now on, and its
+    // history says why.
+    let mut events = vec![event];
+    if let ShareTarget::Project(project) = target {
+        let list = ctx
+            .store()
+            .project_default_list(project)
+            .await
+            .map_err(|error| crate::auth::internal::<S>(&error))?;
+        if list.is_some_and(|row| row.search == search) {
+            events.push(ctx.event(
+                by(actor.person.id),
+                entity(RecordKind::Project, project),
+                vec![FieldChange {
+                    field: member::DEFAULT_LIST.to_owned(),
+                    before: Some(json!(search.to_string())),
+                    after: None,
+                }],
+            )?);
+        }
+    }
     ctx.store()
-        .record_change(&event, move |transaction| {
+        .record_changes(&events, move |transaction| {
             Box::pin(async move {
                 S::delete_search_share(transaction, search, target).await?;
                 match target {

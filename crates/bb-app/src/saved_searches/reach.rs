@@ -11,14 +11,14 @@ use super::judge::Judge;
 use super::store::Reach;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::projects::Shown;
+use crate::projects::Leveled;
 
 /// The groups a person is in and the projects they see: the places a share reaches them by.
 pub(crate) struct Reaching {
     groups: Vec<GroupId>,
     projects: Vec<ProjectId>,
     /// What the person sees of the tree, kept for the names and rights of the places in a view.
-    pub(crate) shown: Shown,
+    pub(crate) shown: Leveled,
 }
 
 impl Reaching {
@@ -77,7 +77,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .into_iter()
             .map(|group| group.id)
             .collect();
-        let shown = self.shown_to(actor).await?;
+        let shown = self.shown_with_levels_to(actor).await?;
         let projects = shown.everything().into_iter().map(|p| p.id).collect();
         Ok(Reaching {
             groups,
@@ -121,6 +121,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 found.search.maker == actor.person.id || reaching.includes(&found.shares)
             });
         let mut clean = None;
+        if candidate.is_none() {
+            // Nothing there: the same work is done on a text with no names, so the answer does not
+            // come sooner than one for a search that is there and does not check.
+            self.canonical_text(&mut judge, "", &Presentation::default())
+                .await?;
+        }
         if let Some(found) = candidate
             && (found.search.maker == actor.person.id
                 || self.reads_cleanly(&mut judge, &found).await?)

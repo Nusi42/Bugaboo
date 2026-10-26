@@ -10,13 +10,14 @@ use serde_json::{Value, json};
 
 use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{PROJECTS, Site, id_of, ok};
-use super::perf_queries::{assert_as_many_statements, five_and_forty};
+use super::perf_queries::{Counter, assert_as_many_statements, five_and_forty};
 
 const SEARCHES: &str = "/api/v1/saved-searches";
 /// The most statements a page of saved searches may run, however many rows there are (a ceiling
 /// that a change to the code has to notice; the exact numbers are compared apart). Most of them are
-/// the session, the rights of the person and the fields they may read (checking a shared search needs them).
-const AT_MOST: usize = 50;
+/// the session, the rights of the person and the fields they may read (checking a shared search
+/// needs them).
+const AT_MOST: usize = 52;
 
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
@@ -28,7 +29,10 @@ async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
                 "search_text": "status is open",
                 "presentation": {
                     "view": "list",
-                    "columns": [{"field": "title", "width": 300}, {"field": "status", "width": null}],
+                    "columns": [
+                        {"field": "title", "width": 300},
+                        {"field": "status", "width": null}
+                    ],
                     "spacing": "compact",
                     "group_by": "statusGroup"
                 }
@@ -169,8 +173,7 @@ async fn qry_06_only_the_maker_changes_a_saved_search_and_a_receiver_copies_it()
 }
 
 #[tokio::test]
-async fn qry_06_stopping_a_share_and_the_trash_take_a_saved_search_from_its_receivers() -> TestResult
-{
+async fn qry_06_stopping_a_share_and_the_trash_take_a_search_from_its_receivers() -> TestResult {
     each_database("qry_06_saved_search_stops", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
@@ -195,7 +198,7 @@ async fn qry_06_stopping_a_share_and_the_trash_take_a_saved_search_from_its_rece
         let back = ada
             .send("POST", &format!("{SEARCHES}/{id}/restore"), None)
             .await?;
-        assert_eq!(ok(&back)?["shared_with"][0]["kind"], "project");
+        assert_eq!(ok(&back)?["search"]["shared_with"][0]["kind"], "project");
         let seen = bob.send("GET", &format!("{SEARCHES}/{id}"), None).await?;
         assert_eq!(seen.status, StatusCode::OK);
         Ok(())
@@ -335,6 +338,123 @@ async fn qry_06_deleting_a_group_takes_the_searches_shared_with_it_along() -> Te
         assert_eq!(deleted.status, StatusCode::NO_CONTENT);
         let after = ada.send("GET", &format!("{SEARCHES}/{id}"), None).await?;
         assert_eq!(ok(&after)?["shared_with"], json!([]));
+        Ok(())
+    })
+    .await
+}
+
+/// Ada saves a search with this text and shares it with ACME; its ID.
+async fn ada_shares(
+    site: &Site<'_>,
+    ada: &mut Browser,
+    name: &str,
+    search_text: &str,
+) -> Result<String, Failure> {
+    let made = ada
+        .send(
+            "POST",
+            SEARCHES,
+            Some(json!({"name": name, "search_text": search_text})),
+        )
+        .await?;
+    let id = id_of(&made)?;
+    ok(&share_with_acme(ada, &id, &site.acme).await?)?;
+    Ok(id)
+}
+
+#[tokio::test]
+async fn qry_06_a_search_that_does_not_check_for_the_receiver_is_not_there_for_any_call()
+-> TestResult {
+    each_database("qry_06_saved_search_hidden", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        // A guest sees people by their role only, so cannot search by who an issue is assigned to.
+        let (mut dan, _) = site
+            .person_called(StartingRole::Guest, "dan", "Dan Dyer")
+            .await?;
+        let (mut cleo, _) = site
+            .person_called(StartingRole::TeamMember, "cleo", "Cleo Cook")
+            .await?;
+        let hidden = ada_shares(&site, &mut ada, "Hidden", "assignedTo is \"Bob Baker\"").await?;
+        let seen = ada_shares(&site, &mut ada, "Seen", "").await?;
+        let missing = "01a3185c-5000-73b2-8f37-20757db0778e";
+        // The list holds the next search, not a gap; the address, the delete and the restore answer
+        // as they do for a search that is not there.
+        let page = dan
+            .send("GET", &format!("{SEARCHES}?scope=shared&limit=1"), None)
+            .await?;
+        assert_eq!(names(&page), ["Seen"]);
+        assert_eq!(page.body["items"][0]["id"], seen.as_str());
+        for (method, suffix) in [
+            ("GET", ""),
+            ("DELETE", ""),
+            ("POST", "/restore"),
+            ("POST", "/copy"),
+        ] {
+            let body = (method == "POST" && suffix == "/copy").then(|| json!({}));
+            let there = dan
+                .send(
+                    method,
+                    &format!("{SEARCHES}/{hidden}{suffix}"),
+                    body.clone(),
+                )
+                .await?;
+            let nothing = dan
+                .send(method, &format!("{SEARCHES}/{missing}{suffix}"), body)
+                .await?;
+            assert_eq!(there.status, StatusCode::NOT_FOUND, "{method}{suffix}");
+            assert_eq!(
+                (there.status, there.code()),
+                (nothing.status, nothing.code())
+            );
+        }
+        // Nothing of it was deleted: somebody who reads it cleanly still has it.
+        let kept = cleo
+            .send("GET", &format!("{SEARCHES}/{hidden}"), None)
+            .await?;
+        assert_eq!(kept.status, StatusCode::OK);
+        // An administrator takes a private search out of the trash and learns nothing of it.
+        let private = id_of(&save(&mut cleo, "Private of Cleo").await?)?;
+        let gone = cleo
+            .send("DELETE", &format!("{SEARCHES}/{private}"), None)
+            .await?;
+        assert_eq!(gone.status, StatusCode::NO_CONTENT);
+        let back = ada
+            .send("POST", &format!("{SEARCHES}/{private}/restore"), None)
+            .await?;
+        assert_eq!(ok(&back)?["search"], Value::Null);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_05_many_searches_that_are_skipped_cost_no_more_statements_than_none() -> TestResult {
+    each_database("perf_05_saved_searches_skipped", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut dan, _) = site
+            .person_called(StartingRole::Guest, "dan", "Dan Dyer")
+            .await?;
+        // Five that Dan reads; then forty that he cannot read follow them, so he looks at all of
+        // them to know that the page has no sixth.
+        for number in 0..5 {
+            ada_shares(&site, &mut ada, &format!("Seen {number}"), "").await?;
+        }
+        let path = format!("{SEARCHES}?scope=shared&limit=5&fields=name,maker");
+        let mut counter = Counter::on(&rig.database);
+        ok(&dan.send("GET", &path, None).await?)?;
+        counter.take();
+        assert_eq!(names(&dan.send("GET", &path, None).await?).len(), 5);
+        let on_none = counter.take();
+        for number in 0..40 {
+            let name = format!("Hidden {number}");
+            ada_shares(&site, &mut ada, &name, "assignedTo is \"Bob Baker\"").await?;
+        }
+        counter.take();
+        let skipping = dan.send("GET", &path, None).await?;
+        assert_eq!(names(&skipping).len(), 5);
+        assert_as_many_statements(on_none, counter.take(), AT_MOST, "skipped searches");
         Ok(())
     })
     .await

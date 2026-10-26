@@ -9,6 +9,7 @@
 use jiff::Timestamp;
 use serde::Serialize;
 
+use crate::fields::ID_WORD;
 use crate::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use crate::personal::{Entity, NotPersonal};
 use crate::settings::{APPEARANCE_SPACING, DefaultValue};
@@ -26,10 +27,6 @@ pub const COLUMN_WIDTH_RANGE: std::ops::RangeInclusive<u32> = 24..=2000;
 
 /// The most saved searches one person has (those in the trash included): the 501st is refused.
 pub const SAVED_SEARCHES_MAX: usize = 500;
-
-/// The word of the column that shows the Issue ID. It is no field of the search language (every
-/// issue has an ID), so it is the one word of a column that needs no field.
-pub const ID_COLUMN: &str = "id";
 
 /// The most groups and projects one saved search is shared with.
 pub const SHARES_MAX: usize = 100;
@@ -198,7 +195,7 @@ impl Presentation {
         self.columns
             .iter()
             .map(|column| column.field.as_str())
-            .filter(|word| *word != ID_COLUMN)
+            .filter(|word| *word != ID_WORD)
             .chain(self.group_by.as_deref())
     }
 }

@@ -36,6 +36,8 @@ pub trait SavedSearchStore: ChangeStore + 'static {
         fn search_columns(id: SavedSearchId) -> Vec<SearchColumn> = search_columns_in;
         /// The groups and projects one saved search is shared with, in the order they were added.
         fn search_shares(id: SavedSearchId) -> Vec<SearchShare> = search_shares_in;
+        /// How many saved searches a person has, the trash included.
+        fn count_saved_searches_of(maker: UserId) -> u64 = count_saved_searches_of_in;
         /// The saved search a project shows as its list, if it has one.
         fn project_default_list(project: ProjectId) -> Option<ProjectDefaultList>
             = project_default_list_in;
@@ -58,11 +60,12 @@ pub trait SavedSearchStore: ChangeStore + 'static {
             limit: u64
         ) -> Vec<SavedSearch>;
         /// How many saved searches a person has, the trash included.
-        fn count_saved_searches_of(maker: UserId) -> u64;
         /// The columns of these saved searches, each search's in order.
         fn columns_of_searches(ids: &[SavedSearchId]) -> Vec<SearchColumn>;
         /// The shares of these saved searches.
         fn shares_of_searches(ids: &[SavedSearchId]) -> Vec<SearchShare>;
+        /// The saved searches that are shared with a group, by ID.
+        fn searches_shared_with_group(group: GroupId) -> Vec<SavedSearchId>;
         /// The people with these IDs that exist: the makers of a page.
         fn makers_of(ids: &[UserId]) -> Vec<Person>;
     }

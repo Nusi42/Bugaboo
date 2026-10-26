@@ -386,6 +386,26 @@ async fn qry_06_a_search_shared_with_a_place_is_listed_for_the_people_it_reaches
     )
     .await?;
     assert!(shared(&crew, &crew.cleo).await?.is_empty());
+    // The history of the search says that it is no longer shared with the group.
+    let said = crew
+        .world
+        .store
+        .lock()
+        .events
+        .iter()
+        .filter(|event| {
+            event.entity.kind == bb_core::event::EntityKind::from(RecordKind::SavedSearch)
+                && event.changes.iter().any(|change| {
+                    change.field == "shared_with"
+                        && change.before.is_some()
+                        && change.after.is_none()
+                })
+        })
+        .count();
+    assert_eq!(
+        said, 2,
+        "one event for the search of the group, one for the project"
+    );
     let after = open(&crew.world, &ada, for_night.id).await?;
     assert!(after.shared_with.is_empty());
     Ok(())
@@ -496,7 +516,9 @@ async fn qry_06_delete_goes_to_the_trash_with_undo() -> Outcome {
     // *Undo* brings it back as it was, still shared.
     let back = restore_search(&crew.world.ctx(), untrash(ben))
         .await?
-        .into_value();
+        .into_value()
+        .search
+        .ok_or("the maker is shown the search")?;
     assert_eq!(back.name, "My bugs");
     assert_eq!(back.shared_with.len(), 1);
     assert_eq!(back.version, made.version + 2);
@@ -544,6 +566,17 @@ async fn qry_06_somebody_with_change_organization_settings_deletes_any_saved_sea
         names(&list(&crew.world, ben, SearchSet::Mine).await?),
         ["Shared"]
     );
+    // Taking a private search out of the trash tells her nothing of its name or text.
+    let private_back = restore_search(
+        &crew.world.ctx(),
+        RestoreSearch {
+            session_token: ada.clone(),
+            search: private.id,
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(private_back.search, None);
     let change = change_search(
         &crew.world.ctx(),
         ChangeSearch {

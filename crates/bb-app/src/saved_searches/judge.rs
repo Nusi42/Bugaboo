@@ -75,7 +75,7 @@ pub(crate) struct Judge<'a> {
     reaching: &'a Reaching,
     fields: ReadableFields,
     manages_groups: bool,
-    groups: Option<Vec<Group>>,
+    groups: Vec<Group>,
     projects: HashMap<String, bool>,
 }
 
@@ -87,8 +87,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         reaching: &'a Reaching,
     ) -> Result<Judge<'a>, AppError> {
         let fields = self
-            .readable_fields_of(actor, SearchScope::Everywhere)
+            .readable_fields_in(&reaching.shown, SearchScope::Everywhere)
             .await?;
+        // Read whatever the answer, so that a search that is there costs what one that is not does.
+        let groups = self
+            .store()
+            .groups()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
         let manages_groups = self
             .evaluation_of(actor, bb_policy::Place::Organization)
             .await?
@@ -97,7 +103,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             reaching,
             fields,
             manages_groups,
-            groups: None,
+            groups,
             projects: HashMap::new(),
         })
     }
@@ -148,15 +154,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// Whether the person sees a group of this name: they are in it, or may manage groups.
     async fn sees_group(&self, judge: &mut Judge<'_>, name: &str) -> Result<bool, AppError> {
-        if judge.groups.is_none() {
-            judge.groups = Some(
-                self.store()
-                    .groups()
-                    .await
-                    .map_err(|error| internal::<S>(&error))?,
-            );
-        }
-        Ok(judge.groups.iter().flatten().any(|group| {
+        Ok(judge.groups.iter().any(|group| {
             same_name(&group.name, name) && (judge.manages_groups || judge.reaching.is_in(group.id))
         }))
     }

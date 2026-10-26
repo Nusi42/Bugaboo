@@ -7053,6 +7053,10 @@ export interface components {
        */
       version: number;
     };
+    /** @description What taking a saved search out of the trash answers. */
+    RestoredSearchBody: {
+      search: components["schemas"]["SavedSearchItem"] | null;
+    };
     /**
      * @description A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
      *     Website" needs.
@@ -14434,13 +14438,13 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The saved search, out of the trash. */
+      /** @description The saved search is out of the trash; the search is in the answer when it is one the person may open. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["SavedSearchItem"];
+          "application/json": components["schemas"]["RestoredSearchBody"];
         };
       };
       401: components["responses"]["NotSignedIn"];

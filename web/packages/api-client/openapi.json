@@ -11151,11 +11151,11 @@
         ],
         "responses": {
           "200": {
-            "description": "The saved search, out of the trash.",
+            "description": "The saved search is out of the trash; the search is in the answer when it is one the person may open.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SavedSearchItem"
+                  "$ref": "#/components/schemas/RestoredSearchBody"
                 }
               }
             }
@@ -20117,6 +20117,24 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the role the person looked at; a change made meanwhile stops this one."
+          }
+        }
+      },
+      "RestoredSearchBody": {
+        "type": "object",
+        "description": "What taking a saved search out of the trash answers.",
+        "required": ["search"],
+        "properties": {
+          "search": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SavedSearchItem",
+                "description": "The saved search, when it is one the person may open; `null` for somebody who may only take\nit out of the trash (they are told nothing of its name or text)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

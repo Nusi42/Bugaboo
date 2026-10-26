@@ -15,6 +15,11 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::id::FieldId;
 use crate::people_kinds::PeopleKind;
 
+/// The word of the column that shows the Issue ID. It is no field to search by (every issue has an
+/// ID and the Issue ID has its own place in a search), so a column may use it without a field, and
+/// no own field takes it (ADR-0005, amendment M5, item 9).
+pub const ID_WORD: &str = "id";
+
 words! {
     /// A built-in field. The word is the key of the field (`assigned-to`).
     pub enum Field {

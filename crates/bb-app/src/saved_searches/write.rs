@@ -14,10 +14,11 @@ use serde_json::json;
 use super::events;
 use super::reach::{Opened, Reaching, Stored};
 use super::types::{
-    ChangeSearch, DeleteSearch, RestoreSearch, SaveCopy, SaveSearch, SavedSearchView,
+    ChangeSearch, DeleteSearch, RestoreSearch, RestoredSearch, SaveCopy, SaveSearch,
+    SavedSearchView,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity};
 use crate::input::clean_name;
 use crate::member::saved_search as member;
 use crate::ports::BoxFuture;
@@ -50,13 +51,22 @@ struct NewSearch {
 }
 
 /// The change that writes a new saved search with its columns.
+/// It stops with `limit.reached` (in `why`) when the person has as many searches as they may have:
+/// counted in the same change, so two saves at once cannot pass the limit.
 fn inserting<S: AuthStore>(
     search: SavedSearch,
     columns: Vec<SearchColumn>,
+    why: Why,
 ) -> impl for<'t> FnOnce(&'t mut S::Transaction) -> BoxFuture<'t, Result<(), S::Error>> + Send + 'static
 {
     move |transaction: &mut S::Transaction| {
-        Box::pin(async move { S::insert_saved_search(transaction, &search, &columns).await })
+        Box::pin(async move {
+            let have = S::count_saved_searches_of_in(transaction, search.maker).await?;
+            if have >= u64::try_from(SAVED_SEARCHES_MAX).unwrap_or(u64::MAX) {
+                return Err(why.stop::<S>(ErrorCode::LimitReached));
+            }
+            S::insert_saved_search(transaction, &search, &columns).await
+        })
     }
 }
 
@@ -111,19 +121,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.canonical_text(&mut judge, &text, presentation)
             .await?
             .ok_or_else(|| ErrorCode::InvalidRequest.into())
-    }
-
-    /// Refuses a new saved search when the person has as many as they may have.
-    async fn ensure_room(&self, actor: &Actor) -> Result<(), AppError> {
-        let have = self
-            .store()
-            .count_saved_searches_of(actor.person.id)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        if have >= u64::try_from(SAVED_SEARCHES_MAX).unwrap_or(u64::MAX) {
-            return Err(ErrorCode::LimitReached.into());
-        }
-        Ok(())
     }
 
     /// A new saved search of the actor, private, with the event that says it was made.
@@ -205,16 +202,25 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<(Stored, Reaching), AppError> {
         let stored = self.stored_search(id).await?;
         let reaching = self.reaching(actor).await?;
+        let mut judge = self.judge(actor, &reaching).await?;
         let organization = self.evaluation_of(actor, Place::Organization).await?;
-        let found = stored
-            .filter(|found| found.search.deleted_at.is_some() == in_trash)
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let found = stored.filter(|found| found.search.deleted_at.is_some() == in_trash);
+        let Some(found) = found else {
+            self.canonical_text(&mut judge, "", &Presentation::default())
+                .await?;
+            return Err(ErrorCode::NotFound.into());
+        };
         let mine = found.search.maker == actor.person.id;
         if mine || organization.allows(Permission::ChangeOrganizationSettings) {
+            drop(judge);
             return Ok((found, reaching));
         }
-        // Whoever does not see it is told nothing about it, and nobody is told about the trash.
-        if !in_trash && reaching.includes(&found.shares) {
+        // Whoever does not see it, also because it does not check for them, is told nothing about
+        // it, and nobody is told about the trash.
+        let sees = !in_trash
+            && reaching.includes(&found.shares)
+            && self.reads_cleanly(&mut judge, &found).await?;
+        if sees {
             Err(ErrorCode::Forbidden.into())
         } else {
             Err(ErrorCode::NotFound.into())
@@ -263,19 +269,19 @@ pub async fn save_search<S: AuthStore>(
     input: SaveSearch,
 ) -> Result<Authorized<SavedSearchView>, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
-    ctx.ensure_room(&actor).await?;
     let reaching = ctx.reaching(&actor).await?;
     let text = ctx
         .canonical_for(&actor, &reaching, &input.text, &input.presentation)
         .await?;
     let new = ctx.new_search(&actor, &input.name, text, input.presentation)?;
+    let why = Why::default();
     ctx.store()
         .record_change(
             &new.event,
-            inserting::<S>(new.search.clone(), new.columns.clone()),
+            inserting::<S>(new.search.clone(), new.columns.clone(), why.clone()),
         )
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound))?;
     ctx.new_view(&actor, new).await
 }
 
@@ -377,7 +383,7 @@ pub async fn delete_search<S: AuthStore>(
 pub async fn restore_search<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RestoreSearch,
-) -> Result<Authorized<SavedSearchView>, AppError> {
+) -> Result<Authorized<RestoredSearch>, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let (found, reaching) = ctx.search_to_trash(&actor, input.search, true).await?;
     let (event, after) = ctx.trash_event(&actor, &found.search, false)?;
@@ -393,7 +399,20 @@ pub async fn restore_search<S: AuthStore>(
         search: after,
         ..found
     };
-    ctx.authorized_view(&actor, &reaching, restored).await
+    // Somebody who may take a search out of the trash without being its maker is shown it only
+    // when it would be theirs to open: what they may do is not what they may read.
+    let organization = ctx.evaluation_of(&actor, Place::Organization).await?;
+    let mut judge = ctx.judge(&actor, &reaching).await?;
+    let opens = restored.search.maker == actor.person.id
+        || (reaching.includes(&restored.shares)
+            && ctx.reads_cleanly(&mut judge, &restored).await?);
+    drop(judge);
+    let search = if opens {
+        Some(ctx.one_view(&actor, &reaching, restored).await?)
+    } else {
+        None
+    };
+    Ok(organization.authorize(RestoredSearch { search }))
 }
 
 /// *Save a copy*: a private saved search of the person with the text and the presentation of one
@@ -410,18 +429,18 @@ pub async fn save_copy<S: AuthStore>(
     let original = ctx.open_search(&actor, input.search).await?.stored;
     let name = input.name.unwrap_or_else(|| original.search.name.clone());
     let presentation = Presentation::of(&original.search, &original.columns);
-    ctx.ensure_room(&actor).await?;
     let reaching = ctx.reaching(&actor).await?;
     let text = ctx
         .canonical_for(&actor, &reaching, &original.search.text, &presentation)
         .await?;
     let new = ctx.new_search(&actor, &name, text, presentation)?;
+    let why = Why::default();
     ctx.store()
         .record_change(
             &new.event,
-            inserting::<S>(new.search.clone(), new.columns.clone()),
+            inserting::<S>(new.search.clone(), new.columns.clone(), why.clone()),
         )
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound))?;
     ctx.new_view(&actor, new).await
 }

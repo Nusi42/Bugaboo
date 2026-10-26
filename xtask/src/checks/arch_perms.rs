@@ -131,7 +131,7 @@ fn evaluate(
             None => findings.push(Finding::at(
                 place,
                 format!(
-                    "The route declares no permission. Add it to the table of routes in `bb-api` (`permissions.rs`): a key of the catalogue, or one of {}.",
+                    "The route declares no permission. Add it to the table of routes in `bb-api` (`permissions.rs` or `permissions/<area>.rs`): a key of the catalogue, or one of {}.",
                     WORDS.join(", ")
                 ),
             )),

@@ -124,15 +124,14 @@ impl SavedSearchStore for FakeStore {
         }))
     }
 
-    async fn count_saved_searches_of(&self, maker: UserId) -> Result<u64, FakeError> {
-        Ok(self.read(|state| {
-            let count = state
-                .saved_searches
-                .iter()
-                .filter(|search| search.maker == maker)
-                .count();
-            u64::try_from(count).unwrap_or(u64::MAX)
-        }))
+    async fn count_saved_searches_of_in(tx: &mut Tx, maker: UserId) -> Result<u64, FakeError> {
+        let count = tx
+            .state
+            .saved_searches
+            .iter()
+            .filter(|search| search.maker == maker)
+            .count();
+        Ok(u64::try_from(count).unwrap_or(u64::MAX))
     }
 
     async fn columns_of_searches(
@@ -163,6 +162,22 @@ impl SavedSearchStore for FakeStore {
                 .cloned()
                 .collect();
             found.sort_by_key(|share| (share.search, share.shared_at, share.target));
+            found
+        }))
+    }
+
+    async fn searches_shared_with_group(
+        &self,
+        group: bb_core::id::GroupId,
+    ) -> Result<Vec<SavedSearchId>, FakeError> {
+        Ok(self.read(|state| {
+            let mut found: Vec<SavedSearchId> = state
+                .search_shares
+                .iter()
+                .filter(|share| share.target == ShareTarget::Group(group))
+                .map(|share| share.search)
+                .collect();
+            found.sort();
             found
         }))
     }

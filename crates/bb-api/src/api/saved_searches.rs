@@ -241,6 +241,17 @@ impl From<&ProjectList> for ProjectListBody {
     }
 }
 
+/// What taking a saved search out of the trash answers.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct RestoredSearchBody {
+    /// The saved search, when it is one the person may open; `null` for somebody who may only take
+    /// it out of the trash (they are told nothing of its name or text).
+    #[schema(required = true)]
+    search: Option<SavedSearchItem>,
+}
+
+impl Masked for RestoredSearchBody {}
+
 /// A search to save.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct NewSavedSearchBody {

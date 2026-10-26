@@ -318,8 +318,11 @@ pub async fn delete_group<S: AuthStore>(
         vec![changed("group")],
     )?;
     let by_person = actor.person.id;
+    // The saved searches that stop being shared with the group have an event each.
+    let mut events = vec![event];
+    events.extend(ctx.events_of_a_deleted_group(by_person, id).await?);
     ctx.store()
-        .record_change(&event, move |transaction| {
+        .record_changes(&events, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 // Deleting the group lifts the *No access* it has, for its people.

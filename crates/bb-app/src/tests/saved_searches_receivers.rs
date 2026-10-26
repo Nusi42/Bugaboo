@@ -54,6 +54,27 @@ async fn qry_06_a_shared_search_with_a_field_the_receiver_cannot_read_is_not_lis
     )
     .await?;
     assert!(!is_there_for(&crew, &crew.dan, made.id).await?);
+    // Every write answers as for a missing one, not as for a search that is there.
+    let ids = [
+        made.id,
+        SavedSearchId::from_parts(jiff::Timestamp::UNIX_EPOCH, [8; 10])?,
+    ];
+    let dan = crew.dan.session_token.clone();
+    let mut deletions = Vec::new();
+    for id in ids {
+        deletions.push(
+            crate::saved_searches::delete_search(
+                &crew.world.ctx(),
+                crate::saved_searches::DeleteSearch {
+                    session_token: dan.clone(),
+                    search: id,
+                },
+            )
+            .await,
+        );
+    }
+    assert!(refused(&deletions[0], ErrorCode::NotFound));
+    assert_eq!(deletions[0], deletions[1]);
     let hidden = open(&crew.world, &crew.dan.session_token, made.id).await;
     let missing = open(
         &crew.world,
@@ -269,5 +290,40 @@ async fn qry_06_a_shared_search_runs_with_the_rights_of_the_person_who_opens_it(
         assert_eq!(seen.text, "status is open");
         assert!(seen.shared_with.is_empty() && !seen.mine);
     }
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_an_own_field_named_id_never_takes_the_word_of_the_id_column() -> Outcome {
+    let crew = Crew::new().await?;
+    super::scenarios_fields::a_field(&crew.world, "Id", bb_core::own_fields::FieldType::Text, &[])
+        .await?;
+    let ctx = crew.world.ctx();
+    let actor = ctx.actor(&crew.ada()).await?;
+    let fields = ctx
+        .readable_fields_of(&actor, crate::search::SearchScope::Everywhere)
+        .await?;
+    assert!(fields.field("id").is_none());
+    // The column of the Issue ID is a word that needs no field.
+    let ben = &crew.ben.session_token;
+    let mut shown = a_presentation();
+    shown.columns.insert(
+        0,
+        bb_core::saved_search::Column {
+            field: bb_core::fields::ID_WORD.to_owned(),
+            width: None,
+        },
+    );
+    let made = crate::saved_searches::save_search(
+        &crew.world.ctx(),
+        crate::saved_searches::SaveSearch {
+            session_token: ben.clone(),
+            name: "With ID".to_owned(),
+            text: String::new(),
+            presentation: shown,
+        },
+    )
+    .await?;
+    assert_eq!(made.into_value().presentation.columns[0].field, "id");
     Ok(())
 }

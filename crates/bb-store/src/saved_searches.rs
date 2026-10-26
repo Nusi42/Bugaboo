@@ -267,7 +267,10 @@ impl SavedSearchStore for AuthStorage {
             .collect()
     }
 
-    async fn count_saved_searches_of(&self, maker: UserId) -> Result<u64, StoreError> {
+    async fn count_saved_searches_of_in(
+        transaction: &mut Transaction,
+        maker: UserId,
+    ) -> Result<u64, StoreError> {
         let mut select = Query::select();
         select
             .expr_as(
@@ -276,7 +279,7 @@ impl SavedSearchStore for AuthStorage {
             )
             .from(SavedSearchRow::Table)
             .and_where(Expr::col(SavedSearchRow::Maker).eq(maker.stored()));
-        let total: i64 = match self.database().fetch_optional(&select).await? {
+        let total: i64 = match transaction.fetch_optional(&select).await? {
             Some(row) => row.get(crate::schema::Computed::Total)?,
             None => 0,
         };
@@ -322,6 +325,25 @@ impl SavedSearchStore for AuthStorage {
             .await?
             .iter()
             .map(read_share)
+            .collect()
+    }
+
+    async fn searches_shared_with_group(
+        &self,
+        group: GroupId,
+    ) -> Result<Vec<SavedSearchId>, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(SearchShareRow::Search)
+            .from(SearchShareRow::Table)
+            .and_where(Expr::col(SearchShareRow::Kind).eq(ShareKind::Group.code()))
+            .and_where(Expr::col(SearchShareRow::Target).eq(group.stored()))
+            .order_by(SearchShareRow::Search, Order::Asc);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| row.id::<SavedSearchId>(SearchShareRow::Search))
             .collect()
     }
 

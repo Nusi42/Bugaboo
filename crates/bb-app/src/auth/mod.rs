@@ -110,11 +110,12 @@ use crate::roles::{
     reset_role, role, role_levels, roles, set_level,
 };
 use crate::saved_searches::{
-    ChangeSearch, DeleteSearch, ProjectList, ProjectListQuery, RestoreSearch, SaveCopy, SaveSearch,
-    SavedSearchPage, SavedSearchView, SearchQuery, SearchesQuery, SetProjectList, ShareChoicePage,
-    ShareChoicesQuery, ShareSearch, StopSharingSearch, change_search, delete_search, project_list,
-    restore_search, save_copy, save_search, saved_search, saved_searches, set_project_list,
-    share_choices, share_search, stop_sharing_search,
+    ChangeSearch, DeleteSearch, ProjectList, ProjectListQuery, RestoreSearch, RestoredSearch,
+    SaveCopy, SaveSearch, SavedSearchPage, SavedSearchView, SearchQuery, SearchesQuery,
+    SetProjectList, ShareChoicePage, ShareChoicesQuery, ShareSearch, StopSharingSearch,
+    change_search, delete_search, project_list, restore_search, save_copy, save_search,
+    saved_search, saved_searches, set_project_list, share_choices, share_search,
+    stop_sharing_search,
 };
 use crate::settings::{
     ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
@@ -545,7 +546,7 @@ use_cases! {
     /// Puts a saved search into the trash.
     delete_search(DeleteSearch) -> Done;
     /// Takes a saved search out of the trash.
-    restore_search(RestoreSearch) -> Authorized<SavedSearchView>;
+    restore_search(RestoreSearch) -> Authorized<RestoredSearch>;
     /// Saves a copy of a saved search for the person.
     save_copy(SaveCopy) -> Authorized<SavedSearchView>;
     /// Shows the list a project shows.

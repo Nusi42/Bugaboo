@@ -178,6 +178,17 @@ pub struct SavedSearchView {
 
 impl Masked for SavedSearchView {}
 
+/// What taking a saved search out of the trash answers: the search, when it is one the person
+/// may open. Somebody who may only take it out (the maker's right to *Undo* is theirs; a person who
+/// may change organization settings may too) gets nothing of its name or text.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RestoredSearch {
+    /// The saved search as the person sees it; none when it is not theirs to open.
+    pub search: Option<SavedSearchView>,
+}
+
+impl Masked for RestoredSearch {}
+
 /// A page of saved searches.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SavedSearchPage {
