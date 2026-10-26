@@ -10,7 +10,7 @@
 use std::future::Future;
 use std::str::FromStr;
 
-use bb_core::paging::{LOOKED_AT_MAX, PAGE_SIZE_MAX, SkipCursor};
+use bb_core::paging::{LOOKED_AT_MAX, PAGE_SIZE_MAX, SKIP_MAX, SkipCursor};
 
 use crate::auth::AppError;
 
@@ -87,8 +87,9 @@ pub(crate) async fn fill_past_hidden<W: Walk>(
             }),
             None => None,
         }
-    } else if looked_at >= bound {
-        // A page that looked at enough rows continues past them.
+    } else if looked_at >= bound && start.skip + bound <= SKIP_MAX {
+        // A page that looked at enough rows continues past them, as far as a cursor can say: the
+        // reader refuses a skip above SKIP_MAX, so the list ends there (never a cursor it refuses).
         Some(SkipCursor {
             after: start.after.clone(),
             skip: start.skip + bound,
