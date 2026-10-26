@@ -19,6 +19,7 @@ bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
 bb-markdown = { path = "../bb-markdown" }
 bb-policy = { path = "../bb-policy" }
+bb-searchlang = { path = "../bb-searchlang" }
 getrandom = { workspace = true }
 jiff = { workspace = true, features = ["tzdb-bundle-always"] }
 regex = { workspace = true }

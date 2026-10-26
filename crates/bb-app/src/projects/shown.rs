@@ -145,6 +145,20 @@ impl Leveled {
         sight
     }
 
+    /// What the person may do in each project they see, with the projects from the top down to it,
+    /// for the projects at or below `within` (all of them without): the places a search looks at,
+    /// so the fields it may use are the ones readable in every one of them.
+    pub(crate) fn seen_places(
+        &self,
+        within: Option<ProjectId>,
+    ) -> Vec<(Vec<ProjectId>, std::sync::Arc<Evaluation>)> {
+        self.visible
+            .iter()
+            .filter(|project| within.is_none_or(|top| self.tree.is_within(**project, top)))
+            .filter_map(|project| Some((self.tree.chain(*project)?, self.held_in(*project)?)))
+            .collect()
+    }
+
     /// Which issues the person reads where their role lets them see the labels (SEC-06), judged in
     /// memory; for the groups of labels in use.
     pub(crate) fn label_sight(&self, types: &[IssueTypeId]) -> IssueSight {

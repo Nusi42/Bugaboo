@@ -5,7 +5,7 @@
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
-use bb_core::fields::{Field, FieldKey};
+use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field, FieldKey};
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::ASSIGNED_PEOPLE_MAX;
 use bb_core::text::TITLE_MAX;
@@ -58,7 +58,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         for person in distinct.iter().filter(|person| !is_kept(already, person)) {
             if !self
-                .may_name(actor, viewer, *person, project, Some(reported_by))
+                .may_name(
+                    actor,
+                    viewer,
+                    ASSIGNED_TO_PEOPLE,
+                    *person,
+                    project,
+                    Some(reported_by),
+                )
                 .await?
             {
                 return Err(ErrorCode::InvalidRequest.into());

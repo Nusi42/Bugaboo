@@ -114,11 +114,28 @@ impl Evaluation {
         self.person() != Some(person) && self.people_level(kind, context) == PeopleLevel::RoleOnly
     }
 
+    /// Whether the viewer sees the names of the people of this kind (*Names*, not *Role only* or
+    /// *Hidden*): what lets them show, choose, search, sort or group by people of that kind
+    /// (ADR-0022).
+    #[must_use]
+    pub fn sees_names(&self, kind: PeopleKind) -> bool {
+        self.people_level(kind, PeopleContext::Ordinary) == PeopleLevel::Names
+    }
+
+    /// Whether the viewer sees the names of the people or groups an own field of this type holds:
+    /// `false` for a type that holds none.
+    #[must_use]
+    pub fn sees_names_in(&self, field_type: bb_core::own_fields::FieldType) -> bool {
+        field_type
+            .people_kind()
+            .is_some_and(|kind| self.sees_names(kind))
+    }
+
     /// Whether a picture of a person may be shown: only where the kind of the place also gives
     /// *Names*.
     #[must_use]
     pub fn shows_picture(&self, kind: PeopleKind, context: PeopleContext) -> bool {
-        self.kind_level(PeopleKind::Pictures) == PeopleLevel::Names
+        self.sees_names(PeopleKind::Pictures)
             && self.people_level(kind, context) == PeopleLevel::Names
     }
 }

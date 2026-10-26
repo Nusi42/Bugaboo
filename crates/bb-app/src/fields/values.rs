@@ -17,7 +17,6 @@ use std::sync::Arc;
 use crate::event_members::own_change;
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
-use bb_core::access::PeopleLevel;
 use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{ChoiceId, EntityId, FieldId, GroupId, IssueId, IssueTypeId, ProjectId, UserId};
@@ -368,15 +367,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
 
-    /// A person as the viewer is shown them in an own field, resolved once for every value of a
-    /// page (`people` is the cache of the page).
+    /// A person as the viewer is shown them in an own field; `people` caches them for a page.
     async fn field_person(
         &self,
         viewer: &Evaluation,
         people: &mut HashMap<(PeopleKind, UserId), PersonRef>,
+        kind: PeopleKind,
         person: UserId,
     ) -> Result<Value, AppError> {
-        let key = (PeopleKind::AssignedTo, person);
+        let key = (kind, person);
         let to_json = |shown: &PersonRef| {
             serde_json::to_value(shown).map_err(|error| AppError::Internal(error.to_string()))
         };
@@ -384,22 +383,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             return to_json(shown);
         }
         let shown = self
-            .person_ref(
-                viewer,
-                PeopleKind::AssignedTo,
-                PeopleContext::Ordinary,
-                person,
-            )
+            .person_ref(viewer, kind, PeopleContext::Ordinary, person)
             .await?;
         let json = to_json(&shown);
         people.insert(key, shown);
         json
     }
 
-    /// A value as a viewer is shown it. A person is a `PersonRef` as the kind *Assigned to* says,
-    /// a group is its name when the viewer sees names in *Mentions*, an issue is its readable ID
-    /// when the viewer sees it (an issue they do not see is shown as no value); the other types
-    /// are the JSON of the value.
+    /// A value as a viewer is shown it: a person or a group as the kind of people information of
+    /// the type says (`FieldType::people_kind`), an issue by its ID when the viewer sees it.
     pub(crate) async fn display_value(
         &self,
         actor: &Actor,
@@ -410,28 +402,31 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Value, AppError> {
         let id_of = |value: &Value| value.as_str().map(str::to_owned);
         match (kind, &json) {
-            (FieldType::Person, Value::String(id)) => match id.parse::<UserId>() {
-                Ok(person) => self.field_person(viewer, people, person).await,
-                Err(_) => Ok(Value::Null),
-            },
+            (FieldType::Person, Value::String(id)) => {
+                match (id.parse::<UserId>(), kind.people_kind()) {
+                    (Ok(person), Some(each)) => {
+                        self.field_person(viewer, people, each, person).await
+                    }
+                    _ => Ok(Value::Null),
+                }
+            }
             (FieldType::People, Value::Array(ids)) => {
                 let mut shown = Vec::with_capacity(ids.len());
                 for id in ids.iter().filter_map(id_of) {
-                    if let Ok(person) = id.parse::<UserId>() {
-                        shown.push(self.field_person(viewer, people, person).await?);
+                    if let (Ok(person), Some(each)) = (id.parse::<UserId>(), kind.people_kind()) {
+                        shown.push(self.field_person(viewer, people, each, person).await?);
                     }
                 }
                 Ok(Value::Array(shown))
             }
             (FieldType::Group, Value::String(id)) => {
                 let name = match id.parse::<GroupId>() {
-                    Ok(group) if viewer.kind_level(PeopleKind::Mentions) == PeopleLevel::Names => {
-                        self.store()
-                            .group(group)
-                            .await
-                            .map_err(|error| internal::<S>(&error))?
-                            .map(|found| found.name)
-                    }
+                    Ok(group) if viewer.sees_names_in(kind) => self
+                        .store()
+                        .group(group)
+                        .await
+                        .map_err(|error| internal::<S>(&error))?
+                        .map(|found| found.name),
                     _ => None,
                 };
                 Ok(serde_json::json!({ "id": id, "name": name }))
@@ -546,53 +541,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(ItemValues {
             definitions,
             values,
-        })
-    }
-
-    /// Whether a person, group or issue a value names exists and may be named by this viewer.
-    /// A person has to be one the viewer may name (themselves, or someone they are shown by name)
-    /// and, with `access`, who may see the item: the rule of *Assigned to* (`may_name`); a group
-    /// one whose name the viewer may read. Without `access` (*Undo*) a person who lost access
-    /// since is still named, but one who is gone is not.
-    async fn reference_may_be_named(
-        &self,
-        actor: &Actor,
-        viewer: &Evaluation,
-        item: &Item,
-        kind: FieldType,
-        bytes: [u8; 16],
-        access: bool,
-    ) -> Result<bool, AppError> {
-        let failed = |error| internal::<S>(&error);
-        Ok(match kind {
-            FieldType::Person | FieldType::People => {
-                let Ok(person) = UserId::from_bytes(bytes) else {
-                    return Ok(false);
-                };
-                let Some(project) = item.chain.last() else {
-                    return Ok(false);
-                };
-                if access {
-                    self.may_name(actor.person.id, viewer, person, *project, item.reported_by)
-                        .await?
-                } else {
-                    self.may_name_person(actor.person.id, viewer, person)
-                        .await?
-                }
-            }
-            FieldType::Group => match GroupId::from_bytes(bytes) {
-                Ok(group) => {
-                    viewer.kind_level(PeopleKind::Mentions) == PeopleLevel::Names
-                        && self.store().group(group).await.map_err(failed)?.is_some()
-                }
-                Err(_) => false,
-            },
-            FieldType::Issue => match IssueId::from_bytes(bytes) {
-                // The viewer may only name an issue they see.
-                Ok(id) => self.seen_issue_by_id(actor, id).await?.is_some(),
-                Err(_) => false,
-            },
-            _ => true,
         })
     }
 

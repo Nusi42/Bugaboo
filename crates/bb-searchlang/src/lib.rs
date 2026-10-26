@@ -38,7 +38,7 @@ pub use answer::{Answer, read};
 #[cfg(feature = "browser")]
 pub use browser::{Problem, print_from_json, readable_fields_from_json, search_from_json};
 pub use checker::{CheckedSearch, check};
-pub use fields::{Field, FieldKind, Operator, ReadableFields, own_field_word};
+pub use fields::{Field, FieldKind, IssueField, NO, Operator, ReadableFields, YES, own_field_word};
 pub use limits::{
     MAX_CONTAINS_WORDS, MAX_DEPTH, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES,
     MIN_PREFIX_CHARS,
