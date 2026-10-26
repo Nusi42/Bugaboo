@@ -190,3 +190,46 @@ async fn perf_05_a_page_over_many_projects_runs_as_many_statements_as_one_over_t
     })
     .await
 }
+
+#[tokio::test]
+async fn qry_05_the_list_of_a_project_holds_the_projects_below_it() -> TestResult {
+    each_database("search_http_list_below", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let below = ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/{}/sub-projects", site.acme),
+                Some(json!({"short_name": "BELOW", "name": "Below"})),
+            )
+            .await?;
+        let below = text_in(ok(&below)?, "id")?;
+        issue_in(&site, &mut ada, &site.acme, 1).await?;
+        issue_in(&site, &mut ada, &below, 2).await?;
+        issue_in(&site, &mut ada, &site.acme, 3).await?;
+        let list = ada
+            .send("GET", &format!("{PROJECTS}/{}/issues", site.acme), None)
+            .await?;
+        let titles: Vec<_> = ok(&list)?["items"]
+            .as_array()
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|each| each["title"].as_str())
+                    .collect()
+            })
+            .unwrap_or_default();
+        // The test server's clock stands still, so issues made one after the other share their
+        // moment: the order among them is the one of their IDs, and only the set is stable.
+        let mut sorted = titles.clone();
+        sorted.sort_unstable();
+        assert_eq!(sorted, ["Issue 1", "Issue 2", "Issue 3"]);
+        // The list of the sub-project holds its own issue only.
+        let inside = ada
+            .send("GET", &format!("{PROJECTS}/{below}/issues"), None)
+            .await?;
+        assert_eq!(ok(&inside)?["items"].as_array().map(Vec::len), Some(1));
+        Ok(())
+    })
+    .await
+}
