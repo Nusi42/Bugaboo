@@ -172,6 +172,17 @@ async fn rack_in_two_projects(
     storage: &AuthStorage,
     data: &mut super::tests::Data,
 ) -> Result<(FieldId, ProjectId), Box<dyn std::error::Error + Send + Sync>> {
+    a_field_in_two_projects(storage, data, FieldType::Text, "a1").await
+}
+
+/// An own field of this kind with the value `text` on the first issue and on one of the project
+/// OTHER, which the person reads too.
+async fn a_field_in_two_projects(
+    storage: &AuthStorage,
+    data: &mut super::tests::Data,
+    kind: FieldType,
+    text: &str,
+) -> Result<(FieldId, ProjectId), Box<dyn std::error::Error + Send + Sync>> {
     let field = FieldId::generate(&mut data.source)?;
     let other = ProjectId::generate(&mut data.source)?;
     let mut outside = issue(&mut data.source, other, data.issue_type, 1);
@@ -181,11 +192,11 @@ async fn rack_in_two_projects(
             id: field,
             name: "Rack".to_owned(),
             help: String::new(),
-            kind: FieldType::Text,
+            kind,
             applies_to: FieldFor::Issues,
             rules: Rules::default(),
             default_value: String::new(),
-            look: Look::starting(FieldType::Text),
+            look: Look::starting(kind),
             never_to_assistant: false,
             position: 0,
             retired_at: None,
@@ -202,6 +213,7 @@ async fn rack_in_two_projects(
         version: FIRST_VERSION,
     };
     let placed = [data.issues[0].id, outside.id];
+    let text = text.to_owned();
     let ev = event(&mut data.source, 7);
     ChangeStore::record_change(storage, &ev, move |tx| {
         Box::pin(async move {
@@ -210,7 +222,7 @@ async fn rack_in_two_projects(
             AuthStorage::insert_field(tx, &definition).await?;
             for issue in placed {
                 let cells = [Cell {
-                    text: Some("a1".to_owned()),
+                    text: Some(text.clone()),
                     number: None,
                     date: None,
                     reference: None,
@@ -224,6 +236,8 @@ async fn rack_in_two_projects(
                 )
                 .await?;
             }
+            // The index of the text search is a reader of the outbox; the tests write it by hand.
+            crate::text_index::reindex_issues(tx, &placed).await?;
             Ok(())
         })
     })
@@ -395,6 +409,110 @@ async fn qry_05_the_list_of_a_project_never_shows_an_issue_of_a_hidden_type() ->
         seen.sort();
         seen.dedup();
         assert_eq!(seen.len(), 6);
+        Ok(())
+    })
+    .await
+}
+
+/// Titles of the hits of a search text, in order.
+async fn found_titles(storage: &AuthStorage, ask: &bb_app::search::SearchRequest) -> Vec<String> {
+    storage
+        .search_page(ask)
+        .await
+        .map(|hits| hits.into_iter().map(|hit| hit.issue.title).collect())
+        .unwrap_or_default()
+}
+
+#[tokio::test]
+async fn qry_05_contains_finds_the_words_of_a_title_and_of_a_field_where_it_is_readable()
+-> TestResult {
+    each_database("search_contains", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        let (field, other) = a_field_in_two_projects(
+            storage,
+            &mut data,
+            FieldType::LongText,
+            "Printer room, shelf A1",
+        )
+        .await?;
+        // The titles are indexed by hand like the field values.
+        let all: Vec<_> = data.issues.iter().map(|each| each.id).collect();
+        let ev = event(&mut data.source, 8);
+        ChangeStore::record_change(storage, &ev, move |tx| {
+            Box::pin(async move { crate::text_index::reindex_issues(tx, &all).await })
+        })
+        .await?;
+        // A title: every word in the one title, a start with `*`, accents and case alike.
+        let titled = |text: &str| {
+            request(
+                &data,
+                &format!("title contains \"{text}\" sort by title"),
+                None,
+                10,
+            )
+        };
+        assert_eq!(
+            found_titles(storage, &titled("CRASH save")).await,
+            ["Crash on save"]
+        );
+        assert_eq!(
+            found_titles(storage, &titled("cra*")).await,
+            ["Crash on save"]
+        );
+        assert!(
+            found_titles(storage, &titled("crash printer"))
+                .await
+                .is_empty()
+        );
+        // The issue the person does not read is never found, nor is a word of its title.
+        assert!(found_titles(storage, &titled("hidden")).await.is_empty());
+        let not = request(
+            &data,
+            "not title contains \"crash\" sort by title",
+            None,
+            10,
+        );
+        let rest = found_titles(storage, &not).await;
+        assert!(!rest.contains(&"Crash on save".to_owned()) && rest.contains(&"Idea".to_owned()));
+        // A field of the issues: only where it reaches and where the person reads the issue.
+        let notes = Searchable {
+            field: Field::new("notes", FieldKind::Text),
+            target: FieldTarget::Own {
+                field,
+                kind: FieldType::LongText,
+            },
+        };
+        let ask = |reach: Vec<ProjectId>| {
+            let mut ask = request_with(
+                &data,
+                "notes contains \"shelf a1\" sort by title",
+                None,
+                10,
+                vec![notes.clone()],
+                vec![OwnReach {
+                    field,
+                    projects: reach,
+                    issue_types: None,
+                }],
+            );
+            ask.sight.all.push(other);
+            ask
+        };
+        assert_eq!(
+            found_titles(storage, &ask(vec![data.project])).await,
+            ["Printer jams"]
+        );
+        assert_eq!(
+            found_titles(storage, &ask(vec![data.project, other])).await,
+            ["Outside", "Printer jams"]
+        );
+        assert!(found_titles(storage, &ask(vec![])).await.is_empty());
+        // Without sight of the other project its issue is not found either.
+        let mut narrow = ask(vec![data.project, other]);
+        narrow.sight.all.retain(|each| *each != other);
+        assert_eq!(found_titles(storage, &narrow).await, ["Printer jams"]);
         Ok(())
     })
     .await

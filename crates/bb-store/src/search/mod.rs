@@ -35,6 +35,7 @@ mod filter;
 mod order;
 mod source;
 mod statements;
+mod text;
 mod time;
 mod values;
 

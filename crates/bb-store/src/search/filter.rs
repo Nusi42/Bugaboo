@@ -36,7 +36,11 @@ impl Compiler<'_> {
     }
 
     fn field_test(&self, word: &str, test: &Test) -> Result<Cond, CompileError> {
-        let (subject, domain) = self.subject_of(self.target(word)?);
+        let target = self.target(word)?;
+        if let Test::Contains { text, .. } = test {
+            return self.contains(target, text);
+        }
+        let (subject, domain) = self.subject_of(target);
         match test {
             Test::Is { value, .. } => self.equals_in(&subject, domain, value),
             Test::IsNot { value, .. } => self.is_not(&subject, domain, std::slice::from_ref(value)),
@@ -68,7 +72,7 @@ impl Compiler<'_> {
                         .add(each.lt(range.to))
                 }))
             }
-            Test::Contains { .. } => Err(CompileError::Unsupported("contains")),
+            Test::Contains { .. } => Err(CompileError::Unsupported("contains is made above")),
             Test::MemberOf { group, .. } => {
                 let key = name_key(&group.text);
                 let groups: Vec<_> = self

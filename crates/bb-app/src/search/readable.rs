@@ -35,7 +35,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_core::workflow::WorkflowStatus;
 use bb_policy::{Authorized, Evaluation, FieldMask, Masked, Place as Where};
 use bb_searchlang::Field as SearchField;
-use bb_searchlang::{FieldKind, IssueField, ReadableFields, own_field_word};
+use bb_searchlang::{FieldKind, IssueField, Operator, ReadableFields, own_field_word};
 use serde::Serialize;
 
 use super::request::OwnReach;
@@ -320,8 +320,15 @@ fn catalogue_field(field: Field, kind: FieldKind, sources: &Sources) -> SearchFi
 /// of its choices.
 fn own_search_field(word: &str, definition: &Definition) -> SearchField {
     match definition.field.kind {
-        FieldType::Text | FieldType::LongText | FieldType::WebAddress => {
-            SearchField::new(word, FieldKind::Text)
+        FieldType::LongText => SearchField::new(word, FieldKind::Text),
+        // The index of the text search holds long texts only: a short text or an address is
+        // compared, not searched by its words.
+        FieldType::Text | FieldType::WebAddress => {
+            let mut field = SearchField::new(word, FieldKind::Text);
+            field
+                .operators
+                .retain(|operator| *operator != Operator::Contains);
+            field
         }
         FieldType::WholeNumber | FieldType::Decimal | FieldType::Duration => {
             SearchField::new(word, FieldKind::Number)

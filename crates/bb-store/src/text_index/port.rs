@@ -39,6 +39,9 @@ pub enum TextScope {
     /// of every issue whatever the rules of the field, so the compiler must add, in the same
     /// statement, that the field is readable in the project and shown for the type of the issue.
     Field(FieldId),
+    /// `title contains` and `description contains`: the rows of that one built-in source of an
+    /// issue. Every word must be in that one text.
+    Source(TextSource),
 }
 
 /// What to find.
@@ -106,7 +109,7 @@ pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
             }
             Expr::case(all, 1_i64).finally(0_i64).into()
         }
-        TextScope::Field(_) => Expr::val(0_i64),
+        TextScope::Field(_) | TextScope::Source(_) => Expr::val(0_i64),
     };
     TextMatch {
         select: with_columns(select, title_hit),
@@ -141,6 +144,7 @@ fn in_scope(scope: TextScope) -> SimpleExpr {
             TextSource::Comment.code(),
             TextSource::File.code(),
         ]),
+        TextScope::Source(source) => in_source(source),
         TextScope::Field(field) => {
             in_source(TextSource::Field).and(Expr::col(TextIndexRow::SourceRef).eq(field.stored()))
         }
