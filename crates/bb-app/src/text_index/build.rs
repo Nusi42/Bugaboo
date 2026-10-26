@@ -6,12 +6,12 @@
 //!
 //! It takes the store and the time and nothing else: it is no use case of a person.
 
-use bb_core::text_index::BATCH;
 use jiff::Timestamp;
 
 use super::map::{Touched, touched};
 use super::store::TextIndexStore;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::outbox_reader::read_all;
 
 /// Reads at most `batch` events the index has not finished and updates the issues they touch.
 /// Returns how many events it read: 0 when it has caught up.
@@ -44,20 +44,12 @@ pub async fn catch_up_batch<S: TextIndexStore>(
 /// # Errors
 /// The error of the store.
 pub async fn catch_up<S: TextIndexStore>(store: &S, now: Timestamp) -> Result<u64, S::Error> {
-    let mut read = 0_u64;
-    loop {
-        let events = catch_up_batch(store, now, BATCH).await?;
-        read = read.saturating_add(events);
-        if events < BATCH {
-            return Ok(read);
-        }
-    }
+    read_all(|batch| catch_up_batch(store, now, batch)).await
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Catches the index up with every event not yet read: the daily job `text-index.catch-up`
-    /// does it (also at every start), every round of the jobs does it, and a search does it
-    /// first. Returns how many events it read.
+    /// Catches the index up with every event not yet read: every round of the jobs does it (the
+    /// first one after a start included). Returns how many events it read.
     ///
     /// # Errors
     /// An internal error when the store fails.

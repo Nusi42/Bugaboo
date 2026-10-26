@@ -26,6 +26,9 @@ pub(crate) fn rebuild(root: &Path, data_dir: Option<&Path>) -> anyhow::Result<bo
         ])
         .arg("--data-dir")
         .arg(&data_dir)
+        // The data folder is the one the command works on: an address of a database in the
+        // environment of the developer must not send it to another one.
+        .env_remove("BUGABOO_DATABASE_URL")
         .current_dir(root)
         .status()
         .context("could not run cargo")?;

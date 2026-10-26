@@ -6,13 +6,14 @@
 //! - `security-log verify`, `rotate-key` and `keys export` look after the secrets (`secrets.rs`,
 //!   M1-F19, M1-F20, M1-F22);
 //! - `search-index rebuild` builds the index of the text search again from the stored texts
-//!   (`secrets.rs`, M5 WP-05);
+//!   (`search_index.rs`, M5 WP-05);
 //! - `openapi` prints the description of the API.
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
 
 mod preview;
 mod renewal;
+mod search_index;
 mod secrets;
 mod serve;
 mod service;
@@ -240,7 +241,7 @@ async fn run(cli: Cli) -> ExitCode {
         Command::RotateKey(args) => secrets::rotate_key(&args).await,
         Command::SearchIndex {
             command: SearchIndexCommand::Rebuild(args),
-        } => secrets::rebuild_search_index(&args).await,
+        } => search_index::rebuild(&args).await,
         Command::Keys {
             command: KeysCommand::Export { store, folder },
         } => secrets::export_keys(&store, &folder).await,

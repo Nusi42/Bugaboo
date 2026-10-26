@@ -4,7 +4,6 @@
 //! listen, so they need no port.
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use anyhow::{Context as _, anyhow};
 use bb_app::status::{LogBreak, LogState};
@@ -117,7 +116,7 @@ fn require_own_installation(
 }
 
 /// The installation the command works on, found from the settings, and its opened store.
-async fn open(
+pub(super) async fn open(
     args: &StoreArgs,
     command: &str,
     folder: Option<&Path>,
@@ -196,19 +195,6 @@ pub(super) async fn rotate_key(args: &StoreArgs) -> anyhow::Result<()> {
         .rotate_master_key(&store.keys, Timestamp::now())
         .await?;
     output::line(&message::keys_rotated(i64::try_from(secrets).unwrap_or(i64::MAX)).render());
-    Ok(())
-}
-
-/// `bugaboo search-index rebuild`: builds the index of the text search again from the stored
-/// texts, for a database that has none yet and after the rule that prepares texts changed. A
-/// server that runs meanwhile goes on; its changes reach the index from the outbox as always.
-pub(super) async fn rebuild_search_index(args: &StoreArgs) -> anyhow::Result<()> {
-    let (_, store) = open(args, "search-index rebuild", None).await?;
-    let storage = bb_store::AuthStorage::new(store.database, Arc::new(store.keys), store.seal);
-    let issues = bb_app::text_index::TextIndexStore::rebuild_text_index(&storage).await?;
-    output::line(
-        &message::search_index_rebuilt(i64::try_from(issues).unwrap_or(i64::MAX)).render(),
-    );
     Ok(())
 }
 

@@ -350,6 +350,11 @@ async fn transaction_has_no_row(
     Ok(transaction.fetch_optional(&select).await?.is_none())
 }
 
+/// The name of an outbox consumer (ADR-0007) as the outbox keeps it: the one place a reader makes it.
+pub(crate) fn consumer_name(name: &'static str) -> Result<TechnicalName, StoreError> {
+    TechnicalName::new(name).map_err(|_| StoreError::Corrupt("the name of an outbox reader"))
+}
+
 /// Records, inside the transaction of the reader that gives its place, that `consumer` has
 /// finished everything up to and including `position`: the place moves in the same transaction as
 /// what the reader made, so a reader that stops reads again and never twice (ADR-0007).

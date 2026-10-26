@@ -22,7 +22,7 @@ use crate::schema::{IssueRow, TextIndexRow};
 /// The FTS5 table and the triggers that keep it in step (SQLite).
 const SQLITE: [&str; 4] = [
     "CREATE VIRTUAL TABLE text_index_fts USING fts5(words, content='text_index', \
-     content_rowid='id', tokenize='unicode61 remove_diacritics 0')",
+     content_rowid='id', prefix='2 3', tokenize='unicode61 remove_diacritics 0')",
     "CREATE TRIGGER text_index_after_insert AFTER INSERT ON text_index BEGIN \
      INSERT INTO text_index_fts(rowid, words) VALUES (new.id, new.words); END",
     "CREATE TRIGGER text_index_after_delete AFTER DELETE ON text_index BEGIN \

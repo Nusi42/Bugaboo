@@ -436,6 +436,7 @@ export interface MessageArguments {
   "search.mistake.too-many-filters": { limit: string | number };
   "search.mistake.too-many-sort-keys": { limit: string | number };
   "search.mistake.too-many-steps": { limit: string | number };
+  "search.mistake.too-many-words": { limit: string | number };
   "search.mistake.unknown-choice": { field: string | number; value: string | number };
   "search.mistake.unknown-choice-did-you-mean": {
     field: string | number;

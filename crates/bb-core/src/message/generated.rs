@@ -3778,6 +3778,9 @@ pub const SAVE_SAVED: MessageKey = MessageKey::new("save.saved");
 /// The message `save.saving`.
 pub const SAVE_SAVING: MessageKey = MessageKey::new("save.saving");
 
+/// The message `search-index.opened-address`.
+pub const SEARCH_INDEX_OPENED_ADDRESS: MessageKey = MessageKey::new("search-index.opened-address");
+
 /// The message `search.clear`.
 pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
 
@@ -8695,6 +8698,15 @@ pub fn save_saved_at(time: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search-index.opened-built-in`.
+#[must_use]
+pub fn search_index_opened_built_in(folder: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search-index.opened-built-in"),
+        vec![("folder", Value::Text(folder.to_string()))],
+    )
+}
+
 /// The message `search-index.rebuilt`.
 #[must_use]
 pub fn search_index_rebuilt(issues: i64) -> Message {
@@ -8939,6 +8951,15 @@ pub fn search_mistake_too_many_sort_keys(limit: impl std::fmt::Display) -> Messa
 pub fn search_mistake_too_many_steps(limit: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.too-many-steps"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `search.mistake.too-many-words`.
+#[must_use]
+pub fn search_mistake_too_many_words(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.too-many-words"),
         vec![("limit", Value::Text(limit.to_string()))],
     )
 }
@@ -13213,6 +13234,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("save.saved-at", "Saved · {time}"),
     ("save.saving", "Saving…"),
     (
+        "search-index.opened-address",
+        "Opened the database that the settings name by an address (the address is not shown; it can hold a password).",
+    ),
+    (
+        "search-index.opened-built-in",
+        "Opened the built-in database in {folder}.",
+    ),
+    (
         "search-index.rebuilt",
         "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
     ),
@@ -13329,6 +13358,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "search.mistake.too-many-steps",
         "A search can look at most {limit} steps away.",
+    ),
+    (
+        "search.mistake.too-many-words",
+        "A text to find can have at most {limit} different words.",
     ),
     (
         "search.mistake.unclosed-quote",

@@ -37,9 +37,6 @@ bb_core::words! {
         PurgeDrafts => "editing.purge-drafts",
         /// The history catching up with the events (M3-F71): `Ctx::catch_up_history`.
         CatchUpHistory => "history.catch-up",
-        /// The index of the full-text search catching up with the events (M5 WP-05):
-        /// `Ctx::catch_up_text_index`.
-        CatchUpTextIndex => "text-index.catch-up",
         /// One e-mail (`notifications`): the payload names the kind of e-mail, who gets it and
         /// about what. Queued by the reader of notifications and by signing up.
         MailSend => "mail.send",
@@ -69,7 +66,6 @@ impl JobKind {
     pub const fn is_daily(self) -> bool {
         match self {
             Self::CatchUpHistory
-            | Self::CatchUpTextIndex
             | Self::CleanUpFiles
             | Self::PurgeDrafts
             | Self::PurgeNotifications
@@ -268,7 +264,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             // The daily kinds go to `do_daily_job`; listed so that a new kind has to be placed.
             JobKind::PurgeDrafts
             | JobKind::CatchUpHistory
-            | JobKind::CatchUpTextIndex
             | JobKind::PurgeNotifications
             | JobKind::PruneSecurityLog
             | JobKind::PurgeSessions
@@ -302,7 +297,6 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "the history could not catch up");
                 JobFailure::of(&error, FAILED, job)
             }),
-            JobKind::CatchUpTextIndex => self.text_index_job(job).await,
             JobKind::PurgeNotifications => {
                 Box::pin(self.run_daily(JobKind::PurgeNotifications, async {
                     self.purge_old_notifications().await.map(|purged| {
@@ -392,7 +386,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(
                 kind @ (JobKind::PurgeDrafts
                 | JobKind::CatchUpHistory
-                | JobKind::CatchUpTextIndex
                 | JobKind::PurgeNotifications
                 | JobKind::PruneSecurityLog
                 | JobKind::PurgeSessions
@@ -407,21 +400,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Err(error) = ended {
             tracing::error!(cause = %error, "the work of a dead job could not be ended");
         }
-    }
-
-    /// The daily round of the index of the full-text search catching up (`run_daily` queues the
-    /// next round first).
-    async fn text_index_job(&self, job: &Job) -> Result<(), JobFailure> {
-        Box::pin(self.run_daily(JobKind::CatchUpTextIndex, async {
-            self.catch_up_text_index().await.map(|events| {
-                tracing::info!(events, "the text index caught up with the events");
-            })
-        }))
-        .await
-        .map_err(|error| {
-            tracing::warn!(cause = %error, "the text index could not catch up");
-            JobFailure::of(&error, FAILED, job)
-        })
     }
 
     /// Does the work of a job of a daily kind. Its next round is queued first, so a round that
@@ -482,7 +460,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Err(error) = self.catch_up_notifications().await {
             tracing::warn!(cause = %error, "the notifications could not catch up");
         }
-        // The index of the search follows the changes within a round of the jobs.
+        // The index of the text search follows the changes within a round, and so is caught up
+        // after a start as soon as the first round runs (it has no daily job of its own).
         if let Err(error) = self.catch_up_text_index().await {
             tracing::warn!(cause = %error, "the text index could not catch up");
         }

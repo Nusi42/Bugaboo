@@ -259,6 +259,7 @@ export const messages = {
   "search.mistake.too-many-sort-keys": "A search can be sorted by at most {limit} fields.",
   "search.mistake.too-long": "This search is too long. Please shorten it.",
   "search.mistake.too-many-steps": "A search can look at most {limit} steps away.",
+  "search.mistake.too-many-words": "A text to find can have at most {limit} different words.",
   "shortcut.quick-search": "Open quick search",
   "shortcut.show-shortcuts": "Show all keyboard shortcuts",
   "shortcut.go-home": "Go to the start page",

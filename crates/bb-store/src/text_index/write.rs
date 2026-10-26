@@ -19,12 +19,19 @@ use bb_core::text_index::TextSource;
 use bb_core::text_words::prepare_joined;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
-use crate::db::{Reader, STATEMENT_ITEMS, StoredId as _, Transaction, rows_per_insert};
+use crate::db::{Reader, StoredId as _, Transaction, rows_per_insert};
 use crate::error::StoreError;
+use crate::locks::LockClass;
 use crate::schema::{AttachmentRow, CommentRow, FieldRow, FieldValueRow, IssueRow, TextIndexRow};
 
 /// How many columns a row of the index binds when it is written.
 const WRITTEN_COLUMNS: usize = 4;
+
+/// How many issues one step reads and writes: the four reads and the delete of a step bind the
+/// issues once each, and the answers (comments, files, fields) are not bound, so a step is far
+/// below the limit of what a statement binds and still few enough to commit often. The reader
+/// of the outbox, the rebuild and the lock all work in steps of this size.
+pub(super) const ISSUES_PER_STEP: usize = 500;
 
 /// The texts to index, by issue.
 type Texts = BTreeMap<[u8; 16], Vec<Text>>;
@@ -204,7 +211,12 @@ pub(crate) async fn reindex_issues(
     transaction: &mut Transaction,
     issues: &[IssueId],
 ) -> Result<(), StoreError> {
-    for chunk in issues.chunks(STATEMENT_ITEMS / 64) {
+    if issues.is_empty() {
+        return Ok(());
+    }
+    // Writers go one after the other: what one read is what the next one finds committed.
+    transaction.advisory_lock(LockClass::TextIndex, 0).await?;
+    for chunk in issues.chunks(ISSUES_PER_STEP) {
         let texts = texts_of(transaction, chunk).await?;
         let mut delete = Query::delete();
         delete

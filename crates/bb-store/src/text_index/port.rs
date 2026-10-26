@@ -4,19 +4,28 @@
 //!
 //! The port matches and nothing else. Who may see what is decided in one place, the compiler:
 //! it joins [`TextMatch::select`] to `issue`, applies its visibility predicates there (the issue,
-//! its project, and for a search in a field that the field is readable in the project of the
-//! issue), and so a hit never comes from a text the reader may not see. The port never reads a
-//! permission.
+//! its project, and for a search in a field that the field is readable in the project and for the
+//! type of that issue), and so a hit never comes from a text the reader may not see. The port
+//! never reads a permission.
 //!
-//! A text matches when it has every word of the search (all words in one text). The order is not
-//! the port's either: it hands the compiler `title_hit` (1 when the title has the words) for
-//! "title hits first, then the newest" (ADR-0016, amendment M5), with no ranking function, so both
+//! An issue matches when every word of the search is in some text of the scope, not necessarily
+//! the same one (a title with "login" and a comment with "error" find `login error`): one
+//! sub-select for each word, all in the one statement of the search. The order is not the port's
+//! either: it hands the compiler `title_hit` (1 when the title alone has every word) for "title
+//! hits first, then the newest" (ADR-0016, amendment M5), with no ranking function, so both
 //! databases give the same order.
+//!
+//! The cost of one search is bounded here, for a caller that did not run the checker: a word that
+//! comes twice counts once, no more than [`MAX_CONTAINS_WORDS`] words are looked up, and a start
+//! of fewer than [`MIN_PREFIX_CHARS`] letters is looked up as the whole word.
 
 use bb_core::id::FieldId;
 use bb_core::text_index::TextSource;
 use bb_core::text_words::SearchWord;
-use sea_query::{Alias, BinOper, Expr, ExprTrait as _, Func, Query, SelectStatement, SimpleExpr};
+use bb_searchlang::{MAX_CONTAINS_WORDS, MIN_PREFIX_CHARS};
+use sea_query::{
+    Alias, BinOper, Condition, Expr, ExprTrait as _, Func, Query, SelectStatement, SimpleExpr,
+};
 
 use crate::db::{Dialect, StoredId as _};
 use crate::schema::{TextIndexExtra, TextIndexRow};
@@ -26,27 +35,29 @@ use crate::schema::{TextIndexExtra, TextIndexRow};
 pub enum TextScope {
     /// A bare `contains`: titles, descriptions, comments and file names; never own fields.
     Everywhere,
-    /// `<field> contains`: the rows of that own long-text field only.
+    /// `<field> contains`: the rows of that own long-text field only. The index holds the value
+    /// of every issue whatever the rules of the field, so the compiler must add, in the same
+    /// statement, that the field is readable in the project and shown for the type of the issue.
     Field(FieldId),
 }
 
 /// What to find.
 #[derive(Clone, Copy, Debug)]
 pub struct TextSearch<'a> {
-    /// The prepared words (`bb_core::text_words::search_words`); every one must be in a text. No
-    /// words match nothing.
+    /// The prepared words (`bb_core::text_words::search_words`); every one must be in the scope.
+    /// No words match nothing.
     pub words: &'a [SearchWord],
     /// Where to look.
     pub scope: TextScope,
 }
 
-/// The sub-select of a search: for each issue with a matching text, one row with the columns
-/// [`TextMatch::ISSUE`] (the issue ID) and [`TextMatch::TITLE_HIT`] (1 when its title matches,
-/// else 0).
+/// The sub-select of a search: for each issue that has every word, one row with the columns
+/// [`TextMatch::ISSUE`] (the issue ID) and [`TextMatch::TITLE_HIT`] (1 when its title alone has
+/// every word, else 0; always 0 in a field).
 #[derive(Clone, Debug)]
 pub struct TextMatch {
     /// The sub-select. The compiler uses it as a derived table (`FROM (...) AS text_hit`, joined
-    /// on `issue.id`), or [`TextMatch::issue_ids`] as the right side of `issue.id IN (...)`.
+    /// on `issue.id`).
     pub select: SelectStatement,
 }
 
@@ -57,93 +68,119 @@ impl TextMatch {
     pub const TITLE_HIT: &'static str = "title_hit";
 }
 
+/// One word as it is looked up: the text, and whether it matches by its start.
+type Lookup<'a> = (&'a str, bool);
+
 /// The sub-select of a search for one database.
 #[must_use]
 pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
-    let mut select = rows(dialect, search);
+    let words = lookups(search.words);
+    let mut select = Query::select();
+    select.from(TextIndexRow::Table);
+    let Some((first, rest)) = words.split_first() else {
+        // No words match nothing.
+        select.and_where(Expr::val(1).eq(0));
+        return TextMatch {
+            select: with_columns(select, Expr::val(0_i64).into()),
+        };
+    };
+    select
+        .and_where(word_matches(dialect, *first))
+        .and_where(in_scope(search.scope));
+    for word in rest {
+        select.and_where(Expr::col(TextIndexRow::Issue).in_subquery(issues_with(
+            dialect,
+            *word,
+            &in_scope(search.scope),
+        )));
+    }
+    let title_hit = match search.scope {
+        TextScope::Everywhere => {
+            let in_title = in_source(TextSource::Title);
+            let mut all = Condition::all();
+            for word in &words {
+                all = all.add(
+                    Expr::col(TextIndexRow::Issue)
+                        .in_subquery(issues_with(dialect, *word, &in_title)),
+                );
+            }
+            Expr::case(all, 1_i64).finally(0_i64).into()
+        }
+        TextScope::Field(_) => Expr::val(0_i64).into(),
+    };
+    TextMatch {
+        select: with_columns(select, title_hit),
+    }
+}
+
+/// The columns of the sub-select, and the grouping that makes one row for an issue.
+fn with_columns(mut select: SelectStatement, title_hit: SimpleExpr) -> SelectStatement {
     select
         .expr_as(Expr::col(TextIndexRow::Issue), Alias::new(TextMatch::ISSUE))
-        .expr_as(
-            Func::max(
-                Expr::case(
-                    Expr::col(TextIndexRow::Source).eq(TextSource::Title.code()),
-                    1_i64,
-                )
-                .finally(0_i64),
-            ),
-            Alias::new(TextMatch::TITLE_HIT),
-        )
+        .expr_as(title_hit, Alias::new(TextMatch::TITLE_HIT))
         .group_by_col(TextIndexRow::Issue);
-    TextMatch { select }
-}
-
-/// The issue IDs of a search only, for `issue.id IN (...)` when the compiler does not order by the
-/// title.
-#[must_use]
-pub fn matching_issue_ids(dialect: Dialect, search: &TextSearch<'_>) -> SelectStatement {
-    let mut select = rows(dialect, search);
-    select.distinct().column(TextIndexRow::Issue);
     select
 }
 
-/// `FROM text_index WHERE <the words match> AND <the scope>`, without columns.
-fn rows(dialect: Dialect, search: &TextSearch<'_>) -> SelectStatement {
+/// The words as they are looked up: each once, the first ten, a short start as a whole word.
+fn lookups(words: &[SearchWord]) -> Vec<Lookup<'_>> {
+    let mut found: Vec<Lookup<'_>> = Vec::new();
+    for word in words {
+        let lookup = (
+            word.text(),
+            word.is_prefix() && word.text().chars().count() >= MIN_PREFIX_CHARS,
+        );
+        if !found.contains(&lookup) {
+            found.push(lookup);
+        }
+    }
+    found.truncate(MAX_CONTAINS_WORDS);
+    found
+}
+
+/// The condition that a row is from the scope.
+fn in_scope(scope: TextScope) -> SimpleExpr {
+    match scope {
+        TextScope::Everywhere => Expr::col(TextIndexRow::Source).is_in([
+            TextSource::Title.code(),
+            TextSource::Description.code(),
+            TextSource::Comment.code(),
+            TextSource::File.code(),
+        ]),
+        TextScope::Field(field) => {
+            in_source(TextSource::Field).and(Expr::col(TextIndexRow::SourceRef).eq(field.stored()))
+        }
+    }
+}
+
+/// The condition that a row is of one source.
+fn in_source(source: TextSource) -> SimpleExpr {
+    Expr::col(TextIndexRow::Source).eq(source.code())
+}
+
+/// The issues that have a text of the scope with this word.
+fn issues_with(dialect: Dialect, word: Lookup<'_>, scope: &SimpleExpr) -> SelectStatement {
     let mut select = Query::select();
     select
+        .column(TextIndexRow::Issue)
         .from(TextIndexRow::Table)
-        .and_where(words_match(dialect, search.words));
-    match search.scope {
-        TextScope::Everywhere => {
-            select.and_where(Expr::col(TextIndexRow::Source).is_in([
-                TextSource::Title.code(),
-                TextSource::Description.code(),
-                TextSource::Comment.code(),
-                TextSource::File.code(),
-            ]));
-        }
-        TextScope::Field(field) => {
-            select
-                .and_where(Expr::col(TextIndexRow::Source).eq(TextSource::Field.code()))
-                .and_where(Expr::col(TextIndexRow::SourceRef).eq(field.stored()));
-        }
-    }
+        .and_where(word_matches(dialect, word))
+        .and_where(scope.clone());
     select
 }
 
-/// The condition that the words of the search are in the words of a row, as the database says it.
-fn words_match(dialect: Dialect, words: &[SearchWord]) -> SimpleExpr {
-    // A word is letters and digits and nothing else, whatever the caller built, so no word can
-    // carry the syntax of the query of the database.
-    let words: Vec<(String, bool)> = words
-        .iter()
-        .map(|word| {
-            (
-                word.text
-                    .chars()
-                    .filter(|c| c.is_alphanumeric())
-                    .collect::<String>(),
-                word.prefix,
-            )
-        })
-        .filter(|(text, _)| !text.is_empty())
-        .collect();
-    if words.is_empty() {
-        return Expr::val(1).eq(0);
-    }
+/// The condition that the words of a row have this word, as the database says it. The word is
+/// letters and digits and nothing else (`SearchWord` is made by `search_words` only), so it carries
+/// no syntax of the query of the database.
+fn word_matches(dialect: Dialect, (text, prefix): Lookup<'_>) -> SimpleExpr {
     match dialect {
         Dialect::Sqlite => {
-            // FTS5: `"one" "two"*`, phrases of one word side by side mean AND.
-            let query = words
-                .iter()
-                .map(|(text, prefix)| {
-                    if *prefix {
-                        ["\"", text, "\"*"].concat()
-                    } else {
-                        ["\"", text, "\""].concat()
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join(" ");
+            // FTS5: `"word"` or `"word"*`.
+            let query = if prefix {
+                ["\"", text, "\"*"].concat()
+            } else {
+                ["\"", text, "\""].concat()
+            };
             let mut inner = Query::select();
             inner
                 .expr(Expr::col(Alias::new("rowid")))
@@ -152,18 +189,12 @@ fn words_match(dialect: Dialect, words: &[SearchWord]) -> SimpleExpr {
             Expr::col(TextIndexRow::Id).in_subquery(inner)
         }
         Dialect::Postgres => {
-            // tsquery: `one & two:*`.
-            let query = words
-                .iter()
-                .map(|(text, prefix)| {
-                    if *prefix {
-                        [text.as_str(), ":*"].concat()
-                    } else {
-                        text.clone()
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join(" & ");
+            // tsquery: `word` or `word:*`.
+            let query = if prefix {
+                [text, ":*"].concat()
+            } else {
+                text.to_owned()
+            };
             Expr::col(TextIndexExtra::WordsTsv).binary(
                 BinOper::Custom("@@"),
                 Func::cust(Alias::new("to_tsquery"))
@@ -176,17 +207,20 @@ fn words_match(dialect: Dialect, words: &[SearchWord]) -> SimpleExpr {
 
 #[cfg(test)]
 mod tests {
+    use bb_core::id::SequentialIds;
     use bb_core::text_words::search_words;
     use sea_query::{PostgresQueryBuilder, SqliteQueryBuilder};
 
     use super::*;
 
-    fn text_of(dialect: Dialect, words: &[SearchWord]) -> String {
+    /// The statement with its values written in, for a test to read (the store never does this).
+    fn text_of(dialect: Dialect, input: &str, scope: TextScope) -> String {
+        let words = search_words(input);
         let select = text_matches(
             dialect,
             &TextSearch {
-                words,
-                scope: TextScope::Everywhere,
+                words: &words,
+                scope,
             },
         )
         .select;
@@ -197,30 +231,80 @@ mod tests {
     }
 
     #[test]
-    fn the_words_become_one_query_of_the_database() {
-        let words = search_words("crash stor*");
-        let sqlite = text_of(Dialect::Sqlite, &words);
-        assert!(sqlite.contains(r#"MATCH '"crash" "stor"*'"#), "{sqlite}");
-        let postgres = text_of(Dialect::Postgres, &words);
+    fn each_word_is_one_lookup_of_the_database() {
+        let sqlite = text_of(Dialect::Sqlite, "crash stor*", TextScope::Everywhere);
+        assert!(sqlite.contains(r#"MATCH '"crash"'"#), "{sqlite}");
+        assert!(sqlite.contains(r#"MATCH '"stor"*'"#), "{sqlite}");
+        let postgres = text_of(Dialect::Postgres, "crash stor*", TextScope::Everywhere);
         assert!(
-            postgres.contains("to_tsquery(CAST('simple' AS regconfig), 'crash & stor:*')"),
+            postgres.contains("to_tsquery(CAST('simple' AS regconfig), 'crash')"),
+            "{postgres}"
+        );
+        assert!(
+            postgres.contains("to_tsquery(CAST('simple' AS regconfig), 'stor:*')"),
             "{postgres}"
         );
     }
 
     #[test]
-    fn syntax_in_a_word_cannot_reach_the_query() {
-        let words = vec![SearchWord {
-            text: "a\" OR b; --".into(),
-            prefix: false,
-        }];
-        let text = text_of(Dialect::Sqlite, &words);
-        assert!(text.contains(r#"MATCH '"aORb"'"#), "{text}");
+    fn the_words_may_be_in_different_texts_but_the_title_hit_needs_them_in_the_title() {
+        let text = text_of(Dialect::Postgres, "login error", TextScope::Everywhere);
+        // One lookup in the scope for the second word, and one for each word in the title.
+        assert_eq!(text.matches("'error')").count(), 2, "{text}");
+        assert_eq!(text.matches("'login')").count(), 2, "{text}");
+        assert!(text.contains("source\" = 'title'"), "{text}");
+    }
+
+    #[test]
+    fn syntax_in_a_search_cannot_reach_the_query() {
+        let text = text_of(
+            Dialect::Sqlite,
+            "a\" OR b; -- title:x NEAR(y)",
+            TextScope::Everywhere,
+        );
+        assert!(!text.contains("NEAR"), "{text}");
+        assert!(!text.contains("--"), "{text}");
+        assert!(text.contains(r#"MATCH '"or"'"#), "{text}");
     }
 
     #[test]
     fn no_words_match_nothing() {
-        let text = text_of(Dialect::Postgres, &[]);
+        let text = text_of(Dialect::Postgres, " ... ", TextScope::Everywhere);
         assert!(text.contains("1 = 0"), "{text}");
+    }
+
+    #[test]
+    fn a_word_that_comes_twice_is_looked_up_once() {
+        let text = text_of(
+            Dialect::Postgres,
+            "crash crash CRASH",
+            TextScope::Everywhere,
+        );
+        // Once in the scope and once in the title.
+        assert_eq!(text.matches("'crash')").count(), 2, "{text}");
+    }
+
+    #[test]
+    fn no_more_than_ten_words_are_looked_up() {
+        let many: Vec<String> = (0..25).map(|n| format!("word{n}")).collect();
+        let text = text_of(Dialect::Postgres, &many.join(" "), TextScope::Everywhere);
+        assert!(text.contains("'word9'"), "{text}");
+        assert!(!text.contains("'word10'"), "{text}");
+    }
+
+    #[test]
+    fn a_start_of_one_letter_is_looked_up_as_the_whole_word() {
+        let text = text_of(Dialect::Postgres, "a* ab*", TextScope::Everywhere);
+        assert!(!text.contains("'a:*'"), "{text}");
+        assert!(text.contains("'a')"), "{text}");
+        assert!(text.contains("'ab:*'"), "{text}");
+    }
+
+    #[test]
+    fn a_search_in_a_field_has_no_title_hit() {
+        let field = FieldId::generate(&mut SequentialIds::default()).unwrap();
+        let text = text_of(Dialect::Postgres, "notes", TextScope::Field(field));
+        assert!(text.contains("source\" = 'field'"), "{text}");
+        assert!(!text.contains("source\" = 'title'"), "{text}");
     }
 }

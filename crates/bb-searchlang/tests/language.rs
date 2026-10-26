@@ -11,9 +11,9 @@ use serde_json as _;
 use bb_searchlang::messages;
 use bb_searchlang::vectors::{ACCEPTED, REFUSED, sample_fields};
 use bb_searchlang::{
-    Expr, Field, FieldKind, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES,
-    MIN_PREFIX_CHARS, Mistake, Operand, ReadableFields, Suggestion, Test, check, parse, parse_with,
-    print, suggest,
+    Expr, Field, FieldKind, MAX_CONTAINS_WORDS, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS,
+    MAX_TEXT_BYTES, MIN_PREFIX_CHARS, Mistake, Operand, ReadableFields, Suggestion, Test, check,
+    parse, parse_with, print, suggest,
 };
 
 /// A text parsed and checked against the sample fields, printed.
@@ -316,6 +316,22 @@ fn iss_13_a_word_with_a_star_needs_two_letters_before_it() {
         assert_eq!(mistakes[0].key, messages::PREFIX_TOO_SHORT);
         assert_eq!(mistakes[0].args["limit"], MIN_PREFIX_CHARS.to_string());
     }
+}
+
+#[test]
+fn iss_13_a_contains_has_at_most_ten_different_words() {
+    let words = |count: usize| {
+        let list: Vec<String> = (0..count).map(|n| format!("word{n}")).collect();
+        format!("title contains \"{}\"", list.join(" "))
+    };
+    assert!(checked(&words(MAX_CONTAINS_WORDS)).is_ok());
+    let mistakes = mistakes_of(&words(MAX_CONTAINS_WORDS + 1));
+    assert_eq!(mistakes.len(), 1);
+    assert_eq!(mistakes[0].key, messages::TOO_MANY_WORDS);
+    assert_eq!(mistakes[0].args["limit"], MAX_CONTAINS_WORDS.to_string());
+    // A word typed again is not another word.
+    let again = format!("title contains \"{}\"", "crash ".repeat(30));
+    assert!(checked(&again).is_ok());
 }
 
 #[test]

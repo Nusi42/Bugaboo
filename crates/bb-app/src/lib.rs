@@ -23,6 +23,7 @@ pub mod many_changes;
 pub mod member;
 pub mod notifications;
 pub mod offers;
+mod outbox_reader;
 pub mod people;
 pub mod ports;
 pub mod preview;

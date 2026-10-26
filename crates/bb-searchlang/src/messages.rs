@@ -88,6 +88,9 @@ pub const TOO_MANY_SORT_KEYS: &str = "search.mistake.too-many-sort-keys";
 /// The message `search.mistake.too-many-steps`.
 pub const TOO_MANY_STEPS: &str = "search.mistake.too-many-steps";
 
+/// The message `search.mistake.too-many-words`.
+pub const TOO_MANY_WORDS: &str = "search.mistake.too-many-words";
+
 /// The message `search.mistake.unclosed-quote`.
 pub const UNCLOSED_QUOTE: &str = "search.mistake.unclosed-quote";
 

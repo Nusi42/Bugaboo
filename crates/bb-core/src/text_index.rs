@@ -10,9 +10,6 @@ use crate::personal::Entity;
 /// kept under this name.
 pub const CONSUMER: &str = "text-index";
 
-/// How many events the consumer reads in one go.
-pub const BATCH: u64 = 200;
-
 words! {
     /// Where a text of an index row comes from. A search leaves out every source the reader may
     /// not see.
@@ -46,7 +43,8 @@ pub struct IndexedText {
     /// its title and description.
     #[not_personal]
     pub source_ref: EntityId,
-    /// The prepared words of the text, one space between. It can hold anything a person typed.
-    #[personal(category = "content", basis = "legitimate_interests")]
+    /// The prepared words of the text, one space between. It can hold anything a person typed, so it
+    /// has the legal basis of the texts it is made from.
+    #[personal(category = "content", basis = "contract")]
     pub words: String,
 }

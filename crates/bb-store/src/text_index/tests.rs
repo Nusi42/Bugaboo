@@ -1,6 +1,8 @@
 //! The port and the index on both databases: the same words find the same issues in the same
 //! order (ARCH-DB-PARITY).
 
+mod reader;
+
 use bb_core::id::{EntityId, FieldId, IssueId};
 use bb_core::text_index::TextSource;
 use bb_core::text_words::search_words;
@@ -16,8 +18,8 @@ fn hit(number: i64, title: i64) -> (String, i64) {
     (number.to_string(), title)
 }
 
-/// The issues that a search finds, newest first within the same title hit (the order the compiler
-/// of the search will ask for), as their numbers.
+/// The issues that a search finds, title hits first and then the newest (the order the compiler of
+/// the search asks for), each with its title hit.
 async fn found(
     storage: &crate::AuthStorage,
     input: &str,
@@ -57,88 +59,46 @@ async fn found(
         .collect()
 }
 
-#[tokio::test]
-async fn iss_13_the_port_finds_each_source_and_orders_title_hits_first() -> TestResult {
-    each_database("iss_13_port_sources", async |db| {
+/// Puts `text` of the source into the index for the first of two issues and finds it with `words`:
+/// the second issue has other words and is never found.
+async fn finds_through(
+    name: &str,
+    source: TextSource,
+    text: &'static str,
+    words: &'static str,
+) -> TestResult {
+    each_database(name, async |db| {
         let fixture = fixture(db).await?;
-        let mut source = ids();
-        let world = world(&fixture.storage, &mut source, 5).await;
+        let mut ids = ids();
+        let world = world(&fixture.storage, &mut ids, 2).await;
         let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
+        let field = FieldId::generate(&mut ids)?;
+        // The title and the description are the issue's own; the others have a record of their own.
+        let reference = match source {
+            TextSource::Title | TextSource::Description => EntityId::from(issue[0]),
+            TextSource::Field => field.into(),
+            TextSource::Comment | TextSource::File => EntityId::from(IssueId::generate(&mut ids)?),
+        };
         let mut tx = fixture.storage.database().begin().await?;
-        let comment = EntityId::from(IssueId::generate(&mut source)?);
-        index_text(
-            &mut tx,
-            issue[0],
-            TextSource::Title,
-            issue[0].into(),
-            "Crash on save",
-        )
-        .await?;
+        index_text(&mut tx, issue[0], source, reference, text).await?;
         index_text(
             &mut tx,
             issue[1],
-            TextSource::Comment,
-            comment,
-            "It CRASHES, then crash on SAVE",
-        )
-        .await?;
-        index_text(
-            &mut tx,
-            issue[2],
-            TextSource::Description,
-            issue[2].into(),
-            "Absturz beim Speichern: Größe",
-        )
-        .await?;
-        index_text(
-            &mut tx,
-            issue[3],
-            TextSource::File,
-            comment,
-            "crash-log.txt",
-        )
-        .await?;
-        index_text(
-            &mut tx,
-            issue[4],
-            TextSource::Field,
-            comment,
-            "crash on save in issue[0] field",
+            TextSource::Title,
+            issue[1].into(),
+            "nothing here",
         )
         .await?;
         tx.commit().await?;
-
-        let storage = &fixture.storage;
-        // Title hits first, then the others, newest first.
+        let scope = if source == TextSource::Field {
+            TextScope::Field(field)
+        } else {
+            TextScope::Everywhere
+        };
+        let title = i64::from(source == TextSource::Title);
         assert_eq!(
-            found(storage, "crash on save", TextScope::Everywhere).await?,
-            [hit(1, 1), hit(2, 0)]
-        );
-        // `crash` is not `crashes`, but `crash*` finds both.
-        assert_eq!(
-            found(storage, "crashes", TextScope::Everywhere).await?,
-            [hit(2, 0)]
-        );
-        assert_eq!(
-            found(storage, "crash*", TextScope::Everywhere).await?,
-            [hit(1, 1), hit(4, 0), hit(2, 0)]
-        );
-        // Accents and case do not matter; ß is ss.
-        assert_eq!(
-            found(storage, "GROSSE größe", TextScope::Everywhere).await?,
-            [hit(3, 0)]
-        );
-        // A bare search never reads an own field.
-        assert!(
-            found(storage, "field", TextScope::Everywhere)
-                .await?
-                .is_empty()
-        );
-        // No words find nothing.
-        assert!(
-            found(storage, " ... ", TextScope::Everywhere)
-                .await?
-                .is_empty()
+            found(&fixture.storage, words, scope).await?,
+            [hit(1, title)]
         );
         Ok(())
     })
@@ -146,16 +106,203 @@ async fn iss_13_the_port_finds_each_source_and_orders_title_hits_first() -> Test
 }
 
 #[tokio::test]
-async fn iss_13_a_search_in_one_field_reads_the_rows_of_that_field_only() -> TestResult {
-    each_database("iss_13_port_field", async |db| {
+async fn iss_13_a_word_in_the_title_finds_the_issue() -> TestResult {
+    finds_through("iss_13_title", TextSource::Title, "Crash on save", "save").await
+}
+
+#[tokio::test]
+async fn iss_13_a_word_in_the_description_finds_the_issue() -> TestResult {
+    finds_through(
+        "iss_13_description",
+        TextSource::Description,
+        "Steps: open the Größe dialog",
+        "dialog",
+    )
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_a_word_in_a_comment_finds_the_issue() -> TestResult {
+    finds_through(
+        "iss_13_comment",
+        TextSource::Comment,
+        "It CRASHES at once",
+        "crashes",
+    )
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_a_word_in_a_file_name_finds_the_issue() -> TestResult {
+    finds_through(
+        "iss_13_file",
+        TextSource::File,
+        "Protokoll-Übersicht.pdf",
+        "protokoll",
+    )
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_a_word_in_a_long_text_field_finds_the_issue_when_that_field_is_asked() -> TestResult
+{
+    finds_through(
+        "iss_13_field",
+        TextSource::Field,
+        "notes about printers",
+        "printers",
+    )
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_crash_does_not_find_crashes_but_crash_star_does() -> TestResult {
+    each_database("iss_13_prefix", async |db| {
         let fixture = fixture(db).await?;
-        let mut source = ids();
-        let world = world(&fixture.storage, &mut source, 3).await;
+        let mut ids = ids();
+        let world = world(&fixture.storage, &mut ids, 3).await;
         let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
-        let (wanted, other) = (
-            FieldId::generate(&mut source)?,
-            FieldId::generate(&mut source)?,
+        let mut tx = fixture.storage.database().begin().await?;
+        index_text(
+            &mut tx,
+            issue[0],
+            TextSource::Title,
+            issue[0].into(),
+            "A crash",
+        )
+        .await?;
+        index_text(
+            &mut tx,
+            issue[1],
+            TextSource::Title,
+            issue[1].into(),
+            "Many crashes",
+        )
+        .await?;
+        index_text(
+            &mut tx,
+            issue[2],
+            TextSource::Title,
+            issue[2].into(),
+            "Nothing",
+        )
+        .await?;
+        tx.commit().await?;
+        let storage = &fixture.storage;
+        let everywhere = TextScope::Everywhere;
+        assert_eq!(found(storage, "crash", everywhere).await?, [hit(1, 1)]);
+        assert_eq!(
+            found(storage, "crash*", everywhere).await?,
+            [hit(2, 1), hit(1, 1)]
         );
+        assert_eq!(found(storage, "crashes", everywhere).await?, [hit(2, 1)]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_accents_and_case_do_not_matter() -> TestResult {
+    each_database("iss_13_accents", async |db| {
+        let fixture = fixture(db).await?;
+        let mut ids = ids();
+        let world = world(&fixture.storage, &mut ids, 2).await;
+        let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
+        let mut tx = fixture.storage.database().begin().await?;
+        index_text(
+            &mut tx,
+            issue[0],
+            TextSource::Title,
+            issue[0].into(),
+            "Die Größe, très ÜBER",
+        )
+        .await?;
+        tx.commit().await?;
+        let everywhere = TextScope::Everywhere;
+        for words in ["GROSSE", "grösse", "tres", "TRÈS", "uber", "Über*"] {
+            assert_eq!(
+                found(&fixture.storage, words, everywhere).await?,
+                [hit(1, 1)],
+                "{words}"
+            );
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_the_words_may_be_in_different_texts_of_one_issue() -> TestResult {
+    each_database("iss_13_words_anywhere", async |db| {
+        let fixture = fixture(db).await?;
+        let mut ids = ids();
+        let world = world(&fixture.storage, &mut ids, 4).await;
+        let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
+        let (note, other) = (
+            EntityId::from(IssueId::generate(&mut ids)?),
+            EntityId::from(IssueId::generate(&mut ids)?),
+        );
+        let mut tx = fixture.storage.database().begin().await?;
+        // 1: both words in the title. 2: one in the title, one in a comment. 3: one word in each
+        // of two issues. 4: only one word.
+        index_text(
+            &mut tx,
+            issue[0],
+            TextSource::Title,
+            issue[0].into(),
+            "Login error",
+        )
+        .await?;
+        index_text(
+            &mut tx,
+            issue[1],
+            TextSource::Title,
+            issue[1].into(),
+            "Login fails",
+        )
+        .await?;
+        index_text(
+            &mut tx,
+            issue[1],
+            TextSource::Comment,
+            note,
+            "I see an error",
+        )
+        .await?;
+        index_text(
+            &mut tx,
+            issue[2],
+            TextSource::Title,
+            issue[2].into(),
+            "Login",
+        )
+        .await?;
+        index_text(&mut tx, issue[3], TextSource::Comment, other, "error").await?;
+        tx.commit().await?;
+        // Title hits come first; the issue with the words in two texts is found, and a word
+        // from another issue does not count.
+        assert_eq!(
+            found(&fixture.storage, "login error", TextScope::Everywhere).await?,
+            [hit(1, 1), hit(2, 0)]
+        );
+        // A word typed twice, or a start of one letter, finds what the whole word finds.
+        assert_eq!(
+            found(&fixture.storage, "error error e*", TextScope::Everywhere).await?,
+            found(&fixture.storage, "error e", TextScope::Everywhere).await?
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_the_port_reads_a_field_only_when_that_field_is_asked_for() -> TestResult {
+    each_database("iss_13_field_scope", async |db| {
+        let fixture = fixture(db).await?;
+        let mut ids = ids();
+        let world = world(&fixture.storage, &mut ids, 3).await;
+        let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
+        let (wanted, other) = (FieldId::generate(&mut ids)?, FieldId::generate(&mut ids)?);
         let mut tx = fixture.storage.database().begin().await?;
         index_text(
             &mut tx,
@@ -182,305 +329,17 @@ async fn iss_13_a_search_in_one_field_reads_the_rows_of_that_field_only() -> Tes
         )
         .await?;
         tx.commit().await?;
+        let storage = &fixture.storage;
         assert_eq!(
-            found(
-                &fixture.storage,
-                "steps reproduce",
-                TextScope::Field(wanted)
-            )
-            .await?,
+            found(storage, "steps reproduce", TextScope::Field(wanted)).await?,
             [hit(1, 0)]
+        );
+        // A bare search never reads a field.
+        assert_eq!(
+            found(storage, "steps reproduce", TextScope::Everywhere).await?,
+            [hit(3, 1)]
         );
         Ok(())
     })
     .await
-}
-
-mod reader {
-    //! The reader of the outbox that keeps the index, with the real tables.
-
-    use bb_app::comments::CommentStore as _;
-    use bb_app::fields::FieldStore as _;
-    use bb_app::files::AttachmentStore as _;
-    use bb_app::issues::IssueStore as _;
-    use bb_app::ports::{BoxFuture, ChangeStore};
-    use bb_app::text_index::{TextIndexStore as _, Touched, catch_up};
-    use bb_core::comment::Comment;
-    use bb_core::event::{EntityKind, RecordKind};
-    use bb_core::files::{Attachment, MediaType, PreviewStatus, StoredFile};
-    use bb_core::id::{AttachmentId, CommentId, UserId};
-    use bb_core::own_fields::FieldType;
-    use bb_core::own_fields_value::FieldValue;
-    use bb_core::security_log::Digest;
-    use bb_core::version::FIRST_VERSION;
-
-    use super::*;
-    use crate::db::Transaction;
-    use crate::schema::TextIndexRow;
-    use crate::test_support::{at, definition, event, fixture, ids, world};
-    use crate::{AuthStorage, StoreError};
-
-    /// Runs `write` as one change whose event is about `issue`, the way a use case of an issue
-    /// does, so the reader knows which issue to read again.
-    async fn changed_issue(
-        storage: &AuthStorage,
-        source: &mut impl bb_core::id::IdSource,
-        issue: IssueId,
-        write: impl for<'t> FnOnce(&'t mut Transaction) -> BoxFuture<'t, Result<(), StoreError>> + Send,
-    ) -> Result<(), StoreError> {
-        let mut about = event(source, 6);
-        about.entity.kind = EntityKind::from(RecordKind::Issue);
-        about.entity.id = EntityId::from(issue);
-        ChangeStore::record_change(storage, &about, write).await
-    }
-
-    async fn rows(storage: &AuthStorage) -> Result<Vec<(String, String)>, StoreError> {
-        let mut select = Query::select();
-        select
-            .columns([TextIndexRow::Source, TextIndexRow::Words])
-            .from(TextIndexRow::Table)
-            .order_by(TextIndexRow::Id, Order::Asc);
-        storage
-            .database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(|row| {
-                Ok((
-                    row.get(TextIndexRow::Source)?,
-                    row.get(TextIndexRow::Words)?,
-                ))
-            })
-            .collect()
-    }
-
-    fn comment(source: &mut impl bb_core::id::IdSource, issue: IssueId, text: &str) -> Comment {
-        Comment {
-            id: CommentId::generate(source).unwrap(),
-            issue,
-            author: UserId::generate(source),
-            text: text.to_owned(),
-            created_at: at(2),
-            edited_at: None,
-            deleted_at: None,
-            version: FIRST_VERSION,
-        }
-    }
-
-    fn file() -> StoredFile {
-        StoredFile {
-            hash: Digest::new([7; 32]),
-            size: 10,
-            media_type: MediaType::new("image/png").unwrap(),
-            preview: PreviewStatus::Pending,
-            created_at: at(1),
-        }
-    }
-
-    fn attachment(
-        source: &mut impl bb_core::id::IdSource,
-        issue: IssueId,
-        name: &str,
-    ) -> Attachment {
-        Attachment {
-            id: AttachmentId::generate(source).unwrap(),
-            issue,
-            comment: None,
-            file: file().hash,
-            name: name.to_owned(),
-            added_by: UserId::generate(source),
-            added_at: at(2),
-            deleted_at: None,
-            preview: PreviewStatus::Pending,
-            version: FIRST_VERSION,
-        }
-    }
-
-    #[tokio::test]
-    async fn iss_13_a_change_while_the_reader_was_stopped_is_in_the_index_after_a_start()
-    -> TestResult {
-        each_database("iss_13_reader_catches_up", async |db| {
-            let fixture = fixture(db).await?;
-            let storage = &fixture.storage;
-            let mut source = ids();
-            let world = world(storage, &mut source, 2).await;
-            let mut issue = world.issues[0].clone();
-            let id = issue.id;
-            issue.title = "Absturz beim Speichern".to_owned();
-            issue.description = "Steps: open the Größe dialog".to_owned();
-            let (said, kept) = (comment(&mut source, id, "It CRASHES at once"), file());
-            let (named, field) = (
-                attachment(&mut source, id, "Protokoll-Übersicht.pdf"),
-                definition(&mut source, FieldType::LongText, 1),
-            );
-            let field_id = field.field.id;
-            let cells = FieldValue::Text("hidden-notes about printers".to_owned()).to_cells();
-            // The server is stopped: only the changes are written, no reader runs.
-            changed_issue(storage, &mut source, id, move |tx| {
-                Box::pin(async move {
-                    AuthStorage::update_issue(tx, &issue, FIRST_VERSION).await?;
-                    AuthStorage::insert_comment(tx, &said).await?;
-                    AuthStorage::insert_stored_file(tx, &kept).await?;
-                    AuthStorage::insert_attachment(tx, &named).await?;
-                    AuthStorage::insert_field(tx, &field).await?;
-                    AuthStorage::put_field_value(
-                        tx,
-                        EntityKind::from(RecordKind::Issue),
-                        EntityId::from(id),
-                        field_id,
-                        &cells,
-                    )
-                    .await?;
-                    Ok(())
-                })
-            })
-            .await?;
-            assert!(rows(storage).await?.is_empty());
-            let everywhere = TextScope::Everywhere;
-            assert!(found(storage, "crashes", everywhere).await?.is_empty());
-
-            // A start: the reader reads what it has not read.
-            assert!(catch_up(storage, at(9)).await? > 0);
-            for words in ["absturz", "STEPS grosse", "crashes", "protokoll ubersicht*"] {
-                assert_eq!(
-                    found(storage, words, everywhere).await?,
-                    [hit(1, i64::from(words == "absturz"))],
-                    "{words}"
-                );
-            }
-            // A bare search never reads a long-text field; a search in that field does.
-            assert!(found(storage, "printers", everywhere).await?.is_empty());
-            assert_eq!(
-                found(storage, "printers", TextScope::Field(field_id)).await?,
-                [hit(1, 0)]
-            );
-            assert_eq!(catch_up(storage, at(10)).await?, 0);
-            Ok(())
-        })
-        .await
-    }
-
-    #[tokio::test]
-    async fn iss_13_reading_an_event_twice_changes_nothing() -> TestResult {
-        each_database("iss_13_reader_twice", async |db| {
-            let fixture = fixture(db).await?;
-            let storage = &fixture.storage;
-            let mut source = ids();
-            let world = world(storage, &mut source, 1).await;
-            let id = world.issues[0].id;
-            let said = comment(&mut source, id, "twice is the same");
-            let comment_id = said.id;
-            changed_issue(storage, &mut source, id, move |tx| {
-                Box::pin(async move { AuthStorage::insert_comment(tx, &said).await })
-            })
-            .await?;
-            catch_up(storage, at(9)).await?;
-            let once = rows(storage).await?;
-            assert!(!once.is_empty());
-            // The same events again, as after a restart that lost the place, and a comment named
-            // on its own.
-            let again = [Touched::Issue(id), Touched::Comment(comment_id)];
-            storage.store_text_index(&again, 0, at(10)).await?;
-            storage.store_text_index(&again, 0, at(11)).await?;
-            assert_eq!(rows(storage).await?, once);
-            assert_eq!(
-                found(storage, "twice same", TextScope::Everywhere).await?,
-                [hit(1, 0)]
-            );
-            Ok(())
-        })
-        .await
-    }
-
-    #[tokio::test]
-    async fn iss_13_trashed_texts_leave_the_index_and_a_restored_one_comes_back() -> TestResult {
-        each_database("iss_13_reader_trash", async |db| {
-            let fixture = fixture(db).await?;
-            let storage = &fixture.storage;
-            let mut source = ids();
-            let world = world(storage, &mut source, 1).await;
-            let id = world.issues[0].id;
-            let said = comment(&mut source, id, "gone soon");
-            let comment_id = said.id;
-            let (kept, named) = (file(), attachment(&mut source, id, "evidence.txt"));
-            let file_id = named.id;
-            changed_issue(storage, &mut source, id, move |tx| {
-                Box::pin(async move {
-                    AuthStorage::insert_comment(tx, &said).await?;
-                    AuthStorage::insert_stored_file(tx, &kept).await?;
-                    AuthStorage::insert_attachment(tx, &named).await?;
-                    Ok(())
-                })
-            })
-            .await?;
-            catch_up(storage, at(9)).await?;
-            let everywhere = TextScope::Everywhere;
-            assert_eq!(found(storage, "soon", everywhere).await?.len(), 1);
-            assert_eq!(found(storage, "evidence", everywhere).await?.len(), 1);
-
-            changed_issue(storage, &mut source, id, move |tx| {
-                Box::pin(async move {
-                    AuthStorage::set_comment_deleted(tx, comment_id, Some(at(10))).await?;
-                    AuthStorage::set_attachment_deleted(tx, file_id, Some(at(10))).await?;
-                    Ok(())
-                })
-            })
-            .await?;
-            catch_up(storage, at(11)).await?;
-            assert!(found(storage, "soon", everywhere).await?.is_empty());
-            assert!(found(storage, "evidence", everywhere).await?.is_empty());
-
-            changed_issue(storage, &mut source, id, move |tx| {
-                Box::pin(async move {
-                    AuthStorage::set_comment_deleted(tx, comment_id, None).await?;
-                    Ok(())
-                })
-            })
-            .await?;
-            catch_up(storage, at(12)).await?;
-            assert_eq!(found(storage, "soon", everywhere).await?.len(), 1);
-
-            // The whole issue in the trash leaves the index with everything it had.
-            changed_issue(storage, &mut source, id, move |tx| {
-                Box::pin(async move {
-                    AuthStorage::set_issue_deleted(tx, id, Some(at(13)), at(13)).await?;
-                    Ok(())
-                })
-            })
-            .await?;
-            catch_up(storage, at(14)).await?;
-            assert!(rows(storage).await?.is_empty());
-            changed_issue(storage, &mut source, id, move |tx| {
-                Box::pin(async move {
-                    AuthStorage::set_issue_deleted(tx, id, None, at(15)).await?;
-                    Ok(())
-                })
-            })
-            .await?;
-            catch_up(storage, at(16)).await?;
-            assert_eq!(found(storage, "soon", everywhere).await?.len(), 1);
-            Ok(())
-        })
-        .await
-    }
-
-    #[tokio::test]
-    async fn iss_13_a_rebuild_makes_the_index_from_the_stored_texts() -> TestResult {
-        each_database("iss_13_rebuild", async |db| {
-            let fixture = fixture(db).await?;
-            let storage = &fixture.storage;
-            let mut source = ids();
-            let world = world(storage, &mut source, 3).await;
-            // Nothing was ever indexed (a database from before the index): the rebuild reads
-            // every issue, and the title of each is found.
-            assert!(rows(storage).await?.is_empty());
-            assert_eq!(storage.rebuild_text_index().await?, 3);
-            assert_eq!(
-                found(storage, "issue", TextScope::Everywhere).await?.len(),
-                world.issues.len()
-            );
-            Ok(())
-        })
-        .await
-    }
 }
