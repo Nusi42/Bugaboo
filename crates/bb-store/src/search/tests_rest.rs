@@ -108,25 +108,29 @@ async fn qry_04_within_finds_a_project_and_the_projects_below_it_that_the_person
         inside.title = "Below".to_owned();
         let mut outside = issue(&mut data.source, beside, data.issue_type, 1);
         outside.title = "Beside".to_owned();
-        let rows = [
-            (below, "BELOW", Some(data.project)),
-            (beside, "BESIDE", None),
-        ]
-        .map(|(id, short, parent)| {
-            (
-                Project {
-                    id,
-                    parent,
-                    short_name: ShortName::new(short).unwrap(),
-                    name: short.to_owned(),
-                    version: FIRST_VERSION,
-                },
-                parent,
-            )
-        });
+        let (acme_name, below_name, beside_name) = (
+            ShortName::new("ACME")?,
+            ShortName::new("BELOW")?,
+            ShortName::new("BESIDE")?,
+        );
+        let projects = vec![
+            Project {
+                id: below,
+                parent: Some(data.project),
+                short_name: below_name.clone(),
+                name: "Below".to_owned(),
+                version: FIRST_VERSION,
+            },
+            Project {
+                id: beside,
+                parent: None,
+                short_name: beside_name.clone(),
+                name: "Beside".to_owned(),
+                version: FIRST_VERSION,
+            },
+        ];
         let made = [inside, outside];
         let ev = event(&mut data.source, 10);
-        let projects: Vec<Project> = rows.iter().map(|(project, _)| project.clone()).collect();
         ChangeStore::record_change(storage, &ev, move |tx| {
             Box::pin(async move {
                 for project in &projects {
@@ -146,17 +150,17 @@ async fn qry_04_within_finds_a_project_and_the_projects_below_it_that_the_person
                 ProjectLink {
                     id: data.project,
                     parent: None,
-                    short_name: "ACME".parse().unwrap(),
+                    short_name: acme_name.clone(),
                 },
                 ProjectLink {
                     id: below,
                     parent: Some(data.project),
-                    short_name: "BELOW".parse().unwrap(),
+                    short_name: below_name.clone(),
                 },
                 ProjectLink {
                     id: beside,
                     parent: None,
-                    short_name: "BESIDE".parse().unwrap(),
+                    short_name: beside_name.clone(),
                 },
             ];
             ask
