@@ -191,8 +191,21 @@ fn with_query(template: &str, filled: String, project: &str, project_id: &str) -
             format!("{filled}?project={project}&kind=new-issue")
         }
         "/api/v1/workflows" | "/api/v1/workflows/editor" => format!("{filled}?project={project}"),
+        "/api/v1/saved-searches/share-choices" => format!("{filled}?kind=group"),
         _ => filled,
     }
+}
+
+/// A saved search of the person, for the routes that name one: its ID.
+async fn a_saved_search(ada: &mut Browser) -> Result<String, Failure> {
+    let made = ada
+        .send(
+            "POST",
+            "/api/v1/saved-searches",
+            Some(json!({"name": "Open bugs", "search_text": ""})),
+        )
+        .await?;
+    Ok(made.body["id"].as_str().ok_or("no search")?.to_owned())
 }
 
 #[tokio::test]
@@ -231,6 +244,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let (issue_type_id, label_group_id) = a_type_and_a_label_group(&mut ada).await?;
         let run_id = a_run_of(&rig, &person_id).await?;
         let upload_id = an_upload_on(&mut ada, &readable_id).await?;
+        let search_id = a_saved_search(&mut ada).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -254,6 +268,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{group}", &group_id)
                 .replace("{run}", &run_id)
                 .replace("{upload}", &upload_id)
+                .replace("{search}", &search_id)
                 .replace("{project}", project);
             let filled = with_query(template, filled, project, &project_id);
             let filled = if template.ends_with("/status-changes") {
