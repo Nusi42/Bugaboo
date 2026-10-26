@@ -30,25 +30,6 @@ fn target(kind: ShareKind, id: &str) -> Result<ShareTarget, ApiError> {
     ShareTarget::parse(kind, id).ok_or_else(|| ApiError::new(ErrorCode::InvalidRequest))
 }
 
-/// Who asks comes before what is asked: an access key is turned away (and written into the
-/// security log) before a malformed address, query or body gets an answer of its own, as it is on
-/// the routes of the person's own sign-in data (AUTH-07).
-pub(super) async fn session_first(
-    auth: &AuthHandle,
-    info: &bb_app::auth::RequestInfo,
-    session_token: &str,
-) -> Result<(), ApiError> {
-    auth.api()?
-        .require_session(
-            info.clone(),
-            bb_app::auth::RequireSessionQuery {
-                session_token: session_token.to_owned(),
-            },
-        )
-        .await?;
-    Ok(())
-}
-
 /// The saved searches the person made, or the ones shared with them, a page at a time, oldest
 /// first.
 #[utoipa::path(
@@ -66,9 +47,9 @@ async fn list_saved_searches(
     params: Result<ApiQuery<ListParams>, ApiError>,
     which: Result<ApiQuery<ScopeParams>, ApiError>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
-    let ApiQuery(params) = params?;
-    let ApiQuery(which) = which?;
+    let read = params.and_then(|params| which.map(|which| (params, which)));
+    let (ApiQuery(params), ApiQuery(which)) =
+        auth.after_who_asks(&info, &session_token, read).await?;
     let (cursor, bad_cursor) = params.start(SEARCHES_LIST);
     let page = auth
         .api()?
@@ -111,21 +92,20 @@ async fn create_saved_search(
     Session(session_token): Session,
     body: Result<ApiJson<NewSavedSearchBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
-    let ApiJson(body) = body?;
+    let read = body.and_then(|ApiJson(body)| {
+        let presentation = body.presentation.map(Presentation::try_from).transpose()?;
+        Ok((body.name, body.search_text, presentation))
+    });
+    let (name, text, presentation) = auth.after_who_asks(&info, &session_token, read).await?;
     let made = auth
         .api()?
         .save_search(
             info,
             SaveSearch {
                 session_token,
-                name: body.name,
-                text: body.search_text,
-                presentation: body
-                    .presentation
-                    .map(Presentation::try_from)
-                    .transpose()?
-                    .unwrap_or_default(),
+                name,
+                text,
+                presentation: presentation.unwrap_or_default(),
             },
         )
         .await?;
@@ -152,14 +132,16 @@ async fn get_saved_search(
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
+    let search = auth
+        .after_who_asks(&info, &session_token, search_id(&search))
+        .await?;
     let found = auth
         .api()?
         .saved_search(
             info,
             SearchQuery {
                 session_token,
-                search: search_id(&search)?,
+                search,
             },
         )
         .await?;
@@ -190,19 +172,30 @@ async fn change_saved_search(
     ApiPath(search): ApiPath<String>,
     body: Result<ApiJson<ChangeSavedSearchBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
-    let ApiJson(body) = body?;
+    let read = search_id(&search).and_then(|search| {
+        let ApiJson(body) = body?;
+        let presentation = body.presentation.map(Presentation::try_from).transpose()?;
+        Ok((
+            search,
+            body.version,
+            body.name,
+            body.search_text,
+            presentation,
+        ))
+    });
+    let (search, version, name, text, presentation) =
+        auth.after_who_asks(&info, &session_token, read).await?;
     let changed = auth
         .api()?
         .change_search(
             info,
             ChangeSearch {
                 session_token,
-                search: search_id(&search)?,
-                version: body.version,
-                name: body.name,
-                text: body.search_text,
-                presentation: body.presentation.map(Presentation::try_from).transpose()?,
+                search,
+                version,
+                name,
+                text,
+                presentation,
             },
         )
         .await?;
@@ -230,13 +223,15 @@ async fn delete_saved_search(
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
+    let search = auth
+        .after_who_asks(&info, &session_token, search_id(&search))
+        .await?;
     auth.api()?
         .delete_search(
             info,
             DeleteSearch {
                 session_token,
-                search: search_id(&search)?,
+                search,
             },
         )
         .await?;
@@ -262,14 +257,16 @@ async fn restore_saved_search(
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
+    let search = auth
+        .after_who_asks(&info, &session_token, search_id(&search))
+        .await?;
     let restored = auth
         .api()?
         .restore_search(
             info,
             RestoreSearch {
                 session_token,
-                search: search_id(&search)?,
+                search,
             },
         )
         .await?;
@@ -299,16 +296,16 @@ async fn copy_saved_search(
     ApiPath(search): ApiPath<String>,
     body: Result<ApiJson<CopyBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
-    let ApiJson(body) = body?;
+    let read = search_id(&search).and_then(|search| body.map(|ApiJson(body)| (search, body.name)));
+    let (search, name) = auth.after_who_asks(&info, &session_token, read).await?;
     let copy = auth
         .api()?
         .save_copy(
             info,
             SaveCopy {
                 session_token,
-                search: search_id(&search)?,
-                name: body.name,
+                search,
+                name,
             },
         )
         .await?;
@@ -340,16 +337,19 @@ async fn share_saved_search(
     ApiPath(search): ApiPath<String>,
     body: Result<ApiJson<ShareBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
-    let ApiJson(body) = body?;
+    let read = search_id(&search).and_then(|search| {
+        let ApiJson(body) = body?;
+        Ok((search, target(body.kind, &body.id)?))
+    });
+    let (search, target) = auth.after_who_asks(&info, &session_token, read).await?;
     let shared = auth
         .api()?
         .share_search(
             info,
             ShareSearch {
                 session_token,
-                search: search_id(&search)?,
-                target: target(body.kind, &body.id)?,
+                search,
+                target,
             },
         )
         .await?;
@@ -380,16 +380,20 @@ async fn stop_sharing_saved_search(
     Session(session_token): Session,
     ApiPath((search, kind, id)): ApiPath<(String, String, String)>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
-    let kind = ShareKind::from_code(&kind).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
-    let target = ShareTarget::parse(kind, &id).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
+    let read = search_id(&search).and_then(|search| {
+        let kind = ShareKind::from_code(&kind).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
+        let target =
+            ShareTarget::parse(kind, &id).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
+        Ok((search, target))
+    });
+    let (search, target) = auth.after_who_asks(&info, &session_token, read).await?;
     let stopped = auth
         .api()?
         .stop_sharing_search(
             info,
             StopSharingSearch {
                 session_token,
-                search: search_id(&search)?,
+                search,
                 target,
             },
         )
@@ -414,9 +418,9 @@ async fn list_share_choices(
     params: Result<ApiQuery<ListParams>, ApiError>,
     which: Result<ApiQuery<KindParams>, ApiError>,
 ) -> Result<Response, ApiError> {
-    session_first(&auth, &info, &session_token).await?;
-    let ApiQuery(params) = params?;
-    let ApiQuery(which) = which?;
+    let read = params.and_then(|params| which.map(|which| (params, which)));
+    let (ApiQuery(params), ApiQuery(which)) =
+        auth.after_who_asks(&info, &session_token, read).await?;
     let (cursor, bad_cursor) = params.start(CHOICES_LIST);
     let page = auth
         .api()?

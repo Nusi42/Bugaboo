@@ -21,7 +21,7 @@ use axum::http::request::Parts;
 use axum::http::{StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
-use bb_app::auth::{AppError, AuthApi, RequestInfo, Started};
+use bb_app::auth::{AppError, AuthApi, RequestInfo, RequireSessionQuery, Started};
 use bb_auth::Device;
 use bb_core::ErrorCode;
 use bb_core::error_code::PROBLEM_CONTENT_TYPE;
@@ -75,6 +75,32 @@ impl AuthHandle {
         self.0
             .as_deref()
             .ok_or_else(|| ApiError::new(ErrorCode::Unavailable))
+    }
+
+    /// Who asks comes before what is asked (AUTH-07): when the address, query or body of a request
+    /// could not be read (`parsed` is an error), an access key is turned away, and written into the
+    /// security log, before the person gets the error of the request. A request that reads well
+    /// reads nothing here: the use case turns a key away itself.
+    ///
+    /// # Errors
+    /// The error of the session if there is one, else the error of `parsed`.
+    pub(crate) async fn after_who_asks<T>(
+        &self,
+        info: &RequestInfo,
+        session_token: &str,
+        parsed: Result<T, ApiError>,
+    ) -> Result<T, ApiError> {
+        if parsed.is_err() {
+            self.api()?
+                .require_session(
+                    info.clone(),
+                    RequireSessionQuery {
+                        session_token: session_token.to_owned(),
+                    },
+                )
+                .await?;
+        }
+        parsed
     }
 }
 
