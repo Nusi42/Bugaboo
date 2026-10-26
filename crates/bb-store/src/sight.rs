@@ -24,13 +24,23 @@ pub(crate) fn sight_condition_as(sight: &IssueSight, name: &str) -> Cond {
 
 fn sight_condition_on(sight: &IssueSight, issue: &DynIden) -> Cond {
     let column = |column: IssueRow| Expr::col((issue.clone(), column));
-    let readable = Cond::any()
-        .add(column(IssueRow::Project).is_in(sight.all.iter().map(|project| project.stored())))
-        .add(
+    // A branch is there only for projects there are: an `OR` with a branch that can never hold
+    // keeps a database from using the index of the project.
+    let mut readable = Cond::any();
+    if !sight.all.is_empty() {
+        readable = readable
+            .add(column(IssueRow::Project).is_in(sight.all.iter().map(|project| project.stored())));
+    }
+    if !sight.own.is_empty() {
+        readable = readable.add(
             column(IssueRow::Project)
                 .is_in(sight.own.iter().map(|project| project.stored()))
                 .and(column(IssueRow::ReportedBy).eq(sight.person.stored())),
         );
+    }
+    if sight.all.is_empty() && sight.own.is_empty() {
+        readable = readable.add(Expr::val(1).eq(2));
+    }
     let visible = sight
         .hidden
         .iter()

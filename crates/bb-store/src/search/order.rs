@@ -12,7 +12,7 @@ use bb_core::id::IssueId;
 use bb_searchlang::Direction;
 use sea_query::{
     Alias, Cond, DynIden, Expr, ExprTrait as _, Func, IntoIden as _, JoinType, Order, Query,
-    SelectStatement,
+    SelectStatement, SimpleExpr,
 };
 
 use super::source::{Domain, Subject};
@@ -88,6 +88,10 @@ pub(super) struct Key {
     pub(super) value: Expr,
     pub(super) kind: Kind,
     pub(super) order: Order,
+    /// Whether every issue has a value (a column that is never empty, a key made to have one): the
+    /// statement then says nothing about an issue without one, so an index of the column can give
+    /// the order.
+    pub(super) always: bool,
 }
 
 /// The table that gives the name of a thing a column holds an ID of: its table, its ID and its name.
@@ -179,7 +183,15 @@ impl Compiler<'_> {
                 Ok((self.bytes(Self::plain(&subject, first)), Kind::Text))
             }
             Domain::Number(_) | Domain::YesNo | Domain::Time(_) => {
-                Ok((bigint(Self::plain(&subject, first)), Kind::Whole))
+                let value = Self::plain(&subject, first);
+                // A column of whole numbers is the same on both databases and stays the column, so an
+                // index of it can give the order.
+                let value = if matches!(subject, Subject::Column(_)) {
+                    value
+                } else {
+                    bigint(value)
+                };
+                Ok((value, Kind::Whole))
             }
             named => {
                 let (table, id, name) =
@@ -297,6 +309,7 @@ impl Compiler<'_> {
                 value: Expr::col((IssueRow::Table, IssueRow::CreatedAt)),
                 kind: Kind::Whole,
                 order: Order::Desc,
+                always: true,
             };
             // With words to find and no order asked for, the issues whose title has the words
             // come first, then the newest, then the ID (ADR-0016, amendment M5, item 5).
@@ -320,10 +333,15 @@ impl Compiler<'_> {
                 // first, as the direction it reads in without a word depends on it.
                 let desc = down || (!up && kind_of(self.subject_of(target).1) == Kind::Whole);
                 let (value, kind) = self.sort_value(target, desc)?;
+                let (value, always) = match target {
+                    FieldTarget::Created | FieldTarget::Changed => (value, true),
+                    _ => (value, false),
+                };
                 Ok(Key {
                     value,
                     kind,
                     order: if desc { Order::Desc } else { Order::Asc },
+                    always,
                 })
             })
             .collect()
@@ -332,6 +350,13 @@ impl Compiler<'_> {
     /// The key "the title alone has the words" (1 or 0, never empty) of the first `contains` on its
     /// own that every issue found must satisfy. It is an expression of the issue like any other
     /// key, so the store reads its value for the last issue of a page by itself.
+    /// Whether the order of the search is by title hits first: words to find and no order asked
+    /// for.
+    pub(super) fn orders_by_title(&self) -> bool {
+        let search = self.request.search.search();
+        search.sort.is_empty() && search.filter.as_ref().and_then(first_words).is_some()
+    }
+
     fn title_hit(&self) -> Option<Key> {
         let text = self
             .request
@@ -352,6 +377,7 @@ impl Compiler<'_> {
             value: Expr::case(in_title, 1_i64).finally(0_i64).into(),
             kind: Kind::Whole,
             order: Order::Desc,
+            always: true,
         })
     }
 
@@ -363,13 +389,25 @@ impl Compiler<'_> {
     /// Puts the order on the select, issues without a value last.
     pub(super) fn order_by(select: &mut SelectStatement, keys: &[Key]) {
         for key in keys {
-            select.order_by_expr(key.value.clone().is_null(), Order::Asc);
+            if !key.always {
+                select.order_by_expr(key.value.clone().is_null(), Order::Asc);
+            }
             select.order_by_expr(key.value.clone(), key.order.clone());
         }
         select.order_by_expr(
             Expr::col((IssueRow::Table, IssueRow::Id)),
             Self::id_order(keys),
         );
+    }
+
+    /// The issues that come after by this key, and those without a value (last) unless every issue
+    /// has one.
+    fn or_empty(key: &Key, later: SimpleExpr) -> Cond {
+        let mut any = Cond::any().add(later);
+        if !key.always {
+            any = any.add(key.value.clone().is_null());
+        }
+        any
     }
 
     /// The issues after the last one of the page before, whose values of the keys are `last`.
@@ -395,12 +433,12 @@ impl Compiler<'_> {
             let after = match value {
                 // Issues without a value are last, so none comes after one of them by this key.
                 SortValue::Empty => nothing(),
-                SortValue::Text(text) => Cond::any()
-                    .add(later(&key.value, &key.order, text.clone().into()))
-                    .add(key.value.clone().is_null()),
-                SortValue::Whole(number) => Cond::any()
-                    .add(later(&key.value, &key.order, (*number).into()))
-                    .add(key.value.clone().is_null()),
+                SortValue::Text(text) => {
+                    Self::or_empty(key, later(&key.value, &key.order, text.clone().into()))
+                }
+                SortValue::Whole(number) => {
+                    Self::or_empty(key, later(&key.value, &key.order, (*number).into()))
+                }
             };
             any = any.add(all.add(after));
         }

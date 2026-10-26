@@ -123,7 +123,14 @@ pub(crate) fn page_statement(
     plan: &SortPlan,
     last: Option<(&[SortValue], IssueId)>,
 ) -> Result<Built, CompileError> {
+    // A page cut after its first rows asks about the issues one at a time, which stops early; with
+    // an order by title hits every issue that matches is read, so the matches are made once.
     let compiler = Compiler::new(request, dialect);
+    let compiler = if compiler.orders_by_title() {
+        compiler
+    } else {
+        compiler.paged()
+    };
     let mut cond = found(&compiler)?;
     if let Some((values, id)) = last {
         cond = cond.add(Compiler::after(&plan.keys, values, id));
@@ -142,10 +149,7 @@ pub(crate) fn count_statement(
     let compiler = Compiler::new(request, dialect);
     let mut select = Query::select();
     select
-        .expr_as(
-            Func::count(Expr::col((IssueRow::Table, IssueRow::Id))),
-            Counted,
-        )
+        .expr_as(Func::count(Expr::col(sea_query::Asterisk)), Counted)
         .from(IssueRow::Table)
         .cond_where(found(&compiler)?);
     Ok(finish(&compiler, select))
@@ -168,7 +172,7 @@ pub(crate) fn groups_statement(
             let mut select = Query::select();
             select
                 .expr_as(value, Sorted(0))
-                .expr_as(Func::count(issue()), Counted)
+                .expr_as(Func::count(Expr::col(sea_query::Asterisk)), Counted)
                 .from(IssueRow::Table)
                 .cond_where(cond)
                 .group_by_col(Sorted(0));

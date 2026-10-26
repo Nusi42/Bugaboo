@@ -70,32 +70,69 @@ impl TextMatch {
 /// One word as it is looked up: the text, and whether it matches by its start.
 type Lookup<'a> = (&'a str, bool);
 
-/// The sub-select of a search for one database.
-#[must_use]
-pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
+/// The conditions on a row of the index that make it one of the texts of an issue that has the
+/// first word in the scope and whose issue also has every other word in the scope. No words match
+/// nothing.
+fn row_conditions(dialect: Dialect, search: &TextSearch<'_>) -> Vec<SimpleExpr> {
     let words = lookups(search.words);
-    let mut select = Query::select();
-    select.from(TextIndexRow::Table);
     let Some((first, rest)) = words.split_first() else {
-        // No words match nothing.
-        select.and_where(Expr::val(1).eq(0));
-        return TextMatch {
-            select: with_columns(select),
-        };
+        return vec![Expr::val(1).eq(0)];
     };
-    select
-        .and_where(word_matches(dialect, *first))
-        .and_where(in_scope(search.scope));
+    let mut conditions = vec![word_matches(dialect, *first), in_scope(search.scope)];
     for word in rest {
-        select.and_where(Expr::col(TextIndexRow::Issue).in_subquery(issues_with(
+        conditions.push(Expr::col(TextIndexRow::Issue).in_subquery(issues_with(
             dialect,
             *word,
             &in_scope(search.scope),
         )));
     }
+    conditions
+}
+
+/// The sub-select of a search for one database.
+#[must_use]
+pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
+    let mut select = Query::select();
+    select.from(TextIndexRow::Table);
+    for condition in row_conditions(dialect, search) {
+        select.and_where(condition);
+    }
     TextMatch {
         select: with_columns(select),
     }
+}
+
+/// The issues that match, one row for each text of theirs that does (`SELECT issue FROM
+/// text_index WHERE …`), for a condition `issue.id IN (…)` that asks about all issues at once: the
+/// database makes the set once. An issue is in it as often as it has texts that match.
+#[must_use]
+pub fn text_issues(dialect: Dialect, search: &TextSearch<'_>) -> SelectStatement {
+    let mut select = Query::select();
+    select.column(TextIndexRow::Issue).from(TextIndexRow::Table);
+    for condition in row_conditions(dialect, search) {
+        select.and_where(condition);
+    }
+    select
+}
+
+/// The same search asked of one issue: `SELECT 1 FROM text_index WHERE issue = <that issue> AND …`
+/// for the compiler to put in `EXISTS (…)`, where a page is cut after the first rows and an issue
+/// is asked about at a time. `issue` is the column of the issue it asks about.
+#[must_use]
+pub fn text_of_issue(
+    dialect: Dialect,
+    search: &TextSearch<'_>,
+    issue: SimpleExpr,
+) -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .expr(Expr::val(1))
+        .from(TextIndexRow::Table)
+        .and_where(Expr::col(TextIndexRow::Issue).eq(issue));
+    for condition in row_conditions(dialect, search) {
+        select.and_where(condition);
+    }
+    select
 }
 
 /// The columns of the sub-select, and the grouping that makes one row for an issue.

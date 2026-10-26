@@ -11,12 +11,12 @@ use bb_app::search::{FieldTarget, TextPlace};
 use bb_core::text_index::TextSource;
 use bb_core::text_words::search_words;
 use bb_searchlang::Text;
-use sea_query::{Alias, Cond, Expr, ExprTrait as _, Query};
+use sea_query::{Cond, Expr, ExprTrait as _};
 
 use super::source::reach_condition;
 use super::{CompileError, Compiler};
 use crate::schema::IssueRow;
-use crate::text_index::{TextMatch, TextScope, TextSearch, text_matches};
+use crate::text_index::{TextScope, TextSearch, text_issues, text_of_issue};
 
 impl Compiler<'_> {
     /// The issues whose text, in the part the field stands for, has every word of `text`.
@@ -39,22 +39,34 @@ impl Compiler<'_> {
         Ok(cond)
     }
 
-    /// The issues that have every word of `text` in the texts of the scope: a test on `issue.id`
-    /// inside the statement that starts from the sight, so the comments and the file names of an
-    /// issue the person does not read are never found.
+    /// The issues that have every word of `text` in the texts of the scope, a test in the
+    /// statement that starts from the sight, so the comments and the file names of an issue the
+    /// person does not read are never found. A page is cut after the first rows, so there the
+    /// issues are asked about one at a time (`EXISTS`, which stops at the first one that has the
+    /// words); a count or the groups ask about all of them (`IN`, the set made once).
     pub(super) fn words_in(&self, scope: TextScope, text: &str) -> Cond {
         let words = search_words(text);
-        let matched = text_matches(
-            self.dialect,
-            &TextSearch {
-                words: &words,
-                scope,
-            },
-        );
-        let mut found = Query::select();
-        found
-            .column(Alias::new(TextMatch::ISSUE))
-            .from_subquery(matched.select, Alias::new("text_hit"));
-        Cond::all().add(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(found))
+        let search = TextSearch {
+            words: &words,
+            scope,
+        };
+        if self.paged {
+            self.words_of_issue(scope, text)
+        } else {
+            let issue = Expr::col((IssueRow::Table, IssueRow::Id));
+            Cond::all().add(issue.in_subquery(text_issues(self.dialect, &search)))
+        }
+    }
+
+    /// The same asked of the issue of the statement, one at a time (also for a key of the order,
+    /// which is read for the issue it orders).
+    pub(super) fn words_of_issue(&self, scope: TextScope, text: &str) -> Cond {
+        let words = search_words(text);
+        let search = TextSearch {
+            words: &words,
+            scope,
+        };
+        let issue = Expr::col((IssueRow::Table, IssueRow::Id));
+        Cond::all().add(Expr::exists(text_of_issue(self.dialect, &search, issue)))
     }
 }

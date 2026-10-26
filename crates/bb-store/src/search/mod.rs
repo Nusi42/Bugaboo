@@ -62,6 +62,8 @@ impl std::fmt::Display for CompileError {
 pub(crate) struct Compiler<'a> {
     pub(crate) request: &'a SearchRequest,
     pub(crate) dialect: Dialect,
+    /// Whether the statement is a page, which is cut after its first rows (see `words_in`).
+    pub(crate) paged: bool,
     tables: RefCell<Vec<CommonTableExpression>>,
 }
 
@@ -70,8 +72,15 @@ impl<'a> Compiler<'a> {
         Self {
             request,
             dialect,
+            paged: false,
             tables: RefCell::new(Vec::new()),
         }
+    }
+
+    /// The compiler of a statement that is a page.
+    pub(crate) const fn paged(mut self) -> Self {
+        self.paged = true;
+        self
     }
 
     /// What the word reads. The word of a field that is not among the readable ones cannot be
