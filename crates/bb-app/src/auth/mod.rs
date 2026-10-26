@@ -61,7 +61,7 @@ use crate::follow::{
 use crate::history::{HistoryPage, HistoryQuery, history};
 use crate::issues::{
     AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, CreateIssue,
-    CreateIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView,
+    CreateIssueType, DeleteIssue, IssueDetail, IssueQuery, IssueTypePage, IssueTypeView,
     IssueTypesQuery, IssueView, IssuesQuery, MoveIssue, RestoreIssue, SaveDescription,
     assignable_people, change_issue, change_issue_type, create_issue, create_issue_type,
     delete_issue, issue, issue_types, issues, move_issue, restore_issue, save_description,
@@ -429,7 +429,7 @@ use_cases! {
     /// Changes where an issue type or a group of labels is offered.
     change_offers(ChangeOffers) -> Authorized<Offers>;
     /// Lists the issues of a project a person sees.
-    issues(IssuesQuery) -> Authorized<IssuePage>;
+    issues(IssuesQuery) -> Authorized<SearchPage>;
     /// A page of the issues a search finds, in the projects the person sees.
     search(SearchQuery) -> Authorized<SearchPage>;
     /// How many issues a search finds.

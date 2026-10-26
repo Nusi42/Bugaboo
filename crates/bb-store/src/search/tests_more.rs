@@ -348,3 +348,54 @@ async fn qry_04_a_day_of_twenty_three_hours_is_a_day_in_the_zone_of_the_person()
     })
     .await
 }
+
+#[tokio::test]
+async fn qry_05_the_list_of_a_project_never_shows_an_issue_of_a_hidden_type() -> TestResult {
+    each_database("search_list_hidden_type", async |db| {
+        let fixture = fixture(db).await?;
+        let data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        // The list of a project is the search with its sight, newest first.
+        let mut list = request(&data, "", None, 100);
+        let shown = storage
+            .search_page(&list)
+            .await
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(shown.len(), 6);
+        assert!(
+            shown
+                .windows(2)
+                .all(|pair| pair[0].issue.created_at >= pair[1].issue.created_at)
+        );
+        // Where the sight hides the type, not one issue of it is listed.
+        list.sight.hidden = vec![(data.project, data.issue_type)];
+        let none = storage
+            .search_page(&list)
+            .await
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(none.is_empty(), "{}", none.len());
+        // The dump of the sample data asks for a whole project in pages and reads each issue once.
+        let mut seen = Vec::new();
+        let mut after = None;
+        loop {
+            let request = bb_app::search::SearchRequest::whole_project(data.project, after, 4)
+                .map_err(|mistakes| format!("{mistakes:?}"))?;
+            let page = storage
+                .search_page(&request)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            after = page.last().map(|hit| hit.issue.id);
+            let full = page.len() == 4;
+            seen.extend(page.into_iter().map(|hit| hit.issue.id));
+            if !full {
+                break;
+            }
+        }
+        assert_eq!(seen.len(), 6);
+        seen.sort();
+        seen.dedup();
+        assert_eq!(seen.len(), 6);
+        Ok(())
+    })
+    .await
+}

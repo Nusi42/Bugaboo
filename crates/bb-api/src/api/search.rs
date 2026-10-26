@@ -271,16 +271,26 @@ async fn search_issues(
         .await
         .map_err(cursor_error)?;
     bad_cursor?;
+    issue_page_answer(&list, page, &params)
+}
+
+/// The answer of a page of issues, each with the rights of its own project: the list of a project
+/// and a search over many projects make it the same way.
+pub(super) fn issue_page_answer(
+    list: &str,
+    page: Authorized<SearchPage>,
+    params: &ListParams,
+) -> Result<Response, ApiError> {
     let (items, next) = unpack(page);
     let items: Vec<Authorized<IssueItem>> = items
         .into_iter()
         .map(|each| each.map(|view| IssueItem::from(&view)))
         .collect();
     Ok(super::auth::answer(Page::of_authorized_items(
-        &list,
+        list,
         &items,
         next.as_deref(),
-        &params,
+        params,
         &ISSUE_FIELDS,
     )?))
 }

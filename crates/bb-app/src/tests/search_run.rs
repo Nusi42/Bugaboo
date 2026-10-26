@@ -542,3 +542,47 @@ async fn qry_05_the_projects_an_own_field_reaches_are_told_to_the_store() -> Out
     assert_eq!(reach.issue_types, None);
     Ok(())
 }
+
+#[tokio::test]
+async fn qry_05_the_list_of_a_project_is_the_search_within_it() -> Outcome {
+    let g = groups().await?;
+    let issue = issue_of(&g.world, g.sub).await?;
+    g.world.store.lock().search_hits = vec![hit(issue.clone())];
+    let list = |assigned_to| crate::issues::IssuesQuery {
+        session_token: g.lead.clone(),
+        project: g.acme.to_string(),
+        assigned_to,
+        cursor: None,
+        limit: 10,
+    };
+    let page = crate::issues::issues(&g.world.ctx(), list(false))
+        .await
+        .map_err(|error| format!("{error:?}"))?
+        .into_value();
+    // An issue of a project below the one asked for is in the list (ADR-0034 decision 6).
+    assert_eq!(page.items.len(), 1);
+    assert!(page.next_cursor.is_none());
+    let seen = g.world.store.lock().searches.clone();
+    assert_eq!(seen.len(), 1);
+    assert_eq!(seen[0].search, empty_search());
+    assert!(seen[0].projects.iter().any(|each| each.id == g.acme));
+    // A project the person does not see is not found, as one that does not exist.
+    let other = crate::issues::IssuesQuery {
+        project: g.other.to_string(),
+        ..list(false)
+    };
+    let refused = crate::issues::issues(&g.world.ctx(), other).await;
+    assert!(matches!(
+        refused,
+        Err(AppError::Refused(ErrorCode::NotFound))
+    ));
+    assert_eq!(g.world.store.lock().searches.len(), 1);
+    Ok(())
+}
+
+/// The search of the empty text, which finds everything.
+fn empty_search() -> bb_searchlang::CheckedSearch {
+    let readable = bb_searchlang::ReadableFields::default();
+    let parsed = bb_searchlang::parse_with("", &readable).unwrap();
+    bb_searchlang::check(parsed, &readable).unwrap()
+}

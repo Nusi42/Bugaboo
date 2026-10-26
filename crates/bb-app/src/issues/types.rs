@@ -257,17 +257,6 @@ pub struct IssueDetail {
     pub changeable: Vec<FieldKey>,
 }
 
-/// A page of issues.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Masked)]
-pub struct IssuePage {
-    /// The issues, newest first.
-    #[masked(nested)]
-    pub items: Vec<IssueView>,
-    /// The cursor of the next page, if there is one.
-    #[masked(open)]
-    pub next_cursor: Option<String>,
-}
-
 /// Make an issue type.
 pub struct CreateIssueType {
     /// The secret of the session of the request.

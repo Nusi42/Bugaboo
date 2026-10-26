@@ -2,7 +2,7 @@
 //! and the codes of their readable IDs.
 
 use bb_core::event::DomainEvent;
-use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
 use bb_core::readable_id::IssueCode;
 use jiff::Timestamp;
@@ -106,31 +106,6 @@ impl IssueStore for FakeStore {
                 .iter()
                 .find(|found| found.id == id)
                 .cloned()
-        }))
-    }
-
-    async fn issues_page(
-        &self,
-        project: ProjectId,
-        reported_by: Option<UserId>,
-        before: Option<IssueId>,
-        limit: u64,
-    ) -> Result<Vec<Issue>, FakeError> {
-        Ok(self.read(|state| {
-            let mut found: Vec<Issue> = state
-                .issues
-                .iter()
-                .filter(|issue| {
-                    issue.project == project
-                        && issue.deleted_at.is_none()
-                        && reported_by.is_none_or(|person| issue.reported_by == person)
-                        && before.is_none_or(|before| issue.id < before)
-                })
-                .cloned()
-                .collect();
-            found.sort_by_key(|issue| std::cmp::Reverse(issue.id));
-            found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-            found
         }))
     }
 

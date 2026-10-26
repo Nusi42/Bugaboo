@@ -198,3 +198,44 @@ pub trait SearchStore: IssueStore + 'static {
         by: &str,
     ) -> impl Future<Output = Result<Vec<GroupCount>, SearchFailure>> + Send;
 }
+
+impl SearchRequest {
+    /// Every issue of one project that is not in the trash, newest first, for a program that reads
+    /// the issues of the whole product and has no person to ask for (the dump of the sample data):
+    /// the same statement as the list of a project, with the sight of the whole project.
+    ///
+    /// # Errors
+    /// The empty text is read and checked like any search; it never has a mistake.
+    pub fn whole_project(
+        project: ProjectId,
+        after: Option<IssueId>,
+        limit: u64,
+    ) -> Result<Self, Vec<bb_searchlang::Mistake>> {
+        let readable = bb_searchlang::ReadableFields::default();
+        // The empty text is a search that finds everything, whatever the fields.
+        let parsed = bb_searchlang::parse_with("", &readable).map_err(|mistake| vec![mistake])?;
+        let search = bb_searchlang::check(parsed, &readable)?;
+        let nobody = UserId::from_random([0; 16]);
+        Ok(Self {
+            search,
+            fields: Vec::new(),
+            sight: IssueSight {
+                all: vec![project],
+                own: Vec::new(),
+                person: nobody,
+                hidden: Vec::new(),
+                with_trashed: false,
+            },
+            me: nobody,
+            now: Timestamp::UNIX_EPOCH,
+            zone: TimeZone::UTC,
+            projects: Vec::new(),
+            names: Names::default(),
+            status_groups: Vec::new(),
+            blocking_kinds: Vec::new(),
+            own_reach: Vec::new(),
+            after,
+            limit,
+        })
+    }
+}

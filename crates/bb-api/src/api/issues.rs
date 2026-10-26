@@ -340,12 +340,7 @@ async fn list_issues(
         .await
         .map_err(super::access_bodies::cursor_error)?;
     bad_cursor?;
-    let list = page.map(|page| Listed {
-        items: page.items.iter().map(IssueItem::from).collect(),
-        next: page.next_cursor,
-    });
-    let fields = params.fields_readable(&ISSUE_FIELDS, &list.hidden_properties())?;
-    Ok(answer(Page::of_authorized(ISSUES_LIST, &list, &fields)?))
+    super::search::issue_page_answer(ISSUES_LIST, page, &params)
 }
 
 /// What the list of people is for besides *Assigned to*.

@@ -7,7 +7,7 @@
 use std::future::Future;
 
 use bb_core::event::DomainEvent;
-use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
 use bb_core::readable_id::IssueCode;
 use bb_core::workflow::StatusKey;
@@ -64,15 +64,6 @@ pub trait IssueStore: ProjectStore + 'static {
     reads! {
         /// The issue type with this ID.
         fn issue_type(id: IssueTypeId) -> Option<IssueType>;
-        /// A page of the issues of a project that are not in the trash, newest first: the ones
-        /// before `before` (the last of the page before), only the ones `reported_by` reported
-        /// when it is given, at most `limit`.
-        fn issues_page(
-            project: ProjectId,
-            reported_by: Option<UserId>,
-            before: Option<IssueId>,
-            limit: u64
-        ) -> Vec<Issue>;
         /// The people the issues are assigned to, for a page of issues at once.
         fn assigned_people_of(issues: &[IssueId]) -> Vec<AssignedPerson>;
     }

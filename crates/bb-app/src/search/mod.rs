@@ -14,6 +14,7 @@ pub use request::{
     GroupCount, GroupKey, Names, OwnReach, ProjectLink, SearchFailure, SearchHit, SearchRequest,
     SearchStore, UnknownName,
 };
+pub(crate) use run::search_page;
 pub use run::{
     SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,
     ShownKey, search, search_count, search_groups,

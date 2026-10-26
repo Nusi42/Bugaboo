@@ -359,33 +359,6 @@ impl IssueStore for AuthStorage {
             .transpose()
     }
 
-    async fn issues_page(
-        &self,
-        project: ProjectId,
-        reported_by: Option<UserId>,
-        before: Option<IssueId>,
-        limit: u64,
-    ) -> Result<Vec<Issue>, StoreError> {
-        let mut select = issue_select();
-        select
-            .and_where(Expr::col(IssueRow::Project).eq(project.stored()))
-            .and_where(Expr::col(IssueRow::DeletedAt).is_null())
-            .order_by(IssueRow::Id, Order::Desc)
-            .limit(limit);
-        if let Some(person) = reported_by {
-            select.and_where(Expr::col(IssueRow::ReportedBy).eq(person.stored()));
-        }
-        if let Some(before) = before {
-            select.and_where(Expr::col(IssueRow::Id).lt(before.stored()));
-        }
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_issue)
-            .collect()
-    }
-
     async fn assigned_people_of(
         &self,
         issues: &[IssueId],

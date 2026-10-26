@@ -14,6 +14,7 @@ use bb_app::fields::FieldStore as _;
 use bb_app::issues::IssueStore as _;
 use bb_app::projects::ProjectStore as _;
 use bb_app::relations::RelationStore as _;
+use bb_app::search::{SearchRequest, SearchStore as _};
 use bb_app::tags::TagStore as _;
 use bb_core::event::{DomainEvent, EntityKind, RecordKind};
 use bb_core::id::{EntityId, IssueId, ProjectId};
@@ -115,7 +116,15 @@ impl Sample {
             };
             let mut before = None;
             loop {
-                let page = storage.issues_page(*id, None, before, PAGE).await?;
+                let request = SearchRequest::whole_project(*id, before, PAGE)
+                    .map_err(|mistakes| SampleError::Store(format!("{mistakes:?}")))?;
+                let page: Vec<Issue> = storage
+                    .search_page(&request)
+                    .await
+                    .map_err(|failure| SampleError::Store(format!("{failure:?}")))?
+                    .into_iter()
+                    .map(|hit| hit.issue)
+                    .collect();
                 before = page.last().map(|issue| issue.id);
                 let full = page.len() as u64 == PAGE;
                 for issue in page {

@@ -6,25 +6,20 @@
 //! *See issues* a person sees the issues they reported. No answer holds a count (PRIV-13): a page
 //! has a cursor, never a total.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, UserId};
-use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::readable_id::ReadableId;
-use bb_policy::{Authorized, Permission, Place};
+use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
 
 use super::fields::CHANGEABLE;
 use super::store::IssueFound;
-use super::types::{IssueDetail, IssuePage, IssueQuery, IssuesQuery};
-use super::views::PagePlace;
+use super::types::{IssueDetail, IssueQuery, IssuesQuery};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::Item;
-use crate::input::cursor_or_invalid;
+use crate::search::{SearchPage, SearchQuery, SearchScope, search_page};
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The issue an address names: its internal ID, or a readable ID (the code now or an old
@@ -121,13 +116,9 @@ pub async fn issue<S: AuthStore>(
     }))
 }
 
-/// Where a page ends: the ID of the last issue, which the next page starts before (newest first).
-fn write_cursor(last: &bb_core::issue::Issue) -> String {
-    last.id.to_string()
-}
-
-/// The issues of a project the person sees, newest first, a page at a time. Without *See issues*
-/// the person sees the issues they reported.
+/// The issues of a project the person sees and of the projects below it that they see, newest
+/// first, a page at a time: the search with `within` (ADR-0034 decision 6). Where the person has no
+/// *See issues* they see the issues they reported.
 ///
 /// # Errors
 /// `resource.not-found` for a project that does not exist or that the person may not see,
@@ -135,7 +126,7 @@ fn write_cursor(last: &bb_core::issue::Issue) -> String {
 pub async fn issues<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: IssuesQuery,
-) -> Result<Authorized<IssuePage>, AppError> {
+) -> Result<Authorized<SearchPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let found = ctx.find_project(&input.project).await?;
     let place = found.as_ref().map_or(Place::Organization, |found| {
@@ -148,31 +139,14 @@ pub async fn issues<S: AuthStore>(
     else {
         return Err(AppError::Refused(ErrorCode::NotFound));
     };
-    let before = cursor_or_invalid(input.cursor.as_deref(), |text| text.parse::<IssueId>().ok())?;
-    let limit = page_len(Some(input.limit));
-    let reported_by = (!held.allows(Permission::SeeIssues)).then_some(actor.person.id);
-    let found = ctx
-        .store()
-        .issues_page(project.id, reported_by, before, read_len(limit))
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let page = Cut::of(found, limit);
-    let next_cursor = page.next_cursor(write_cursor);
-    let places = HashMap::from([(
-        project.id,
-        PagePlace {
-            chain: ctx.chain_of(project.id).await?,
-            held: Arc::clone(&held),
-            project,
-        },
-    )]);
+    let query = SearchQuery {
+        session_token: input.session_token,
+        text: String::new(),
+        scope: SearchScope::Within(project.id),
+        cursor: input.cursor,
+        limit: input.limit,
+    };
     // Always read: a status change may name the person assigned. The people are in the answer only
     // when they were asked for.
-    let items = ctx
-        .issue_items(&actor, &page.items, &places, input.assigned_to)
-        .await?
-        .into_iter()
-        .map(|(_, view)| view)
-        .collect();
-    Ok(held.authorize(IssuePage { items, next_cursor }))
+    search_page(ctx, &actor, &query, input.assigned_to).await
 }

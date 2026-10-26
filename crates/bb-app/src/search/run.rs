@@ -214,7 +214,21 @@ pub async fn search<S: AuthStore + SearchStore>(
     query: SearchQuery,
 ) -> Result<Authorized<SearchPage>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
-    let mut prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
+    search_page(ctx, &actor, &query, true).await
+}
+
+/// The page of a search for a person who is known already; the people each issue is assigned to
+/// are read only when `with_people`. The list of a project is this too, with `within`.
+///
+/// # Errors
+/// As [`search`].
+pub(crate) async fn search_page<S: AuthStore + SearchStore>(
+    ctx: &Ctx<'_, S>,
+    actor: &Actor,
+    query: &SearchQuery,
+    with_people: bool,
+) -> Result<Authorized<SearchPage>, AppError> {
+    let mut prepared = ctx.prepare_search(actor, &query.text, query.scope).await?;
     let len = page_len(Some(query.limit));
     prepared.request.limit = read_len(len);
     // A cursor is the ID of the last issue of the page before: the store reads its place in the
@@ -248,12 +262,12 @@ pub async fn search<S: AuthStore + SearchStore>(
         .collect();
     let issues: Vec<_> = page.items.iter().map(|hit| hit.issue.clone()).collect();
     let items = ctx
-        .issue_items(&actor, &issues, &places, true)
+        .issue_items(actor, &issues, &places, with_people)
         .await?
         .into_iter()
         .map(|(held, view)| held.authorize(view))
         .collect();
-    let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
+    let organization = ctx.evaluation_of(actor, Where::Organization).await?;
     Ok(organization.authorize(SearchPage { items, next_cursor }))
 }
 
