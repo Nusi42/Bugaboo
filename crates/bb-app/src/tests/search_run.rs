@@ -252,3 +252,34 @@ async fn qry_05_the_count_comes_from_the_same_search() -> Outcome {
     assert_eq!(counted.into_value().issues, 1);
     Ok(())
 }
+
+/// The reads the store answers while a page of issues from `projects` projects is made.
+async fn reads_for_a_page_over(projects: usize) -> Result<usize, String> {
+    let world = World::new().await?;
+    let mut hits = Vec::new();
+    for number in 0..projects {
+        let project = a_project(&world, &format!("PR{number}")).await?;
+        hits.push(hit(issue_of(&world, project).await?));
+    }
+    world.store.lock().search_hits = hits;
+    let admin = token(&world);
+    let before = world.store.reads();
+    let query = SearchQuery {
+        limit: 100,
+        ..asked(&admin, "")
+    };
+    let page = search(&world.ctx(), query)
+        .await
+        .map_err(|error| format!("{error:?}"))?
+        .into_value();
+    assert_eq!(page.items.len(), projects);
+    Ok(world.store.reads() - before)
+}
+
+#[tokio::test]
+async fn perf_n1_a_page_over_many_projects_reads_as_much_as_one_over_few() -> Outcome {
+    let few = reads_for_a_page_over(2).await?;
+    let many = reads_for_a_page_over(6).await?;
+    assert_eq!(few, many, "reads grow with the projects of a page");
+    Ok(())
+}

@@ -29,7 +29,6 @@ mod store;
 mod types;
 mod views;
 mod visible;
-pub(crate) use views::IssueViews;
 pub(crate) use visible::{Where, seen_by};
 
 pub use assigned_people::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};

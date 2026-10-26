@@ -9,8 +9,10 @@
 //! rules of the person, and handed to the store as data.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::{IssueId, ProjectId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::tags::IssueSight;
@@ -242,24 +244,54 @@ pub async fn search<S: AuthStore + SearchStore>(
         .assigned_people_of(&ids)
         .await
         .map_err(|error| internal::<S>(&error))?;
+    // Everything the views of the whole page need is read here once, whatever the number of
+    // projects the page spans: the rights and the chain of each project come from the tree the
+    // person's view already holds, the types and the workflows from the caches of the request, and
+    // the values of own fields of all the issues in one read (PERF-N1).
+    let values = ctx
+        .load_values(
+            RecordKind::Issue,
+            &ids.iter().map(|id| (*id).into()).collect::<Vec<_>>(),
+        )
+        .await?;
+    let places: HashMap<ProjectId, _> = prepared
+        .looked
+        .seen
+        .seen_places(None)
+        .into_iter()
+        .filter_map(|(chain, held)| Some((*chain.last()?, (chain, held))))
+        .collect();
     let mut views = HashMap::new();
     let mut items = Vec::with_capacity(page.items.len());
     for hit in &page.items {
         let project = hit.issue.project;
-        let (held, shown) = match views.remove(&project) {
-            Some(each) => each,
-            None => ctx.views_in(&actor, &prepared.looked, project).await?,
+        if !views.contains_key(&project) {
+            let (chain, held) = places
+                .get(&project)
+                .cloned()
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+            let stored = prepared
+                .looked
+                .seen
+                .stored(project)
+                .cloned()
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+            let made = ctx
+                .issue_views(&actor, Arc::clone(&held), stored)
+                .await?
+                .with_page(chain, values.clone());
+            views.insert(project, (held, made));
+        }
+        let Some((held, shown)) = views.get_mut(&project) else {
+            continue;
         };
-        let (held, mut shown) = (held, shown);
         let people: Vec<_> = assigned
             .iter()
             .filter(|each| each.issue == hit.issue.id)
             .map(|each| each.person)
             .collect();
-        ctx.preload_values(&mut shown, &[hit.issue.id]).await?;
-        let view = ctx.issue_view(&mut shown, &hit.issue, &people).await?;
+        let view = ctx.issue_view(shown, &hit.issue, &people).await?;
         items.push(held.authorize(view));
-        views.insert(project, (held, shown));
     }
     let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
     Ok(organization.authorize(SearchPage { items, next_cursor }))
@@ -313,31 +345,6 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The rights of the person in a project and the views of its issues.
-    async fn views_in(
-        &self,
-        actor: &Actor,
-        looked: &Looked,
-        project: ProjectId,
-    ) -> Result<
-        (
-            std::sync::Arc<bb_policy::Evaluation>,
-            crate::issues::IssueViews,
-        ),
-        AppError,
-    > {
-        let held = self.evaluation_of(actor, Where::Project(project)).await?;
-        let stored = looked
-            .seen
-            .stored(project)
-            .cloned()
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        let views = self
-            .issue_views(actor, std::sync::Arc::clone(&held), stored)
-            .await?;
-        Ok((held, views))
-    }
-
     /// The kinds of relation that mean *blocks*: those whose forward name is the starting one.
     async fn blocking_kinds(&self) -> Result<Vec<bb_core::id::RelationKindId>, AppError> {
         let blocks =

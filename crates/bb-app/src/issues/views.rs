@@ -16,7 +16,7 @@ use bb_policy::{Evaluation, PeopleContext, PersonRef};
 
 use super::types::{IssueTypeRef, IssueView};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx};
 use crate::fields::ItemValues;
 use crate::projects::ProjectRef;
 use crate::workflows::{StatusChangeView, StatusCheck, StatusView};
@@ -41,6 +41,16 @@ pub(crate) struct IssueViews {
 }
 
 impl IssueViews {
+    /// Gives the views what the page has read already, so they read nothing of their own: the
+    /// projects from the top down to the project, and the values of own fields of all the issues
+    /// of the page (a page over many projects costs the same statements as one over a single
+    /// project).
+    pub(crate) fn with_page(mut self, chain: Vec<ProjectId>, values: ItemValues) -> Self {
+        self.chain = Some(chain);
+        self.values = values;
+        self
+    }
+
     /// Leaves the people an issue is assigned to out of the views.
     pub(crate) const fn without_people(mut self) -> Self {
         self.show_people = false;
@@ -60,10 +70,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         // Every type is read to name the type of an issue the viewer reads: a type in use on an
         // issue they read is known to them (`offers/known.rs`), and no other name is given out.
         let types = self
-            .store()
-            .issue_types()
-            .await
-            .map_err(|error| internal::<S>(&error))?
+            .all_issue_types()
+            .await?
             .iter()
             .map(|found| (found.id, IssueTypeRef::from(found)))
             .collect();
