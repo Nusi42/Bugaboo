@@ -100,56 +100,57 @@ async fn sec_17_a_search_text_with_a_walk_in_front_never_becomes_sql() -> TestRe
     .await
 }
 
+/// A count that has to go through `up_to` numbers.
+fn counting(up_to: i64) -> sea_query::WithQuery {
+    use sea_query::{
+        Alias, CommonTableExpression, Expr, ExprTrait as _, Func, Query, UnionType, WithClause,
+    };
+    let numbers = Alias::new("numbers");
+    let mut first = Query::select();
+    first.expr(Expr::val(1_i64));
+    let mut next = Query::select();
+    next.expr(Expr::col(Alias::new("n")).add(1_i64))
+        .from(numbers.clone())
+        .and_where(Expr::col(Alias::new("n")).lt(up_to));
+    first.union(UnionType::All, next);
+    let mut table = CommonTableExpression::new();
+    table
+        .table_name(numbers.clone())
+        .columns([Alias::new("n")])
+        .query(first);
+    let mut clause = WithClause::new();
+    clause.recursive(true).cte(table);
+    let mut count = Query::select();
+    count
+        .expr(Func::count(Expr::col(Alias::new("n"))))
+        .from(numbers);
+    count.with(clause)
+}
+
 #[tokio::test]
 async fn sec_17_a_search_that_is_dropped_leaves_no_limit_on_the_connection() -> TestResult {
     use std::time::Duration;
 
-    use sea_query::{
-        Alias, CommonTableExpression, Expr, ExprTrait as _, Func, Query, UnionType, WithClause,
-    };
-    each_database("search_dropped", async |db| {
-        let fixture = fixture(db).await?;
-        let database = fixture.storage.database();
-        let numbers = Alias::new("numbers");
-        let counting = |up_to: i64| {
-            let mut first = Query::select();
-            first.expr(Expr::val(1_i64));
-            let mut next = Query::select();
-            next.expr(Expr::col(Alias::new("n")).add(1_i64))
-                .from(numbers.clone())
-                .and_where(Expr::col(Alias::new("n")).lt(up_to));
-            first.union(UnionType::All, next);
-            let mut table = CommonTableExpression::new();
-            table
-                .table_name(numbers.clone())
-                .columns([Alias::new("n")])
-                .query(first);
-            let mut clause = WithClause::new();
-            clause.recursive(true).cte(table);
-            let mut count = Query::select();
-            count
-                .expr(Func::count(Expr::col(Alias::new("n"))))
-                .from(numbers.clone());
-            count.with(clause)
-        };
-        let slow = counting(2_000_000_000);
-        // The future is dropped while the read runs, as when a client goes away.
-        let dropped = tokio::time::timeout(
-            Duration::from_millis(100),
-            database.fetch_all_within(&slow, Duration::from_millis(300)),
-        )
-        .await;
-        assert!(dropped.is_err(), "the read should still be running");
-        // After the time of the dropped read is over, a long read on the same pool is not stopped.
-        tokio::time::sleep(Duration::from_millis(600)).await;
-        let long = counting(3_000_000);
-        for _ in 0..4 {
-            let rows = database.fetch_all(&long).await?;
-            assert_eq!(rows.len(), 1);
-        }
-        Ok(())
-    })
-    .await
+    use crate::Database;
+
+    // A pool of one connection: the connection the dropped read used is the one the next read gets.
+    let folder = tempfile::tempdir()?;
+    let database = Database::single_connection(&folder.path().join("one.db")).await?;
+    let slow = counting(2_000_000_000);
+    // The future is dropped while the read runs, as when a client goes away.
+    let dropped = tokio::time::timeout(
+        Duration::from_millis(100),
+        database.fetch_all_within(&slow, Duration::from_millis(300)),
+    )
+    .await;
+    assert!(dropped.is_err(), "the read should still be running");
+    // After the time of the dropped read is over, a long read on the same connection is not stopped.
+    tokio::time::sleep(Duration::from_millis(600)).await;
+    for _ in 0..3 {
+        let rows = database.fetch_all(&counting(3_000_000)).await?;
+        assert_eq!(rows.len(), 1);
+    }
+    Ok(())
 }
 
 /// A text field *Rack*, and a second project OTHER with an issue *Outside*; the issue *Printer jams*

@@ -122,13 +122,41 @@ const SQLITE_INTERRUPT: &str = "9";
 /// How many steps of its virtual machine SQLite takes between two looks at the clock.
 const PROGRESS_STEPS: i32 = 1_000;
 
-/// Says that a timed read is over, when it is dropped: the progress handler of a read looks at it.
-#[derive(Default)]
-struct Over(Arc<AtomicBool>);
+/// A pooled SQLite connection while a timed read runs on it. If the read does not end normally (the
+/// future is dropped, a client went away) the read is told to stop at its next step and the
+/// connection is closed instead of going back to the pool, so no limit of a read that is gone can
+/// stop a later statement of anybody else.
+struct Timed {
+    connection: Option<sqlx::pool::PoolConnection<Sqlite>>,
+    cancelled: Arc<AtomicBool>,
+    finished: bool,
+}
 
-impl Drop for Over {
+impl Timed {
+    fn new(connection: sqlx::pool::PoolConnection<Sqlite>) -> Self {
+        Self {
+            connection: Some(connection),
+            cancelled: Arc::default(),
+            finished: false,
+        }
+    }
+
+    /// The connection, which is there until the guard is dropped.
+    fn connection(&mut self) -> Result<&mut sqlx::pool::PoolConnection<Sqlite>, StoreError> {
+        self.connection
+            .as_mut()
+            .ok_or(StoreError::Corrupt("a connection"))
+    }
+}
+
+impl Drop for Timed {
     fn drop(&mut self) {
-        self.0.store(true, Ordering::Relaxed);
+        if !self.finished {
+            self.cancelled.store(true, Ordering::Relaxed);
+            if let Some(connection) = self.connection.as_mut() {
+                connection.close_on_drop();
+            }
+        }
     }
 }
 
@@ -197,6 +225,24 @@ impl Database {
         create_private_file(file)?;
         Ok(Self {
             pool: Pool::Sqlite(open_sqlite(SqliteConnectOptions::new().filename(file)).await?),
+            statements: Arc::default(),
+        })
+    }
+
+    /// A SQLite database with a pool of one connection, so a test gets the same connection back
+    /// every time it asks for one.
+    #[cfg(test)]
+    pub(crate) async fn single_connection(file: &std::path::Path) -> Result<Self, StoreError> {
+        let options = SqliteConnectOptions::new()
+            .filename(file)
+            .create_if_missing(true);
+        Ok(Self {
+            pool: Pool::Sqlite(
+                SqlitePoolOptions::new()
+                    .max_connections(1)
+                    .connect_with(options)
+                    .await?,
+            ),
             statements: Arc::default(),
         })
     }
@@ -328,24 +374,25 @@ impl Database {
         match &self.pool {
             Pool::Sqlite(pool) => {
                 let (sql, values) = statement.build(Dialect::Sqlite);
-                let mut connection = pool.acquire().await?;
+                let mut timed = Timed::new(pool.acquire().await?);
                 let deadline = Instant::now() + limit;
-                // The handler stops nothing once the read is over for any reason, also when this
-                // future is dropped half way (a client that went away): the guard says so, and
-                // the connection goes back to the pool harmless even if the handler is still on.
-                let over = Over::default();
-                let watching = Arc::clone(&over.0);
-                connection
+                let cancelled = Arc::clone(&timed.cancelled);
+                timed
+                    .connection()?
                     .lock_handle()
                     .await?
                     .set_progress_handler(PROGRESS_STEPS, move || {
-                        watching.load(Ordering::Relaxed) || Instant::now() < deadline
+                        !cancelled.load(Ordering::Relaxed) && Instant::now() < deadline
                     });
                 let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(&mut *connection)
+                    .fetch_all(&mut **timed.connection()?)
                     .await;
-                drop(over);
-                connection.lock_handle().await?.remove_progress_handler();
+                timed
+                    .connection()?
+                    .lock_handle()
+                    .await?
+                    .remove_progress_handler();
+                timed.finished = true;
                 Ok(rows
                     .map_err(stopped)?
                     .into_iter()
