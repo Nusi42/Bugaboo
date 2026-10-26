@@ -66,7 +66,7 @@ pub(crate) struct SearchCountBody {
 
 /// The key of a group, by identity or word; a person as the viewer sees them.
 #[derive(Serialize, ToSchema)]
-#[serde(tag = "type", content = "value", rename_all = "snake_case")]
+#[serde(tag = "type", content = "value", rename_all = "kebab-case")]
 pub(crate) enum SearchGroupKeyBody {
     /// The issues without a value.
     Empty,
@@ -120,6 +120,8 @@ pub(crate) struct SearchGroupBody {
 pub(crate) struct SearchGroupsBody {
     /// The groups, the one without a value last.
     groups: Vec<SearchGroupBody>,
+    /// Whether the list was cut off at its cap.
+    truncated: bool,
 }
 
 /// A field the person may search by.
@@ -140,7 +142,12 @@ pub(crate) struct SearchFieldBody {
 pub(crate) struct SearchFieldsBody {
     /// The fields, in the order they are offered.
     fields: Vec<SearchFieldBody>,
+    /// Whether the list was cut off at its cap.
+    truncated: bool,
 }
+
+/// The most fields one answer holds.
+const MAX_FIELDS: usize = 500;
 
 /// The name of a thing as text, from its serialized form (`snake_case` words).
 fn word_of<T: Serialize>(thing: &T) -> String {
@@ -359,6 +366,7 @@ async fn group_searched_issues(
         .await?;
     super::auth::answer_authorized(&found.map(|shown| {
         SearchGroupsBody {
+            truncated: shown.truncated,
             groups: shown
                 .groups
                 .into_iter()
@@ -403,11 +411,14 @@ async fn list_search_fields(
         )
         .await?;
     super::auth::answer_authorized(&found.map(|fields| {
+        let truncated = fields.0.fields.len() > MAX_FIELDS;
         SearchFieldsBody {
+            truncated,
             fields: fields
                 .0
                 .fields
                 .into_iter()
+                .take(MAX_FIELDS)
                 .map(|field| SearchFieldBody {
                     kind: word_of(&field.kind),
                     operators: field.operators.iter().map(word_of).collect(),

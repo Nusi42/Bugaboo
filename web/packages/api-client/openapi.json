@@ -19914,7 +19914,7 @@
       "SearchFieldsBody": {
         "type": "object",
         "description": "The fields the person may search by.",
-        "required": ["fields"],
+        "required": ["fields", "truncated"],
         "properties": {
           "fields": {
             "type": "array",
@@ -19922,6 +19922,10 @@
               "$ref": "#/components/schemas/SearchFieldBody"
             },
             "description": "The fields, in the order they are offered."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the list was cut off at its cap."
           }
         }
       },
@@ -20053,7 +20057,7 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["issue_type"]
+                "enum": ["issue-type"]
               },
               "value": {
                 "type": "string",
@@ -20098,7 +20102,7 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["status_group"]
+                "enum": ["status-group"]
               },
               "value": {
                 "$ref": "#/components/schemas/StatusGroup",
@@ -20142,7 +20146,7 @@
       "SearchGroupsBody": {
         "type": "object",
         "description": "How many issues a search finds in each group of a field.",
-        "required": ["groups"],
+        "required": ["groups", "truncated"],
         "properties": {
           "groups": {
             "type": "array",
@@ -20150,6 +20154,10 @@
               "$ref": "#/components/schemas/SearchGroupBody"
             },
             "description": "The groups, the one without a value last."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the list was cut off at its cap."
           }
         }
       },

@@ -91,7 +91,12 @@ impl Masked for SearchCount {}
 pub struct SearchGroups {
     /// The groups, with the issues without a value last.
     pub groups: Vec<GroupShown>,
+    /// Whether more groups than `MAX_GROUPS` were found and the rest left out.
+    pub truncated: bool,
 }
+
+/// The most groups one answer holds; a field with more values is searched by narrowing the search.
+const MAX_GROUPS: usize = 200;
 
 /// One group of a search, the thing it stands for shown as the person may see it (ADR-0022): a
 /// person as a `PersonRef`, everything else by its identity or word.
@@ -290,11 +295,13 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     {
         return Err(AppError::Refused(ErrorCode::InvalidRequest));
     }
-    let found = ctx
+    let mut found = ctx
         .store()
         .search_groups(&prepared.request, &query.by)
         .await
         .map_err(stopped)?;
+    let truncated = found.len() > MAX_GROUPS;
+    found.truncate(MAX_GROUPS);
     let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
     // The store names a group by identity; a person is shown as the viewer may see them.
     let target = target_of(&prepared.looked.fields, &query.by);
@@ -359,7 +366,7 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
             issues: group.issues,
         });
     }
-    Ok(organization.authorize(SearchGroups { groups }))
+    Ok(organization.authorize(SearchGroups { groups, truncated }))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

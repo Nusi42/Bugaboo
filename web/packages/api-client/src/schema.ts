@@ -7117,6 +7117,8 @@ export interface components {
     SearchFieldsBody: {
       /** @description The fields, in the order they are offered. */
       fields: components["schemas"]["SearchFieldBody"][];
+      /** @description Whether the list was cut off at its cap. */
+      truncated: boolean;
     };
     /** @description One group of a search. */
     SearchGroupBody: {
@@ -7175,7 +7177,7 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          type: "issue_type";
+          type: "issue-type";
           /** @description An issue type, by its ID. */
           value: string;
         }
@@ -7193,7 +7195,7 @@ export interface components {
         }
       | {
           /** @enum {string} */
-          type: "status_group";
+          type: "status-group";
           /** @description A status group. */
           value: components["schemas"]["StatusGroup"];
         }
@@ -7213,6 +7215,8 @@ export interface components {
     SearchGroupsBody: {
       /** @description The groups, the one without a value last. */
       groups: components["schemas"]["SearchGroupBody"][];
+      /** @description Whether the list was cut off at its cap. */
+      truncated: boolean;
     };
     /** @description A thing with a name the person may know. */
     SearchNamedBody: {
