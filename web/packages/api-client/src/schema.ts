@@ -6002,6 +6002,14 @@ export interface components {
      * @enum {string}
      */
     OnlyIfTest: "filled" | "empty";
+    /**
+     * @description A saved search that may be missing: the list a project shows (`null` for the built-in default
+     *     list) and what taking a search out of the trash answers (`null` for somebody who may only take
+     *     it out and may not open it, who is told nothing of its name or text).
+     */
+    OptionalSearchBody: {
+      search: components["schemas"]["SavedSearchItem"] | null;
+    };
     /** @description The change that is about to be made. */
     OwnChangeBody:
       | {
@@ -6759,10 +6767,6 @@ export interface components {
       /** @description `visible` or `hidden`. */
       shown: components["schemas"]["ProjectShown"];
     };
-    /** @description The list a project shows. */
-    ProjectListBody: {
-      search: components["schemas"]["SavedSearchItem"] | null;
-    };
     /** @description The saved search a project shows as its list. */
     ProjectListChoiceBody: {
       /** @description The saved search, shared with the project; `null` for the built-in default list. */
@@ -7052,10 +7056,6 @@ export interface components {
        * @description The version of the role the person looked at; a change made meanwhile stops this one.
        */
       version: number;
-    };
-    /** @description What taking a saved search out of the trash answers. */
-    RestoredSearchBody: {
-      search: components["schemas"]["SavedSearchItem"] | null;
     };
     /**
      * @description A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
@@ -13423,7 +13423,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ProjectListBody"];
+          "application/json": components["schemas"]["OptionalSearchBody"];
         };
       };
       304: components["responses"]["NotModified"];
@@ -13456,7 +13456,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ProjectListBody"];
+          "application/json": components["schemas"]["OptionalSearchBody"];
         };
       };
       400: components["responses"]["BadRequest"];
@@ -14444,7 +14444,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["RestoredSearchBody"];
+          "application/json": components["schemas"]["OptionalSearchBody"];
         };
       };
       401: components["responses"]["NotSignedIn"];

@@ -222,35 +222,25 @@ impl From<&ShareChoice> for ShareChoiceItem {
     }
 }
 
-/// The list a project shows.
+/// A saved search that may be missing: the list a project shows (`null` for the built-in default
+/// list) and what taking a search out of the trash answers (`null` for somebody who may only take
+/// it out and may not open it, who is told nothing of its name or text).
 #[derive(Serialize, ToSchema)]
-pub(crate) struct ProjectListBody {
-    /// The saved search the project chose as its list, when the person may open it; `null` for the
-    /// built-in default list.
+pub(crate) struct OptionalSearchBody {
+    /// The saved search, when the person may open it.
     #[schema(required = true)]
     search: Option<SavedSearchItem>,
 }
 
-impl Masked for ProjectListBody {}
+impl Masked for OptionalSearchBody {}
 
-impl From<&ProjectList> for ProjectListBody {
+impl From<&ProjectList> for OptionalSearchBody {
     fn from(list: &ProjectList) -> Self {
         Self {
             search: list.search.as_ref().map(SavedSearchItem::from),
         }
     }
 }
-
-/// What taking a saved search out of the trash answers.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct RestoredSearchBody {
-    /// The saved search, when it is one the person may open; `null` for somebody who may only take
-    /// it out of the trash (they are told nothing of its name or text).
-    #[schema(required = true)]
-    search: Option<SavedSearchItem>,
-}
-
-impl Masked for RestoredSearchBody {}
 
 /// A search to save.
 #[derive(Deserialize, ToSchema)]

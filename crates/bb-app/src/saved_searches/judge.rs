@@ -140,7 +140,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|filter| named_in(filter, &judge.fields))
             .unwrap_or_default();
         for group in &named.groups {
-            if !self.sees_group(judge, group).await? {
+            if !sees_group(judge, group) {
                 return Ok(None);
             }
         }
@@ -150,13 +150,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         Ok(Some(print(checked.search())))
-    }
-
-    /// Whether the person sees a group of this name: they are in it, or may manage groups.
-    async fn sees_group(&self, judge: &mut Judge<'_>, name: &str) -> Result<bool, AppError> {
-        Ok(judge.groups.iter().any(|group| {
-            same_name(&group.name, name) && (judge.manages_groups || judge.reaching.is_in(group.id))
-        }))
     }
 
     /// Whether the person sees a project with this short name (or an old one).
@@ -175,4 +168,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         judge.projects.insert(short_name.to_owned(), sees);
         Ok(sees)
     }
+}
+
+/// Whether the person sees a group of this name: they are in it, or may manage groups.
+fn sees_group(judge: &Judge<'_>, name: &str) -> bool {
+    judge.groups.iter().any(|group| {
+        same_name(&group.name, name) && (judge.manages_groups || judge.reaching.is_in(group.id))
+    })
 }
