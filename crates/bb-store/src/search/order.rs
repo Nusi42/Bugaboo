@@ -313,7 +313,7 @@ impl Compiler<'_> {
             };
             // With words to find and no order asked for, the issues whose title has the words
             // come first, then the newest, then the ID (ADR-0016, amendment M5, item 5).
-            return Ok(match self.title_hit() {
+            return Ok(match self.title_order() {
                 Some(hit) => vec![hit, newest],
                 None => vec![newest],
             });
@@ -348,37 +348,34 @@ impl Compiler<'_> {
     }
 
     /// The key "the title alone has the words" (1 or 0, never empty) of the first `contains` on its
-    /// own that every issue found must satisfy. It is an expression of the issue like any other
-    /// key, so the store reads its value for the last issue of a page by itself.
-    /// Whether the order of the search is by title hits first: words to find and no order asked
-    /// for.
-    pub(super) fn orders_by_title(&self) -> bool {
+    /// own that every issue found must satisfy, when the search has words to find and no order
+    /// asked for (ADR-0016, amendment M5, item 5). It is an expression of the issue like any other
+    /// key, so the store reads its value for the last issue of a page by itself. The one place that
+    /// decides whether the order is by title hits.
+    fn title_order(&self) -> Option<Key> {
         let search = self.request.search.search();
-        search.sort.is_empty() && search.filter.as_ref().and_then(first_words).is_some()
-    }
-
-    fn title_hit(&self) -> Option<Key> {
-        let text = self
-            .request
-            .search
-            .search()
-            .filter
-            .as_ref()
-            .and_then(first_words)?;
-        let words = bb_core::text_words::search_words(text);
+        if !search.sort.is_empty() {
+            return None;
+        }
+        let text = search.filter.as_ref().and_then(first_words)?;
+        if bb_core::text_words::search_words(text).is_empty() {
+            return None;
+        }
         let in_title = self.words_in(
             crate::text_index::TextScope::Source(bb_core::text_index::TextSource::Title),
             text,
         );
-        if words.is_empty() {
-            return None;
-        }
         Some(Key {
             value: Expr::case(in_title, 1_i64).finally(0_i64).into(),
             kind: Kind::Whole,
             order: Order::Desc,
             always: true,
         })
+    }
+
+    /// Whether the order of the search is by title hits first (the key of `title_order` is there).
+    pub(super) fn orders_by_title(&self) -> bool {
+        self.title_order().is_some()
     }
 
     /// The direction of the ID: that of the last key, so ties keep the direction of the list.
