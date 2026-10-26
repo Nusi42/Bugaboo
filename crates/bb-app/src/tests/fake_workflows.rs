@@ -2,6 +2,7 @@
 
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::Issue;
+use bb_core::version::Version;
 use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 
 use super::fake::{FakeError, FakeStore, Tx};
@@ -137,13 +138,12 @@ impl WorkflowStore for FakeStore {
         id: WorkflowId,
         name: &str,
         content: &WorkflowContent,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
-        let Some(found) = tx
-            .state
-            .workflows
-            .iter_mut()
-            .find(|stored| stored.workflow.id == id && stored.workflow.version == version)
+        let Some(found) =
+            tx.state.workflows.iter_mut().find(|stored| {
+                stored.workflow.id == id && stored.workflow.version == version.get()
+            })
         else {
             return Ok(false);
         };
@@ -153,11 +153,15 @@ impl WorkflowStore for FakeStore {
         Ok(true)
     }
 
-    async fn delete_workflow(tx: &mut Tx, id: WorkflowId, version: i64) -> Result<bool, FakeError> {
+    async fn delete_workflow(
+        tx: &mut Tx,
+        id: WorkflowId,
+        version: Version,
+    ) -> Result<bool, FakeError> {
         let before = tx.state.workflows.len();
-        tx.state
-            .workflows
-            .retain(|stored| !(stored.workflow.id == id && stored.workflow.version == version));
+        tx.state.workflows.retain(|stored| {
+            !(stored.workflow.id == id && stored.workflow.version == version.get())
+        });
         let deleted = tx.state.workflows.len() != before;
         if deleted {
             tx.state.workflow_uses.retain(|used| used.workflow != id);

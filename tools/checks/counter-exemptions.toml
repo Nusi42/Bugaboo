@@ -179,6 +179,16 @@ reason = "Counts the issues in a status that publishing would drop, among them o
 folder = "crates/bb-store/src/dataset.rs"
 reason = "Says where the counter of the counting issue IDs of a project stands after the large dataset wrote its issues in one go; the same counter as in issues.rs, set once (ADR-0021)."
 
+[[exempt]]
+route = "GET /api/v1/search/issues/count"
+property = "issues"
+reason = "Counts only issues the viewer may read: the same statement that finds them starts from the sight of the viewer (ADR-0004), so an issue of a place the viewer may not see is never counted (QRY-05)."
+
+[[exempt]]
+route = "GET /api/v1/search/issues/groups"
+property = "issues"
+reason = "Counts only issues the viewer may see and read: the groups are made by the same statement, which starts from the sight of the viewer (ADR-0004), and a field the viewer may not read is refused instead of grouped (QRY-05)."
+
 [[counting]]
 folder = "crates/bb-store/src/migrations/m0022_text_index.rs"
 reason = "The row number of the index of the text search: a row number that stays when a file is compacted, which the external-content table of SQLite needs. It is never shown, never in an answer and names no public record (ADR-0016)."

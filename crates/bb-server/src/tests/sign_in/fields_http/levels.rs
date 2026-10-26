@@ -132,6 +132,47 @@ async fn reads_nothing_of(
     Ok(detail)
 }
 
+/// The search is no way around a hidden field (M5-F50, SEC-MATRIX *search*): a word held only by
+/// the hidden long text finds nothing, the field is not among those offered, and asking for it
+/// (`notes contains …`, also to sort or group by it) is told like a word that is not there.
+async fn searches_nothing_of(ada: &mut Browser, writer: &mut Browser) -> Result<(), Failure> {
+    let search = |text: &str| format!("/api/v1/search/issues?q={}", text.replace(' ', "%20"));
+    for text in ["notes contains words", "notes is words", "sort by notes"] {
+        let hidden = writer.send("GET", &search(text), None).await?;
+        let missing = writer
+            .send("GET", &search(&text.replace("notes", "nonesuch")), None)
+            .await?;
+        assert_eq!(hidden.code(), "search.invalid", "{text}: {}", hidden.body);
+        assert_eq!(
+            hidden.body["mistakes"][0]["key"], missing.body["mistakes"][0]["key"],
+            "{text}"
+        );
+    }
+    let groups = writer
+        .send("GET", "/api/v1/search/issues/groups?by=notes", None)
+        .await?;
+    assert_eq!(groups.status, StatusCode::BAD_REQUEST, "{}", groups.body);
+    // A `contains` on its own does not look in own fields; and this role does not read the
+    // description either, so it has no such search at all (told as a word that is not there).
+    let bare = writer.send("GET", &search("contains words"), None).await?;
+    assert_eq!(bare.code(), "search.invalid", "{}", bare.body);
+    assert!(!bare.body.to_string().contains("Secret"), "{}", bare.body);
+    let offered = writer.send("GET", "/api/v1/search/fields", None).await?;
+    assert!(
+        !offered.body.to_string().contains("notes"),
+        "{}",
+        offered.body
+    );
+    // Ada, who reads the field, is offered it and may search by it.
+    let hers = ada.send("GET", "/api/v1/search/fields", None).await?;
+    assert!(hers.body.to_string().contains("notes"), "{}", hers.body);
+    let asked = ada
+        .send("GET", &search("notes contains words"), None)
+        .await?;
+    assert_eq!(asked.status, StatusCode::OK, "{}", asked.body);
+    Ok(())
+}
+
 #[tokio::test]
 async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> TestResult {
     each_database("cf_06_hidden", async |db| {
@@ -176,6 +217,7 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
         )
         .await?;
         let detail = reads_nothing_of(&mut ada, &mut writer, &path, (&key, &major, &notes)).await?;
+        searches_nothing_of(&mut ada, &mut writer).await?;
         // A write is refused alike for a hidden field and for one that is not there.
         let version = ok(&detail)?["issue"]["version"].clone();
         let hidden = writer

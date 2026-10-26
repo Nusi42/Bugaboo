@@ -21,7 +21,7 @@ import { titleLabel } from "./support/issues.ts";
 import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 
 // Layouts and role-based forms (CFG-01, ISS-02, ISS-17, M3 WP-09): a project lead opens
-// *Customize this form* from the new-issue dialog, moves *Due date* into a section (by dragging on a
+// *Customize this form* from the new-issue dialog, moves *Review deadline* into a section (by dragging on a
 // computer, with the list and the buttons everywhere), unticks the Guest, and the Guest's form is
 // the short one while a Team member's is the full one.
 
@@ -65,7 +65,7 @@ async function customizeFromDialog(page: Page): Promise<void> {
   ).toBeVisible();
 }
 
-/** Moves *Due date* into the first section: dragged on a computer, from its list elsewhere. */
+/** Moves *Review deadline* into the first section: dragged on a computer, from its list elsewhere. */
 async function moveDueDateIntoSection(page: Page): Promise<void> {
   const available = page.getByRole("list", {
     name: t("layouts.available"),
@@ -95,7 +95,7 @@ async function moveDueDateIntoSection(page: Page): Promise<void> {
   await expect(available.getByText(dueDate, { exact: true })).toHaveCount(0);
 }
 
-/** Unticks the Guest for *Due date* and saves the layout. */
+/** Unticks the Guest for *Review deadline* and saves the layout. */
 async function untickGuestAndSave(page: Page): Promise<void> {
   const roles = rowOf(page, dueDate)
     .last()
@@ -123,7 +123,7 @@ test("cfg_01 a lead customizes the new-issue form, and a Guest gets the short fo
 
   const guest = await anotherBrowser(browser, server);
   await signIn(guest, lea);
-  // The Guest may fill in *Due date*; the layout does not ask for it. (The field is never asked
+  // The Guest may fill in *Review deadline*; the layout does not ask for it. (The field is never asked
   // for, so there is nothing to wait for: the form is there with the description.)
   await expect((await openedForm(guest)).getByLabel(dueDate, { exact: true })).toHaveCount(0);
   const member = await anotherBrowser(browser, server);
@@ -174,7 +174,7 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
   await expect(other.getByRole("button", { name: t("layouts.save"), exact: true })).toBeDisabled();
 });
 
-/** The button that moves *Due date* up in the editor of a layout. */
+/** The button that moves *Review deadline* up in the editor of a layout. */
 function upOf(page: Page) {
   return rowOf(page, dueDate)
     .last()

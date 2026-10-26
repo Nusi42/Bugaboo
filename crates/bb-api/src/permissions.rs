@@ -861,7 +861,7 @@ pub const LONG_TEXT_ROUTES: &[&str] =
 /// The row of the route with this operation ID, if it is declared.
 #[must_use]
 pub fn declared(operation_id: &str) -> Option<&'static Route> {
-    ROUTES.iter().find(|row| row.id == operation_id)
+    search_routes::find(operation_id)
 }
 
 /// Whether a request with this method to this address is open without the token of a session: the
@@ -881,6 +881,6 @@ pub fn csrf_exempt(method: &Method, path: &str) -> bool {
     .iter()
     .any(|(open_method, open_path)| open_method == method && *open_path == path)
 }
-
+mod search_routes;
 #[cfg(test)]
 mod tests;

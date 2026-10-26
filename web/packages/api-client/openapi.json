@@ -9167,7 +9167,7 @@
     "/api/v1/projects/{project}/issues": {
       "get": {
         "tags": ["issues"],
-        "summary": "The issues of a project the person sees, newest first, a page at a time. Without *See every\nissue of the project* the person sees the issues they reported.",
+        "summary": "The issues of a project the person sees and of the projects below it that they see, newest first,\na page at a time. Without *See every issue of the project* the person sees the issues they\nreported. Each issue carries the rights of its own project, so a `fields=` that names a field\nwhich some issue of the page hides is `request.unknown-field`, which an empty page cannot say.",
         "operationId": "listIssues",
         "parameters": [
           {
@@ -10616,6 +10616,292 @@
         },
         "x-never-stored": true,
         "x-permission": "manage-roles"
+      }
+    },
+    "/api/v1/search/fields": {
+      "get": {
+        "tags": ["search"],
+        "summary": "The fields the person may search by where a search looks, the same the checker of the server\ngets, so the editor of the browser checks a search against the same fields.",
+        "operationId": "listSearchFields",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The search, as text of the search language (`priority is high and assignedTo is me`). Left\nout or empty, every issue the person may read is found.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "within",
+            "in": "query",
+            "description": "The ID of a project: the search looks in that project and the ones inside it that the person\nsees. Left out, it looks in every project they see.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The fields.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchFieldsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/search/issues": {
+      "get": {
+        "tags": ["search"],
+        "summary": "The issues a search finds, a page at a time, in the order of the search (newest first without\n`sort by`). Each issue is shown with what the person may see of it in its own project.",
+        "operationId": "searchIssues",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The search, as text of the search language (`priority is high and assignedTo is me`). Left\nout or empty, every issue the person may read is found.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "within",
+            "in": "query",
+            "description": "The ID of a project: the search looks in that project and the ones inside it that the person\nsees. Left out, it looks in every project they see.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The issues found.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_IssueItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/search/issues/count": {
+      "get": {
+        "tags": ["search"],
+        "summary": "How many issues a search finds.",
+        "operationId": "countSearchedIssues",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The search, as text of the search language (`priority is high and assignedTo is me`). Left\nout or empty, every issue the person may read is found.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "within",
+            "in": "query",
+            "description": "The ID of a project: the search looks in that project and the ones inside it that the person\nsees. Left out, it looks in every project they see.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many issues the search finds.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchCountBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/search/issues/groups": {
+      "get": {
+        "tags": ["search"],
+        "summary": "How many issues a search finds in each group of a field. A field the person may not read is\nrefused like a field that does not exist.",
+        "operationId": "groupSearchedIssues",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The search, as text of the search language (`priority is high and assignedTo is me`). Left\nout or empty, every issue the person may read is found.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "within",
+            "in": "query",
+            "description": "The ID of a project: the search looks in that project and the ones inside it that the person\nsees. Left out, it looks in every project they see.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "description": "The word of the field to group by (`status`, `assignedTo`, `tags`, …).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The groups and how many issues each holds.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchGroupsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
       }
     },
     "/api/v1/settings": {
@@ -13337,6 +13623,13 @@
                   }
                 ]
               },
+              "mistakes": {
+                "type": ["array", "null"],
+                "items": {
+                  "$ref": "#/components/schemas/MistakeBody"
+                },
+                "description": "The mistakes of the text of a search, each with the key of its message and the bytes it\nstands on; only for `search.invalid`."
+              },
               "taken_over_by": {
                 "oneOf": [
                   {
@@ -13764,6 +14057,8 @@
           "edit.lock-lost",
           "edit.taken-over",
           "edit.in-progress",
+          "search.invalid",
+          "search.too-slow",
           "rate-limit.exceeded",
           "server.unavailable",
           "server.internal"
@@ -16321,6 +16616,44 @@
         "type": "string",
         "description": "What a mention names: a person, a group or a role.",
         "enum": ["person", "group", "role"]
+      },
+      "MistakeBody": {
+        "type": "object",
+        "description": "One mistake in the text of a search: what the browser needs to write the message in\nthe language of the person and to mark the word.",
+        "required": ["key", "args", "start", "end", "suggestions"],
+        "properties": {
+          "args": {
+            "type": "object",
+            "description": "The words for the placeholders of the message, by name.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "end": {
+            "type": "integer",
+            "description": "The byte after the last one.",
+            "minimum": 0
+          },
+          "key": {
+            "type": "string",
+            "description": "The key of the message in the catalog (`search.mistake.*`)."
+          },
+          "start": {
+            "type": "integer",
+            "description": "The first byte of the text it is about.",
+            "minimum": 0
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What may have been meant, closest first."
+          }
+        }
       },
       "MoveBody": {
         "type": "object",
@@ -19533,6 +19866,313 @@
               "type": "string"
             },
             "description": "The IDs of the projects the field is limited to, with their sub-projects; empty for the\nwhole organization."
+          }
+        }
+      },
+      "SearchCountBody": {
+        "type": "object",
+        "description": "How many issues a search finds.",
+        "required": ["issues"],
+        "properties": {
+          "issues": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The number of issues the person may read that the search finds.",
+            "minimum": 0
+          }
+        }
+      },
+      "SearchFieldBody": {
+        "type": "object",
+        "description": "A field the person may search by.",
+        "required": ["word", "kind", "operators", "choices"],
+        "properties": {
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The values of a fixed list; empty when anything goes."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What kind of values it holds."
+          },
+          "operators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What may be asked of it."
+          },
+          "word": {
+            "type": "string",
+            "description": "The word of the field."
+          }
+        }
+      },
+      "SearchFieldsBody": {
+        "type": "object",
+        "description": "The fields the person may search by.",
+        "required": ["fields", "truncated"],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchFieldBody"
+            },
+            "description": "The fields, in the order they are offered."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the list was cut off at its cap."
+          }
+        }
+      },
+      "SearchGroupBody": {
+        "type": "object",
+        "description": "One group of a search.",
+        "required": ["key", "issues"],
+        "properties": {
+          "issues": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many issues the search finds in it. An issue with several values is in each group.",
+            "minimum": 0
+          },
+          "key": {
+            "$ref": "#/components/schemas/SearchGroupKeyBody",
+            "description": "What the group is."
+          }
+        }
+      },
+      "SearchGroupKeyBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "The issues without a value.",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["empty"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A text that is no person's: a status key, a text of an own field.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["text"]
+              },
+              "value": {
+                "type": "string",
+                "description": "A text that is no person's: a status key, a text of an own field."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A number or a moment.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["whole"]
+              },
+              "value": {
+                "type": "integer",
+                "format": "int64",
+                "description": "A number or a moment."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A person, as the viewer sees them.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["person"]
+              },
+              "value": {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "A person, as the viewer sees them."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A group of people, by its ID.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["group"]
+              },
+              "value": {
+                "type": "string",
+                "description": "A group of people, by its ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "An issue, by its ID.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["issue"]
+              },
+              "value": {
+                "type": "string",
+                "description": "An issue, by its ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A project, by its ID.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["project"]
+              },
+              "value": {
+                "type": "string",
+                "description": "A project, by its ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "An issue type, by its ID.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["issue-type"]
+              },
+              "value": {
+                "type": "string",
+                "description": "An issue type, by its ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A choice of an own field, by its ID.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["choice"]
+              },
+              "value": {
+                "type": "string",
+                "description": "A choice of an own field, by its ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A priority.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["priority"]
+              },
+              "value": {
+                "$ref": "#/components/schemas/Priority",
+                "description": "A priority."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A status group.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["status-group"]
+              },
+              "value": {
+                "$ref": "#/components/schemas/StatusGroup",
+                "description": "A status group."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A tag, by its ID and its name.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["tag"]
+              },
+              "value": {
+                "$ref": "#/components/schemas/SearchNamedBody",
+                "description": "A tag, by its ID and its name."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A label, by its ID and its name.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["label"]
+              },
+              "value": {
+                "$ref": "#/components/schemas/SearchNamedBody",
+                "description": "A label, by its ID and its name."
+              }
+            }
+          }
+        ],
+        "description": "The key of a group, by identity or word; a person as the viewer sees them."
+      },
+      "SearchGroupsBody": {
+        "type": "object",
+        "description": "How many issues a search finds in each group of a field.",
+        "required": ["groups", "truncated"],
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchGroupBody"
+            },
+            "description": "The groups, the one without a value last."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the list was cut off at its cap: over 200 groups the answer holds the first 199\nand the group without a value."
+          }
+        }
+      },
+      "SearchNamedBody": {
+        "type": "object",
+        "description": "A thing with a name the person may know.",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Its ID."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "Its name; left out where the person may not know it."
           }
         }
       },

@@ -2,6 +2,7 @@
 
 use bb_core::id::LayoutId;
 use bb_core::layout::{Layout, LayoutContent, LayoutKind, StoredLayout};
+use bb_core::version::Version;
 
 use super::fake::{FakeError, FakeStore, Tx};
 use crate::layouts::LayoutStore;
@@ -47,13 +48,13 @@ impl LayoutStore for FakeStore {
         tx: &mut Tx,
         id: LayoutId,
         content: &LayoutContent,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .layouts
             .iter_mut()
-            .find(|stored| stored.layout.id == id && stored.layout.version == version)
+            .find(|stored| stored.layout.id == id && stored.layout.version == version.get())
         else {
             return Ok(false);
         };
@@ -62,11 +63,11 @@ impl LayoutStore for FakeStore {
         Ok(true)
     }
 
-    async fn delete_layout(tx: &mut Tx, id: LayoutId, version: i64) -> Result<bool, FakeError> {
+    async fn delete_layout(tx: &mut Tx, id: LayoutId, version: Version) -> Result<bool, FakeError> {
         let before = tx.state.layouts.len();
         tx.state
             .layouts
-            .retain(|stored| !(stored.layout.id == id && stored.layout.version == version));
+            .retain(|stored| !(stored.layout.id == id && stored.layout.version == version.get()));
         Ok(tx.state.layouts.len() != before)
     }
 }

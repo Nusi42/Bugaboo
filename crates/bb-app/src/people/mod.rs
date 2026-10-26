@@ -26,6 +26,7 @@ use bb_core::id::{GroupId, ProjectId, UserId};
 use bb_core::names::is_new_or_changed;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
+use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::guards::ensure_a_manager_remains;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
@@ -271,7 +272,7 @@ pub async fn rename_group<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 // A group that is gone, or one somebody changed since the person looked.
-                if S::rename_group(transaction, id, &new_name, version).await? {
+                if S::rename_group(transaction, id, &new_name, Version::new(version)).await? {
                     Ok(())
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::VersionChanged))

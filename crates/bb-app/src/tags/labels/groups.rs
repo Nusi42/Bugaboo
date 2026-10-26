@@ -6,6 +6,7 @@ use bb_core::id::LabelGroupId;
 use bb_core::offer::has_room;
 use bb_core::tags::{LABEL_GROUPS_MAX, LabelGroup};
 use bb_core::version::FIRST_VERSION;
+use bb_core::version::Version;
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -174,8 +175,15 @@ pub async fn change_label_group<S: AuthStore>(
                 if watch_conflict && two_of_in::<S>(transaction, &crowd_ids).await? {
                     return Err(stopped.stop::<S>(ErrorCode::PickOneConflict));
                 }
-                if S::update_label_group(transaction, id, &written, pick_one, retired_at, version)
-                    .await?
+                if S::update_label_group(
+                    transaction,
+                    id,
+                    &written,
+                    pick_one,
+                    retired_at,
+                    Version::new(version),
+                )
+                .await?
                 {
                     Ok(())
                 } else {

@@ -5,6 +5,7 @@
 //! on the version the person looked at. *Combine with another choice* moves every value in one
 //! change and writes a record into the history of every item it touches (CF-07).
 
+use bb_core::version::Version;
 use std::collections::{HashMap, HashSet};
 
 use bb_core::ErrorCode;
@@ -131,7 +132,7 @@ where
     let run: Write<S> = Box::new(move |transaction| {
         Box::pin(async move {
             S::lock_policy(transaction).await?;
-            if !S::bump_field(transaction, field, version).await? {
+            if !S::bump_field(transaction, field, Version::new(version)).await? {
                 return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
             }
             write(transaction, stopped).await

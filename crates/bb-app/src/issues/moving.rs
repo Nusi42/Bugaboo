@@ -8,6 +8,7 @@
 //! skipped. An issue type the project does not use is no such reason: the issue keeps its type, the
 //! way every issue keeps a retired one, and the preview says so (M3-F124).
 
+use bb_core::version::Version;
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
@@ -343,7 +344,7 @@ impl MoveWrite {
                 status: self.status.clone(),
                 closed_at: self.closed_at,
             },
-            self.version,
+            Version::new(self.version),
             now,
         )
         .await?

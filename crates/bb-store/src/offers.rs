@@ -11,7 +11,7 @@ use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction};
 use crate::error::StoreError;
 use crate::schema::{IssueLabelRow, IssueRow, LabelRow, OfferRow};
-use crate::tags::sight_condition;
+use crate::sight::sight_condition;
 
 /// The condition that picks the row of exactly this subject and place: a missing project is
 /// `NULL`, which `=` never matches.

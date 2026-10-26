@@ -277,7 +277,7 @@ impl Sample {
                         .as_ref()
                         .is_some_and(|key| each.changes.iter().any(|change| &change.field == key))
                     {
-                        problems.push("a notification tells the value of Cost center to somebody who may not see it".to_owned());
+                        problems.push("a notification tells the value of Cost code to somebody who may not see it".to_owned());
                     }
                 }
             }

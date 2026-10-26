@@ -21,6 +21,7 @@ use bb_core::own_fields::{
     OwnField, Rules, RulesRefused, Scope,
 };
 use bb_core::own_fields_value::FieldValue;
+use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place, starting_own_field_level};
 use serde_json::{Value, json};
@@ -42,15 +43,21 @@ fn clean_help(help: Option<&str>) -> Result<String, AppError> {
     }
 }
 
-/// Whether another field than `except` already has the name (`bb_core::names`).
-fn name_taken(definitions: &[Definition], name: &str, except: Option<FieldId>) -> bool {
+/// Whether another field than `except` already has the name (`bb_core::names`), or the name would
+/// make a word in the search language that a built-in field or another field already has.
+fn name_taken(
+    definitions: &[Definition],
+    name: &str,
+    applies_to: FieldFor,
+    except: Option<FieldId>,
+) -> bool {
     name_among(
         definitions
             .iter()
             .filter(|found| Some(found.field.id) != except)
             .map(|found| found.field.name.as_str()),
         name,
-    )
+    ) || crate::search::word_is_taken(definitions, name, applies_to, except)
 }
 
 /// Checks that the rules make sense for the type and that the pattern can be checked.
@@ -275,7 +282,7 @@ pub async fn create_field<S: AuthStore>(
     let choices = ctx.new_choices(id, &input.choices)?;
     let default_value = default_text(kind, &input.rules, &choices, input.default_value.as_ref())?;
     let definitions = ctx.field_catalogue().await?;
-    if name_taken(&definitions, &name, None) {
+    if name_taken(&definitions, &name, input.applies_to, None) {
         return Err(ErrorCode::NameTaken.into());
     }
     if definitions.len() >= FIELDS_MAX {
@@ -313,7 +320,7 @@ pub async fn create_field<S: AuthStore>(
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 let known = S::field_definitions_in(transaction).await?;
-                if name_taken(&known, &stored.field.name, None) {
+                if name_taken(&known, &stored.field.name, stored.field.applies_to, None) {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 S::insert_field(transaction, &stored).await?;
@@ -433,7 +440,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(name) = &input.name {
             after.field.name = clean_name(name)?;
             if is_new_or_changed(Some(&current.field.name), &after.field.name)
-                && name_taken(definitions, &after.field.name, Some(after.field.id))
+                && name_taken(
+                    definitions,
+                    &after.field.name,
+                    after.field.applies_to,
+                    Some(after.field.id),
+                )
             {
                 return Err(ErrorCode::NameTaken.into());
             }
@@ -547,10 +559,24 @@ pub async fn change_field<S: AuthStore>(
                         .map(|stored| stored.field.name.as_str()),
                     &written.field.name,
                 );
-                if renamed && name_taken(&known, &written.field.name, Some(written.field.id)) {
+                if renamed
+                    && name_taken(
+                        &known,
+                        &written.field.name,
+                        written.field.applies_to,
+                        Some(written.field.id),
+                    )
+                {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
-                if S::update_field(transaction, &written.field, &written.scope, version).await? {
+                if S::update_field(
+                    transaction,
+                    &written.field,
+                    &written.scope,
+                    Version::new(version),
+                )
+                .await?
+                {
                     Ok(())
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::VersionChanged))

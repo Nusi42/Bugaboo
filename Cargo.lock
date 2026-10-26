@@ -635,6 +635,7 @@ dependencies = [
  "bb-core",
  "bb-dev-words",
  "bb-files",
+ "bb-searchlang",
  "bb-store",
  "bb-testing",
  "clap",

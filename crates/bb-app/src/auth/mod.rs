@@ -61,7 +61,7 @@ use crate::follow::{
 use crate::history::{HistoryPage, HistoryQuery, history};
 use crate::issues::{
     AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, CreateIssue,
-    CreateIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView,
+    CreateIssueType, DeleteIssue, IssueDetail, IssueQuery, IssueTypePage, IssueTypeView,
     IssueTypesQuery, IssueView, IssuesQuery, MoveIssue, RestoreIssue, SaveDescription,
     assignable_people, change_issue, change_issue_type, create_issue, create_issue_type,
     delete_issue, issue, issue_types, issues, move_issue, restore_issue, save_description,
@@ -108,6 +108,11 @@ use crate::roles::{
     RolesQuery, SetFieldLevel, SetPeopleLevel, assign_role, assignment_choices, assignments,
     change_role, check_access, copy_role, create_role, delete_role, permissions, remove_assignment,
     reset_role, role, role_levels, roles, set_level,
+};
+use crate::search::{
+    ReadableFieldsQuery, SearchCount, SearchCountQuery, SearchFields, SearchGroups,
+    SearchGroupsQuery, SearchPage, SearchQuery, SearcherQuery, readable_fields, search,
+    search_count, search_groups, searcher,
 };
 use crate::settings::{
     ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
@@ -424,7 +429,17 @@ use_cases! {
     /// Changes where an issue type or a group of labels is offered.
     change_offers(ChangeOffers) -> Authorized<Offers>;
     /// Lists the issues of a project a person sees.
-    issues(IssuesQuery) -> Authorized<IssuePage>;
+    issues(IssuesQuery) -> Authorized<SearchPage>;
+    /// A page of the issues a search finds, in the projects the person sees.
+    search(SearchQuery) -> Authorized<SearchPage>;
+    /// How many issues a search finds.
+    search_count(SearchCountQuery) -> Authorized<SearchCount>;
+    /// How many issues a search finds in each group of a field.
+    search_groups(SearchGroupsQuery) -> Authorized<SearchGroups>;
+    /// The person who searches, by a session or an access key.
+    searcher(SearcherQuery) -> bb_core::id::UserId;
+    /// The fields the person may search by, where a search looks.
+    readable_fields(ReadableFieldsQuery) -> Authorized<SearchFields>;
     /// Lists the people an issue of a project can be assigned to.
     assignable_people(AssignablePeopleQuery) -> Authorized<AssignablePeoplePage>;
     /// Creates an issue.

@@ -496,7 +496,7 @@ pub async fn change_setting<S: AuthStore>(
             Box::pin(async move {
                 let renewals =
                     plan_renewals_in::<S>(transaction, scope, store_key, &mode_change).await?;
-                S::put_setting_value(transaction, scope, store_key, &value, now).await?;
+                S::put_setting_value(transaction, scope, definition, &value, now).await?;
                 if forgets {
                     S::forget_mail_password(transaction).await?;
                 }
@@ -572,9 +572,9 @@ pub async fn reset_setting<S: AuthStore>(
                     plan_renewals_in::<S>(transaction, scope, store_key, &ModeChange::Reset)
                         .await?;
                 if keeps_the_lock {
-                    S::put_setting_value(transaction, scope, store_key, &standard, now).await?;
+                    S::put_setting_value(transaction, scope, definition, &standard, now).await?;
                 } else {
-                    S::clear_setting_value(transaction, scope, store_key).await?;
+                    S::clear_setting_value(transaction, scope, definition).await?;
                 }
                 if forgets {
                     S::forget_mail_password(transaction).await?;
@@ -638,10 +638,10 @@ pub async fn lock_setting<S: AuthStore>(
             after: Some(json!(input.locked)),
         }],
     )?;
-    let (store_key, locked, now) = (definition.key(), input.locked, ctx.now());
+    let (locked, now) = (input.locked, ctx.now());
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move { S::put_setting_lock(transaction, store_key, locked, now).await })
+            Box::pin(async move { S::put_setting_lock(transaction, definition, locked, now).await })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;

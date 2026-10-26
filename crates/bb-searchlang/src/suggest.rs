@@ -163,18 +163,19 @@ fn items(
             .map(|field| word(word_or_quoted(&field.word), WordKind::Field))
     };
     let helpers = || {
-        [
-            word(Keyword::Under.text().to_owned(), WordKind::Helper),
-            word(Keyword::Blocks.text().to_owned(), WordKind::Helper),
-            word(
+        // A `contains` on its own is offered to a person who has such a search.
+        let contains = readable
+            .allows_bare_contains()
+            .then(|| Keyword::Contains.text().to_owned());
+        contains
+            .into_iter()
+            .chain([
+                Keyword::Under.text().to_owned(),
+                Keyword::Blocks.text().to_owned(),
                 format!("{} {}", Keyword::Blocked.text(), Keyword::By.text()),
-                WordKind::Helper,
-            ),
-            word(
                 format!("{} {}", Keyword::Connected.text(), Keyword::To.text()),
-                WordKind::Helper,
-            ),
-        ]
+            ])
+            .map(|text| word(text, WordKind::Helper))
     };
     let sort = || {
         word(

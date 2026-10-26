@@ -13,6 +13,7 @@ mod replace;
 mod screens;
 mod types;
 
+use bb_core::version::Version;
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
@@ -264,7 +265,9 @@ pub async fn change_role<S: AuthStore>(
                     ensure_no_escalation(&held, &added).map_err(S::refused)?;
                 }
                 let state_before = S::organization_state_in(transaction).await?;
-                if !S::update_role(transaction, id, &new_name, two_step, version).await? {
+                if !S::update_role(transaction, id, &new_name, two_step, Version::new(version))
+                    .await?
+                {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 S::replace_role_permissions(transaction, id, &new_permissions).await?;
@@ -477,6 +480,7 @@ pub async fn reset_role<S: AuthStore>(
                     return Err(S::refused(Refusal::TooMuch));
                 }
                 let state_before = S::organization_state_in(transaction).await?;
+                let version = Version::new(version);
                 if !S::update_role(transaction, id, &name, starting.two_step(), version).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }

@@ -11,7 +11,9 @@
 //!   `tools/checks/api-out-exemptions.toml` with a reason (the steps of signing in, which are
 //!   about the caller and hold nothing of anybody else), a helper its name and file. The wrappers
 //!   themselves are named that way too. `answer(Page::of_authorized(…))` is a page of authorized
-//!   items and needs no entry;
+//!   items and needs no entry, and so is `answer(Page::of_authorized_items(…))`: a page whose
+//!   items are each an `Authorized<T>` made for the project of that very item (a search over many
+//!   projects), which the function takes as a list of `Authorized` values and nothing else;
 //! - **`axum::Json`** used to answer (`Json(…)`, `Json<…>`) anywhere outside the functions named in
 //!   the same file with a reason (the wrapper itself, the health answer, the description of the
 //!   API): a handler that answers a plain struct this way never asked the engine.
@@ -31,8 +33,9 @@ use crate::source::{Kind, Source, is_word_char, name_uses};
 const EXEMPTIONS_PATH: &str = "tools/checks/api-out-exemptions.toml";
 /// The wrappers that take any value.
 const PLAIN: [&str; 2] = ["answer", "signed_in"];
-/// What a page of authorized items starts with: its argument is made from `Authorized<T>`.
-const AUTHORIZED_PAGE: &str = "Page::of_authorized(";
+/// What a page of authorized items starts with: its argument is made from `Authorized<T>`
+/// (one `Authorized` of a list, or a list of items that each carry their own).
+const AUTHORIZED_PAGES: [&str; 2] = ["Page::of_authorized(", "Page::of_authorized_items("];
 
 pub(crate) struct ArchApiOut;
 
@@ -223,7 +226,10 @@ fn evaluate(sources: &[Source], exemptions: &[Exemption]) -> Vec<Finding> {
             // value: a handler by its operation, a helper (and the wrappers themselves) by name.
             for word in PLAIN {
                 for at in calls(&function.code, word) {
-                    if argument_at(&function.code, at, word).starts_with(AUTHORIZED_PAGE) {
+                    if AUTHORIZED_PAGES
+                        .iter()
+                        .any(|page| argument_at(&function.code, at, word).starts_with(page))
+                    {
                         continue;
                     }
                     if allowed_operation(&mut used).is_some()
@@ -320,6 +326,21 @@ mod tests {
             "{:?}",
             found.iter().map(|f| &f.message).collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn good_example_a_page_of_items_that_each_carry_their_own_authorization() {
+        let text = handler(
+            "    let items: Vec<Authorized<IssueItem>> = found;
+    Ok(answer(Page::of_authorized_items(LIST, &items, next, &params, &FIELDS)?))",
+        );
+        assert!(evaluate(&source(FILE, &text), &[]).is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_page_of_plain_items_is_not_a_page_of_authorized_ones() {
+        let text = handler("    Ok(answer(Page::of_plain_items(LIST, &items, next)?))");
+        assert_eq!(evaluate(&source(FILE, &text), &[]).len(), 1);
     }
 
     #[test]

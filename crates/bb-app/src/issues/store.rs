@@ -7,9 +7,10 @@
 use std::future::Future;
 
 use bb_core::event::DomainEvent;
-use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
 use bb_core::readable_id::IssueCode;
+use bb_core::version::Version;
 use bb_core::workflow::StatusKey;
 use jiff::Timestamp;
 
@@ -64,15 +65,6 @@ pub trait IssueStore: ProjectStore + 'static {
     reads! {
         /// The issue type with this ID.
         fn issue_type(id: IssueTypeId) -> Option<IssueType>;
-        /// A page of the issues of a project that are not in the trash, newest first: the ones
-        /// before `before` (the last of the page before), only the ones `reported_by` reported
-        /// when it is given, at most `limit`.
-        fn issues_page(
-            project: ProjectId,
-            reported_by: Option<UserId>,
-            before: Option<IssueId>,
-            limit: u64
-        ) -> Vec<Issue>;
         /// The people the issues are assigned to, for a page of issues at once.
         fn assigned_people_of(issues: &[IssueId]) -> Vec<AssignedPerson>;
     }
@@ -87,13 +79,13 @@ pub trait IssueStore: ProjectStore + 'static {
             name: &str,
             icon: IssueIcon,
             retired_at: Option<Timestamp>,
-            version: i64
+            version: Version
         ) -> bool;
         /// Adds an issue with the people it is assigned to.
         fn insert_issue(issue: &Issue, assigned_people: &[AssignedPerson]) -> ();
         /// Writes the type, title, description, status, priority, update date and closed date of
         /// `issue`, counts its version up, and says whether it was still at `version`.
-        fn update_issue(issue: &Issue, version: i64) -> bool;
+        fn update_issue(issue: &Issue, version: Version) -> bool;
         /// Puts an issue into another project with a code of that project and the status and
         /// closed date it has there, sets the date it changed, counts its version up, and says
         /// whether the issue was still at `version`. The old code is kept with
@@ -103,7 +95,7 @@ pub trait IssueStore: ProjectStore + 'static {
             project: ProjectId,
             code: &IssueCode,
             moved: &MovedStatus,
-            version: i64,
+            version: Version,
             now: Timestamp
         ) -> bool;
         /// Replaces the people an issue is assigned to.

@@ -11,6 +11,7 @@
 //! check that no live issue is left in a status its workflow does not have (`strand.rs`). So
 //! *Publish* either does all of it or none.
 
+use bb_core::version::Version;
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
@@ -347,7 +348,7 @@ async fn carry_out_moves<S: AuthStore>(
             updated_at: now,
             ..stored.clone()
         };
-        if !S::update_issue(transaction, &next, stored.version).await? {
+        if !S::update_issue(transaction, &next, Version::new(stored.version)).await? {
             return Ok(Some(ErrorCode::WorkflowStatusInUse));
         }
         let followed = events
@@ -427,7 +428,15 @@ pub async fn publish_workflow<S: AuthStore>(
             S::lock_workflows(transaction).await?;
             // The places are read now, with the lock: they are what is stored when the check runs.
             let reach = reach_of_workflow_in::<S>(transaction, id).await?;
-            if !S::replace_workflow(transaction, id, &written_name, &written, version).await? {
+            if !S::replace_workflow(
+                transaction,
+                id,
+                &written_name,
+                &written,
+                Version::new(version),
+            )
+            .await?
+            {
                 return Ok(Written::Stale);
             }
             if let Some(refused) = carry_out_moves::<S>(transaction, &moving, &events, now).await? {

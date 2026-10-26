@@ -10,6 +10,7 @@ use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId, UserId};
 use bb_core::names::name_key;
 use bb_core::own_fields::ChoiceColor;
 use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject};
+use bb_core::version::Version;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, LikeExpr, Order, Query, SelectStatement};
 
@@ -19,10 +20,9 @@ use crate::error::StoreError;
 use crate::schema::{
     IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, TagProjectRow, TagRow,
 };
+use crate::sight::sight_condition;
 
 mod uses;
-
-pub(crate) use uses::sight_condition;
 
 fn read_color(row: &Row, column: impl sea_query::Iden + Copy) -> Result<ChoiceColor, StoreError> {
     ChoiceColor::from_code(&row.get::<String>(column)?)
@@ -437,7 +437,7 @@ impl TagStore for AuthStorage {
         id: TagId,
         name: &str,
         color: ChoiceColor,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -447,7 +447,7 @@ impl TagStore for AuthStorage {
             .value(TagRow::Color, color.code())
             .value(TagRow::Version, Expr::col(TagRow::Version).add(1))
             .and_where(Expr::col(TagRow::Id).eq(id.stored()))
-            .and_where(Expr::col(TagRow::Version).eq(version));
+            .and_where(Expr::col(TagRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 
@@ -605,7 +605,7 @@ impl TagStore for AuthStorage {
         name: &str,
         pick_one: bool,
         retired_at: Option<Timestamp>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -619,7 +619,7 @@ impl TagStore for AuthStorage {
                 Expr::col(LabelGroupRow::Version).add(1),
             )
             .and_where(Expr::col(LabelGroupRow::Id).eq(id.stored()))
-            .and_where(Expr::col(LabelGroupRow::Version).eq(version));
+            .and_where(Expr::col(LabelGroupRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 
@@ -660,7 +660,7 @@ impl TagStore for AuthStorage {
         color: ChoiceColor,
         group: Option<LabelGroupId>,
         retired_at: Option<Timestamp>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -673,7 +673,7 @@ impl TagStore for AuthStorage {
             .value(LabelRow::RetiredAt, retired_at.map(to_micros))
             .value(LabelRow::Version, Expr::col(LabelRow::Version).add(1))
             .and_where(Expr::col(LabelRow::Id).eq(id.stored()))
-            .and_where(Expr::col(LabelRow::Version).eq(version));
+            .and_where(Expr::col(LabelRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 

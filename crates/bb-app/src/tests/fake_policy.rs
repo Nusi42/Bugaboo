@@ -6,6 +6,7 @@ use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
+use bb_core::version::Version;
 use bb_policy::guards::OrganizationState;
 use bb_policy::{
     Inputs, LevelRule, LevelRules, LevelSubject, Permission, Place, Tree, TypedFieldRule,
@@ -300,7 +301,7 @@ impl PolicyStore for FakeStore {
         id: RoleId,
         name: &str,
         two_step: bool,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         if tx
             .state
@@ -314,7 +315,7 @@ impl PolicyStore for FakeStore {
             .state
             .roles
             .iter_mut()
-            .find(|record| record.role.id == id && record.role.version == version)
+            .find(|record| record.role.id == id && record.role.version == version.get())
         else {
             return Ok(false);
         };
@@ -379,7 +380,7 @@ impl PolicyStore for FakeStore {
         tx: &mut Tx,
         id: GroupId,
         name: &str,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         if tx
             .state
@@ -393,7 +394,7 @@ impl PolicyStore for FakeStore {
             .state
             .groups
             .iter_mut()
-            .find(|group| group.id == id && group.version == version)
+            .find(|group| group.id == id && group.version == version.get())
         else {
             return Ok(false);
         };

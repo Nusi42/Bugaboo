@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::future::Future;
 
 use bb_core::id::{ProjectId, UserId};
-use bb_core::settings::{Layers, Scope, SettingValue};
+use bb_core::settings::{Layers, Scope, SettingDefinition, SettingValue};
 use jiff::Timestamp;
 
 use crate::access::PolicyStore;
@@ -36,13 +36,18 @@ pub trait SettingsStore: PolicyStore + 'static {
         /// `AuthStore::aborted`) when the organization locked the setting and the scope is a
         /// project or a person: that is decided inside the change, so a lock made at the same
         /// moment is never overtaken.
-        fn put_setting_value(scope: Scope, key: &str, value: &SettingValue, at: Timestamp) -> ();
+        fn put_setting_value(
+            scope: Scope,
+            setting: &'static SettingDefinition,
+            value: &SettingValue,
+            at: Timestamp
+        ) -> ();
         /// Takes the value of a setting on one scope away, so the layer below applies again.
         /// `false` when there was none.
-        fn clear_setting_value(scope: Scope, key: &str) -> bool;
+        fn clear_setting_value(scope: Scope, setting: &'static SettingDefinition) -> bool;
         /// Locks or unlocks the organization's value of a setting. Locking a setting that has no
         /// organization value yet gives it the default as its value first; unlocking one that
         /// holds only that default removes it again, and one without a value stays without.
-        fn put_setting_lock(key: &str, locked: bool, at: Timestamp) -> ();
+        fn put_setting_lock(setting: &'static SettingDefinition, locked: bool, at: Timestamp) -> ();
     }
 }

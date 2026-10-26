@@ -11,6 +11,7 @@ use std::future::Future;
 
 use bb_core::id::{ProjectId, UserId};
 use bb_core::project::{Project, ProjectAlias, ShortName};
+use bb_core::version::Version;
 use bb_policy::Policy;
 
 use crate::access::PolicyStore;
@@ -59,11 +60,11 @@ pub trait ProjectStore: PolicyStore + 'static {
             id: ProjectId,
             name: &str,
             short_name: &ShortName,
-            version: i64
+            version: Version
         ) -> bool;
         /// Puts a project inside another one (the top level for `None`), counts its version up,
         /// and says whether the project was still at `version`.
-        fn move_project(id: ProjectId, parent: Option<ProjectId>, version: i64) -> bool;
+        fn move_project(id: ProjectId, parent: Option<ProjectId>, version: Version) -> bool;
         /// Keeps an old short name with its project.
         fn insert_project_alias(alias: &ProjectAlias) -> ();
         /// Lets go of an old short name: its project took it back.

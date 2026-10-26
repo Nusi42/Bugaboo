@@ -5,9 +5,11 @@ mod adapter;
 mod port;
 mod write;
 
-pub use port::{TextMatch, TextScope, TextSearch, text_matches};
+pub use port::{TextScope, TextSearch, text_issues, text_of_issue};
 #[cfg(any(test, feature = "testing"))]
 pub use write::index_text;
+#[cfg(test)]
+pub(crate) use write::reindex_issues;
 
 #[cfg(test)]
 mod tests;

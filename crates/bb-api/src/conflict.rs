@@ -56,6 +56,38 @@ pub(crate) struct ConflictProblem {
     /// `edit.taken-over`, so the browser needs no further request to name them (M3-F176).
     #[serde(skip_serializing_if = "Option::is_none")]
     taken_over_by: Option<PersonRef>,
+    /// The mistakes of the text of a search, each with the key of its message and the bytes it
+    /// stands on; only for `search.invalid`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mistakes: Option<Vec<MistakeBody>>,
+}
+
+/// One mistake in the text of a search (ADR-0005): what the browser needs to write the message in
+/// the language of the person and to mark the word.
+#[derive(Clone, Debug, Serialize, ToSchema)]
+pub(crate) struct MistakeBody {
+    /// The key of the message in the catalog (`search.mistake.*`).
+    key: String,
+    /// The words for the placeholders of the message, by name.
+    args: BTreeMap<String, String>,
+    /// The first byte of the text it is about.
+    start: usize,
+    /// The byte after the last one.
+    end: usize,
+    /// What may have been meant, closest first.
+    suggestions: Vec<String>,
+}
+
+impl From<&bb_app::search::Mistake> for MistakeBody {
+    fn from(mistake: &bb_app::search::Mistake) -> Self {
+        Self {
+            key: mistake.key.clone(),
+            args: mistake.args.clone(),
+            start: mistake.span.start,
+            end: mistake.span.end,
+            suggestions: mistake.suggestions.clone(),
+        }
+    }
 }
 
 impl ConflictProblem {
@@ -63,11 +95,13 @@ impl ConflictProblem {
         problem: Problem,
         conflict: Option<ConflictBody>,
         taken_over_by: Option<PersonRef>,
+        mistakes: Option<Vec<MistakeBody>>,
     ) -> Self {
         Self {
             problem,
             conflict,
             taken_over_by,
+            mistakes,
         }
     }
 }

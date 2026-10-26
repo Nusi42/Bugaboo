@@ -5,6 +5,7 @@
 //! only for that project and below. The change counts the version of the subject up, like any other
 //! change of it, so a person who looked at an old state is stopped.
 
+use bb_core::version::Version;
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
@@ -253,7 +254,7 @@ async fn bump_in<S: AuthStore>(
                 &current.name,
                 current.icon,
                 current.retired_at,
-                version,
+                Version::new(version),
             )
             .await
         }
@@ -271,7 +272,7 @@ async fn bump_in<S: AuthStore>(
                 &current.name,
                 current.pick_one,
                 current.retired_at,
-                version,
+                Version::new(version),
             )
             .await
         }

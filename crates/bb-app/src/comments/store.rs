@@ -7,6 +7,7 @@ use std::future::Future;
 
 use bb_core::comment::{Comment, CommentVersion, Mention};
 use bb_core::id::CommentId;
+use bb_core::version::Version;
 use jiff::Timestamp;
 
 use crate::issues::IssueStore;
@@ -37,7 +38,7 @@ pub trait CommentStore: IssueStore + 'static {
             id: CommentId,
             text: &str,
             edited_at: Timestamp,
-            version: i64
+            version: Version
         ) -> bool;
         /// Keeps an earlier text of a comment.
         fn insert_comment_version(version: &CommentVersion) -> ();

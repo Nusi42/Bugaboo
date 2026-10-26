@@ -15,6 +15,7 @@ use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::FieldValue;
 use bb_core::security_log::Digest;
 use bb_core::version::FIRST_VERSION;
+use bb_core::version::Version;
 use std::time::Duration;
 
 use super::*;
@@ -154,7 +155,7 @@ async fn iss_13_a_change_while_the_reader_was_stopped_is_in_the_index_after_a_st
         // The server is stopped: only the changes are written, no reader runs.
         changed_issue(storage, &mut source, id, move |tx| {
             Box::pin(async move {
-                AuthStorage::update_issue(tx, &issue, FIRST_VERSION).await?;
+                AuthStorage::update_issue(tx, &issue, Version::new(FIRST_VERSION)).await?;
                 AuthStorage::insert_comment(tx, &said).await?;
                 AuthStorage::insert_stored_file(tx, &kept).await?;
                 AuthStorage::insert_attachment(tx, &named).await?;
@@ -180,7 +181,7 @@ async fn iss_13_a_change_while_the_reader_was_stopped_is_in_the_index_after_a_st
         for words in ["absturz", "STEPS grosse", "crashes", "protokoll ubersicht*"] {
             assert_eq!(
                 found(storage, words, everywhere).await?,
-                [hit(1, i64::from(words == "absturz"))],
+                [hit(1)],
                 "{words}"
             );
         }
@@ -188,7 +189,7 @@ async fn iss_13_a_change_while_the_reader_was_stopped_is_in_the_index_after_a_st
         assert!(found(storage, "printers", everywhere).await?.is_empty());
         assert_eq!(
             found(storage, "printers", TextScope::Field(field_id)).await?,
-            [hit(1, 0)]
+            [hit(1)]
         );
         assert_eq!(catch_up(storage, at(10)).await?, 0);
         Ok(())
@@ -221,7 +222,7 @@ async fn iss_13_reading_an_event_twice_changes_nothing() -> TestResult {
         assert_eq!(rows(storage).await?, once);
         assert_eq!(
             found(storage, "twice same", TextScope::Everywhere).await?,
-            [hit(1, 0)]
+            [hit(1)]
         );
         Ok(())
     })
@@ -258,7 +259,7 @@ async fn iss_13_an_edited_comment_replaces_its_words() -> TestResult {
                         comment_id,
                         "second version",
                         at(10),
-                        FIRST_VERSION,
+                        Version::new(FIRST_VERSION),
                     )
                     .await?;
                     Ok(())
@@ -438,7 +439,7 @@ async fn iss_13_a_batch_of_comment_edits_costs_the_same_statements_whatever_its_
                                 comment_id,
                                 "after",
                                 at(10),
-                                FIRST_VERSION,
+                                Version::new(FIRST_VERSION),
                             )
                             .await?;
                             Ok(())
@@ -636,7 +637,7 @@ async fn iss_13_a_word_with_a_combining_mark_is_split_alike_on_both_databases() 
         for words in ["हिन्दी", "हि*", "كِتاب", "done"] {
             assert_eq!(
                 found(storage, words, everywhere).await?,
-                [hit(1, 1)],
+                [hit(1)],
                 "{words}"
             );
         }

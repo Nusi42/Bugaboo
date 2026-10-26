@@ -37,10 +37,13 @@ mod paging;
 mod policy;
 mod projects;
 mod relations;
+mod rows;
 mod schema;
+mod search;
 mod secrets;
 mod security_log;
 mod settings;
+mod sight;
 mod tags;
 #[cfg(feature = "testing")]
 mod testing;

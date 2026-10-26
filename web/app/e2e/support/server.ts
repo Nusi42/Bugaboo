@@ -34,6 +34,7 @@ const SETUP_CODE_FILE = "setup-code.txt";
 /** Limits that never get in the way of a test, unless a test sets its own. */
 const generousLimits: Settings = {
   BUGABOO_RATE_LIMIT_PER_MINUTE: "100000",
+  BUGABOO_SEARCHES_PER_MINUTE: "100000",
   BUGABOO_SIGN_IN_ATTEMPTS_PER_MINUTE: "100000",
   BUGABOO_SIGN_IN_FAILURES_PER_MINUTE: "100000",
 };

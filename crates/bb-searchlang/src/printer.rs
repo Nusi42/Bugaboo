@@ -58,6 +58,7 @@ fn expression(node: &Expr, needed: Level) -> String {
         Expr::Field { field, test, .. } => {
             format!("{} {}", word_or_quoted(&field.word), test_text(test))
         }
+        Expr::Contains { text, .. } => format!("{} {}", Keyword::Contains.text(), text_of(text)),
         Expr::Under { id, .. } => format!("{} {}", Keyword::Under.text(), id.text),
         Expr::Blocks { id, .. } => format!("{} {}", Keyword::Blocks.text(), id.text),
         Expr::BlockedBy { id, .. } => format!(

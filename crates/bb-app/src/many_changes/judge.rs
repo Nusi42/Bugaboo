@@ -192,6 +192,8 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             | ErrorCode::EditLockLost
             | ErrorCode::EditTakenOver
             | ErrorCode::EditInProgress
+            | ErrorCode::SearchInvalid
+            | ErrorCode::SearchTooSlow
             | ErrorCode::TooManyRequests
             | ErrorCode::Unavailable
             | ErrorCode::Internal => SkipReason::NotValid,

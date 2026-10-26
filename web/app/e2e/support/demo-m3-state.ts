@@ -14,7 +14,8 @@ export const COST_CENTER = "CC-4711";
 /** The keys of the bug the Team member made and of the one the Guest made, kept for the steps after. */
 export const made = { key: "", guestKey: "" };
 
-export const costCenter = t("issue-field.cost-center");
+/** The own field of the Website that stands in for the cost center: a name like a field of the catalogue is refused, its word in a search is taken. */
+export const costCenter = "Cost code";
 /** The key of the field *Assigned to*, which the form of the Website is given. */
 export const assignedTo = "assigned-to";
 export const assignedToName = t("issue-field.assigned-to");

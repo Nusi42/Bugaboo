@@ -9,25 +9,25 @@ use bb_core::text_words::search_words;
 use bb_testing::{TestResult, each_database};
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
-use super::{TextMatch, TextScope, TextSearch, index_text, text_matches};
+use super::{TextScope, TextSearch, index_text, text_issues};
 use crate::schema::IssueRow;
 use crate::test_support::{fixture, ids, world};
 
-/// An expected hit: the code of the issue and whether its title matched.
-fn hit(number: i64, title: i64) -> (String, i64) {
-    (number.to_string(), title)
+/// An expected hit: the code of the issue.
+fn hit(number: i64) -> String {
+    number.to_string()
 }
 
-/// The issues that a search finds, title hits first and then the newest (the order the compiler of
-/// the search asks for), each with its title hit.
+/// The issues that a search finds, the newest first (the order of the title hits is the
+/// compiler's, tested with it in `search`).
 async fn found(
     storage: &crate::AuthStorage,
     input: &str,
     scope: TextScope,
-) -> Result<Vec<(String, i64)>, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
     let database = storage.database();
     let words = search_words(input);
-    let matched = text_matches(
+    let matched = text_issues(
         database.dialect(),
         &TextSearch {
             words: &words,
@@ -37,25 +37,13 @@ async fn found(
     let mut select = Query::select();
     select
         .column((IssueRow::Table, IssueRow::Code))
-        .expr(Expr::col(("text_hit", TextMatch::TITLE_HIT)))
         .from(IssueRow::Table)
-        .join_subquery(
-            sea_query::JoinType::InnerJoin,
-            matched.select,
-            "text_hit",
-            Expr::col((IssueRow::Table, IssueRow::Id)).equals(("text_hit", TextMatch::ISSUE)),
-        )
-        .order_by(("text_hit", TextMatch::TITLE_HIT), Order::Desc)
+        .and_where(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(matched))
         .order_by((IssueRow::Table, IssueRow::CreatedAt), Order::Desc)
         .order_by((IssueRow::Table, IssueRow::Id), Order::Desc);
     let rows = database.fetch_all(&select).await?;
     rows.iter()
-        .map(|row| {
-            Ok((
-                row.get::<String>(IssueRow::Code)?,
-                row.get::<i64>(TextMatch::TITLE_HIT)?,
-            ))
-        })
+        .map(|row| Ok(row.get::<String>(IssueRow::Code)?))
         .collect()
 }
 
@@ -95,11 +83,7 @@ async fn finds_through(
         } else {
             TextScope::Everywhere
         };
-        let title = i64::from(source == TextSource::Title);
-        assert_eq!(
-            found(&fixture.storage, words, scope).await?,
-            [hit(1, title)]
-        );
+        assert_eq!(found(&fixture.storage, words, scope).await?, [hit(1)]);
         Ok(())
     })
     .await
@@ -190,12 +174,12 @@ async fn iss_13_crash_does_not_find_crashes_but_crash_star_does() -> TestResult 
         tx.commit().await?;
         let storage = &fixture.storage;
         let everywhere = TextScope::Everywhere;
-        assert_eq!(found(storage, "crash", everywhere).await?, [hit(1, 1)]);
+        assert_eq!(found(storage, "crash", everywhere).await?, [hit(1)]);
         assert_eq!(
             found(storage, "crash*", everywhere).await?,
-            [hit(2, 1), hit(1, 1)]
+            [hit(2), hit(1)]
         );
-        assert_eq!(found(storage, "crashes", everywhere).await?, [hit(2, 1)]);
+        assert_eq!(found(storage, "crashes", everywhere).await?, [hit(2)]);
         Ok(())
     })
     .await
@@ -222,7 +206,7 @@ async fn iss_13_accents_and_case_do_not_matter() -> TestResult {
         for words in ["GROSSE", "grösse", "tres", "TRÈS", "uber", "Über*"] {
             assert_eq!(
                 found(&fixture.storage, words, everywhere).await?,
-                [hit(1, 1)],
+                [hit(1)],
                 "{words}"
             );
         }
@@ -279,11 +263,11 @@ async fn iss_13_the_words_may_be_in_different_texts_of_one_issue() -> TestResult
         .await?;
         index_text(&mut tx, issue[3], TextSource::Comment, other, "error").await?;
         tx.commit().await?;
-        // Title hits come first; the issue with the words in two texts is found, and a word
-        // from another issue does not count.
+        // The issue with the words in two texts is found (the newest first), and a word from
+        // another issue does not count.
         assert_eq!(
             found(&fixture.storage, "login error", TextScope::Everywhere).await?,
-            [hit(1, 1), hit(2, 0)]
+            [hit(2), hit(1)]
         );
         // A word typed twice, or a start of one letter, finds what the whole word finds.
         assert_eq!(
@@ -332,12 +316,12 @@ async fn iss_13_the_port_reads_a_field_only_when_that_field_is_asked_for() -> Te
         let storage = &fixture.storage;
         assert_eq!(
             found(storage, "steps reproduce", TextScope::Field(wanted)).await?,
-            [hit(1, 0)]
+            [hit(1)]
         );
         // A bare search never reads a field.
         assert_eq!(
             found(storage, "steps reproduce", TextScope::Everywhere).await?,
-            [hit(3, 1)]
+            [hit(3)]
         );
         Ok(())
     })

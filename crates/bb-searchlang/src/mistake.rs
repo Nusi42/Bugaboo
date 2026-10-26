@@ -39,6 +39,17 @@ impl Mistake {
         }
     }
 
+    /// A value that names something the person cannot know: it does not exist, or they may not
+    /// see it, with the same message for both (decision 9 of ADR-0005 amendment M5).
+    #[must_use]
+    pub fn unknown_value(span: Span, field: &str, value: &str) -> Self {
+        Self::new(
+            span,
+            crate::messages::UNKNOWN_CHOICE,
+            &[("field", field), ("value", value)],
+        )
+    }
+
     /// The mistake, with `suggestions` of what may have been meant.
     pub(crate) fn meaning(mut self, suggestions: Vec<String>) -> Self {
         self.suggestions = suggestions;

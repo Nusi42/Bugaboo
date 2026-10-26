@@ -12,6 +12,7 @@ use bb_core::settings::{
 use bb_core::sign_in::{
     Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TotpStep, TwoStep,
 };
+use bb_core::version::Version;
 use bb_policy::guards::Refusal;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
@@ -23,10 +24,6 @@ use crate::auth::{
 };
 
 use super::fake::*;
-
-fn digest_of(session: &SignInSession) -> Digest {
-    session.token_hash
-}
 
 impl AccountStore for FakeStore {
     async fn account_by_email(&self, email: &str) -> Result<Option<Account>, FakeError> {
@@ -43,13 +40,16 @@ impl AccountStore for FakeStore {
     }
 
     async fn person(&self, id: UserId) -> Result<Option<Person>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .people
-                .iter()
-                .find(|(person, _)| person.id == id)
-                .map(|(person, _)| person.clone())
-        }))
+        Ok(self.people_of(&[id]).await?.pop())
+    }
+
+    async fn people_of(&self, ids: &[UserId]) -> Result<Vec<Person>, FakeError> {
+        let all = self.read(|state| state.people.clone());
+        Ok(all
+            .into_iter()
+            .map(|(person, _)| person)
+            .filter(|person| ids.contains(&person.id))
+            .collect())
     }
 
     async fn people_page(
@@ -139,7 +139,7 @@ impl SessionStore for FakeStore {
             let session = state
                 .sessions
                 .iter()
-                .find(|session| digest_of(session) == *hash)?;
+                .find(|session| session.token_hash == *hash)?;
             let person = state
                 .people
                 .iter()
@@ -790,8 +790,8 @@ impl AuthStore for FakeStore {
         Ok(self.read(|state| state.sign_up_version))
     }
 
-    async fn count_sign_up_policy_up(tx: &mut Tx, version: i64) -> Result<bool, FakeError> {
-        if tx.state.sign_up_version != version {
+    async fn count_sign_up_policy_up(tx: &mut Tx, version: Version) -> Result<bool, FakeError> {
+        if tx.state.sign_up_version != version.get() {
             return Ok(false);
         }
         tx.state.sign_up_version += 1;

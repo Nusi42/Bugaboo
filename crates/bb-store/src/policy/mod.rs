@@ -20,6 +20,7 @@ use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
+use bb_core::version::Version;
 use bb_policy::guards::OrganizationState;
 use bb_policy::{Inputs, LevelRules, LevelSubject, Permission, Place};
 use jiff::Timestamp;
@@ -274,9 +275,9 @@ impl PolicyStore for AuthStorage {
         id: RoleId,
         name: &str,
         two_step: bool,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
-        roles::update_role(transaction, id, name, two_step, version).await
+        roles::update_role(transaction, id, name, two_step, version.get()).await
     }
 
     async fn replace_role_permissions(
@@ -308,9 +309,9 @@ impl PolicyStore for AuthStorage {
         transaction: &mut Transaction,
         id: GroupId,
         name: &str,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
-        groups::rename_group(transaction, id, name, version).await
+        groups::rename_group(transaction, id, name, version.get()).await
     }
 
     async fn delete_group(transaction: &mut Transaction, id: GroupId) -> Result<bool, StoreError> {

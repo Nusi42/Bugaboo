@@ -40,6 +40,7 @@ use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
 use bb_core::ErrorCode;
+use bb_core::id::UserId;
 use bb_core::network::NetworkPrefix;
 use bb_core::security_log::Digest;
 
@@ -89,6 +90,11 @@ const _: () = assert!(
 /// needs more asks for fewer, bigger answers (`limit`, `fields`) or sets the limit higher.
 pub const DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE: u32 = 300;
 
+/// Searches per person and minute (SEC-17, architecture §7 *Search limits*): a search is the
+/// heaviest read there is, so each person has a small allowance of their own beside the one of the
+/// network. The sixty-first waits for the next minute.
+pub const DEFAULT_SEARCHES_PER_MINUTE: u32 = 60;
+
 /// The limits, from the start-up settings (OPS-10; they move to the settings registry later).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LimitsConfig {
@@ -100,6 +106,8 @@ pub struct LimitsConfig {
     pub sign_in_failures_per_minute: u32,
     /// Requests per minute that come with one access key.
     pub access_key_requests_per_minute: u32,
+    /// Searches per person and minute, whether they come with a session or with a key.
+    pub searches_per_minute: u32,
 }
 
 impl Default for LimitsConfig {
@@ -109,6 +117,7 @@ impl Default for LimitsConfig {
             sign_in_attempts_per_minute: DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
             sign_in_failures_per_minute: DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
             access_key_requests_per_minute: DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
+            searches_per_minute: DEFAULT_SEARCHES_PER_MINUTE,
         }
     }
 }
@@ -233,6 +242,7 @@ pub struct Limits {
     sign_up_networks: Window<NetworkPrefix>,
     sign_up_hours: Window<NetworkPrefix>,
     access_keys: Window<Digest>,
+    searches: Window<UserId>,
 }
 
 impl Limits {
@@ -250,6 +260,9 @@ impl Limits {
                 config.access_key_requests_per_minute,
                 Overflow::Share(SHARED_KEY),
             ),
+            // A full table refuses a person it does not know yet: a search is not worth more
+            // than the rest of the server.
+            searches: Window::new(config.searches_per_minute, Overflow::Refuse),
         })
     }
 
@@ -276,6 +289,19 @@ impl Limits {
 
     fn check_access_key_at(&self, key: Digest, now: Instant) -> Result<(), ApiError> {
         self.access_keys.hit(key, now).map_err(too_many)
+    }
+
+    /// Counts one search of `person` against their allowance (`LimitsConfig::searches_per_minute`,
+    /// [`DEFAULT_SEARCHES_PER_MINUTE`] unless the operator set another).
+    ///
+    /// # Errors
+    /// `429` with `Retry-After` when the person is over it.
+    pub fn check_search(&self, person: UserId) -> Result<(), ApiError> {
+        self.check_search_at(person, Instant::now())
+    }
+
+    fn check_search_at(&self, person: UserId, now: Instant) -> Result<(), ApiError> {
+        self.searches.hit(person, now).map_err(too_many)
     }
 
     /// Counts one sign-in attempt of `client`.
@@ -450,6 +476,27 @@ mod tests {
         // After the window the client may try again.
         limits
             .check_request_at(client, start + Duration::from_secs(61))
+            .unwrap();
+    }
+
+    #[test]
+    fn sec_17_the_sixty_first_search_in_a_minute_waits() {
+        let limits = limits(1_000, 1_000);
+        let start = Instant::now();
+        let mut source = bb_core::id::SequentialIds::default();
+        let (person, other) = (UserId::generate(&mut source), UserId::generate(&mut source));
+        for _ in 0..DEFAULT_SEARCHES_PER_MINUTE {
+            limits.check_search_at(person, start).unwrap();
+        }
+        let error = limits
+            .check_search_at(person, start + Duration::from_secs(20))
+            .unwrap_err();
+        assert_eq!(error.code(), ErrorCode::TooManyRequests);
+        assert_eq!(wait_of(&error), 40);
+        // Each person has an allowance of their own, and the minute ends.
+        limits.check_search_at(other, start).unwrap();
+        limits
+            .check_search_at(person, start + Duration::from_secs(61))
             .unwrap();
     }
 

@@ -2,7 +2,7 @@
 
 use sea_query::{
     DeleteStatement, InsertStatement, PostgresQueryBuilder, SelectStatement, SqliteQueryBuilder,
-    UpdateStatement,
+    UpdateStatement, WithQuery,
 };
 use sea_query_sqlx::{SqlxBinder as _, SqlxValues};
 
@@ -14,6 +14,7 @@ pub(crate) enum Statement<'a> {
     Insert(&'a InsertStatement),
     Update(&'a UpdateStatement),
     Delete(&'a DeleteStatement),
+    With(&'a WithQuery),
 }
 
 impl Statement<'_> {
@@ -27,6 +28,8 @@ impl Statement<'_> {
             (Self::Update(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
             (Self::Delete(query), Dialect::Sqlite) => query.build_sqlx(SqliteQueryBuilder),
             (Self::Delete(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
+            (Self::With(query), Dialect::Sqlite) => query.build_sqlx(SqliteQueryBuilder),
+            (Self::With(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
         }
     }
 }
@@ -45,5 +48,6 @@ statement_from!(
     SelectStatement => Select,
     InsertStatement => Insert,
     UpdateStatement => Update,
-    DeleteStatement => Delete
+    DeleteStatement => Delete,
+    WithQuery => With
 );

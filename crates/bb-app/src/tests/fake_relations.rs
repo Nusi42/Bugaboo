@@ -7,6 +7,7 @@ use bb_core::history::{HistoryEntry, HistoryKind};
 use bb_core::id::{CommentId, IssueId, RelationId, RelationKindId, UserId};
 use bb_core::issue::Issue;
 use bb_core::relation::{IssueParent, Relation, RelationKind};
+use bb_core::version::Version;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
@@ -108,13 +109,13 @@ impl RelationStore for FakeStore {
         forward: &str,
         backward: &str,
         retired_at: Option<Timestamp>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .relation_kinds
             .iter_mut()
-            .find(|found| found.id == id && found.version == version)
+            .find(|found| found.id == id && found.version == version.get())
         else {
             return Ok(false);
         };
@@ -220,13 +221,13 @@ impl CommentStore for FakeStore {
         id: CommentId,
         text: &str,
         edited_at: Timestamp,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .comments
             .iter_mut()
-            .find(|found| found.id == id && found.version == version)
+            .find(|found| found.id == id && found.version == version.get())
         else {
             return Ok(false);
         };

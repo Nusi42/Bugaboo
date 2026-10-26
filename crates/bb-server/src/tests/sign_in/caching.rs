@@ -182,7 +182,7 @@ async fn a_type_and_a_label_group(ada: &mut Browser) -> Result<(String, String),
 
 /// The address of a route that is about something named in its query: the draft and lock routes
 /// name a record (the example project), the layout routes the project and a kind of form.
-fn with_query(template: &str, filled: String, project: &str, project_id: &str) -> String {
+fn with_query(template: &str, filled: &str, project: &str, project_id: &str) -> String {
     match template {
         "/api/v1/drafts" | "/api/v1/edit-locks" => {
             format!("{filled}?record_kind=project&record_id={project_id}&part=description")
@@ -191,7 +191,10 @@ fn with_query(template: &str, filled: String, project: &str, project_id: &str) -
             format!("{filled}?project={project}&kind=new-issue")
         }
         "/api/v1/workflows" | "/api/v1/workflows/editor" => format!("{filled}?project={project}"),
-        _ => filled,
+        _ => format!(
+            "{filled}{}",
+            super::http::required_query(template).unwrap_or_default()
+        ),
     }
 }
 
@@ -255,7 +258,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{run}", &run_id)
                 .replace("{upload}", &upload_id)
                 .replace("{project}", project);
-            let filled = with_query(template, filled, project, &project_id);
+            let filled = with_query(template, &filled, project, &project_id);
             let filled = if template.ends_with("/status-changes") {
                 format!("{filled}?person={person_id}")
             } else {

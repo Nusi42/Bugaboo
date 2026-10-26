@@ -8,6 +8,7 @@ use std::future::Future;
 use bb_core::id::{IssueId, RelationId, RelationKindId};
 use bb_core::issue::Issue;
 use bb_core::relation::{IssueParent, Relation, RelationKind};
+use bb_core::version::Version;
 use jiff::Timestamp;
 
 use crate::issues::IssueStore;
@@ -49,7 +50,7 @@ pub trait RelationStore: IssueStore + 'static {
             forward: &str,
             backward: &str,
             retired_at: Option<Timestamp>,
-            version: i64
+            version: Version
         ) -> bool;
         /// Adds a relation. The same relation twice is a duplicate key.
         fn insert_relation(relation: &Relation) -> ();

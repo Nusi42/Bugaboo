@@ -12,6 +12,7 @@ use bb_core::edit::EditWhat;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::CommentId;
 use bb_core::technical::TechnicalName;
+use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use serde_json::json;
@@ -232,7 +233,9 @@ pub async fn save_comment<S: AuthStore>(
                     },
                 )
                 .await?;
-                if !S::update_comment_text(transaction, id, &text, now, version).await? {
+                if !S::update_comment_text(transaction, id, &text, now, Version::new(version))
+                    .await?
+                {
                     return Ok(Written::Stale);
                 }
                 S::replace_mentions(transaction, id, &mentions).await?;

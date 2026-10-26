@@ -10,11 +10,11 @@ import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
 
 /** The name of the own field that the tests of layouts move around. */
-export const dueDate = "Due date";
+export const dueDate = "Review deadline";
 
 /**
  * Gets a server ready for the tests of layouts: the project WEB with a Team member (Bob), a Guest
- * (Lea) and a Viewer (Ana), and the own field *Due date* for issues, which the Guest may fill in
+ * (Lea) and a Viewer (Ana), and the own field *Review deadline* for issues, which the Guest may fill in
  * (so only the layout decides whether the form asks the Guest for it).
  */
 export async function prepareLayouts(server: Instance): Promise<void> {
@@ -104,7 +104,7 @@ async function putFieldsInFirstSection(
   });
 }
 
-/** Saves the layout of *Bug* in the project WEB with *Due date* (for every role) at the end of the first section. */
+/** Saves the layout of *Bug* in the project WEB with *Review deadline* (for every role) at the end of the first section. */
 async function putDueDateInFirstSection(
   admin: ApiSession,
   editor: Schema<"LayoutEditorBody">,
@@ -152,7 +152,7 @@ export async function addToTheFormOfWeb(
 /**
  * Brings the new-issue form of the project WEB to the state a test starts from, through the API,
  * so that no test depends on what another one did: with `customized` the project has a layout of
- * its own for *Bug* with *Due date* in the first section (what the lead makes in the first test);
+ * its own for *Bug* with *Review deadline* in the first section (what the lead makes in the first test);
  * with `inherited` the form of *Bug* has no layout of its own and uses the one it inherits.
  */
 export async function setLayoutOfWeb(

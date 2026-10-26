@@ -27,16 +27,18 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::fields::{Field, FieldKey};
-use bb_core::id::ProjectId;
+use bb_core::id::{FieldId, ProjectId};
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
 use bb_core::own_fields::{FieldFor, FieldType};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::workflow::WorkflowStatus;
 use bb_policy::{Authorized, Evaluation, FieldMask, Masked, Place as Where};
 use bb_searchlang::Field as SearchField;
-use bb_searchlang::{FieldKind, IssueField, ReadableFields, own_field_word};
+use bb_searchlang::{FieldKind, IssueField, Operator, ReadableFields, own_field_word};
 use serde::Serialize;
 
+use super::request::OwnReach;
 use super::target::{FieldTarget, Searchable};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -107,6 +109,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         scope: SearchScope,
     ) -> Result<Vec<Searchable>, AppError> {
+        Ok(self.looked_at(actor, scope).await?.fields)
+    }
+
+    /// What the person may search by where a search looks, and what the names in a search can
+    /// stand for there: the fields, the statuses and issue types the person may know, the own
+    /// fields, and the projects. Read once for a request.
+    ///
+    /// # Errors
+    /// `resource.not-found` for a project that the actor does not see; an internal error when the
+    /// store fails.
+    pub(crate) async fn looked_at(
+        &self,
+        actor: &Actor,
+        scope: SearchScope,
+    ) -> Result<Looked, AppError> {
         let seen = self.shown_with_levels_to(actor).await?;
         let within = match scope {
             SearchScope::Everywhere => None,
@@ -120,24 +137,73 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|(chain, held)| Place::of(chain, held))
             .collect();
         let mut types: Vec<IssueType> = Vec::new();
-        let mut statuses: Vec<String> = Vec::new();
+        let mut statuses: Vec<WorkflowStatus> = Vec::new();
         for place in &places {
             for (found, workflow) in self.workflows_reaching(&seen, &place.chain).await? {
-                statuses.extend(workflow.statuses.iter().map(|status| status.name.clone()));
-                types.push(found);
+                statuses.extend(workflow.statuses.iter().cloned());
+                if !types.iter().any(|each| each.id == found.id) {
+                    types.push(found);
+                }
             }
         }
+        let own = self
+            .store()
+            .field_definitions()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
         let sources = Sources {
-            statuses: once_each(statuses),
+            statuses: once_each(statuses.iter().map(|status| status.name.clone())),
             issue_types: once_each(types.iter().map(|found| found.name.clone())),
-            own: self
-                .store()
-                .field_definitions()
-                .await
-                .map_err(|error| internal::<S>(&error))?,
+            own: own.clone(),
         };
-        Ok(fields_in(&places, &sources))
+        let fields = fields_in(&places, &sources);
+        let own_reach = own
+            .iter()
+            .filter(|definition| {
+                fields.iter().any(|each| {
+                    matches!(each.target, FieldTarget::Own { field, .. } if field == definition.field.id)
+                })
+            })
+            .map(|definition| OwnReach {
+                field: definition.field.id,
+                projects: reached_places(&places, definition)
+                    .filter_map(|place| place.chain.last().copied())
+                    .collect(),
+                issue_types: definition.scope.limited_types().map(<[_]>::to_vec),
+            })
+            .collect();
+        Ok(Looked {
+            fields,
+            own_reach,
+            statuses,
+            types,
+            own,
+            projects: places
+                .iter()
+                .filter_map(|place| place.chain.last().copied())
+                .collect(),
+            seen,
+        })
     }
+}
+
+/// What a search looks at for one person: the fields they may use and what names can stand for.
+pub(crate) struct Looked {
+    /// The fields the person may use, with what each reads.
+    pub(crate) fields: Vec<Searchable>,
+    /// The statuses of the workflows in force where the search looks, for the types the person
+    /// may know.
+    pub(crate) statuses: Vec<WorkflowStatus>,
+    /// The issue types the person may know that reach where the search looks.
+    pub(crate) types: Vec<IssueType>,
+    /// Every own field, with its choices.
+    pub(crate) own: Vec<Definition>,
+    /// Where the values of each own field the person may read count.
+    pub(crate) own_reach: Vec<OwnReach>,
+    /// The projects the search looks at.
+    pub(crate) projects: Vec<ProjectId>,
+    /// The tree as the person sees it, with the levels.
+    pub(crate) seen: crate::projects::Leveled,
 }
 
 /// The names, each once (names that are the same name are one), in the order they come.
@@ -194,6 +260,17 @@ struct Sources {
     issue_types: Vec<String>,
     /// Every own field, with its choices, in the order they are kept in.
     own: Vec<Definition>,
+}
+
+/// The places of the search that an own field reaches: the one filter, for where its values count
+/// and for whether the person may read it.
+fn reached_places<'a>(
+    places: &'a [Place],
+    definition: &'a Definition,
+) -> impl Iterator<Item = &'a Place> {
+    places
+        .iter()
+        .filter(|place| definition.scope.reaches_project(&place.chain))
 }
 
 /// What a field of the catalogue that a search can ask about stands for, with the kind of its
@@ -263,7 +340,7 @@ fn own_search_field(word: &str, definition: &Definition) -> SearchField {
 
 /// The words that belong to the built-in fields for everyone: those of the catalogue (also the
 /// ones that cannot be searched yet) and those of the fields every issue has.
-fn reserved_words() -> Vec<String> {
+pub(crate) fn reserved_words() -> Vec<String> {
     Field::ALL
         .iter()
         .map(|field| field.search_word())
@@ -271,19 +348,55 @@ fn reserved_words() -> Vec<String> {
         .collect()
 }
 
-/// The word each own field is searched by, `None` for one that lost its word to a built-in field or
-/// to an own field before it. Decided from the definitions alone, so it is the same for everybody.
+/// Who owns a word of the search language.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WordOwner {
+    /// A built-in field, or a field every issue has: also one the person may not read or that
+    /// cannot be searched yet.
+    Language,
+    /// An own field for issues: the first of them, in the order they are kept in.
+    Field(FieldId),
+}
+
+/// Who owns this word, decided from the definitions alone, so it is the same for everybody. The one
+/// rule for the words the search reads ([`own_words`]) and for the names that are refused
+/// ([`word_is_taken`]). A field for projects owns no word: issues are what a search finds.
+fn word_owner(word: &str, own: &[Definition]) -> Option<WordOwner> {
+    if reserved_words().iter().any(|each| each == word) {
+        return Some(WordOwner::Language);
+    }
+    own.iter()
+        .find(|definition| {
+            definition.field.applies_to == FieldFor::Issues
+                && own_field_word(&definition.field.name) == word
+        })
+        .map(|definition| WordOwner::Field(definition.field.id))
+}
+
+/// Whether the word that `name` would make for an own field of this kind is owned by the language
+/// or by another field (not `except`, the field itself when it is renamed). A name like that is
+/// refused when a field is made or renamed (ADR-0005 amendment M5, decision 9), so a word never
+/// changes hands.
+pub(crate) fn word_is_taken(
+    own: &[Definition],
+    name: &str,
+    applies_to: FieldFor,
+    except: Option<FieldId>,
+) -> bool {
+    applies_to == FieldFor::Issues
+        && match word_owner(&own_field_word(name), own) {
+            None => false,
+            Some(WordOwner::Language) => true,
+            Some(WordOwner::Field(owner)) => Some(owner) != except,
+        }
+}
+
+/// The word each own field is searched by, `None` for one that does not own it.
 fn own_words(own: &[Definition]) -> Vec<Option<String>> {
-    let mut taken = reserved_words();
     own.iter()
         .map(|definition| {
             let word = own_field_word(&definition.field.name);
-            if definition.field.applies_to != FieldFor::Issues || taken.contains(&word) {
-                None
-            } else {
-                taken.push(word.clone());
-                Some(word)
-            }
+            (word_owner(&word, own) == Some(WordOwner::Field(definition.field.id))).then_some(word)
         })
         .collect()
 }
@@ -343,10 +456,7 @@ fn fields_in(places: &[Place], sources: &Sources) -> Vec<Searchable> {
         let Some(word) = word else {
             continue;
         };
-        let reached: Vec<&Place> = places
-            .iter()
-            .filter(|place| definition.scope.reaches_project(&place.chain))
-            .collect();
+        let reached: Vec<&Place> = reached_places(places, definition).collect();
         let readable = !reached.is_empty()
             && reached.iter().all(|place| {
                 place.may_use(
@@ -362,6 +472,14 @@ fn fields_in(places: &[Place], sources: &Sources) -> Vec<Searchable> {
                     kind: definition.field.kind,
                 },
             });
+        }
+    }
+    // `contains` is offered where the index of the text search holds the text, and nowhere else.
+    for each in &mut found {
+        if each.target.text_place().is_none() {
+            each.field
+                .operators
+                .retain(|operator| *operator != Operator::Contains);
         }
     }
     found
