@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use bb_core::id::{ProjectId, UserId};
-use bb_core::settings::{Layers, OrganizationValue, Scope, SettingValue, find};
+use bb_core::settings::{Layers, OrganizationValue, Scope, SettingDefinition, SettingValue, find};
 use bb_policy::Tree;
 use jiff::Timestamp;
 
@@ -110,10 +110,11 @@ impl SettingsStore for FakeStore {
     async fn put_setting_value(
         tx: &mut Tx,
         scope: Scope,
-        key: &str,
+        setting: &'static SettingDefinition,
         value: &SettingValue,
         _at: Timestamp,
     ) -> Result<(), FakeError> {
+        let key = setting.key();
         let locked_above = scope != Scope::Organization
             && tx
                 .state
@@ -127,7 +128,12 @@ impl SettingsStore for FakeStore {
         Ok(())
     }
 
-    async fn clear_setting_value(tx: &mut Tx, scope: Scope, key: &str) -> Result<bool, FakeError> {
+    async fn clear_setting_value(
+        tx: &mut Tx,
+        scope: Scope,
+        setting: &'static SettingDefinition,
+    ) -> Result<bool, FakeError> {
+        let key = setting.key();
         let before = tx.state.settings.len();
         tx.state
             .settings
@@ -137,13 +143,11 @@ impl SettingsStore for FakeStore {
 
     async fn put_setting_lock(
         tx: &mut Tx,
-        key: &str,
+        definition: &'static SettingDefinition,
         locked: bool,
         _at: Timestamp,
     ) -> Result<(), FakeError> {
-        let Some(definition) = find(key) else {
-            return Err(FakeError::Failed);
-        };
+        let key = definition.key();
         if !locked {
             // A row that only held the lock at the standard value goes away on unlocking.
             let standard = definition.default().to_value();

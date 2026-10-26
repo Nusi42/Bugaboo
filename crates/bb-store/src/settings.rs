@@ -16,7 +16,7 @@ use bb_app::settings::SettingsStore;
 use bb_core::event::DomainEvent;
 use bb_core::id::{EntityId, ProjectId, UserId};
 use bb_core::settings::{
-    Layers, Level, OrganizationValue, Scope, Setting, SettingKind, SettingValue,
+    Layers, Level, OrganizationValue, Scope, Setting, SettingDefinition, SettingKind, SettingValue,
 };
 use bb_core::technical::TechnicalName;
 use bb_core::version::next;
@@ -592,12 +592,12 @@ impl SettingsStore for AuthStorage {
     async fn put_setting_value(
         transaction: &mut Transaction,
         scope: Scope,
-        key: &str,
+        setting: &'static SettingDefinition,
         value: &SettingValue,
         at: Timestamp,
     ) -> Result<(), StoreError> {
         let mut change = SettingChange {
-            key: key.to_owned(),
+            key: setting.key().to_owned(),
             scope,
             value: value.clone(),
             locked: false,
@@ -622,21 +622,19 @@ impl SettingsStore for AuthStorage {
     async fn clear_setting_value(
         transaction: &mut Transaction,
         scope: Scope,
-        key: &str,
+        setting: &'static SettingDefinition,
     ) -> Result<bool, StoreError> {
-        let name = known(key).map_err(StoreError::SettingRejected)?;
+        let name = known(setting.key()).map_err(StoreError::SettingRejected)?;
         delete(transaction, &name, scope).await
     }
 
     async fn put_setting_lock(
         transaction: &mut Transaction,
-        key: &str,
+        definition: &'static SettingDefinition,
         locked: bool,
         at: Timestamp,
     ) -> Result<(), StoreError> {
-        let definition = bb_core::settings::find(key)
-            .ok_or(StoreError::SettingRejected(SettingProblem::UnknownKey))?;
-        let name = known(key).map_err(StoreError::SettingRejected)?;
+        let name = known(definition.key()).map_err(StoreError::SettingRejected)?;
         let row = organization_row(transaction, &name).await?;
         let standard = definition.default().to_value();
         if !locked {
@@ -651,7 +649,7 @@ impl SettingsStore for AuthStorage {
                 return Ok(());
             }
             let change = SettingChange {
-                key: key.to_owned(),
+                key: definition.key().to_owned(),
                 scope: Scope::Organization,
                 value: row.value,
                 locked: false,
@@ -660,7 +658,7 @@ impl SettingsStore for AuthStorage {
             return upsert(transaction, &name, &change, at).await;
         }
         let change = SettingChange {
-            key: key.to_owned(),
+            key: definition.key().to_owned(),
             scope: Scope::Organization,
             value: row.map_or(standard, |row| row.value),
             locked,
