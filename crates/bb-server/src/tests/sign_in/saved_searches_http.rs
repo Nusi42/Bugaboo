@@ -8,13 +8,10 @@ use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Reply, called, rig_and_app};
+use super::access_keys_http::a_key_is_turned_away_first;
+use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{PROJECTS, Site, id_of, ok};
 use super::perf_queries::{Counter, assert_as_many_statements, five_and_forty};
-use super::policy_rig::Org;
-use super::rig::{Rig, Tries};
-use super::status::app_with_probe;
-use bb_core::access_key::KeyChoice;
 
 const SEARCHES: &str = "/api/v1/saved-searches";
 /// The most statements a page of saved searches may run, however many rows there are (a ceiling
@@ -48,16 +45,16 @@ async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
         .await
 }
 
-async fn share_with_acme(
+async fn share_with_project(
     browser: &mut Browser,
     search: &str,
-    acme: &str,
+    project: &str,
 ) -> Result<Reply, Failure> {
     browser
         .send(
             "POST",
             &format!("{SEARCHES}/{search}/shares"),
-            Some(json!({"kind": "project", "id": acme})),
+            Some(json!({"kind": "project", "id": project})),
         )
         .await
 }
@@ -74,7 +71,7 @@ fn names(list: &Reply) -> Vec<String> {
 /// Ada's search "Open bugs", shared with ACME, and Bob, a team member who sees it: the ID.
 async fn ada_shares_with_acme(site: &Site<'_>, ada: &mut Browser) -> Result<String, Failure> {
     let id = id_of(&save(ada, "Open bugs").await?)?;
-    ok(&share_with_acme(ada, &id, &site.acme).await?)?;
+    ok(&share_with_project(ada, &id, &site.acme).await?)?;
     Ok(id)
 }
 
@@ -110,7 +107,7 @@ async fn qry_06_a_saved_search_is_private_and_found_by_its_address_only_where_it
         assert_eq!(hidden.body["code"], "resource.not-found");
         // Shared with ACME, it is listed for Bob and opens, and Bob is told who made it and nothing
         // of whom else it is shared with.
-        let shared = share_with_acme(&mut ada, &id, &site.acme).await?;
+        let shared = share_with_project(&mut ada, &id, &site.acme).await?;
         assert_eq!(ok(&shared)?["shared_with"][0]["kind"], "project");
         assert_eq!(shared.body["shared_with"][0]["short_name"], "ACME");
         let path = format!("{SEARCHES}?scope=shared&fields=name,search_text,maker");
@@ -195,7 +192,7 @@ async fn qry_06_stopping_a_share_and_the_trash_take_a_search_from_its_receivers(
         assert_eq!(ok(&stopped)?["shared_with"], json!([]));
         assert!(names(&bob.send("GET", &shared, None).await?).is_empty());
         // The trash takes it away and *Undo* brings it back, still shared.
-        share_with_acme(&mut ada, &id, &site.acme).await?;
+        share_with_project(&mut ada, &id, &site.acme).await?;
         let deleted = ada
             .send("DELETE", &format!("{SEARCHES}/{id}"), None)
             .await?;
@@ -248,7 +245,7 @@ async fn qry_06_the_share_window_lists_what_the_person_may_share_with_and_the_pr
             )
             .await?;
         assert_eq!(early.code(), "resource.not-found");
-        share_with_acme(&mut bob, &made, &site.acme).await?;
+        share_with_project(&mut bob, &made, &site.acme).await?;
         // A team member has no *Change project settings*; the administrator has.
         let denied = bob
             .send(
@@ -299,7 +296,7 @@ async fn perf_05_a_page_of_forty_saved_searches_runs_as_many_statements_as_a_pag
             // Two makers, so a page of the shared searches names more than one person.
             let maker = if number % 2 == 0 { &mut ada } else { &mut bob };
             let id = id_of(&save(maker, &format!("Search {number}")).await?)?;
-            ok(&share_with_acme(maker, &id, &site.acme).await?)?;
+            ok(&share_with_project(maker, &id, &site.acme).await?)?;
         }
         // Ada made twenty of them; twenty more that she keeps to herself make forty of her own.
         for number in 40..60 {
@@ -365,7 +362,7 @@ async fn ada_shares(
         )
         .await?;
     let id = id_of(&made)?;
-    ok(&share_with_acme(ada, &id, &site.acme).await?)?;
+    ok(&share_with_project(ada, &id, &site.acme).await?)?;
     Ok(id)
 }
 
@@ -593,7 +590,7 @@ async fn perf_05_forty_different_makers_cost_no_more_statements_than_five_for_a_
                 .await?;
             let made = save(&mut maker, &format!("Search {number}")).await?;
             let project = if number % 2 == 0 { &site.acme } else { &beta };
-            ok(&share_with_acme(&mut maker, &id_of(&made)?, project).await?)?;
+            ok(&share_with_project(&mut maker, &id_of(&made)?, project).await?)?;
         }
         let (on_five, on_forty) = five_and_forty(&mut dan, &rig.database, |limit| {
             format!("{SEARCHES}?scope=shared&limit={limit}&fields=name,maker")
@@ -624,43 +621,33 @@ async fn perf_05_forty_different_makers_cost_no_more_statements_than_five_for_a_
 async fn auth_07_a_key_is_turned_away_from_saved_searches_before_its_address_or_body_is_read()
 -> TestResult {
     each_database("auth_07_saved_searches_key_first", async |db| {
-        let rig = Rig::start_with(db, Tries::Roomy).await?;
-        let org = Org::start(&rig).await?;
-        let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
-        let app = app_with_probe(&rig, None);
-        let mut script = Browser::new(&app, &called());
-        for (method, path, body) in [
-            ("POST", SEARCHES.to_owned(), Some(json!({}))),
-            ("GET", format!("{SEARCHES}/not-an-id"), None),
-            ("PATCH", format!("{SEARCHES}/not-an-id"), Some(json!([]))),
-            ("DELETE", format!("{SEARCHES}/not-an-id"), None),
-            (
-                "POST",
-                format!("{SEARCHES}/not-an-id/shares"),
-                Some(json!({"kind": "planet", "id": "x"})),
-            ),
-            (
-                "DELETE",
-                format!("{SEARCHES}/not-an-id/shares/planet/x"),
-                None,
-            ),
-            ("GET", format!("{SEARCHES}?limit=many"), None),
-            ("GET", format!("{SEARCHES}/share-choices"), None),
-            (
-                "PUT",
-                "/api/v1/projects/not-a-project/list".to_owned(),
-                Some(json!({})),
-            ),
-        ] {
-            let reply = script.script(method, &path, body, &key).await?;
-            assert_eq!(reply.status, StatusCode::FORBIDDEN, "{method} {path}");
-            assert_eq!(
-                reply.code(),
-                "auth.access-key-not-allowed",
-                "{method} {path}"
-            );
-        }
-        Ok(())
+        a_key_is_turned_away_first(
+            db,
+            &[
+                ("POST", SEARCHES.to_owned(), Some(json!({}))),
+                ("GET", format!("{SEARCHES}/not-an-id"), None),
+                ("PATCH", format!("{SEARCHES}/not-an-id"), Some(json!([]))),
+                ("DELETE", format!("{SEARCHES}/not-an-id"), None),
+                (
+                    "POST",
+                    format!("{SEARCHES}/not-an-id/shares"),
+                    Some(json!({"kind": "planet", "id": "x"})),
+                ),
+                (
+                    "DELETE",
+                    format!("{SEARCHES}/not-an-id/shares/planet/x"),
+                    None,
+                ),
+                ("GET", format!("{SEARCHES}?limit=many"), None),
+                ("GET", format!("{SEARCHES}/share-choices"), None),
+                (
+                    "PUT",
+                    "/api/v1/projects/not-a-project/list".to_owned(),
+                    Some(json!({})),
+                ),
+            ],
+        )
+        .await
     })
     .await
 }
