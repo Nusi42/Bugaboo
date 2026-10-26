@@ -4,7 +4,7 @@
 
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Column, Presentation, ShareTarget, Spacing};
+use bb_core::saved_search::{Column, Presentation, SearchScope, ShareTarget, Spacing};
 use bb_policy::StartingRole;
 
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -15,9 +15,9 @@ use crate::people::{AddGroupMember, CreateGroup, add_group_member, create_group}
 use crate::roles::{AssignRole, Given, Subject, assign_role};
 use crate::saved_searches::{
     ChangeSearch, DeleteSearch, ProjectList, ProjectListQuery, RestoreSearch, SaveCopy, SaveSearch,
-    SavedSearchView, SearchQuery, SearchScope, SearchesQuery, SetProjectList, ShareSearch,
-    StopSharingSearch, change_search, delete_search, project_list, restore_search, save_copy,
-    save_search, saved_search, saved_searches, set_project_list, share_search, stop_sharing_search,
+    SavedSearchView, SearchQuery, SearchesQuery, SetProjectList, ShareSearch, StopSharingSearch,
+    change_search, delete_search, project_list, restore_search, save_copy, save_search,
+    saved_search, saved_searches, set_project_list, share_search, stop_sharing_search,
 };
 
 /// A list with two columns, grouped by a field, *Compact*.
@@ -33,7 +33,7 @@ pub(crate) fn a_presentation() -> Presentation {
                 width: None,
             },
         ],
-        spacing: Spacing::Compact,
+        spacing: Spacing::of("compact").unwrap_or_default(),
         group_by: Some("statusGroup".to_owned()),
         ..Presentation::default()
     }

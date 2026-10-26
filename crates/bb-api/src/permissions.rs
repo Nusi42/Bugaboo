@@ -15,9 +15,6 @@
 //! session (CSRF) follows from the row too: only the routes that are `public` and change
 //! something are open without one ([`csrf_exempt`]).
 
-use std::sync::OnceLock;
-
-use axum::http::Method;
 use bb_api_words::needs;
 use bb_policy::Permission;
 
@@ -858,29 +855,10 @@ pub const ROUTES: &[Route] = &[
 pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
-/// The row of the route with this operation ID, if it is declared.
-#[must_use]
-pub fn declared(operation_id: &str) -> Option<&'static Route> {
-    ROUTES.iter().find(|row| row.id == operation_id)
-}
+mod lookup;
+mod saved_searches;
 
-/// Whether a request with this method to this address is open without the token of a session: the
-/// routes that are `public` and change something. People who sign in or sign up have no session
-/// yet; they are protected by the origin check and carry no secret a forged request could use
-/// (SEC-12).
-#[must_use]
-pub fn csrf_exempt(method: &Method, path: &str) -> bool {
-    static OPEN: OnceLock<Vec<(Method, &'static str)>> = OnceLock::new();
-    OPEN.get_or_init(|| {
-        crate::openapi::operations()
-            .iter()
-            .filter(|operation| operation.needs == Declared::Public && operation.changes())
-            .map(|operation| (operation.method.clone(), operation.path.as_str()))
-            .collect()
-    })
-    .iter()
-    .any(|(open_method, open_path)| open_method == method && *open_path == path)
-}
+pub use lookup::{csrf_exempt, declared, rows};
 
 #[cfg(test)]
 mod tests;

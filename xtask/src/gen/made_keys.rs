@@ -13,7 +13,6 @@ use bb_core::notification::NotificationKind;
 use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::readable_id::IdMode;
-use bb_core::saved_search::Spacing;
 use bb_policy::{Permission, StartingRole, Topic};
 
 /// A message that the word of an enum makes, and the word.
@@ -85,9 +84,6 @@ pub(crate) fn made_keys() -> Vec<Made> {
     }
     for look in Look::ALL {
         keys.push(made("the look of an own field", look.code(), look.name()));
-    }
-    for spacing in Spacing::ALL {
-        keys.push(made("the spacing", spacing.code(), spacing.name()));
     }
     for level in PeopleLevel::ALL {
         keys.push(made("the people level", level.code(), level.name()));

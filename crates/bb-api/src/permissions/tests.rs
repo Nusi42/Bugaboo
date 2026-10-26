@@ -2,6 +2,8 @@
 
 use std::collections::BTreeSet;
 
+use axum::http::Method;
+
 use super::*;
 use crate::openapi::operations;
 
@@ -18,17 +20,17 @@ fn m1_f32_no_row_names_a_route_that_does_not_exist_or_a_route_twice() {
         .iter()
         .map(|operation| operation.id.as_str())
         .collect();
-    for row in ROUTES {
+    for row in rows() {
         assert!(
             ids.contains(row.id),
             "{} is declared but is no route",
             row.id
         );
     }
-    let rows: BTreeSet<&str> = ROUTES.iter().map(|row| row.id).collect();
+    let ids_declared: BTreeSet<&str> = rows().map(|row| row.id).collect();
     assert_eq!(
-        rows.len(),
-        ROUTES.len(),
+        ids_declared.len(),
+        rows().count(),
         "an operation ID is declared twice"
     );
 }

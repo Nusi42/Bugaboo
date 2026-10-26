@@ -22,7 +22,7 @@ fn columns_json(columns: &[SearchColumn]) -> Value {
 
 /// The target of a share as one value of an event.
 pub(super) fn target_json(target: ShareTarget) -> Value {
-    json!({ "kind": target.kind(), "id": target.id_text() })
+    json!({ "kind": target.kind().code(), "id": target.id_text() })
 }
 
 /// A new saved search: everything it holds.

@@ -1,21 +1,12 @@
 //! What the saved-search use cases take and give back (QRY-06, ADR-0034).
 
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Presentation, ShareTarget};
+use bb_core::saved_search::{Presentation, SearchScope, ShareKind, ShareTarget};
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
 
 use crate::access::ProjectLabel;
-
-/// Which saved searches a list shows.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SearchScope {
-    /// The ones the person made.
-    Mine,
-    /// The ones other people shared with a group of the person or a project they see.
-    Shared,
-}
 
 /// Save a search: private, and the person's own.
 pub struct SaveSearch {
@@ -117,20 +108,11 @@ pub struct ShareChoicesQuery {
     /// The secret of the session of the request.
     pub session_token: String,
     /// Groups or projects.
-    pub kind: ShareChoiceKind,
+    pub kind: ShareKind,
     /// Where the page starts: the `next_cursor` of the page before.
     pub cursor: Option<String>,
     /// How many the page holds at most.
     pub limit: u32,
-}
-
-/// What a *Share* window lists.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ShareChoiceKind {
-    /// Groups.
-    Group,
-    /// Projects.
-    Project,
 }
 
 /// Choose the saved search a project shows as its list, or none (the built-in default).

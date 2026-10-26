@@ -13,7 +13,7 @@ use bb_policy::{Authorized, Permission, Place};
 use serde_json::Value;
 
 use super::events::target_json;
-use super::reach::Opened;
+use super::reach::{Opened, may_share_with_group};
 use super::types::{SavedSearchView, ShareSearch, StopSharingSearch};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity};
@@ -25,7 +25,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// *Manage groups*.
     ///
     /// # Errors
-    /// `resource.not-found` for a project the person may not know, `access.forbidden` for a place
+    /// `resource.not-found` for a project the person does not see, `access.forbidden` for a place
     /// they may not share with, also a group that is not there.
     async fn require_to_share(
         &self,
@@ -35,14 +35,18 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<(), AppError> {
         match target {
             ShareTarget::Project(project) => {
-                self.require(actor, Permission::ShareSearches, Place::Project(project))
-                    .await?;
+                let held = self.evaluation_of(actor, Place::Project(project)).await?;
+                // What is inside a project is not told to a person who does not see it.
+                if !held.sees_project() {
+                    return Err(ErrorCode::NotFound.into());
+                }
+                if !held.allows(Permission::ShareSearches) {
+                    return Err(ErrorCode::Forbidden.into());
+                }
             }
             ShareTarget::Group(group) => {
                 let held = self.evaluation_of(actor, Place::Organization).await?;
-                let manages = held.allows(Permission::ManageGroups);
-                let shares = held.allows(Permission::ShareSearches) && in_group(group);
-                if !(manages || shares) {
+                if !may_share_with_group(&held, in_group(group)) {
                     return Err(ErrorCode::Forbidden.into());
                 }
                 // Somebody who manages groups is told when the group is not there.

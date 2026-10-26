@@ -74,8 +74,12 @@ pub async fn project_list<S: AuthStore>(
 ) -> Result<Authorized<ProjectList>, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let project = ctx.known_project(&actor, &input.project).await?;
-    let list = ctx.list_of_project(&actor, project).await?;
     let held = ctx.evaluation_of(&actor, Place::Project(project)).await?;
+    // A list is for the people who see the project, not for those who only decide who has a role.
+    if !held.sees_project() {
+        return Err(ErrorCode::NotFound.into());
+    }
+    let list = ctx.list_of_project(&actor, project).await?;
     Ok(held.authorize(list))
 }
 

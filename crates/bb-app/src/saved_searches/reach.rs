@@ -5,6 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
 use bb_core::saved_search::{SavedSearch, SearchColumn, SearchShare, ShareTarget};
+use bb_policy::{Evaluation, Permission};
 
 use super::store::Reach;
 use crate::access::Actor;
@@ -41,6 +42,14 @@ impl Reaching {
             ShareTarget::Project(project) => self.projects.contains(&project),
         })
     }
+}
+
+/// Whether a person may share a saved search with a group (ADR-0034, decision 2): they are in it
+/// and hold *Share searches* for the whole organization, or they hold *Manage groups*.
+/// `organization` is what they hold at the organization.
+pub(crate) fn may_share_with_group(organization: &Evaluation, in_group: bool) -> bool {
+    organization.allows(Permission::ManageGroups)
+        || (in_group && organization.allows(Permission::ShareSearches))
 }
 
 /// A saved search that is there, with its columns and its shares.

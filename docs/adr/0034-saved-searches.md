@@ -32,6 +32,20 @@ M5 lets people save a search with how its results are shown, and share it with g
 - **Show a shared search with a hidden field as "This search uses something you cannot see":** it tells the receiver that the field exists, which is what an unknown field must never tell (QRY-05). Rejected.
 - **Anyone may edit a shared search:** a search changes under the people who rely on it. Rejected; *Save a copy* covers the need.
 
+## Amendment M5 WP-06: how it is stored and served
+
+The builder of M5 WP-06 decided the following where the decision above left room:
+
+1. **Tables** (migration 23): `saved_search`, its columns `saved_search_column` (the search word of each field, its place and its width), its shares `saved_search_share` (a group or a project, told apart by `kind`; no reference for the target, so deleting a group takes its rows with it in the same change) and `project_default_list` (one row for each project). The maker has no reference to the person (a removed person leaves a tombstone, PRIV-04).
+2. **Spacing is a choice of the setting *Spacing*** (`appearance.spacing`): the registry holds its two words once and a saved search stores one of them. The widths are whole numbers in the units of the list; a list holds at most 40 columns and a saved search is shared with at most 100 places.
+3. **A saved search is the person's own data:** only a session reaches the routes, never an access key (ADR-0025, decision 8).
+4. **Who is reached:** a share with a group reaches the people in it, a share with a project the people who see it. The list *Shared with me* holds the searches of other people that a share reaches, oldest first, and the person's own are in the list *Mine*. A person who is not the maker, does not see the share's place, or looks at one in the trash, gets `resource.not-found`, with the same reads as for an address that does not exist.
+5. **The maker is shown** as the viewer sees *Authors*, by the rights the viewer has in the first project that reaches them (else in the organization). Whom a search is shared with is told to its maker only.
+6. **The project's default list** is the row of `project_default_list`. It is read only while the search is not in the trash, is still shared with the project and the reader may open it; stopping the share takes the row away in the same change, and choosing none takes it away too. The change is an event about the project (`default_list`).
+7. **A person who is removed:** `delete_private_searches_of` (the port) deletes the searches shared with nobody in the change that removes the person; the shared ones stay, and the maker's name is *Former user …* because the name of the person is.
+
+Enforced by (additional): the tests `qry_06_*` of `bb-core`, `bb-app`, `bb-store` and `bb-server`.
+
 ## Enforced by
 
 SEC-MATRIX (the `search` entry point, with saved searches), ARCH-PERMS (*Share searches*), ARCH-EVENTS, DATA-MARKS, PERF-N1 (the list of saved searches), and the tests of M5 WP-06 named in the security chapter.

@@ -34,7 +34,7 @@ fn presentation() -> Presentation {
                 width: None,
             },
         ],
-        spacing: Spacing::Compact,
+        spacing: Spacing::of("compact").unwrap_or_default(),
         group_by: Some("statusGroup".to_owned()),
         ..Presentation::default()
     }
@@ -285,29 +285,47 @@ async fn qry_06_a_search_is_reached_through_a_group_or_a_project_and_never_by_it
                 ShareTarget::Project(world.project)
             ]
         );
-        // Stopping a share, and a group that is deleted takes its shares along.
-        let (gone, id) = (
-            changed(storage, &mut source, move |tx| {
-                Box::pin(async move {
-                    AuthStorage::delete_search_share(tx, first.id, ShareTarget::Group(group)).await
-                })
-            })
-            .await?,
-            first.id,
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_06_stopping_a_share_and_deleting_a_group_take_the_share_rows_away() -> TestResult {
+    each_database("qry_06_store_shares_go", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let (maker, reader) = (UserId::generate(&mut source), UserId::generate(&mut source));
+        let group = GroupId::generate(&mut source).unwrap();
+        let (first, third) = (
+            search(&mut source, maker, "One", 1),
+            search(&mut source, maker, "Three", 3),
         );
-        assert!(gone);
-        share(storage, &mut source, id, ShareTarget::Group(group)).await?;
-        share(storage, &mut source, third.id, ShareTarget::Group(group)).await?;
+        insert(storage, &mut source, &first).await?;
+        insert(storage, &mut source, &third).await?;
+        let (id, target) = (first.id, ShareTarget::Group(group));
+        share(storage, &mut source, id, target).await?;
+        let stopped = changed(storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::delete_search_share(tx, id, target).await })
+        })
+        .await?;
+        assert!(stopped);
+        let again = changed(storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::delete_search_share(tx, id, target).await })
+        })
+        .await?;
+        assert!(!again, "a share that is not there is not stopped");
+        // A group that is deleted takes its shares along.
+        share(storage, &mut source, id, target).await?;
+        share(storage, &mut source, third.id, target).await?;
         let removed = changed(storage, &mut source, move |tx| {
             Box::pin(async move { AuthStorage::delete_shares_with_group(tx, group).await })
         })
         .await?;
         assert_eq!(removed, [first.id, third.id]);
-        assert!(
-            shared_with(storage, reader, &groups, &[], None)
-                .await?
-                .is_empty()
-        );
+        let reaching = shared_with(storage, reader, &[group], &[], None).await?;
+        assert!(reaching.is_empty());
         Ok(())
     })
     .await

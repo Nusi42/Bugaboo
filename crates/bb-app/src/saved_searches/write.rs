@@ -6,7 +6,6 @@ use bb_core::ErrorCode;
 use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::SavedSearchId;
 use bb_core::saved_search::{Presentation, SavedSearch, SearchColumn};
-use bb_core::text::{NAME_MAX, clean};
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use bb_searchlang::MAX_TEXT_BYTES;
@@ -19,6 +18,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity};
+use crate::input::clean_name;
 use crate::member::saved_search as member;
 use crate::ports::BoxFuture;
 use crate::projects::Why;
@@ -31,13 +31,6 @@ fn clean_search_text(text: &str) -> Result<String, AppError> {
         return Err(ErrorCode::InvalidRequest.into());
     }
     Ok(text.to_owned())
-}
-
-/// The name as it is kept.
-fn clean_search_name(name: &str) -> Result<String, AppError> {
-    clean(name, NAME_MAX)
-        .map(str::to_owned)
-        .ok_or_else(|| ErrorCode::InvalidRequest.into())
 }
 
 /// The presentation, when it can be kept.
@@ -111,7 +104,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         text: String,
         presentation: Presentation,
     ) -> Result<NewSearch, AppError> {
-        let name = clean_search_name(name)?;
+        let name = clean_name(name)?;
         let presentation = checked(presentation)?;
         let id = SavedSearchId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
@@ -270,7 +263,7 @@ pub async fn change_search<S: AuthStore>(
     }
     let mut search = before.clone();
     if let Some(name) = &input.name {
-        search.name = clean_search_name(name)?;
+        search.name = clean_name(name)?;
     }
     if let Some(text) = &input.text {
         search.text = clean_search_text(text)?;
@@ -307,12 +300,12 @@ pub async fn change_search<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
-    let changed = Stored {
+    let saved = Stored {
         search,
         columns,
         shares: stored.shares,
     };
-    ctx.authorized_view(&actor, &reaching, changed).await
+    ctx.authorized_view(&actor, &reaching, saved).await
 }
 
 /// Puts a saved search into the trash. Its maker does, and so does anybody with *Change

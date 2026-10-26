@@ -5,7 +5,8 @@ use bb_app::saved_searches::{Reach, SavedSearchStore};
 use bb_core::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use bb_core::person::Person;
 use bb_core::saved_search::{
-    ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareTarget, Spacing, ViewKind,
+    ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareKind, ShareTarget, Spacing,
+    ViewKind,
 };
 use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
@@ -46,7 +47,7 @@ fn read_search(row: &Row) -> Result<SavedSearch, StoreError> {
         maker: row.id::<UserId>(SavedSearchRow::Maker)?,
         view: ViewKind::from_code(&row.get::<String>(SavedSearchRow::View)?)
             .ok_or(StoreError::Corrupt("a kind of view"))?,
-        spacing: Spacing::from_code(&row.get::<String>(SavedSearchRow::Spacing)?)
+        spacing: Spacing::of(&row.get::<String>(SavedSearchRow::Spacing)?)
             .ok_or(StoreError::Corrupt("a spacing"))?,
         group_by: row.get(SavedSearchRow::GroupBy)?,
         created_at: row.time(SavedSearchRow::CreatedAt)?,
@@ -92,11 +93,11 @@ fn share_select() -> SelectStatement {
 }
 
 fn read_share(row: &Row) -> Result<SearchShare, StoreError> {
-    let kind: String = row.get(SearchShareRow::Kind)?;
-    let target = match kind.as_str() {
-        ShareTarget::GROUP => ShareTarget::Group(row.id::<GroupId>(SearchShareRow::Target)?),
-        ShareTarget::PROJECT => ShareTarget::Project(row.id::<ProjectId>(SearchShareRow::Target)?),
-        _ => return Err(StoreError::Corrupt("a kind of share")),
+    let kind = ShareKind::from_code(&row.get::<String>(SearchShareRow::Kind)?)
+        .ok_or(StoreError::Corrupt("a kind of share"))?;
+    let target = match kind {
+        ShareKind::Group => ShareTarget::Group(row.id::<GroupId>(SearchShareRow::Target)?),
+        ShareKind::Project => ShareTarget::Project(row.id::<ProjectId>(SearchShareRow::Target)?),
     };
     Ok(SearchShare {
         search: row.id::<SavedSearchId>(SearchShareRow::Search)?,
@@ -123,14 +124,14 @@ fn shares_reaching(reach: &Reach<'_>) -> SelectStatement {
     if !reach.groups.is_empty() {
         places = places.add(
             Cond::all()
-                .add(Expr::col(SearchShareRow::Kind).eq(ShareTarget::GROUP))
+                .add(Expr::col(SearchShareRow::Kind).eq(ShareKind::Group.code()))
                 .add(Expr::col(SearchShareRow::Target).is_in(stored_ids(reach.groups))),
         );
     }
     if !reach.projects.is_empty() {
         places = places.add(
             Cond::all()
-                .add(Expr::col(SearchShareRow::Kind).eq(ShareTarget::PROJECT))
+                .add(Expr::col(SearchShareRow::Kind).eq(ShareKind::Project.code()))
                 .add(Expr::col(SearchShareRow::Target).is_in(stored_ids(reach.projects))),
         );
     }
@@ -425,7 +426,7 @@ impl SavedSearchStore for AuthStorage {
             ])
             .values([
                 Expr::val(share.search.stored()),
-                Expr::val(share.target.kind()),
+                Expr::val(share.target.kind().code()),
                 Expr::val(target_id(share.target).to_vec()),
                 Expr::val(to_micros(share.shared_at)),
             ])
@@ -451,7 +452,7 @@ impl SavedSearchStore for AuthStorage {
         delete
             .from_table(SearchShareRow::Table)
             .and_where(Expr::col(SearchShareRow::Search).eq(search.stored()))
-            .and_where(Expr::col(SearchShareRow::Kind).eq(target.kind()))
+            .and_where(Expr::col(SearchShareRow::Kind).eq(target.kind().code()))
             .and_where(Expr::col(SearchShareRow::Target).eq(target_id(target).to_vec()));
         Ok(transaction.execute(&delete).await? > 0)
     }
@@ -503,7 +504,7 @@ impl SavedSearchStore for AuthStorage {
         select
             .column(SearchShareRow::Search)
             .from(SearchShareRow::Table)
-            .and_where(Expr::col(SearchShareRow::Kind).eq(ShareTarget::GROUP))
+            .and_where(Expr::col(SearchShareRow::Kind).eq(ShareKind::Group.code()))
             .and_where(Expr::col(SearchShareRow::Target).eq(group.stored()))
             .order_by(SearchShareRow::Search, Order::Asc);
         let gone = transaction
@@ -515,7 +516,7 @@ impl SavedSearchStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(SearchShareRow::Table)
-            .and_where(Expr::col(SearchShareRow::Kind).eq(ShareTarget::GROUP))
+            .and_where(Expr::col(SearchShareRow::Kind).eq(ShareKind::Group.code()))
             .and_where(Expr::col(SearchShareRow::Target).eq(group.stored()));
         transaction.execute(&delete).await?;
         Ok(gone)

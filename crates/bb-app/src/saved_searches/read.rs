@@ -4,12 +4,13 @@
 use bb_core::ErrorCode;
 use bb_core::id::SavedSearchId;
 use bb_core::paging::{Cut, page_len, read_len, window};
+use bb_core::saved_search::{SearchScope, ShareKind};
 use bb_policy::{Authorized, Permission, Place};
 
-use super::reach::Stored;
+use super::reach::{Stored, may_share_with_group};
 use super::types::{
-    SavedSearchPage, SavedSearchView, SearchQuery, SearchScope, SearchesQuery, ShareChoice,
-    ShareChoiceKind, ShareChoicePage, ShareChoicesQuery,
+    SavedSearchPage, SavedSearchView, SearchQuery, SearchesQuery, ShareChoice, ShareChoicePage,
+    ShareChoicesQuery,
 };
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
@@ -109,9 +110,7 @@ pub async fn share_choices<S: AuthStore>(
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let organization = ctx.evaluation_of(&actor, Place::Organization).await?;
     let mut choices: Vec<ShareChoice> = match input.kind {
-        ShareChoiceKind::Group => {
-            let manages = organization.allows(Permission::ManageGroups);
-            let shares = organization.allows(Permission::ShareSearches);
+        ShareKind::Group => {
             let mine: Vec<_> = ctx
                 .store()
                 .groups_of(actor.person.id)
@@ -125,7 +124,7 @@ pub async fn share_choices<S: AuthStore>(
                 .await
                 .map_err(|error| internal::<S>(&error))?
                 .into_iter()
-                .filter(|group| manages || (shares && mine.contains(&group.id)))
+                .filter(|group| may_share_with_group(&organization, mine.contains(&group.id)))
                 .map(|group| ShareChoice {
                     id: group.id.to_string(),
                     name: group.name,
@@ -133,7 +132,7 @@ pub async fn share_choices<S: AuthStore>(
                 })
                 .collect()
         }
-        ShareChoiceKind::Project => {
+        ShareKind::Project => {
             let shown = ctx.shown_to(&actor).await?;
             shown
                 .holding(Permission::ShareSearches)

@@ -14,6 +14,14 @@ use crate::schema::{
 };
 
 pub(super) fn steps() -> Vec<Step> {
+    let mut steps = searches();
+    steps.extend(columns());
+    steps.extend(shares());
+    steps.extend(default_lists());
+    steps
+}
+
+fn searches() -> Vec<Step> {
     vec![
         Step::Table(
             Table::create()
@@ -57,29 +65,37 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(SavedSearchRow::Id)
                 .to_owned(),
         ),
-        Step::Table(
-            Table::create()
-                .table(SearchColumnRow::Table)
-                .col(id_column(SearchColumnRow::Search))
-                .col(
-                    ColumnDef::new(SearchColumnRow::Position)
-                        .big_integer()
-                        .not_null(),
-                )
-                .col(ColumnDef::new(SearchColumnRow::Field).text().not_null())
-                .col(ColumnDef::new(SearchColumnRow::Width).big_integer())
-                .primary_key(
-                    Index::create()
-                        .col(SearchColumnRow::Search)
-                        .col(SearchColumnRow::Position),
-                )
-                .foreign_key(
-                    ForeignKey::create()
-                        .from(SearchColumnRow::Table, SearchColumnRow::Search)
-                        .to(SavedSearchRow::Table, SavedSearchRow::Id),
-                )
-                .to_owned(),
-        ),
+    ]
+}
+
+fn columns() -> Vec<Step> {
+    vec![Step::Table(
+        Table::create()
+            .table(SearchColumnRow::Table)
+            .col(id_column(SearchColumnRow::Search))
+            .col(
+                ColumnDef::new(SearchColumnRow::Position)
+                    .big_integer()
+                    .not_null(),
+            )
+            .col(ColumnDef::new(SearchColumnRow::Field).text().not_null())
+            .col(ColumnDef::new(SearchColumnRow::Width).big_integer())
+            .primary_key(
+                Index::create()
+                    .col(SearchColumnRow::Search)
+                    .col(SearchColumnRow::Position),
+            )
+            .foreign_key(
+                ForeignKey::create()
+                    .from(SearchColumnRow::Table, SearchColumnRow::Search)
+                    .to(SavedSearchRow::Table, SavedSearchRow::Id),
+            )
+            .to_owned(),
+    )]
+}
+
+fn shares() -> Vec<Step> {
+    vec![
         Step::Table(
             Table::create()
                 .table(SearchShareRow::Table)
@@ -114,29 +130,32 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(SearchShareRow::Search)
                 .to_owned(),
         ),
-        Step::Table(
-            Table::create()
-                .table(ProjectDefaultListRow::Table)
-                .col(
-                    ColumnDef::new(ProjectDefaultListRow::Project)
-                        .blob()
-                        .not_null()
-                        .primary_key(),
-                )
-                .col(id_column(ProjectDefaultListRow::Search))
-                .foreign_key(
-                    ForeignKey::create()
-                        .from(ProjectDefaultListRow::Table, ProjectDefaultListRow::Project)
-                        .to(ProjectRow::Table, ProjectRow::Id),
-                )
-                .foreign_key(
-                    ForeignKey::create()
-                        .from(ProjectDefaultListRow::Table, ProjectDefaultListRow::Search)
-                        .to(SavedSearchRow::Table, SavedSearchRow::Id),
-                )
-                .to_owned(),
-        ),
     ]
+}
+
+fn default_lists() -> Vec<Step> {
+    vec![Step::Table(
+        Table::create()
+            .table(ProjectDefaultListRow::Table)
+            .col(
+                ColumnDef::new(ProjectDefaultListRow::Project)
+                    .blob()
+                    .not_null()
+                    .primary_key(),
+            )
+            .col(id_column(ProjectDefaultListRow::Search))
+            .foreign_key(
+                ForeignKey::create()
+                    .from(ProjectDefaultListRow::Table, ProjectDefaultListRow::Project)
+                    .to(ProjectRow::Table, ProjectRow::Id),
+            )
+            .foreign_key(
+                ForeignKey::create()
+                    .from(ProjectDefaultListRow::Table, ProjectDefaultListRow::Search)
+                    .to(SavedSearchRow::Table, SavedSearchRow::Id),
+            )
+            .to_owned(),
+    )]
 }
 
 #[cfg(test)]

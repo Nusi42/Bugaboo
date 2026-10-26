@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Presentation, ShareTarget};
+use bb_core::saved_search::{Presentation, SearchScope, ShareKind, ShareTarget};
 use bb_policy::StartingRole;
 
 use super::scenarios::{a_project, text, token};
@@ -17,9 +17,8 @@ use crate::auth::{AppError, Started, by, changed, entity};
 use crate::people::{DeleteGroup, delete_group};
 use crate::ports::ChangeStore as _;
 use crate::saved_searches::{
-    ChangeSearch, DeleteSearch, RestoreSearch, SaveCopy, SavedSearchStore as _, SearchScope,
-    ShareChoiceKind, ShareChoicesQuery, ShareView, change_search, delete_search, restore_search,
-    save_copy, share_choices,
+    ChangeSearch, DeleteSearch, RestoreSearch, SaveCopy, SavedSearchStore as _, ShareChoicesQuery,
+    ShareView, change_search, delete_search, restore_search, save_copy, share_choices,
 };
 
 /// The people of a small company: Ada the administrator; Ben, a team member of ACME only; Cleo, a
@@ -68,6 +67,14 @@ impl Crew {
 
 fn refused<T>(result: &Result<T, AppError>, code: ErrorCode) -> bool {
     matches!(result, Err(AppError::Refused(found)) if *found == code)
+}
+
+/// The searches shared with the person.
+async fn shared(
+    crew: &Crew,
+    who: &Started,
+) -> Result<Vec<crate::saved_searches::SavedSearchView>, AppError> {
+    list(&crew.world, &who.session_token, SearchScope::Shared).await
 }
 
 fn names(views: &[crate::saved_searches::SavedSearchView]) -> Vec<&str> {
@@ -241,7 +248,7 @@ async fn qry_06_sharing_needs_share_searches_at_the_place() -> Outcome {
         &crew.world.ctx(),
         ShareChoicesQuery {
             session_token: ben.clone(),
-            kind: ShareChoiceKind::Project,
+            kind: ShareKind::Project,
             cursor: None,
             limit: 50,
         },
@@ -308,7 +315,7 @@ async fn qry_06_a_group_needs_being_in_it_or_manage_groups() -> Outcome {
                 &world.ctx(),
                 ShareChoicesQuery {
                     session_token: session,
-                    kind: ShareChoiceKind::Group,
+                    kind: ShareKind::Group,
                     cursor: None,
                     limit: 50,
                 },
@@ -345,12 +352,6 @@ async fn qry_06_a_search_shared_with_a_place_is_listed_for_the_people_it_reaches
     )
     .await?;
     share(&crew.world, &ada, for_night.id, ShareTarget::Group(night)).await?;
-    async fn shared(
-        crew: &Crew,
-        who: &Started,
-    ) -> Result<Vec<crate::saved_searches::SavedSearchView>, AppError> {
-        list(&crew.world, &who.session_token, SearchScope::Shared).await
-    }
     // Ben and Dan see ACME; Cleo is in the group and, as a team member of the whole organization,
     // sees ACME too; Eve sees nothing.
     assert_eq!(names(&shared(&crew, &crew.ben).await?), ["For ACME"]);

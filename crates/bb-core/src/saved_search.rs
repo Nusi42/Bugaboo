@@ -11,6 +11,7 @@ use serde::Serialize;
 
 use crate::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use crate::personal::{Entity, NotPersonal};
+use crate::settings::{APPEARANCE_SPACING, DefaultValue};
 
 /// The most columns one saved search shows.
 pub const COLUMNS_MAX: usize = 40;
@@ -40,19 +41,54 @@ words_in_api!(
     "The kind of view a saved search is shown as. Other kinds come with their views."
 );
 
-words! {
-    /// How close together the rows are: *Comfortable* or *Compact*. The same two words as the
-    /// setting *Spacing* in *My settings* (`appearance.spacing`), which reads them from here.
-    pub enum Spacing {
-        /// More room around each row.
-        Comfortable => "comfortable",
-        /// Closer rows.
-        Compact => "compact",
+/// How close together the rows are: *Comfortable* or *Compact*. It is one of the choices of the
+/// setting *Spacing* (`appearance.spacing`), which the registry of settings holds once, and the
+/// starting value is the default of that setting.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct Spacing(&'static str);
+
+// One of the words of the registry, never text a person wrote.
+impl NotPersonal for Spacing {}
+
+impl Spacing {
+    /// The spacing a choice of the setting stands for; `None` for text that is none of them.
+    #[must_use]
+    pub fn of(code: &str) -> Option<Self> {
+        APPEARANCE_SPACING
+            .definition()
+            .format()
+            .choices()
+            .iter()
+            .find(|choice| choice.value() == code)
+            .map(|choice| Self(choice.value()))
     }
-    messages name = "appearance.spacing.";
+
+    /// The choice, as stored and as written in the API.
+    #[must_use]
+    pub const fn code(self) -> &'static str {
+        self.0
+    }
+
+    /// Every spacing there is, in the order of the setting.
+    pub fn all() -> impl Iterator<Item = Self> {
+        APPEARANCE_SPACING
+            .definition()
+            .format()
+            .choices()
+            .iter()
+            .map(|choice| Self(choice.value()))
+    }
 }
 
-words_in_api!(Spacing, "How close together the rows of a list are.");
+impl Default for Spacing {
+    /// The default of the setting: what the list is without a choice.
+    fn default() -> Self {
+        match APPEARANCE_SPACING.definition().default() {
+            DefaultValue::Text(code) => Self::of(code).unwrap_or(Self("")),
+            DefaultValue::Bool(_) | DefaultValue::Integer(_) => Self(""),
+        }
+    }
+}
 
 /// One column of a list: the field by its search word and, when the person dragged it, its width.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -83,7 +119,7 @@ impl Default for Presentation {
         Self {
             view: ViewKind::List,
             columns: Vec::new(),
-            spacing: Spacing::Comfortable,
+            spacing: Spacing::default(),
             group_by: None,
         }
     }
@@ -215,6 +251,36 @@ pub struct SearchColumn {
     pub width: Option<i64>,
 }
 
+words! {
+    /// Which saved searches a list shows.
+    pub enum SearchScope {
+        /// The ones the person made.
+        Mine => "mine",
+        /// The ones other people shared with a group of the person or a project they see.
+        Shared => "shared",
+    }
+}
+
+words_in_api!(
+    SearchScope,
+    "Which saved searches a list shows: the person's own, or the ones shared with them."
+);
+
+words! {
+    /// What a saved search is shared with: a group or a project.
+    pub enum ShareKind {
+        /// The people in a group.
+        Group => "group",
+        /// The people who see a project.
+        Project => "project",
+    }
+}
+
+words_in_api!(
+    ShareKind,
+    "What a saved search is shared with: a group or a project."
+);
+
 /// Whom a saved search is shared with: a group or a project (ADR-0034, decision 2).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ShareTarget {
@@ -228,17 +294,12 @@ pub enum ShareTarget {
 impl NotPersonal for ShareTarget {}
 
 impl ShareTarget {
-    /// The word of a share with a group, as stored and as written in an event.
-    pub const GROUP: &'static str = "group";
-    /// The word of a share with a project.
-    pub const PROJECT: &'static str = "project";
-
     /// The word that tells a group from a project.
     #[must_use]
-    pub const fn kind(self) -> &'static str {
+    pub const fn kind(self) -> ShareKind {
         match self {
-            Self::Group(_) => Self::GROUP,
-            Self::Project(_) => Self::PROJECT,
+            Self::Group(_) => ShareKind::Group,
+            Self::Project(_) => ShareKind::Project,
         }
     }
 
@@ -248,6 +309,15 @@ impl ShareTarget {
         match self {
             Self::Group(group) => group.to_string(),
             Self::Project(project) => project.to_string(),
+        }
+    }
+
+    /// The group or project of `kind` that `id` names; `None` for text that is no such ID.
+    #[must_use]
+    pub fn parse(kind: ShareKind, id: &str) -> Option<Self> {
+        match kind {
+            ShareKind::Group => id.parse().ok().map(Self::Group),
+            ShareKind::Project => id.parse().ok().map(Self::Project),
         }
     }
 }
@@ -292,9 +362,18 @@ mod tests {
     fn qry_06_the_starting_presentation_is_a_comfortable_list_with_the_columns_of_the_project() {
         let starting = Presentation::default();
         assert_eq!(starting.view, ViewKind::List);
-        assert_eq!(starting.spacing, Spacing::Comfortable);
+        assert_eq!(starting.spacing.code(), "comfortable");
         assert!(starting.columns.is_empty() && starting.group_by.is_none());
         assert!(starting.is_valid());
+    }
+
+    #[test]
+    fn qry_06_spacing_is_a_choice_of_the_setting_and_nothing_else() {
+        let words: Vec<&str> = Spacing::all().map(Spacing::code).collect();
+        assert_eq!(words, ["comfortable", "compact"]);
+        assert_eq!(Spacing::of("compact").map(Spacing::code), Some("compact"));
+        assert_eq!(Spacing::of("cosy"), None);
+        assert_eq!(Spacing::default().code(), "comfortable");
     }
 
     #[test]
@@ -302,8 +381,14 @@ mod tests {
         let mut ids = crate::id::SequentialIds::default();
         let group = GroupId::generate(&mut ids).unwrap();
         let project = ProjectId::generate(&mut ids).unwrap();
-        assert_eq!(ShareTarget::Group(group).kind(), "group");
-        assert_eq!(ShareTarget::Project(project).kind(), "project");
+        assert_eq!(ShareTarget::Group(group).kind().code(), "group");
+        assert_eq!(ShareTarget::Project(project).kind().code(), "project");
+        let named = |kind: ShareKind, id: String| ShareTarget::parse(kind, &id);
+        assert_eq!(
+            named(ShareKind::Group, group.to_string()),
+            Some(ShareTarget::Group(group))
+        );
+        assert_eq!(ShareTarget::parse(ShareKind::Group, "not an id"), None);
         assert_eq!(ShareTarget::Group(group).id_text(), group.to_string());
         assert_eq!(ShareTarget::Project(project).id_text(), project.to_string());
     }
@@ -312,7 +397,7 @@ mod tests {
     fn qry_06_a_presentation_is_kept_as_rows_and_read_back_in_order() {
         let presentation = Presentation {
             columns: vec![column("title", Some(300)), column("status", None)],
-            spacing: Spacing::Compact,
+            spacing: Spacing::of("compact").unwrap(),
             group_by: Some("statusGroup".to_owned()),
             ..Presentation::default()
         };
