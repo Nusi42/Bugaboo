@@ -693,7 +693,7 @@ mod tests {
         let file = folder.path().join("bugaboo.db");
         let database = Database::connect_file(&file).await?;
         database.ping().await?;
-        database.migrate(Timestamp::now()).await?;
+        database.migrate(jiff::Timestamp::now()).await?;
         for suffix in ["", "-wal", "-shm"] {
             let mut name = file.clone().into_os_string();
             name.push(suffix);
