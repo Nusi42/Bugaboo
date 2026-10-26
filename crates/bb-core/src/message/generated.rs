@@ -462,6 +462,13 @@ pub const CLI_ABOUT_ROTATE_KEY: MessageKey = MessageKey::new("cli.about.rotate-k
 /// The message `cli.about.sample`.
 pub const CLI_ABOUT_SAMPLE: MessageKey = MessageKey::new("cli.about.sample");
 
+/// The message `cli.about.search-index`.
+pub const CLI_ABOUT_SEARCH_INDEX: MessageKey = MessageKey::new("cli.about.search-index");
+
+/// The message `cli.about.search-index-rebuild`.
+pub const CLI_ABOUT_SEARCH_INDEX_REBUILD: MessageKey =
+    MessageKey::new("cli.about.search-index-rebuild");
+
 /// The message `cli.about.security-log`.
 pub const CLI_ABOUT_SECURITY_LOG: MessageKey = MessageKey::new("cli.about.security-log");
 
@@ -8688,6 +8695,15 @@ pub fn save_saved_at(time: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search-index.rebuilt`.
+#[must_use]
+pub fn search_index_rebuilt(issues: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search-index.rebuilt"),
+        vec![("issues", Value::Number(issues))],
+    )
+}
+
 /// The message `search.mistake.expected-blocked-by`.
 #[must_use]
 pub fn search_mistake_expected_blocked_by(
@@ -10378,6 +10394,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "cli.about.sample",
         "Create the sample organization: fictional people, the same every time from a seed",
+    ),
+    (
+        "cli.about.search-index",
+        "Look after the index of the text search",
+    ),
+    (
+        "cli.about.search-index-rebuild",
+        "Build the index of the text search again from the stored texts",
     ),
     ("cli.about.security-log", "Look at the security log"),
     (
@@ -13188,6 +13212,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("save.saved", "Saved"),
     ("save.saved-at", "Saved · {time}"),
     ("save.saving", "Saving…"),
+    (
+        "search-index.rebuilt",
+        "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
+    ),
     ("search.clear", "Clear the search"),
     ("search.label", "Search"),
     (
