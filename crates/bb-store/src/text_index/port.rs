@@ -11,9 +11,9 @@
 //! An issue matches when every word of the search is in some text of the scope, not necessarily
 //! the same one (a title with "login" and a comment with "error" find `login error`): one
 //! sub-select for each word, all in the one statement of the search. The order is not the port's
-//! either: it hands the compiler `title_hit` (1 when the title alone has every word) for "title
-//! hits first, then the newest" (ADR-0016, amendment M5), with no ranking function, so both
-//! databases give the same order.
+//! either: "title hits first, then the newest" (ADR-0016, amendment M5) is asked by the compiler
+//! with the scope [`TextScope::Source`] on the title, with no ranking function, so both databases
+//! give the same order.
 //!
 //! The cost of one search is bounded here, for a caller that did not run the checker: a word that
 //! comes twice counts once (`search_words`), no more than [`MAX_CONTAINS_WORDS`] words are looked
@@ -23,9 +23,7 @@ use bb_core::id::FieldId;
 use bb_core::text_index::TextSource;
 use bb_core::text_words::SearchWord;
 use bb_searchlang::MAX_CONTAINS_WORDS;
-use sea_query::{
-    Alias, BinOper, Condition, Expr, ExprTrait as _, Func, Query, SelectStatement, SimpleExpr,
-};
+use sea_query::{Alias, BinOper, Expr, ExprTrait as _, Func, Query, SelectStatement, SimpleExpr};
 
 use crate::db::{Dialect, StoredId as _};
 use crate::schema::{TextIndexExtra, TextIndexRow};
@@ -55,8 +53,8 @@ pub struct TextSearch<'a> {
 }
 
 /// The sub-select of a search: for each issue that has every word, one row with the columns
-/// [`TextMatch::ISSUE`] (the issue ID) and [`TextMatch::TITLE_HIT`] (1 when its title alone has
-/// every word, else 0; always 0 in a field).
+/// [`TextMatch::ISSUE`] (the issue ID). Whether the title alone has the words is asked of the scope
+/// [`TextScope::Source`] by the compiler of the search, which is the one place that orders.
 #[derive(Clone, Debug)]
 pub struct TextMatch {
     /// The sub-select. The compiler uses it as a derived table (`FROM (...) AS text_hit`, joined
@@ -67,8 +65,6 @@ pub struct TextMatch {
 impl TextMatch {
     /// The name of the issue column of [`TextMatch::select`].
     pub const ISSUE: &'static str = "issue_id";
-    /// The name of the title column of [`TextMatch::select`].
-    pub const TITLE_HIT: &'static str = "title_hit";
 }
 
 /// One word as it is looked up: the text, and whether it matches by its start.
@@ -84,7 +80,7 @@ pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
         // No words match nothing.
         select.and_where(Expr::val(1).eq(0));
         return TextMatch {
-            select: with_columns(select, Expr::val(0_i64)),
+            select: with_columns(select),
         };
     };
     select
@@ -97,30 +93,15 @@ pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
             &in_scope(search.scope),
         )));
     }
-    let title_hit = match search.scope {
-        TextScope::Everywhere => {
-            let in_title = in_source(TextSource::Title);
-            let mut all = Condition::all();
-            for word in &words {
-                all = all.add(
-                    Expr::col(TextIndexRow::Issue)
-                        .in_subquery(issues_with(dialect, *word, &in_title)),
-                );
-            }
-            Expr::case(all, 1_i64).finally(0_i64).into()
-        }
-        TextScope::Field(_) | TextScope::Source(_) => Expr::val(0_i64),
-    };
     TextMatch {
-        select: with_columns(select, title_hit),
+        select: with_columns(select),
     }
 }
 
 /// The columns of the sub-select, and the grouping that makes one row for an issue.
-fn with_columns(mut select: SelectStatement, title_hit: SimpleExpr) -> SelectStatement {
+fn with_columns(mut select: SelectStatement) -> SelectStatement {
     select
         .expr_as(Expr::col(TextIndexRow::Issue), Alias::new(TextMatch::ISSUE))
-        .expr_as(title_hit, Alias::new(TextMatch::TITLE_HIT))
         .group_by_col(TextIndexRow::Issue);
     select
 }
@@ -245,12 +226,13 @@ mod tests {
     }
 
     #[test]
-    fn the_words_may_be_in_different_texts_but_the_title_hit_needs_them_in_the_title() {
+    fn the_words_may_be_in_different_texts_of_the_scope() {
         let text = text_of(Dialect::Postgres, "login error", TextScope::Everywhere);
-        // One lookup in the scope for the second word, and one for each word in the title.
-        assert_eq!(text.matches("'error')").count(), 2, "{text}");
-        assert_eq!(text.matches("'login')").count(), 2, "{text}");
-        assert!(text.contains("source\" = 'title'"), "{text}");
+        // One lookup in the scope for each word: the first in the statement, the second in a
+        // sub-select, and nothing about the title (the order is the compiler's).
+        assert_eq!(text.matches("'error')").count(), 1, "{text}");
+        assert_eq!(text.matches("'login')").count(), 1, "{text}");
+        assert!(!text.contains("source\" = 'title'"), "{text}");
     }
 
     #[test]
@@ -278,8 +260,7 @@ mod tests {
             "crash crash CRASH",
             TextScope::Everywhere,
         );
-        // Once in the scope and once in the title.
-        assert_eq!(text.matches("'crash')").count(), 2, "{text}");
+        assert_eq!(text.matches("'crash')").count(), 1, "{text}");
     }
 
     #[test]
@@ -299,7 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn a_search_in_a_field_has_no_title_hit() {
+    fn a_search_in_a_field_looks_at_the_rows_of_that_field_only() {
         let field = FieldId::generate(&mut SequentialIds::default()).unwrap();
         let text = text_of(Dialect::Postgres, "notes", TextScope::Field(field));
         assert!(text.contains("source\" = 'field'"), "{text}");

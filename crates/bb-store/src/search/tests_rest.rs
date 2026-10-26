@@ -20,7 +20,7 @@ use bb_searchlang::{Field, FieldKind};
 use bb_testing::{TestDatabase, TestResult, each_database};
 
 use super::tests::{Data, request, request_with, seed, titles};
-use super::tests_more::a_field_in_two_projects;
+use super::tests_more::{a_field_in_two_projects, titles_of};
 use crate::AuthStorage;
 use crate::test_support::{at, event, fixture, issue};
 
@@ -79,18 +79,10 @@ async fn qry_04_member_of_finds_the_issues_of_the_people_of_a_group() -> TestRes
         assert_eq!(found, ["Reported"]);
         // A group the person may not ask about is no group: nothing is found, and nothing breaks.
         ask.names.member_groups.clear();
-        assert!(titles_of(storage, &ask).await.is_empty());
+        assert!(titles_of(storage, &ask).await?.is_empty());
         Ok(())
     })
     .await
-}
-
-async fn titles_of(storage: &AuthStorage, ask: &bb_app::search::SearchRequest) -> Vec<String> {
-    storage
-        .search_page(ask)
-        .await
-        .map(|hits| hits.into_iter().map(|hit| hit.issue.title).collect())
-        .unwrap_or_default()
 }
 
 #[tokio::test]
@@ -166,11 +158,11 @@ async fn qry_04_within_finds_a_project_and_the_projects_below_it_that_the_person
             ask
         };
         let all = [data.project, below, beside];
-        let acme = titles_of(storage, &ask("project within ACME sort by title", &all)).await;
+        let acme = titles_of(storage, &ask("project within ACME sort by title", &all)).await?;
         assert_eq!(acme.len(), 7, "{acme:?}");
         assert!(acme.contains(&"Below".to_owned()) && !acme.contains(&"Beside".to_owned()));
         assert_eq!(
-            titles_of(storage, &ask("project within BELOW", &all)).await,
+            titles_of(storage, &ask("project within BELOW", &all)).await?,
             ["Below"]
         );
         // A project below that the person does not see is not looked into.
@@ -178,7 +170,7 @@ async fn qry_04_within_finds_a_project_and_the_projects_below_it_that_the_person
             storage,
             &ask("project within ACME", &[data.project, beside]),
         )
-        .await;
+        .await?;
         assert!(!narrow.contains(&"Below".to_owned()));
         Ok(())
     })
@@ -269,7 +261,9 @@ async fn own_field_case(
     };
     let both = vec![data.project, other];
     assert!(
-        titles_of(storage, &ask(low, both.clone())).await.is_empty(),
+        titles_of(storage, &ask(low, both.clone()))
+            .await?
+            .is_empty(),
         "{low}"
     );
     assert_eq!(
@@ -277,19 +271,19 @@ async fn own_field_case(
             storage,
             &ask(&format!("{high} sort by title"), both.clone())
         )
-        .await,
+        .await?,
         ["Outside", "Printer jams"],
         "{high}"
     );
     // Where the field does not reach, its value is none.
     assert_eq!(
-        titles_of(storage, &ask(high, vec![data.project])).await,
+        titles_of(storage, &ask(high, vec![data.project])).await?,
         ["Printer jams"]
     );
-    let empty = titles_of(storage, &ask("rack is empty", vec![data.project])).await;
+    let empty = titles_of(storage, &ask("rack is empty", vec![data.project])).await?;
     assert!(empty.contains(&"Outside".to_owned()) && !empty.contains(&"Printer jams".to_owned()));
     // Sorting by it: the issues with a value first, the others after.
-    let down = titles_of(storage, &ask("sort by rack, highest first", both)).await;
+    let down = titles_of(storage, &ask("sort by rack, highest first", both)).await?;
     assert_eq!(down.len(), 7, "{down:?}");
     assert!(down[..2].contains(&"Printer jams".to_owned()));
     Ok(())
@@ -352,13 +346,13 @@ async fn qry_05_a_field_with_many_values_sorts_by_its_smallest_and_by_its_larges
         let data = seed(&fixture.storage).await;
         let storage = &fixture.storage;
         // Printer jams has the tags Bug and UI, Login broken has UI, the others none.
-        let up = titles_of(storage, &request(&data, "sort by tags, title", None, 10)).await;
+        let up = titles_of(storage, &request(&data, "sort by tags, title", None, 10)).await?;
         assert_eq!(up[..2], ["Printer jams", "Login broken"], "{up:?}");
         let down = titles_of(
             storage,
             &request(&data, "sort by tags, Z to A, title", None, 10),
         )
-        .await;
+        .await?;
         // Both end in UI at most, so both come first; the issues without a tag stay last.
         let first: std::collections::BTreeSet<_> = down[..2].iter().cloned().collect();
         assert_eq!(
@@ -501,18 +495,18 @@ async fn qry_05_contains_on_its_own_finds_all_words_across_the_texts_of_issues_t
             async move { titles_of(storage, &ask).await }
         };
         // A word only in a comment: found on the issue the person reads, not on the hidden one.
-        assert_eq!(found("contains zebra").await, ["Login broken"]);
+        assert_eq!(found("contains zebra").await?, ["Login broken"]);
         // The words may stand in different texts of the issue: the title and a comment.
-        assert_eq!(found("contains \"login zebra\"").await, ["Login broken"]);
-        assert!(found("contains \"login printer\"").await.is_empty());
+        assert_eq!(found("contains \"login zebra\"").await?, ["Login broken"]);
+        assert!(found("contains \"login printer\"").await?.is_empty());
         // The title of an issue is found too, and the hidden comment adds nothing to its word.
-        assert_eq!(found("contains \"crash\"").await, ["Crash on save"]);
+        assert_eq!(found("contains \"crash\"").await?, ["Crash on save"]);
         // It combines with any other filter, and `not` leaves the issue out.
         assert_eq!(
-            found("contains zebra and priority is critical").await,
+            found("contains zebra and priority is critical").await?,
             ["Login broken"]
         );
-        let without = found("not contains zebra").await;
+        let without = found("not contains zebra").await?;
         assert_eq!(without.len(), 5);
         assert!(!without.contains(&"Login broken".to_owned()));
         Ok(())
@@ -534,7 +528,7 @@ async fn perf_02_the_issues_whose_title_has_the_words_come_first_then_the_newest
             &[(idea, "the page jams"), (docs, "a page with a typo")],
         )
         .await?;
-        let whole = titles_of(storage, &request(&data, "contains page", None, 20)).await;
+        let whole = titles_of(storage, &request(&data, "contains page", None, 20)).await?;
         assert_eq!(whole, ["Slow page", "Idea", "Docs typo"]);
         // Paging one by one never skips or repeats one: the cursor holds only the ID.
         let mut walked = Vec::new();
@@ -557,7 +551,7 @@ async fn perf_02_the_issues_whose_title_has_the_words_come_first_then_the_newest
             storage,
             &request(&data, "contains page sort by title", None, 20),
         )
-        .await;
+        .await?;
         assert_eq!(sorted, ["Docs typo", "Idea", "Slow page"]);
         Ok(())
     })
@@ -588,12 +582,89 @@ async fn sec_06_a_person_named_for_one_kind_of_field_is_not_found_by_another() -
             ask
         };
         // Named as a reporter, the person is found as one; named as an assignee, they are not.
-        assert_eq!(titles_of(storage, &ask(REPORTED_BY_PEOPLE)).await.len(), 5);
+        assert_eq!(titles_of(storage, &ask(REPORTED_BY_PEOPLE)).await?.len(), 5);
         assert!(
             titles_of(storage, &ask(ASSIGNED_TO_PEOPLE))
-                .await
+                .await?
                 .is_empty()
         );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_02_only_the_first_contains_that_every_issue_must_satisfy_orders_by_title_hits()
+-> TestResult {
+    each_database("search_title_hit_which", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        // Slow page (made 4) and Docs typo (made 3) both have both words: one in the title, the
+        // other in a comment.
+        let (slow, docs) = (data.issues[3].id, data.issues[2].id);
+        comment_and_index(
+            storage,
+            &mut data,
+            &[(slow, "a typo was noted"), (docs, "the page is wrong")],
+        )
+        .await?;
+        let found = |text: &'static str| {
+            let ask = request(&data, text, None, 20);
+            async move { titles_of(storage, &ask).await }
+        };
+        let (newest_first, oldest_first) = (["Slow page", "Docs typo"], ["Docs typo", "Slow page"]);
+        // The first `contains` of the `and` decides which title is asked for.
+        assert_eq!(
+            found("contains page and contains typo").await?,
+            newest_first
+        );
+        assert_eq!(
+            found("contains typo and contains page").await?,
+            oldest_first
+        );
+        // Under an `or`, with a `title contains` or with a field, no title order: the newest first.
+        assert_eq!(found("contains page or contains typo").await?, newest_first);
+        assert_eq!(found("contains typo or contains page").await?, newest_first);
+        assert_eq!(
+            found("title contains page or title contains typo").await?,
+            newest_first
+        );
+        assert_eq!(
+            found("contains typo and not contains zebra").await?,
+            oldest_first
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_13_a_comment_on_an_issue_the_reader_cannot_see_never_finds_it() -> TestResult {
+    each_database("iss_13_hidden_comment", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        let hidden = data.hidden.id;
+        comment_and_index(
+            storage,
+            &mut data,
+            &[(hidden, "unicorn sighted in the vault")],
+        )
+        .await?;
+        // The word is only in a comment of an issue in a project the person does not see.
+        for text in [
+            "contains unicorn",
+            "contains \"unicorn vault\"",
+            "contains \"unic*\"",
+        ] {
+            let ask = request(&data, text, None, 20);
+            assert!(titles_of(storage, &ask).await?.is_empty(), "{text}");
+        }
+        // Where the person does see that project, the same word finds the issue.
+        let mut ask = request(&data, "contains unicorn", None, 20);
+        ask.sight.all.push(data.hidden.project);
+        assert_eq!(titles_of(storage, &ask).await?, ["Hidden one"]);
         Ok(())
     })
     .await

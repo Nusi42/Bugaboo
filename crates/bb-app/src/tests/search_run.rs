@@ -19,7 +19,7 @@ use crate::search::{
     SearchCountQuery, SearchFailure, SearchHit, SearchQuery, SearchScope, search, search_count,
 };
 
-fn asked(session: &str, text: &str) -> SearchQuery {
+pub(super) fn asked(session: &str, text: &str) -> SearchQuery {
     SearchQuery {
         session_token: session.to_owned(),
         text: text.to_owned(),
@@ -29,7 +29,10 @@ fn asked(session: &str, text: &str) -> SearchQuery {
     }
 }
 
-async fn issue_of(world: &World, project: bb_core::id::ProjectId) -> Result<Issue, String> {
+pub(super) async fn issue_of(
+    world: &World,
+    project: bb_core::id::ProjectId,
+) -> Result<Issue, String> {
     let id = an_issue(world, project).await?;
     world
         .store
@@ -39,7 +42,7 @@ async fn issue_of(world: &World, project: bb_core::id::ProjectId) -> Result<Issu
         .ok_or_else(|| "the issue is there".to_owned())
 }
 
-fn hit(issue: Issue) -> SearchHit {
+pub(super) fn hit(issue: Issue) -> SearchHit {
     SearchHit { issue }
 }
 
@@ -309,7 +312,11 @@ async fn qry_05_a_hidden_field_takes_as_long_as_an_unknown_field() -> Outcome {
 }
 
 /// The mistakes of a search that is refused, or none.
-async fn refused(world: &World, session: &str, text: &str) -> Vec<bb_searchlang::Mistake> {
+pub(super) async fn refused(
+    world: &World,
+    session: &str,
+    text: &str,
+) -> Vec<bb_searchlang::Mistake> {
     match search(&world.ctx(), asked(session, text)).await {
         Err(AppError::Mistakes(found)) => found,
         _ => Vec::new(),
@@ -585,138 +592,4 @@ fn empty_search() -> bb_searchlang::CheckedSearch {
     let readable = bb_searchlang::ReadableFields::default();
     let parsed = bb_searchlang::parse_with("", &readable).unwrap();
     bb_searchlang::check(parsed, &readable).unwrap()
-}
-
-#[tokio::test]
-async fn qry_05_contains_on_its_own_needs_the_title_and_the_description_to_be_readable() -> Outcome
-{
-    let world = World::new().await?;
-    a_project(&world, "OPEN").await?;
-    let admin = token(&world);
-    search(&world.ctx(), asked(&admin, "contains crash"))
-        .await
-        .map_err(|error| format!("{error:?}"))?;
-    assert_eq!(world.store.lock().searches.len(), 1);
-    // A role that hides the description: the search is told as a field that is not there.
-    let shown: Vec<_> = every_field()
-        .into_iter()
-        .filter(|field| *field != Field::Description.into())
-        .collect();
-    let (bob, _) = bob_with_a_role(&world, &shown).await?;
-    let refused = search(&world.ctx(), asked(&bob, "contains crash")).await;
-    assert!(matches!(refused, Err(AppError::Mistakes(ref found)) if found.len() == 1));
-    assert_eq!(world.store.lock().searches.len(), 1);
-    Ok(())
-}
-
-#[tokio::test]
-async fn sec_06_a_name_is_resolved_for_the_kind_of_the_field_it_stands_in() -> Outcome {
-    let world = World::new().await?;
-    a_project(&world, "OPEN").await?;
-    let bob = world.person("bob@example.test").await?;
-    let admin = token(&world);
-    for text in [
-        "assignedTo is \"bob builder\" or reportedBy is \"bob builder\"",
-        "reportedBy is \"bob builder\" or assignedTo is \"bob builder\"",
-    ] {
-        search(&world.ctx(), asked(&admin, text))
-            .await
-            .map_err(|error| format!("{error:?}"))?;
-        let request = world
-            .store
-            .lock()
-            .searches
-            .last()
-            .cloned()
-            .ok_or("the store was asked")?;
-        // The same name stands once for each kind, resolved by the rule of that kind: the answer
-        // for one kind is never taken for another, whatever the order of the text.
-        let kinds: Vec<_> = request
-            .names
-            .people
-            .iter()
-            .filter(|(_, name, ids)| name == "bob builder" && ids == &[bob.person.id])
-            .map(|(kind, _, _)| *kind)
-            .collect();
-        assert_eq!(kinds.len(), 2, "{text}");
-        assert_ne!(kinds[0], kinds[1], "{text}");
-    }
-    Ok(())
-}
-
-#[tokio::test]
-async fn qry_05_a_label_or_tag_the_person_may_not_know_is_as_unknown_as_one_that_does_not_exist()
--> Outcome {
-    use super::offers::group_in;
-    use super::scenarios_tags::{a_label, tagged};
-
-    let g = groups().await?;
-    let world = &g.world;
-    // A label of a group that belongs to OTHER, and a tag on an issue of OTHER: the lead of ACME,
-    // who does not see OTHER, may know neither.
-    let secret_group = group_in(world, &g.admin, Some("OTHER"), "Hidden area").await?;
-    a_label(world, "hushed", Some(secret_group)).await?;
-    let in_other = issue_of(world, g.other).await?;
-    tagged(world, in_other.id, "hushtag").await?;
-    let unknown = |text: &'static str| {
-        let (world, lead) = (&g.world, g.lead.clone());
-        async move { refused(world, &lead, text).await }
-    };
-    for text in ["labels is hushed", "tags is hushtag"] {
-        let found = unknown(text).await;
-        assert_eq!(found.len(), 1, "{text}");
-        assert_eq!(found[0].key, bb_searchlang::messages::UNKNOWN_CHOICE);
-        // The same answer as a name that does not exist at all.
-        let missing = unknown(if text.starts_with("labels") {
-            "labels is nonesuch"
-        } else {
-            "tags is nonesuch"
-        })
-        .await;
-        assert_eq!(missing[0].key, found[0].key);
-        assert_eq!(missing[0].span.start, found[0].span.start);
-    }
-    // The administrator sees OTHER and knows both; a label of a group the lead knows is theirs too.
-    for text in ["labels is hushed", "tags is hushtag"] {
-        assert!(refused(world, &g.admin, text).await.is_empty(), "{text}");
-    }
-    assert!(refused(world, &g.lead, "labels is login").await.is_empty());
-    assert!(!world.store.lock().searches.is_empty());
-    Ok(())
-}
-
-#[tokio::test]
-async fn iss_13_a_hidden_long_text_field_never_finds_an_issue() -> Outcome {
-    use bb_core::own_fields::FieldType;
-
-    use super::scenarios_fields::a_field;
-
-    let world = World::new().await?;
-    a_project(&world, "OPEN").await?;
-    a_field(&world, "Notes", FieldType::LongText, &[]).await?;
-    a_field(&world, "Rack", FieldType::Text, &[]).await?;
-    let admin = token(&world);
-    // The administrator reads the long text and may search it; a short text is compared, not
-    // searched by its words, so `contains` is no operator of it.
-    assert!(
-        refused(&world, &admin, "notes contains crash")
-            .await
-            .is_empty()
-    );
-    let short = refused(&world, &admin, "rack contains crash").await;
-    assert_eq!(short.len(), 1);
-    assert_eq!(short[0].key, bb_searchlang::messages::OPERATOR_NOT_ALLOWED);
-    // A person whose role does not show the own field is told what is told of a word that is not
-    // there, and no statement is made for it.
-    let (bob, _) = bob_with_a_role(&world, &every_field()).await?;
-    let hidden = refused(&world, &bob, "notes contains crash").await;
-    let unknown = refused(&world, &bob, "nonsense contains crash").await;
-    assert_eq!(hidden.len(), 1);
-    assert_eq!(hidden[0].key, unknown[0].key);
-    let asked = world.store.lock().searches.len();
-    assert_eq!(
-        asked, 1,
-        "only the administrator's search reached the store"
-    );
-    Ok(())
 }

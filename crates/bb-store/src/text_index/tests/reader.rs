@@ -180,7 +180,7 @@ async fn iss_13_a_change_while_the_reader_was_stopped_is_in_the_index_after_a_st
         for words in ["absturz", "STEPS grosse", "crashes", "protokoll ubersicht*"] {
             assert_eq!(
                 found(storage, words, everywhere).await?,
-                [hit(1, i64::from(words == "absturz"))],
+                [hit(1)],
                 "{words}"
             );
         }
@@ -188,7 +188,7 @@ async fn iss_13_a_change_while_the_reader_was_stopped_is_in_the_index_after_a_st
         assert!(found(storage, "printers", everywhere).await?.is_empty());
         assert_eq!(
             found(storage, "printers", TextScope::Field(field_id)).await?,
-            [hit(1, 0)]
+            [hit(1)]
         );
         assert_eq!(catch_up(storage, at(10)).await?, 0);
         Ok(())
@@ -221,7 +221,7 @@ async fn iss_13_reading_an_event_twice_changes_nothing() -> TestResult {
         assert_eq!(rows(storage).await?, once);
         assert_eq!(
             found(storage, "twice same", TextScope::Everywhere).await?,
-            [hit(1, 0)]
+            [hit(1)]
         );
         Ok(())
     })
@@ -636,7 +636,7 @@ async fn iss_13_a_word_with_a_combining_mark_is_split_alike_on_both_databases() 
         for words in ["हिन्दी", "हि*", "كِتاب", "done"] {
             assert_eq!(
                 found(storage, words, everywhere).await?,
-                [hit(1, 1)],
+                [hit(1)],
                 "{words}"
             );
         }

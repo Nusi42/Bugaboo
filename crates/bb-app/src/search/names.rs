@@ -13,7 +13,6 @@
 //! and only when the person sees it; an issue only by its Issue ID, in a project they see, and only
 //! when they read the issue.
 
-use bb_core::fields::{ASSIGNED_TO_PEOPLE, REPORTED_BY_PEOPLE};
 use bb_core::id::{GroupId, UserId};
 use bb_core::issue::StatusGroup;
 use bb_core::names::{name_key, same_name};
@@ -60,15 +59,6 @@ struct Ask {
     field: String,
 }
 
-pub(super) fn people_kind_of(target: FieldTarget) -> Option<PeopleKind> {
-    match target {
-        FieldTarget::AssignedTo => Some(ASSIGNED_TO_PEOPLE),
-        FieldTarget::ReportedBy => Some(REPORTED_BY_PEOPLE),
-        FieldTarget::Own { kind, .. } => kind.people_kind().filter(|_| kind != FieldType::Group),
-        _ => None,
-    }
-}
-
 /// What the values of a field name, if they are names this module resolves.
 fn what_of(target: FieldTarget) -> Option<What> {
     match target {
@@ -84,7 +74,7 @@ fn what_of(target: FieldTarget) -> Option<What> {
             kind: FieldType::Group,
             ..
         } => Some(What::Group),
-        other => people_kind_of(other).map(What::Person),
+        other => other.people_kind().map(What::Person),
     }
 }
 

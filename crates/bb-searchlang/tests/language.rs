@@ -578,3 +578,34 @@ fn qry_05_a_choice_is_found_by_the_one_rule_of_the_same_name() {
     // An accent is a difference, as everywhere else in the app.
     assert!(answer(r#"status is "uber uns""#).is_err());
 }
+
+#[test]
+fn qry_05_a_contains_on_its_own_is_offered_and_allowed_only_with_title_and_description() {
+    let offers_contains = |readable: &ReadableFields| {
+        suggest("", 0, readable)
+            .items
+            .iter()
+            .any(|offer| matches!(offer, Suggestion::Word { text, .. } if text == "contains"))
+    };
+    let all = sample_fields();
+    assert!(offers_contains(&all));
+    assert!(checked("contains crash").is_ok());
+    for hidden in ["title", "description"] {
+        let readable = ReadableFields {
+            fields: all
+                .fields
+                .iter()
+                .filter(|field| field.word != hidden)
+                .cloned()
+                .collect(),
+        };
+        assert!(!offers_contains(&readable), "{hidden}");
+        let answer = parse_with("contains crash", &readable)
+            .map_err(|mistake| vec![mistake])
+            .and_then(|parsed| check(parsed, &readable));
+        let Err(found) = answer else {
+            panic!("{hidden}: accepted");
+        };
+        assert_eq!(found[0].key, messages::UNKNOWN_FIELD, "{hidden}");
+    }
+}

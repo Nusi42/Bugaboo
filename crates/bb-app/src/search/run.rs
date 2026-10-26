@@ -19,10 +19,10 @@ use bb_searchlang::{Mistake, check, parse_with};
 use jiff::tz::TimeZone;
 use serde::Serialize;
 
-use super::names::{people_kind_of, status_groups};
+use super::names::status_groups;
 use super::readable::{Looked, SearchScope, readable_of};
 use super::request::{GroupKey, SearchFailure, SearchRequest, SearchStore};
-use super::target::target_of;
+use super::target::{FieldTarget, target_of};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
@@ -345,7 +345,7 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
     // The store names a group by identity; a person is shown as the viewer may see them.
     let target = target_of(&prepared.looked.fields, &query.by);
-    let kind = target.and_then(people_kind_of);
+    let kind = target.and_then(FieldTarget::people_kind);
     // A tag or a label is shown by its name, among those the person may know.
     let tags = if found
         .iter()

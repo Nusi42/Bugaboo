@@ -304,3 +304,64 @@ async fn perf_05_the_groups_by_a_person_field_run_as_many_statements_for_ten_peo
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_14_a_key_for_one_project_searches_that_project_only() -> TestResult {
+    use bb_core::access_key::KeyChoice;
+    use bb_core::id::ProjectId;
+    each_database("search_http_key_narrowed", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let two = project_called(&mut ada, "TWO").await?;
+        for (project, title) in [(&site.acme, "In ACME"), (&two, "In TWO")] {
+            let made = ada
+                .send(
+                    "POST",
+                    &format!("{PROJECTS}/{project}/issues"),
+                    Some(site.new_issue(title)),
+                )
+                .await?;
+            ok(&made)?;
+        }
+        let only_two: ProjectId = two.parse()?;
+        let key =
+            super::access_keys::create(&rig, &site.org.admin, KeyChoice::SeeOnly, &[], &[only_two])
+                .await?
+                .secret;
+        let mut script = Browser::new(&app, &called());
+        let titles = |reply: &super::http::Reply| -> Vec<String> {
+            reply.body["items"]
+                .as_array()
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|each| each["title"].as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        // The person finds both; the key, which reaches TWO only, finds what is there.
+        let hers = ada.send("GET", "/api/v1/search/issues", None).await?;
+        assert_eq!(titles(&hers).len(), 2, "{}", hers.body);
+        let keys = script
+            .script("GET", "/api/v1/search/issues", None, &key)
+            .await?;
+        assert_eq!(titles(&keys), ["In TWO"], "{}", keys.body);
+        let counted = script
+            .script("GET", "/api/v1/search/issues/count", None, &key)
+            .await?;
+        assert_eq!(ok(&counted)?["issues"], 1);
+        // Asking for the project it does not reach finds nothing of it.
+        let acme = script
+            .script(
+                "GET",
+                &format!("/api/v1/search/issues?within={}", site.acme),
+                None,
+                &key,
+            )
+            .await?;
+        assert!(!acme.body.to_string().contains("In ACME"), "{}", acme.body);
+        Ok(())
+    })
+    .await
+}

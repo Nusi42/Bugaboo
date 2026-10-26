@@ -120,7 +120,8 @@ pub(crate) struct SearchGroupBody {
 pub(crate) struct SearchGroupsBody {
     /// The groups, the one without a value last.
     groups: Vec<SearchGroupBody>,
-    /// Whether the list was cut off at its cap.
+    /// Whether the list was cut off at its cap: over 200 groups the answer holds the first 199
+    /// and the group without a value.
     truncated: bool,
 }
 

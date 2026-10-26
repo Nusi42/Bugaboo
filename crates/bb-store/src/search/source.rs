@@ -8,7 +8,6 @@
 use bb_app::search::FieldTarget;
 use bb_app::search::OwnReach;
 use bb_core::event::{EntityKind, RecordKind};
-use bb_core::fields::{ASSIGNED_TO_PEOPLE, REPORTED_BY_PEOPLE};
 use bb_core::id::FieldId;
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -202,14 +201,14 @@ pub(super) fn subject_of(
         ),
         T::ReportedBy => (
             Subject::Column(issue_column(IssueRow::ReportedBy)),
-            Domain::Person(Some(REPORTED_BY_PEOPLE)),
+            Domain::Person(target.people_kind()),
         ),
         T::AssignedTo => (
             linked(
                 rows_of(AssignedPersonRow::Table, AssignedPersonRow::Issue),
                 Expr::col((AssignedPersonRow::Table, AssignedPersonRow::Person)),
             ),
-            Domain::Person(Some(ASSIGNED_TO_PEOPLE)),
+            Domain::Person(target.people_kind()),
         ),
         T::Tags => (
             linked(
@@ -247,7 +246,7 @@ pub(super) fn subject_of(
             Subject::Column(issue_column(IssueRow::ClosedAt)),
             Domain::Time(Clock::Micros),
         ),
-        T::Own { field, kind } => own_subject(field, kind, reach, sight),
+        T::Own { field, kind } => own_subject(field, kind, target.people_kind(), reach, sight),
     }
 }
 
@@ -255,6 +254,7 @@ pub(super) fn subject_of(
 fn own_subject(
     field: FieldId,
     kind: FieldType,
+    people: Option<PeopleKind>,
     reach: &[OwnReach],
     sight: &IssueSight,
 ) -> (Subject, Domain) {
@@ -289,7 +289,7 @@ fn own_subject(
         ),
         FieldType::Person | FieldType::People => (
             own_values(field, FieldValueRow::ValueRef, reach),
-            Domain::Person(kind.people_kind()),
+            Domain::Person(people),
         ),
         FieldType::Group => (
             own_values(field, FieldValueRow::ValueRef, reach),

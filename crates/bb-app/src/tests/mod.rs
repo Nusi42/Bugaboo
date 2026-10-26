@@ -60,6 +60,7 @@ mod scenarios_tags;
 mod scenarios_workflows;
 mod search_fields;
 mod search_run;
+mod search_run_more;
 mod search_words;
 mod settings;
 mod sign_up;

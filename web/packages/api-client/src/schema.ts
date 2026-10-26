@@ -7217,7 +7217,10 @@ export interface components {
     SearchGroupsBody: {
       /** @description The groups, the one without a value last. */
       groups: components["schemas"]["SearchGroupBody"][];
-      /** @description Whether the list was cut off at its cap. */
+      /**
+       * @description Whether the list was cut off at its cap: over 200 groups the answer holds the first 199
+       *     and the group without a value.
+       */
       truncated: boolean;
     };
     /** @description A thing with a name the person may know. */

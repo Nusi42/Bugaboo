@@ -60,6 +60,20 @@ pub enum TextPlace {
 }
 
 impl FieldTarget {
+    /// The kind of people a person in this field is shown as (ADR-0022), the one answer for the
+    /// names a search resolves, the people of its groups and the compiler. Built on
+    /// `Field::person_kind` for the fields every issue has; an own field of people by its type; a
+    /// group of people is no person.
+    #[must_use]
+    pub fn people_kind(self) -> Option<bb_core::people_kinds::PeopleKind> {
+        match self {
+            Self::AssignedTo => bb_core::fields::Field::AssignedTo.person_kind(),
+            Self::ReportedBy => bb_core::fields::Field::ReportedBy.person_kind(),
+            Self::Own { kind, .. } => kind.people_kind().filter(|_| kind != FieldType::Group),
+            _ => None,
+        }
+    }
+
     /// Where the words of `<field> contains` are looked for; none for a field whose text is not in
     /// the index (a short text, an address, anything that is not text).
     #[must_use]

@@ -417,7 +417,7 @@ async fn qry_05_the_sight_hides_the_issues_of_a_hidden_type_from_a_list() -> Tes
 
 /// Titles of the hits of a search text, in order; a search that fails is an error here, so an
 /// empty list always means that nothing was found.
-async fn found_titles(
+pub(super) async fn titles_of(
     storage: &AuthStorage,
     ask: &bb_app::search::SearchRequest,
 ) -> Result<Vec<String>, String> {
@@ -459,27 +459,27 @@ async fn qry_05_contains_finds_the_words_of_a_title_and_of_a_field_where_it_is_r
             )
         };
         assert_eq!(
-            found_titles(storage, &titled("CRASH save")).await?,
+            titles_of(storage, &titled("CRASH save")).await?,
             ["Crash on save"]
         );
         assert_eq!(
-            found_titles(storage, &titled("cra*")).await?,
+            titles_of(storage, &titled("cra*")).await?,
             ["Crash on save"]
         );
         assert!(
-            found_titles(storage, &titled("crash printer"))
+            titles_of(storage, &titled("crash printer"))
                 .await?
                 .is_empty()
         );
         // The issue the person does not read is never found, nor is a word of its title.
-        assert!(found_titles(storage, &titled("hidden")).await?.is_empty());
+        assert!(titles_of(storage, &titled("hidden")).await?.is_empty());
         let not = request(
             &data,
             "not title contains \"crash\" sort by title",
             None,
             10,
         );
-        let rest = found_titles(storage, &not).await?;
+        let rest = titles_of(storage, &not).await?;
         assert!(!rest.contains(&"Crash on save".to_owned()) && rest.contains(&"Idea".to_owned()));
         // A field of the issues: only where it reaches and where the person reads the issue.
         let notes = Searchable {
@@ -506,23 +506,23 @@ async fn qry_05_contains_finds_the_words_of_a_title_and_of_a_field_where_it_is_r
             ask
         };
         assert_eq!(
-            found_titles(storage, &ask(vec![data.project])).await?,
+            titles_of(storage, &ask(vec![data.project])).await?,
             ["Printer jams"]
         );
         assert_eq!(
-            found_titles(storage, &ask(vec![data.project, other])).await?,
+            titles_of(storage, &ask(vec![data.project, other])).await?,
             ["Outside", "Printer jams"]
         );
-        assert!(found_titles(storage, &ask(vec![])).await?.is_empty());
+        assert!(titles_of(storage, &ask(vec![])).await?.is_empty());
         // Without sight of the other project its issue is not found either.
         let mut narrow = ask(vec![data.project, other]);
         narrow.sight.all.retain(|each| *each != other);
-        assert_eq!(found_titles(storage, &narrow).await?, ["Printer jams"]);
+        assert_eq!(titles_of(storage, &narrow).await?, ["Printer jams"]);
         // A field limited to other issue types is read for none of these issues.
         let mut limited = ask(vec![data.project, other]);
         limited.own_reach[0].issue_types =
             Some(vec![bb_core::id::IssueTypeId::generate(&mut data.source)?]);
-        assert!(found_titles(storage, &limited).await?.is_empty());
+        assert!(titles_of(storage, &limited).await?.is_empty());
         Ok(())
     })
     .await

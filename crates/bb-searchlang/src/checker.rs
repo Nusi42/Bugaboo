@@ -102,12 +102,7 @@ impl<'a> Checker<'a> {
                 // A `contains` on its own looks in the title and in the description among other
                 // texts: a person who may read only one of them has no such search, told as a
                 // field that is not there (nothing tells a hidden field from a missing one).
-                let reads = |field: bb_core::fields::Field| {
-                    self.readable.field(&field.search_word()).is_some()
-                };
-                if reads(bb_core::fields::Field::Title)
-                    && reads(bb_core::fields::Field::Description)
-                {
+                if self.readable.allows_bare_contains() {
                     self.words_mistakes(text);
                 } else {
                     self.mistakes.push(Mistake::new(
