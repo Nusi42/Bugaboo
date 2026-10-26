@@ -649,7 +649,7 @@ async fn auth_07_a_key_is_turned_away_from_saved_searches_before_its_address_or_
                 (
                     "PUT",
                     "/api/v1/projects/not-a-project/list".to_owned(),
-                    Some(json!({})),
+                    Some(json!({"search": "x"})),
                 ),
             ],
         )
