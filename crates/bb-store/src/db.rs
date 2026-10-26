@@ -10,26 +10,17 @@ use std::future::Future;
 use std::str::FromStr as _;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use bb_core::event::DomainEvent;
-use bb_core::id::{
-    AccessKeyId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId, EventId,
-    FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
-    LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId,
-    RelationKindId, RoleId, SessionId, TagId, UploadId, UserId, WorkflowId,
-};
-use jiff::Timestamp;
 use sea_query::{
-    DeleteStatement, Iden, InsertStatement, PostgresQueryBuilder, SchemaStatementBuilder,
-    SelectStatement, SqliteQueryBuilder, UpdateStatement,
+    DeleteStatement, InsertStatement, PostgresQueryBuilder, SchemaStatementBuilder,
+    SelectStatement, SqliteQueryBuilder, UpdateStatement, WithQuery,
 };
 use sea_query_sqlx::{SqlxBinder as _, SqlxValues};
-use sqlx::postgres::{PgConnectOptions, PgPoolOptions, PgRow};
-use sqlx::sqlite::{
-    SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow, SqliteSynchronous,
-};
-use sqlx::{AssertSqlSafe, PgPool, Postgres, Row as _, Sqlite, SqlitePool};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
+use sqlx::{AssertSqlSafe, PgPool, Postgres, Sqlite, SqlitePool};
 
 use crate::error::StoreError;
 use crate::locks::{Held, LockClass, Mode};
@@ -121,6 +112,15 @@ fn create_private_file(file: &std::path::Path) -> Result<(), StoreError> {
         _ => Ok(()),
     }
 }
+
+/// The error code PostgreSQL gives a statement that `statement_timeout` stopped.
+const QUERY_CANCELED: &str = "57014";
+
+/// The code SQLite gives a statement that the progress handler interrupted.
+const SQLITE_INTERRUPT: &str = "9";
+
+/// How many steps of its virtual machine SQLite takes between two looks at the clock.
+const PROGRESS_STEPS: i32 = 1_000;
 
 /// The two databases Bugaboo supports.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -292,6 +292,63 @@ impl Database {
         Connection::Pool(&self.pool)
             .fetch_all(statement.into())
             .await
+    }
+
+    /// Reads all rows of a query that may take `limit` at most (SEC-17): PostgreSQL stops it with
+    /// `statement_timeout` for the transaction it runs in, SQLite with a progress handler on the
+    /// connection that runs it. A read that is stopped is [`StoreError::TimedOut`].
+    pub(crate) async fn fetch_all_within<'a>(
+        &self,
+        statement: impl Into<Statement<'a>>,
+        limit: Duration,
+    ) -> Result<Vec<Row>, StoreError> {
+        let statement = statement.into();
+        self.statements.fetch_add(1, Ordering::Relaxed);
+        let stopped = |error: sqlx::Error| match &error {
+            sqlx::Error::Database(found)
+                if matches!(
+                    found.code().as_deref(),
+                    Some(QUERY_CANCELED | SQLITE_INTERRUPT)
+                ) =>
+            {
+                StoreError::TimedOut
+            }
+            _ => StoreError::from(error),
+        };
+        match &self.pool {
+            Pool::Sqlite(pool) => {
+                let (sql, values) = statement.build(Dialect::Sqlite);
+                let mut connection = pool.acquire().await?;
+                let deadline = Instant::now() + limit;
+                connection
+                    .lock_handle()
+                    .await?
+                    .set_progress_handler(PROGRESS_STEPS, move || Instant::now() < deadline);
+                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
+                    .fetch_all(&mut *connection)
+                    .await;
+                connection.lock_handle().await?.remove_progress_handler();
+                Ok(rows
+                    .map_err(stopped)?
+                    .into_iter()
+                    .map(Row::Sqlite)
+                    .collect())
+            }
+            Pool::Postgres(pool) => {
+                let (sql, values) = statement.build(Dialect::Postgres);
+                let mut transaction = pool.begin().await?;
+                sqlx::query("SELECT set_config('statement_timeout', $1, true)")
+                    .bind(limit.as_millis().to_string())
+                    .execute(&mut *transaction)
+                    .await?;
+                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
+                    .fetch_all(&mut *transaction)
+                    .await
+                    .map_err(stopped)?;
+                transaction.commit().await?;
+                Ok(rows.into_iter().map(Row::Postgres).collect())
+            }
+        }
     }
 
     /// Reads the first row of a query, if there is one.
@@ -532,6 +589,7 @@ pub(crate) enum Statement<'a> {
     Insert(&'a InsertStatement),
     Update(&'a UpdateStatement),
     Delete(&'a DeleteStatement),
+    With(&'a WithQuery),
 }
 
 impl Statement<'_> {
@@ -545,6 +603,8 @@ impl Statement<'_> {
             (Self::Update(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
             (Self::Delete(query), Dialect::Sqlite) => query.build_sqlx(SqliteQueryBuilder),
             (Self::Delete(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
+            (Self::With(query), Dialect::Sqlite) => query.build_sqlx(SqliteQueryBuilder),
+            (Self::With(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
         }
     }
 }
@@ -563,149 +623,11 @@ statement_from!(
     SelectStatement => Select,
     InsertStatement => Insert,
     UpdateStatement => Update,
-    DeleteStatement => Delete
+    DeleteStatement => Delete,
+    WithQuery => With
 );
 
-/// One row of an answer, from either database.
-pub(crate) enum Row {
-    Sqlite(SqliteRow),
-    Postgres(PgRow),
-}
-
-impl Row {
-    /// The value of a column. Whole numbers are always `i64` (`BIGINT`), so both databases give
-    /// the same type.
-    pub(crate) fn get<'r, T>(&'r self, column: impl Iden + Copy) -> Result<T, StoreError>
-    where
-        T: sqlx::Decode<'r, Sqlite>
-            + sqlx::Type<Sqlite>
-            + sqlx::Decode<'r, Postgres>
-            + sqlx::Type<Postgres>,
-    {
-        let name = column.to_string();
-        match self {
-            Self::Sqlite(row) => row.try_get(name.as_str()),
-            Self::Postgres(row) => row.try_get(name.as_str()),
-        }
-        .map_err(StoreError::from)
-    }
-
-    /// An ID stored as 16 bytes.
-    pub(crate) fn id<T: StoredId>(&self, column: impl Iden + Copy) -> Result<T, StoreError> {
-        let bytes: Vec<u8> = self.get(column)?;
-        T::read(bytes)
-    }
-
-    /// An ID that may be missing.
-    pub(crate) fn optional_id<T: StoredId>(
-        &self,
-        column: impl Iden + Copy,
-    ) -> Result<Option<T>, StoreError> {
-        self.get::<Option<Vec<u8>>>(column)?
-            .map(T::read)
-            .transpose()
-    }
-
-    /// A moment stored as microseconds since 1970.
-    pub(crate) fn time(&self, column: impl Iden + Copy) -> Result<Timestamp, StoreError> {
-        from_micros(self.get(column)?)
-    }
-
-    /// A moment that may be missing.
-    pub(crate) fn optional_time(
-        &self,
-        column: impl Iden + Copy,
-    ) -> Result<Option<Timestamp>, StoreError> {
-        self.get::<Option<i64>>(column)?
-            .map(from_micros)
-            .transpose()
-    }
-}
-
-/// An ID as the database holds it: 16 bytes. Writing and reading go through here, so no module
-/// has its own copy of the conversion or its own wording for "this row cannot be read".
-pub(crate) trait StoredId: Copy {
-    /// What the ID is, for the report of a stored value that is not one.
-    const WHAT: &'static str;
-
-    /// The ID with these bytes, if they are one.
-    fn from_stored(bytes: [u8; 16]) -> Result<Self, IdError>;
-
-    /// The 16 bytes of the ID.
-    fn to_stored(self) -> [u8; 16];
-
-    /// The bytes as a value to bind to a query.
-    fn stored(self) -> Vec<u8> {
-        self.to_stored().to_vec()
-    }
-
-    /// The ID stored in `bytes`, or the report that the row is corrupt.
-    fn read(bytes: Vec<u8>) -> Result<Self, StoreError> {
-        <[u8; 16]>::try_from(bytes)
-            .ok()
-            .and_then(|bytes| Self::from_stored(bytes).ok())
-            .ok_or(StoreError::Corrupt(Self::WHAT))
-    }
-}
-
-macro_rules! stored_ids {
-    ($($ty:ident => $what:literal),+ $(,)?) => {
-        $(impl StoredId for $ty {
-            const WHAT: &'static str = $what;
-
-            fn from_stored(bytes: [u8; 16]) -> Result<Self, IdError> {
-                Self::from_bytes(bytes)
-            }
-
-            fn to_stored(self) -> [u8; 16] {
-                self.to_bytes()
-            }
-        })+
-    };
-}
-
-stored_ids!(
-    AccessKeyId => "an access key ID",
-    AssignmentId => "an assignment ID",
-    AttachmentId => "an attachment ID",
-    UploadId => "an upload ID",
-    ManyChangeRunId => "a run ID",
-    CommentId => "a comment ID",
-    EditorId => "an editor ID",
-    EntityId => "a record ID",
-    EventId => "an event ID",
-    FieldId => "a field ID",
-    ChoiceId => "a choice ID",
-    GroupId => "a group ID",
-    InvitationId => "an invitation ID",
-    IssueId => "an issue ID",
-    IssueTypeId => "an issue type ID",
-    JobId => "a job ID",
-    LabelGroupId => "a label group ID",
-    LabelId => "a label ID",
-    LayoutId => "a layout ID",
-    LockToken => "an edit lock token",
-    NotificationId => "a notification ID",
-    PasskeyId => "a passkey ID",
-    ProjectId => "a project ID",
-    TagId => "a tag ID",
-    RelationId => "a relation ID",
-    RelationKindId => "a kind of relation ID",
-    RoleId => "a role ID",
-    SessionId => "a session ID",
-    UserId => "a person ID",
-    WorkflowId => "a workflow ID",
-);
-
-/// A moment as it is stored: microseconds since 1970 (UTC), the same whole number in both databases.
-pub(crate) fn to_micros(time: Timestamp) -> i64 {
-    time.as_microsecond()
-}
-
-/// The moment stored as `micros`.
-pub(crate) fn from_micros(micros: i64) -> Result<Timestamp, StoreError> {
-    Timestamp::from_microsecond(micros).map_err(|_| StoreError::Corrupt("a time"))
-}
+pub(crate) use crate::rows::{Row, StoredId, from_micros, to_micros};
 
 #[cfg(test)]
 impl Database {

@@ -178,7 +178,7 @@ fn read_cell(row: &Row) -> Result<Cell, StoreError> {
     })
 }
 
-fn kind_text(kind: &EntityKind) -> String {
+pub(crate) fn kind_text(kind: &EntityKind) -> String {
     kind.as_str().to_owned()
 }
 
