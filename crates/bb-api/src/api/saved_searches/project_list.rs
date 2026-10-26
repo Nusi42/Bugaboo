@@ -10,7 +10,9 @@ use super::super::auth::{
     answer_authorized,
 };
 use super::super::body_id;
-use super::*;
+use super::{
+    ProjectListBody, ProjectListChoiceBody, ProjectListQuery, SavedSearchId, SetProjectList,
+};
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
 /// The list a project shows: the saved search the project chose, when the person may open it, else

@@ -294,3 +294,9 @@ route = "GET /api/v1/fields"
 property = "scope"
 embedded = true
 reason = "Where a field is used is part of its definition; the projects in it are references (M4-F179)."
+
+[[exempt]]
+route = "GET /api/v1/saved-searches/{search}"
+property = "shared_with"
+whole_value = true
+reason = "A saved search is shared with at most 100 places, bounded when it is shared, and only its maker is told; paging it is M5-F60."

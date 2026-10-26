@@ -42,7 +42,7 @@ const SEARCH_FIELDS: [FieldSpec; 9] = [
     FieldSpec::by_default("mine"),
     FieldSpec::by_default("updated_at"),
     FieldSpec::by_default("version"),
-    FieldSpec::on_request("text"),
+    FieldSpec::on_request("search_text"),
     FieldSpec::on_request("presentation"),
     FieldSpec::on_request("shared_with"),
 ];
@@ -64,7 +64,7 @@ pub(crate) struct ColumnBody {
 
 /// How the results of a saved search are shown.
 #[derive(Clone, Serialize, Deserialize, ToSchema)]
-pub(crate) struct PresentationBody {
+pub(crate) struct PresentationRef {
     /// The kind of view. M5 shows the kind `list`.
     view: ViewKind,
     /// The columns, in order. None at all means the columns of the project's list.
@@ -76,7 +76,7 @@ pub(crate) struct PresentationBody {
     group_by: Option<String>,
 }
 
-impl From<&Presentation> for PresentationBody {
+impl From<&Presentation> for PresentationRef {
     fn from(presentation: &Presentation) -> Self {
         Self {
             view: presentation.view,
@@ -94,10 +94,10 @@ impl From<&Presentation> for PresentationBody {
     }
 }
 
-impl TryFrom<PresentationBody> for Presentation {
+impl TryFrom<PresentationRef> for Presentation {
     type Error = ApiError;
 
-    fn try_from(body: PresentationBody) -> Result<Self, ApiError> {
+    fn try_from(body: PresentationRef) -> Result<Self, ApiError> {
         Ok(Self {
             view: body.view,
             columns: body
@@ -117,7 +117,7 @@ impl TryFrom<PresentationBody> for Presentation {
 
 /// A group or a project a saved search is shared with.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct ShareItem {
+pub(crate) struct ShareRef {
     /// A group or a project.
     kind: ShareKind,
     /// The ID of the group or the project.
@@ -130,7 +130,7 @@ pub(crate) struct ShareItem {
     short_name: Option<String>,
 }
 
-impl From<&ShareView> for ShareItem {
+impl From<&ShareView> for ShareRef {
     fn from(share: &ShareView) -> Self {
         match share {
             ShareView::Group { id, name } => Self {
@@ -165,15 +165,15 @@ pub(crate) struct SavedSearchItem {
     /// What it is called.
     name: String,
     /// The search text, in the canonical spelling of the search language.
-    text: String,
+    search_text: String,
     /// How its results are shown.
-    presentation: PresentationBody,
+    presentation: PresentationRef,
     /// Who made it, as the person sees people who write.
     maker: PersonRef,
     /// Whether the person made it.
     mine: bool,
     /// Whom it is shared with; only its maker is told.
-    shared_with: Vec<ShareItem>,
+    shared_with: Vec<ShareRef>,
     /// When it was last changed.
     updated_at: String,
     /// Counts up with every change. A change is made on the version that was looked at.
@@ -187,11 +187,11 @@ impl From<&SavedSearchView> for SavedSearchItem {
         Self {
             id: view.id.to_string(),
             name: view.name.clone(),
-            text: view.text.clone(),
-            presentation: PresentationBody::from(&view.presentation),
+            search_text: view.text.clone(),
+            presentation: PresentationRef::from(&view.presentation),
             maker: view.maker.clone(),
             mine: view.mine,
-            shared_with: view.shared_with.iter().map(ShareItem::from).collect(),
+            shared_with: view.shared_with.iter().map(ShareRef::from).collect(),
             updated_at: view.updated_at.to_string(),
             version: view.version,
         }
@@ -247,10 +247,10 @@ pub(crate) struct NewSavedSearchBody {
     /// What it is called.
     name: String,
     /// The search text.
-    text: String,
+    search_text: String,
     /// How its results are shown; a comfortable list with the columns of the project's list when
     /// left out.
-    presentation: Option<PresentationBody>,
+    presentation: Option<PresentationRef>,
 }
 
 /// What to change in a saved search. What is left out stays as it is.
@@ -261,9 +261,9 @@ pub(crate) struct ChangeSavedSearchBody {
     /// A new name.
     name: Option<String>,
     /// A new search text.
-    text: Option<String>,
+    search_text: Option<String>,
     /// A new way to show the results.
-    presentation: Option<PresentationBody>,
+    presentation: Option<PresentationRef>,
 }
 
 /// The name of a copy.
@@ -326,8 +326,8 @@ mod tests {
         let search = SavedSearchItem {
             id: String::new(),
             name: String::new(),
-            text: String::new(),
-            presentation: PresentationBody::from(&Presentation::default()),
+            search_text: String::new(),
+            presentation: PresentationRef::from(&Presentation::default()),
             maker: PersonRef::Someone,
             mine: true,
             shared_with: Vec::new(),

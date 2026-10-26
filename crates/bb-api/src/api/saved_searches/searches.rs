@@ -12,7 +12,13 @@ use super::super::auth::{
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
 use super::super::path_id;
-use super::*;
+use super::{
+    CHOICE_FIELDS, CHOICES_LIST, ChangeSavedSearchBody, ChangeSearch, CopyBody, DeleteSearch,
+    KindParams, NewSavedSearchBody, Presentation, RestoreSearch, SEARCH_FIELDS, SEARCHES_LIST,
+    SaveCopy, SaveSearch, SavedSearchId, SavedSearchItem, ScopeParams, SearchQuery, SearchScope,
+    SearchesQuery, ShareBody, ShareChoiceItem, ShareChoicesQuery, ShareKind, ShareSearch,
+    ShareTarget, StopSharingSearch,
+};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{ListParams, Listed, Page};
 
@@ -90,7 +96,7 @@ async fn create_saved_search(
             SaveSearch {
                 session_token,
                 name: body.name,
-                text: body.text,
+                text: body.search_text,
                 presentation: body
                     .presentation
                     .map(Presentation::try_from)
@@ -168,7 +174,7 @@ async fn change_saved_search(
                 search: search_id(&search)?,
                 version: body.version,
                 name: body.name,
-                text: body.text,
+                text: body.search_text,
                 presentation: body.presentation.map(Presentation::try_from).transpose()?,
             },
         )

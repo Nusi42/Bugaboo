@@ -25,7 +25,7 @@ async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
             SEARCHES,
             Some(json!({
                 "name": name,
-                "text": "status is open",
+                "search_text": "status is open",
                 "presentation": {
                     "view": "list",
                     "columns": [{"field": "title", "width": 300}, {"field": "status", "width": null}],
@@ -102,10 +102,10 @@ async fn qry_06_a_saved_search_is_private_and_found_by_its_address_only_where_it
         let shared = share_with_acme(&mut ada, &id, &site.acme).await?;
         assert_eq!(ok(&shared)?["shared_with"][0]["kind"], "project");
         assert_eq!(shared.body["shared_with"][0]["short_name"], "ACME");
-        let path = format!("{SEARCHES}?scope=shared&fields=name,text,maker");
+        let path = format!("{SEARCHES}?scope=shared&fields=name,search_text,maker");
         let listed = bob.send("GET", &path, None).await?;
         assert_eq!(names(&listed), ["Open bugs"]);
-        assert_eq!(listed.body["items"][0]["text"], "status is open");
+        assert_eq!(listed.body["items"][0]["search_text"], "status is open");
         let opened = bob.send("GET", &format!("{SEARCHES}/{id}"), None).await?;
         assert_eq!(ok(&opened)?["mine"], false);
         assert_eq!(opened.body["shared_with"], json!([]));

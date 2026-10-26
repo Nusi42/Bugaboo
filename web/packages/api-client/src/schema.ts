@@ -3875,9 +3875,9 @@ export interface components {
     ChangeSavedSearchBody: {
       /** @description A new name. */
       name?: string | null;
-      presentation?: components["schemas"]["PresentationBody"] | null;
+      presentation?: components["schemas"]["PresentationRef"] | null;
       /** @description A new search text. */
-      text?: string | null;
+      search_text?: string | null;
       /**
        * Format: int64
        * @description The version the person looked at; a change made meanwhile stops this one.
@@ -5879,9 +5879,9 @@ export interface components {
     NewSavedSearchBody: {
       /** @description What it is called. */
       name: string;
-      presentation?: components["schemas"]["PresentationBody"] | null;
+      presentation?: components["schemas"]["PresentationRef"] | null;
       /** @description The search text. */
-      text: string;
+      search_text: string;
     };
     /** @description A new value for a setting. */
     NewValueBody: {
@@ -6568,7 +6568,7 @@ export interface components {
           kind: "hidden";
         };
     /** @description How the results of a saved search are shown. */
-    PresentationBody: {
+    PresentationRef: {
       /** @description The columns, in order. None at all means the columns of the project's list. */
       columns: components["schemas"]["ColumnBody"][];
       /** @description The field the rows are grouped by, by its search word. */
@@ -7230,11 +7230,11 @@ export interface components {
       /** @description What it is called. */
       name: string;
       /** @description How its results are shown. */
-      presentation: components["schemas"]["PresentationBody"];
-      /** @description Whom it is shared with; only its maker is told. */
-      shared_with: components["schemas"]["ShareItem"][];
+      presentation: components["schemas"]["PresentationRef"];
       /** @description The search text, in the canonical spelling of the search language. */
-      text: string;
+      search_text: string;
+      /** @description Whom it is shared with; only its maker is told. */
+      shared_with: components["schemas"]["ShareRef"][];
       /**
        * Format: date-time
        * @description When it was last changed.
@@ -7483,8 +7483,13 @@ export interface components {
       /** @description The short name of a project. */
       short_name?: string | null;
     };
+    /**
+     * @description What a saved search is shared with: a group or a project.
+     * @enum {string}
+     */
+    ShareKind: "group" | "project";
     /** @description A group or a project a saved search is shared with. */
-    ShareItem: {
+    ShareRef: {
       /** @description The ID of the group or the project. */
       id: string;
       /** @description A group or a project. */
@@ -7494,11 +7499,6 @@ export interface components {
       /** @description The short name of a project the person may know. */
       short_name?: string | null;
     };
-    /**
-     * @description What a saved search is shared with: a group or a project.
-     * @enum {string}
-     */
-    ShareKind: "group" | "project";
     /** @description What a person types to sign in. */
     SignInBody: {
       /** @description The e-mail address. */

@@ -13503,7 +13503,7 @@
           "presentation": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/PresentationBody",
+                "$ref": "#/components/schemas/PresentationRef",
                 "description": "A new way to show the results."
               },
               {
@@ -13511,7 +13511,7 @@
               }
             ]
           },
-          "text": {
+          "search_text": {
             "type": ["string", "null"],
             "description": "A new search text."
           },
@@ -17653,7 +17653,7 @@
       "NewSavedSearchBody": {
         "type": "object",
         "description": "A search to save.",
-        "required": ["name", "text"],
+        "required": ["name", "search_text"],
         "properties": {
           "name": {
             "type": "string",
@@ -17662,7 +17662,7 @@
           "presentation": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/PresentationBody",
+                "$ref": "#/components/schemas/PresentationRef",
                 "description": "How its results are shown; a comfortable list with the columns of the project's list when\nleft out."
               },
               {
@@ -17670,7 +17670,7 @@
               }
             ]
           },
-          "text": {
+          "search_text": {
             "type": "string",
             "description": "The search text."
           }
@@ -19174,7 +19174,7 @@
         ],
         "description": "Where a row of *Who has which role* is: the whole organization, a project, or a project the\nperson cannot see (which is not named)."
       },
-      "PresentationBody": {
+      "PresentationRef": {
         "type": "object",
         "description": "How the results of a saved search are shown.",
         "required": ["view", "columns", "spacing", "group_by"],
@@ -20392,7 +20392,7 @@
         "required": [
           "id",
           "name",
-          "text",
+          "search_text",
           "presentation",
           "maker",
           "mine",
@@ -20418,19 +20418,19 @@
             "description": "What it is called."
           },
           "presentation": {
-            "$ref": "#/components/schemas/PresentationBody",
+            "$ref": "#/components/schemas/PresentationRef",
             "description": "How its results are shown."
+          },
+          "search_text": {
+            "type": "string",
+            "description": "The search text, in the canonical spelling of the search language."
           },
           "shared_with": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ShareItem"
+              "$ref": "#/components/schemas/ShareRef"
             },
             "description": "Whom it is shared with; only its maker is told."
-          },
-          "text": {
-            "type": "string",
-            "description": "The search text, in the canonical spelling of the search language."
           },
           "updated_at": {
             "type": "string",
@@ -20904,7 +20904,12 @@
           }
         }
       },
-      "ShareItem": {
+      "ShareKind": {
+        "type": "string",
+        "description": "What a saved search is shared with: a group or a project.",
+        "enum": ["group", "project"]
+      },
+      "ShareRef": {
         "type": "object",
         "description": "A group or a project a saved search is shared with.",
         "required": ["kind", "id"],
@@ -20926,11 +20931,6 @@
             "description": "The short name of a project the person may know."
           }
         }
-      },
-      "ShareKind": {
-        "type": "string",
-        "description": "What a saved search is shared with: a group or a project.",
-        "enum": ["group", "project"]
       },
       "SignInBody": {
         "type": "object",
