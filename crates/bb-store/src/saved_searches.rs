@@ -144,6 +144,25 @@ fn shares_reaching(reach: &Reach<'_>) -> SelectStatement {
     select
 }
 
+/// The searches shared with a group, by ID.
+fn shared_with_group(group: GroupId) -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .column(SearchShareRow::Search)
+        .from(SearchShareRow::Table)
+        .and_where(Expr::col(SearchShareRow::Kind).eq(ShareKind::Group.code()))
+        .and_where(Expr::col(SearchShareRow::Target).eq(group.stored()))
+        .order_by(SearchShareRow::Search, Order::Asc);
+    select
+}
+
+/// The IDs of searches in rows that hold one.
+fn search_ids(rows: &[Row]) -> Result<Vec<SavedSearchId>, StoreError> {
+    rows.iter()
+        .map(|row| row.id::<SavedSearchId>(SearchShareRow::Search))
+        .collect()
+}
+
 impl SavedSearchStore for AuthStorage {
     async fn saved_search_in(
         transaction: &mut Transaction,
@@ -335,19 +354,8 @@ impl SavedSearchStore for AuthStorage {
         &self,
         group: GroupId,
     ) -> Result<Vec<SavedSearchId>, StoreError> {
-        let mut select = Query::select();
-        select
-            .column(SearchShareRow::Search)
-            .from(SearchShareRow::Table)
-            .and_where(Expr::col(SearchShareRow::Kind).eq(ShareKind::Group.code()))
-            .and_where(Expr::col(SearchShareRow::Target).eq(group.stored()))
-            .order_by(SearchShareRow::Search, Order::Asc);
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(|row| row.id::<SavedSearchId>(SearchShareRow::Search))
-            .collect()
+        let select = shared_with_group(group);
+        search_ids(&self.database().fetch_all(&select).await?)
     }
 
     async fn policy_of_people(&self, people: &[UserId]) -> Result<bb_policy::Policy, StoreError> {
@@ -558,19 +566,8 @@ impl SavedSearchStore for AuthStorage {
         transaction: &mut Transaction,
         group: GroupId,
     ) -> Result<Vec<SavedSearchId>, StoreError> {
-        let mut select = Query::select();
-        select
-            .column(SearchShareRow::Search)
-            .from(SearchShareRow::Table)
-            .and_where(Expr::col(SearchShareRow::Kind).eq(ShareKind::Group.code()))
-            .and_where(Expr::col(SearchShareRow::Target).eq(group.stored()))
-            .order_by(SearchShareRow::Search, Order::Asc);
-        let gone = transaction
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(|row| row.id::<SavedSearchId>(SearchShareRow::Search))
-            .collect::<Result<Vec<_>, _>>()?;
+        let select = shared_with_group(group);
+        let gone = search_ids(&transaction.fetch_all(&select).await?)?;
         let mut delete = Query::delete();
         delete
             .from_table(SearchShareRow::Table)
