@@ -305,8 +305,10 @@ pub async fn change_search<S: AuthStore>(
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let Opened { stored, reaching } = ctx.own_search(&actor, input.search).await?;
     let before = stored.search.clone();
+    let record = entity(RecordKind::SavedSearch, before.id);
+    let own_place = Place::Organization;
     if before.version != input.version {
-        return Err(ErrorCode::VersionChanged.into());
+        return Err(AppError::stale(record.clone(), own_place, actor.person.id));
     }
     let mut search = before.clone();
     if let Some(name) = &input.name {
@@ -349,7 +351,13 @@ pub async fn change_search<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)).about(
+                &record,
+                own_place,
+                actor.person.id,
+            )
+        })?;
     let saved = Stored {
         search,
         columns,
