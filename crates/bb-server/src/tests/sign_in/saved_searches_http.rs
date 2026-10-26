@@ -589,6 +589,21 @@ async fn perf_05_forty_different_makers_cost_no_more_statements_than_five_for_a_
             format!("{SEARCHES}?scope=shared&limit={limit}&fields=name,maker")
         })
         .await?;
+        // The statements are the same because the labels are read at once, not because nothing is
+        // read: a guest sees every maker as the role of a team member, with no name and no ID.
+        let page = dan
+            .send(
+                "GET",
+                &format!("{SEARCHES}?scope=shared&limit=40&fields=maker"),
+                None,
+            )
+            .await?;
+        for item in page.body["items"].as_array().ok_or("no items")? {
+            assert_eq!(
+                item["maker"],
+                json!({"shown": "role", "role": "Team member"})
+            );
+        }
         assert_as_many_statements(on_five, on_forty, AT_MOST_FOR_A_GUEST, "more makers");
         Ok(())
     })

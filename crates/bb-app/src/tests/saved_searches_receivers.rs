@@ -9,9 +9,10 @@ use bb_policy::StartingRole;
 
 use super::saved_searches::{Crew, refused, shared};
 use super::scenarios::a_project;
-use super::scenarios_searches::{a_group_of, a_presentation, open, save, share};
+use super::scenarios_searches::{a_group_of, a_presentation, open, save, share, with_role};
 use super::world::Outcome;
 use crate::auth::{AppError, Started};
+use crate::saved_searches::SavedSearchStore as _;
 use crate::saved_searches::{ChangeSearch, SaveCopy, change_search, save_copy};
 
 /// Ada saves a search with this text and shares it with ACME.
@@ -471,5 +472,72 @@ async fn qry_06_a_search_is_shared_with_at_most_a_hundred_places_and_the_next_is
     )
     .await;
     assert!(refused(&over, ErrorCode::LimitReached));
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_the_label_of_a_role_read_for_many_people_is_the_one_of_their_evaluation() -> Outcome
+{
+    use bb_policy::Place;
+    let crew = Crew::new().await?;
+    let world = &crew.world;
+    // A role from a parent project (inherited into the project below it), and a role that comes
+    // from a group; the people have no other role.
+    let parent = a_project(world, "PARENT").await?;
+    let child = crate::projects::create_project(
+        &world.ctx(),
+        crate::projects::CreateProject {
+            session_token: crew.ada(),
+            parent: Some(parent),
+            short_name: "CHILD".to_owned(),
+            name: "Child".to_owned(),
+        },
+    )
+    .await?
+    .into_value()
+    .id;
+    let from_parent = world.person_named("pa@example.test", "Pa Rent").await?;
+    with_role(world, &from_parent, StartingRole::Contributor, Some(parent)).await?;
+    let from_group = world.person_named("gro@example.test", "Gro Up").await?;
+    let group = a_group_of(world, "Readers", &[&from_group]).await?;
+    let viewer_role = super::workflows_rules::starting_role(world, StartingRole::Viewer).await?;
+    crate::roles::assign_role(
+        &world.ctx(),
+        crate::roles::AssignRole {
+            session_token: crew.ada(),
+            subject: crate::roles::Subject::Group(group),
+            given: crate::roles::Given::Role(viewer_role),
+            project: Some(child),
+            applies_to: bb_core::access::AppliesTo::Project,
+        },
+    )
+    .await?;
+    let ctx = world.ctx();
+    let actor = ctx.actor(&crew.ada()).await?;
+    let shown = ctx.shown_with_levels_to(&actor).await?;
+    let people = [from_parent.person.id, from_group.person.id];
+    let policy = world
+        .store
+        .policy_of_people(&people)
+        .await
+        .map_err(|error| error.to_string())?;
+    for person in people {
+        for place in [
+            Place::Project(child),
+            Place::Project(parent),
+            Place::Organization,
+        ] {
+            let wanted = ctx
+                .evaluate(person, place)
+                .await?
+                .first_role_name()
+                .map(str::to_owned);
+            assert_eq!(shown.role_label_in(&policy, person, place), wanted);
+        }
+    }
+    // The two cases are not empty: the inherited role and the one from a group both name a role.
+    let at_child = |person| shown.role_label_in(&policy, person, Place::Project(child));
+    assert_eq!(at_child(people[0]).as_deref(), Some("Contributor"));
+    assert_eq!(at_child(people[1]).as_deref(), Some("Viewer"));
     Ok(())
 }
