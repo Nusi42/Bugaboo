@@ -291,7 +291,8 @@ impl Limits {
         self.access_keys.hit(key, now).map_err(too_many)
     }
 
-    /// Counts one search of `person` against their allowance (`LimitsConfig::searches_per_minute`, [`DEFAULT_SEARCHES_PER_MINUTE`] unless the operator set another).
+    /// Counts one search of `person` against their allowance (`LimitsConfig::searches_per_minute`,
+    /// [`DEFAULT_SEARCHES_PER_MINUTE`] unless the operator set another).
     ///
     /// # Errors
     /// `429` with `Retry-After` when the person is over it.

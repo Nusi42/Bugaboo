@@ -4,9 +4,9 @@
 //!
 //! The port matches and nothing else. Who may see what is decided in one place, the compiler:
 //! it puts [`text_issues`] (or [`text_of_issue`]) in a condition on `issue` beside its visibility
-//! predicates (the issue, its project, and for a search in a field that the field is readable in the project and for the
-//! type of that issue), and so a hit never comes from a text the reader may not see. The port
-//! never reads a permission.
+//! predicates (the issue, its project, and for a search in a field that the field is readable in
+//! the project and for the type of that issue), and so a hit never comes from a text the reader
+//! may not see. The port never reads a permission.
 //!
 //! An issue matches when every word of the search is in some text of the scope, not necessarily
 //! the same one (a title with "login" and a comment with "error" find `login error`): one

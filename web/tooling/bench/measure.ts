@@ -29,7 +29,6 @@ class Tally {
   /** A run that is not made counts as the slowest time seen. */
   skip(): void {
     this.times.push(this.slowest);
-    this.slow += 1;
     this.skipped += 1;
   }
 
@@ -67,10 +66,11 @@ class Tally {
  * Runs a scenario: the warm-up, then the counted runs; what they took, summed up.
  *
  * A search that the server stops for taking too long counts as the time it really took (at least
- * the limit, which the server owns and this file does not name). Once three runs in a row are too
+ * the limit, which the server owns and this file does not name). Once `TOO_SLOW_IN_A_ROW` runs in a row are too
  * slow, wherever in the run, the rest are not made (each would wait the full time) and count as the
  * slowest time seen, so the numbers say plainly that the budget is far over. `made` and `skipped`
- * tell how many counted runs were made and how many were counted without one.
+ * tell how many counted runs were made and how many were counted without one; `tooSlow` counts
+ * only the runs the server stopped.
  */
 export async function measure(
   scenario: Scenario,

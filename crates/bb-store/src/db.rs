@@ -82,13 +82,17 @@ async fn open_sqlite(options: SqliteConnectOptions) -> Result<SqlitePool, StoreE
     }
 }
 
+/// How many rows of a table `PRAGMA optimize` looks at when a connection closes (SQLite advises 400):
+/// a short look, so a close never holds the write lock long on a table of a million rows.
+const OPTIMIZE_ANALYSIS_LIMIT: u32 = 400;
+
 async fn open_sqlite_once(options: SqliteConnectOptions) -> Result<SqlitePool, sqlx::Error> {
     let options = options
         .create_if_missing(true)
         .journal_mode(SqliteJournalMode::Wal)
         // What SQLite knows of the tables for its plans stays fresh as the data grows: a connection
         // that closes looks at what changed (`PRAGMA optimize`).
-        .optimize_on_close(true, Some(400))
+        .optimize_on_close(true, Some(OPTIMIZE_ANALYSIS_LIMIT))
         // FULL: a committed change survives a power cut (security first). It costs one
         // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
         .synchronous(SqliteSynchronous::Full)
