@@ -10864,8 +10864,8 @@
           {
             "name": "kind",
             "in": "query",
-            "description": "Groups (the default) or projects.",
-            "required": false,
+            "description": "Groups or projects.",
+            "required": true,
             "schema": {
               "$ref": "#/components/schemas/ShareKind"
             }

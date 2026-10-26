@@ -3,7 +3,6 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_core::ErrorCode;
-use bb_core::id::GroupId;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
@@ -23,19 +22,8 @@ use super::{
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{ListParams, Listed, Page};
 
-/// An ID that no record has (a time-ordered ID made of nothing).
-const NOBODYS_ID: &str = "00000000-0000-7000-8000-000000000000";
-
-/// The saved search an address names. An address that is none names a search that is not there, so
-/// the use case answers it as it answers any other: a call that may not come at all (an access key)
-/// is turned away before anything is said about the address.
 fn search_id(text: &str) -> Result<SavedSearchId, ApiError> {
-    match path_id::<SavedSearchId>(text) {
-        Ok(id) => Ok(id),
-        Err(_) => NOBODYS_ID
-            .parse::<SavedSearchId>()
-            .map_err(|error| ApiError::internal(&error)),
-    }
+    path_id::<SavedSearchId>(text)
 }
 
 fn target(kind: ShareKind, id: &str) -> Result<ShareTarget, ApiError> {
@@ -359,16 +347,8 @@ async fn stop_sharing_saved_search(
     Session(session_token): Session,
     ApiPath((search, kind, id)): ApiPath<(String, String, String)>,
 ) -> Result<Response, ApiError> {
-    // An address that names no share names one that is not there: stopping it changes nothing.
-    let kind = ShareKind::from_code(&kind).unwrap_or(ShareKind::Group);
-    let target = match ShareTarget::parse(kind, &id) {
-        Some(target) => target,
-        None => ShareTarget::Group(
-            NOBODYS_ID
-                .parse::<GroupId>()
-                .map_err(|error| ApiError::internal(&error))?,
-        ),
-    };
+    let kind = ShareKind::from_code(&kind).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
+    let target = ShareTarget::parse(kind, &id).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
     let stopped = auth
         .api()?
         .stop_sharing_search(
@@ -407,7 +387,7 @@ async fn list_share_choices(
             info,
             ShareChoicesQuery {
                 session_token,
-                kind: which.kind.unwrap_or(ShareKind::Group),
+                kind: which.kind,
                 cursor,
                 limit: params.limit(),
             },

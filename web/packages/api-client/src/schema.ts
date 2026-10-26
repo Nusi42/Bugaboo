@@ -14265,15 +14265,15 @@ export interface operations {
   };
   listShareChoices: {
     parameters: {
-      query?: {
+      query: {
         /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: components["parameters"]["Limit"];
-        /** @description Groups (the default) or projects. */
-        kind?: components["schemas"]["ShareKind"];
+        /** @description Groups or projects. */
+        kind: components["schemas"]["ShareKind"];
       };
       header?: never;
       path?: never;

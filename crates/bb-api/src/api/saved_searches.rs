@@ -311,8 +311,8 @@ pub(crate) struct ScopeParams {
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
 pub(crate) struct KindParams {
-    /// Groups (the default) or projects.
-    kind: Option<ShareKind>,
+    /// Groups or projects.
+    kind: ShareKind,
 }
 
 /// The routes of saved searches and of the list of a project.
