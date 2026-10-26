@@ -265,7 +265,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .comment_facts(stale.viewer, record)
                 .await?
                 .map(|facts| facts.version),
-            // A saved search is private to its maker: nobody else is told its version.
+            // A saved search is private to its maker: nobody else is told its version. The
+            // filter mirrors `own_search` (only the maker changes it, never in the trash),
+            // which made this stale record; `Stale` holds no actor to call it with.
             RecordKind::SavedSearch => found(SavedSearchId::from_bytes(bytes).ok(), |id| {
                 store.saved_search(id)
             })

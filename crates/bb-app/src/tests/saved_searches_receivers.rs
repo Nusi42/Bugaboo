@@ -527,35 +527,22 @@ async fn qry_06_the_label_of_a_role_read_for_many_people_is_the_one_of_their_eva
     ctx.preload_role_labels(&shown, &wanted).await?;
     // The page's one read stored the evaluated label of every pair asked for: what is stored is
     // compared, not what `role_label_of` falls back to when nothing is.
+    let stored = |person, place| {
+        crate::auth::locked(&ctx.known.role_labels)
+            .get(&(person, place))
+            .cloned()
+    };
     for (person, place) in wanted {
         let evaluated = ctx
             .evaluate(person, place)
             .await?
             .first_role_name()
             .map(str::to_owned);
-        let stored = ctx
-            .known
-            .role_labels
-            .lock()
-            .map_err(|error| error.to_string())?
-            .get(&(person, place))
-            .cloned();
-        assert_eq!(stored, Some(evaluated));
+        assert_eq!(stored(person, place), Some(evaluated));
     }
     // The two cases are not empty: the inherited role and the one from a group both name a role.
-    let at_child = |person| {
-        ctx.known
-            .role_labels
-            .lock()
-            .map(|labels| {
-                labels
-                    .get(&(person, Place::Project(child)))
-                    .cloned()
-                    .flatten()
-            })
-            .map_err(|error| error.to_string())
-    };
-    assert_eq!(at_child(people[0])?.as_deref(), Some("Contributor"));
-    assert_eq!(at_child(people[1])?.as_deref(), Some("Viewer"));
+    let at_child = |person| stored(person, Place::Project(child)).flatten();
+    assert_eq!(at_child(people[0]).as_deref(), Some("Contributor"));
+    assert_eq!(at_child(people[1]).as_deref(), Some("Viewer"));
     Ok(())
 }

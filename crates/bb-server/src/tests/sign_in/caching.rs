@@ -20,6 +20,7 @@ use serde_json::json;
 use tower::ServiceExt as _;
 
 use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
+use super::issues_site::id_of;
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
@@ -198,14 +199,14 @@ fn with_query(template: &str, filled: String, project: &str, project_id: &str) -
 
 /// A saved search of the person, for the routes that name one: its ID.
 async fn a_saved_search(ada: &mut Browser) -> Result<String, Failure> {
-    let made = ada
-        .send(
+    id_of(
+        &ada.send(
             "POST",
             "/api/v1/saved-searches",
             Some(json!({"name": "Open bugs", "search_text": ""})),
         )
-        .await?;
-    Ok(made.body["id"].as_str().ok_or("no search")?.to_owned())
+        .await?,
+    )
 }
 
 #[tokio::test]
