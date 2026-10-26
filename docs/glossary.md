@@ -98,6 +98,12 @@ Rules:
 | **Search**               | Finding issues. *Simple search* uses filter buttons; *Advanced search* is typed text | query (in UI)    |
 | **Filter**               | One condition in a search, shown as a button (`Status: not Done`)  | clause, predicate (in UI)          |
 | **Saved search**         | A search plus how its results are shown, saved under a name        | view, filter (as saved object)     |
+| **Save search**          | Keep the search you have open, with its columns and order, under a name | save view, save filter      |
+| **Save a copy**          | Keep an open saved search as a new one of your own, private at first | clone, fork (in UI)               |
+| **Share** (a saved search) | The window that chooses the groups and projects a saved search is shared with; each person still sees only what they may see | —                                |
+| **Share searches**       | The permission to share saved searches with a group or a project    | —                                  |
+| **Mine** / **Shared with me** | The two lists of *Saved searches*: the ones you made, and the ones others shared with you | owned, inbox (in UI) |
+| **Group by**             | Show the results of a search in groups, one per value of a field; an issue with several values (labels, tags, people) stands in the group of each, one without a value in *None* | aggregate, bucket |
 | **Search language**      | The text you type in Advanced search                               | any "xQL" name                     |
 | **Show as**              | How results are shown: *List*, *Board*, *Timeline*, *Calendar*, *Map* | view type                       |
 | **Board**                | Issues as cards in columns                                         | kanban (in UI), agile board        |
