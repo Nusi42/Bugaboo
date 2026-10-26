@@ -23,9 +23,7 @@ use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, FieldChange, 
 use bb_core::id::{CommentId, EntityId, IssueId, JobId, NotificationId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
-use bb_core::notification::{
-    BATCH, FIELDS_MAX, MailState, Notification, NotificationKind, Once, Via,
-};
+use bb_core::notification::{FIELDS_MAX, MailState, Notification, NotificationKind, Once, Via};
 use bb_core::person::Person;
 use bb_core::settings::Layers;
 use bb_policy::Evaluation;
@@ -42,6 +40,7 @@ use crate::history::{issue_in, visible_changes};
 use crate::issues::{Where, member as issue_member};
 use crate::jobs::{JobKind, QueuedJob};
 use crate::member::{comment, follower};
+use crate::outbox_reader::read_all;
 
 /// What one batch of events looks up once: people, their settings, the followers that lost
 /// access.
@@ -204,14 +203,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// An internal error when the store fails.
     pub async fn catch_up_notifications(&self) -> Result<u64, AppError> {
-        let mut read = 0_u64;
-        loop {
-            let events = self.notification_batch(BATCH).await?;
-            read = read.saturating_add(events);
-            if events < BATCH {
-                return Ok(read);
-            }
-        }
+        read_all(|batch| self.notification_batch(batch)).await
     }
 
     /// Reads at most `batch` events the reader has not finished and makes their rows. Returns how

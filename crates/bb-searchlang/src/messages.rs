@@ -67,6 +67,9 @@ pub const NOT_A_DATE: &str = "search.mistake.not-a-date";
 /// The message `search.mistake.operator-not-allowed`.
 pub const OPERATOR_NOT_ALLOWED: &str = "search.mistake.operator-not-allowed";
 
+/// The message `search.mistake.prefix-too-short`.
+pub const PREFIX_TOO_SHORT: &str = "search.mistake.prefix-too-short";
+
 /// The message `search.mistake.reserved-word`.
 pub const RESERVED_WORD: &str = "search.mistake.reserved-word";
 
@@ -84,6 +87,9 @@ pub const TOO_MANY_SORT_KEYS: &str = "search.mistake.too-many-sort-keys";
 
 /// The message `search.mistake.too-many-steps`.
 pub const TOO_MANY_STEPS: &str = "search.mistake.too-many-steps";
+
+/// The message `search.mistake.too-many-words`.
+pub const TOO_MANY_WORDS: &str = "search.mistake.too-many-words";
 
 /// The message `search.mistake.unclosed-quote`.
 pub const UNCLOSED_QUOTE: &str = "search.mistake.unclosed-quote";

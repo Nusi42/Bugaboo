@@ -19,9 +19,6 @@ use crate::time::SECONDS_PER_DAY;
 /// outbox is kept under this name.
 pub const CONSUMER: &str = "notifications";
 
-/// How many events the reader reads in one go.
-pub const BATCH: u64 = 200;
-
 /// How long a notification is kept, in days (PRIV-05, ADR-0033 §5).
 pub const KEEP_DAYS: i64 = 90;
 

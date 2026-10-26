@@ -47,6 +47,7 @@ mod sight;
 mod tags;
 #[cfg(feature = "testing")]
 mod testing;
+pub mod text_index;
 mod workflows;
 
 pub use anchor::LogSeal;
@@ -86,6 +87,12 @@ mod test_support {
     use bb_core::readable_id::IssueCode;
     use bb_core::version::FIRST_VERSION;
     use bb_core::workflow::starter;
+
+    use bb_app::fields::Definition;
+    use bb_core::id::{ChoiceId, FieldId};
+    use bb_core::own_fields::{
+        ChoiceColor, FieldChoice, FieldFor, FieldType, Look, OwnField, Rules, Scope,
+    };
 
     use crate::{AuthStorage, Database, LogSeal};
 
@@ -184,6 +191,50 @@ mod test_support {
             closed_at: None,
             deleted_at: None,
             version: FIRST_VERSION,
+        }
+    }
+
+    /// An own field of this type for the tests, with three choices when the type has choices.
+    pub(crate) fn definition(
+        source: &mut impl IdSource,
+        kind: FieldType,
+        position: i64,
+    ) -> Definition {
+        let id = FieldId::generate(source).unwrap();
+        let choices = if kind.has_choices() {
+            ["Minor", "Major", "Critical"]
+                .iter()
+                .zip(0_i64..)
+                .map(|(name, at)| FieldChoice {
+                    id: ChoiceId::generate(source).unwrap(),
+                    field: id,
+                    name: (*name).to_owned(),
+                    color: ChoiceColor::nth(usize::try_from(at).unwrap()),
+                    icon: None,
+                    position: at,
+                    retired_at: None,
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        Definition {
+            field: OwnField {
+                id,
+                name: format!("Field {position}"),
+                help: String::new(),
+                kind,
+                applies_to: FieldFor::Issues,
+                rules: Rules::default(),
+                default_value: String::new(),
+                look: Look::starting(kind),
+                never_to_assistant: false,
+                position,
+                retired_at: None,
+                version: FIRST_VERSION,
+            },
+            scope: Scope::default(),
+            choices,
         }
     }
 

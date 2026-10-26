@@ -2,7 +2,7 @@
 //!
 //! The ports come from [`crate::ports`].
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -68,6 +68,11 @@ fn stop(child: &mut Child) {
 /// The data folder of the server in development (inside the work folder's build folder).
 const DEV_DATA: &str = "target/dev-data";
 
+/// The data folder of `cargo xtask dev` inside the repository at `root`.
+pub(crate) fn data_folder(root: &Path) -> PathBuf {
+    root.join(DEV_DATA)
+}
+
 pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
     let ports = Ports::load(root)?;
     let built = steps::run(root, &[steps::server_build(Profile::Debug)])?;
@@ -81,7 +86,7 @@ pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
         };
         folder
     } else {
-        root.join(DEV_DATA)
+        data_folder(root)
     };
 
     let interrupted = Arc::new(AtomicBool::new(false));

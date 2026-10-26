@@ -228,7 +228,13 @@ async fn adr_0007_the_rows_the_jobs_and_the_place_of_the_reader_are_one_step() -
         storage
             .store_notifications(&[first], std::slice::from_ref(&job), 5, at(4))
             .await?;
-        assert_eq!(storage.database().outbox_position(&consumer()?).await?, 5);
+        assert_eq!(
+            storage
+                .database()
+                .outbox_position(&consumer_name(CONSUMER)?)
+                .await?,
+            5
+        );
         // A step that fails half way (the job is in the queue already) leaves nothing of it: no
         // row, and the reader has not moved, so it reads the same events again.
         let second = row(&mut source, ana, None, 2)?;
@@ -241,7 +247,13 @@ async fn adr_0007_the_rows_the_jobs_and_the_place_of_the_reader_are_one_step() -
             )
             .await;
         assert!(failed.is_err(), "the job is there twice");
-        assert_eq!(storage.database().outbox_position(&consumer()?).await?, 5);
+        assert_eq!(
+            storage
+                .database()
+                .outbox_position(&consumer_name(CONSUMER)?)
+                .await?,
+            5
+        );
         let found = storage
             .notifications_of(ana, NotificationFilter::All, None, 10)
             .await?;

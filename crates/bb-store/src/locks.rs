@@ -50,6 +50,10 @@ pub(crate) enum LockClass {
     /// Finishing an upload of an issue (key: four bytes of the issue's ID): two finishes at the same
     /// moment cannot both take the last place for a file of the issue.
     IssueFiles = 10,
+    /// Writing the rows of the text index (key 0): two writers (the reader of the outbox in two
+    /// processes, or the reader and a rebuild) read the stored texts and write the rows one after
+    /// the other, so the older reading never overwrites the newer.
+    TextIndex = 11,
 }
 
 impl LockClass {
@@ -69,6 +73,7 @@ impl LockClass {
             Self::Handles => 7,
             Self::Uploads => 8,
             Self::IssueFiles => 9,
+            Self::TextIndex => 10,
         }
     }
 }
