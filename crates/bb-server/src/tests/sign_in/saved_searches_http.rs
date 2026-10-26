@@ -638,6 +638,12 @@ async fn auth_07_a_key_is_turned_away_from_saved_searches_before_its_address_or_
                     format!("{SEARCHES}/not-an-id/shares/planet/x"),
                     None,
                 ),
+                ("POST", format!("{SEARCHES}/not-an-id/restore"), None),
+                (
+                    "POST",
+                    format!("{SEARCHES}/not-an-id/copy"),
+                    Some(json!([])),
+                ),
                 ("GET", format!("{SEARCHES}?limit=many"), None),
                 ("GET", format!("{SEARCHES}/share-choices"), None),
                 (
