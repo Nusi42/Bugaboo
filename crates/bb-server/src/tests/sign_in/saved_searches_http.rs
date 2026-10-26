@@ -22,10 +22,11 @@ const AT_MOST: usize = 40;
 /// The same for a guest, who sees the makers by their role only: the roles of all the makers of a
 /// page are read once (not for each maker), which costs the reads of that one policy (measured: 43).
 const AT_MOST_FOR_A_GUEST: usize = 43;
-/// The same for a list whose texts name a group, a tag and an issue: each is read once for the
-/// request (the groups, the catalogue of tags, the issue and what the person sees of it), so the
-/// reads are those of the three names and do not grow with the page (measured: 56).
-const AT_MOST_WITH_NAMES: usize = 56;
+/// The same for a list whose texts name a group the receiver is in, a tag, an issue and the
+/// receiver: each is read once for the request (the groups of the person, the catalogue of tags, the
+/// issue and what the person sees of it, the person), so the reads are those of the names and do
+/// not grow with the page (measured: 58).
+const AT_MOST_WITH_NAMES: usize = 58;
 
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
@@ -668,19 +669,28 @@ async fn perf_05_forty_searches_that_name_a_group_a_tag_and_an_issue_cost_no_mor
     each_database("perf_05_saved_searches_names", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (mut bea, _) = site
-            .person_called(StartingRole::Administrator, "bea", "Bea Boss")
+        // The receiver is a team member in the group (so `member of` reads the groups of the person,
+        // and they are shown no other person by name, so only themselves can be named).
+        let (mut cleo, cleo_id) = site
+            .person_called(StartingRole::TeamMember, "cleo", "Cleo Cook")
             .await?;
-        // What the texts name: a group, a tag and an issue. Every text of the list is checked for
-        // Bea, who is shown groups by name and may manage them, and the names are read once for
-        // the request, not once for each search.
-        ok(&ada
+        // What the texts name: a group the receiver is in, a tag, an issue and the receiver. Every
+        // text of the list is checked for them, and the names are read once for the request, not
+        // once for each search.
+        let group = ok(&ada
+            .send("POST", "/api/v1/groups", Some(json!({"name": "Night shift"})))
+            .await?)?["id"]
+            .as_str()
+            .ok_or("no group")?
+            .to_owned();
+        let added = ada
             .send(
-                "POST",
-                "/api/v1/groups",
-                Some(json!({"name": "Night shift"})),
+                "PUT",
+                &format!("/api/v1/groups/{group}/members/{cleo_id}"),
+                None,
             )
-            .await?)?;
+            .await?;
+        assert_eq!(added.status, StatusCode::NO_CONTENT, "{}", added.body);
         let issue = key_of(&site.create(&mut ada, "Slow page").await?)?;
         ok(&ada
             .send(
@@ -689,12 +699,13 @@ async fn perf_05_forty_searches_that_name_a_group_a_tag_and_an_issue_cost_no_mor
                 Some(json!({"name": "slow"})),
             )
             .await?)?;
-        let text =
-            format!("assignedTo member of \"Night shift\" and tags is slow and under {issue}");
+        let text = format!(
+            "assignedTo member of \"Night shift\" and tags is slow and under {issue} and assignedTo is \"Cleo Cook\""
+        );
         for number in 0..40 {
             ada_shares(&site, &mut ada, &format!("Search {number}"), &text).await?;
         }
-        let (on_five, on_forty) = five_and_forty(&mut bea, &rig.database, |limit| {
+        let (on_five, on_forty) = five_and_forty(&mut cleo, &rig.database, |limit| {
             format!("{SEARCHES}?scope=shared&limit={limit}&fields=name")
         })
         .await?;
