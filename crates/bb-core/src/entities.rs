@@ -85,6 +85,7 @@ crate::entities! {
     crate::tags::Label,
     crate::tags::LabelGroup,
     crate::tags::Tag,
+    crate::text_index::IndexedText,
     crate::tags::TagProject,
     crate::workflow::StoredChange,
     crate::workflow::StoredStatus,

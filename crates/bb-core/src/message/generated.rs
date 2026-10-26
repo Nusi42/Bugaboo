@@ -462,6 +462,13 @@ pub const CLI_ABOUT_ROTATE_KEY: MessageKey = MessageKey::new("cli.about.rotate-k
 /// The message `cli.about.sample`.
 pub const CLI_ABOUT_SAMPLE: MessageKey = MessageKey::new("cli.about.sample");
 
+/// The message `cli.about.search-index`.
+pub const CLI_ABOUT_SEARCH_INDEX: MessageKey = MessageKey::new("cli.about.search-index");
+
+/// The message `cli.about.search-index-rebuild`.
+pub const CLI_ABOUT_SEARCH_INDEX_REBUILD: MessageKey =
+    MessageKey::new("cli.about.search-index-rebuild");
+
 /// The message `cli.about.security-log`.
 pub const CLI_ABOUT_SECURITY_LOG: MessageKey = MessageKey::new("cli.about.security-log");
 
@@ -3759,6 +3766,9 @@ pub const SAMPLE_STEP_SIGNING_OUT: MessageKey = MessageKey::new("sample.step.sig
 /// The message `sample.step.tags`.
 pub const SAMPLE_STEP_TAGS: MessageKey = MessageKey::new("sample.step.tags");
 
+/// The message `sample.step.text-index`.
+pub const SAMPLE_STEP_TEXT_INDEX: MessageKey = MessageKey::new("sample.step.text-index");
+
 /// The message `sample.step.workflows`.
 pub const SAMPLE_STEP_WORKFLOWS: MessageKey = MessageKey::new("sample.step.workflows");
 
@@ -3770,6 +3780,9 @@ pub const SAVE_SAVED: MessageKey = MessageKey::new("save.saved");
 
 /// The message `save.saving`.
 pub const SAVE_SAVING: MessageKey = MessageKey::new("save.saving");
+
+/// The message `search-index.opened-address`.
+pub const SEARCH_INDEX_OPENED_ADDRESS: MessageKey = MessageKey::new("search-index.opened-address");
 
 /// The message `search.clear`.
 pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
@@ -8688,6 +8701,24 @@ pub fn save_saved_at(time: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search-index.opened-built-in`.
+#[must_use]
+pub fn search_index_opened_built_in(folder: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search-index.opened-built-in"),
+        vec![("folder", Value::Text(folder.to_string()))],
+    )
+}
+
+/// The message `search-index.rebuilt`.
+#[must_use]
+pub fn search_index_rebuilt(issues: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search-index.rebuilt"),
+        vec![("issues", Value::Number(issues))],
+    )
+}
+
 /// The message `search.mistake.expected-blocked-by`.
 #[must_use]
 pub fn search_mistake_expected_blocked_by(
@@ -8882,6 +8913,15 @@ pub fn search_mistake_operator_not_allowed(
     )
 }
 
+/// The message `search.mistake.prefix-too-short`.
+#[must_use]
+pub fn search_mistake_prefix_too_short(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.prefix-too-short"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
 /// The message `search.mistake.reserved-word`.
 #[must_use]
 pub fn search_mistake_reserved_word(word: impl std::fmt::Display) -> Message {
@@ -8914,6 +8954,15 @@ pub fn search_mistake_too_many_sort_keys(limit: impl std::fmt::Display) -> Messa
 pub fn search_mistake_too_many_steps(limit: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.too-many-steps"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `search.mistake.too-many-words`.
+#[must_use]
+pub fn search_mistake_too_many_words(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.too-many-words"),
         vec![("limit", Value::Text(limit.to_string()))],
     )
 }
@@ -10369,6 +10418,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "cli.about.sample",
         "Create the sample organization: fictional people, the same every time from a seed",
+    ),
+    (
+        "cli.about.search-index",
+        "Look after the index of the text search",
+    ),
+    (
+        "cli.about.search-index-rebuild",
+        "Build the index of the text search again from the stored texts",
     ),
     ("cli.about.security-log", "Look at the security log"),
     (
@@ -13172,6 +13229,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.step.signing-out", "signing out"),
     ("sample.step.tags", "putting a tag or a label on an issue"),
     (
+        "sample.step.text-index",
+        "building the index of the text search",
+    ),
+    (
         "sample.step.workflows",
         "creating the workflow of a project",
     ),
@@ -13179,6 +13240,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("save.saved", "Saved"),
     ("save.saved-at", "Saved · {time}"),
     ("save.saving", "Saving…"),
+    (
+        "search-index.opened-address",
+        "Opened the database that the settings name by an address (the address is not shown; it can hold a password).",
+    ),
+    (
+        "search-index.opened-built-in",
+        "Opened the built-in database in {folder}.",
+    ),
+    (
+        "search-index.rebuilt",
+        "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
+    ),
     ("search.clear", "Clear the search"),
     ("search.label", "Search"),
     (
@@ -13266,6 +13339,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "“{operator}” cannot be used with “{field}”.",
     ),
     (
+        "search.mistake.prefix-too-short",
+        "A word that ends in * needs at least {limit} letters before the *.",
+    ),
+    (
         "search.mistake.reserved-word",
         "“{word}” is a word of the search language. To search for it, put it in quotes.",
     ),
@@ -13288,6 +13365,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "search.mistake.too-many-steps",
         "A search can look at most {limit} steps away.",
+    ),
+    (
+        "search.mistake.too-many-words",
+        "A text to find can have at most {limit} different words.",
     ),
     (
         "search.mistake.unclosed-quote",

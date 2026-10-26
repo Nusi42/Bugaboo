@@ -18,10 +18,6 @@ use crate::db::{Row, StoredId, to_micros};
 use crate::error::StoreError;
 use crate::schema::HistoryEntryRow;
 
-fn consumer() -> Result<TechnicalName, StoreError> {
-    TechnicalName::new(CONSUMER).map_err(|_| StoreError::Corrupt("the name of the history"))
-}
-
 fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
     let changes: Vec<FieldChange> =
         serde_json::from_str(&row.get::<String>(HistoryEntryRow::Changes)?)
@@ -43,13 +39,7 @@ fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
 
 impl HistoryStore for AuthStorage {
     async fn history_events(&self, limit: u64) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
-        Ok(self
-            .database()
-            .outbox_after(&consumer()?, limit)
-            .await?
-            .into_iter()
-            .map(|(entry, event)| (entry.position, event))
-            .collect())
+        self.database().outbox_events(CONSUMER, limit).await
     }
 
     async fn store_history(
@@ -97,7 +87,7 @@ impl HistoryStore for AuthStorage {
             }
             transaction.commit().await?;
         }
-        database.outbox_done(&consumer()?, position, now).await
+        database.outbox_set(CONSUMER, position, now).await
     }
 
     async fn history_page(

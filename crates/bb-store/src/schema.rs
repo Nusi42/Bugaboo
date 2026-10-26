@@ -18,6 +18,7 @@ mod notify;
 mod searches;
 mod sign_in;
 mod system;
+mod text_index;
 mod work;
 
 pub(crate) use access::*;
@@ -27,6 +28,7 @@ pub(crate) use notify::*;
 pub(crate) use searches::*;
 pub(crate) use sign_in::*;
 pub(crate) use system::*;
+pub(crate) use text_index::*;
 pub(crate) use work::*;
 
 /// A table with the entity stored in it.
@@ -486,6 +488,13 @@ stored_tables! {
         Record => record,
         RecordKind => record_kind,
         Changes => changes,
+    },
+    TextIndexRow => bb_core::text_index::IndexedText {
+        Id => id,
+        Issue => issue,
+        Source => source,
+        SourceRef => source_ref,
+        Words => words,
     },
     FieldProjectRow => bb_core::own_fields::FieldProject {
         Field => field,

@@ -23,6 +23,7 @@ pub mod many_changes;
 pub mod member;
 pub mod notifications;
 pub mod offers;
+mod outbox_reader;
 pub mod people;
 pub mod ports;
 pub mod preview;
@@ -36,6 +37,7 @@ pub mod settings;
 pub mod status;
 mod store_macros;
 pub mod tags;
+pub mod text_index;
 pub mod workflows;
 
 #[cfg(test)]

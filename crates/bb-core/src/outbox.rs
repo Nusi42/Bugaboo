@@ -7,6 +7,10 @@ use crate::id::EventId;
 use crate::personal::Entity;
 use crate::technical::TechnicalName;
 
+/// How many events a consumer of the outbox reads in one go: the one number for the history, the
+/// notifications and the text index.
+pub const OUTBOX_BATCH: u64 = 200;
+
 /// One event waiting for its consumers. Written in the same transaction as the event.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct OutboxEntry {

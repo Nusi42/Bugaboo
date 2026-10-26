@@ -24,6 +24,7 @@ dataset = []
 [dependencies]
 bb-app = { path = "../bb-app" }
 bb-core = { path = "../bb-core" }
+bb-searchlang = { path = "../bb-searchlang" }
 bb-policy = { path = "../bb-policy" }
 chacha20poly1305 = { workspace = true }
 getrandom = { workspace = true }

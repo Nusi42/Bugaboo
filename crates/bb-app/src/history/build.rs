@@ -7,12 +7,12 @@
 //! It takes the store and the time and nothing else: it is no use case of a person (it has no
 //! actor and writes no domain event of its own), so it is not a command of ARCH-EVENTS.
 
-use bb_core::history::BATCH;
 use jiff::Timestamp;
 
 use super::map::rows_of;
 use super::store::HistoryStore;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::outbox_reader::read_all;
 
 /// Reads at most `batch` events the history has not finished and makes their rows. Returns how
 /// many events it read: 0 when it has caught up.
@@ -41,14 +41,7 @@ pub async fn catch_up_batch<S: HistoryStore>(
 /// # Errors
 /// The error of the store.
 pub async fn catch_up<S: HistoryStore>(store: &S, now: Timestamp) -> Result<u64, S::Error> {
-    let mut read = 0_u64;
-    loop {
-        let events = catch_up_batch(store, now, BATCH).await?;
-        read = read.saturating_add(events);
-        if events < BATCH {
-            return Ok(read);
-        }
-    }
+    read_all(|batch| catch_up_batch(store, now, batch)).await
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

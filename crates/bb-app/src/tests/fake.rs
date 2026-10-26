@@ -109,6 +109,8 @@ pub(crate) struct State {
     pub(crate) history: Vec<HistoryEntry>,
     /// How many events the history has finished (their place in the outbox).
     pub(crate) history_position: i64,
+    /// How far the consumer of the text index has read (the in-memory store keeps no index).
+    pub(crate) text_index_position: i64,
     pub(crate) notifications: Vec<bb_core::notification::Notification>,
     pub(crate) handles: Vec<bb_core::handle::PersonHandle>,
     pub(crate) sign_up_invitations: Vec<bb_core::sign_up_invitation::SignUpInvitation>,

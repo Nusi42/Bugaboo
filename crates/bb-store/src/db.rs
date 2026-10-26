@@ -21,10 +21,8 @@ use bb_core::id::{
 };
 use jiff::Timestamp;
 use sea_query::{
-    DeleteStatement, Iden, InsertStatement, PostgresQueryBuilder, SchemaStatementBuilder,
-    SelectStatement, SqliteQueryBuilder, UpdateStatement,
+    Iden, PostgresQueryBuilder, SchemaStatementBuilder, SelectStatement, SqliteQueryBuilder,
 };
-use sea_query_sqlx::{SqlxBinder as _, SqlxValues};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions, PgRow};
 use sqlx::sqlite::{
     SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow, SqliteSynchronous,
@@ -33,6 +31,12 @@ use sqlx::{AssertSqlSafe, PgPool, Postgres, Row as _, Sqlite, SqlitePool};
 
 use crate::error::StoreError;
 use crate::locks::{Held, LockClass, Mode};
+
+mod fixed;
+mod statement;
+
+pub(crate) use fixed::FixedSql;
+pub(crate) use statement::Statement;
 
 /// How many values one statement binds at most. SQLite allows 32,766 and PostgreSQL 65,535, so the
 /// smaller counts, less a little room for the values a statement binds besides its list. This is
@@ -508,63 +512,44 @@ impl Transaction {
         &mut self,
         statement: &impl SchemaStatementBuilder,
     ) -> Result<(), StoreError> {
+        self.execute_text(|dialect| match dialect {
+            Dialect::Sqlite => statement.build(SqliteQueryBuilder),
+            Dialect::Postgres => statement.build(PostgresQueryBuilder),
+        })
+        .await
+    }
+
+    /// Runs the fixed statements of a migration step that belong to this database.
+    pub(crate) async fn execute_fixed(&mut self, sql: &FixedSql) -> Result<(), StoreError> {
+        let dialect = match self.inner {
+            TxInner::Sqlite(_) => Dialect::Sqlite,
+            TxInner::Postgres(_) => Dialect::Postgres,
+        };
+        for text in sql.of(dialect) {
+            self.execute_text(|_| (*text).to_owned()).await?;
+        }
+        Ok(())
+    }
+
+    /// Runs a text of schema or migration, as the database of this transaction needs it. The one
+    /// place that runs such a text.
+    async fn execute_text(
+        &mut self,
+        text: impl FnOnce(Dialect) -> String,
+    ) -> Result<(), StoreError> {
         match &mut self.inner {
-            TxInner::Sqlite(transaction) => {
-                let sql = statement.build(SqliteQueryBuilder);
-                sqlx::query(AssertSqlSafe(sql))
-                    .execute(&mut **transaction)
-                    .await?;
+            TxInner::Sqlite(tx) => {
+                let sql = text(Dialect::Sqlite);
+                sqlx::query(AssertSqlSafe(sql)).execute(&mut **tx).await?;
             }
-            TxInner::Postgres(transaction) => {
-                let sql = statement.build(PostgresQueryBuilder);
-                sqlx::query(AssertSqlSafe(sql))
-                    .execute(&mut **transaction)
-                    .await?;
+            TxInner::Postgres(tx) => {
+                let sql = text(Dialect::Postgres);
+                sqlx::query(AssertSqlSafe(sql)).execute(&mut **tx).await?;
             }
         }
         Ok(())
     }
 }
-
-/// A query built with sea-query, ready to be built for a dialect.
-pub(crate) enum Statement<'a> {
-    Select(&'a SelectStatement),
-    Insert(&'a InsertStatement),
-    Update(&'a UpdateStatement),
-    Delete(&'a DeleteStatement),
-}
-
-impl Statement<'_> {
-    fn build(&self, dialect: Dialect) -> (String, SqlxValues) {
-        match (self, dialect) {
-            (Self::Select(query), Dialect::Sqlite) => query.build_sqlx(SqliteQueryBuilder),
-            (Self::Select(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
-            (Self::Insert(query), Dialect::Sqlite) => query.build_sqlx(SqliteQueryBuilder),
-            (Self::Insert(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
-            (Self::Update(query), Dialect::Sqlite) => query.build_sqlx(SqliteQueryBuilder),
-            (Self::Update(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
-            (Self::Delete(query), Dialect::Sqlite) => query.build_sqlx(SqliteQueryBuilder),
-            (Self::Delete(query), Dialect::Postgres) => query.build_sqlx(PostgresQueryBuilder),
-        }
-    }
-}
-
-macro_rules! statement_from {
-    ($($query:ident => $variant:ident),+) => {
-        $(impl<'a> From<&'a $query> for Statement<'a> {
-            fn from(query: &'a $query) -> Self {
-                Self::$variant(query)
-            }
-        })+
-    };
-}
-
-statement_from!(
-    SelectStatement => Select,
-    InsertStatement => Insert,
-    UpdateStatement => Update,
-    DeleteStatement => Delete
-);
 
 /// One row of an answer, from either database.
 pub(crate) enum Row {

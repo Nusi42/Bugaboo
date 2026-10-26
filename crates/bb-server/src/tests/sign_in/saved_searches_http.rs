@@ -17,7 +17,10 @@ const SEARCHES: &str = "/api/v1/saved-searches";
 /// that a change to the code has to notice; the exact numbers are compared apart). Most of them are
 /// the session, the rights of the person and the fields they may read (checking a shared search
 /// needs them).
-const AT_MOST: usize = 52;
+const AT_MOST: usize = 40;
+/// The same for a guest, who sees the makers by their role only: every maker costs the reads of a
+/// role label (measured: 51).
+const AT_MOST_FOR_A_GUEST: usize = 51;
 
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
@@ -454,7 +457,84 @@ async fn perf_05_many_searches_that_are_skipped_cost_no_more_statements_than_non
         counter.take();
         let skipping = dan.send("GET", &path, None).await?;
         assert_eq!(names(&skipping).len(), 5);
-        assert_as_many_statements(on_none, counter.take(), AT_MOST, "skipped searches");
+        assert_as_many_statements(
+            on_none,
+            counter.take(),
+            AT_MOST_FOR_A_GUEST,
+            "skipped searches",
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_06_two_saves_at_the_same_moment_cannot_both_take_the_last_place() -> TestResult {
+    each_database("qry_06_saved_search_limit_race", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        let mut again = Browser::signed_in_as(&app, super::http::ADA_EMAIL).await?;
+        // One place is left.
+        for number in 0..499 {
+            ok(&save(&mut ada, &format!("Search {number}")).await?)?;
+        }
+        let (first, second) = tokio::join!(save(&mut ada, "One"), save(&mut again, "Two"));
+        let (first, second) = (first?, second?);
+        let mut codes = [first.status, second.status];
+        codes.sort();
+        assert_eq!(codes, [StatusCode::OK, StatusCode::CONFLICT]);
+        let refused = if first.status == StatusCode::OK {
+            &second
+        } else {
+            &first
+        };
+        assert_eq!(refused.code(), "limit.reached");
+        let all = ada
+            .send("GET", &format!("{SEARCHES}?limit=100"), None)
+            .await?;
+        assert_eq!(all.status, StatusCode::OK);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_06_the_shared_list_goes_on_past_a_walk_of_hidden_searches_on_both_databases()
+-> TestResult {
+    each_database("qry_06_saved_search_offset", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut dan, _) = site
+            .person_called(StartingRole::Guest, "dan", "Dan Dyer")
+            .await?;
+        // A hundred and five that Dan cannot read (more than one read of the store, so the offset is used), then three that he can; he asks for two at a time, and the
+        // cursor goes on by the last one shown.
+        for number in 0..105 {
+            let name = format!("Hidden {number}");
+            ada_shares(&site, &mut ada, &name, "assignedTo is \"Bob Baker\"").await?;
+        }
+        for number in 0..3 {
+            ada_shares(&site, &mut ada, &format!("Seen {number}"), "").await?;
+        }
+        let first = dan
+            .send("GET", &format!("{SEARCHES}?scope=shared&limit=2"), None)
+            .await?;
+        assert_eq!(names(&first).len(), 2);
+        let cursor = first.body["next_cursor"].as_str().ok_or("no cursor")?;
+        let second = dan
+            .send(
+                "GET",
+                &format!("{SEARCHES}?scope=shared&limit=2&cursor={cursor}"),
+                None,
+            )
+            .await?;
+        // Two and one, none twice: the three that he reads, in whatever order they were made.
+        let mut all = names(&first);
+        all.extend(names(&second));
+        all.sort();
+        assert_eq!(all, ["Seen 0", "Seen 1", "Seen 2"]);
+        assert_eq!(names(&second).len(), 1);
+        assert_eq!(second.body["next_cursor"], Value::Null);
         Ok(())
     })
     .await

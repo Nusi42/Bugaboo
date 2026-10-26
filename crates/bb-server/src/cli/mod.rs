@@ -5,12 +5,15 @@
 //! - `service install` / `service uninstall` run Bugaboo as a service (`service.rs`);
 //! - `security-log verify`, `rotate-key` and `keys export` look after the secrets (`secrets.rs`,
 //!   M1-F19, M1-F20, M1-F22);
+//! - `search-index rebuild` builds the index of the text search again from the stored texts
+//!   (`search_index.rs`, M5 WP-05);
 //! - `openapi` prints the description of the API.
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
 
 mod preview;
 mod renewal;
+mod search_index;
 mod secrets;
 mod serve;
 mod service;
@@ -58,6 +61,11 @@ enum Command {
     },
     #[command(name = "rotate-key", about = text(message::CLI_ABOUT_ROTATE_KEY))]
     RotateKey(StoreArgs),
+    #[command(name = "search-index", about = text(message::CLI_ABOUT_SEARCH_INDEX))]
+    SearchIndex {
+        #[command(subcommand)]
+        command: SearchIndexCommand,
+    },
     #[command(about = text(message::CLI_ABOUT_KEYS))]
     Keys {
         #[command(subcommand)]
@@ -98,6 +106,12 @@ enum ServiceCommand {
 enum SecurityLogCommand {
     #[command(about = text(message::CLI_ABOUT_SECURITY_LOG_VERIFY))]
     Verify(StoreArgs),
+}
+
+#[derive(Subcommand)]
+enum SearchIndexCommand {
+    #[command(about = text(message::CLI_ABOUT_SEARCH_INDEX_REBUILD))]
+    Rebuild(StoreArgs),
 }
 
 #[derive(Subcommand)]
@@ -225,6 +239,9 @@ async fn run(cli: Cli) -> ExitCode {
             command: SecurityLogCommand::Verify(args),
         } => secrets::verify_security_log(&args).await,
         Command::RotateKey(args) => secrets::rotate_key(&args).await,
+        Command::SearchIndex {
+            command: SearchIndexCommand::Rebuild(args),
+        } => search_index::rebuild(&args).await,
         Command::Keys {
             command: KeysCommand::Export { store, folder },
         } => secrets::export_keys(&store, &folder).await,

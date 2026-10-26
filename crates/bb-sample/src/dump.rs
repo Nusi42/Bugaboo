@@ -178,11 +178,9 @@ impl Sample {
             });
         }
 
-        let reader =
-            TechnicalName::new(READER).map_err(|error| SampleError::Store(error.to_string()))?;
         let raw: Vec<DomainEvent> = self
             .database
-            .outbox_after(&reader, LIMIT)
+            .outbox_events(READER, LIMIT)
             .await?
             .into_iter()
             .map(|(_, event)| event)

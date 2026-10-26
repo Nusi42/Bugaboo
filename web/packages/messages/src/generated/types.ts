@@ -431,10 +431,12 @@ export interface MessageArguments {
   "search.mistake.expected-value": { field: string | number };
   "search.mistake.not-a-date": { text: string | number };
   "search.mistake.operator-not-allowed": { field: string | number; operator: string | number };
+  "search.mistake.prefix-too-short": { limit: string | number };
   "search.mistake.reserved-word": { word: string | number };
   "search.mistake.too-many-filters": { limit: string | number };
   "search.mistake.too-many-sort-keys": { limit: string | number };
   "search.mistake.too-many-steps": { limit: string | number };
+  "search.mistake.too-many-words": { limit: string | number };
   "search.mistake.unknown-choice": { field: string | number; value: string | number };
   "search.mistake.unknown-choice-did-you-mean": {
     field: string | number;
