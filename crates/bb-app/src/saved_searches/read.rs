@@ -3,15 +3,16 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::SavedSearchId;
-use bb_core::paging::{Cut, page_len, read_len, window};
-use bb_core::saved_search::{SearchScope, ShareKind};
+use bb_core::paging::{Cut, page_len, read_count, read_len, window};
+use bb_core::saved_search::{SavedSearch, SearchSet, ShareKind};
 use bb_policy::{Authorized, Permission, Place};
 
-use super::reach::{Stored, may_share_with_group};
+use super::reach::{Reaching, Stored, may_share_with_group};
 use super::types::{
     SavedSearchPage, SavedSearchView, SearchQuery, SearchesQuery, ShareChoice, ShareChoicePage,
     ShareChoicesQuery,
 };
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
 
@@ -32,18 +33,15 @@ pub async fn saved_searches<S: AuthStore>(
     let reaching = ctx.reaching(&actor).await?;
     let store = ctx.store();
     let found = match input.scope {
-        SearchScope::Mine => {
-            store
-                .saved_searches_made_by(actor.person.id, after, read_len(len))
-                .await
+        SearchSet::Mine => store
+            .saved_searches_made_by(actor.person.id, after, read_len(len))
+            .await
+            .map_err(|error| internal::<S>(&error))?,
+        SearchSet::Shared => {
+            ctx.shared_that_read_cleanly(&actor, &reaching, after, len)
+                .await?
         }
-        SearchScope::Shared => {
-            store
-                .saved_searches_shared_with(reaching.reach(), after, read_len(len))
-                .await
-        }
-    }
-    .map_err(|error| internal::<S>(&error))?;
+    };
     let cut = Cut::of(found, len);
     let next_cursor = cut.next_cursor(|search| search.id.to_string());
     let ids: Vec<SavedSearchId> = cut.items.iter().map(|search| search.id).collect();
@@ -70,6 +68,53 @@ pub async fn saved_searches<S: AuthStore>(
     let items = ctx.search_views(&actor, &reaching, stored).await?;
     let organization = ctx.evaluation_of(&actor, Place::Organization).await?;
     Ok(organization.authorize(SavedSearchPage { items, next_cursor }))
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The searches shared with the person that check cleanly for them, after `after`, one more
+    /// than `len` if there are so many. A search that does not is skipped without a trace: the
+    /// batches go on until the page is full or the searches are used up, so a short page never
+    /// tells that something was left out (ADR-0034, decision 4).
+    async fn shared_that_read_cleanly(
+        &self,
+        actor: &Actor,
+        reaching: &Reaching,
+        after: Option<SavedSearchId>,
+        len: usize,
+    ) -> Result<Vec<SavedSearch>, AppError> {
+        let mut judge = self.judge(actor, reaching).await?;
+        let (store, wanted) = (self.store(), read_count(len));
+        let batch = read_len(len);
+        let (mut clean, mut from) = (Vec::new(), after);
+        loop {
+            let found = store
+                .saved_searches_shared_with(reaching.reach(), from, batch)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            let ids: Vec<SavedSearchId> = found.iter().map(|search| search.id).collect();
+            let mut columns = store
+                .columns_of_searches(&ids)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            let last = found.last().map(|search| search.id);
+            let exhausted = u64::try_from(found.len()).is_ok_and(|count| count < batch);
+            for search in found {
+                let id = search.id;
+                let stored = Stored {
+                    search,
+                    columns: take_where(&mut columns, |column| column.search == id),
+                    shares: Vec::new(),
+                };
+                if clean.len() < wanted && self.reads_cleanly(&mut judge, &stored).await? {
+                    clean.push(stored.search);
+                }
+            }
+            match last {
+                Some(last) if clean.len() < wanted && !exhausted => from = Some(last),
+                _ => return Ok(clean),
+            }
+        }
+    }
 }
 
 /// The items that `is` is true for, taken out of `from` in their order.

@@ -17,7 +17,7 @@ use bb_core::history::HistoryTab;
 use bb_core::mail::MailServerReadiness;
 use bb_core::message::Message;
 use bb_core::notification::{NotificationFilter, NotificationKind};
-use bb_core::saved_search::{SearchScope, ShareKind};
+use bb_core::saved_search::{SearchSet, ShareKind};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation as OperationSpec, ParameterIn, PathItem};
@@ -61,7 +61,7 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         MailServerReadiness,
         NotificationFilter,
         NotificationKind,
-        SearchScope,
+        SearchSet,
         ShareKind
     )),
     tags(

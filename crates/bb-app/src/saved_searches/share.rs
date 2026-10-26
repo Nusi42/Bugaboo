@@ -76,7 +76,7 @@ fn share_change(target: ShareTarget, shared: bool) -> FieldChange {
 ///
 /// # Errors
 /// `resource.not-found` for a search the person does not see, `access.forbidden` for one they did
-/// not make or a place they may not share with, `request.invalid` when it is shared with as many
+/// not make or a place they may not share with, `limit.reached` when it is shared with as many
 /// places as it can be.
 pub async fn share_search<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -97,7 +97,7 @@ pub async fn share_search<S: AuthStore>(
         return ctx.authorized_view(&actor, &reaching, stored).await;
     }
     if stored.shares.len() >= SHARES_MAX {
-        return Err(ErrorCode::InvalidRequest.into());
+        return Err(ErrorCode::LimitReached.into());
     }
     let share = SearchShare {
         search: stored.search.id,

@@ -24,6 +24,13 @@ pub const WORD_MAX: usize = crate::text::NAME_MAX;
 /// size of text). A column never disappears by its width, and no width is wider than a screen.
 pub const COLUMN_WIDTH_RANGE: std::ops::RangeInclusive<u32> = 24..=2000;
 
+/// The most saved searches one person has (those in the trash included): the 501st is refused.
+pub const SAVED_SEARCHES_MAX: usize = 500;
+
+/// The word of the column that shows the Issue ID. It is no field of the search language (every
+/// issue has an ID), so it is the one word of a column that needs no field.
+pub const ID_COLUMN: &str = "id";
+
 /// The most groups and projects one saved search is shared with.
 pub const SHARES_MAX: usize = 100;
 
@@ -185,11 +192,13 @@ impl Presentation {
             .collect()
     }
 
-    /// The search words of every field the presentation names: the columns and the grouping.
+    /// The search words of every field the presentation names: the columns (besides the ID column)
+    /// and the grouping.
     pub fn fields(&self) -> impl Iterator<Item = &str> {
         self.columns
             .iter()
             .map(|column| column.field.as_str())
+            .filter(|word| *word != ID_COLUMN)
             .chain(self.group_by.as_deref())
     }
 }
@@ -252,8 +261,8 @@ pub struct SearchColumn {
 }
 
 words! {
-    /// Which saved searches a list shows.
-    pub enum SearchScope {
+    /// Which set of saved searches a list shows.
+    pub enum SearchSet {
         /// The ones the person made.
         Mine => "mine",
         /// The ones other people shared with a group of the person or a project they see.
@@ -262,8 +271,8 @@ words! {
 }
 
 words_in_api!(
-    SearchScope,
-    "Which saved searches a list shows: the person's own, or the ones shared with them."
+    SearchSet,
+    "Which set of saved searches a list shows: the person's own, or the ones shared with them."
 );
 
 words! {

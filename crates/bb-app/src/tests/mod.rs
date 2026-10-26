@@ -50,6 +50,7 @@ mod offers_secrecy;
 mod recurring_jobs;
 mod runs_end;
 mod saved_searches;
+mod saved_searches_receivers;
 mod scenarios;
 mod scenarios_fields;
 mod scenarios_files;

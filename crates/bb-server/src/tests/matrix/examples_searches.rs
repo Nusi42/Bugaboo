@@ -32,7 +32,7 @@ async fn their_search(fixture: &Fixture<'_>, browser: &mut Browser) -> Result<St
             SEARCHES,
             Some(json!({
                 "name": format!("Search {}", fixture.next_number()),
-                "search_text": "status is open",
+                "search_text": "",
             })),
         )
         .await?;
@@ -55,7 +55,7 @@ pub(super) async fn search_request(
         "createSavedSearch" => (
             "POST",
             SEARCHES.into(),
-            Some(json!({"name": "Open bugs", "search_text": "status is open"})),
+            Some(json!({"name": "Open bugs", "search_text": ""})),
         ),
         "getSavedSearch" => {
             let search = their_search(fixture, browser).await?;

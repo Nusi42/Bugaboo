@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Presentation, SearchScope, ShareKind, ShareTarget};
+use bb_core::saved_search::{Presentation, SearchSet, ShareKind, ShareTarget};
 use bb_policy::StartingRole;
 
 use super::scenarios::{a_project, text, token};
@@ -23,18 +23,18 @@ use crate::saved_searches::{
 
 /// The people of a small company: Ada the administrator; Ben, a team member of ACME only; Cleo, a
 /// team member of the whole organization; Dan, a guest in ACME; Eve, with no role at all.
-struct Crew {
-    world: World,
-    acme: ProjectId,
-    web: ProjectId,
-    ben: Started,
-    cleo: Started,
-    dan: Started,
-    eve: Started,
+pub(super) struct Crew {
+    pub(super) world: World,
+    pub(super) acme: ProjectId,
+    pub(super) web: ProjectId,
+    pub(super) ben: Started,
+    pub(super) cleo: Started,
+    pub(super) dan: Started,
+    pub(super) eve: Started,
 }
 
 impl Crew {
-    async fn new() -> Result<Self, String> {
+    pub(super) async fn new() -> Result<Self, String> {
         let world = World::new().await?;
         let acme = a_project(&world, "ACME").await?;
         let web = a_project(&world, "WEB").await?;
@@ -60,21 +60,21 @@ impl Crew {
         })
     }
 
-    fn ada(&self) -> String {
+    pub(super) fn ada(&self) -> String {
         token(&self.world)
     }
 }
 
-fn refused<T>(result: &Result<T, AppError>, code: ErrorCode) -> bool {
+pub(super) fn refused<T>(result: &Result<T, AppError>, code: ErrorCode) -> bool {
     matches!(result, Err(AppError::Refused(found)) if *found == code)
 }
 
 /// The searches shared with the person.
-async fn shared(
+pub(super) async fn shared(
     crew: &Crew,
     who: &Started,
 ) -> Result<Vec<crate::saved_searches::SavedSearchView>, AppError> {
-    list(&crew.world, &who.session_token, SearchScope::Shared).await
+    list(&crew.world, &who.session_token, SearchSet::Shared).await
 }
 
 fn names(views: &[crate::saved_searches::SavedSearchView]) -> Vec<&str> {
@@ -96,7 +96,7 @@ async fn qry_06_a_saved_search_is_private_when_it_is_made_and_keeps_how_it_is_sh
     assert_eq!(made.text, "status is open");
     // Nobody else lists it or opens it, and the address answers as for one that is not there.
     for other in [&crew.cleo, &crew.dan, &crew.eve] {
-        for scope in [SearchScope::Mine, SearchScope::Shared] {
+        for scope in [SearchSet::Mine, SearchSet::Shared] {
             assert!(
                 list(&crew.world, &other.session_token, scope)
                     .await?
@@ -362,7 +362,7 @@ async fn qry_06_a_search_shared_with_a_place_is_listed_for_the_people_it_reaches
     );
     assert!(shared(&crew, &crew.eve).await?.is_empty());
     // Ada's own list holds all three, with whom each is shared with.
-    let mine = list(&crew.world, &ada, SearchScope::Mine).await?;
+    let mine = list(&crew.world, &ada, SearchSet::Mine).await?;
     assert_eq!(names(&mine), ["For ACME", "For the night", "Mine"]);
     assert!(shared_view(&mine[1]).contains("Night shift"));
     // A receiver is told who made it, and not whom else it is shared with.
@@ -426,7 +426,7 @@ async fn qry_06_save_a_copy_is_private_and_mine() -> Outcome {
     // Private: nobody else sees it, not even the maker of the original.
     let hidden = open(&crew.world, &ada, copy.id).await;
     assert!(refused(&hidden, ErrorCode::NotFound));
-    let mine = list(&crew.world, &crew.dan.session_token, SearchScope::Mine).await?;
+    let mine = list(&crew.world, &crew.dan.session_token, SearchSet::Mine).await?;
     assert_eq!(mine.len(), 1);
     // The original is as it was, and a person who does not see it cannot copy it.
     assert_eq!(
@@ -470,9 +470,9 @@ async fn qry_06_delete_goes_to_the_trash_with_undo() -> Outcome {
     };
     delete_search(&crew.world.ctx(), trash(ben)).await?;
     // In the trash it is not listed, not found, and not deleted twice.
-    assert!(list(&crew.world, ben, SearchScope::Mine).await?.is_empty());
+    assert!(list(&crew.world, ben, SearchSet::Mine).await?.is_empty());
     assert!(
-        list(&crew.world, &crew.dan.session_token, SearchScope::Shared)
+        list(&crew.world, &crew.dan.session_token, SearchSet::Shared)
             .await?
             .is_empty()
     );
@@ -501,7 +501,7 @@ async fn qry_06_delete_goes_to_the_trash_with_undo() -> Outcome {
     assert_eq!(back.shared_with.len(), 1);
     assert_eq!(back.version, made.version + 2);
     assert_eq!(
-        names(&list(&crew.world, &crew.dan.session_token, SearchScope::Shared).await?),
+        names(&list(&crew.world, &crew.dan.session_token, SearchSet::Shared).await?),
         ["My bugs"]
     );
     // Taking out what is not in the trash is not found.
@@ -530,7 +530,7 @@ async fn qry_06_somebody_with_change_organization_settings_deletes_any_saved_sea
         )
         .await?;
     }
-    assert!(list(&crew.world, ben, SearchScope::Mine).await?.is_empty());
+    assert!(list(&crew.world, ben, SearchSet::Mine).await?.is_empty());
     // She takes it back as well, and the maker sees it again; she changes nothing else of it.
     restore_search(
         &crew.world.ctx(),
@@ -541,7 +541,7 @@ async fn qry_06_somebody_with_change_organization_settings_deletes_any_saved_sea
     )
     .await?;
     assert_eq!(
-        names(&list(&crew.world, ben, SearchScope::Mine).await?),
+        names(&list(&crew.world, ben, SearchSet::Mine).await?),
         ["Shared"]
     );
     let change = change_search(
@@ -697,7 +697,7 @@ async fn qry_06_a_person_who_is_removed_takes_the_private_searches_along_and_the
 #[tokio::test]
 async fn perf_05_a_page_of_forty_saved_searches_costs_as_many_reads_as_a_page_of_five() -> Outcome {
     let crew = Crew::new().await?;
-    let reads_for = |scope: SearchScope| {
+    let reads_for = |scope: SearchSet| {
         let crew = &crew;
         async move {
             let before = crew.world.store.reads();
@@ -725,7 +725,7 @@ async fn perf_05_a_page_of_forty_saved_searches_costs_as_many_reads_as_a_page_of
             )
             .await?;
         }
-        counts.push(reads_for(SearchScope::Shared).await?);
+        counts.push(reads_for(SearchSet::Shared).await?);
     }
     assert_eq!(counts[0], counts[1], "the reads grew with the page");
     Ok(())

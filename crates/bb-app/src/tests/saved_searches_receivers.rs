@@ -1,0 +1,273 @@
+//! What a receiver sees of a saved search (QRY-06, ADR-0034, decision 4): a search that does not
+//! check cleanly for them is not listed and its address is not found; a text is kept in its
+//! canonical spelling; a person has at most as many searches as they may have.
+
+use bb_core::ErrorCode;
+use bb_core::id::SavedSearchId;
+use bb_core::saved_search::{SearchSet, ShareTarget};
+use bb_policy::StartingRole;
+
+use super::saved_searches::{Crew, refused, shared};
+use super::scenarios::a_project;
+use super::scenarios_searches::{a_group_of, a_presentation, open, save, share};
+use super::world::Outcome;
+use crate::auth::{AppError, Started};
+use crate::saved_searches::{ChangeSearch, SaveCopy, change_search, save_copy};
+
+/// Ada saves a search with this text and shares it with ACME.
+async fn shared_with_acme(
+    crew: &Crew,
+    name: &str,
+    search_text: &str,
+) -> Result<crate::saved_searches::SavedSearchView, AppError> {
+    let ada = crew.ada();
+    let made = save(&crew.world, &ada, name, search_text).await?;
+    share(&crew.world, &ada, made.id, ShareTarget::Project(crew.acme)).await
+}
+
+/// Whether a person lists the search and can open it.
+async fn is_there_for(crew: &Crew, who: &Started, id: SavedSearchId) -> Result<bool, AppError> {
+    let listed = shared(crew, who).await?.iter().any(|view| view.id == id);
+    let opened = open(&crew.world, &who.session_token, id).await.is_ok();
+    assert_eq!(listed, opened, "the list and the address disagree");
+    Ok(opened)
+}
+
+#[tokio::test]
+async fn qry_06_a_shared_search_with_a_field_the_receiver_cannot_read_is_not_listed_and_its_address_is_not_found()
+-> Outcome {
+    let crew = Crew::new().await?;
+    let made = shared_with_acme(&crew, "High", "priority is high").await?;
+    assert!(is_there_for(&crew, &crew.dan, made.id).await?);
+    // The role of Dan loses the field: the search leaves his list without a message.
+    let guest = super::workflows_rules::starting_role(&crew.world, StartingRole::Guest).await?;
+    crate::roles::set_level(
+        &crew.world.ctx(),
+        crate::roles::SetFieldLevel {
+            session_token: crew.ada(),
+            role: guest,
+            project: None,
+            issue_type: None,
+            field: bb_core::fields::Field::Priority.into(),
+            level: Some(bb_core::access::FieldLevel::Hidden),
+        },
+    )
+    .await?;
+    assert!(!is_there_for(&crew, &crew.dan, made.id).await?);
+    let hidden = open(&crew.world, &crew.dan.session_token, made.id).await;
+    let missing = open(
+        &crew.world,
+        &crew.dan.session_token,
+        SavedSearchId::from_parts(jiff::Timestamp::UNIX_EPOCH, [8; 10])?,
+    )
+    .await;
+    assert_eq!(hidden, missing);
+    // The others still have it.
+    assert!(is_there_for(&crew, &crew.ben, made.id).await?);
+    // A grouping on a field the receiver cannot read is the same.
+    let mut shown = a_presentation();
+    shown.group_by = Some("priority".to_owned());
+    let grouped = crate::saved_searches::save_search(
+        &crew.world.ctx(),
+        crate::saved_searches::SaveSearch {
+            session_token: crew.ada(),
+            name: "Grouped".to_owned(),
+            text: String::new(),
+            presentation: shown,
+        },
+    )
+    .await?
+    .into_value();
+    share(
+        &crew.world,
+        &crew.ada(),
+        grouped.id,
+        ShareTarget::Project(crew.acme),
+    )
+    .await?;
+    assert!(!is_there_for(&crew, &crew.dan, grouped.id).await?);
+    assert!(is_there_for(&crew, &crew.ben, grouped.id).await?);
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_a_shared_search_with_a_hidden_person_group_or_project_in_its_text_is_not_found()
+-> Outcome {
+    let crew = Crew::new().await?;
+    a_group_of(&crew.world, "Night shift", &[&crew.cleo]).await?;
+    a_project(&crew.world, "SECRET").await?;
+    // A person: Dan sees people by their role only, so he cannot search by one.
+    let person = shared_with_acme(&crew, "By person", "assignedTo is \"Ada Admin\"").await?;
+    assert!(is_there_for(&crew, &crew.ben, person.id).await?);
+    assert!(!is_there_for(&crew, &crew.dan, person.id).await?);
+    // A group: Cleo is in it, Ben is not.
+    let group = shared_with_acme(&crew, "By group", "assignedTo member of \"Night shift\"").await?;
+    assert!(is_there_for(&crew, &crew.cleo, group.id).await?);
+    assert!(!is_there_for(&crew, &crew.ben, group.id).await?);
+    // A project that only Ada sees, and one that Ben sees.
+    let project = shared_with_acme(&crew, "By project", "project within SECRET").await?;
+    assert!(!is_there_for(&crew, &crew.ben, project.id).await?);
+    let within = shared_with_acme(&crew, "By seen project", "project within ACME").await?;
+    assert!(is_there_for(&crew, &crew.ben, within.id).await?);
+    let issue = shared_with_acme(&crew, "Under", "under SECRET-1").await?;
+    assert!(!is_there_for(&crew, &crew.ben, issue.id).await?);
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_a_text_is_kept_in_its_canonical_spelling_and_a_bad_one_is_refused() -> Outcome {
+    let crew = Crew::new().await?;
+    let ben = &crew.ben.session_token;
+    let text = "  priority   is   high  and status is open ";
+    let made = save(&crew.world, ben, "Spacing", text).await?;
+    assert_eq!(made.text, "priority is high and status is open");
+    for bad in [
+        "nonsense is true",
+        "priority is",
+        "assignedTo member of \"No such group\"",
+    ] {
+        let refused_text = save(&crew.world, ben, "Bad", bad).await;
+        assert!(refused(&refused_text, ErrorCode::InvalidRequest), "{bad}");
+    }
+    // A field the maker cannot read is refused for them too.
+    let own = save(
+        &crew.world,
+        &crew.dan.session_token,
+        "Own",
+        "assignedTo is \"Ada Admin\"",
+    )
+    .await;
+    assert!(refused(&own, ErrorCode::InvalidRequest));
+    // And a change that breaks the text is refused.
+    let broken = change_search(
+        &crew.world.ctx(),
+        ChangeSearch {
+            session_token: ben.clone(),
+            search: made.id,
+            version: made.version,
+            name: None,
+            text: Some("nonsense".to_owned()),
+            presentation: None,
+        },
+    )
+    .await;
+    assert!(refused(&broken, ErrorCode::InvalidRequest));
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_a_short_page_never_shows_that_searches_were_left_out() -> Outcome {
+    let crew = Crew::new().await?;
+    shared_with_acme(&crew, "Hidden one", "assignedTo is \"Ada Admin\"").await?;
+    shared_with_acme(&crew, "Hidden two", "assignedTo is \"Ada Admin\"").await?;
+    let third = shared_with_acme(&crew, "Seen three", "status is open").await?;
+    let fourth = shared_with_acme(&crew, "Seen four", "status is open").await?;
+    let page = |cursor: Option<String>| {
+        let crew = &crew;
+        async move {
+            crate::saved_searches::saved_searches(
+                &crew.world.ctx(),
+                crate::saved_searches::SearchesQuery {
+                    session_token: crew.dan.session_token.clone(),
+                    scope: SearchSet::Shared,
+                    cursor,
+                    limit: 1,
+                },
+            )
+            .await
+            .map(bb_policy::Authorized::into_value)
+        }
+    };
+    let one = page(None).await?;
+    assert_eq!(one.items.len(), 1);
+    assert_eq!(one.items[0].id, third.id);
+    let two = page(one.next_cursor).await?;
+    assert_eq!(two.items[0].id, fourth.id);
+    assert_eq!(two.next_cursor, None);
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_a_person_has_at_most_five_hundred_saved_searches() -> Outcome {
+    use bb_core::saved_search::SAVED_SEARCHES_MAX;
+    let crew = Crew::new().await?;
+    let ben = &crew.ben.session_token;
+    let made = save(&crew.world, ben, "One", "").await?;
+    {
+        let mut shared = crew.world.store.lock();
+        let template = shared.state.saved_searches[0].clone();
+        for number in 1..SAVED_SEARCHES_MAX {
+            let mut each = template.clone();
+            each.id = SavedSearchId::from_parts(
+                jiff::Timestamp::UNIX_EPOCH,
+                [
+                    u8::try_from(number % 250)?,
+                    u8::try_from(number / 250)?,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                ],
+            )?;
+            shared.state.saved_searches.push(each);
+        }
+    }
+    let over = save(&crew.world, ben, "Too many", "").await;
+    assert!(refused(&over, ErrorCode::LimitReached));
+    let copy = save_copy(
+        &crew.world.ctx(),
+        SaveCopy {
+            session_token: ben.clone(),
+            search: made.id,
+            name: None,
+        },
+    )
+    .await;
+    assert!(refused(&copy, ErrorCode::LimitReached));
+    // Somebody else is not held back by it.
+    assert!(
+        save(&crew.world, &crew.cleo.session_token, "Fine", "")
+            .await
+            .is_ok()
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_06_a_shared_search_runs_with_the_rights_of_the_person_who_opens_it() -> Outcome {
+    use crate::search::SearchScope;
+    let crew = Crew::new().await?;
+    let made = shared_with_acme(&crew, "Open", "status is open").await?;
+    // Both open the same text; what each may search by is their own.
+    let words = |who: &Started| {
+        let crew = &crew;
+        let token = who.session_token.clone();
+        async move {
+            let ctx = crew.world.ctx();
+            let actor = ctx.actor(&token).await?;
+            let fields = ctx
+                .readable_fields_of(&actor, SearchScope::Everywhere)
+                .await?;
+            Ok::<_, AppError>(
+                fields
+                    .fields
+                    .into_iter()
+                    .map(|field| field.word)
+                    .collect::<Vec<_>>(),
+            )
+        }
+    };
+    let (ben, dan) = (words(&crew.ben).await?, words(&crew.dan).await?);
+    assert!(ben.contains(&"assignedTo".to_owned()));
+    assert!(!dan.contains(&"assignedTo".to_owned()));
+    for who in [&crew.ben, &crew.dan] {
+        let seen = open(&crew.world, &who.session_token, made.id).await?;
+        assert_eq!(seen.text, "status is open");
+        assert!(seen.shared_with.is_empty() && !seen.mine);
+    }
+    Ok(())
+}

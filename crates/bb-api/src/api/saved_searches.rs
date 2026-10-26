@@ -16,7 +16,7 @@ use bb_app::saved_searches::{
 use bb_core::ErrorCode;
 use bb_core::id::SavedSearchId;
 use bb_core::saved_search::{
-    Column, Presentation, SearchScope, ShareKind, ShareTarget, Spacing, ViewKind,
+    Column, Presentation, SearchSet, ShareKind, ShareTarget, Spacing, ViewKind,
 };
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -295,7 +295,7 @@ pub(crate) struct ProjectListChoiceBody {
 #[into_params(parameter_in = Query)]
 pub(crate) struct ScopeParams {
     /// The ones the person made (`mine`, the default) or the ones shared with them (`shared`).
-    scope: Option<SearchScope>,
+    scope: Option<SearchSet>,
 }
 
 /// Which places to list.

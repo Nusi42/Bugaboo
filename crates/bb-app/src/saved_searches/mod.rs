@@ -11,6 +11,7 @@
 //!   address answers exactly like one that does not exist (`reach.rs`, `read.rs`).
 
 mod events;
+mod judge;
 mod project_list;
 mod reach;
 mod read;

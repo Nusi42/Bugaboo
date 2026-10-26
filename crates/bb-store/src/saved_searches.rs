@@ -267,6 +267,22 @@ impl SavedSearchStore for AuthStorage {
             .collect()
     }
 
+    async fn count_saved_searches_of(&self, maker: UserId) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(
+                Expr::col(SavedSearchRow::Id).count(),
+                crate::schema::Computed::Total,
+            )
+            .from(SavedSearchRow::Table)
+            .and_where(Expr::col(SavedSearchRow::Maker).eq(maker.stored()));
+        let total: i64 = match self.database().fetch_optional(&select).await? {
+            Some(row) => row.get(crate::schema::Computed::Total)?,
+            None => 0,
+        };
+        u64::try_from(total).map_err(|_| StoreError::Corrupt("a count"))
+    }
+
     async fn columns_of_searches(
         &self,
         ids: &[SavedSearchId],

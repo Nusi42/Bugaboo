@@ -15,8 +15,8 @@ use super::perf_queries::{assert_as_many_statements, five_and_forty};
 const SEARCHES: &str = "/api/v1/saved-searches";
 /// The most statements a page of saved searches may run, however many rows there are (a ceiling
 /// that a change to the code has to notice; the exact numbers are compared apart). Most of them are
-/// the session and the rights of the person, which every read pays.
-const AT_MOST: usize = 30;
+/// the session, the rights of the person and the fields they may read (checking a shared search needs them).
+const AT_MOST: usize = 50;
 
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
@@ -302,6 +302,39 @@ async fn perf_05_a_page_of_forty_saved_searches_runs_as_many_statements_as_a_pag
             .await?;
             assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page");
         }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_06_deleting_a_group_takes_the_searches_shared_with_it_along() -> TestResult {
+    each_database("qry_06_group_deleted", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        let group = id_of(
+            &ada.send(
+                "POST",
+                "/api/v1/groups",
+                Some(json!({"name": "Night shift"})),
+            )
+            .await?,
+        )?;
+        let id = id_of(&save(&mut ada, "For the night").await?)?;
+        let shared = ada
+            .send(
+                "POST",
+                &format!("{SEARCHES}/{id}/shares"),
+                Some(json!({"kind": "group", "id": group})),
+            )
+            .await?;
+        assert_eq!(ok(&shared)?["shared_with"][0]["name"], "Night shift");
+        let deleted = ada
+            .send("DELETE", &format!("/api/v1/groups/{group}"), None)
+            .await?;
+        assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+        let after = ada.send("GET", &format!("{SEARCHES}/{id}"), None).await?;
+        assert_eq!(ok(&after)?["shared_with"], json!([]));
         Ok(())
     })
     .await

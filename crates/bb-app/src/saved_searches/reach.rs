@@ -4,9 +4,10 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{SavedSearch, SearchColumn, SearchShare, ShareTarget};
+use bb_core::saved_search::{Presentation, SavedSearch, SearchColumn, SearchShare, ShareTarget};
 use bb_policy::{Evaluation, Permission};
 
+use super::judge::Judge;
 use super::store::Reach;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -104,8 +105,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The saved search the actor may open, or `resource.not-found`: a search that does not
-    /// exist, is in the trash, or is not theirs and not shared with them is one and the same
-    /// answer, and the same reads (ADR-0034, decision 4).
+    /// exist, is in the trash, is not theirs and not shared with them, or does not check cleanly
+    /// for them is one and the same answer, and the same reads (ADR-0034, decision 4).
     pub(crate) async fn open_search(
         &self,
         actor: &Actor,
@@ -113,12 +114,34 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Opened, AppError> {
         let stored = self.stored_search(id).await?;
         let reaching = self.reaching(actor).await?;
-        let stored = stored
+        let mut judge = self.judge(actor, &reaching).await?;
+        let candidate = stored
             .filter(|found| found.search.deleted_at.is_none())
             .filter(|found| {
                 found.search.maker == actor.person.id || reaching.includes(&found.shares)
-            })
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+            });
+        let mut clean = None;
+        if let Some(found) = candidate
+            && (found.search.maker == actor.person.id
+                || self.reads_cleanly(&mut judge, &found).await?)
+        {
+            clean = Some(found);
+        }
+        drop(judge);
+        let stored = clean.ok_or(AppError::Refused(ErrorCode::NotFound))?;
         Ok(Opened { stored, reaching })
+    }
+
+    /// Whether a saved search of somebody else checks cleanly for the person `judge` is for.
+    pub(crate) async fn reads_cleanly(
+        &self,
+        judge: &mut Judge<'_>,
+        found: &Stored,
+    ) -> Result<bool, AppError> {
+        let presentation = Presentation::of(&found.search, &found.columns);
+        Ok(self
+            .canonical_text(judge, &found.search.text, &presentation)
+            .await?
+            .is_some())
     }
 }

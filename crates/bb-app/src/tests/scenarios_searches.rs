@@ -4,7 +4,7 @@
 
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Column, Presentation, SearchScope, ShareTarget, Spacing};
+use bb_core::saved_search::{Column, Presentation, SearchSet, ShareTarget, Spacing};
 use bb_policy::StartingRole;
 
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -37,6 +37,23 @@ pub(crate) fn a_presentation() -> Presentation {
         group_by: Some("statusGroup".to_owned()),
         ..Presentation::default()
     }
+}
+
+/// Saves a search with the columns of the project's list, which a world without a project can
+/// read (it has no fields yet).
+async fn save_plain(world: &World, who: &str, name: &str) -> Result<SavedSearchView, AppError> {
+    world.clock.advance(1);
+    Ok(save_search(
+        &world.ctx(),
+        SaveSearch {
+            session_token: who.to_owned(),
+            name: name.to_owned(),
+            text: String::new(),
+            presentation: Presentation::default(),
+        },
+    )
+    .await?
+    .into_value())
 }
 
 /// Saves a search for the person with the session. The clock moves on a second, so that the
@@ -103,7 +120,7 @@ pub(crate) async fn unshare(
 pub(crate) async fn list(
     world: &World,
     who: &str,
-    scope: SearchScope,
+    scope: SearchSet,
 ) -> Result<Vec<SavedSearchView>, AppError> {
     Ok(saved_searches(
         &world.ctx(),
@@ -232,14 +249,14 @@ pub(crate) async fn a_group_of(
 
 /// A saved search of Ada's.
 async fn adas_search(world: &World) -> Result<SavedSearchView, String> {
-    save(world, &token(world), "Open bugs", "status is open")
+    save_plain(world, &token(world), "Open bugs")
         .await
         .map_err(text)
 }
 
 pub(crate) async fn save_search_scenario(world: &World) -> Added {
     measured(&world.store, async {
-        save(world, &token(world), "Open bugs", "status is open").await
+        save_plain(world, &token(world), "Open bugs").await
     })
     .await
 }

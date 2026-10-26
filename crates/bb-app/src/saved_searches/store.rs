@@ -57,6 +57,8 @@ pub trait SavedSearchStore: ChangeStore + 'static {
             after: Option<SavedSearchId>,
             limit: u64
         ) -> Vec<SavedSearch>;
+        /// How many saved searches a person has, the trash included.
+        fn count_saved_searches_of(maker: UserId) -> u64;
         /// The columns of these saved searches, each search's in order.
         fn columns_of_searches(ids: &[SavedSearchId]) -> Vec<SearchColumn>;
         /// The shares of these saved searches.

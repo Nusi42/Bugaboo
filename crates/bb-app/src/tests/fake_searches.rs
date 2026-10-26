@@ -124,6 +124,17 @@ impl SavedSearchStore for FakeStore {
         }))
     }
 
+    async fn count_saved_searches_of(&self, maker: UserId) -> Result<u64, FakeError> {
+        Ok(self.read(|state| {
+            let count = state
+                .saved_searches
+                .iter()
+                .filter(|search| search.maker == maker)
+                .count();
+            u64::try_from(count).unwrap_or(u64::MAX)
+        }))
+    }
+
     async fn columns_of_searches(
         &self,
         ids: &[SavedSearchId],

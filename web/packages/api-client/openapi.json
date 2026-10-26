@@ -10757,7 +10757,7 @@
             "description": "The ones the person made (`mine`, the default) or the ones shared with them (`shared`).",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/SearchScope"
+              "$ref": "#/components/schemas/SearchSet"
             }
           }
         ],
@@ -20464,9 +20464,9 @@
           }
         }
       },
-      "SearchScope": {
+      "SearchSet": {
         "type": "string",
-        "description": "Which saved searches a list shows: the person's own, or the ones shared with them.",
+        "description": "Which set of saved searches a list shows: the person's own, or the ones shared with them.",
         "enum": ["mine", "shared"]
       },
       "SecondStepBody": {

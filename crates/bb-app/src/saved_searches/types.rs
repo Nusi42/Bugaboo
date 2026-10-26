@@ -1,7 +1,7 @@
 //! What the saved-search use cases take and give back (QRY-06, ADR-0034).
 
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Presentation, SearchScope, ShareKind, ShareTarget};
+use bb_core::saved_search::{Presentation, SearchSet, ShareKind, ShareTarget};
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
@@ -88,7 +88,7 @@ pub struct SearchesQuery {
     /// The secret of the session of the request.
     pub session_token: String,
     /// Which saved searches.
-    pub scope: SearchScope,
+    pub scope: SearchSet,
     /// Where the page starts: the `next_cursor` of the page before.
     pub cursor: Option<String>,
     /// How many the page holds at most.

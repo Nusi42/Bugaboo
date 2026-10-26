@@ -7257,10 +7257,10 @@ export interface components {
       projects?: string[];
     };
     /**
-     * @description Which saved searches a list shows: the person's own, or the ones shared with them.
+     * @description Which set of saved searches a list shows: the person's own, or the ones shared with them.
      * @enum {string}
      */
-    SearchScope: "mine" | "shared";
+    SearchSet: "mine" | "shared";
     /** @description Which ways there are to finish signing in. */
     SecondStepBody: {
       /** @description A backup code (only with a code app). */
@@ -14203,7 +14203,7 @@ export interface operations {
         /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: components["parameters"]["Limit"];
         /** @description The ones the person made (`mine`, the default) or the ones shared with them (`shared`). */
-        scope?: components["schemas"]["SearchScope"];
+        scope?: components["schemas"]["SearchSet"];
       };
       header?: never;
       path?: never;

@@ -15,7 +15,7 @@ use super::super::path_id;
 use super::{
     CHOICE_FIELDS, CHOICES_LIST, ChangeSavedSearchBody, ChangeSearch, CopyBody, DeleteSearch,
     KindParams, NewSavedSearchBody, Presentation, RestoreSearch, SEARCH_FIELDS, SEARCHES_LIST,
-    SaveCopy, SaveSearch, SavedSearchId, SavedSearchItem, ScopeParams, SearchQuery, SearchScope,
+    SaveCopy, SaveSearch, SavedSearchId, SavedSearchItem, ScopeParams, SearchQuery, SearchSet,
     SearchesQuery, ShareBody, ShareChoiceItem, ShareChoicesQuery, ShareKind, ShareSearch,
     ShareTarget, StopSharingSearch,
 };
@@ -54,7 +54,7 @@ async fn list_saved_searches(
             info,
             SearchesQuery {
                 session_token,
-                scope: which.scope.unwrap_or(SearchScope::Mine),
+                scope: which.scope.unwrap_or(SearchSet::Mine),
                 cursor,
                 limit: params.limit(),
             },

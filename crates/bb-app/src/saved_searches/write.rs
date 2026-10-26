@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::SavedSearchId;
-use bb_core::saved_search::{Presentation, SavedSearch, SearchColumn};
+use bb_core::saved_search::{Presentation, SAVED_SEARCHES_MAX, SavedSearch, SearchColumn};
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use bb_searchlang::MAX_TEXT_BYTES;
@@ -17,7 +17,7 @@ use super::types::{
     ChangeSearch, DeleteSearch, RestoreSearch, SaveCopy, SaveSearch, SavedSearchView,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity};
+use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal};
 use crate::input::clean_name;
 use crate::member::saved_search as member;
 use crate::ports::BoxFuture;
@@ -94,6 +94,36 @@ impl<S: AuthStore> Ctx<'_, S> {
         } else {
             Err(ErrorCode::Forbidden.into())
         }
+    }
+
+    /// The text as it is kept: trimmed, and in the canonical spelling of the search language when
+    /// it checks cleanly with the fields the actor may read, with the columns and the grouping
+    /// naming fields they may read too. A text that does not is `request.invalid`.
+    async fn canonical_for(
+        &self,
+        actor: &Actor,
+        reaching: &Reaching,
+        text: &str,
+        presentation: &Presentation,
+    ) -> Result<String, AppError> {
+        let text = clean_search_text(text)?;
+        let mut judge = self.judge(actor, reaching).await?;
+        self.canonical_text(&mut judge, &text, presentation)
+            .await?
+            .ok_or_else(|| ErrorCode::InvalidRequest.into())
+    }
+
+    /// Refuses a new saved search when the person has as many as they may have.
+    async fn ensure_room(&self, actor: &Actor) -> Result<(), AppError> {
+        let have = self
+            .store()
+            .count_saved_searches_of(actor.person.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if have >= u64::try_from(SAVED_SEARCHES_MAX).unwrap_or(u64::MAX) {
+            return Err(ErrorCode::LimitReached.into());
+        }
+        Ok(())
     }
 
     /// A new saved search of the actor, private, with the event that says it was made.
@@ -233,7 +263,11 @@ pub async fn save_search<S: AuthStore>(
     input: SaveSearch,
 ) -> Result<Authorized<SavedSearchView>, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
-    let text = clean_search_text(&input.text)?;
+    ctx.ensure_room(&actor).await?;
+    let reaching = ctx.reaching(&actor).await?;
+    let text = ctx
+        .canonical_for(&actor, &reaching, &input.text, &input.presentation)
+        .await?;
     let new = ctx.new_search(&actor, &input.name, text, input.presentation)?;
     ctx.store()
         .record_change(
@@ -265,13 +299,16 @@ pub async fn change_search<S: AuthStore>(
     if let Some(name) = &input.name {
         search.name = clean_name(name)?;
     }
-    if let Some(text) = &input.text {
-        search.text = clean_search_text(text)?;
-    }
     let presentation = match input.presentation {
         Some(presentation) => checked(presentation)?,
         None => Presentation::of(&before, &stored.columns),
     };
+    if input.text.is_some() || presentation != Presentation::of(&before, &stored.columns) {
+        let text = input.text.as_deref().unwrap_or(&before.text);
+        search.text = ctx
+            .canonical_for(&actor, &reaching, text, &presentation)
+            .await?;
+    }
     search.view = presentation.view;
     search.spacing = presentation.spacing;
     search.group_by = presentation.group_by.clone();
@@ -373,7 +410,12 @@ pub async fn save_copy<S: AuthStore>(
     let original = ctx.open_search(&actor, input.search).await?.stored;
     let name = input.name.unwrap_or_else(|| original.search.name.clone());
     let presentation = Presentation::of(&original.search, &original.columns);
-    let new = ctx.new_search(&actor, &name, original.search.text, presentation)?;
+    ctx.ensure_room(&actor).await?;
+    let reaching = ctx.reaching(&actor).await?;
+    let text = ctx
+        .canonical_for(&actor, &reaching, &original.search.text, &presentation)
+        .await?;
+    let new = ctx.new_search(&actor, &name, text, presentation)?;
     ctx.store()
         .record_change(
             &new.event,
