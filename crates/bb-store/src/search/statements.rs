@@ -3,9 +3,11 @@
 //! page.
 
 use bb_app::search::{GroupCount, SearchHit, SearchPosition, SearchRequest, SortValue};
-use sea_query::{Cond, Expr, Func, Iden, NullOrdering, Order, Query, WithClause, WithQuery};
+use sea_query::{
+    Alias, Cond, Expr, Func, Iden, NullOrdering, Order, Query, UnionType, WithClause, WithQuery,
+};
 
-use super::order::Kind;
+use super::order::{Grouping, Kind};
 use super::{CompileError, Compiler};
 use crate::db::{Dialect, Row, Statement};
 use crate::error::StoreError;
@@ -111,25 +113,57 @@ pub(crate) fn count_statement(
 }
 
 /// How many issues the search finds for each value of the field, the value in the column `s0`.
+/// An issue with several values counts in the group of each; one with none in the group without a
+/// value (the last).
 pub(crate) fn groups_statement(
     request: &SearchRequest,
     dialect: Dialect,
     by: &str,
 ) -> Result<(Built, Kind), CompileError> {
     let compiler = Compiler::new(request, dialect);
-    let (value, kind) = compiler.group_value(by)?;
-    let mut select = Query::select();
-    select
-        .expr_as(value.clone(), Sorted(0))
-        .expr_as(
-            Func::count(Expr::col((IssueRow::Table, IssueRow::Id))),
-            Counted,
-        )
-        .from(IssueRow::Table)
-        .cond_where(found(&compiler)?)
-        .group_by_col(Sorted(0));
-    select.order_by_expr_with_nulls(Expr::col(Sorted(0)), Order::Asc, NullOrdering::Last);
-    Ok((finish(&compiler, select), kind))
+    let grouping = compiler.grouping(by)?;
+    let cond = found(&compiler)?;
+    let issue = || Expr::col((IssueRow::Table, IssueRow::Id));
+    match grouping {
+        Grouping::One(value, kind) => {
+            let mut select = Query::select();
+            select
+                .expr_as(value, Sorted(0))
+                .expr_as(Func::count(issue()), Counted)
+                .from(IssueRow::Table)
+                .cond_where(cond)
+                .group_by_col(Sorted(0));
+            select.order_by_expr_with_nulls(Expr::col(Sorted(0)), Order::Asc, NullOrdering::Last);
+            Ok((finish(&compiler, select), kind))
+        }
+        Grouping::Many {
+            mut rows,
+            value,
+            kind,
+            without,
+        } => {
+            // The rows of the values of an issue, joined to the issue by their own condition.
+            rows.expr_as(value, Sorted(0))
+                .expr_as(Func::count_distinct(issue()), Counted)
+                .from(IssueRow::Table)
+                .cond_where(cond.clone())
+                .group_by_col(Sorted(0));
+            let nothing_of_kind = match kind {
+                Kind::Text => "TEXT",
+                Kind::Whole => "BIGINT",
+            };
+            let mut none = Query::select();
+            none.expr_as(
+                Func::cast_as(Expr::null(), Alias::new(nothing_of_kind)),
+                Sorted(0),
+            )
+            .expr_as(Func::count(issue()), Counted)
+            .from(IssueRow::Table)
+            .cond_where(cond.add(without));
+            rows.union(UnionType::All, none);
+            Ok((finish(&compiler, rows), kind))
+        }
+    }
 }
 
 /// The issue and where it stands, from a row of a page.

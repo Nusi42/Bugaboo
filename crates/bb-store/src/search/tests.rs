@@ -86,6 +86,11 @@ async fn seed(storage: &AuthStorage) -> Data {
         created_at: at(0),
         version: FIRST_VERSION,
     };
+    let second_tag = Tag {
+        id: TagId::generate(&mut source).unwrap(),
+        name: "Bug".to_owned(),
+        ..tag.clone()
+    };
     let blocks = RelationKind {
         id: RelationKindId::generate(&mut source).unwrap(),
         forward: "blocks".to_owned(),
@@ -114,9 +119,10 @@ async fn seed(storage: &AuthStorage) -> Data {
         issues.clone(),
     );
     let (tagged, kind_row, block_from_to) = (
-        [issues[0].id, issues[1].id].map(|issue| IssueTag {
-            issue,
-            tag: tag.id,
+        // Printer jams has two tags, Login broken one, the rest none.
+        [(0, tag.id), (1, tag.id), (0, second_tag.id)].map(|(at_issue, tag)| IssueTag {
+            issue: issues[at_issue].id,
+            tag,
             added_by: me,
             added_at: at(0),
         }),
@@ -145,6 +151,7 @@ async fn seed(storage: &AuthStorage) -> Data {
                 AuthStorage::insert_issue(tx, each, &[]).await?;
             }
             AuthStorage::insert_tag(tx, &tag).await?;
+            AuthStorage::insert_tag(tx, &second_tag).await?;
             for link in &tagged {
                 AuthStorage::insert_issue_tag(tx, link).await?;
             }
@@ -461,6 +468,24 @@ async fn qry_05_the_count_and_the_groups_come_from_the_same_search() -> TestResu
             .map(|group| (group.value.as_deref(), group.issues))
             .collect();
         assert_eq!(counts.iter().map(|(_, n)| n).sum::<u64>(), 6);
+        // An issue with two tags stands in the group of each; one with none in the group without a
+        // value, which comes last. The count line is still the number of issues.
+        let by_tag = storage
+            .search_groups(&request(&data, "", None, 1), "tags")
+            .await
+            .unwrap();
+        let by_tag: Vec<(Option<&str>, u64)> = by_tag
+            .iter()
+            .map(|group| (group.value.as_deref(), group.issues))
+            .collect();
+        assert_eq!(by_tag, [(Some("bug"), 1), (Some("ui"), 2), (None, 4)]);
+        assert_eq!(
+            storage
+                .search_count(&request(&data, "", None, 1))
+                .await
+                .unwrap(),
+            6
+        );
         // The group of an unreadable field is as unknown as the field.
         assert!(storage.search_groups(&high, "nonsense").await.is_err());
         Ok(())

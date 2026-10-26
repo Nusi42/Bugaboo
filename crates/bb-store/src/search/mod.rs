@@ -104,6 +104,20 @@ pub(crate) fn nothing() -> Cond {
 /// How long a search may run on the database (SEC-17, architecture §7 *Search limits*).
 const SEARCH_TIME: std::time::Duration = std::time::Duration::from_secs(2);
 
+/// The place of a group in the order: the groups with a value first, by the bytes of a text or the
+/// size of a number.
+fn group_order(kind: order::Kind, group: &GroupCount) -> (bool, Option<i64>, Option<String>) {
+    let number = match kind {
+        order::Kind::Whole => group.value.as_deref().and_then(|text| text.parse().ok()),
+        order::Kind::Text => None,
+    };
+    let text = match kind {
+        order::Kind::Text => group.value.clone(),
+        order::Kind::Whole => None,
+    };
+    (group.value.is_none(), number, text)
+}
+
 fn failed(error: impl std::fmt::Display) -> SearchFailure {
     SearchFailure::Failed(error.to_string())
 }
@@ -157,10 +171,15 @@ impl SearchStore for AuthStorage {
             .fetch_all_within(&built, SEARCH_TIME)
             .await
             .map_err(stopped)?;
-        rows.iter()
+        let mut groups: Vec<GroupCount> = rows
+            .iter()
             .map(|row| read_group(row, kind))
             .collect::<Result<_, _>>()
-            .map_err(failed)
+            .map_err(failed)?;
+        // The groups of a field with many values come from two reads put together, so they are
+        // put in order here: by their value as text or number, the group without a value last.
+        groups.sort_by(|one, other| group_order(kind, one).cmp(&group_order(kind, other)));
+        Ok(groups)
     }
 }
 

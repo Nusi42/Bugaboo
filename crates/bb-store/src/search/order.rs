@@ -29,6 +29,20 @@ pub(super) enum Kind {
     Whole,
 }
 
+/// How a field splits the issues into groups.
+pub(super) enum Grouping {
+    /// One value for each issue.
+    One(Expr, Kind),
+    /// Any number of values: the rows of the values of the issue, the value as the group is named,
+    /// and the condition of an issue that has none.
+    Many {
+        rows: SelectStatement,
+        value: Expr,
+        kind: Kind,
+        without: Cond,
+    },
+}
+
 /// One key of the order.
 pub(super) struct Key {
     pub(super) value: Expr,
@@ -194,9 +208,44 @@ impl Compiler<'_> {
         ranked.map_or_else(Expr::null, |case| case.finally(Expr::null()).into())
     }
 
-    /// The value a field groups the issues by, and what it holds.
-    pub(super) fn group_value(&self, word: &str) -> Result<(Expr, Kind), CompileError> {
-        self.sort_value(self.target(word)?)
+    /// How a field groups the issues. A field with one value for an issue is a value of the
+    /// issue; a field with many (tags, labels, assigned people, an own field with several
+    /// values) puts the issue in the group of each of its values, and an issue with none in the
+    /// group of no value.
+    pub(super) fn grouping(&self, word: &str) -> Result<Grouping, CompileError> {
+        let target = self.target(word)?;
+        let (subject, domain) = subject_of(target);
+        let Subject::Linked(rows, value) = subject.clone() else {
+            let (value, kind) = self.sort_value(target)?;
+            return Ok(Grouping::One(value, kind));
+        };
+        let looked_up = Alias::new("named");
+        let (value, kind, name_table) = match domain {
+            Domain::Text => (self.bytes(value), Kind::Text, None),
+            Domain::Number(_) | Domain::YesNo | Domain::Time(_) => {
+                (bigint(value), Kind::Whole, None)
+            }
+            named => {
+                let (table, id, name) =
+                    names_of(named).ok_or(CompileError::Unsupported("grouping by this field"))?;
+                (
+                    self.bytes(Expr::col((looked_up.clone(), name))),
+                    Kind::Text,
+                    Some((table, Expr::col((looked_up.clone(), id)).eq(value))),
+                )
+            }
+        };
+        let mut rows = *rows;
+        rows.clear_selects();
+        if let Some((table, on)) = name_table {
+            rows.join_as(JoinType::InnerJoin, table, looked_up, on);
+        }
+        Ok(Grouping::Many {
+            rows,
+            value,
+            kind,
+            without: subject.empty(),
+        })
     }
 
     /// The keys of the order of this search, the ID last.
