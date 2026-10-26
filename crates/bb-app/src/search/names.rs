@@ -36,6 +36,13 @@ const PEOPLE_PER_NAME: u64 = 100;
 /// reads (the people past them are not found by that name).
 const PEOPLE_PAGES_PER_NAME: usize = 5;
 
+/// The most names that a request resolves with reads (a person, a group, a tag, a label, an
+/// issue): the texts of a list of saved searches are written by other people, so what they name
+/// has a bound (`LOOKED_AT_MAX` searches of up to 50 names each is 25,000 names otherwise). A name
+/// past it is as unknown as one that does not exist, for the rest of the request; a search the
+/// person runs holds far fewer.
+pub(crate) const NAME_RESOLUTIONS_MAX: usize = 200;
+
 /// What a name in a search is the name of.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum What {
@@ -149,6 +156,19 @@ pub(crate) struct NameCache {
     tags_known: Option<Vec<(String, bb_core::id::TagId)>>,
     labels_known: Option<Vec<(String, bb_core::id::LabelId)>>,
     missing_issues: Vec<String>,
+    /// How many names were resolved with reads for the request, against [`NAME_RESOLUTIONS_MAX`].
+    resolutions: usize,
+}
+
+impl NameCache {
+    /// Whether a name that has to be read may be: counts it, and says no past the bound.
+    fn may_resolve(&mut self) -> bool {
+        if self.resolutions >= NAME_RESOLUTIONS_MAX {
+            return false;
+        }
+        self.resolutions += 1;
+        true
+    }
 }
 
 /// What a text can name that needs no read: the statuses, the issue types and the choices of the
@@ -285,6 +305,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 {
                     return Ok(!found.is_empty());
                 }
+                if !cache.may_resolve() {
+                    return Ok(false);
+                }
                 let found = self.people_named(actor, viewer, kind, &each.text).await?;
                 let known = !found.is_empty();
                 cache.names.people.push((kind, key, found));
@@ -300,6 +323,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .find(|(name, _)| *name == key)
                 {
                     return Ok(!found.is_empty());
+                }
+                if !cache.may_resolve() {
+                    return Ok(false);
                 }
                 let found = self
                     .groups_named(actor, viewer, &each.text, member_of, cache)
@@ -323,6 +349,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Ok(true);
                 }
                 if cache.missing_issues.contains(&key) {
+                    return Ok(false);
+                }
+                if !cache.may_resolve() {
                     return Ok(false);
                 }
                 let found = self.issue_named(actor, looked, &id).await?;
@@ -418,6 +447,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             if let Some((_, found)) = cache.names.tags.iter().find(|(name, _)| *name == key) {
                 return Ok(!found.is_empty());
             }
+            if !cache.may_resolve() {
+                return Ok(false);
+            }
             if cache.tags_known.is_none() {
                 let catalogue = self.tag_catalogue().await?;
                 cache.tags_known = Some(
@@ -441,6 +473,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         if let Some((_, found)) = cache.names.labels.iter().find(|(name, _)| *name == key) {
             return Ok(!found.is_empty());
+        }
+        if !cache.may_resolve() {
+            return Ok(false);
         }
         if cache.labels_known.is_none() {
             let mut catalogue = self.label_catalogue().await?;
@@ -537,4 +572,20 @@ pub(crate) fn status_groups(looked: &Looked) -> Vec<(StatusGroup, Vec<String>)> 
             (*group, keys)
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{NAME_RESOLUTIONS_MAX, NameCache};
+
+    #[test]
+    fn perf_05_a_request_resolves_no_more_than_a_bounded_number_of_names_with_reads() {
+        let mut cache = NameCache::default();
+        for _ in 0..NAME_RESOLUTIONS_MAX {
+            assert!(cache.may_resolve());
+        }
+        // Past the bound a name is as unknown as one that does not exist, however many come.
+        assert!(!cache.may_resolve());
+        assert!(!cache.may_resolve());
+    }
 }
