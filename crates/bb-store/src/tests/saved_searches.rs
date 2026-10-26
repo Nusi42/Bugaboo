@@ -441,3 +441,48 @@ async fn qry_06_a_person_who_is_removed_takes_the_searches_shared_with_nobody_al
     })
     .await
 }
+
+#[tokio::test]
+async fn qry_06_the_shared_list_leaves_out_a_number_of_searches_after_a_search() -> TestResult {
+    each_database("qry_06_store_offset", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 1).await;
+        let (maker, reader) = (UserId::generate(&mut source), UserId::generate(&mut source));
+        let mut made = Vec::new();
+        for number in 0..6 {
+            let each = search(&mut source, maker, &format!("Search {number}"), number);
+            insert(storage, &mut source, &each).await?;
+            share(
+                storage,
+                &mut source,
+                each.id,
+                ShareTarget::Project(world.project),
+            )
+            .await?;
+            made.push(each.id);
+        }
+        let projects = [world.project];
+        let page = |after: Option<SavedSearchId>, skip: u64, limit: u64| {
+            storage.saved_searches_shared_with(
+                Reach {
+                    person: reader,
+                    groups: &[],
+                    projects: &projects,
+                },
+                after,
+                skip,
+                limit,
+            )
+        };
+        // Past a number from the start, and past a number after a search: the offset counts the
+        // rows after the search.
+        assert_eq!(ids_of(&page(None, 2, 2).await?), made[2..4]);
+        assert_eq!(ids_of(&page(Some(made[0]), 2, 10).await?), made[3..]);
+        assert_eq!(ids_of(&page(Some(made[4]), 0, 10).await?), made[5..]);
+        assert!(page(Some(made[4]), 5, 10).await?.is_empty());
+        Ok(())
+    })
+    .await
+}

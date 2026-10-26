@@ -18,9 +18,9 @@ const SEARCHES: &str = "/api/v1/saved-searches";
 /// the session, the rights of the person and the fields they may read (checking a shared search
 /// needs them).
 const AT_MOST: usize = 40;
-/// The same for a guest, who sees the makers by their role only: every maker costs the reads of a
-/// role label (measured: 51).
-const AT_MOST_FOR_A_GUEST: usize = 51;
+/// The same for a guest, who sees the makers by their role only: the roles of all the makers of a
+/// page are read once (not for each maker), which costs the reads of that one policy (measured: 43).
+const AT_MOST_FOR_A_GUEST: usize = 43;
 
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
@@ -507,7 +507,8 @@ async fn qry_06_the_shared_list_goes_on_past_a_walk_of_hidden_searches_on_both_d
         let (mut dan, _) = site
             .person_called(StartingRole::Guest, "dan", "Dan Dyer")
             .await?;
-        // A hundred and five that Dan cannot read (more than one read of the store, so the offset is used), then three that he can; he asks for two at a time, and the
+        // A hundred and five that Dan cannot read (more than one read of the store, so the offset
+        // is used), then three that he can; he asks for two at a time, and the
         // cursor goes on by the last one shown.
         for number in 0..105 {
             let name = format!("Hidden {number}");
@@ -535,6 +536,56 @@ async fn qry_06_the_shared_list_goes_on_past_a_walk_of_hidden_searches_on_both_d
         assert_eq!(all, ["Seen 0", "Seen 1", "Seen 2"]);
         assert_eq!(names(&second).len(), 1);
         assert_eq!(second.body["next_cursor"], Value::Null);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_06_a_cursor_with_a_skip_that_does_not_fit_answers_request_invalid() -> TestResult {
+    each_database("qry_06_saved_search_forged_cursor", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        for path in [
+            format!("{SEARCHES}?scope=shared&cursor=%2B9223372036854776000"),
+            format!("{SEARCHES}?scope=shared&cursor=%2B499"),
+            "/api/v1/access-keys/project-choices?cursor=%2B9223372036854776000".to_owned(),
+        ] {
+            let reply = ada.send("GET", &path, None).await?;
+            assert_eq!(reply.status, StatusCode::BAD_REQUEST, "{path}");
+            assert_eq!(reply.code(), "request.bad-cursor", "{path}");
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_05_forty_different_makers_cost_no_more_statements_than_five_for_a_guest() -> TestResult
+{
+    each_database("perf_05_saved_searches_makers", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        let (mut dan, _) = site
+            .person_called(StartingRole::Guest, "dan", "Dan Dyer")
+            .await?;
+        // Forty people, each with a search of their own shared with ACME. A guest sees people by
+        // their role only, so each maker is shown by a role label.
+        for number in 0..40 {
+            let (mut maker, _) = site
+                .person_called(
+                    StartingRole::TeamMember,
+                    &format!("maker{number}"),
+                    &format!("Maker {number}"),
+                )
+                .await?;
+            ada_shares(&site, &mut maker, &format!("Search {number}"), "").await?;
+        }
+        let (on_five, on_forty) = five_and_forty(&mut dan, &rig.database, |limit| {
+            format!("{SEARCHES}?scope=shared&limit={limit}&fields=name,maker")
+        })
+        .await?;
+        assert_as_many_statements(on_five, on_forty, AT_MOST_FOR_A_GUEST, "more makers");
         Ok(())
     })
     .await
