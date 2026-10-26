@@ -43,7 +43,7 @@ pub use visibility::{
 use serde::Serialize;
 
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal, locked};
-use crate::projects::{Leveled, sub_projects_in};
+use crate::projects::{Leveled, Shown, sub_projects_in};
 
 /// Who asks: the signed-in person behind a session, or the owner of the access key a script
 /// came with.
@@ -323,8 +323,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // evaluation of the rights of each different person on a page was the biggest cost of a
         // page of notifications (M3-F113, PERF-01).
         let role = if viewer.shows_role_label(kind, context, person) {
-            if_there(self.evaluate(person, viewer.place()).await)?
-                .and_then(|theirs| theirs.first_role_name().map(str::to_owned))
+            self.role_label_of(person, viewer.place()).await?
         } else {
             None
         };
@@ -339,6 +338,59 @@ impl<S: AuthStore> Ctx<'_, S> {
                 removed: None,
             },
         ))
+    }
+
+    /// The label of the first role of `person` at `place`: the one a page filled in one read
+    /// (`known.role_labels`), else their evaluation there.
+    async fn role_label_of(
+        &self,
+        person: UserId,
+        place: Place,
+    ) -> Result<Option<String>, AppError> {
+        let known = locked(&self.known.role_labels)
+            .get(&(person, place))
+            .cloned();
+        if let Some(label) = known {
+            return Ok(label);
+        }
+        Ok(if_there(self.evaluate(person, place).await)?
+            .and_then(|theirs| theirs.first_role_name().map(str::to_owned)))
+    }
+
+    /// Reads the roles of all the `wanted` people at once, so that showing each of them by their
+    /// role costs no read of its own: the labels are kept for the rest of the request.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn preload_role_labels(
+        &self,
+        shown: &Shown,
+        wanted: &[(UserId, Place)],
+    ) -> Result<(), AppError> {
+        let missing: Vec<(UserId, Place)> = {
+            let known = locked(&self.known.role_labels);
+            wanted
+                .iter()
+                .copied()
+                .filter(|pair| !known.contains_key(pair))
+                .collect()
+        };
+        if missing.is_empty() {
+            return Ok(());
+        }
+        let mut people: Vec<UserId> = missing.iter().map(|(person, _)| *person).collect();
+        people.sort();
+        people.dedup();
+        let policy = self
+            .store()
+            .policy_of_people(&people)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let mut known = locked(&self.known.role_labels);
+        for (person, place) in missing {
+            known.insert((person, place), shown.role_label_in(&policy, person, place));
+        }
+        Ok(())
     }
 
     /// The place as the actor may name it: the project's label, or `None` for the whole

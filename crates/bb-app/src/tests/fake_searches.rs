@@ -189,6 +189,10 @@ impl SavedSearchStore for FakeStore {
         }))
     }
 
+    async fn policy_of_people(&self, _people: &[UserId]) -> Result<bb_policy::Policy, FakeError> {
+        Ok(self.read(|state| super::fake_projects::policy_of(state, None)))
+    }
+
     async fn makers_of(&self, ids: &[UserId]) -> Result<Vec<Person>, FakeError> {
         Ok(self.read(|state| {
             state

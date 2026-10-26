@@ -86,10 +86,28 @@ impl<S: AuthStore> Ctx<'_, S> {
             HashMap::new()
         };
         let organization = self.evaluation_of(actor, Place::Organization).await?;
+        // How the viewer sees the people who write, decided for every search first, so that the
+        // roles of all the makers that are shown by their role are read at once.
+        let viewers: Vec<Evaluation> = found
+            .iter()
+            .map(|stored| viewer_of(&organization, reaching, stored))
+            .collect();
+        let by_role: Vec<(UserId, Place)> = found
+            .iter()
+            .zip(&viewers)
+            .filter(|(stored, viewer)| {
+                viewer.shows_role_label(
+                    PeopleKind::Authors,
+                    PeopleContext::Ordinary,
+                    stored.search.maker,
+                )
+            })
+            .map(|(stored, viewer)| (stored.search.maker, viewer.place()))
+            .collect();
+        self.preload_role_labels(&reaching.shown, &by_role).await?;
         let mut views = Vec::with_capacity(found.len());
-        for stored in found {
+        for (stored, viewer) in found.into_iter().zip(viewers) {
             let mine = stored.search.maker == actor.person.id;
-            let viewer = viewer_of(&organization, reaching, &stored);
             let maker = self
                 .person_ref(
                     &viewer,

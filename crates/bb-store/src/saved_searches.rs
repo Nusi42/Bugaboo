@@ -350,6 +350,14 @@ impl SavedSearchStore for AuthStorage {
             .collect()
     }
 
+    async fn policy_of_people(&self, people: &[UserId]) -> Result<bb_policy::Policy, StoreError> {
+        if people.is_empty() {
+            return Ok(bb_policy::Policy::default());
+        }
+        let mut transaction = self.database().begin_read().await?;
+        crate::policy::load_policy(&mut transaction, crate::policy::Wanted::People(people)).await
+    }
+
     async fn makers_of(&self, ids: &[UserId]) -> Result<Vec<Person>, StoreError> {
         if ids.is_empty() {
             return Ok(Vec::new());

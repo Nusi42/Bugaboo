@@ -30,6 +30,9 @@ pub(crate) enum Wanted<'a> {
     /// The rows of one person (their own and their groups') wherever they are, with the roles
     /// those name. No levels: a decision about permissions does not need them.
     Person(UserId),
+    /// The rows of these people (their own and their groups') wherever they are, with the roles
+    /// those name. No levels: what a role label needs.
+    People(&'a [UserId]),
     /// What one person's decision at a place needs: their rows on the organization and on the
     /// projects of the chain, the roles those name and the levels of those roles.
     PersonAt(UserId, &'a [ProjectId]),
@@ -41,7 +44,7 @@ pub(crate) enum Wanted<'a> {
 impl Wanted<'_> {
     const fn person(self) -> Option<UserId> {
         match self {
-            Self::Everybody | Self::Organization => None,
+            Self::Everybody | Self::Organization | Self::People(_) => None,
             Self::Person(person) | Self::PersonAt(person, _) => Some(person),
         }
     }
@@ -98,6 +101,9 @@ async fn rows_wanted(
     if let Some(person) = wanted.person() {
         select.and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
     }
+    if let Wanted::People(people) = wanted {
+        select.and_where(Expr::col(GroupMemberRow::Person).is_in(in_list(people)));
+    }
     let members = reader
         .fetch_all(&select)
         .await?
@@ -108,6 +114,14 @@ async fn rows_wanted(
     if let Some(person) = wanted.person() {
         let groups: Vec<GroupId> = members.iter().map(|member| member.group).collect();
         let mut whose = Expr::col(AssignmentRow::Person).eq(person.stored());
+        if !groups.is_empty() {
+            whose = whose.or(Expr::col(AssignmentRow::Group).is_in(in_list(&groups)));
+        }
+        select.and_where(whose);
+    }
+    if let Wanted::People(people) = wanted {
+        let groups: Vec<GroupId> = members.iter().map(|member| member.group).collect();
+        let mut whose = Expr::col(AssignmentRow::Person).is_in(in_list(people));
         if !groups.is_empty() {
             whose = whose.or(Expr::col(AssignmentRow::Group).is_in(in_list(&groups)));
         }

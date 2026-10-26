@@ -182,6 +182,20 @@ impl Shown {
         }
     }
 
+    /// The label of the first role of `person` at `place`, decided in memory from the rows of
+    /// `policy` (which holds at least theirs and their groups') and the tree.
+    pub(crate) fn role_label_in(
+        &self,
+        policy: &Policy,
+        person: UserId,
+        place: Place,
+    ) -> Option<String> {
+        // Another person's label, not a judgment about the actor: no key narrows it.
+        policy
+            .evaluate_with(person, &policy.rows_of(person), &self.tree, place)
+            .and_then(|held| held.first_role_name().map(str::to_owned))
+    }
+
     /// The person it is the view of.
     pub(crate) const fn person(&self) -> UserId {
         self.person

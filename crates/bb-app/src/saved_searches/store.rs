@@ -67,6 +67,9 @@ pub trait SavedSearchStore: ChangeStore + 'static {
         fn shares_of_searches(ids: &[SavedSearchId]) -> Vec<SearchShare>;
         /// The saved searches that are shared with a group, by ID.
         fn searches_shared_with_group(group: GroupId) -> Vec<SavedSearchId>;
+        /// The rows of *Who has which role* of these people and of their groups, with the roles
+        /// those name and no levels: what the labels of their roles need.
+        fn policy_of_people(people: &[UserId]) -> bb_policy::Policy;
         /// The people with these IDs that exist: the makers of a page.
         fn makers_of(ids: &[UserId]) -> Vec<Person>;
     }
