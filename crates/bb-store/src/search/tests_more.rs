@@ -177,7 +177,7 @@ async fn rack_in_two_projects(
 
 /// An own field of this kind with the value `text` on the first issue and on one of the project
 /// OTHER, which the person reads too.
-async fn a_field_in_two_projects(
+pub(super) async fn a_field_in_two_projects(
     storage: &AuthStorage,
     data: &mut super::tests::Data,
     kind: FieldType,
