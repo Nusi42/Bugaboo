@@ -207,9 +207,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Whether `viewer` (the evaluation of `actor`) may name a person that exists: themselves, or
-    /// anybody when they are shown people by name (`names_other_people`, of the kind of the field). A viewer who is shown
-    /// others only as a role has no ID to name them by, so one sent anyway is refused alike for a
-    /// person who is there and one who is not. The part of `may_name` that holds without access.
+    /// anybody when they are shown people by name (`names_other_people`, of the kind of the
+    /// field). A viewer who is shown others only as a role has no ID to name them by, so one sent
+    /// anyway is refused alike for a person who is there and one who is not. The part of
+    /// `may_name` that holds without access.
     pub(crate) async fn may_name_person(
         &self,
         actor: UserId,

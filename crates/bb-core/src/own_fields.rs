@@ -122,7 +122,7 @@ words! {
 }
 
 /// The kind of people information that a person in an own field is shown as.
-const PERSON_FIELD_KIND: PeopleKind = PeopleKind::AssignedTo;
+const PERSON_FIELD_KIND: PeopleKind = crate::fields::ASSIGNED_TO_PEOPLE;
 
 /// The kind of people information that a group in an own field is named by.
 const GROUP_FIELD_KIND: PeopleKind = PeopleKind::Mentions;

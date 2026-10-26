@@ -58,6 +58,10 @@ words! {
 /// field says ([`Field::person_kind`]), and what the places that choose or check a person for it ask.
 pub const ASSIGNED_TO_PEOPLE: PeopleKind = PeopleKind::AssignedTo;
 
+/// The kind of people information that the person in *Reported by* is shown as: what the field
+/// says ([`Field::person_kind`]), and what the views of an issue ask.
+pub const REPORTED_BY_PEOPLE: PeopleKind = PeopleKind::ReportedBy;
+
 /// The word of a stable code in the search language: the code in lower camel case (`assigned-to` is
 /// `assignedTo`). The one rule for the fields, the priorities and the status groups, so no second
 /// list of words can disagree with the codes.
@@ -244,7 +248,7 @@ impl Field {
     pub const fn person_kind(self) -> Option<PeopleKind> {
         match self {
             Self::AssignedTo => Some(ASSIGNED_TO_PEOPLE),
-            Self::ReportedBy => Some(PeopleKind::ReportedBy),
+            Self::ReportedBy => Some(REPORTED_BY_PEOPLE),
             _ => None,
         }
     }
