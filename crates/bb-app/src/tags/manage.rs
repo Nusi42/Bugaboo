@@ -151,6 +151,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(uses.into_iter().filter(tag_is_known).collect())
     }
 
+    /// The tags of the catalogue that the person may know of: the one answer for the lists of tags,
+    /// the names a search may use and the names it shows.
+    pub(crate) async fn tags_known<'a>(
+        &self,
+        catalogue: &'a Catalogue,
+        shown: &crate::projects::Shown,
+    ) -> Result<Vec<&'a Tag>, AppError> {
+        let known = self.known_tags(shown).await?;
+        Ok(catalogue
+            .tags
+            .iter()
+            .filter(|tag| known.contains(&tag.id))
+            .collect())
+    }
+
     /// The names of the tags the person may know of, in one spelling (lower case): what the history
     /// of an issue may name. A name no known tag has is not told (a tag that is gone, or one that
     /// only projects the person does not see know).
@@ -194,12 +209,7 @@ pub async fn tags<S: AuthStore>(
     let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.tag_catalogue().await?;
     let shown = ctx.shown_to(&actor).await?;
-    let known = ctx.known_tags(&shown).await?;
-    let listed: Vec<&Tag> = catalogue
-        .tags
-        .iter()
-        .filter(|tag| known.contains(&tag.id))
-        .collect();
+    let listed = ctx.tags_known(&catalogue, &shown).await?;
     let page = window(listed.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     Ok(held.authorize(TagPage {

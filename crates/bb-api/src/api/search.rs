@@ -14,11 +14,11 @@ use axum::extract::State;
 use axum::response::Response;
 use axum::{Extension, extract::FromRef};
 use base64ct::{Base64UrlUnpadded, Encoding as _};
-use bb_app::auth::{AuthenticateQuery, RequestInfo};
+use bb_app::auth::RequestInfo;
 use bb_app::issues::IssueView;
 use bb_app::search::{
     GroupKey, ReadableFieldsQuery, SearchCountQuery, SearchGroupsQuery, SearchPage, SearchQuery,
-    SearchScope, ShownKey,
+    SearchScope, SearcherQuery, ShownKey,
 };
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::{Priority, StatusGroup};
@@ -194,17 +194,18 @@ async fn counted(
     info: &RequestInfo,
     session_token: &str,
 ) -> Result<UserId, ApiError> {
-    let who = auth
+    // A session or an access key: the person is the one the use cases resolve for the request.
+    let person = auth
         .api()?
-        .authenticate(
+        .searcher(
             info.clone(),
-            AuthenticateQuery {
+            SearcherQuery {
                 session_token: session_token.to_owned(),
             },
         )
         .await?;
-    limits.check_search(who.person.id)?;
-    Ok(who.person.id)
+    limits.check_search(person)?;
+    Ok(person)
 }
 
 /// Where the search looks, from the `within` parameter.

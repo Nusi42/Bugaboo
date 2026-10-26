@@ -9,7 +9,6 @@
 use bb_app::search::ProjectLink;
 use bb_core::issue::Priority;
 use bb_core::names::name_key;
-use bb_core::project::ShortName;
 use bb_core::readable_id::ReadableId;
 use bb_searchlang::{Comparison, Operand};
 use sea_query::{Cond, Expr, ExprTrait as _, Query, Value};
@@ -146,7 +145,7 @@ impl Compiler<'_> {
                 Some(found) => Cond::all().add(subject.in_subquery(found)),
                 None => nothing(),
             },
-            Domain::Person => match operand {
+            Domain::Person(kind) => match operand {
                 Operand::Me { .. } => Cond::all().add(subject.eq(self.request.me.stored())),
                 _ => Self::among(
                     subject,
@@ -155,8 +154,8 @@ impl Compiler<'_> {
                             .names
                             .people
                             .iter()
-                            .filter(|(name, _)| *name == key)
-                            .flat_map(|(_, ids)| ids.iter().map(|id| id.stored())),
+                            .filter(|(of, name, _)| Some(*of) == kind && *name == key)
+                            .flat_map(|(_, _, ids)| ids.iter().map(|id| id.stored())),
                     ),
                 ),
             },
@@ -224,7 +223,7 @@ impl Compiler<'_> {
             | Domain::Type
             | Domain::Project
             | Domain::Issue
-            | Domain::Person
+            | Domain::Person(_)
             | Domain::Group
             | Domain::Tag
             | Domain::Label => self.equals_named(domain, subject, operand),
@@ -315,14 +314,7 @@ impl Compiler<'_> {
     /// The project of the person with this short name, as it is written in a search (in any case:
     /// the one rule of `ShortName`).
     pub(super) fn project_named(&self, text: &str) -> Option<&ProjectLink> {
-        self.project_link(&text.parse::<ShortName>().ok()?)
-    }
-
-    fn project_link(&self, short_name: &ShortName) -> Option<&ProjectLink> {
-        self.request
-            .projects
-            .iter()
-            .find(|project| project.short_name == *short_name)
+        ProjectLink::named_in(&self.request.projects, text)
     }
 
     /// The issue an Issue ID names, as the request resolved it for this person (the current short

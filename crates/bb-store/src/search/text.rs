@@ -7,29 +7,26 @@
 //! on the issue itself, that the field is readable where the issue is (its project, its type), and
 //! the words and the scope reach the database only as bound values.
 
-use bb_app::search::FieldTarget;
-use bb_core::own_fields::FieldType;
+use bb_app::search::{FieldTarget, TextPlace};
 use bb_core::text_index::TextSource;
 use bb_core::text_words::search_words;
 use bb_searchlang::Text;
 use sea_query::{Alias, Cond, Expr, ExprTrait as _, Query};
 
-use super::{CompileError, Compiler, nothing};
-use crate::db::StoredId as _;
+use super::source::reach_condition;
+use super::{CompileError, Compiler};
 use crate::schema::IssueRow;
 use crate::text_index::{TextMatch, TextScope, TextSearch, text_matches};
 
 impl Compiler<'_> {
     /// The issues whose text, in the part the field stands for, has every word of `text`.
     pub(super) fn contains(&self, target: FieldTarget, text: &Text) -> Result<Cond, CompileError> {
-        let scope = match target {
-            FieldTarget::Title => TextScope::Source(TextSource::Title),
-            FieldTarget::Description => TextScope::Source(TextSource::Description),
-            FieldTarget::Own {
-                field,
-                kind: FieldType::LongText,
-            } => TextScope::Field(field),
-            _ => {
+        // The language offers `contains` only where `text_place` says the text is indexed.
+        let scope = match target.text_place() {
+            Some(TextPlace::Title) => TextScope::Source(TextSource::Title),
+            Some(TextPlace::Description) => TextScope::Source(TextSource::Description),
+            Some(TextPlace::Field(field)) => TextScope::Field(field),
+            None => {
                 return Err(CompileError::Unsupported(
                     "contains on a field whose text is not indexed",
                 ));
@@ -37,7 +34,7 @@ impl Compiler<'_> {
         };
         let mut cond = self.words_in(scope, &text.text);
         if let TextScope::Field(field) = scope {
-            cond = cond.add(self.reads_field_here(field));
+            cond = cond.add(reach_condition(field, &self.request.own_reach));
         }
         Ok(cond)
     }
@@ -59,29 +56,5 @@ impl Compiler<'_> {
             .column(Alias::new(TextMatch::ISSUE))
             .from_subquery(matched.select, Alias::new("text_hit"));
         Cond::all().add(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(found))
-    }
-
-    /// The field is readable where the issue is: in its project, and for its type when the field is
-    /// limited to some types. A field that reaches nowhere is read nowhere.
-    fn reads_field_here(&self, field: bb_core::id::FieldId) -> Cond {
-        let Some(reach) = self
-            .request
-            .own_reach
-            .iter()
-            .find(|each| each.field == field)
-        else {
-            return nothing();
-        };
-        let mut cond = Cond::all().add(
-            Expr::col((IssueRow::Table, IssueRow::Project))
-                .is_in(reach.projects.iter().map(|project| project.stored())),
-        );
-        if let Some(types) = &reach.issue_types {
-            cond = cond.add(
-                Expr::col((IssueRow::Table, IssueRow::IssueType))
-                    .is_in(types.iter().map(|kind| kind.stored())),
-            );
-        }
-        cond
     }
 }

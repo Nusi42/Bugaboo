@@ -306,6 +306,32 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(found)
     }
 
+    /// Reads the people with these IDs in one go, so the lookups of each of them one by one
+    /// (`person_known`) find them read already.
+    pub(crate) async fn preload_people(&self, ids: &[UserId]) -> Result<(), AppError> {
+        let wanted: Vec<UserId> = {
+            let known = locked(&self.known.people);
+            ids.iter()
+                .copied()
+                .filter(|id| !known.contains_key(id))
+                .collect()
+        };
+        if wanted.is_empty() {
+            return Ok(());
+        }
+        let found = self
+            .store()
+            .people_of(&wanted)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let mut known = locked(&self.known.people);
+        for id in wanted {
+            let person = found.iter().find(|person| person.id == id).cloned();
+            known.insert(id, person);
+        }
+        Ok(())
+    }
+
     /// How `viewer` sees `person` as `kind` at `place` (PRIV-12): a name, the label of their
     /// first role there, or *Someone*. A person that does not exist is *Someone*.
     pub(crate) async fn person_ref(

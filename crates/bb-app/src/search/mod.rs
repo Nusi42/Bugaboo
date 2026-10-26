@@ -17,6 +17,6 @@ pub use request::{
 pub(crate) use run::search_page;
 pub use run::{
     SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,
-    ShownKey, search, search_count, search_groups,
+    SearcherQuery, ShownKey, search, search_count, search_groups, searcher,
 };
-pub use target::{FieldTarget, Searchable, target_of};
+pub use target::{FieldTarget, Searchable, TextPlace, target_of};

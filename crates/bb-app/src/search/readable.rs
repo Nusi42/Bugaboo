@@ -320,15 +320,8 @@ fn catalogue_field(field: Field, kind: FieldKind, sources: &Sources) -> SearchFi
 /// of its choices.
 fn own_search_field(word: &str, definition: &Definition) -> SearchField {
     match definition.field.kind {
-        FieldType::LongText => SearchField::new(word, FieldKind::Text),
-        // The index of the text search holds long texts only: a short text or an address is
-        // compared, not searched by its words.
-        FieldType::Text | FieldType::WebAddress => {
-            let mut field = SearchField::new(word, FieldKind::Text);
-            field
-                .operators
-                .retain(|operator| *operator != Operator::Contains);
-            field
+        FieldType::Text | FieldType::LongText | FieldType::WebAddress => {
+            SearchField::new(word, FieldKind::Text)
         }
         FieldType::WholeNumber | FieldType::Decimal | FieldType::Duration => {
             SearchField::new(word, FieldKind::Number)
@@ -479,6 +472,14 @@ fn fields_in(places: &[Place], sources: &Sources) -> Vec<Searchable> {
                     kind: definition.field.kind,
                 },
             });
+        }
+    }
+    // `contains` is offered where the index of the text search holds the text, and nowhere else.
+    for each in &mut found {
+        if each.target.text_place().is_none() {
+            each.field
+                .operators
+                .retain(|operator| *operator != Operator::Contains);
         }
     }
     found

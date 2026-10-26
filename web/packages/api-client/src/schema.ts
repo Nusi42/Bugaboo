@@ -2584,8 +2584,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The issues of a project the person sees, newest first, a page at a time. Without *See every
-     *     issue of the project* the person sees the issues they reported.
+     * The issues of a project the person sees and of the projects below it that they see, newest first,
+     *     a page at a time. Without *See every issue of the project* the person sees the issues they
+     *     reported. Each issue carries the rights of its own project, so a `fields=` that names a field
+     *     which some issue of the page hides is `request.unknown-field`, which an empty page cannot say.
      */
     get: operations["listIssues"];
     put?: never;

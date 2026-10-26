@@ -8,8 +8,10 @@
 use bb_app::search::FieldTarget;
 use bb_app::search::OwnReach;
 use bb_core::event::{EntityKind, RecordKind};
+use bb_core::fields::{ASSIGNED_TO_PEOPLE, REPORTED_BY_PEOPLE};
 use bb_core::id::FieldId;
 use bb_core::own_fields::FieldType;
+use bb_core::people_kinds::PeopleKind;
 use bb_core::tags::IssueSight;
 use sea_query::{Alias, Cond, Expr, ExprTrait as _, Query, SelectStatement};
 
@@ -70,8 +72,9 @@ pub(super) enum Domain {
     Project,
     /// An issue by its ID.
     Issue,
-    /// A person by name or `me`.
-    Person,
+    /// A person by name or `me`, shown to the viewer as people of this kind (the names a viewer
+    /// may use depend on the kind of the field, ADR-0022); none for a field of no kind.
+    Person(Option<PeopleKind>),
     /// A group by name.
     Group,
     /// A tag by name.
@@ -121,23 +124,26 @@ fn own_values(field: FieldId, column: FieldValueRow, reach: &[OwnReach]) -> Subj
         )
         .and_where(Expr::col((FieldValueRow::Table, FieldValueRow::Field)).eq(field.stored()))
         .and_where(Expr::col((FieldValueRow::Table, column)).is_not_null());
-    match reach.iter().find(|each| each.field == field) {
-        Some(reached) => {
-            rows.and_where(
-                issue_column(IssueRow::Project)
-                    .is_in(reached.projects.iter().map(|project| project.stored())),
-            );
-            if let Some(types) = &reached.issue_types {
-                rows.and_where(
-                    issue_column(IssueRow::IssueType).is_in(types.iter().map(|kind| kind.stored())),
-                );
-            }
-        }
-        None => {
-            rows.and_where(Expr::val(1).eq(2));
-        }
-    }
+    rows.cond_where(reach_condition(field, reach));
     Subject::Linked(Box::new(rows), Expr::col((FieldValueRow::Table, column)))
+}
+
+/// Where the values of an own field count, on the issue of the statement: in a project the field
+/// reaches and, when it is limited to some issue types, one of them; nowhere when it reaches
+/// nothing. The one place that turns the reach of a field into a condition.
+pub(super) fn reach_condition(field: FieldId, reach: &[OwnReach]) -> Cond {
+    let Some(reached) = reach.iter().find(|each| each.field == field) else {
+        return Cond::all().add(Expr::val(1).eq(2));
+    };
+    let mut cond = Cond::all().add(
+        issue_column(IssueRow::Project)
+            .is_in(reached.projects.iter().map(|project| project.stored())),
+    );
+    if let Some(types) = &reached.issue_types {
+        cond = cond
+            .add(issue_column(IssueRow::IssueType).is_in(types.iter().map(|kind| kind.stored())));
+    }
+    cond
 }
 
 /// The name the issue at the other end of a row has in the statement.
@@ -196,14 +202,14 @@ pub(super) fn subject_of(
         ),
         T::ReportedBy => (
             Subject::Column(issue_column(IssueRow::ReportedBy)),
-            Domain::Person,
+            Domain::Person(Some(REPORTED_BY_PEOPLE)),
         ),
         T::AssignedTo => (
             linked(
                 rows_of(AssignedPersonRow::Table, AssignedPersonRow::Issue),
                 Expr::col((AssignedPersonRow::Table, AssignedPersonRow::Person)),
             ),
-            Domain::Person,
+            Domain::Person(Some(ASSIGNED_TO_PEOPLE)),
         ),
         T::Tags => (
             linked(
@@ -283,7 +289,7 @@ fn own_subject(
         ),
         FieldType::Person | FieldType::People => (
             own_values(field, FieldValueRow::ValueRef, reach),
-            Domain::Person,
+            Domain::Person(kind.people_kind()),
         ),
         FieldType::Group => (
             own_values(field, FieldValueRow::ValueRef, reach),

@@ -9167,7 +9167,7 @@
     "/api/v1/projects/{project}/issues": {
       "get": {
         "tags": ["issues"],
-        "summary": "The issues of a project the person sees, newest first, a page at a time. Without *See every\nissue of the project* the person sees the issues they reported.",
+        "summary": "The issues of a project the person sees and of the projects below it that they see, newest first,\na page at a time. Without *See every issue of the project* the person sees the issues they\nreported. Each issue carries the rights of its own project, so a `fields=` that names a field\nwhich some issue of the page hides is `request.unknown-field`, which an empty page cannot say.",
         "operationId": "listIssues",
         "parameters": [
           {

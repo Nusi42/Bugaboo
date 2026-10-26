@@ -11,7 +11,7 @@
 use std::collections::HashMap;
 
 use bb_core::ErrorCode;
-use bb_core::id::{IssueId, ProjectId};
+use bb_core::id::{IssueId, ProjectId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::tags::IssueSight;
 use bb_policy::{Authorized, Masked, PeopleContext, PersonRef, Place as Where};
@@ -27,7 +27,6 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
 use crate::issues::{IssueView, PagePlace};
-use crate::offers::label_is_known;
 
 /// Ask for a page of the issues a search finds.
 pub struct SearchQuery {
@@ -41,6 +40,13 @@ pub struct SearchQuery {
     pub cursor: Option<String>,
     /// How many issues a page holds at most.
     pub limit: u32,
+}
+
+/// Ask who is searching, before a search is run, so the limit of searches is the person's whether
+/// they come with a session or with an access key.
+pub struct SearcherQuery {
+    /// The secret of the session or the access key of the request.
+    pub session_token: String,
 }
 
 /// Ask how many issues a search finds.
@@ -271,6 +277,17 @@ pub(crate) async fn search_page<S: AuthStore + SearchStore>(
     Ok(organization.authorize(SearchPage { items, next_cursor }))
 }
 
+/// The person who searches, by a session or an access key: the one the search is run for.
+///
+/// # Errors
+/// `auth.not-signed-in` without a signed-in person.
+pub async fn searcher<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    query: SearcherQuery,
+) -> Result<UserId, AppError> {
+    Ok(ctx.actor(&query.session_token).await?.person.id)
+}
+
 /// How many issues the search finds, the same search without the paging.
 ///
 /// # Errors
@@ -314,8 +331,17 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
         .search_groups(&prepared.request, &query.by)
         .await
         .map_err(stopped)?;
+    // Over the cap the groups are cut, but the one for the issues without a value stays: it is how
+    // many issues the field does not reach, and the answer says it cut the rest (`truncated`).
     let truncated = found.len() > MAX_GROUPS;
-    found.truncate(MAX_GROUPS);
+    if truncated {
+        let none = found
+            .iter()
+            .position(|group| group.key == GroupKey::Empty)
+            .map(|at| found.remove(at));
+        found.truncate(MAX_GROUPS - usize::from(none.is_some()));
+        found.extend(none);
+    }
     let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
     // The store names a group by identity; a person is shown as the viewer may see them.
     let target = target_of(&prepared.looked.fields, &query.by);
@@ -325,10 +351,12 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
         .iter()
         .any(|group| matches!(group.key, GroupKey::Tag(_)))
     {
-        let known = ctx.known_tags(&prepared.looked.seen).await?;
-        let mut shown = ctx.tag_catalogue().await?.tags;
-        shown.retain(|tag| known.contains(&tag.id));
-        shown
+        let catalogue = ctx.tag_catalogue().await?;
+        ctx.tags_known(&catalogue, &prepared.looked.seen)
+            .await?
+            .into_iter()
+            .cloned()
+            .collect()
     } else {
         Vec::new()
     };
@@ -337,15 +365,23 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
         .any(|group| matches!(group.key, GroupKey::Label(_)))
     {
         let mut catalogue = ctx.label_catalogue().await?;
-        let (known, _) = ctx
-            .listed_groups(&prepared.looked.seen, &mut catalogue, None)
-            .await?;
-        let mut shown = catalogue.labels;
-        shown.retain(|label| label_is_known(label.group, &known));
-        shown
+        ctx.labels_known(&prepared.looked.seen, &mut catalogue, None)
+            .await?
+            .into_iter()
+            .cloned()
+            .collect()
     } else {
         Vec::new()
     };
+    // The people of the groups are read in one go, as the people of a page are.
+    let people: Vec<_> = found
+        .iter()
+        .filter_map(|group| match group.key {
+            GroupKey::Person(person) => Some(person),
+            _ => None,
+        })
+        .collect();
+    ctx.preload_people(&people).await?;
     let mut groups = Vec::with_capacity(found.len());
     for group in found {
         let key = match (group.key, kind) {

@@ -111,8 +111,8 @@ use crate::roles::{
 };
 use crate::search::{
     ReadableFieldsQuery, SearchCount, SearchCountQuery, SearchFields, SearchGroups,
-    SearchGroupsQuery, SearchPage, SearchQuery, readable_fields, search, search_count,
-    search_groups,
+    SearchGroupsQuery, SearchPage, SearchQuery, SearcherQuery, readable_fields, search,
+    search_count, search_groups, searcher,
 };
 use crate::settings::{
     ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
@@ -436,6 +436,8 @@ use_cases! {
     search_count(SearchCountQuery) -> Authorized<SearchCount>;
     /// How many issues a search finds in each group of a field.
     search_groups(SearchGroupsQuery) -> Authorized<SearchGroups>;
+    /// The person who searches, by a session or an access key.
+    searcher(SearcherQuery) -> bb_core::id::UserId;
     /// The fields the person may search by, where a search looks.
     readable_fields(ReadableFieldsQuery) -> Authorized<SearchFields>;
     /// Lists the people an issue of a project can be assigned to.

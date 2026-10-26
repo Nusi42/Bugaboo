@@ -14,14 +14,17 @@ use bb_app::fields::FieldStore as _;
 use bb_app::issues::IssueStore as _;
 use bb_app::projects::ProjectStore as _;
 use bb_app::relations::RelationStore as _;
-use bb_app::search::{SearchRequest, SearchStore as _};
+use bb_app::search::{Names, SearchRequest, SearchStore as _};
 use bb_app::tags::TagStore as _;
 use bb_core::event::{DomainEvent, EntityKind, RecordKind};
+use bb_core::id::UserId;
 use bb_core::id::{EntityId, IssueId, ProjectId};
 use bb_core::issue::Issue;
 use bb_core::message::Message;
 use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
+use bb_core::tags::IssueSight;
 use jiff::Timestamp;
+use jiff::tz::TimeZone;
 use serde::Serialize;
 
 use crate::dump_work::DumpWork;
@@ -116,7 +119,7 @@ impl Sample {
             };
             let mut before = None;
             loop {
-                let request = SearchRequest::whole_project(*id, before, PAGE)
+                let request = whole_project(*id, before, PAGE)
                     .map_err(|mistakes| SampleError::Store(format!("{mistakes:?}")))?;
                 let page: Vec<Issue> = storage
                     .search_page(&request)
@@ -297,6 +300,49 @@ fn chain_from(
         .unwrap_or(0);
     depth.insert(at, longest);
     longest
+}
+
+/// The sight of the whole project is the sample dump's own: a program that reads the issues of the
+/// whole product and has no person to ask for. It is built here and nowhere else, so the app crate
+/// has no search that ignores the rights.
+///
+/// Every issue of one project that is not in the trash, newest first, for a program that reads
+/// the issues of the whole product and has no person to ask for (the dump of the sample data):
+/// the same statement as the list of a project, with the sight of the whole project.
+///
+/// # Errors
+/// The empty text is read and checked like any search; it never has a mistake.
+fn whole_project(
+    project: ProjectId,
+    after: Option<IssueId>,
+    limit: u64,
+) -> Result<SearchRequest, Vec<bb_searchlang::Mistake>> {
+    let readable = bb_searchlang::ReadableFields::default();
+    // The empty text is a search that finds everything, whatever the fields.
+    let parsed = bb_searchlang::parse_with("", &readable).map_err(|mistake| vec![mistake])?;
+    let search = bb_searchlang::check(parsed, &readable)?;
+    let nobody = UserId::from_random([0; 16]);
+    Ok(SearchRequest {
+        search,
+        fields: Vec::new(),
+        sight: IssueSight {
+            all: vec![project],
+            own: Vec::new(),
+            person: nobody,
+            hidden: Vec::new(),
+            with_trashed: false,
+        },
+        me: nobody,
+        now: Timestamp::UNIX_EPOCH,
+        zone: TimeZone::UTC,
+        projects: Vec::new(),
+        names: Names::default(),
+        status_groups: Vec::new(),
+        blocking_kinds: Vec::new(),
+        own_reach: Vec::new(),
+        after,
+        limit,
+    })
 }
 
 #[cfg(test)]

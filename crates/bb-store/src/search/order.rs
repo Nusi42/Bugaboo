@@ -94,7 +94,7 @@ pub(super) struct Key {
 fn names_of(domain: Domain) -> Option<(DynIden, DynIden, DynIden)> {
     let of = |table: DynIden, id: DynIden, name: DynIden| Some((table, id, name));
     match domain {
-        Domain::Person => of(
+        Domain::Person(_) => of(
             PersonRow::Table.into_iden(),
             PersonRow::Id.into_iden(),
             PersonRow::DisplayName.into_iden(),
@@ -443,7 +443,7 @@ const fn kind_of(domain: Domain) -> Kind {
 /// What the groups of a field are, by the domain of its values.
 const fn group_value_of(domain: Domain) -> GroupValue {
     match domain {
-        Domain::Person => GroupValue::Id(IdOf::Person),
+        Domain::Person(_) => GroupValue::Id(IdOf::Person),
         Domain::Group => GroupValue::Id(IdOf::Group),
         Domain::Issue => GroupValue::Id(IdOf::Issue),
         Domain::Project => GroupValue::Id(IdOf::Project),

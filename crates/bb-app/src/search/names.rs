@@ -24,15 +24,18 @@ use bb_policy::{Permission, Place as Where};
 use bb_searchlang::{CheckedSearch, Expr as Node, Operand, Span, Test};
 
 use super::readable::Looked;
-use super::request::{Names, UnknownName};
+use super::request::{Names, ProjectLink, UnknownName};
 use super::target::{FieldTarget, target_of};
 use crate::access::{Actor, names_other_people};
 use crate::auth::{AppError, AuthStore, Ctx, SearchIn, internal};
 use crate::issues::Where as IssueWhere;
-use crate::offers::label_is_known;
 
-/// The most people read from the store for one name in a search.
+/// The most people read from the store in one page for a name in a search.
 const PEOPLE_PER_NAME: u64 = 100;
+
+/// The most pages read for one name, so a name that fits very many people costs a bounded number of
+/// reads (the people past them are not found by that name).
+const PEOPLE_PAGES_PER_NAME: usize = 5;
 
 /// What a name in a search is the name of.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -143,6 +146,15 @@ fn put_values(target: FieldTarget, values: &[Operand], put: &mut impl FnMut(What
 }
 
 impl Names {
+    /// The groups after `member of`, or the groups of a field that holds one.
+    fn group_list(&mut self, member_of: bool) -> &mut Vec<(String, Vec<GroupId>)> {
+        if member_of {
+            &mut self.member_groups
+        } else {
+            &mut self.groups
+        }
+    }
+
     /// Whether the search names something the person cannot know: a text that is run or saved with
     /// such a name is refused, as it would find nothing or something else (decision 9).
     #[must_use]
@@ -223,42 +235,41 @@ impl<S: AuthStore> Ctx<'_, S> {
         let key = name_key(&each.text);
         match each.what {
             What::Person(kind) => {
-                if let Some((_, found)) = names.people.iter().find(|(name, _)| *name == key) {
+                if let Some((_, _, found)) = names
+                    .people
+                    .iter()
+                    .find(|(of, name, _)| *of == kind && *name == key)
+                {
                     return Ok(!found.is_empty());
                 }
                 let found = self.people_named(actor, viewer, kind, &each.text).await?;
                 let known = !found.is_empty();
-                names.people.push((key, found));
+                names.people.push((kind, key, found));
                 Ok(known)
             }
             What::Group | What::MemberOf => {
                 let member_of = each.what == What::MemberOf;
-                let list = if member_of {
-                    &mut names.member_groups
-                } else {
-                    &mut names.groups
-                };
-                if let Some((_, found)) = list.iter().find(|(name, _)| *name == key) {
+                // The groups after `member of` and the groups of a group field are told apart.
+                if let Some((_, found)) = names
+                    .group_list(member_of)
+                    .iter()
+                    .find(|(name, _)| *name == key)
+                {
                     return Ok(!found.is_empty());
                 }
                 let found = self
                     .groups_named(actor, viewer, &each.text, member_of)
                     .await?;
                 let known = !found.is_empty();
-                let list = if member_of {
-                    &mut names.member_groups
-                } else {
-                    &mut names.groups
-                };
-                list.push((key, found));
+                names.group_list(member_of).push((key, found));
                 Ok(known)
             }
             What::Tag | What::Label => self.tag_or_label_named(looked, each, names).await,
-            What::Project => Ok(looked.seen.links(&looked.projects).iter().any(|link| {
-                each.text
-                    .parse()
-                    .is_ok_and(|short| link.short_name == short)
-            })),
+            What::Project => Ok(ProjectLink::named_in(
+                &looked.seen.links(&looked.projects),
+                &each.text,
+            )
+            .is_some()),
             What::Issue => {
                 let Ok(id) = each.text.parse::<ReadableId>() else {
                     return Ok(false);
@@ -285,7 +296,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         id: &ReadableId,
     ) -> Result<Option<bb_core::id::IssueId>, AppError> {
         let links = looked.seen.links(&looked.projects);
-        let Some(project) = links.iter().find(|link| link.short_name == id.short_name) else {
+        let Some(project) = ProjectLink::named(&links, &id.short_name) else {
             return Ok(None);
         };
         let Some(found) = self
@@ -352,11 +363,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 return Ok(!found.is_empty());
             }
             let catalogue = self.tag_catalogue().await?;
-            let known = self.known_tags(&looked.seen).await?;
-            let ids: Vec<_> = catalogue
-                .tags
-                .iter()
-                .filter(|tag| known.contains(&tag.id) && same_name(&tag.name, &each.text))
+            let ids: Vec<_> = self
+                .tags_known(&catalogue, &looked.seen)
+                .await?
+                .into_iter()
+                .filter(|tag| same_name(&tag.name, &each.text))
                 .map(|tag| tag.id)
                 .collect();
             let found = !ids.is_empty();
@@ -367,15 +378,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(!found.is_empty());
         }
         let mut catalogue = self.label_catalogue().await?;
-        let (groups, _) = self
-            .listed_groups(&looked.seen, &mut catalogue, None)
-            .await?;
-        let ids: Vec<_> = catalogue
-            .labels
-            .iter()
-            .filter(|label| {
-                label_is_known(label.group, &groups) && same_name(&label.name, &each.text)
-            })
+        let ids: Vec<_> = self
+            .labels_known(&looked.seen, &mut catalogue, None)
+            .await?
+            .into_iter()
+            .filter(|label| same_name(&label.name, &each.text))
             .map(|label| label.id)
             .collect();
         let found = !ids.is_empty();
@@ -407,7 +414,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let mut found = Vec::new();
         let mut after = None;
-        loop {
+        // A short name may fit very many people; the pages read for one name are bounded, as
+        // the length of a search is.
+        for _ in 0..PEOPLE_PAGES_PER_NAME {
             let page = self
                 .store()
                 .people_page(Some(text), SearchIn::Names, after.as_ref(), PEOPLE_PER_NAME)

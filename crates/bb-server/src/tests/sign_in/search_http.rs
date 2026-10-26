@@ -233,3 +233,74 @@ async fn qry_05_the_list_of_a_project_holds_the_projects_below_it() -> TestResul
     })
     .await
 }
+
+#[tokio::test]
+async fn qry_05_an_access_key_searches_as_its_person_and_has_the_same_allowance() -> TestResult {
+    use bb_core::access_key::KeyChoice;
+    each_database("search_http_key", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ok(&site.create(&mut ada, "Found by a script").await?)?;
+        let key = super::access_keys::key_of(&rig, &site.org.admin, KeyChoice::Everything).await?;
+        let mut script = Browser::new(&app, &called());
+        let found = script
+            .script(
+                "GET",
+                "/api/v1/search/issues?q=priority%20is%20normal",
+                None,
+                &key,
+            )
+            .await?;
+        assert_eq!(ok(&found)?["items"].as_array().map(Vec::len), Some(1));
+        // A mistake is answered the same way as for a person with a session.
+        let wrong = script.script("GET", WRONG, None, &key).await?;
+        assert_eq!(wrong.code(), "search.invalid");
+        // The allowance is the person's, whichever way they come: the searches of the key and of
+        // the session of Ada add up (two are made already).
+        for number in 2..bb_api::limits::SEARCHES_PER_MINUTE {
+            let done = script
+                .script("GET", "/api/v1/search/issues/count", None, &key)
+                .await?;
+            assert_eq!(done.status, StatusCode::OK, "search {number}");
+        }
+        let by_session = ada.send("GET", "/api/v1/search/issues/count", None).await?;
+        assert_eq!(by_session.status, StatusCode::TOO_MANY_REQUESTS);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_05_the_groups_by_a_person_field_run_as_many_statements_for_ten_people_as_for_three()
+-> TestResult {
+    each_database("search_http_perf_groups", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let path = "/api/v1/search/issues/groups?by=reportedBy";
+        let mut counter = Counter::on(&rig.database);
+        let mut made = 0_u32;
+        let mut counted = async |until: u32, ada: &mut Browser| -> Result<usize, Failure> {
+            while made < until {
+                let (mut person, _) = site
+                    .person(StartingRole::TeamMember, &format!("reporter{made}"))
+                    .await?;
+                ok(&site.create(&mut person, &format!("By {made}")).await?)?;
+                made += 1;
+            }
+            // The first read warms what is kept for a request; the second is the one counted.
+            let first = ada.send("GET", path, None).await?;
+            assert_eq!(
+                ok(&first)?["groups"].as_array().map(Vec::len),
+                Some(until as usize)
+            );
+            counter.take();
+            ok(&ada.send("GET", path, None).await?)?;
+            Ok(counter.take())
+        };
+        let on_three = counted(3, &mut ada).await?;
+        let on_ten = counted(10, &mut ada).await?;
+        assert_as_many_statements(on_three, on_ten, AT_MOST, "more people in the groups");
+        Ok(())
+    })
+    .await
+}

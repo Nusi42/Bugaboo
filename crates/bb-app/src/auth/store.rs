@@ -154,6 +154,8 @@ pub trait AccountStore: ChangeStore + 'static {
         fn account_by_email(email: &str) -> Option<Account>;
         /// The person with this ID.
         fn person(id: UserId) -> Option<Person>;
+        /// The people with these IDs, in one read; an ID of nobody is left out.
+        fn people_of(ids: &[UserId]) -> Vec<Person>;
         /// People by name (without regard to capitals, then by ID), after the position `after`
         /// (the last one of the page before), at most `limit`. With `search`, only those whose
         /// name holds the words, or, when it looks at the names and the addresses, whose address does

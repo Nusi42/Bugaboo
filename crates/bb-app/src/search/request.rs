@@ -8,6 +8,7 @@ use bb_core::id::{
     UserId,
 };
 use bb_core::issue::{Issue, Priority, StatusGroup};
+use bb_core::people_kinds::PeopleKind;
 use bb_core::project::ShortName;
 use bb_core::tags::IssueSight;
 use bb_searchlang::CheckedSearch;
@@ -28,6 +29,21 @@ pub struct ProjectLink {
     pub short_name: ShortName,
 }
 
+impl ProjectLink {
+    /// The project with this short name among `links`: the one rule for reading a project by its
+    /// current short name, for the use case that resolves the names and for the compiler.
+    #[must_use]
+    pub fn named<'a>(links: &'a [Self], short_name: &ShortName) -> Option<&'a Self> {
+        links.iter().find(|link| link.short_name == *short_name)
+    }
+
+    /// The same for a text as a search writes it (in any case: the rule of `ShortName`).
+    #[must_use]
+    pub fn named_in<'a>(links: &'a [Self], text: &str) -> Option<&'a Self> {
+        Self::named(links, &text.parse::<ShortName>().ok()?)
+    }
+}
+
 /// What the names in a search stand for, resolved by the use case with the rules of the person
 /// before the statement is made (ADR-0005 amendment M5, decision 9): a name is the key of
 /// `bb_core::names::name_key`, and only things the person may know are in these lists, so a name
@@ -39,8 +55,9 @@ pub struct Names {
     pub statuses: Vec<(String, Vec<String>)>,
     /// The issue types that have a name.
     pub issue_types: Vec<(String, Vec<IssueTypeId>)>,
-    /// The people the person may see by name (*Who sees people*), by the key of their name.
-    pub people: Vec<(String, Vec<UserId>)>,
+    /// The people the person may see by name (*Who sees people*), by the kind of the field they are
+    /// named in and the key of their name: a name allowed for one kind is not allowed for another.
+    pub people: Vec<(PeopleKind, String, Vec<UserId>)>,
     /// The groups the person may see by name.
     pub groups: Vec<(String, Vec<GroupId>)>,
     /// The groups after `member of` that the person may ask about: those they are in, or all of
@@ -197,45 +214,4 @@ pub trait SearchStore: IssueStore + 'static {
         request: &SearchRequest,
         by: &str,
     ) -> impl Future<Output = Result<Vec<GroupCount>, SearchFailure>> + Send;
-}
-
-impl SearchRequest {
-    /// Every issue of one project that is not in the trash, newest first, for a program that reads
-    /// the issues of the whole product and has no person to ask for (the dump of the sample data):
-    /// the same statement as the list of a project, with the sight of the whole project.
-    ///
-    /// # Errors
-    /// The empty text is read and checked like any search; it never has a mistake.
-    pub fn whole_project(
-        project: ProjectId,
-        after: Option<IssueId>,
-        limit: u64,
-    ) -> Result<Self, Vec<bb_searchlang::Mistake>> {
-        let readable = bb_searchlang::ReadableFields::default();
-        // The empty text is a search that finds everything, whatever the fields.
-        let parsed = bb_searchlang::parse_with("", &readable).map_err(|mistake| vec![mistake])?;
-        let search = bb_searchlang::check(parsed, &readable)?;
-        let nobody = UserId::from_random([0; 16]);
-        Ok(Self {
-            search,
-            fields: Vec::new(),
-            sight: IssueSight {
-                all: vec![project],
-                own: Vec::new(),
-                person: nobody,
-                hidden: Vec::new(),
-                with_trashed: false,
-            },
-            me: nobody,
-            now: Timestamp::UNIX_EPOCH,
-            zone: TimeZone::UTC,
-            projects: Vec::new(),
-            names: Names::default(),
-            status_groups: Vec::new(),
-            blocking_kinds: Vec::new(),
-            own_reach: Vec::new(),
-            after,
-            limit,
-        })
-    }
 }

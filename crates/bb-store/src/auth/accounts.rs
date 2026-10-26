@@ -84,6 +84,21 @@ impl AccountStore for AuthStorage {
         self.person_by_id(id).await
     }
 
+    async fn people_of(&self, ids: &[UserId]) -> Result<Vec<Person>, StoreError> {
+        let mut found = Vec::new();
+        for chunk in ids.chunks(crate::db::BIND_LIMIT) {
+            let mut select = Query::select();
+            select
+                .columns(person_columns())
+                .from(PersonRow::Table)
+                .and_where(Expr::col(PersonRow::Id).is_in(chunk.iter().map(|id| id.stored())));
+            for row in &self.database.fetch_all(&select).await? {
+                found.push(read_person(row)?);
+            }
+        }
+        Ok(found)
+    }
+
     async fn people_page(
         &self,
         search: Option<&str>,

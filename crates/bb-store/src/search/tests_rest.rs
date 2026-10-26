@@ -563,3 +563,38 @@ async fn perf_02_the_issues_whose_title_has_the_words_come_first_then_the_newest
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_a_person_named_for_one_kind_of_field_is_not_found_by_another() -> TestResult {
+    use bb_core::fields::{ASSIGNED_TO_PEOPLE, REPORTED_BY_PEOPLE};
+    each_database("search_people_by_kind", async |db| {
+        let fixture = fixture(db).await?;
+        let data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        let reporter = bb_app::search::Searchable {
+            field: Field::new("reportedBy", FieldKind::Person),
+            target: FieldTarget::ReportedBy,
+        };
+        let ask = |kind| {
+            let mut ask = request_with(
+                &data,
+                "reportedBy is \"Me Too\" sort by title",
+                None,
+                20,
+                vec![reporter.clone()],
+                Vec::new(),
+            );
+            ask.names.people = vec![(kind, name_key("Me Too"), vec![data.me])];
+            ask
+        };
+        // Named as a reporter, the person is found as one; named as an assignee, they are not.
+        assert_eq!(titles_of(storage, &ask(REPORTED_BY_PEOPLE)).await.len(), 5);
+        assert!(
+            titles_of(storage, &ask(ASSIGNED_TO_PEOPLE))
+                .await
+                .is_empty()
+        );
+        Ok(())
+    })
+    .await
+}

@@ -46,6 +46,36 @@ pub enum FieldTarget {
     },
 }
 
+/// Where the words of a `contains` on a field are looked for: the one list of the fields whose texts
+/// the index of the text search holds. The language offers `contains` on exactly these fields
+/// (`readable.rs`) and the compiler reads the same list, so nothing else reaches it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextPlace {
+    /// The title.
+    Title,
+    /// The description.
+    Description,
+    /// A long-text own field.
+    Field(FieldId),
+}
+
+impl FieldTarget {
+    /// Where the words of `<field> contains` are looked for; none for a field whose text is not in
+    /// the index (a short text, an address, anything that is not text).
+    #[must_use]
+    pub const fn text_place(self) -> Option<TextPlace> {
+        match self {
+            Self::Title => Some(TextPlace::Title),
+            Self::Description => Some(TextPlace::Description),
+            Self::Own {
+                field,
+                kind: FieldType::LongText,
+            } => Some(TextPlace::Field(field)),
+            _ => None,
+        }
+    }
+}
+
 /// One field a person may search by: its word and kind for the checker, and what it stands for.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Searchable {

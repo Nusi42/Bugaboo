@@ -24,10 +24,6 @@ use crate::auth::{
 
 use super::fake::*;
 
-fn digest_of(session: &SignInSession) -> Digest {
-    session.token_hash
-}
-
 impl AccountStore for FakeStore {
     async fn account_by_email(&self, email: &str) -> Result<Option<Account>, FakeError> {
         Ok(self.read(|state| {
@@ -43,13 +39,16 @@ impl AccountStore for FakeStore {
     }
 
     async fn person(&self, id: UserId) -> Result<Option<Person>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .people
-                .iter()
-                .find(|(person, _)| person.id == id)
-                .map(|(person, _)| person.clone())
-        }))
+        Ok(self.people_of(&[id]).await?.pop())
+    }
+
+    async fn people_of(&self, ids: &[UserId]) -> Result<Vec<Person>, FakeError> {
+        let all = self.read(|state| state.people.clone());
+        Ok(all
+            .into_iter()
+            .map(|(person, _)| person)
+            .filter(|person| ids.contains(&person.id))
+            .collect())
     }
 
     async fn people_page(
@@ -139,7 +138,7 @@ impl SessionStore for FakeStore {
             let session = state
                 .sessions
                 .iter()
-                .find(|session| digest_of(session) == *hash)?;
+                .find(|session| session.token_hash == *hash)?;
             let person = state
                 .people
                 .iter()
