@@ -20,7 +20,7 @@
 //!   (M2-F24);
 //! - in `bb-app` outside its access module: a judgment about the actor that skips the narrowing of
 //!   an access key, `ctx.evaluate(actor.person.id, …)` or the policy's `visible(` and
-//!   `evaluate_at(` (use `ctx.evaluation_of(actor, …)`, `ctx.require(…)`, `visible_as` and
+//!   `evaluate_at(`, `evaluate_with(` and `rows_of(` (use `ctx.evaluation_of(actor, …)`, `ctx.require(…)`, `visible_as` and
 //!   `evaluate_as` with the actor's key scope), so a key can never see more than it was given
 //!   (M2-F27);
 //! - inside `bb-policy`: a `pub` field in the definition of `Authorized`, a `pub` constructor
@@ -42,7 +42,7 @@ const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
 const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
 /// What a use case must not write about the actor: each skips the narrowing of an access key
 /// (M2-F27), with what to write instead.
-const UNNARROWED: [(&str, &str); 5] = [
+const UNNARROWED: [(&str, &str); 7] = [
     (
         ".evaluate(actor.person",
         "`ctx.evaluate(actor.person.id, …)` skips the narrowing of an access key. Judge the actor \
@@ -67,6 +67,14 @@ const UNNARROWED: [(&str, &str); 5] = [
         ".evaluate_at(",
         "`Policy::evaluate_at` does not narrow to an access key. Use `evaluate_as(person, \
          actor.key_scope(), tree, place)` for the actor.",
+    ),
+    (
+        ".evaluate_with(",
+        "`Policy::evaluate_with` and `Policy::rows_of` are the engine call of `evaluate_at`, which          does not narrow to an access key. Judge the actor with `evaluate_as(person,          actor.key_scope(), tree, place)`; about another person, ask in the access module.",
+    ),
+    (
+        ".rows_of(",
+        "`Policy::evaluate_with` and `Policy::rows_of` are the engine call of `evaluate_at`, which          does not narrow to an access key. Judge the actor with `evaluate_as(person,          actor.key_scope(), tree, place)`; about another person, ask in the access module.",
     ),
 ];
 /// The narrowed forms, which narrow to nothing when they are given no key: the second argument
@@ -651,6 +659,12 @@ const T: &str = \"use bb_policy::*;\";
             "async fn f() { self.evaluate(actor.person.id, place).await; }\n",
         ));
         assert!(access.is_empty());
+        let access_with = evaluate(&source(
+            "crates/bb-app/src/access/mod.rs",
+            "fn f() { policy.evaluate_with(person, &policy.rows_of(person), &tree, place); }
+",
+        ));
+        assert!(access_with.is_empty());
         // Other crates are not use cases.
         let policy = evaluate(&source(
             "crates/bb-policy/src/tree.rs",
