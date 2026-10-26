@@ -262,13 +262,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(filter) = &checked.search().filter {
             ask(filter, looked, &mut asked);
         }
-        let viewer = match &cache.viewer {
-            Some(viewer) => viewer.clone(),
-            None => {
-                let viewer = self.evaluation_of(actor, Where::Organization).await?;
-                cache.viewer = Some(viewer.clone());
-                viewer
-            }
+        let viewer = if let Some(viewer) = &cache.viewer {
+            viewer.clone()
+        } else {
+            let viewer = self.evaluation_of(actor, Where::Organization).await?;
+            cache.viewer = Some(viewer.clone());
+            viewer
         };
         for each in &asked {
             let found = self
