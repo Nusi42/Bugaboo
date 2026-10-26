@@ -670,7 +670,7 @@ async fn perf_05_forty_searches_that_name_a_group_a_tag_and_an_issue_cost_no_mor
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         // The receiver is a team member in the group (so `member of` reads the groups of the person,
-        // and they are shown no other person by name, so only themselves can be named).
+        // and a team member is shown no other person by name in *Assigned to*, so only they can be named).
         let (mut cleo, cleo_id) = site
             .person_called(StartingRole::TeamMember, "cleo", "Cleo Cook")
             .await?;
