@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use bb_api::{
     DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE, DEFAULT_HEADER_TIMEOUT, DEFAULT_MAX_CONNECTIONS,
-    DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
+    DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SEARCHES_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
     DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, LimitsConfig,
 };
 
@@ -499,7 +499,7 @@ fn limits_from(values: &BTreeMap<SettingName, String>) -> Result<LimitsConfig, C
         searches_per_minute: rate_limit(
             values,
             SettingName::SearchesPerMinute,
-            LimitsConfig::default().searches_per_minute,
+            DEFAULT_SEARCHES_PER_MINUTE,
         )?,
     })
 }

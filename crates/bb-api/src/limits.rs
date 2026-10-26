@@ -93,7 +93,7 @@ pub const DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE: u32 = 300;
 /// Searches per person and minute (SEC-17, architecture §7 *Search limits*): a search is the
 /// heaviest read there is, so each person has a small allowance of their own beside the one of the
 /// network. The sixty-first waits for the next minute.
-pub const SEARCHES_PER_MINUTE: u32 = 60;
+pub const DEFAULT_SEARCHES_PER_MINUTE: u32 = 60;
 
 /// The limits, from the start-up settings (OPS-10; they move to the settings registry later).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -117,7 +117,7 @@ impl Default for LimitsConfig {
             sign_in_attempts_per_minute: DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
             sign_in_failures_per_minute: DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
             access_key_requests_per_minute: DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
-            searches_per_minute: SEARCHES_PER_MINUTE,
+            searches_per_minute: DEFAULT_SEARCHES_PER_MINUTE,
         }
     }
 }
@@ -291,7 +291,7 @@ impl Limits {
         self.access_keys.hit(key, now).map_err(too_many)
     }
 
-    /// Counts one search of `person` against their allowance of [`SEARCHES_PER_MINUTE`].
+    /// Counts one search of `person` against their allowance (`LimitsConfig::searches_per_minute`, [`DEFAULT_SEARCHES_PER_MINUTE`] unless the operator set another).
     ///
     /// # Errors
     /// `429` with `Retry-After` when the person is over it.
@@ -484,7 +484,7 @@ mod tests {
         let start = Instant::now();
         let mut source = bb_core::id::SequentialIds::default();
         let (person, other) = (UserId::generate(&mut source), UserId::generate(&mut source));
-        for _ in 0..SEARCHES_PER_MINUTE {
+        for _ in 0..DEFAULT_SEARCHES_PER_MINUTE {
             limits.check_search_at(person, start).unwrap();
         }
         let error = limits

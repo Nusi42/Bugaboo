@@ -56,7 +56,7 @@ async fn sec_17_the_sixty_first_search_of_a_minute_waits() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut gus, _) = site.person(StartingRole::TeamMember, "gus").await?;
-        for number in 0..bb_api::limits::SEARCHES_PER_MINUTE {
+        for number in 0..bb_api::limits::DEFAULT_SEARCHES_PER_MINUTE {
             let done = ada.send("GET", "/api/v1/search/issues/count", None).await?;
             assert_eq!(done.status, StatusCode::OK, "search {number}");
         }
@@ -257,7 +257,7 @@ async fn qry_05_an_access_key_searches_as_its_person_and_has_the_same_allowance(
         assert_eq!(wrong.code(), "search.invalid");
         // The allowance is the person's, whichever way they come: the searches of the key and of
         // the session of Ada add up (two are made already).
-        for number in 2..bb_api::limits::SEARCHES_PER_MINUTE {
+        for number in 2..bb_api::limits::DEFAULT_SEARCHES_PER_MINUTE {
             let done = script
                 .script("GET", "/api/v1/search/issues/count", None, &key)
                 .await?;

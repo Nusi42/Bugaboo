@@ -36,7 +36,7 @@ pub use headers::{
 };
 pub use limits::{
     DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE, DEFAULT_REQUESTS_PER_MINUTE,
-    DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, Limits, LimitsConfig,
+    DEFAULT_SEARCHES_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, Limits, LimitsConfig,
 };
 pub use listener::{
     Accepted, ClientAddr, Connection, DEFAULT_MAX_CONNECTIONS, Incoming, ListenerOptions,
