@@ -76,6 +76,8 @@ fn share_change(target: ShareTarget, shared: bool) -> FieldChange {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The events of the saved searches that stop being shared because the group is deleted: one
     /// for each search, so that each one's history says it (ADR-0034, decision 7).
+    /// The shares are read here and not in the change: a share made at the same moment can be
+    /// missing from the events, never from the change, which deletes them all.
     pub(crate) async fn events_of_a_deleted_group(
         &self,
         by_person: bb_core::id::UserId,
@@ -186,7 +188,10 @@ pub async fn stop_sharing_search<S: AuthStore>(
         vec![share_change(target, false)],
     )?;
     // A project that had the search as its list shows the built-in default from now on, and its
-    // history says why.
+    // history says why. Whether it had is read here and not in the change: a choice of the list at
+    // the same moment can make this event differ from what the change does, and the history then
+    // shows the one that was true when the person asked (the list itself is always right, because
+    // the change clears it by the search).
     let mut events = vec![event];
     if let ShareTarget::Project(project) = target {
         let list = ctx

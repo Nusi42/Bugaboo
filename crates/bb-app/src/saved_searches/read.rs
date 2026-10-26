@@ -24,8 +24,8 @@ struct Found {
     next: Option<String>,
 }
 
-/// The searches shared with a person, walked by [`fill_past_hidden`]: the ones that check cleanly for
-/// them (ADR-0034, decision 4).
+/// The searches shared with a person, walked by [`fill_past_hidden`]: the ones that check cleanly
+/// for them (ADR-0034, decision 4).
 struct SharedSearches<'a, 'c, S: AuthStore> {
     ctx: &'a Ctx<'c, S>,
     reaching: &'a Reaching,

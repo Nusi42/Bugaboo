@@ -122,7 +122,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             Some(_) => {}
             None => {
-                // Nothing there: the same work is done on a text with no names, so the answer
+                // Nothing there: the same reads are done on a text with no names, so the answer
                 // does not come sooner than one for a search that is there and does not check.
                 self.canonical_text(&mut judge, "", &Presentation::default())
                     .await?;
