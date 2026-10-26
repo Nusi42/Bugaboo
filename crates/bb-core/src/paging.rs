@@ -29,7 +29,8 @@ pub const SKIP_MAX: u64 = 1_000_000;
 /// were looked at without filling a page, which says no more than the page that stopped there
 /// ("there is more"). It never holds the key of a row that is hidden from the person, and never a
 /// count of how many there are between two they can see. The text is `KEY`, `KEY+500`, `+500`, or
-/// nothing for the start.
+/// nothing for the start. A key is read as its type reads it (a short name in lower case is the same
+/// short name in capitals), and over HTTP the text is sealed, so no client writes one by hand.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SkipCursor<K> {
     /// The row to start after.

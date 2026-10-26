@@ -506,8 +506,9 @@ impl<S: AuthStore> Walk for ProjectChoices<'_, '_, S> {
         Ok(access.knows_project())
     }
 
-    fn key_of(project: &super::types::ProjectChoice) -> Option<Self::Key> {
-        bb_core::project::ShortName::new(&project.short_name).ok()
+    fn key_of(project: &super::types::ProjectChoice) -> Result<Self::Key, AppError> {
+        bb_core::project::ShortName::new(&project.short_name)
+            .map_err(|_| AppError::Internal("a stored short name does not read".to_owned()))
     }
 }
 

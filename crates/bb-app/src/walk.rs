@@ -32,8 +32,11 @@ pub(crate) trait Walk: Send {
     /// Whether the person may see the row.
     fn keeps(&mut self, row: &Self::Row) -> impl Future<Output = Result<bool, AppError>> + Send;
 
-    /// The key of a row; none for a row that cannot be named in a cursor.
-    fn key_of(row: &Self::Row) -> Option<Self::Key>;
+    /// The key of a row.
+    ///
+    /// # Errors
+    /// An internal error for a stored row whose key cannot be read: the list is not cut short.
+    fn key_of(row: &Self::Row) -> Result<Self::Key, AppError>;
 }
 
 /// A page of rows and where the next one starts.
@@ -77,10 +80,13 @@ pub(crate) async fn fill_past_hidden<W: Walk>(
     }
     let next = if more {
         // A full page continues after its last row, which the person has just been shown.
-        rows.last().and_then(W::key_of).map(|key| SkipCursor {
-            after: Some(key),
-            skip: 0,
-        })
+        match rows.last() {
+            Some(last) => Some(SkipCursor {
+                after: Some(W::key_of(last)?),
+                skip: 0,
+            }),
+            None => None,
+        }
     } else if looked_at >= bound {
         // A page that looked at enough rows continues past them.
         Some(SkipCursor {

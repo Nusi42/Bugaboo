@@ -69,8 +69,8 @@ impl<S: AuthStore> Walk for SharedSearches<'_, '_, S> {
         self.ctx.reads_cleanly(&mut self.judge, stored).await
     }
 
-    fn key_of(stored: &Stored) -> Option<SavedSearchId> {
-        Some(stored.search.id)
+    fn key_of(stored: &Stored) -> Result<SavedSearchId, AppError> {
+        Ok(stored.search.id)
     }
 }
 
