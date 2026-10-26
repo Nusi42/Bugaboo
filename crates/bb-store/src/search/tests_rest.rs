@@ -56,7 +56,7 @@ async fn qry_04_member_of_finds_the_issues_of_the_people_of_a_group() -> TestRes
             })
         })
         .await?;
-        let reporter = bb_app::search::Searchable {
+        let reported_by = bb_app::search::Searchable {
             field: Field::new("reportedBy", FieldKind::Person),
             target: FieldTarget::ReportedBy,
         };
@@ -65,7 +65,7 @@ async fn qry_04_member_of_finds_the_issues_of_the_people_of_a_group() -> TestRes
             "reportedBy member of \"Checkers\"",
             None,
             10,
-            vec![reporter],
+            vec![reported_by],
             Vec::new(),
         );
         ask.names.member_groups = vec![(name_key("Checkers"), vec![group])];
