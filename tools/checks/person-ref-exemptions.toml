@@ -49,6 +49,12 @@ reason = "The payload of the job that answers a sign-up holds the address the pe
 # read, or a read in another function, is a finding. The reason says why the read is right.
 
 [[read]]
+file = "crates/bb-app/src/search/names.rs"
+function = "is_named"
+reads = 1
+reason = "A search compares the name typed in it with the name of a candidate by the one rule of the same name, to turn the name into an ID before the statement is made; no name is shown or kept. Who may be named is decided before (names_other_people)."
+
+[[read]]
 file = "crates/bb-api/src/api/auth.rs"
 function = "from"
 reads = 2

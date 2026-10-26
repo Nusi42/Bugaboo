@@ -153,6 +153,12 @@ pub(crate) struct Shared {
     pub(crate) policy_reads_fail: bool,
     /// How many more times the saving of the progress of a run fails.
     pub(crate) progress_failures: usize,
+    /// The searches the store was asked to run, in order.
+    pub(crate) searches: Vec<crate::search::SearchRequest>,
+    /// What a search finds, in order (`fake_search.rs`).
+    pub(crate) search_hits: Vec<crate::search::SearchHit>,
+    /// How a search fails, instead of finding anything.
+    pub(crate) search_fails: Option<crate::search::SearchFailure>,
 }
 
 /// The in-memory store. Cheap to clone; all clones are the same store.

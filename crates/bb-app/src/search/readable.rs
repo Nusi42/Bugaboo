@@ -32,6 +32,7 @@ use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
 use bb_core::own_fields::{FieldFor, FieldType};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::workflow::WorkflowStatus;
 use bb_policy::{Authorized, Evaluation, FieldMask, Masked, Place as Where};
 use bb_searchlang::Field as SearchField;
 use bb_searchlang::{FieldKind, IssueField, ReadableFields, own_field_word};
@@ -107,6 +108,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         scope: SearchScope,
     ) -> Result<Vec<Searchable>, AppError> {
+        Ok(self.looked_at(actor, scope).await?.fields)
+    }
+
+    /// What the person may search by where a search looks, and what the names in a search can
+    /// stand for there: the fields, the statuses and issue types the person may know, the own
+    /// fields, and the projects. Read once for a request.
+    ///
+    /// # Errors
+    /// `resource.not-found` for a project that the actor does not see; an internal error when the
+    /// store fails.
+    pub(crate) async fn looked_at(
+        &self,
+        actor: &Actor,
+        scope: SearchScope,
+    ) -> Result<Looked, AppError> {
         let seen = self.shown_with_levels_to(actor).await?;
         let within = match scope {
             SearchScope::Everywhere => None,
@@ -120,24 +136,54 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|(chain, held)| Place::of(chain, held))
             .collect();
         let mut types: Vec<IssueType> = Vec::new();
-        let mut statuses: Vec<String> = Vec::new();
+        let mut statuses: Vec<WorkflowStatus> = Vec::new();
         for place in &places {
             for (found, workflow) in self.workflows_reaching(&seen, &place.chain).await? {
-                statuses.extend(workflow.statuses.iter().map(|status| status.name.clone()));
-                types.push(found);
+                statuses.extend(workflow.statuses.iter().cloned());
+                if !types.iter().any(|each| each.id == found.id) {
+                    types.push(found);
+                }
             }
         }
+        let own = self
+            .store()
+            .field_definitions()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
         let sources = Sources {
-            statuses: once_each(statuses),
+            statuses: once_each(statuses.iter().map(|status| status.name.clone())),
             issue_types: once_each(types.iter().map(|found| found.name.clone())),
-            own: self
-                .store()
-                .field_definitions()
-                .await
-                .map_err(|error| internal::<S>(&error))?,
+            own: own.clone(),
         };
-        Ok(fields_in(&places, &sources))
+        Ok(Looked {
+            fields: fields_in(&places, &sources),
+            statuses,
+            types,
+            own,
+            projects: places
+                .iter()
+                .filter_map(|place| place.chain.last().copied())
+                .collect(),
+            seen,
+        })
     }
+}
+
+/// What a search looks at for one person: the fields they may use and what names can stand for.
+pub(crate) struct Looked {
+    /// The fields the person may use, with what each reads.
+    pub(crate) fields: Vec<Searchable>,
+    /// The statuses of the workflows in force where the search looks, for the types the person
+    /// may know.
+    pub(crate) statuses: Vec<WorkflowStatus>,
+    /// The issue types the person may know that reach where the search looks.
+    pub(crate) types: Vec<IssueType>,
+    /// Every own field, with its choices.
+    pub(crate) own: Vec<Definition>,
+    /// The projects the search looks at.
+    pub(crate) projects: Vec<ProjectId>,
+    /// The tree as the person sees it, with the levels.
+    pub(crate) seen: crate::projects::Leveled,
 }
 
 /// The names, each once (names that are the same name are one), in the order they come.

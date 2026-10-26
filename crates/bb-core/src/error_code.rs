@@ -208,6 +208,9 @@ error_codes! {
     /// Somebody else is editing the thing, so it cannot be taken away now. Nothing is lost: the
     /// page names who is editing (ADR-0019).
     EditInProgress => ("edit.in-progress", 409),
+    /// A search took longer than the time a search may take (SEC-17, architecture §7 *Search
+    /// limits*); the person narrows it down.
+    SearchTooSlow => ("search.too-slow", 503),
     /// Too many requests in a short time (SEC-14).
     TooManyRequests => ("rate-limit.exceeded", 429),
     /// The server cannot answer right now.

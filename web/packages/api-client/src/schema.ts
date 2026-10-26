@@ -4225,6 +4225,7 @@ export interface components {
       | "edit.lock-lost"
       | "edit.taken-over"
       | "edit.in-progress"
+      | "search.too-slow"
       | "rate-limit.exceeded"
       | "server.unavailable"
       | "server.internal";
