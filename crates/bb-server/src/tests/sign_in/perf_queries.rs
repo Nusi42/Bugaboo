@@ -61,31 +61,22 @@ pub(super) fn assert_as_many_statements(on_few: usize, on_many: usize, at_most: 
     assert!(on_many <= at_most, "{on_many} statements");
 }
 
-/// The statements that a page of five and a page of forty run; each page has as many items as were
-/// asked for.
-///
-/// Each page is read twice and the second read is counted. The first read warms the caches, and it
-/// also carries the one statement that does not depend on the page: a session that has been idle
-/// for a minute is touched (`touch_session`), which is due by the clock and so falls into whatever
-/// read comes first after the minute, in the window of five or of forty. The second read of the
-/// same path comes right after, when the touch is done, so the two counts differ only by the page.
+/// The statements that a page of five and a page of forty run, after a read that warms the caches
+/// (not counted); each page has as many items as were asked for.
 pub(super) async fn five_and_forty(
     browser: &mut Browser,
     database: &Database,
     path: impl Fn(u32) -> String,
 ) -> Result<(usize, usize), Failure> {
     let mut counter = Counter::on(database);
-    let mut second_read = async |limit: u32| -> Result<usize, Failure> {
-        ok(&browser.send("GET", &path(limit), None).await?)?;
-        counter.take();
-        let page = browser.send("GET", &path(limit), None).await?;
-        let items = ok(&page)?["items"].as_array().map(Vec::len);
-        assert_eq!(items, Some(usize::try_from(limit)?));
-        Ok(counter.take())
-    };
-    let on_five = second_read(5).await?;
-    let on_forty = second_read(40).await?;
-    Ok((on_five, on_forty))
+    ok(&browser.send("GET", &path(5), None).await?)?;
+    counter.take();
+    let five = browser.send("GET", &path(5), None).await?;
+    assert_eq!(ok(&five)?["items"].as_array().map(Vec::len), Some(5));
+    let on_five = counter.take();
+    let forty = browser.send("GET", &path(40), None).await?;
+    assert_eq!(ok(&forty)?["items"].as_array().map(Vec::len), Some(40));
+    Ok((on_five, counter.take()))
 }
 
 /// The reads the issue page makes, by what they read.
