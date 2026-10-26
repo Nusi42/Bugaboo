@@ -320,13 +320,13 @@ One text of an issue, as the index keeps it.
 
 Defined in `crates/bb-core/src/text_index.rs`.
 
-| Field        | Personal data | Category  | Legal basis            | What it holds                                                                                                           |
-| ------------ | ------------- | --------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `id`         | No            | –         | –                      | The number of the row.                                                                                                  |
-| `issue`      | No            | –         | –                      | The issue the text belongs to.                                                                                          |
-| `source`     | No            | –         | –                      | Where the text comes from.                                                                                              |
-| `source_ref` | No            | –         | –                      | The record the text comes from: the comment, the file or the own field; the issue itself for its title and description. |
-| `words`      | Yes           | `content` | `legitimate_interests` | The prepared words of the text, one space between. It can hold anything a person typed.                                 |
+| Field        | Personal data | Category  | Legal basis | What it holds                                                                                                                                   |
+| ------------ | ------------- | --------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | No            | –         | –           | The number of the row.                                                                                                                          |
+| `issue`      | No            | –         | –           | The issue the text belongs to.                                                                                                                  |
+| `source`     | No            | –         | –           | Where the text comes from.                                                                                                                      |
+| `source_ref` | No            | –         | –           | The record the text comes from: the comment, the file or the own field; the issue itself for its title and description.                         |
+| `words`      | Yes           | `content` | `contract`  | The prepared words of the text, one space between. It can hold anything a person typed, so it has the legal basis of the texts it is made from. |
 
 ### Invitation
 
