@@ -4,8 +4,8 @@
 # real words in both languages. Nothing here names a real company, product or person.
 
 [fields]
-# The own field that Contributors may not see.
-cost_center = "Cost center"
+# The own field that Contributors may not see. Its name is no name of a field of the catalogue (the word of such a name in a search is taken).
+cost_center = "Cost code"
 
 [projects]
 # The name of a team group; {team} is a word of `teams`, {number} counts up.

@@ -123,7 +123,7 @@ impl Later for Large {
     }
 }
 
-/// Makes the own field *Cost center* for every issue and hides it from Contributors, who may not
+/// Makes the own field *Cost code* for every issue and hides it from Contributors, who may not
 /// see what it is charged to.
 async fn cost_center(
     world: &World<'_>,
