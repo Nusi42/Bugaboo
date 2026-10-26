@@ -379,7 +379,7 @@ async fn qry_06_a_search_that_does_not_check_for_the_receiver_is_not_there_for_a
         let (mut cleo, _) = site
             .person_called(StartingRole::TeamMember, "cleo", "Cleo Cook")
             .await?;
-        let hidden = ada_shares(&site, &mut ada, "Hidden", "assignedTo is \"Bob Baker\"").await?;
+        let hidden = ada_shares(&site, &mut ada, "Hidden", "assignedTo is \"Ada Admin\"").await?;
         let seen = ada_shares(&site, &mut ada, "Seen", "").await?;
         let missing = "01a3185c-5000-73b2-8f37-20757db0778e";
         // The list holds the next search, not a gap; the address, the delete and the restore answer
@@ -453,7 +453,7 @@ async fn perf_05_many_searches_that_are_skipped_cost_no_more_statements_than_non
         let on_none = counter.take();
         for number in 0..40 {
             let name = format!("Hidden {number}");
-            ada_shares(&site, &mut ada, &name, "assignedTo is \"Bob Baker\"").await?;
+            ada_shares(&site, &mut ada, &name, "assignedTo is \"Ada Admin\"").await?;
         }
         counter.take();
         let skipping = dan.send("GET", &path, None).await?;
@@ -513,7 +513,7 @@ async fn qry_06_the_shared_list_goes_on_past_a_walk_of_hidden_searches_on_both_d
         // cursor goes on by the last one shown.
         for number in 0..105 {
             let name = format!("Hidden {number}");
-            ada_shares(&site, &mut ada, &name, "assignedTo is \"Bob Baker\"").await?;
+            ada_shares(&site, &mut ada, &name, "assignedTo is \"Ada Admin\"").await?;
         }
         for number in 0..3 {
             ada_shares(&site, &mut ada, &format!("Seen {number}"), "").await?;
