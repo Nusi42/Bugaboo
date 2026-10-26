@@ -81,7 +81,7 @@ pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
         // No words match nothing.
         select.and_where(Expr::val(1).eq(0));
         return TextMatch {
-            select: with_columns(select, Expr::val(0_i64).into()),
+            select: with_columns(select, Expr::val(0_i64)),
         };
     };
     select
@@ -106,7 +106,7 @@ pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
             }
             Expr::case(all, 1_i64).finally(0_i64).into()
         }
-        TextScope::Field(_) => Expr::val(0_i64).into(),
+        TextScope::Field(_) => Expr::val(0_i64),
     };
     TextMatch {
         select: with_columns(select, title_hit),
