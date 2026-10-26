@@ -101,6 +101,12 @@ pub(crate) async fn evaluation_in<S: AuthStore>(
         .map(|inputs| evaluate(&inputs)))
 }
 
+/// The label of the first role of a person, from their evaluation at a place: how they are shown
+/// as *Role only*. The one place that makes it.
+pub(crate) fn role_label(evaluation: Option<&Evaluation>) -> Option<String> {
+    evaluation.and_then(|theirs| theirs.first_role_name().map(str::to_owned))
+}
+
 /// A project as a person who may see it, or who decides who has which role there, sees it; a
 /// project they may not know about is not named (ADR-0025, decision 12).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -353,8 +359,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(label) = known {
             return Ok(label);
         }
-        Ok(if_there(self.evaluate(person, place).await)?
-            .and_then(|theirs| theirs.first_role_name().map(str::to_owned)))
+        Ok(role_label(
+            if_there(self.evaluate(person, place).await)?.as_deref(),
+        ))
     }
 
     /// Reads the roles of all the `wanted` people at once, so that showing each of them by their
