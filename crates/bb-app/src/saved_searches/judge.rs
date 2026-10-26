@@ -1,8 +1,10 @@
 //! Whether a saved search checks cleanly for a person (ADR-0034, decisions 3 and 4): the text is
-//! read and checked with the fields the person may read, the groups and projects it names are ones
-//! they may see, and the columns and the grouping name fields they may read. A field, a person, a
-//! group or a project the person may not see is as unknown as one that does not exist, so nothing
-//! of a search that does not check cleanly reaches them.
+//! read and checked with the fields the person may read, every name it holds (a person, a group, a
+//! project, an Issue ID, a status, a type, a choice, a tag, a label) stands for something they may
+//! know (`Ctx::search_names`), and the columns and the grouping name fields they may read. A field
+//! or a name the person may not know is as unknown as one that does not exist, so nothing of a
+//! search that does not check cleanly reaches them. The judge keeps what the names of the texts it
+//! has judged stood for, so a list reads each group, tag, label and name once for the request.
 
 use bb_core::saved_search::Presentation;
 use bb_searchlang::{ReadableFields, check, parse_with, print};
@@ -10,7 +12,7 @@ use bb_searchlang::{ReadableFields, check, parse_with, print};
 use super::reach::Reaching;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx};
-use crate::search::{Looked, SearchScope, readable_of};
+use crate::search::{Looked, NameCache, SearchScope, readable_of};
 
 /// Judges saved searches for one person, reading what it needs once for the request: what the
 /// person may search by and what the names of a text can stand for (`looked_at`, the same read as
@@ -19,6 +21,7 @@ pub(crate) struct Judge<'a> {
     actor: &'a Actor,
     looked: Looked,
     fields: ReadableFields,
+    names: NameCache,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -37,6 +40,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             actor,
             looked,
             fields,
+            names: NameCache::default(),
         })
     }
 }
@@ -67,10 +71,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         // The names of the text (groups, projects, issues, people, statuses, ...) are resolved by
         // the one rule of the search; a name the person cannot know is as unknown as a missing one.
-        let names = self
-            .search_names(judge.actor, &judge.looked, &checked)
+        self.search_names_in(judge.actor, &judge.looked, &checked, &mut judge.names)
             .await?;
-        if names.names_unknown() {
+        if judge.names.names.names_unknown() {
             return Ok(None);
         }
         Ok(Some(print(checked.search())))

@@ -8,6 +8,7 @@ mod run;
 mod target;
 
 pub use bb_searchlang::Mistake;
+pub(crate) use names::NameCache;
 pub(crate) use readable::{Looked, readable_of, word_is_taken};
 pub use readable::{ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
 pub use request::{
