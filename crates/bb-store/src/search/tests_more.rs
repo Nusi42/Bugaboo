@@ -144,12 +144,25 @@ async fn sec_17_a_search_that_is_dropped_leaves_no_limit_on_the_connection() -> 
     )
     .await;
     assert!(dropped.is_err(), "the read should still be running");
-    // After the time of the dropped read is over, a long read on the same connection is not stopped.
-    tokio::time::sleep(Duration::from_millis(600)).await;
+    // The dropped read is stopped at its next step and its connection closed, so the next read on
+    // the pool of one connection is not kept waiting by it and is not stopped by its limit.
+    let started = std::time::Instant::now();
+    let tiny = database.fetch_all(&counting(10)).await?;
+    assert_eq!(tiny.len(), 1);
+    assert!(
+        started.elapsed() < Duration::from_millis(500),
+        "the dropped read kept the connection for {:?}",
+        started.elapsed()
+    );
     for _ in 0..3 {
         let rows = database.fetch_all(&counting(3_000_000)).await?;
         assert_eq!(rows.len(), 1);
     }
+    assert!(
+        started.elapsed() < Duration::from_secs(5),
+        "a dropped read kept the connection: {:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 
@@ -241,7 +254,7 @@ async fn qry_05_a_value_of_an_own_field_counts_only_where_the_field_reaches() ->
                 vec![OwnReach {
                     field,
                     projects: reach,
-                    issue_types: Vec::new(),
+                    issue_types: None,
                 }],
             );
             // The person reads both projects; the field reaches only some of them.

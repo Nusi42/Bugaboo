@@ -27,7 +27,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::fields::{Field, FieldKey};
-use bb_core::id::ProjectId;
+use bb_core::id::{FieldId, ProjectId};
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
 use bb_core::own_fields::{FieldFor, FieldType};
@@ -166,12 +166,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .map(|definition| OwnReach {
                 field: definition.field.id,
-                projects: places
-                    .iter()
-                    .filter(|place| definition.scope.reaches_project(&place.chain))
+                projects: reached_places(&places, definition)
                     .filter_map(|place| place.chain.last().copied())
                     .collect(),
-                issue_types: definition.scope.issue_types.clone(),
+                issue_types: definition.scope.limited_types().map(<[_]>::to_vec),
             })
             .collect();
         Ok(Looked {
@@ -264,6 +262,17 @@ struct Sources {
     own: Vec<Definition>,
 }
 
+/// The places of the search that an own field reaches: the one filter, for where its values count
+/// and for whether the person may read it.
+fn reached_places<'a>(
+    places: &'a [Place],
+    definition: &'a Definition,
+) -> impl Iterator<Item = &'a Place> {
+    places
+        .iter()
+        .filter(|place| definition.scope.reaches_project(&place.chain))
+}
+
 /// What a field of the catalogue that a search can ask about stands for, with the kind of its
 /// values; `None` for a field whose values the issues do not hold yet (a later milestone adds its
 /// line here, and the compiler its join). Its word is reserved all the same.
@@ -339,31 +348,55 @@ pub(crate) fn reserved_words() -> Vec<String> {
         .collect()
 }
 
-/// Whether the word that `name` would make for an own field is already a word of the language: one
-/// of a built-in field or of a field every issue has, or the word of one of the `others`. A name
-/// like that is refused when a field is made or renamed (ADR-0005 amendment M5, decision 9), so a
-/// word never changes hands.
-pub(crate) fn word_is_taken<'a>(name: &str, others: impl IntoIterator<Item = &'a str>) -> bool {
-    let word = own_field_word(name);
-    reserved_words().contains(&word)
-        || others
-            .into_iter()
-            .any(|other| own_field_word(other) == word)
+/// Who owns a word of the search language.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WordOwner {
+    /// A built-in field, or a field every issue has: also one the person may not read or that
+    /// cannot be searched yet.
+    Language,
+    /// An own field for issues: the first of them, in the order they are kept in.
+    Field(FieldId),
 }
 
-/// The word each own field is searched by, `None` for one that lost its word to a built-in field or
-/// to an own field before it. Decided from the definitions alone, so it is the same for everybody.
+/// Who owns this word, decided from the definitions alone, so it is the same for everybody. The one
+/// rule for the words the search reads ([`own_words`]) and for the names that are refused
+/// ([`word_is_taken`]). A field for projects owns no word: issues are what a search finds.
+fn word_owner(word: &str, own: &[Definition]) -> Option<WordOwner> {
+    if reserved_words().iter().any(|each| each == word) {
+        return Some(WordOwner::Language);
+    }
+    own.iter()
+        .find(|definition| {
+            definition.field.applies_to == FieldFor::Issues
+                && own_field_word(&definition.field.name) == word
+        })
+        .map(|definition| WordOwner::Field(definition.field.id))
+}
+
+/// Whether the word that `name` would make for an own field of this kind is owned by the language
+/// or by another field (not `except`, the field itself when it is renamed). A name like that is
+/// refused when a field is made or renamed (ADR-0005 amendment M5, decision 9), so a word never
+/// changes hands.
+pub(crate) fn word_is_taken(
+    own: &[Definition],
+    name: &str,
+    applies_to: FieldFor,
+    except: Option<FieldId>,
+) -> bool {
+    applies_to == FieldFor::Issues
+        && match word_owner(&own_field_word(name), own) {
+            None => false,
+            Some(WordOwner::Language) => true,
+            Some(WordOwner::Field(owner)) => Some(owner) != except,
+        }
+}
+
+/// The word each own field is searched by, `None` for one that does not own it.
 fn own_words(own: &[Definition]) -> Vec<Option<String>> {
-    let mut taken = reserved_words();
     own.iter()
         .map(|definition| {
             let word = own_field_word(&definition.field.name);
-            if definition.field.applies_to != FieldFor::Issues || taken.contains(&word) {
-                None
-            } else {
-                taken.push(word.clone());
-                Some(word)
-            }
+            (word_owner(&word, own) == Some(WordOwner::Field(definition.field.id))).then_some(word)
         })
         .collect()
 }
@@ -423,10 +456,7 @@ fn fields_in(places: &[Place], sources: &Sources) -> Vec<Searchable> {
         let Some(word) = word else {
             continue;
         };
-        let reached: Vec<&Place> = places
-            .iter()
-            .filter(|place| definition.scope.reaches_project(&place.chain))
-            .collect();
+        let reached: Vec<&Place> = reached_places(places, definition).collect();
         let readable = !reached.is_empty()
             && reached.iter().all(|place| {
                 place.may_use(

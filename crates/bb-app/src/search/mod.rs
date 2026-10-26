@@ -11,7 +11,7 @@ pub(crate) use readable::word_is_taken;
 pub use readable::{ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
 pub use request::{
     GroupCount, GroupKey, Names, OwnReach, ProjectLink, SearchFailure, SearchHit, SearchRequest,
-    SearchStore,
+    SearchStore, UnknownName,
 };
 pub use run::{
     SearchCount, SearchCountQuery, SearchError, SearchGroups, SearchGroupsQuery, SearchPage,

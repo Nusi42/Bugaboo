@@ -312,3 +312,238 @@ async fn qry_05_a_hidden_field_takes_as_long_as_an_unknown_field() -> Outcome {
     );
     Ok(())
 }
+
+/// The mistakes of a search that is refused, or none.
+async fn refused(world: &World, session: &str, text: &str) -> Vec<bb_searchlang::Mistake> {
+    match search(&world.ctx(), asked(session, text)).await {
+        Err(SearchError::Mistakes(found)) => found,
+        _ => Vec::new(),
+    }
+}
+
+#[tokio::test]
+async fn qry_05_tags_labels_projects_and_issues_are_resolved_or_the_search_is_refused() -> Outcome {
+    use super::scenarios_tags::tagged;
+
+    let world = World::new().await?;
+    let project = a_project(&world, "OPEN").await?;
+    let issue = issue_of(&world, project).await?;
+    let tag = tagged(&world, issue.id, "Login").await?;
+    let admin = token(&world);
+    let code = format!("OPEN-{}", issue.code.as_str());
+    let ok = format!("tags is login and project is open and under {code}");
+    search(&world.ctx(), asked(&admin, &ok))
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+    let request = world.store.lock().searches.last().cloned().ok_or("asked")?;
+    assert!(
+        request
+            .names
+            .tags
+            .iter()
+            .any(|(name, ids)| name == "login" && ids == &[tag])
+    );
+    assert!(
+        request
+            .names
+            .issues
+            .iter()
+            .any(|(name, id)| *name == code && *id == issue.id)
+    );
+    // A name that stands for nothing the person may know is refused, where it stands.
+    for (text, start) in [
+        ("tags is nothing", 8),
+        ("project is NOPE", 11),
+        ("project within NOPE", 15),
+        ("under OPEN-ZZZZZZ", 6),
+        ("blocks WEB-1", 7),
+    ] {
+        let found = refused(&world, &admin, text).await;
+        assert_eq!(found.len(), 1, "{text}");
+        assert_eq!(
+            found[0].key,
+            bb_searchlang::messages::UNKNOWN_CHOICE,
+            "{text}"
+        );
+        assert_eq!(found[0].span.start, start, "{text}");
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_05_member_of_needs_being_in_the_group_or_managing_groups() -> Outcome {
+    use super::search_fields::set_people;
+    use crate::people::{AddGroupMember, CreateGroup, add_group_member, create_group};
+
+    let world = World::new().await?;
+    a_project(&world, "OPEN").await?;
+    let admin = token(&world);
+    let backend = create_group(
+        &world.ctx(),
+        CreateGroup {
+            session_token: admin.clone(),
+            name: "Backend".to_owned(),
+        },
+    )
+    .await
+    .map_err(|error| format!("{error:?}"))?
+    .into_value();
+    let (bob, role) = bob_with_a_role(&world, &every_field()).await?;
+    let mentions = bb_core::own_fields::FieldType::Group
+        .people_kind()
+        .ok_or("a group has a kind")?;
+    set_people(&world, role, mentions, bb_core::access::PeopleLevel::Names).await?;
+    let text = "assignedTo member of \"Backend\"";
+    // Bob is not in the group and does not manage groups: it is as unknown as no group.
+    assert_eq!(refused(&world, &bob, text).await.len(), 1);
+    // The administrator manages groups.
+    assert!(refused(&world, &admin, text).await.is_empty());
+    // Once Bob is in the group he may ask about it.
+    let person = world
+        .ctx()
+        .actor(&bob)
+        .await
+        .map_err(|error| format!("{error:?}"))?
+        .person
+        .id;
+    add_group_member(
+        &world.ctx(),
+        AddGroupMember {
+            session_token: admin.clone(),
+            group: backend.id,
+            person,
+        },
+    )
+    .await
+    .map_err(|error| format!("{error:?}"))?;
+    assert!(refused(&world, &bob, text).await.is_empty());
+    // A group that does not exist is refused alike.
+    assert_eq!(
+        refused(&world, &admin, "assignedTo member of \"Nobody\"")
+            .await
+            .len(),
+        1
+    );
+    Ok(())
+}
+
+/// The reads the store answers while a page of `issues` issues of one project, by three people, is made.
+async fn reads_for_a_page_of(issues: usize) -> Result<usize, String> {
+    let world = World::new().await?;
+    let project = a_project(&world, "OPEN").await?;
+    let people = [
+        world.admin.person.id,
+        world
+            .person("bob@example.test")
+            .await
+            .map_err(|e| format!("{e:?}"))?
+            .person
+            .id,
+        world
+            .person("eve@example.test")
+            .await
+            .map_err(|e| format!("{e:?}"))?
+            .person
+            .id,
+    ];
+    let mut hits = Vec::new();
+    for number in 0..issues {
+        let mut each = issue_of(&world, project).await?;
+        each.reported_by = people[number % people.len()];
+        hits.push(hit(each));
+    }
+    world.store.lock().search_hits = hits;
+    let before = world.store.reads();
+    let query = SearchQuery {
+        limit: 100,
+        ..asked(&token(&world), "")
+    };
+    let page = search(&world.ctx(), query)
+        .await
+        .map_err(|error| format!("{error:?}"))?
+        .into_value();
+    assert_eq!(page.items.len(), issues);
+    Ok(world.store.reads() - before)
+}
+
+#[tokio::test]
+async fn perf_n1_a_page_of_forty_reads_as_much_as_a_page_of_five() -> Outcome {
+    assert_eq!(
+        reads_for_a_page_of(5).await?,
+        reads_for_a_page_of(40).await?
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_05_a_group_of_people_is_shown_through_the_person_ref_of_the_viewer() -> Outcome {
+    use crate::search::{GroupCount, GroupKey, SearchGroupsQuery, search_groups};
+
+    let world = World::new().await?;
+    a_project(&world, "OPEN").await?;
+    let bob = world
+        .person("bob@example.test")
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    world.store.lock().search_groups = vec![
+        GroupCount {
+            key: GroupKey::Person(bob.person.id),
+            issues: 2,
+        },
+        GroupCount {
+            key: GroupKey::Empty,
+            issues: 1,
+        },
+    ];
+    let groups = search_groups(
+        &world.ctx(),
+        SearchGroupsQuery {
+            session_token: token(&world),
+            text: String::new(),
+            scope: SearchScope::Everywhere,
+            by: "assignedTo".to_owned(),
+        },
+    )
+    .await
+    .map_err(|error| format!("{error:?}"))?;
+    let shown = serde_json::to_string(&groups.into_value().groups).map_err(|e| e.to_string())?;
+    // The group is the person as the viewer sees them, never a bare ID: it holds the name.
+    assert!(shown.contains("Bob Builder"), "{shown}");
+    assert!(!shown.contains(&bob.person.id.to_string()) || shown.contains("Bob Builder"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_05_the_projects_an_own_field_reaches_are_told_to_the_store() -> Outcome {
+    use bb_core::own_fields::{FieldType, Scope};
+
+    use super::scenarios_fields::new_field;
+    use crate::fields::create_field;
+
+    let world = World::new().await?;
+    let (a, _b) = (
+        a_project(&world, "ALPHA").await?,
+        a_project(&world, "BETA").await?,
+    );
+    let mut input = new_field(&world, "Rack", FieldType::Text, &[]);
+    input.scope = Scope {
+        projects: vec![a],
+        issue_types: Vec::new(),
+    };
+    let rack = create_field(&world.ctx(), input)
+        .await
+        .map_err(|e| format!("{e:?}"))?
+        .into_value();
+    search(&world.ctx(), asked(&token(&world), "rack is x"))
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+    let request = world.store.lock().searches.last().cloned().ok_or("asked")?;
+    let reach = request
+        .own_reach
+        .iter()
+        .find(|each| each.field == rack.id)
+        .ok_or("the field has a reach")?;
+    assert_eq!(reach.projects, [a]);
+    assert_eq!(reach.issue_types, None);
+    Ok(())
+}

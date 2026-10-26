@@ -59,6 +59,8 @@ pub(super) enum GroupValue {
 /// What an ID in a group is the ID of.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum IdOf {
+    Tag,
+    Label,
     Person,
     Group,
     Issue,
@@ -273,13 +275,6 @@ impl Compiler<'_> {
                 let mut rows = *rows;
                 rows.clear_selects();
                 let value = match (domain, what) {
-                    (Domain::Tag | Domain::Label, _) => {
-                        // Tags and labels are told apart by the key of their name: not personal.
-                        let (table, id, name) = names_of(domain)
-                            .ok_or(CompileError::Unsupported("grouping by this field"))?;
-                        let one = Subject::Column(value);
-                        self.bytes(Self::named(&one, table, id, name, Func::min))
-                    }
                     (_, GroupValue::Text) => self.bytes(value),
                     (_, GroupValue::Whole) => bigint(value),
                     _ => value,
@@ -317,8 +312,7 @@ impl Compiler<'_> {
                 );
                 // Without a word: the newest, the highest, A to Z. What the key holds is found out
                 // first, as the direction it reads in without a word depends on it.
-                let (_, kind) = self.sort_value(target, false)?;
-                let desc = down || (!up && kind == Kind::Whole);
+                let desc = down || (!up && kind_of(self.subject_of(target).1) == Kind::Whole);
                 let (value, kind) = self.sort_value(target, desc)?;
                 Ok(Key {
                     value,
@@ -392,6 +386,18 @@ impl Compiler<'_> {
     }
 }
 
+/// What a key holds, by the domain of the values it sorts.
+const fn kind_of(domain: Domain) -> Kind {
+    match domain {
+        Domain::Priority
+        | Domain::StatusGroup
+        | Domain::Number(_)
+        | Domain::YesNo
+        | Domain::Time(_) => Kind::Whole,
+        _ => Kind::Text,
+    }
+}
+
 /// What the groups of a field are, by the domain of its values.
 const fn group_value_of(domain: Domain) -> GroupValue {
     match domain {
@@ -404,6 +410,8 @@ const fn group_value_of(domain: Domain) -> GroupValue {
         Domain::Priority => GroupValue::Priority,
         Domain::StatusGroup => GroupValue::StatusGroup,
         Domain::Number(_) | Domain::YesNo | Domain::Time(_) => GroupValue::Whole,
-        Domain::Text | Domain::Status | Domain::Tag | Domain::Label => GroupValue::Text,
+        Domain::Tag => GroupValue::Id(IdOf::Tag),
+        Domain::Label => GroupValue::Id(IdOf::Label),
+        Domain::Text | Domain::Status => GroupValue::Text,
     }
 }

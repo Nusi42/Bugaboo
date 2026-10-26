@@ -74,7 +74,7 @@ impl Compiler<'_> {
                 let groups: Vec<_> = self
                     .request
                     .names
-                    .groups
+                    .member_groups
                     .iter()
                     .filter(|(name, _)| *name == key)
                     .flat_map(|(_, ids)| ids.iter().map(|id| id.stored()))

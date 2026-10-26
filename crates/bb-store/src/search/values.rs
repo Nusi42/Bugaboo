@@ -18,7 +18,7 @@ use super::source::Domain;
 use super::time::{Clock, Range};
 use super::{CompileError, Compiler, nothing};
 use crate::db::StoredId as _;
-use crate::schema::{IssueAliasRow, IssueRow};
+use crate::schema::IssueRow;
 
 /// The text of a value, for a field that holds text.
 fn operand_text(operand: &Operand) -> String {
@@ -325,29 +325,24 @@ impl Compiler<'_> {
             .find(|project| project.short_name == *short_name)
     }
 
-    /// The issues a readable ID names, of the issues the person reads (the current ID or an old
-    /// one): none for a project they do not see or a text that is no ID.
+    /// The issue an Issue ID names, as the request resolved it for this person (the current short
+    /// name of a project they see, an issue they read), held to the sight all the same: none for
+    /// a text that is no ID or names nothing they may know.
     pub(super) fn issues_named(&self, text: &str) -> Option<sea_query::SelectStatement> {
         let id: ReadableId = text.parse().ok()?;
-        let project = self.project_link(&id.short_name)?.id;
+        let key = id.to_string();
+        let (_, issue) = self
+            .request
+            .names
+            .issues
+            .iter()
+            .find(|(name, _)| *name == key)?;
         let mut found = Query::select();
         found
             .column((IssueRow::Table, IssueRow::Id))
             .from(IssueRow::Table)
             .cond_where(crate::sight::sight_condition(&self.request.sight))
-            .and_where(
-                Expr::col((IssueRow::Table, IssueRow::Project))
-                    .eq(project.stored())
-                    .and(Expr::col((IssueRow::Table, IssueRow::Code)).eq(id.code.as_str()))
-                    .or(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(
-                        Query::select()
-                            .column(IssueAliasRow::Issue)
-                            .from(IssueAliasRow::Table)
-                            .and_where(Expr::col(IssueAliasRow::Project).eq(project.stored()))
-                            .and_where(Expr::col(IssueAliasRow::Code).eq(id.code.as_str()))
-                            .to_owned(),
-                    )),
-            );
+            .and_where(Expr::col((IssueRow::Table, IssueRow::Id)).eq(issue.stored()));
         Some(found)
     }
 

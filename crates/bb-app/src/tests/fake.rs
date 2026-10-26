@@ -157,6 +157,8 @@ pub(crate) struct Shared {
     pub(crate) searches: Vec<crate::search::SearchRequest>,
     /// What a search finds, in order (`fake_search.rs`).
     pub(crate) search_hits: Vec<crate::search::SearchHit>,
+    /// The groups a search finds.
+    pub(crate) search_groups: Vec<crate::search::GroupCount>,
     /// How a search fails, instead of finding anything.
     pub(crate) search_fails: Option<crate::search::SearchFailure>,
 }

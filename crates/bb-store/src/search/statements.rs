@@ -3,7 +3,7 @@
 //! the count line and the groups always agree with the page.
 
 use bb_app::search::{GroupCount, GroupKey, SearchHit, SearchRequest};
-use bb_core::id::{ChoiceId, GroupId, IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::id::{ChoiceId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, TagId, UserId};
 use bb_core::issue::{Priority, StatusGroup};
 use bb_searchlang::MAX_SORT_KEYS;
 use sea_query::{
@@ -259,6 +259,8 @@ fn read_key(row: &Row, what: GroupValue) -> Result<GroupKey, StoreError> {
         GroupValue::Id(of) => match row.get::<Option<Vec<u8>>>(Sorted(0))? {
             None => GroupKey::Empty,
             Some(bytes) => match of {
+                IdOf::Tag => GroupKey::Tag(TagId::read(bytes)?),
+                IdOf::Label => GroupKey::Label(LabelId::read(bytes)?),
                 IdOf::Person => GroupKey::Person(UserId::read(bytes)?),
                 IdOf::Group => GroupKey::Group(GroupId::read(bytes)?),
                 IdOf::Issue => GroupKey::Issue(IssueId::read(bytes)?),

@@ -43,12 +43,32 @@ pub struct Names {
     pub people: Vec<(String, Vec<UserId>)>,
     /// The groups the person may see by name.
     pub groups: Vec<(String, Vec<GroupId>)>,
+    /// The groups after `member of` that the person may ask about: those they are in, or all of
+    /// them when they manage groups.
+    pub member_groups: Vec<(String, Vec<GroupId>)>,
+    /// The issues that an Issue ID names, among those the person reads, by the ID as the
+    /// language writes it (capitals).
+    pub issues: Vec<(String, IssueId)>,
+    /// The names of the search that stand for nothing the person may know, with where they are.
+    pub unknown: Vec<UnknownName>,
     /// The choices of each own field with a list, in the order of the list.
     pub choices: Vec<(FieldId, Vec<(String, ChoiceId)>)>,
     /// The tags the person may know, by the key of their name.
     pub tags: Vec<(String, Vec<TagId>)>,
     /// The labels the person may know, by the key of their name.
     pub labels: Vec<(String, Vec<LabelId>)>,
+}
+
+/// A name in a search that stands for nothing the person may know: it does not exist, or they may
+/// not see it, which is told alike (ADR-0005 amendment M5, decision 9).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnknownName {
+    /// The bytes of the text it stands on.
+    pub span: bb_searchlang::Span,
+    /// The word of the field it is a value of; empty for a helper (`under`, `blocks`, …).
+    pub field: String,
+    /// The name as written.
+    pub text: String,
 }
 
 /// Where the values of an own field count: only in the projects the field reaches, and for the
@@ -59,8 +79,8 @@ pub struct OwnReach {
     pub field: FieldId,
     /// The projects of the search that the field reaches.
     pub projects: Vec<ProjectId>,
-    /// The issue types the field is used for; empty for all.
-    pub issue_types: Vec<IssueTypeId>,
+    /// The issue types the field is limited to; `None` while it is used for all of them.
+    pub issue_types: Option<Vec<IssueTypeId>>,
 }
 
 /// Everything a search is compiled from. The person's rights are in it as data (`sight`, the
@@ -123,6 +143,10 @@ pub enum GroupKey {
     Issue(IssueId),
     /// A project.
     Project(ProjectId),
+    /// A tag.
+    Tag(TagId),
+    /// A label.
+    Label(LabelId),
     /// An issue type.
     IssueType(IssueTypeId),
     /// A choice of an own field.

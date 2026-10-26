@@ -27,6 +27,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
 use crate::issues::{IssueView, PagePlace};
+use crate::offers::label_is_known;
 
 /// Ask for a page of the issues a search finds.
 pub struct SearchQuery {
@@ -125,6 +126,16 @@ pub enum ShownKey {
     Other(GroupKey),
     /// A person, as the viewer sees them.
     Person(PersonRef),
+    /// A tag, by its name if the person may know it.
+    Tag {
+        id: bb_core::id::TagId,
+        name: Option<String>,
+    },
+    /// A label, by its name if the person may know it.
+    Label {
+        id: bb_core::id::LabelId,
+        name: Option<String>,
+    },
 }
 
 impl Masked for SearchGroups {}
@@ -148,6 +159,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         let parsed = parse_with(text, &readable).map_err(|mistake| vec![mistake])?;
         let checked = check(parsed, &readable)?;
         let names = self.search_names(actor, &looked, &checked).await?;
+        // A name the person cannot know is refused, as unknown as one that does not exist.
+        if names.names_unknown() {
+            return Err(SearchError::Mistakes(
+                names
+                    .unknown
+                    .iter()
+                    .map(|each| Mistake::unknown_value(each.span, &each.field, &each.text))
+                    .collect(),
+            ));
+        }
         let mut sight = looked.seen.issue_sight();
         sight
             .all
@@ -292,7 +313,34 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
         .map_err(stopped)?;
     let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
     // The store names a group by identity; a person is shown as the viewer may see them.
-    let kind = target_of(&prepared.looked.fields, &query.by).and_then(people_kind_of);
+    let target = target_of(&prepared.looked.fields, &query.by);
+    let kind = target.and_then(people_kind_of);
+    // A tag or a label is shown by its name, among those the person may know.
+    let tags = if found
+        .iter()
+        .any(|group| matches!(group.key, GroupKey::Tag(_)))
+    {
+        let known = ctx.known_tags(&prepared.looked.seen).await?;
+        let mut shown = ctx.tag_catalogue().await?.tags;
+        shown.retain(|tag| known.contains(&tag.id));
+        shown
+    } else {
+        Vec::new()
+    };
+    let labels = if found
+        .iter()
+        .any(|group| matches!(group.key, GroupKey::Label(_)))
+    {
+        let mut catalogue = ctx.label_catalogue().await?;
+        let (known, _) = ctx
+            .listed_groups(&prepared.looked.seen, &mut catalogue, None)
+            .await?;
+        let mut shown = catalogue.labels;
+        shown.retain(|label| label_is_known(label.group, &known));
+        shown
+    } else {
+        Vec::new()
+    };
     let mut groups = Vec::with_capacity(found.len());
     for group in found {
         let key = match (group.key, kind) {
@@ -300,6 +348,24 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
                 ctx.person_ref(&organization, kind, PeopleContext::Ordinary, person)
                     .await?,
             ),
+            // A person is never given out but through `PersonRef`.
+            (GroupKey::Person(_), None) => {
+                return Err(AppError::Internal("a group of people without a kind".into()).into());
+            }
+            (GroupKey::Tag(id), _) => ShownKey::Tag {
+                id,
+                name: tags
+                    .iter()
+                    .find(|tag| tag.id == id)
+                    .map(|tag| tag.name.clone()),
+            },
+            (GroupKey::Label(id), _) => ShownKey::Label {
+                id,
+                name: labels
+                    .iter()
+                    .find(|label| label.id == id)
+                    .map(|label| label.name.clone()),
+            },
             (other, _) => ShownKey::Other(other),
         };
         groups.push(GroupShown {

@@ -27,7 +27,8 @@ impl SearchStore for FakeStore {
         request: &SearchRequest,
         _by: &str,
     ) -> Result<Vec<GroupCount>, SearchFailure> {
-        self.lock().searches.push(request.clone());
-        Ok(Vec::new())
+        let mut shared = self.lock();
+        shared.searches.push(request.clone());
+        Ok(shared.search_groups.clone())
     }
 }

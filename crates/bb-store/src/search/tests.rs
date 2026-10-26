@@ -360,6 +360,13 @@ pub(super) fn request_with(
             short_name: "ACME".parse().unwrap(),
         }],
         names: Names {
+            // The issues of ACME by their IDs; the hidden one is not among them.
+            issues: data
+                .issues
+                .iter()
+                .enumerate()
+                .map(|(at, each)| (format!("ACME-{}", at + 1), each.id))
+                .collect(),
             tags: data
                 .tags
                 .iter()
@@ -601,17 +608,25 @@ async fn qry_05_the_count_and_the_groups_come_from_the_same_search() -> TestResu
             .search_groups(&request(&data, "", None, 1), "tags")
             .await
             .unwrap();
-        let by_tag: Vec<(GroupKey, u64)> = by_tag
-            .into_iter()
-            .map(|group| (group.key, group.issues))
-            .collect();
+        let tag = |name: &str| {
+            data.tags
+                .iter()
+                .find(|(each, _)| each == name)
+                .map(|(_, id)| GroupKey::Tag(*id))
+                .unwrap()
+        };
+        let counts = |key: GroupKey| {
+            by_tag
+                .iter()
+                .find(|group| group.key == key)
+                .map(|g| g.issues)
+        };
+        assert_eq!(counts(tag("bug")), Some(1));
+        assert_eq!(counts(tag("ui")), Some(2));
+        assert_eq!(counts(GroupKey::Empty), Some(4));
         assert_eq!(
-            by_tag,
-            [
-                (GroupKey::Text("bug".to_owned()), 1),
-                (GroupKey::Text("ui".to_owned()), 2),
-                (GroupKey::Empty, 4)
-            ]
+            by_tag.last().map(|group| group.key.clone()),
+            Some(GroupKey::Empty)
         );
         assert_eq!(
             storage

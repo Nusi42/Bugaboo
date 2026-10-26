@@ -127,10 +127,9 @@ fn own_values(field: FieldId, column: FieldValueRow, reach: &[OwnReach]) -> Subj
                 issue_column(IssueRow::Project)
                     .is_in(reached.projects.iter().map(|project| project.stored())),
             );
-            if !reached.issue_types.is_empty() {
+            if let Some(types) = &reached.issue_types {
                 rows.and_where(
-                    issue_column(IssueRow::IssueType)
-                        .is_in(reached.issue_types.iter().map(|kind| kind.stored())),
+                    issue_column(IssueRow::IssueType).is_in(types.iter().map(|kind| kind.stored())),
                 );
             }
         }

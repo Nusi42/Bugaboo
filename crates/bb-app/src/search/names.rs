@@ -1,8 +1,17 @@
 //! What the names in a search stand for (ADR-0005 amendment M5, decision 9): a status, an issue
-//! type, a choice of an own field, a person, a group. Each name is turned into the things of that
-//! name that this person may know, by the one rule of the same name (`names::same_name`), before the
-//! statement is made, so the statement compares IDs and keys and never text. A name the person
-//! cannot know is not in the lists, and is then as unknown as a name that does not exist.
+//! type, a choice of an own field, a person, a group, a tag, a label, a project, an issue. **One
+//! function resolves every name of a search** ([`Ctx::search_names`]), for running a search and for
+//! checking a saved one: each name is turned into the things of that name that this person may know,
+//! by the one rule of the same name (`names::same_name`), before the statement is made, so the
+//! statement compares IDs and keys and never text. A name the person cannot know is as unknown as a
+//! name that does not exist: it is not in the lists and it is told in [`Names::unknown`] with where
+//! it stands, so a caller refuses the text ([`Names::names_unknown`]).
+//!
+//! The rules: a person or a group by *Who sees people* for the people kind of the field;
+//! `member of "…"` also needs being in the group or *Manage groups*, as its results show who is in
+//! it; a tag or a label only when the person may know it; a project only by its current short name
+//! and only when the person sees it; an issue only by its Issue ID, in a project they see, and only
+//! when they read the issue.
 
 use bb_core::fields::{ASSIGNED_TO_PEOPLE, REPORTED_BY_PEOPLE};
 use bb_core::id::{GroupId, UserId};
@@ -10,25 +19,42 @@ use bb_core::issue::StatusGroup;
 use bb_core::names::{name_key, same_name};
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::Place as Where;
-use bb_searchlang::{CheckedSearch, Expr as Node, Operand, Test};
+use bb_core::readable_id::ReadableId;
+use bb_policy::{Permission, Place as Where};
+use bb_searchlang::{CheckedSearch, Expr as Node, Operand, Span, Test};
 
 use super::readable::Looked;
-use super::request::Names;
+use super::request::{Names, UnknownName};
 use super::target::{FieldTarget, target_of};
 use crate::access::{Actor, names_other_people};
 use crate::auth::{AppError, AuthStore, Ctx, SearchIn, internal};
+use crate::issues::Where as IssueWhere;
 use crate::offers::label_is_known;
 
 /// The most people read from the store for one name in a search.
 const PEOPLE_PER_NAME: u64 = 100;
 
-/// Which people or groups a search names, and as what kind of people information.
-struct Asked {
-    people: Vec<(PeopleKind, String)>,
-    groups: Vec<String>,
-    tags: Vec<String>,
-    labels: Vec<String>,
+/// What a name in a search is the name of.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum What {
+    /// A person, in a field whose people are shown as this kind.
+    Person(PeopleKind),
+    /// A group of people, in a field that holds one.
+    Group,
+    /// The group after `member of`.
+    MemberOf,
+    Tag,
+    Label,
+    Project,
+    Issue,
+}
+
+/// A name in the text of the search, with where it stands.
+struct Ask {
+    what: What,
+    text: String,
+    span: Span,
+    field: String,
 }
 
 pub(super) fn people_kind_of(target: FieldTarget) -> Option<PeopleKind> {
@@ -40,17 +66,26 @@ pub(super) fn people_kind_of(target: FieldTarget) -> Option<PeopleKind> {
     }
 }
 
-fn texts(values: &[&Operand]) -> Vec<String> {
-    values
-        .iter()
-        .filter_map(|value| match value {
-            Operand::Text { text, .. } => Some(text.clone()),
-            _ => None,
-        })
-        .collect()
+/// What the values of a field name, if they are names this module resolves.
+fn what_of(target: FieldTarget) -> Option<What> {
+    match target {
+        FieldTarget::Tags => Some(What::Tag),
+        FieldTarget::Labels => Some(What::Label),
+        FieldTarget::Project => Some(What::Project),
+        FieldTarget::Parent
+        | FieldTarget::Own {
+            kind: FieldType::Issue,
+            ..
+        } => Some(What::Issue),
+        FieldTarget::Own {
+            kind: FieldType::Group,
+            ..
+        } => Some(What::Group),
+        other => people_kind_of(other).map(What::Person),
+    }
 }
 
-fn ask(node: &Node, looked: &Looked, asked: &mut Asked) {
+fn ask(node: &Node, looked: &Looked, asked: &mut Vec<Ask>) {
     match node {
         Node::Or { items, .. } | Node::And { items, .. } => {
             for item in items {
@@ -62,38 +97,62 @@ fn ask(node: &Node, looked: &Looked, asked: &mut Asked) {
             let Some(target) = target_of(&looked.fields, &field.word) else {
                 return;
             };
-            let values: Vec<&Operand> = match test {
-                Test::Is { value, .. } | Test::IsNot { value, .. } => vec![value],
-                Test::In { values, .. } => values.iter().collect(),
-                Test::MemberOf { group, .. } => {
-                    asked.groups.push(group.text.clone());
-                    return;
-                }
-                _ => return,
+            let mut put = |what: What, text: &str, span: Span| {
+                asked.push(Ask {
+                    what,
+                    text: text.to_owned(),
+                    span,
+                    field: field.word.clone(),
+                });
             };
-            if matches!(
-                target,
-                FieldTarget::Own {
-                    kind: FieldType::Group,
-                    ..
+            match test {
+                Test::MemberOf { group, .. } => put(What::MemberOf, &group.text, group.span),
+                Test::Within { project, .. } => put(What::Project, &project.text, project.span),
+                Test::Is { value, .. } | Test::IsNot { value, .. } => {
+                    put_values(target, std::slice::from_ref(value), &mut put);
                 }
-            ) {
-                asked.groups.extend(texts(&values));
-            } else if let Some(kind) = people_kind_of(target) {
-                asked
-                    .people
-                    .extend(texts(&values).into_iter().map(|text| (kind, text)));
+                Test::In { values, .. } => put_values(target, values, &mut put),
+                _ => {}
             }
         }
-        Node::Under { .. }
-        | Node::Blocks { .. }
-        | Node::BlockedBy { .. }
-        | Node::ConnectedTo { .. } => {}
+        Node::Under { id, .. }
+        | Node::Blocks { id, .. }
+        | Node::BlockedBy { id, .. }
+        | Node::ConnectedTo { id, .. } => asked.push(Ask {
+            what: What::Issue,
+            text: id.text.clone(),
+            span: id.span,
+            field: String::new(),
+        }),
+    }
+}
+
+/// The values of a test that are names.
+fn put_values(target: FieldTarget, values: &[Operand], put: &mut impl FnMut(What, &str, Span)) {
+    let Some(what) = what_of(target) else {
+        return;
+    };
+    for value in values {
+        match value {
+            Operand::Text { text, span } => put(what, text, *span),
+            Operand::Issue { id, span } => put(What::Issue, &id.text, *span),
+            _ => {}
+        }
+    }
+}
+
+impl Names {
+    /// Whether the search names something the person cannot know: a text that is run or saved with
+    /// such a name is refused, as it would find nothing or something else (decision 9).
+    #[must_use]
+    pub fn names_unknown(&self) -> bool {
+        !self.unknown.is_empty()
     }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The things the names of a checked search stand for, for this person.
+    /// The things the names of a checked search stand for, for this person, and the names that stand
+    /// for nothing they may know. The one function that resolves the names of a search.
     ///
     /// # Errors
     /// An internal error when the store fails.
@@ -131,85 +190,196 @@ impl<S: AuthStore> Ctx<'_, S> {
                 ));
             }
         }
-        let mut asked = Asked {
-            people: Vec::new(),
-            groups: Vec::new(),
-            tags: Vec::new(),
-            labels: Vec::new(),
-        };
+        let mut asked: Vec<Ask> = Vec::new();
         if let Some(filter) = &checked.search().filter {
             ask(filter, looked, &mut asked);
         }
-        self.tags_and_labels_named(looked, &asked, &mut names)
-            .await?;
         let viewer = self.evaluation_of(actor, Where::Organization).await?;
-        for (kind, text) in &asked.people {
-            if names.people.iter().any(|(each, _)| *each == name_key(text)) {
-                continue;
-            }
-            let found = self.people_named(actor, &viewer, *kind, text).await?;
-            names.people.push((name_key(text), found));
-        }
-        if viewer.sees_names_in(FieldType::Group) {
-            let groups = self
-                .store()
-                .groups()
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            for text in &asked.groups {
-                if names.groups.iter().any(|(each, _)| *each == name_key(text)) {
-                    continue;
-                }
-                let ids: Vec<GroupId> = groups
-                    .iter()
-                    .filter(|group| same_name(&group.name, text))
-                    .map(|group| group.id)
-                    .collect();
-                names.groups.push((name_key(text), ids));
+        for each in &asked {
+            let found = self
+                .resolve_name(actor, looked, &viewer, each, &mut names)
+                .await?;
+            if !found {
+                names.unknown.push(UnknownName {
+                    span: each.span,
+                    field: each.field.clone(),
+                    text: each.text.clone(),
+                });
             }
         }
         Ok(names)
     }
 
-    /// The tags and labels the search names, among those the person may know (the same rule as the
-    /// lists of tags and labels): only read when the search names one.
-    async fn tags_and_labels_named(
+    /// Resolves one name into `names`; whether it stands for anything the person may know.
+    async fn resolve_name(
+        &self,
+        actor: &Actor,
+        looked: &Looked,
+        viewer: &bb_policy::Evaluation,
+        each: &Ask,
+        names: &mut Names,
+    ) -> Result<bool, AppError> {
+        let key = name_key(&each.text);
+        match each.what {
+            What::Person(kind) => {
+                if let Some((_, found)) = names.people.iter().find(|(name, _)| *name == key) {
+                    return Ok(!found.is_empty());
+                }
+                let found = self.people_named(actor, viewer, kind, &each.text).await?;
+                let known = !found.is_empty();
+                names.people.push((key, found));
+                Ok(known)
+            }
+            What::Group | What::MemberOf => {
+                let member_of = each.what == What::MemberOf;
+                let list = if member_of {
+                    &mut names.member_groups
+                } else {
+                    &mut names.groups
+                };
+                if let Some((_, found)) = list.iter().find(|(name, _)| *name == key) {
+                    return Ok(!found.is_empty());
+                }
+                let found = self
+                    .groups_named(actor, viewer, &each.text, member_of)
+                    .await?;
+                let known = !found.is_empty();
+                let list = if member_of {
+                    &mut names.member_groups
+                } else {
+                    &mut names.groups
+                };
+                list.push((key, found));
+                Ok(known)
+            }
+            What::Tag | What::Label => self.tag_or_label_named(looked, each, names).await,
+            What::Project => Ok(looked.seen.links(&looked.projects).iter().any(|link| {
+                each.text
+                    .parse()
+                    .is_ok_and(|short| link.short_name == short)
+            })),
+            What::Issue => {
+                let Ok(id) = each.text.parse::<ReadableId>() else {
+                    return Ok(false);
+                };
+                let key = id.to_string();
+                if names.issues.iter().any(|(name, _)| *name == key) {
+                    return Ok(true);
+                }
+                let found = self.issue_named(actor, looked, &id).await?;
+                if let Some(issue) = found {
+                    names.issues.push((key, issue));
+                }
+                Ok(found.is_some())
+            }
+        }
+    }
+
+    /// The issue an Issue ID names, when it is in a project the person sees by its current short
+    /// name and they read the issue.
+    async fn issue_named(
+        &self,
+        actor: &Actor,
+        looked: &Looked,
+        id: &ReadableId,
+    ) -> Result<Option<bb_core::id::IssueId>, AppError> {
+        let links = looked.seen.links(&looked.projects);
+        let Some(project) = links.iter().find(|link| link.short_name == id.short_name) else {
+            return Ok(None);
+        };
+        let Some(found) = self
+            .store()
+            .issue_at(project.id, id.code.clone())
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
+            return Ok(None);
+        };
+        Ok(self
+            .seen_in(actor, &found.issue, IssueWhere::Live)
+            .await?
+            .map(|_| found.issue.id))
+    }
+
+    /// The groups of this name the person may name: all of them where they are shown groups by
+    /// name; for `member of`, only the groups they are in, unless they manage groups.
+    async fn groups_named(
+        &self,
+        actor: &Actor,
+        viewer: &bb_policy::Evaluation,
+        text: &str,
+        member_of: bool,
+    ) -> Result<Vec<GroupId>, AppError> {
+        if !viewer.sees_names_in(FieldType::Group) {
+            return Ok(Vec::new());
+        }
+        let groups = self
+            .store()
+            .groups()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let mine: Vec<GroupId> = if member_of && !viewer.allows(Permission::ManageGroups) {
+            self.store()
+                .groups_of(actor.person.id)
+                .await
+                .map_err(|error| internal::<S>(&error))?
+                .iter()
+                .map(|group| group.id)
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let everyone = !member_of || viewer.allows(Permission::ManageGroups);
+        Ok(groups
+            .iter()
+            .filter(|group| same_name(&group.name, text) && (everyone || mine.contains(&group.id)))
+            .map(|group| group.id)
+            .collect())
+    }
+
+    /// A tag or a label the search names, among those the person may know (the same rule as the
+    /// lists of tags and labels).
+    async fn tag_or_label_named(
         &self,
         looked: &Looked,
-        asked: &Asked,
+        each: &Ask,
         names: &mut Names,
-    ) -> Result<(), AppError> {
-        if !asked.tags.is_empty() {
+    ) -> Result<bool, AppError> {
+        let key = name_key(&each.text);
+        if each.what == What::Tag {
+            if let Some((_, found)) = names.tags.iter().find(|(name, _)| *name == key) {
+                return Ok(!found.is_empty());
+            }
             let catalogue = self.tag_catalogue().await?;
             let known = self.known_tags(&looked.seen).await?;
-            for text in &asked.tags {
-                let ids = catalogue
-                    .tags
-                    .iter()
-                    .filter(|tag| known.contains(&tag.id) && same_name(&tag.name, text))
-                    .map(|tag| tag.id)
-                    .collect();
-                names.tags.push((name_key(text), ids));
-            }
+            let ids: Vec<_> = catalogue
+                .tags
+                .iter()
+                .filter(|tag| known.contains(&tag.id) && same_name(&tag.name, &each.text))
+                .map(|tag| tag.id)
+                .collect();
+            let found = !ids.is_empty();
+            names.tags.push((key, ids));
+            return Ok(found);
         }
-        if !asked.labels.is_empty() {
-            let mut catalogue = self.label_catalogue().await?;
-            let (groups, _) = self
-                .listed_groups(&looked.seen, &mut catalogue, None)
-                .await?;
-            for text in &asked.labels {
-                let ids = catalogue
-                    .labels
-                    .iter()
-                    .filter(|label| {
-                        label_is_known(label.group, &groups) && same_name(&label.name, text)
-                    })
-                    .map(|label| label.id)
-                    .collect();
-                names.labels.push((name_key(text), ids));
-            }
+        if let Some((_, found)) = names.labels.iter().find(|(name, _)| *name == key) {
+            return Ok(!found.is_empty());
         }
-        Ok(())
+        let mut catalogue = self.label_catalogue().await?;
+        let (groups, _) = self
+            .listed_groups(&looked.seen, &mut catalogue, None)
+            .await?;
+        let ids: Vec<_> = catalogue
+            .labels
+            .iter()
+            .filter(|label| {
+                label_is_known(label.group, &groups) && same_name(&label.name, &each.text)
+            })
+            .map(|label| label.id)
+            .collect();
+        let found = !ids.is_empty();
+        names.labels.push((key, ids));
+        Ok(found)
     }
 
     /// The people of this name whom the viewer may name: themselves, or anybody when they are

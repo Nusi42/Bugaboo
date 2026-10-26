@@ -400,7 +400,7 @@ async fn qry_05_a_name_whose_word_is_taken_is_refused_when_a_field_is_made_or_re
             "{name}"
         );
     }
-    let points = made("Story points").await?.into_value();
+    made("Story points").await?;
     // Another name, the same word.
     let clash = made("storyPoints").await.err();
     assert_eq!(clash, Some(AppError::Refused(ErrorCode::NameTaken)));
@@ -425,8 +425,41 @@ async fn qry_05_a_name_whose_word_is_taken_is_refused_when_a_field_is_made_or_re
     .await
     .err();
     assert_eq!(renamed, Some(AppError::Refused(ErrorCode::NameTaken)));
-    // A field keeps its own word when it is saved again.
+    // Another name with another word is made.
     assert!(made("Customer number").await.is_ok());
-    let _ = points;
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_05_a_field_for_projects_owns_no_word_of_a_search() -> Outcome {
+    use bb_core::own_fields::FieldFor;
+    let world = World::new().await?;
+    a_project(&world, "OPEN").await?;
+    let for_projects = async |name: &str| {
+        let mut input = new_field(&world, name, FieldType::Text, &[]);
+        input.applies_to = FieldFor::Projects;
+        create_field(&world.ctx(), input).await
+    };
+    // A field for projects may be named like a word of the language or of a field for issues...
+    for_projects("Priority").await?;
+    for_projects("Story points").await?;
+    // ...and takes no word from the fields for issues: no search finds issues by it.
+    let issue = create_field(
+        &world.ctx(),
+        new_field(&world, "storyPoints", FieldType::Text, &[]),
+    )
+    .await;
+    assert!(issue.is_ok(), "{:?}", issue.err());
+    // But an issue field cannot take a word of the language, and not a word of an issue field.
+    for name in ["Priority", "story points"] {
+        let refused = create_field(&world.ctx(), new_field(&world, name, FieldType::Text, &[]))
+            .await
+            .err();
+        assert_eq!(
+            refused,
+            Some(AppError::Refused(ErrorCode::NameTaken)),
+            "{name}"
+        );
+    }
     Ok(())
 }
