@@ -38,6 +38,7 @@ pub mod status;
 mod store_macros;
 pub mod tags;
 pub mod text_index;
+mod walk;
 pub mod workflows;
 
 #[cfg(test)]

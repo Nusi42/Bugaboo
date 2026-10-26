@@ -16,6 +16,76 @@ pub const PAGE_SIZE_MAX: u32 = 100;
 /// a person all walk by this one rule.
 pub const LOOKED_AT_MAX: usize = 500;
 
+/// The most rows a cursor of [`SkipCursor`] may ask to leave out: far more than any list holds, and
+/// far below what a database can take as an offset, so a forged cursor is refused and never reaches
+/// the store.
+pub const SKIP_MAX: u64 = 1_000_000;
+
+/// Where a page of a list that skips the rows a person may not see starts: after a row the person
+/// was shown (or the start) and past a number of rows, always a multiple of [`LOOKED_AT_MAX`].
+///
+/// A cursor is readable, so it holds nothing a person may not know about: the key is the last row
+/// of the page before, which the person has seen, and the number only counts whole stretches that
+/// were looked at without filling a page, which says no more than the page that stopped there
+/// ("there is more"). It never holds the key of a row that is hidden from the person, and never a
+/// count of how many there are between two they can see. The text is `KEY`, `KEY+500`, `+500`, or
+/// nothing for the start.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SkipCursor<K> {
+    /// The row to start after.
+    pub after: Option<K>,
+    /// How many rows after it to leave out.
+    pub skip: u64,
+}
+
+impl<K: FromStr + Display> SkipCursor<K> {
+    /// The start of a list.
+    #[must_use]
+    pub const fn start() -> Self {
+        Self {
+            after: None,
+            skip: 0,
+        }
+    }
+
+    /// What the cursor text says; `None` for text that is none of the forms, a skip that is not a
+    /// whole number of stretches or is above [`SKIP_MAX`], and a key that is none.
+    #[must_use]
+    pub fn read(cursor: Option<&str>) -> Option<Self> {
+        let Some(text) = cursor else {
+            return Some(Self::start());
+        };
+        let (key, skip) = match text.split_once('+') {
+            Some((key, skip)) => (key, skip.parse::<u64>().ok()?),
+            None => (text, 0),
+        };
+        if skip % (LOOKED_AT_MAX as u64) != 0 || skip > SKIP_MAX {
+            return None;
+        }
+        let after = if key.is_empty() {
+            None
+        } else {
+            Some(key.parse().ok()?)
+        };
+        Some(Self { after, skip })
+    }
+
+    /// The text of the cursor.
+    #[must_use]
+    pub fn write(&self) -> String {
+        let key = self
+            .after
+            .as_ref()
+            .map(ToString::to_string)
+            .unwrap_or_default();
+        if self.skip == 0 {
+            key
+        } else {
+            format!("{key}+{}", self.skip)
+        }
+    }
+}
+
 /// How many items a page holds when the request does not say.
 pub const PAGE_SIZE_DEFAULT: u32 = 50;
 
@@ -114,6 +184,45 @@ pub struct Window {
     pub end: usize,
     /// The cursor of the next page; `None` on the last page.
     pub next: Option<String>,
+}
+
+#[cfg(test)]
+mod skip_cursor_tests {
+    use super::*;
+
+    type Cursor = SkipCursor<u32>;
+
+    #[test]
+    fn a_cursor_is_a_key_a_count_of_whole_stretches_or_both_and_reads_back() {
+        for (text, after, skip) in [
+            ("", None, 0),
+            ("7", Some(7), 0),
+            ("7+500", Some(7), 500),
+            ("+1000", None, 1000),
+        ] {
+            let read = Cursor::read((!text.is_empty()).then_some(text)).unwrap();
+            assert_eq!((read.after, read.skip), (after, skip), "{text}");
+            assert_eq!(read.write(), text);
+        }
+        assert_eq!(Cursor::read(None), Some(Cursor::start()));
+    }
+
+    #[test]
+    fn a_cursor_that_does_not_fit_is_refused_and_never_a_panic() {
+        for text in [
+            "x",
+            "7+",
+            "7+499",
+            "7+-500",
+            "+500.5",
+            "7+9223372036854776000",
+        ] {
+            assert_eq!(Cursor::read(Some(text)), None, "{text}");
+        }
+        let at_most = SKIP_MAX - SKIP_MAX % LOOKED_AT_MAX as u64;
+        assert!(Cursor::read(Some(&format!("+{at_most}"))).is_some());
+        assert_eq!(Cursor::read(Some(&format!("+{}", at_most + 500))), None);
+    }
 }
 
 #[cfg(test)]
