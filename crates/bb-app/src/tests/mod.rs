@@ -51,6 +51,7 @@ mod offers_secrecy;
 mod recurring_jobs;
 mod runs_end;
 mod saved_searches;
+mod saved_searches_names;
 mod saved_searches_receivers;
 mod scenarios;
 mod scenarios_fields;
