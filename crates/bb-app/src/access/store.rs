@@ -14,6 +14,7 @@ use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
+use bb_core::version::Version;
 use bb_policy::guards::OrganizationState;
 use bb_policy::{Inputs, LevelRules, LevelSubject, Permission, Place, RoleData};
 use jiff::Timestamp;
@@ -134,7 +135,7 @@ pub trait PolicyStore: ChangeStore + 'static {
         ) -> ();
         /// Changes the name and the two-step switch of a role, counts its version up, and says
         /// whether the role was still at `version`.
-        fn update_role(id: RoleId, name: &str, two_step: bool, version: i64) -> bool;
+        fn update_role(id: RoleId, name: &str, two_step: bool, version: Version) -> bool;
         /// Replaces the permissions of a role.
         fn replace_role_permissions(id: RoleId, permissions: &[Permission]) -> ();
         /// Replaces the levels a role has of its own (not those set for projects).
@@ -149,7 +150,7 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn insert_group(group: &Group) -> ();
         /// Renames a group, counts its version up, and says whether the group was still at
         /// `version`.
-        fn rename_group(id: GroupId, name: &str, version: i64) -> bool;
+        fn rename_group(id: GroupId, name: &str, version: Version) -> bool;
         /// Removes a group, with its members and its rows.
         fn delete_group(id: GroupId) -> bool;
         /// Puts a person into a group.

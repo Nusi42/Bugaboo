@@ -13,6 +13,7 @@ use bb_core::message::Message;
 use bb_core::names::{is_new_or_changed, name_among};
 use bb_core::paging::window;
 use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
+use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
@@ -262,7 +263,7 @@ pub async fn change_relation_kind<S: AuthStore>(
                     &written.forward,
                     &written.backward,
                     written.retired_at,
-                    version,
+                    Version::new(version),
                 )
                 .await?;
                 if updated {

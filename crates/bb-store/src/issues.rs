@@ -11,6 +11,7 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType, Priority};
 use bb_core::readable_id::IssueCode;
+use bb_core::version::Version;
 use bb_core::workflow::StatusKey;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement, UpdateStatement};
@@ -401,7 +402,7 @@ impl IssueStore for AuthStorage {
         name: &str,
         icon: IssueIcon,
         retired_at: Option<Timestamp>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -414,7 +415,7 @@ impl IssueStore for AuthStorage {
                 Expr::col(IssueTypeRow::Version).add(1),
             )
             .and_where(Expr::col(IssueTypeRow::Id).eq(id.stored()))
-            .and_where(Expr::col(IssueTypeRow::Version).eq(version));
+            .and_where(Expr::col(IssueTypeRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 
@@ -466,7 +467,7 @@ impl IssueStore for AuthStorage {
     async fn update_issue(
         transaction: &mut Transaction,
         issue: &Issue,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -479,7 +480,7 @@ impl IssueStore for AuthStorage {
             .value(IssueRow::ClosedAt, issue.closed_at.map(to_micros));
         counting_up(&mut update, issue.updated_at)
             .and_where(Expr::col(IssueRow::Id).eq(issue.id.stored()))
-            .and_where(Expr::col(IssueRow::Version).eq(version));
+            .and_where(Expr::col(IssueRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 
@@ -489,7 +490,7 @@ impl IssueStore for AuthStorage {
         project: ProjectId,
         code: &IssueCode,
         moved: &MovedStatus,
-        version: i64,
+        version: Version,
         now: Timestamp,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
@@ -501,7 +502,7 @@ impl IssueStore for AuthStorage {
             .value(IssueRow::ClosedAt, moved.closed_at.map(to_micros));
         counting_up(&mut update, now)
             .and_where(Expr::col(IssueRow::Id).eq(id.stored()))
-            .and_where(Expr::col(IssueRow::Version).eq(version))
+            .and_where(Expr::col(IssueRow::Version).eq(version.get()))
             .and_where(Expr::col(IssueRow::DeletedAt).is_null());
         Ok(transaction.execute(&update).await? > 0)
     }

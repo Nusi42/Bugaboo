@@ -8,6 +8,7 @@ use bb_app::workflows::{StatusFilter, WorkflowStore};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{IdSource, WorkflowId};
 use bb_core::version::FIRST_VERSION;
+use bb_core::version::Version;
 use bb_core::workflow::starter::{BUG, SIMPLE};
 use bb_core::workflow::{Condition, Test, Workflow, WorkflowPlace, WorkflowUse, find};
 use bb_testing::{TestResult, each_database};
@@ -66,7 +67,14 @@ async fn wf_01_a_workflow_comes_back_as_stored_and_a_save_needs_the_version_it_s
         let (id, saved) = (workflow.id, second.clone());
         let done = changed(storage, &mut source, move |tx| {
             Box::pin(async move {
-                AuthStorage::replace_workflow(tx, id, "Renamed", &saved, FIRST_VERSION).await
+                AuthStorage::replace_workflow(
+                    tx,
+                    id,
+                    "Renamed",
+                    &saved,
+                    Version::new(FIRST_VERSION),
+                )
+                .await
             })
         })
         .await?;
@@ -80,7 +88,8 @@ async fn wf_01_a_workflow_comes_back_as_stored_and_a_save_needs_the_version_it_s
         let other = content.clone();
         let done = changed(storage, &mut source, move |tx| {
             Box::pin(async move {
-                AuthStorage::replace_workflow(tx, id, "Stale", &other, FIRST_VERSION).await
+                AuthStorage::replace_workflow(tx, id, "Stale", &other, Version::new(FIRST_VERSION))
+                    .await
             })
         })
         .await?;
@@ -91,12 +100,16 @@ async fn wf_01_a_workflow_comes_back_as_stored_and_a_save_needs_the_version_it_s
 
         // Taking it away needs the current version too, and leaves nothing behind.
         let wrong = changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::delete_workflow(tx, id, FIRST_VERSION).await })
+            Box::pin(async move {
+                AuthStorage::delete_workflow(tx, id, Version::new(FIRST_VERSION)).await
+            })
         })
         .await?;
         assert!(!wrong);
         let right = changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::delete_workflow(tx, id, FIRST_VERSION + 1).await })
+            Box::pin(async move {
+                AuthStorage::delete_workflow(tx, id, Version::new(FIRST_VERSION + 1)).await
+            })
         })
         .await?;
         assert!(right);
@@ -191,7 +204,9 @@ async fn wf_01_a_project_finds_its_workflow_like_a_layout() -> TestResult {
         assert_eq!(storage.workflow_uses().await?.len(), 1);
         let (id, version) = (simple.id, simple.version);
         changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::delete_workflow(tx, id, version).await })
+            Box::pin(
+                async move { AuthStorage::delete_workflow(tx, id, Version::new(version)).await },
+            )
         })
         .await?;
         assert!(storage.workflow_uses().await?.is_empty());

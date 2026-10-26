@@ -10,6 +10,7 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
 use bb_core::readable_id::IssueCode;
+use bb_core::version::Version;
 use bb_core::workflow::StatusKey;
 use jiff::Timestamp;
 
@@ -78,13 +79,13 @@ pub trait IssueStore: ProjectStore + 'static {
             name: &str,
             icon: IssueIcon,
             retired_at: Option<Timestamp>,
-            version: i64
+            version: Version
         ) -> bool;
         /// Adds an issue with the people it is assigned to.
         fn insert_issue(issue: &Issue, assigned_people: &[AssignedPerson]) -> ();
         /// Writes the type, title, description, status, priority, update date and closed date of
         /// `issue`, counts its version up, and says whether it was still at `version`.
-        fn update_issue(issue: &Issue, version: i64) -> bool;
+        fn update_issue(issue: &Issue, version: Version) -> bool;
         /// Puts an issue into another project with a code of that project and the status and
         /// closed date it has there, sets the date it changed, counts its version up, and says
         /// whether the issue was still at `version`. The old code is kept with
@@ -94,7 +95,7 @@ pub trait IssueStore: ProjectStore + 'static {
             project: ProjectId,
             code: &IssueCode,
             moved: &MovedStatus,
-            version: i64,
+            version: Version,
             now: Timestamp
         ) -> bool;
         /// Replaces the people an issue is assigned to.

@@ -4,6 +4,7 @@
 use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, Taking};
 use bb_core::event::{DomainEvent, EntityRef};
 use bb_core::id::UserId;
+use bb_core::version::Version;
 use jiff::Timestamp;
 use std::sync::atomic::Ordering;
 
@@ -127,13 +128,11 @@ impl EditStore for FakeStore {
         &self,
         record: &EntityRef,
         field: &str,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
-        Ok(self
-            .lock()
-            .events
-            .iter()
-            .any(|event| event.entity == *record && event.changes_field_after(field, version)))
+        Ok(self.lock().events.iter().any(|event| {
+            event.entity == *record && event.changes_field_after(field, version.get())
+        }))
     }
 
     async fn take_edit_notices(

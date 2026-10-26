@@ -3,6 +3,7 @@
 
 use bb_core::id::{ProjectId, UserId};
 use bb_core::project::{Project, ProjectAlias, ShortName};
+use bb_core::version::Version;
 use bb_policy::{LevelRules, Policy, RoleData};
 
 use super::fake::{FakeError, FakeStore, State, Tx};
@@ -140,13 +141,13 @@ impl ProjectStore for FakeStore {
         id: ProjectId,
         name: &str,
         short_name: &ShortName,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(project) = tx
             .state
             .projects
             .iter_mut()
-            .find(|project| project.id == id && project.version == version)
+            .find(|project| project.id == id && project.version == version.get())
         else {
             return Ok(false);
         };
@@ -160,13 +161,13 @@ impl ProjectStore for FakeStore {
         tx: &mut Tx,
         id: ProjectId,
         parent: Option<ProjectId>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(project) = tx
             .state
             .projects
             .iter_mut()
-            .find(|project| project.id == id && project.version == version)
+            .find(|project| project.id == id && project.version == version.get())
         else {
             return Ok(false);
         };

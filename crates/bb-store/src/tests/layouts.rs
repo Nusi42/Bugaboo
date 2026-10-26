@@ -11,10 +11,14 @@ use bb_core::layout::{
 };
 use bb_core::project::{Project, ShortName};
 use bb_core::version::FIRST_VERSION;
+use bb_core::version::Version;
 use bb_testing::{TestResult, each_database};
 
 use super::*;
 use crate::test_support::{event, fixture, ids};
+
+/// The first version of a record, as the ports are asked.
+const FIRST: Version = Version::new(FIRST_VERSION);
 
 /// Runs `write` as a change with its event, the way a use case does.
 async fn changed<T: Send>(
@@ -118,9 +122,7 @@ async fn cfg_01_a_layout_comes_back_as_stored_and_a_save_needs_the_version_it_st
         };
         let (id, saved) = (layout.id, second.clone());
         let done = changed(storage, &mut source, move |tx| {
-            Box::pin(
-                async move { AuthStorage::replace_layout(tx, id, &saved, FIRST_VERSION).await },
-            )
+            Box::pin(async move { AuthStorage::replace_layout(tx, id, &saved, FIRST).await })
         })
         .await?;
         assert!(done);
@@ -131,9 +133,7 @@ async fn cfg_01_a_layout_comes_back_as_stored_and_a_save_needs_the_version_it_st
         // A save that started from the old version writes nothing.
         let (stale, other) = (id, first.clone());
         let done = changed(storage, &mut source, move |tx| {
-            Box::pin(
-                async move { AuthStorage::replace_layout(tx, stale, &other, FIRST_VERSION).await },
-            )
+            Box::pin(async move { AuthStorage::replace_layout(tx, stale, &other, FIRST).await })
         })
         .await?;
         assert!(!done);
@@ -141,12 +141,14 @@ async fn cfg_01_a_layout_comes_back_as_stored_and_a_save_needs_the_version_it_st
 
         // Taking it away needs the current version too, and leaves nothing behind.
         let wrong = changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::delete_layout(tx, id, FIRST_VERSION).await })
+            Box::pin(async move { AuthStorage::delete_layout(tx, id, FIRST).await })
         })
         .await?;
         assert!(!wrong);
         let right = changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::delete_layout(tx, id, FIRST_VERSION + 1).await })
+            Box::pin(async move {
+                AuthStorage::delete_layout(tx, id, Version::new(FIRST_VERSION + 1)).await
+            })
         })
         .await?;
         assert!(right);

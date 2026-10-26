@@ -10,6 +10,7 @@ use bb_core::event::{EntityKind, RecordKind};
 use bb_core::id::{ChoiceId, EntityId, FieldId, IssueId, ProjectId};
 use bb_core::own_fields::{FieldChoice, OwnField, Scope};
 use bb_core::own_fields_value::Cell;
+use bb_core::version::Version;
 use jiff::Timestamp;
 
 use super::types::Definition;
@@ -51,10 +52,10 @@ pub trait FieldStore: IssueStore + 'static {
         /// Writes everything of a field but its choices (name, help, rules, default, look,
         /// assistant mark, order, retired date) and its scope, counts the version up, and says
         /// whether the field was still at `version`.
-        fn update_field(field: &OwnField, scope: &Scope, version: i64) -> bool;
+        fn update_field(field: &OwnField, scope: &Scope, version: Version) -> bool;
         /// Counts the version of a field up (a choice changed), and says whether it was still at
         /// `version`.
-        fn bump_field(field: FieldId, version: i64) -> bool;
+        fn bump_field(field: FieldId, version: Version) -> bool;
         /// Adds a choice.
         fn insert_choice(choice: &FieldChoice) -> ();
         /// Writes the name, color, icon and retired date of a choice.
@@ -124,7 +125,7 @@ pub trait FieldStore: IssueStore + 'static {
                     project,
                     &found.name,
                     &found.short_name,
-                    found.version,
+                    Version::new(found.version),
                 )
                 .await
                 .map(|done| done.then_some(found.version))

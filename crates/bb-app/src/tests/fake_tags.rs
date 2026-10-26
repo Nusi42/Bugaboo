@@ -4,6 +4,7 @@ use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::names::name_key;
 use bb_core::own_fields::ChoiceColor;
 use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject};
+use bb_core::version::Version;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
@@ -208,13 +209,13 @@ impl TagStore for FakeStore {
         id: TagId,
         name: &str,
         color: ChoiceColor,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .tags
             .iter_mut()
-            .find(|found| found.id == id && found.version == version)
+            .find(|found| found.id == id && found.version == version.get())
         else {
             return Ok(false);
         };
@@ -303,13 +304,13 @@ impl TagStore for FakeStore {
         name: &str,
         pick_one: bool,
         retired_at: Option<Timestamp>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .label_groups
             .iter_mut()
-            .find(|found| found.id == id && found.version == version)
+            .find(|found| found.id == id && found.version == version.get())
         else {
             return Ok(false);
         };
@@ -337,13 +338,13 @@ impl TagStore for FakeStore {
         color: ChoiceColor,
         group: Option<LabelGroupId>,
         retired_at: Option<Timestamp>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .labels
             .iter_mut()
-            .find(|found| found.id == id && found.version == version)
+            .find(|found| found.id == id && found.version == version.get())
         else {
             return Ok(false);
         };

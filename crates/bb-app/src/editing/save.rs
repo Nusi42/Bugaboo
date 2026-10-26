@@ -7,6 +7,7 @@ use bb_core::ErrorCode;
 use bb_core::edit::{DRAFT_KEPT_BY, DraftTarget, EditWhat, Hold};
 use bb_core::event::{DomainEvent, EntityRef};
 use bb_core::id::{LockToken, UserId};
+use bb_core::version::Version;
 use bb_policy::Place;
 
 use super::types::DraftText;
@@ -60,7 +61,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let changed = self
             .store()
-            .field_changed_since(record, field, sent)
+            .field_changed_since(record, field, Version::new(sent))
             .await
             .map_err(|error| internal::<S>(&error))?;
         Ok(if changed { sent } else { current })

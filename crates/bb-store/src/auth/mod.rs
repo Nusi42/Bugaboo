@@ -14,6 +14,7 @@ mod sessions;
 mod sign_up;
 
 pub(crate) use accounts::{person_columns, read_person};
+use bb_core::version::Version;
 use std::sync::Arc;
 
 use bb_app::auth::{AuthSettings, AuthStore, SecurityEvent};
@@ -174,9 +175,9 @@ impl AuthStore for AuthStorage {
 
     async fn count_sign_up_policy_up(
         transaction: &mut Transaction,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
-        count_policy_version_up(transaction, SIGN_UP_POLICY, version).await
+        count_policy_version_up(transaction, SIGN_UP_POLICY, version.get()).await
     }
 
     async fn put_setting(

@@ -4,6 +4,7 @@
 //! Everything needs *Manage issue types, kinds of relation and layouts* at the place: for a
 //! project, there; for the whole organization, at the organization.
 
+use bb_core::version::Version;
 use std::collections::{BTreeSet, HashMap};
 
 use bb_core::ErrorCode;
@@ -388,7 +389,7 @@ pub async fn save_layout<S: AuthStore>(
         &event,
         move |transaction| {
             Box::pin(async move {
-                if S::replace_layout(transaction, id, &written, version).await? {
+                if S::replace_layout(transaction, id, &written, Version::new(version)).await? {
                     Ok(Written::Saved(()))
                 } else {
                     Ok(Written::Stale)
@@ -456,7 +457,7 @@ pub async fn delete_layout<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 let_go_for_delete::<S>(transaction, &what, me, now, &stopped).await?;
-                if S::delete_layout(transaction, id, version).await? {
+                if S::delete_layout(transaction, id, Version::new(version)).await? {
                     Ok(())
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::VersionChanged))

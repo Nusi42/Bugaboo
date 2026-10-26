@@ -12,6 +12,7 @@ use bb_core::settings::{
 use bb_core::sign_in::{
     Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TotpStep, TwoStep,
 };
+use bb_core::version::Version;
 use bb_policy::guards::Refusal;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
@@ -789,8 +790,8 @@ impl AuthStore for FakeStore {
         Ok(self.read(|state| state.sign_up_version))
     }
 
-    async fn count_sign_up_policy_up(tx: &mut Tx, version: i64) -> Result<bool, FakeError> {
-        if tx.state.sign_up_version != version {
+    async fn count_sign_up_policy_up(tx: &mut Tx, version: Version) -> Result<bool, FakeError> {
+        if tx.state.sign_up_version != version.get() {
             return Ok(false);
         }
         tx.state.sign_up_version += 1;

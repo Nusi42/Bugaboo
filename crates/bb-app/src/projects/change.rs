@@ -1,6 +1,7 @@
 //! Changing a project: its name, and its short name (PRJ-01, M2-Q4). The old short name stays with
 //! the project, so its old addresses keep working, and only that project can take it back.
 
+use bb_core::version::Version;
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
@@ -203,7 +204,9 @@ pub async fn change_project<S: AuthStore>(
                     };
                     S::insert_project_alias(transaction, &alias).await?;
                 }
-                if !S::update_project(transaction, id, &name, &short_name, version).await? {
+                if !S::update_project(transaction, id, &name, &short_name, Version::new(version))
+                    .await?
+                {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 for (field, cells) in &own_writes {

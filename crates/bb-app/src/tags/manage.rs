@@ -7,6 +7,7 @@
 //! the version of the tag the person looked at, so a tag that somebody changed meanwhile asks for
 //! a new look.
 
+use bb_core::version::Version;
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
@@ -393,7 +394,7 @@ pub async fn change_tag<S: AuthStore>(
                 if let Some(rewrite) = &rewrite {
                     rewrite.append_events::<S>(transaction, &events).await?;
                 }
-                if !S::update_tag(transaction, id, &written, color, version).await? {
+                if !S::update_tag(transaction, id, &written, color, Version::new(version)).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 if replace_projects {

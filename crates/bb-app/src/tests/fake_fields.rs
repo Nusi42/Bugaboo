@@ -5,6 +5,7 @@ use bb_core::event::EntityKind;
 use bb_core::id::{ChoiceId, EntityId, FieldId, ProjectId};
 use bb_core::own_fields::{FieldChoice, OwnField, Scope};
 use bb_core::own_fields_value::Cell;
+use bb_core::version::Version;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
 use crate::fields::{Definition, FieldStore, StoredValues};
@@ -125,30 +126,30 @@ impl FieldStore for FakeStore {
         tx: &mut Tx,
         field: &OwnField,
         scope: &Scope,
-        version: i64,
+        version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .field_definitions
             .iter_mut()
-            .find(|found| found.field.id == field.id && found.field.version == version)
+            .find(|found| found.field.id == field.id && found.field.version == version.get())
         else {
             return Ok(false);
         };
         found.field = OwnField {
-            version: version + 1,
+            version: version.get() + 1,
             ..field.clone()
         };
         found.scope = scope.clone();
         Ok(true)
     }
 
-    async fn bump_field(tx: &mut Tx, field: FieldId, version: i64) -> Result<bool, FakeError> {
+    async fn bump_field(tx: &mut Tx, field: FieldId, version: Version) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .field_definitions
             .iter_mut()
-            .find(|found| found.field.id == field && found.field.version == version)
+            .find(|found| found.field.id == field && found.field.version == version.get())
         else {
             return Ok(false);
         };

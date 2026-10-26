@@ -11,6 +11,7 @@ use bb_core::fields::FieldKey;
 use bb_core::id::{FieldId, LockToken};
 use bb_core::own_fields::{FieldFor, edit_part};
 use bb_core::own_fields_value::FieldValue;
+use bb_core::version::Version;
 use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Place};
 
@@ -198,7 +199,7 @@ pub async fn save_field_text<S: AuthStore>(
         &event,
         move |transaction| {
             Box::pin(async move {
-                if !S::update_issue(transaction, &touched, version).await? {
+                if !S::update_issue(transaction, &touched, Version::new(version)).await? {
                     return Ok(Written::Stale);
                 }
                 S::put_field_value(transaction, kind, id.into(), field_id, &cells).await?;

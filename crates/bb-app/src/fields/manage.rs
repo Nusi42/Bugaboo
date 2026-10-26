@@ -21,6 +21,7 @@ use bb_core::own_fields::{
     OwnField, Rules, RulesRefused, Scope,
 };
 use bb_core::own_fields_value::FieldValue;
+use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place, starting_own_field_level};
 use serde_json::{Value, json};
@@ -568,7 +569,14 @@ pub async fn change_field<S: AuthStore>(
                 {
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
-                if S::update_field(transaction, &written.field, &written.scope, version).await? {
+                if S::update_field(
+                    transaction,
+                    &written.field,
+                    &written.scope,
+                    Version::new(version),
+                )
+                .await?
+                {
                     Ok(())
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::VersionChanged))

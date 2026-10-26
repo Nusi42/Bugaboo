@@ -7,6 +7,7 @@
 use bb_app::projects::{Found, ProjectStore};
 use bb_core::id::{ProjectId, UserId};
 use bb_core::project::{DEPTH_MAX, Project, ProjectAlias, ShortName};
+use bb_core::version::Version;
 use bb_policy::{Policy, Tree};
 use sea_query::{Expr, ExprTrait as _, Query, SelectStatement};
 
@@ -226,7 +227,7 @@ impl ProjectStore for AuthStorage {
         id: ProjectId,
         name: &str,
         short_name: &ShortName,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -235,7 +236,7 @@ impl ProjectStore for AuthStorage {
             .value(ProjectRow::ShortName, short_name.as_str())
             .value(ProjectRow::Version, Expr::col(ProjectRow::Version).add(1))
             .and_where(Expr::col(ProjectRow::Id).eq(id.stored()))
-            .and_where(Expr::col(ProjectRow::Version).eq(version));
+            .and_where(Expr::col(ProjectRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 
@@ -243,7 +244,7 @@ impl ProjectStore for AuthStorage {
         transaction: &mut Transaction,
         id: ProjectId,
         parent: Option<ProjectId>,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -251,7 +252,7 @@ impl ProjectStore for AuthStorage {
             .value(ProjectRow::Parent, parent.map(ProjectId::stored))
             .value(ProjectRow::Version, Expr::col(ProjectRow::Version).add(1))
             .and_where(Expr::col(ProjectRow::Id).eq(id.stored()))
-            .and_where(Expr::col(ProjectRow::Version).eq(version));
+            .and_where(Expr::col(ProjectRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 

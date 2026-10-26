@@ -7,6 +7,7 @@ use std::future::Future;
 
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject};
+use bb_core::version::Version;
 use jiff::Timestamp;
 
 use crate::issues::IssueStore;
@@ -88,7 +89,7 @@ pub trait TagStore: IssueStore + 'static {
             id: TagId,
             name: &str,
             color: bb_core::own_fields::ChoiceColor,
-            version: i64
+            version: Version
         ) -> bool;
         /// Replaces the projects a tag is limited to.
         fn replace_tag_projects(tag: TagId, projects: &[ProjectId]) -> ();
@@ -110,7 +111,7 @@ pub trait TagStore: IssueStore + 'static {
             name: &str,
             pick_one: bool,
             retired_at: Option<Timestamp>,
-            version: i64
+            version: Version
         ) -> bool;
         /// Adds a label. A name used in the same group (without regard to capitals) is a duplicate
         /// key.
@@ -123,7 +124,7 @@ pub trait TagStore: IssueStore + 'static {
             color: bb_core::own_fields::ChoiceColor,
             group: Option<LabelGroupId>,
             retired_at: Option<Timestamp>,
-            version: i64
+            version: Version
         ) -> bool;
         /// Puts a label on an issue; a duplicate key when it is there already.
         fn insert_issue_label(link: &IssueLabel) -> ();

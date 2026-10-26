@@ -8,6 +8,7 @@
 use bb_app::comments::CommentStore;
 use bb_core::comment::{Comment, CommentVersion, Mention, MentionTarget};
 use bb_core::id::{CommentId, IssueId, UserId};
+use bb_core::version::Version;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
@@ -173,7 +174,7 @@ impl CommentStore for AuthStorage {
         id: CommentId,
         text: &str,
         edited_at: Timestamp,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -182,7 +183,7 @@ impl CommentStore for AuthStorage {
             .value(CommentRow::EditedAt, to_micros(edited_at))
             .value(CommentRow::Version, Expr::col(CommentRow::Version).add(1))
             .and_where(Expr::col(CommentRow::Id).eq(id.stored()))
-            .and_where(Expr::col(CommentRow::Version).eq(version));
+            .and_where(Expr::col(CommentRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 

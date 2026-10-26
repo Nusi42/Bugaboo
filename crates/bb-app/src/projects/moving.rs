@@ -15,6 +15,7 @@
 //!   has which role and the levels the roles set: a tree that changed meanwhile asks the person to
 //!   look again.
 
+use bb_core::version::Version;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -429,7 +430,7 @@ pub async fn move_project<S: AuthStore>(
                 if judged.version != expected {
                     return Err(stopped.stop::<S>(ErrorCode::MovePreviewChanged));
                 }
-                if !S::move_project(transaction, id, to, now.version).await? {
+                if !S::move_project(transaction, id, to, Version::new(now.version)).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 // The issues in it now follow another workflow: those whose status it lacks

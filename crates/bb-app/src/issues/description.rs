@@ -9,6 +9,7 @@ use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::UserId;
 use bb_core::technical::TechnicalName;
+use bb_core::version::Version;
 use bb_core::version::{counted_up, next as next_version};
 use bb_policy::{Authorized, Place};
 use serde_json::json;
@@ -102,7 +103,7 @@ pub async fn save_description<S: AuthStore>(
                 if stored.deleted_at.is_some() || stored.version != version {
                     return Ok(Written::Stale);
                 }
-                if S::update_issue(transaction, &written, version).await? {
+                if S::update_issue(transaction, &written, Version::new(version)).await? {
                     Ok(Written::Saved(()))
                 } else {
                     Ok(Written::Stale)

@@ -12,6 +12,7 @@ use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, No
 use bb_core::event::{DomainEvent, EntityKind, EntityRef};
 use bb_core::id::{EditorId, EntityId, LockToken, UserId};
 use bb_core::technical::TechnicalName;
+use bb_core::version::Version;
 use jiff::Timestamp;
 use sea_query::{Condition, Expr, ExprTrait as _, OnConflict, Order, Query};
 
@@ -394,10 +395,10 @@ impl EditStore for AuthStorage {
         &self,
         record: &EntityRef,
         field: &str,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         self.database()
-            .field_changed_after(record, field, version)
+            .field_changed_after(record, field, version.get())
             .await
     }
 

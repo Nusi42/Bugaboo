@@ -18,6 +18,7 @@ use bb_core::settings::SettingValue;
 use bb_core::sign_in::{
     Invitation, SecurityAction, SetupCode, SignInSession, StoredPasskey, TotpStep, TwoStep,
 };
+use bb_core::version::Version;
 use bb_policy::Permission;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
@@ -389,7 +390,7 @@ pub trait AuthStore:
     writes! {
         /// Counts the version of the sign-up policy up, after its two values were written, and
         /// says whether it was still at `version`.
-        fn count_sign_up_policy_up(version: i64) -> bool;
+        fn count_sign_up_policy_up(version: Version) -> bool;
         /// Stores the value of a setting of the whole organization.
         fn put_setting(key: &str, value: &SettingValue, at: Timestamp) -> ();
     }

@@ -7,6 +7,7 @@ use crate::fields::FieldStore;
 use crate::store_macros::{queries, writes};
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::Issue;
+use bb_core::version::Version;
 use bb_core::workflow::{
     StatusKey, StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse,
 };
@@ -80,10 +81,10 @@ pub trait WorkflowStore: FieldStore + 'static {
         fn insert_workflow(workflow: &Workflow, content: &WorkflowContent) -> ();
         /// Replaces the name, the statuses and the status changes of a workflow, counts its version
         /// up, and says whether the workflow was still at `version`.
-        fn replace_workflow(id: WorkflowId, name: &str, content: &WorkflowContent, version: i64) -> bool;
+        fn replace_workflow(id: WorkflowId, name: &str, content: &WorkflowContent, version: Version) -> bool;
         /// Takes a workflow away together with the places it was used at, and says whether it was
         /// still at `version`.
-        fn delete_workflow(id: WorkflowId, version: i64) -> bool;
+        fn delete_workflow(id: WorkflowId, version: Version) -> bool;
         /// Says that the place uses the workflow from now on (the place had a workflow or not).
         fn put_workflow_use(used: &WorkflowUse) -> ();
         /// Takes the use at exactly this place away, so the place follows its parent again.

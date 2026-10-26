@@ -5,6 +5,7 @@
 //! inside the transaction of a change. A value is one row per value in `field_value`, with one
 //! typed column per kind; the cells of `bb_core::own_fields_value` are those rows.
 
+use bb_core::version::Version;
 use std::collections::BTreeMap;
 
 use bb_app::fields::{Definition, FieldStore, StoredValues};
@@ -490,7 +491,7 @@ impl FieldStore for AuthStorage {
         transaction: &mut Transaction,
         field: &OwnField,
         scope: &Scope,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
@@ -505,7 +506,7 @@ impl FieldStore for AuthStorage {
             .value(FieldRow::RetiredAt, field.retired_at.map(to_micros))
             .value(FieldRow::Version, Expr::col(FieldRow::Version).add(1))
             .and_where(Expr::col(FieldRow::Id).eq(field.id.stored()))
-            .and_where(Expr::col(FieldRow::Version).eq(version));
+            .and_where(Expr::col(FieldRow::Version).eq(version.get()));
         if transaction.execute(&update).await? == 0 {
             return Ok(false);
         }
@@ -516,14 +517,14 @@ impl FieldStore for AuthStorage {
     async fn bump_field(
         transaction: &mut Transaction,
         field: FieldId,
-        version: i64,
+        version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
             .table(FieldRow::Table)
             .value(FieldRow::Version, Expr::col(FieldRow::Version).add(1))
             .and_where(Expr::col(FieldRow::Id).eq(field.stored()))
-            .and_where(Expr::col(FieldRow::Version).eq(version));
+            .and_where(Expr::col(FieldRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 
