@@ -12,6 +12,7 @@ use super::source::{Domain, Subject};
 use super::{CompileError, Compiler, nothing};
 use crate::db::StoredId as _;
 use crate::schema::{GroupMemberRow, IssueParentRow, IssueRow, RelationRow};
+use crate::text_index::TextScope;
 
 impl Compiler<'_> {
     /// The condition a node of the tree stands for.
@@ -25,6 +26,7 @@ impl Compiler<'_> {
                 .try_fold(Cond::all(), |cond, item| Ok(cond.add(self.filter(item)?))),
             Node::Not { item, .. } => Ok(self.filter(item)?.not()),
             Node::Field { field, test, .. } => self.field_test(&field.word, test),
+            Node::Contains { text, .. } => Ok(self.words_in(TextScope::Everywhere, &text.text)),
             Node::Under { id, .. } => Ok(self.under(&id.text)),
             Node::Blocks { id, .. } => Ok(self.blocking(&id.text, Way::Blocks)),
             Node::BlockedBy { id, .. } => Ok(self.blocking(&id.text, Way::BlockedBy)),

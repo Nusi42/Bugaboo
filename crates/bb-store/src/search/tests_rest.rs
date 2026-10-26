@@ -433,3 +433,133 @@ async fn perf_02_paging_by_the_parent_never_names_a_hidden_parent_and_walks_ever
     })
     .await
 }
+
+/// A comment of `text` on an issue, the way the use case stores it.
+fn said(
+    source: &mut impl bb_core::id::IdSource,
+    issue: IssueId,
+    text: &str,
+) -> Result<bb_core::comment::Comment, Box<dyn std::error::Error + Send + Sync>> {
+    Ok(bb_core::comment::Comment {
+        id: bb_core::id::CommentId::generate(source)?,
+        issue,
+        author: bb_core::id::UserId::generate(source),
+        text: text.to_owned(),
+        created_at: at(2),
+        edited_at: None,
+        deleted_at: None,
+        version: FIRST_VERSION,
+    })
+}
+
+/// Writes the comments and indexes every issue, by hand like the outbox reader would.
+async fn comment_and_index(
+    storage: &AuthStorage,
+    data: &mut Data,
+    comments: &[(IssueId, &str)],
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    use bb_app::comments::CommentStore as _;
+    let mut made = Vec::new();
+    for (issue, text) in comments {
+        made.push(said(&mut data.source, *issue, text)?);
+    }
+    let mut all: Vec<IssueId> = data.issues.iter().map(|each| each.id).collect();
+    all.push(data.hidden.id);
+    let ev = event(&mut data.source, 13);
+    ChangeStore::record_change(storage, &ev, move |tx| {
+        Box::pin(async move {
+            for each in &made {
+                AuthStorage::insert_comment(tx, each).await?;
+            }
+            crate::text_index::reindex_issues(tx, &all).await
+        })
+    })
+    .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn qry_05_contains_on_its_own_finds_all_words_across_the_texts_of_issues_the_person_reads()
+-> TestResult {
+    each_database("search_bare_contains", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        let login = data.issues[1].id;
+        let hidden = data.hidden.id;
+        comment_and_index(
+            storage,
+            &mut data,
+            &[
+                (login, "Zebra stripes appear"),
+                (hidden, "zebra and crash in the secret project"),
+            ],
+        )
+        .await?;
+        let found = |text: &'static str| {
+            let ask = request(&data, text, None, 20);
+            async move { titles_of(storage, &ask).await }
+        };
+        // A word only in a comment: found on the issue the person reads, not on the hidden one.
+        assert_eq!(found("contains zebra").await, ["Login broken"]);
+        // The words may stand in different texts of the issue: the title and a comment.
+        assert_eq!(found("contains \"login zebra\"").await, ["Login broken"]);
+        assert!(found("contains \"login printer\"").await.is_empty());
+        // The title of an issue is found too, and the hidden comment adds nothing to its word.
+        assert_eq!(found("contains \"crash\"").await, ["Crash on save"]);
+        // It combines with any other filter, and `not` leaves the issue out.
+        assert_eq!(
+            found("contains zebra and priority is critical").await,
+            ["Login broken"]
+        );
+        let without = found("not contains zebra").await;
+        assert_eq!(without.len(), 5);
+        assert!(!without.contains(&"Login broken".to_owned()));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_02_the_issues_whose_title_has_the_words_come_first_then_the_newest() -> TestResult {
+    each_database("search_title_hit_order", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        // Slow page has the word in its title (created 4); Idea (6) and Docs typo (3) in a comment.
+        let (docs, idea) = (data.issues[2].id, data.issues[5].id);
+        comment_and_index(
+            storage,
+            &mut data,
+            &[(idea, "the page jams"), (docs, "a page with a typo")],
+        )
+        .await?;
+        let whole = titles_of(storage, &request(&data, "contains page", None, 20)).await;
+        assert_eq!(whole, ["Slow page", "Idea", "Docs typo"]);
+        // Paging one by one never skips or repeats one: the cursor holds only the ID.
+        let mut walked = Vec::new();
+        let mut after = None;
+        loop {
+            let hits = storage
+                .search_page(&request(&data, "contains page", after, 1))
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            after = hits.last().map(|hit| hit.issue.id);
+            let more = !hits.is_empty();
+            walked.extend(hits.into_iter().map(|hit| hit.issue.title));
+            if !more {
+                break;
+            }
+        }
+        assert_eq!(walked, whole);
+        // An order that was asked for stays the one asked for.
+        let sorted = titles_of(
+            storage,
+            &request(&data, "contains page sort by title", None, 20),
+        )
+        .await;
+        assert_eq!(sorted, ["Docs typo", "Idea", "Slow page"]);
+        Ok(())
+    })
+    .await
+}

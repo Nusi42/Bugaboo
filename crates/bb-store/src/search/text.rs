@@ -35,7 +35,18 @@ impl Compiler<'_> {
                 ));
             }
         };
-        let words = search_words(&text.text);
+        let mut cond = self.words_in(scope, &text.text);
+        if let TextScope::Field(field) = scope {
+            cond = cond.add(self.reads_field_here(field));
+        }
+        Ok(cond)
+    }
+
+    /// The issues that have every word of `text` in the texts of the scope: a test on `issue.id`
+    /// inside the statement that starts from the sight, so the comments and the file names of an
+    /// issue the person does not read are never found.
+    pub(super) fn words_in(&self, scope: TextScope, text: &str) -> Cond {
+        let words = search_words(text);
         let matched = text_matches(
             self.dialect,
             &TextSearch {
@@ -47,12 +58,7 @@ impl Compiler<'_> {
         found
             .column(Alias::new(TextMatch::ISSUE))
             .from_subquery(matched.select, Alias::new("text_hit"));
-        let mut cond =
-            Cond::all().add(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(found));
-        if let TextScope::Field(field) = scope {
-            cond = cond.add(self.reads_field_here(field));
-        }
-        Ok(cond)
+        Cond::all().add(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(found))
     }
 
     /// The field is readable where the issue is: in its project, and for its type when the field is

@@ -267,6 +267,11 @@ pub(super) fn searchables() -> Vec<Searchable> {
             FieldTarget::Title,
         ),
         with(
+            Field::new("description", FieldKind::Text),
+            vec![],
+            FieldTarget::Description,
+        ),
+        with(
             Field::unordered("status"),
             status_names,
             FieldTarget::Status,

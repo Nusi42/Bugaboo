@@ -293,11 +293,17 @@ impl Compiler<'_> {
     pub(super) fn keys(&self) -> Result<Vec<Key>, CompileError> {
         let sort = &self.request.search.search().sort;
         if sort.is_empty() {
-            return Ok(vec![Key {
+            let newest = Key {
                 value: Expr::col((IssueRow::Table, IssueRow::CreatedAt)),
                 kind: Kind::Whole,
                 order: Order::Desc,
-            }]);
+            };
+            // With words to find and no order asked for, the issues whose title has the words
+            // come first, then the newest, then the ID (ADR-0016, amendment M5, item 5).
+            return Ok(match self.title_hit() {
+                Some(hit) => vec![hit, newest],
+                None => vec![newest],
+            });
         }
         sort.iter()
             .map(|key| {
@@ -321,6 +327,32 @@ impl Compiler<'_> {
                 })
             })
             .collect()
+    }
+
+    /// The key "the title alone has the words" (1 or 0, never empty) of the first `contains` on its
+    /// own that every issue found must satisfy. It is an expression of the issue like any other
+    /// key, so the store reads its value for the last issue of a page by itself.
+    fn title_hit(&self) -> Option<Key> {
+        let text = self
+            .request
+            .search
+            .search()
+            .filter
+            .as_ref()
+            .and_then(first_words)?;
+        let words = bb_core::text_words::search_words(text);
+        let in_title = self.words_in(
+            crate::text_index::TextScope::Source(bb_core::text_index::TextSource::Title),
+            text,
+        );
+        if words.is_empty() {
+            return None;
+        }
+        Some(Key {
+            value: Expr::case(in_title, 1_i64).finally(0_i64).into(),
+            kind: Kind::Whole,
+            order: Order::Desc,
+        })
     }
 
     /// The direction of the ID: that of the last key, so ties keep the direction of the list.
@@ -383,6 +415,16 @@ impl Compiler<'_> {
             column.gt(id.stored())
         });
         any.add(all)
+    }
+}
+
+/// The words of the first `contains` on its own that every issue found has to satisfy: one of the
+/// items of the `and`, not inside an `or` or a `not`.
+fn first_words(filter: &bb_searchlang::Expr) -> Option<&str> {
+    match filter {
+        bb_searchlang::Expr::Contains { text, .. } => Some(&text.text),
+        bb_searchlang::Expr::And { items, .. } => items.iter().find_map(first_words),
+        _ => None,
     }
 }
 
