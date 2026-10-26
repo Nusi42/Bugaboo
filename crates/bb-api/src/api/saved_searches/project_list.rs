@@ -10,6 +10,7 @@ use super::super::auth::{
     answer_authorized,
 };
 use super::super::body_id;
+use super::searches::session_first;
 use super::{
     OptionalSavedSearchBody, ProjectListChoiceBody, ProjectListQuery, SavedSearchId, SetProjectList,
 };
@@ -35,6 +36,7 @@ async fn get_project_list(
     Session(session_token): Session,
     ApiPath(project): ApiPath<String>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
     let list = auth
         .api()?
         .project_list(
@@ -70,8 +72,10 @@ async fn set_project_list(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(project): ApiPath<String>,
-    ApiJson(body): ApiJson<ProjectListChoiceBody>,
+    body: Result<ApiJson<ProjectListChoiceBody>, ApiError>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
+    let ApiJson(body) = body?;
     let search = body
         .search
         .as_deref()

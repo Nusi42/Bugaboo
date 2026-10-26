@@ -16,8 +16,8 @@ use super::examples::Request;
 use super::routes::Fixture;
 use crate::sign_in_tests::http::Browser;
 
-/// An ID that no saved search has, in the form of one (a time-ordered ID): the route reads the
-/// address before it asks who is calling.
+/// An ID that no saved search has, in the form of one (a time-ordered ID): an address that is no
+/// ID is not found before the use case is asked who is calling.
 fn nobodys_search() -> Result<String, Failure> {
     Ok(SavedSearchId::from_parts(Timestamp::UNIX_EPOCH, [5; 10])?.to_string())
 }

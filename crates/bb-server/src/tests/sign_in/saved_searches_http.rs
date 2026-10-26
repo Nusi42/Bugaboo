@@ -8,19 +8,23 @@ use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Reply, rig_and_app};
+use super::http::{Browser, Reply, called, rig_and_app};
 use super::issues_site::{PROJECTS, Site, id_of, ok};
 use super::perf_queries::{Counter, assert_as_many_statements, five_and_forty};
+use super::policy_rig::Org;
+use super::rig::{Rig, Tries};
+use super::status::app_with_probe;
+use bb_core::access_key::KeyChoice;
 
 const SEARCHES: &str = "/api/v1/saved-searches";
 /// The most statements a page of saved searches may run, however many rows there are (a ceiling
 /// that a change to the code has to notice; the exact numbers are compared apart). Most of them are
 /// the session, the rights of the person and the fields they may read (checking a shared search
 /// needs them).
-const AT_MOST: usize = 40;
+const AT_MOST: usize = 42;
 /// The same for a guest, who sees the makers by their role only: the roles of all the makers of a
-/// page are read once (not for each maker), which costs the reads of that one policy (measured: 43).
-const AT_MOST_FOR_A_GUEST: usize = 43;
+/// page are read once (not for each maker), which costs the reads of that one policy (measured: 46).
+const AT_MOST_FOR_A_GUEST: usize = 46;
 
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
@@ -586,6 +590,51 @@ async fn perf_05_forty_different_makers_cost_no_more_statements_than_five_for_a_
         })
         .await?;
         assert_as_many_statements(on_five, on_forty, AT_MOST_FOR_A_GUEST, "more makers");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn auth_07_a_key_is_turned_away_from_saved_searches_before_its_address_or_body_is_read()
+-> TestResult {
+    each_database("auth_07_saved_searches_key_first", async |db| {
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
+        let org = Org::start(&rig).await?;
+        let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
+        let app = app_with_probe(&rig, None);
+        let mut script = Browser::new(&app, &called());
+        for (method, path, body) in [
+            ("POST", SEARCHES.to_owned(), Some(json!({}))),
+            ("GET", format!("{SEARCHES}/not-an-id"), None),
+            ("PATCH", format!("{SEARCHES}/not-an-id"), Some(json!([]))),
+            ("DELETE", format!("{SEARCHES}/not-an-id"), None),
+            (
+                "POST",
+                format!("{SEARCHES}/not-an-id/shares"),
+                Some(json!({"kind": "planet", "id": "x"})),
+            ),
+            (
+                "DELETE",
+                format!("{SEARCHES}/not-an-id/shares/planet/x"),
+                None,
+            ),
+            ("GET", format!("{SEARCHES}?limit=many"), None),
+            ("GET", format!("{SEARCHES}/share-choices"), None),
+            (
+                "PUT",
+                "/api/v1/projects/not-a-project/list".to_owned(),
+                Some(json!({})),
+            ),
+        ] {
+            let reply = script.script(method, &path, body, &key).await?;
+            assert_eq!(reply.status, StatusCode::FORBIDDEN, "{method} {path}");
+            assert_eq!(
+                reply.code(),
+                "auth.access-key-not-allowed",
+                "{method} {path}"
+            );
+        }
         Ok(())
     })
     .await

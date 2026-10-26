@@ -30,6 +30,25 @@ fn target(kind: ShareKind, id: &str) -> Result<ShareTarget, ApiError> {
     ShareTarget::parse(kind, id).ok_or_else(|| ApiError::new(ErrorCode::InvalidRequest))
 }
 
+/// Who asks comes before what is asked: an access key is turned away (and written into the
+/// security log) before a malformed address, query or body gets an answer of its own, as it is on
+/// the routes of the person's own sign-in data (AUTH-07).
+pub(super) async fn session_first(
+    auth: &AuthHandle,
+    info: &bb_app::auth::RequestInfo,
+    session_token: &str,
+) -> Result<(), ApiError> {
+    auth.api()?
+        .require_session(
+            info.clone(),
+            bb_app::auth::RequireSessionQuery {
+                session_token: session_token.to_owned(),
+            },
+        )
+        .await?;
+    Ok(())
+}
+
 /// The saved searches the person made, or the ones shared with them, a page at a time, oldest
 /// first.
 #[utoipa::path(
@@ -44,9 +63,12 @@ async fn list_saved_searches(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiQuery(params): ApiQuery<ListParams>,
-    ApiQuery(which): ApiQuery<ScopeParams>,
+    params: Result<ApiQuery<ListParams>, ApiError>,
+    which: Result<ApiQuery<ScopeParams>, ApiError>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
+    let ApiQuery(params) = params?;
+    let ApiQuery(which) = which?;
     let (cursor, bad_cursor) = params.start(SEARCHES_LIST);
     let page = auth
         .api()?
@@ -87,8 +109,10 @@ async fn create_saved_search(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<NewSavedSearchBody>,
+    body: Result<ApiJson<NewSavedSearchBody>, ApiError>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
+    let ApiJson(body) = body?;
     let made = auth
         .api()?
         .save_search(
@@ -128,6 +152,7 @@ async fn get_saved_search(
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
     let found = auth
         .api()?
         .saved_search(
@@ -163,8 +188,10 @@ async fn change_saved_search(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
-    ApiJson(body): ApiJson<ChangeSavedSearchBody>,
+    body: Result<ApiJson<ChangeSavedSearchBody>, ApiError>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
+    let ApiJson(body) = body?;
     let changed = auth
         .api()?
         .change_search(
@@ -203,6 +230,7 @@ async fn delete_saved_search(
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
     auth.api()?
         .delete_search(
             info,
@@ -234,6 +262,7 @@ async fn restore_saved_search(
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
     let restored = auth
         .api()?
         .restore_search(
@@ -268,8 +297,10 @@ async fn copy_saved_search(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
-    ApiJson(body): ApiJson<CopyBody>,
+    body: Result<ApiJson<CopyBody>, ApiError>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
+    let ApiJson(body) = body?;
     let copy = auth
         .api()?
         .save_copy(
@@ -307,8 +338,10 @@ async fn share_saved_search(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(search): ApiPath<String>,
-    ApiJson(body): ApiJson<ShareBody>,
+    body: Result<ApiJson<ShareBody>, ApiError>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
+    let ApiJson(body) = body?;
     let shared = auth
         .api()?
         .share_search(
@@ -347,6 +380,7 @@ async fn stop_sharing_saved_search(
     Session(session_token): Session,
     ApiPath((search, kind, id)): ApiPath<(String, String, String)>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
     let kind = ShareKind::from_code(&kind).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
     let target = ShareTarget::parse(kind, &id).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
     let stopped = auth
@@ -377,9 +411,12 @@ async fn list_share_choices(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiQuery(params): ApiQuery<ListParams>,
-    ApiQuery(which): ApiQuery<KindParams>,
+    params: Result<ApiQuery<ListParams>, ApiError>,
+    which: Result<ApiQuery<KindParams>, ApiError>,
 ) -> Result<Response, ApiError> {
+    session_first(&auth, &info, &session_token).await?;
+    let ApiQuery(params) = params?;
+    let ApiQuery(which) = which?;
     let (cursor, bad_cursor) = params.start(CHOICES_LIST);
     let page = auth
         .api()?
