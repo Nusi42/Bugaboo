@@ -360,15 +360,9 @@ async fn sec_14_a_key_for_one_project_searches_that_project_only() -> TestResult
                 &key,
             )
             .await?;
-        // The route answers as designed (a project the key does not reach is as good as none: the
-        // search finds nothing there), and nothing of ACME is in it.
-        assert_eq!(acme.status, StatusCode::OK, "{}", acme.body);
-        assert_eq!(
-            acme.body["items"].as_array().map(Vec::len),
-            Some(0),
-            "{}",
-            acme.body
-        );
+        // A project the key does not reach is as good as none: not found, and nothing of ACME is in
+        // the answer.
+        assert_eq!(acme.status, StatusCode::NOT_FOUND, "{}", acme.body);
         assert!(!acme.body.to_string().contains("In ACME"), "{}", acme.body);
         Ok(())
     })

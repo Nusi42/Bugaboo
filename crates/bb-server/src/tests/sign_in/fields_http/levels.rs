@@ -152,9 +152,10 @@ async fn searches_nothing_of(ada: &mut Browser, writer: &mut Browser) -> Result<
         .send("GET", "/api/v1/search/issues/groups?by=notes", None)
         .await?;
     assert_eq!(groups.status, StatusCode::BAD_REQUEST, "{}", groups.body);
-    // A `contains` on its own does not look in own fields, so it finds nothing of the text.
+    // A `contains` on its own does not look in own fields; and this role does not read the
+    // description either, so it has no such search at all (told as a word that is not there).
     let bare = writer.send("GET", &search("contains words"), None).await?;
-    assert_eq!(bare.status, StatusCode::OK, "{}", bare.body);
+    assert_eq!(bare.code(), "search.invalid", "{}", bare.body);
     assert!(!bare.body.to_string().contains("Secret"), "{}", bare.body);
     let offered = writer.send("GET", "/api/v1/search/fields", None).await?;
     assert!(
