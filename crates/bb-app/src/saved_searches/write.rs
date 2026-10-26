@@ -220,13 +220,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut judge = self.judge(actor, &reaching, Groups::Now).await?;
         // Whoever does not see it, also because it does not check for them, is told nothing about
         // it, and nobody is told about the trash.
-        let sees = match &found {
-            Some(found) => self.may_open(&mut judge, actor, &reaching, found).await?,
-            None => {
-                self.canonical_text(&mut judge, "", &Presentation::default())
-                    .await?;
-                false
-            }
+        let sees = if let Some(found) = &found {
+            self.may_open(&mut judge, actor, &reaching, found).await?
+        } else {
+            self.canonical_text(&mut judge, "", &Presentation::default())
+                .await?;
+            false
         };
         if sees {
             Err(ErrorCode::Forbidden.into())
