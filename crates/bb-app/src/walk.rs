@@ -175,4 +175,87 @@ mod tests {
         assert_eq!(next_after_skipping(SKIP_MAX).await?, None);
         Ok(())
     }
+
+    /// A list of three rows whose row `spent_at` is more than the request may spend, until the
+    /// bound is lifted: then it is judged in full, by `truth` (the rows that are kept).
+    struct Costly {
+        spent_at: u64,
+        truth: [bool; 3],
+        lifted: bool,
+        spent: bool,
+        lifts: u32,
+    }
+
+    impl Costly {
+        fn new(spent_at: u64, truth: [bool; 3]) -> Self {
+            Self {
+                spent_at,
+                truth,
+                lifted: false,
+                spent: false,
+                lifts: 0,
+            }
+        }
+    }
+
+    impl Walk for Costly {
+        type Row = u64;
+        type Key = u64;
+
+        async fn fetch(
+            &mut self,
+            after: Option<&u64>,
+            skip: u64,
+            limit: u64,
+        ) -> Result<Vec<u64>, AppError> {
+            let first = after.map_or(0, |key| key + 1) + skip;
+            Ok((first..3.min(first + limit)).collect())
+        }
+
+        async fn keeps(&mut self, row: &u64) -> Result<bool, AppError> {
+            self.spent = *row == self.spent_at && !self.lifted;
+            // A search out of budget is answered provisionally, and the answer must not be used.
+            Ok(self.spent || self.truth[usize::try_from(*row).unwrap_or(0)])
+        }
+
+        fn budget_spent(&self) -> bool {
+            self.spent
+        }
+
+        fn lift_budget(&mut self) {
+            self.lifted = true;
+            self.lifts += 1;
+        }
+
+        fn key_of(row: &u64) -> Result<u64, AppError> {
+            Ok(*row)
+        }
+    }
+
+    #[tokio::test]
+    async fn perf_05_a_spent_search_on_an_empty_page_is_judged_again_and_shown_once()
+    -> Result<(), AppError> {
+        // The first search is out of budget and, in truth, hidden: the page has no row yet, so the
+        // bound is lifted and the search judged again; the provisional answer is never used.
+        let mut walk = Costly::new(0, [false, true, true]);
+        let filled = fill_past_hidden(&mut walk, &SkipCursor::start(), 5).await?;
+        assert_eq!(filled.rows, [1, 2]);
+        assert_eq!(walk.lifts, 1);
+        assert!(filled.next.is_none());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn perf_05_a_spent_search_after_a_shown_one_ends_the_page_after_the_shown_one()
+    -> Result<(), AppError> {
+        let mut walk = Costly::new(1, [true, true, true]);
+        let filled = fill_past_hidden(&mut walk, &SkipCursor::start(), 5).await?;
+        assert_eq!(filled.rows, [0]);
+        assert_eq!(walk.lifts, 0);
+        let next = filled
+            .next
+            .ok_or(AppError::Internal("no cursor".to_owned()))?;
+        assert_eq!((next.after, next.skip), (Some(0), 0));
+        Ok(())
+    }
 }

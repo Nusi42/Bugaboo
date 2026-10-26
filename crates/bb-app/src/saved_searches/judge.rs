@@ -86,7 +86,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         // the one rule of the search; a name the person cannot know is as unknown as a missing one.
         self.search_names_in(judge.actor, &judge.looked, &checked, &mut judge.names)
             .await?;
-        if judge.names.names.names_unknown() {
+        // Out of budget, a name was not resolved and the text has no answer: it does not check
+        // (the walk of a list reads `budget_spent` and judges the search again with the bound
+        // lifted, or ends its page before it), so a name that was not resolved is never let through.
+        if judge.names.spent() || judge.names.names.names_unknown() {
             return Ok(None);
         }
         Ok(Some(print(checked.search())))
