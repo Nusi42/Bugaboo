@@ -22,6 +22,11 @@ use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
 /// names are read in one statement, which made it 47.
 const AT_MOST: usize = 47;
 
+/// The most statements the list of a project may run: it is a search now (ADR-0034 decision 6),
+/// which reads what the person may search by, the names a search may use and the settings of the
+/// person before the one statement that finds the page (58 measured; M5-F45 looks for fewer).
+const LIST_AT_MOST: usize = 58;
+
 /// The most statements the history of an issue may run: the history names an issue type and a label
 /// only where the reader may know it (LM1 of the M4 exit review, `offers/known.rs`), so it also
 /// reads the types, the label groups and what the reader sees of the projects, once for a page
@@ -287,7 +292,7 @@ async fn perf_05_a_page_of_forty_issues_runs_as_many_statements_as_a_page_of_fiv
         }
         let path = |limit: u32| format!("{PROJECTS}/{}/issues?limit={limit}", site.acme);
         let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, path).await?;
-        assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page");
+        assert_as_many_statements(on_five, on_forty, LIST_AT_MOST, "a longer page");
         Ok(())
     })
     .await

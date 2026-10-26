@@ -464,7 +464,7 @@ const ANY_ID: &str = "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10";
 /// The address of a route written as `template`, with an ID in every `{…}` part (a setting key in
 /// `{key}`).
 pub(super) fn example_path(template: &str) -> String {
-    template
+    let path = template
         .split('/')
         .map(|part| match part {
             "{key}" => "some.key",
@@ -472,7 +472,13 @@ pub(super) fn example_path(template: &str) -> String {
             part => part,
         })
         .collect::<Vec<_>>()
-        .join("/")
+        .join("/");
+    format!("{path}{}", required_query(template).unwrap_or_default())
+}
+
+/// The query a route cannot be asked without: the field the groups of a search are made by.
+pub(super) fn required_query(template: &str) -> Option<&'static str> {
+    (template == "/api/v1/search/issues/groups").then_some("?by=priority")
 }
 
 /// Whether the address is the route written as `template`, whose `{…}` parts stand for any one
