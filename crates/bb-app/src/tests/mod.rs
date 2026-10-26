@@ -57,6 +57,8 @@ mod scenarios_notifications;
 mod scenarios_relations;
 mod scenarios_tags;
 mod scenarios_workflows;
+mod search_fields;
+mod search_words;
 mod settings;
 mod sign_up;
 mod tags;

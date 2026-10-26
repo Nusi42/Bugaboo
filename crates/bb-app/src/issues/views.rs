@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
 use bb_core::event::RecordKind;
+use bb_core::fields::{ASSIGNED_TO_PEOPLE, REPORTED_BY_PEOPLE};
 use bb_core::id::{EntityId, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::people_kinds::PeopleKind;
@@ -197,15 +198,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .view_status_changes(views, &workflow, issue, assigned_to)
             .await?;
         let reported_by = self
-            .person_once(views, PeopleKind::ReportedBy, issue.reported_by)
+            .person_once(views, REPORTED_BY_PEOPLE, issue.reported_by)
             .await?;
         let shown_people = if views.show_people { assigned_to } else { &[] };
         let mut people = Vec::with_capacity(shown_people.len());
         for person in shown_people {
-            people.push(
-                self.person_once(views, PeopleKind::AssignedTo, *person)
-                    .await?,
-            );
+            people.push(self.person_once(views, ASSIGNED_TO_PEOPLE, *person).await?);
         }
         Ok(IssueView {
             id: issue.id,

@@ -156,11 +156,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         here: Option<&Here>,
         types: Vec<IssueType>,
     ) -> Result<Vec<IssueType>, AppError> {
+        self.known_types_reaching(shown, types, |owner| {
+            here.is_none_or(|here| here.reached_by(owner))
+        })
+        .await
+    }
+
+    /// The issue types of the list that the person may know and that `reached` lets through, by
+    /// the project each was made in: the one composition of what a list about a place holds, for
+    /// the lists of types and for the statuses of a place.
+    pub(crate) async fn known_types_reaching(
+        &self,
+        shown: &Shown,
+        types: Vec<IssueType>,
+        reached: impl Fn(Option<ProjectId>) -> bool,
+    ) -> Result<Vec<IssueType>, AppError> {
         Ok(self
             .known_types(shown, types)
             .await?
             .into_iter()
-            .filter(|found| here.is_none_or(|here| here.reached_by(found.project)))
+            .filter(|found| reached(found.project))
             .collect())
     }
 

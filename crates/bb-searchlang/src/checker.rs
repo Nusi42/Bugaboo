@@ -7,6 +7,8 @@
 //! person may not read it (QRY-05): the checker cannot tell the two apart, because readable fields
 //! only holds what the person may read.
 
+use bb_core::names::same_name;
+
 use crate::fields::{Field, FieldKind, Operator, ReadableFields};
 use crate::limits::{MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS};
 use crate::messages as key;
@@ -248,7 +250,7 @@ fn unknown_choice(field: &Field, value: &Operand, span: Span) -> Option<Mistake>
         || field
             .choices
             .iter()
-            .any(|choice| choice.eq_ignore_ascii_case(&wanted))
+            .any(|choice| same_name(choice, &wanted))
     {
         return None;
     }

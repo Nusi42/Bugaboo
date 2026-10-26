@@ -525,3 +525,22 @@ fn qry_03_the_cursor_may_stand_anywhere_in_any_text_without_a_crash() {
     }
     let _ = suggest("ünï is é ö", 3, &sample_fields());
 }
+
+/// Two names are the same name by the one rule of the app (`bb_core::names::same_name`): capitals of
+/// any alphabet and repeated spaces do not count, accents do (ADR-0005 amendment M5, decision 9).
+#[test]
+fn qry_05_a_choice_is_found_by_the_one_rule_of_the_same_name() {
+    let fields = ReadableFields {
+        fields: vec![
+            Field::new("status", FieldKind::Choice).with_choices(&["Über uns", "In progress"]),
+        ],
+    };
+    let answer = |text: &str| {
+        let search = parse_with(text, &fields).map_err(|mistake| vec![mistake])?;
+        check(search, &fields).map(|_| ())
+    };
+    assert!(answer(r#"status is "ÜBER   UNS""#).is_ok());
+    assert!(answer(r#"status is "in  progress""#).is_ok());
+    // An accent is a difference, as everywhere else in the app.
+    assert!(answer(r#"status is "uber uns""#).is_err());
+}
