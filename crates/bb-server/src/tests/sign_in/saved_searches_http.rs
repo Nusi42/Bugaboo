@@ -21,10 +21,10 @@ const SEARCHES: &str = "/api/v1/saved-searches";
 /// that a change to the code has to notice; the exact numbers are compared apart). Most of them are
 /// the session, the rights of the person and the fields they may read (checking a shared search
 /// needs them).
-const AT_MOST: usize = 42;
+const AT_MOST: usize = 40;
 /// The same for a guest, who sees the makers by their role only: the roles of all the makers of a
-/// page are read once (not for each maker), which costs the reads of that one policy (measured: 46).
-const AT_MOST_FOR_A_GUEST: usize = 46;
+/// page are read once (not for each maker), which costs the reads of that one policy (measured: 43).
+const AT_MOST_FOR_A_GUEST: usize = 43;
 
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
