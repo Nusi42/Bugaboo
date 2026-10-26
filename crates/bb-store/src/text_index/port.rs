@@ -3,8 +3,8 @@
 //! (WP-04) and its tests call it without one.
 //!
 //! The port matches and nothing else. Who may see what is decided in one place, the compiler:
-//! it joins [`TextMatch::select`] to `issue`, applies its visibility predicates there (the issue,
-//! its project, and for a search in a field that the field is readable in the project and for the
+//! it puts [`text_issues`] (or [`text_of_issue`]) in a condition on `issue` beside its visibility
+//! predicates (the issue, its project, and for a search in a field that the field is readable in the project and for the
 //! type of that issue), and so a hit never comes from a text the reader may not see. The port
 //! never reads a permission.
 //!
@@ -52,21 +52,6 @@ pub struct TextSearch<'a> {
     pub scope: TextScope,
 }
 
-/// The sub-select of a search: for each issue that has every word, one row with the columns
-/// [`TextMatch::ISSUE`] (the issue ID). Whether the title alone has the words is asked of the scope
-/// [`TextScope::Source`] by the compiler of the search, which is the one place that orders.
-#[derive(Clone, Debug)]
-pub struct TextMatch {
-    /// The sub-select. The compiler uses it as a derived table (`FROM (...) AS text_hit`, joined
-    /// on `issue.id`).
-    pub select: SelectStatement,
-}
-
-impl TextMatch {
-    /// The name of the issue column of [`TextMatch::select`].
-    pub const ISSUE: &'static str = "issue_id";
-}
-
 /// One word as it is looked up: the text, and whether it matches by its start.
 type Lookup<'a> = (&'a str, bool);
 
@@ -87,19 +72,6 @@ fn row_conditions(dialect: Dialect, search: &TextSearch<'_>) -> Vec<SimpleExpr> 
         )));
     }
     conditions
-}
-
-/// The sub-select of a search for one database.
-#[must_use]
-pub fn text_matches(dialect: Dialect, search: &TextSearch<'_>) -> TextMatch {
-    let mut select = Query::select();
-    select.from(TextIndexRow::Table);
-    for condition in row_conditions(dialect, search) {
-        select.and_where(condition);
-    }
-    TextMatch {
-        select: with_columns(select),
-    }
 }
 
 /// The issues that match, one row for each text of theirs that does (`SELECT issue FROM
@@ -132,14 +104,6 @@ pub fn text_of_issue(
     for condition in row_conditions(dialect, search) {
         select.and_where(condition);
     }
-    select
-}
-
-/// The columns of the sub-select, and the grouping that makes one row for an issue.
-fn with_columns(mut select: SelectStatement) -> SelectStatement {
-    select
-        .expr_as(Expr::col(TextIndexRow::Issue), Alias::new(TextMatch::ISSUE))
-        .group_by_col(TextIndexRow::Issue);
     select
 }
 
@@ -232,14 +196,13 @@ mod tests {
     /// The statement with its values written in, for a test to read (the store never does this).
     fn text_of(dialect: Dialect, input: &str, scope: TextScope) -> String {
         let words = search_words(input);
-        let select = text_matches(
+        let select = text_issues(
             dialect,
             &TextSearch {
                 words: &words,
                 scope,
             },
-        )
-        .select;
+        );
         match dialect {
             Dialect::Sqlite => select.to_string(SqliteQueryBuilder),
             Dialect::Postgres => select.to_string(PostgresQueryBuilder),

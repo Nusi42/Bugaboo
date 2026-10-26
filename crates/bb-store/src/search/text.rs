@@ -50,23 +50,11 @@ impl Compiler<'_> {
             words: &words,
             scope,
         };
+        let issue = Expr::col((IssueRow::Table, IssueRow::Id));
         if self.paged {
-            self.words_of_issue(scope, text)
+            Cond::all().add(Expr::exists(text_of_issue(self.dialect, &search, issue)))
         } else {
-            let issue = Expr::col((IssueRow::Table, IssueRow::Id));
             Cond::all().add(issue.in_subquery(text_issues(self.dialect, &search)))
         }
-    }
-
-    /// The same asked of the issue of the statement, one at a time (also for a key of the order,
-    /// which is read for the issue it orders).
-    pub(super) fn words_of_issue(&self, scope: TextScope, text: &str) -> Cond {
-        let words = search_words(text);
-        let search = TextSearch {
-            words: &words,
-            scope,
-        };
-        let issue = Expr::col((IssueRow::Table, IssueRow::Id));
-        Cond::all().add(Expr::exists(text_of_issue(self.dialect, &search, issue)))
     }
 }

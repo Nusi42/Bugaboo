@@ -9,7 +9,7 @@ use bb_core::text_words::search_words;
 use bb_testing::{TestResult, each_database};
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
-use super::{TextMatch, TextScope, TextSearch, index_text, text_matches};
+use super::{TextScope, TextSearch, index_text, text_issues};
 use crate::schema::IssueRow;
 use crate::test_support::{fixture, ids, world};
 
@@ -27,7 +27,7 @@ async fn found(
 ) -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
     let database = storage.database();
     let words = search_words(input);
-    let matched = text_matches(
+    let matched = text_issues(
         database.dialect(),
         &TextSearch {
             words: &words,
@@ -38,12 +38,7 @@ async fn found(
     select
         .column((IssueRow::Table, IssueRow::Code))
         .from(IssueRow::Table)
-        .join_subquery(
-            sea_query::JoinType::InnerJoin,
-            matched.select,
-            "text_hit",
-            Expr::col((IssueRow::Table, IssueRow::Id)).equals(("text_hit", TextMatch::ISSUE)),
-        )
+        .and_where(Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(matched))
         .order_by((IssueRow::Table, IssueRow::CreatedAt), Order::Desc)
         .order_by((IssueRow::Table, IssueRow::Id), Order::Desc);
     let rows = database.fetch_all(&select).await?;

@@ -5,7 +5,7 @@ mod adapter;
 mod port;
 mod write;
 
-pub use port::{TextMatch, TextScope, TextSearch, text_issues, text_matches, text_of_issue};
+pub use port::{TextScope, TextSearch, text_issues, text_of_issue};
 #[cfg(any(test, feature = "testing"))]
 pub use write::index_text;
 #[cfg(test)]
