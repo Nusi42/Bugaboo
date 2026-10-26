@@ -31,8 +31,3 @@ reason = "The tests of uploads, downloads and previews over HTTP, one flow after
 [[generated]]
 path = "crates/bb-core/src/message/generated.rs"
 reason = "Written by cargo xtask gen from the message catalog; never edited by hand."
-
-[[exempt]]
-path = "crates/bb-store/src/migrations/mod.rs"
-lines = 805
-reason = "The list of the migrations grows by five lines with each one. Split by area in M4-F130."

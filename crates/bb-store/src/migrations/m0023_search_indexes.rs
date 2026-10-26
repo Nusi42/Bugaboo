@@ -1,4 +1,4 @@
-//! Migration 23 (provisional number: the lead renumbers it at the merge): the indexes that the
+//! Migration 23: the indexes that the
 //! search of M5 WP-04 needs on the large dataset of PERF-01 (1 M issues, 500 projects), found by
 //! the benchmark and not by guessing.
 //!
