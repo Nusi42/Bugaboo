@@ -20,6 +20,7 @@ use serde_json::json;
 use tower::ServiceExt as _;
 
 use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
+use super::issues_site::id_of;
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
@@ -198,6 +199,18 @@ fn with_query(template: &str, filled: &str, project: &str, project_id: &str) -> 
     }
 }
 
+/// A saved search of the person, for the routes that name one: its ID.
+async fn a_saved_search(ada: &mut Browser) -> Result<String, Failure> {
+    id_of(
+        &ada.send(
+            "POST",
+            "/api/v1/saved-searches",
+            Some(json!({"name": "Open bugs", "search_text": ""})),
+        )
+        .await?,
+    )
+}
+
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
@@ -234,6 +247,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let (issue_type_id, label_group_id) = a_type_and_a_label_group(&mut ada).await?;
         let run_id = a_run_of(&rig, &person_id).await?;
         let upload_id = an_upload_on(&mut ada, &readable_id).await?;
+        let search_id = a_saved_search(&mut ada).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -257,6 +271,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{group}", &group_id)
                 .replace("{run}", &run_id)
                 .replace("{upload}", &upload_id)
+                .replace("{search}", &search_id)
                 .replace("{project}", project);
             let filled = with_query(template, &filled, project, &project_id);
             let filled = if template.ends_with("/status-changes") {

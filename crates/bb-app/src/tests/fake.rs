@@ -133,6 +133,10 @@ pub(crate) struct State {
     pub(crate) workflows: Vec<bb_core::workflow::StoredWorkflow>,
     pub(crate) workflow_uses: Vec<bb_core::workflow::WorkflowUse>,
     pub(crate) offers: Vec<bb_core::offer::Offer>,
+    pub(crate) saved_searches: Vec<bb_core::saved_search::SavedSearch>,
+    pub(crate) search_columns: Vec<bb_core::saved_search::SearchColumn>,
+    pub(crate) search_shares: Vec<bb_core::saved_search::SearchShare>,
+    pub(crate) default_lists: Vec<bb_core::saved_search::ProjectDefaultList>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

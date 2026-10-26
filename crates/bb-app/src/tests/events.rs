@@ -18,6 +18,7 @@ use super::scenarios_issues as si;
 use super::scenarios_layouts as sl;
 use super::scenarios_notifications as sn;
 use super::scenarios_relations as sr;
+use super::scenarios_searches as ss;
 use super::scenarios_tags as st;
 use super::scenarios_workflows as sw;
 use super::world::{Outcome, World};
@@ -151,6 +152,14 @@ table! {
     "use_workflow" => sw::use_workflow_scenario,
     "publish_workflow" => sw::publish_workflow_scenario,
     "delete_workflow" => sw::delete_workflow_scenario,
+    "save_search" => ss::save_search_scenario,
+    "change_search" => ss::change_search_scenario,
+    "share_search" => ss::share_search_scenario,
+    "stop_sharing_search" => ss::stop_sharing_search_scenario,
+    "delete_search" => ss::delete_search_scenario,
+    "restore_search" => ss::restore_search_scenario,
+    "save_copy" => ss::save_copy_scenario,
+    "set_project_list" => ss::set_project_list_scenario,
 }
 
 #[test]

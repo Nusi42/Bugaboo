@@ -30,6 +30,7 @@ pub mod preview;
 pub mod projects;
 pub mod relations;
 pub mod roles;
+pub mod saved_searches;
 pub mod search;
 pub mod server_log;
 pub mod settings;
@@ -37,6 +38,7 @@ pub mod status;
 mod store_macros;
 pub mod tags;
 pub mod text_index;
+mod walk;
 pub mod workflows;
 
 #[cfg(test)]

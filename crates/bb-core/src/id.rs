@@ -305,6 +305,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a saved search (QRY-06); the address `/s/<id>` carries it.
+    SavedSearchId
+}
+
+define_ordered_id! {
     /// The ID of a comment (ISS-05).
     CommentId
 }
@@ -435,6 +440,7 @@ into_entity_id!(
     RelationId,
     LayoutId,
     WorkflowId,
+    SavedSearchId,
     CommentId,
     AttachmentId,
     UploadId,

@@ -2,13 +2,10 @@
 
 use std::collections::BTreeSet;
 
+use axum::http::Method;
+
 use super::*;
 use crate::openapi::operations;
-
-/// The rows of the table and of the search routes.
-fn all_rows() -> impl Iterator<Item = &'static Route> {
-    ROUTES.iter().chain(search_routes::ROUTES)
-}
 
 #[test]
 fn adr_0019_a_route_that_saves_long_text_is_a_route() {
@@ -23,17 +20,17 @@ fn m1_f32_no_row_names_a_route_that_does_not_exist_or_a_route_twice() {
         .iter()
         .map(|operation| operation.id.as_str())
         .collect();
-    for row in all_rows() {
+    for row in rows() {
         assert!(
             ids.contains(row.id),
             "{} is declared but is no route",
             row.id
         );
     }
-    let rows: BTreeSet<&str> = all_rows().map(|row| row.id).collect();
+    let ids_declared: BTreeSet<&str> = rows().map(|row| row.id).collect();
     assert_eq!(
-        rows.len(),
-        all_rows().count(),
+        ids_declared.len(),
+        rows().count(),
         "an operation ID is declared twice"
     );
 }

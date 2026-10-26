@@ -38,6 +38,7 @@ mod policy;
 mod projects;
 mod relations;
 mod rows;
+mod saved_searches;
 mod schema;
 mod search;
 mod secrets;

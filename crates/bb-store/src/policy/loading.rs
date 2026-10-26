@@ -17,7 +17,7 @@ use super::groups::{member_select, read_member};
 use super::in_list;
 use super::levels::{Which, read_rules, read_typed_rules};
 use super::roles::roles_in;
-use crate::db::{Reader, StoredId as _, Transaction};
+use crate::db::{Reader, Transaction};
 use crate::error::StoreError;
 use crate::projects::chain_of;
 use crate::schema::{AssignmentRow, GroupMemberRow};
@@ -30,6 +30,9 @@ pub(crate) enum Wanted<'a> {
     /// The rows of one person (their own and their groups') wherever they are, with the roles
     /// those name. No levels: a decision about permissions does not need them.
     Person(UserId),
+    /// The rows of these people (their own and their groups') wherever they are, with the roles
+    /// those name. No levels: what a role label needs.
+    People(&'a [UserId]),
     /// What one person's decision at a place needs: their rows on the organization and on the
     /// projects of the chain, the roles those name and the levels of those roles.
     PersonAt(UserId, &'a [ProjectId]),
@@ -39,10 +42,12 @@ pub(crate) enum Wanted<'a> {
 }
 
 impl Wanted<'_> {
-    const fn person(self) -> Option<UserId> {
+    /// The people whose rows are wanted; none for everybody's.
+    fn people(&self) -> Option<&[UserId]> {
         match self {
             Self::Everybody | Self::Organization => None,
-            Self::Person(person) | Self::PersonAt(person, _) => Some(person),
+            Self::Person(person) | Self::PersonAt(person, _) => Some(std::slice::from_ref(person)),
+            Self::People(people) => Some(people),
         }
     }
 }
@@ -95,8 +100,8 @@ async fn rows_wanted(
     wanted: Wanted<'_>,
 ) -> Result<(Vec<GroupMember>, Vec<Assignment>), StoreError> {
     let mut select = member_select();
-    if let Some(person) = wanted.person() {
-        select.and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
+    if let Some(people) = wanted.people() {
+        select.and_where(Expr::col(GroupMemberRow::Person).is_in(in_list(people)));
     }
     let members = reader
         .fetch_all(&select)
@@ -105,9 +110,9 @@ async fn rows_wanted(
         .map(read_member)
         .collect::<Result<Vec<_>, _>>()?;
     let mut select = assignment_select();
-    if let Some(person) = wanted.person() {
+    if let Some(people) = wanted.people() {
         let groups: Vec<GroupId> = members.iter().map(|member| member.group).collect();
-        let mut whose = Expr::col(AssignmentRow::Person).eq(person.stored());
+        let mut whose = Expr::col(AssignmentRow::Person).is_in(in_list(people));
         if !groups.is_empty() {
             whose = whose.or(Expr::col(AssignmentRow::Group).is_in(in_list(&groups)));
         }

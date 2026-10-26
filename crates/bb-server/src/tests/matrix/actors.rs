@@ -242,6 +242,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
         DecideWhatRolesSee, DeleteIssues, EditAnyway, ManageFields, ManageGroups,
         ManageInvitations, ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles,
         ManageWorkflows, MoveIssues, MoveProjects, SeeIssues, SeeProjects, SeeStatus,
+        ShareSearches,
     };
     match role {
         StartingRole::Administrator => BTreeSet::from([
@@ -257,6 +258,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             Comment,
             DeleteIssues,
             MoveIssues,
+            ShareSearches,
             EditAnyway,
             ManageIssueTypes,
             ManageFields,
@@ -284,6 +286,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             Comment,
             DeleteIssues,
             MoveIssues,
+            ShareSearches,
             EditAnyway,
             ManageIssueTypes,
             ManageLabels,
@@ -301,6 +304,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             Comment,
             DeleteIssues,
             MoveIssues,
+            ShareSearches,
         ]),
         StartingRole::Contributor => BTreeSet::from([
             SeeProjects,
@@ -308,8 +312,9 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             CreateIssues,
             ChangeOwnIssues,
             Comment,
+            ShareSearches,
         ]),
-        StartingRole::Viewer => BTreeSet::from([SeeProjects, SeeIssues]),
+        StartingRole::Viewer => BTreeSet::from([SeeProjects, SeeIssues, ShareSearches]),
         StartingRole::Guest => {
             BTreeSet::from([SeeProjects, CreateIssues, ChangeOwnIssues, Comment])
         }

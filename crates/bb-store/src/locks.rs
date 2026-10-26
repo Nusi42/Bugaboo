@@ -54,6 +54,9 @@ pub(crate) enum LockClass {
     /// processes, or the reader and a rebuild) read the stored texts and write the rows one after
     /// the other, so the older reading never overwrites the newer.
     TextIndex = 11,
+    /// Making saved searches and sharing them (key: four bytes of the maker's ID): two changes of
+    /// one person at the same moment cannot both pass the limits of searches and of shares.
+    SavedSearches = 12,
 }
 
 impl LockClass {
@@ -74,6 +77,7 @@ impl LockClass {
             Self::Uploads => 8,
             Self::IssueFiles => 9,
             Self::TextIndex => 10,
+            Self::SavedSearches => 11,
         }
     }
 }
@@ -148,7 +152,7 @@ pub(crate) fn lock_key(id: [u8; 16]) -> i32 {
 mod tests {
     use super::*;
 
-    const ORDER: [LockClass; 10] = [
+    const ORDER: [LockClass; 12] = [
         LockClass::Migration,
         LockClass::Policy,
         LockClass::TagsAndLabels,
@@ -159,6 +163,8 @@ mod tests {
         LockClass::Handles,
         LockClass::Uploads,
         LockClass::IssueFiles,
+        LockClass::TextIndex,
+        LockClass::SavedSearches,
     ];
 
     #[test]
@@ -208,7 +214,7 @@ mod tests {
     #[test]
     fn arch_lock_order_the_order_is_the_written_one_and_covers_every_class() {
         let ranks: Vec<u8> = ORDER.iter().map(|class| class.rank()).collect();
-        assert_eq!(ranks, (0..10).collect::<Vec<u8>>());
+        assert_eq!(ranks, (0..12).collect::<Vec<u8>>());
         // The numbers of the classes are the ones PostgreSQL sees: none may repeat.
         let mut numbers: Vec<i32> = ORDER.iter().map(|class| *class as i32).collect();
         numbers.sort_unstable();

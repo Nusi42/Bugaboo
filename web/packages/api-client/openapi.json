@@ -9297,6 +9297,124 @@
         "x-permission": "create-issues"
       }
     },
+    "/api/v1/projects/{project}/list": {
+      "get": {
+        "tags": ["saved-searches"],
+        "summary": "The list a project shows: the saved search the project chose, when the person may open it, else\n`null` and the client shows the built-in default list. Needs the right to see the project.",
+        "operationId": "getProjectList",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The list.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptionalSavedSearchBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "by-record"
+      },
+      "put": {
+        "tags": ["saved-searches"],
+        "summary": "Chooses the saved search a project shows as its list, or none. Needs *Change project settings*;\nthe search has to be shared with the project.",
+        "operationId": "setProjectList",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectListChoiceBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The list as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptionalSavedSearchBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-project-settings"
+      }
+    },
     "/api/v1/projects/{project}/move": {
       "post": {
         "tags": ["projects"],
@@ -10616,6 +10734,581 @@
         },
         "x-never-stored": true,
         "x-permission": "manage-roles"
+      }
+    },
+    "/api/v1/saved-searches": {
+      "get": {
+        "tags": ["saved-searches"],
+        "summary": "The saved searches the person made, or the ones shared with them, a page at a time, oldest\nfirst.",
+        "operationId": "listSavedSearches",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "The ones the person made (`mine`, the default) or the ones shared with them (`shared`).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SearchSet"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved searches.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_SavedSearchItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadListRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      },
+      "post": {
+        "tags": ["saved-searches"],
+        "summary": "Saves a search under a name. It is private and the person's own.",
+        "operationId": "createSavedSearch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewSavedSearchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The saved search.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/saved-searches/share-choices": {
+      "get": {
+        "tags": ["saved-searches"],
+        "summary": "The groups or the projects the person may share a saved search with, by name, a page at a\ntime: what a *Share* window lists.",
+        "operationId": "listShareChoices",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "Groups or projects.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ShareKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What may be shared with.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ShareChoiceItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadListRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/saved-searches/{search}": {
+      "get": {
+        "tags": ["saved-searches"],
+        "summary": "Opens a saved search: the person's own, or one shared with them. For anybody else, and for one\nthat does not exist or is in the trash, the answer is `not found`.",
+        "operationId": "getSavedSearch",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved search.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      },
+      "delete": {
+        "tags": ["saved-searches"],
+        "summary": "Puts a saved search into the trash (*Undo* takes it out again). Its maker may, and so may\nwhoever may change organization settings.",
+        "operationId": "deleteSavedSearch",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The saved search is in the trash."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "patch": {
+        "tags": ["saved-searches"],
+        "summary": "Changes a saved search. Only its maker does.",
+        "operationId": "changeSavedSearch",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeSavedSearchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The saved search as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/saved-searches/{search}/copy": {
+      "post": {
+        "tags": ["saved-searches"],
+        "summary": "*Save a copy*: a private saved search of the person with the text and the presentation of one\nthey may open.",
+        "operationId": "copySavedSearch",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The copy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/saved-searches/{search}/restore": {
+      "post": {
+        "tags": ["saved-searches"],
+        "summary": "Takes a saved search out of the trash (*Undo*).",
+        "operationId": "restoreSavedSearch",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved search is out of the trash; the search is in the answer when it is one the person may open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptionalSavedSearchBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/saved-searches/{search}/shares": {
+      "post": {
+        "tags": ["saved-searches"],
+        "summary": "Shares a saved search with a group or a project. Only its maker does, with *Share searches* in\nthe project; for a group, by being in it and holding *Share searches* for the whole\norganization, or with *Manage groups*. Sharing it again changes nothing.",
+        "operationId": "shareSavedSearch",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The saved search as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "share-searches"
+      }
+    },
+    "/api/v1/saved-searches/{search}/shares/{kind}/{id}": {
+      "delete": {
+        "tags": ["saved-searches"],
+        "summary": "Stops sharing a saved search with a group or a project. Only its maker does.",
+        "operationId": "stopSharingSavedSearch",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "A group or a project.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ShareKind"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the group or the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved search as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
       }
     },
     "/api/v1/search/fields": {
@@ -13084,6 +13777,37 @@
           }
         }
       },
+      "ChangeSavedSearchBody": {
+        "type": "object",
+        "description": "What to change in a saved search. What is left out stays as it is.",
+        "required": ["version"],
+        "properties": {
+          "name": {
+            "type": ["string", "null"],
+            "description": "A new name."
+          },
+          "presentation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PresentationRef",
+                "description": "A new way to show the results."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "search_text": {
+            "type": ["string", "null"],
+            "description": "A new search text."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at; a change made meanwhile stops this one."
+          }
+        }
+      },
       "ChangeTagBody": {
         "type": "object",
         "description": "What to change about a tag: what is left out stays as it is.",
@@ -13426,6 +14150,23 @@
           }
         }
       },
+      "ColumnBody": {
+        "type": "object",
+        "description": "One column of a list: the field by its search word, and its width if the person set one.",
+        "required": ["field", "width"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The search word of the field (`assignedTo`)."
+          },
+          "width": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "How wide the column is, in the units of the list; `null` for the width the list chooses.",
+            "minimum": 0
+          }
+        }
+      },
       "CombineBody": {
         "type": "object",
         "description": "The tag that takes the issues of another.",
@@ -13645,6 +14386,16 @@
           }
         ],
         "description": "The answer to a change that found the record at another version, or to any other refused\nchange: the usual problem, and for `edit.version-changed` the `conflict` member."
+      },
+      "CopyBody": {
+        "type": "object",
+        "description": "The name of a copy.",
+        "properties": {
+          "name": {
+            "type": ["string", "null"],
+            "description": "What the copy is called; the name of the original when left out."
+          }
+        }
       },
       "CreateKeyBody": {
         "type": "object",
@@ -17232,6 +17983,32 @@
           }
         }
       },
+      "NewSavedSearchBody": {
+        "type": "object",
+        "description": "A search to save.",
+        "required": ["name", "search_text"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "presentation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PresentationRef",
+                "description": "How its results are shown; a comfortable list with the columns of the project's list when\nleft out."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "search_text": {
+            "type": "string",
+            "description": "The search text."
+          }
+        }
+      },
       "NewValueBody": {
         "type": "object",
         "description": "A new value for a setting.",
@@ -17495,6 +18272,24 @@
         "type": "string",
         "description": "What a condition of a status change asks of a field.",
         "enum": ["filled", "empty"]
+      },
+      "OptionalSavedSearchBody": {
+        "type": "object",
+        "description": "A saved search that may be missing: the list a project shows (`null` for the built-in default\nlist) and what taking a search out of the trash answers (`null` for somebody who may only take\nit out and may not open it, who is told nothing of its name or text).",
+        "required": ["search"],
+        "properties": {
+          "search": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SavedSearchItem",
+                "description": "The saved search, when the person may open it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
       },
       "OwnChangeBody": {
         "oneOf": [
@@ -18095,6 +18890,42 @@
           }
         }
       },
+      "Page_SavedSearchItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedSearchItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_ShareChoiceItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareChoiceItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_TagItem": {
         "type": "object",
         "description": "One page of a list: its items, and where the next page starts.",
@@ -18395,6 +19226,7 @@
           "comment",
           "delete-issues",
           "move-issues",
+          "share-searches",
           "edit-anyway",
           "manage-issue-types",
           "manage-workflows",
@@ -18692,6 +19524,32 @@
           }
         ],
         "description": "Where a row of *Who has which role* is: the whole organization, a project, or a project the\nperson cannot see (which is not named)."
+      },
+      "PresentationRef": {
+        "type": "object",
+        "description": "How the results of a saved search are shown.",
+        "required": ["view", "columns", "spacing", "group_by"],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnBody"
+            },
+            "description": "The columns, in order. None at all means the columns of the project's list."
+          },
+          "group_by": {
+            "type": ["string", "null"],
+            "description": "The field the rows are grouped by, by its search word."
+          },
+          "spacing": {
+            "type": "string",
+            "description": "How close together the rows are: a choice of the setting `appearance.spacing`."
+          },
+          "view": {
+            "$ref": "#/components/schemas/ViewKind",
+            "description": "The kind of view. M5 shows the kind `list`."
+          }
+        }
       },
       "PreviewChangeBody": {
         "type": "object",
@@ -19021,6 +19879,17 @@
           "shown": {
             "$ref": "#/components/schemas/ProjectShown",
             "description": "`visible` or `hidden`."
+          }
+        }
+      },
+      "ProjectListChoiceBody": {
+        "type": "object",
+        "description": "The saved search a project shows as its list.",
+        "required": ["search"],
+        "properties": {
+          "search": {
+            "type": ["string", "null"],
+            "description": "The saved search, shared with the project; `null` for the built-in default list."
           }
         }
       },
@@ -19402,6 +20271,7 @@
           "relation-kind",
           "workflow",
           "role",
+          "saved-search",
           "session",
           "setting",
           "setup-code",
@@ -19849,6 +20719,64 @@
           }
         }
       },
+      "SavedSearchItem": {
+        "type": "object",
+        "description": "A saved search as the person sees it.",
+        "required": [
+          "id",
+          "name",
+          "search_text",
+          "presentation",
+          "maker",
+          "mine",
+          "shared_with",
+          "updated_at",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID, in the address `/s/<id>`."
+          },
+          "maker": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who made it, as the person sees people who write."
+          },
+          "mine": {
+            "type": "boolean",
+            "description": "Whether the person made it."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "presentation": {
+            "$ref": "#/components/schemas/PresentationRef",
+            "description": "How its results are shown."
+          },
+          "search_text": {
+            "type": "string",
+            "description": "The search text, in the canonical spelling of the search language."
+          },
+          "shared_with": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareRef"
+            },
+            "description": "Whom it is shared with; only its maker is told."
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "When it was last changed.",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
       "ScopeInput": {
         "type": "object",
         "description": "Where a field is used, in a request.",
@@ -20175,6 +21103,11 @@
             "description": "Its name; left out where the person may not know it."
           }
         }
+      },
+      "SearchSet": {
+        "type": "string",
+        "description": "Which set of saved searches a list shows: the person's own, or the ones shared with them.",
+        "enum": ["mine", "shared"]
       },
       "SecondStepBody": {
         "type": "object",
@@ -20574,6 +21507,68 @@
           "password": {
             "type": "string",
             "description": "The password of the administrator."
+          }
+        }
+      },
+      "ShareBody": {
+        "type": "object",
+        "description": "The group or the project to share with.",
+        "required": ["kind", "id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the group or the project."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ShareKind",
+            "description": "A group or a project."
+          }
+        }
+      },
+      "ShareChoiceItem": {
+        "type": "object",
+        "description": "A group or a project the person may share with.",
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the group or the project."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "The short name of a project."
+          }
+        }
+      },
+      "ShareKind": {
+        "type": "string",
+        "description": "What a saved search is shared with: a group or a project.",
+        "enum": ["group", "project"]
+      },
+      "ShareRef": {
+        "type": "object",
+        "description": "A group or a project a saved search is shared with.",
+        "required": ["kind", "id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the group or the project."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ShareKind",
+            "description": "A group or a project."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "Its name; left out for a project the person may not know."
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "The short name of a project the person may know."
           }
         }
       },
@@ -21203,6 +22198,11 @@
           }
         }
       },
+      "ViewKind": {
+        "type": "string",
+        "description": "The kind of view a saved search is shown as. Other kinds come with their views.",
+        "enum": ["list"]
+      },
       "WhereToBody": {
         "type": "object",
         "description": "Where a project would go.",
@@ -21622,6 +22622,10 @@
     {
       "name": "access",
       "description": "What roles see (field permissions, who sees people) and what a person can do and why (check access)."
+    },
+    {
+      "name": "saved-searches",
+      "description": "Searches that people save with how their results are shown, share with groups and projects, and the list a project shows."
     }
   ]
 }

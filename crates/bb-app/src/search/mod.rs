@@ -8,7 +8,10 @@ mod run;
 mod target;
 
 pub use bb_searchlang::Mistake;
-pub(crate) use readable::word_is_taken;
+#[cfg(test)]
+pub(crate) use names::NAME_RESOLUTIONS_MAX;
+pub(crate) use names::NameCache;
+pub(crate) use readable::{Looked, readable_of, word_is_taken};
 pub use readable::{ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
 pub use request::{
     GroupCount, GroupKey, Names, OwnReach, ProjectLink, SearchFailure, SearchHit, SearchRequest,

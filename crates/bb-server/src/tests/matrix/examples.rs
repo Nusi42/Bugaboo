@@ -424,6 +424,33 @@ pub(super) const EXAMPLES: &[Example] = &[
         ],
     ),
     Example::with("downloadFile", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("listSavedSearches", &[Quirk::SessionOnly]),
+    Example::with("listShareChoices", &[Quirk::SessionOnly]),
+    Example::with("createSavedSearch", &[Quirk::SessionOnly]),
+    Example::with("getSavedSearch", &[Quirk::SessionOnly]),
+    Example::with("changeSavedSearch", &[Quirk::SessionOnly]),
+    Example::with("deleteSavedSearch", &[Quirk::SessionOnly]),
+    Example::with("restoreSavedSearch", &[Quirk::SessionOnly]),
+    Example::with("copySavedSearch", &[Quirk::SessionOnly]),
+    Example::with(
+        "shareSavedSearch",
+        &[
+            Quirk::OnTheTargetProject(Permission::ShareSearches),
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with("stopSharingSavedSearch", &[Quirk::SessionOnly]),
+    Example::with(
+        "getProjectList",
+        &[
+            Quirk::OnTheTargetProject(Permission::SeeProjects),
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with(
+        "setProjectList",
+        &[Quirk::NeedsToSeeTheProject, Quirk::SessionOnly],
+    ),
     Example::route("getMyHandle"),
     Example::route("changeMyHandle"),
     Example::route("listNotifications"),
@@ -559,6 +586,11 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_files::file_request(fixture, operation, browser).await? {
+        return Ok(found);
+    }
+    if let Some(found) =
+        super::examples_searches::search_request(fixture, operation, browser).await?
+    {
         return Ok(found);
     }
     if let Some(found) = super::examples_tags::tag_request(fixture, operation).await? {

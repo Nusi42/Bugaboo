@@ -109,6 +109,14 @@ use crate::roles::{
     change_role, check_access, copy_role, create_role, delete_role, permissions, remove_assignment,
     reset_role, role, role_levels, roles, set_level,
 };
+use crate::saved_searches::{
+    ChangeSearch, DeleteSearch, ProjectList, ProjectListQuery, RestoreSearch, RestoredSearch,
+    SaveCopy, SaveSearch, SavedSearchPage, SavedSearchQuery, SavedSearchView, SearchesQuery,
+    SetProjectList, ShareChoicePage, ShareChoicesQuery, ShareSearch, StopSharingSearch,
+    change_search, delete_search, project_list, restore_search, save_copy, save_search,
+    saved_search, saved_searches, set_project_list, share_choices, share_search,
+    stop_sharing_search,
+};
 use crate::search::{
     ReadableFieldsQuery, SearchCount, SearchCountQuery, SearchFields, SearchGroups,
     SearchGroupsQuery, SearchPage, SearchQuery, SearcherQuery, readable_fields, search,
@@ -536,6 +544,30 @@ use_cases! {
     followers(FollowersQuery) -> Authorized<Followers>;
     /// Whether the person follows an issue.
     following(FollowingQuery) -> Authorized<FollowingState>;
+    /// Lists the saved searches a person made, or the ones shared with them.
+    saved_searches(SearchesQuery) -> Authorized<SavedSearchPage>;
+    /// Opens one saved search.
+    saved_search(SavedSearchQuery) -> Authorized<SavedSearchView>;
+    /// Lists the groups or projects a person may share a saved search with.
+    share_choices(ShareChoicesQuery) -> Authorized<ShareChoicePage>;
+    /// Saves a search under a name.
+    save_search(SaveSearch) -> Authorized<SavedSearchView>;
+    /// Changes a saved search.
+    change_search(ChangeSearch) -> Authorized<SavedSearchView>;
+    /// Shares a saved search with a group or a project.
+    share_search(ShareSearch) -> Authorized<SavedSearchView>;
+    /// Stops sharing a saved search with a group or a project.
+    stop_sharing_search(StopSharingSearch) -> Authorized<SavedSearchView>;
+    /// Puts a saved search into the trash.
+    delete_search(DeleteSearch) -> Done;
+    /// Takes a saved search out of the trash.
+    restore_search(RestoreSearch) -> Authorized<RestoredSearch>;
+    /// Saves a copy of a saved search for the person.
+    save_copy(SaveCopy) -> Authorized<SavedSearchView>;
+    /// Shows the list a project shows.
+    project_list(ProjectListQuery) -> Authorized<ProjectList>;
+    /// Chooses the saved search a project shows as its list.
+    set_project_list(SetProjectList) -> Authorized<ProjectList>;
     /// Lists the own fields a person sees.
     fields(FieldsQuery) -> Authorized<FieldPage>;
     /// Lists the kinds of information a field can hold.

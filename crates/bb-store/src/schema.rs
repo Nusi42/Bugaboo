@@ -15,6 +15,7 @@ mod access;
 mod comments;
 mod files;
 mod notify;
+mod searches;
 mod sign_in;
 mod system;
 mod text_index;
@@ -24,6 +25,7 @@ pub(crate) use access::*;
 pub(crate) use comments::*;
 pub(crate) use files::*;
 pub(crate) use notify::*;
+pub(crate) use searches::*;
 pub(crate) use sign_in::*;
 pub(crate) use system::*;
 pub(crate) use text_index::*;
@@ -440,6 +442,35 @@ stored_tables! {
         Size => size,
         CreatedAt => created_at,
         UpdatedAt => updated_at,
+    },
+    SavedSearchRow => bb_core::saved_search::SavedSearch {
+        Id => id,
+        Name => name,
+        Text => text,
+        Maker => maker,
+        View => view,
+        Spacing => spacing,
+        GroupBy => group_by,
+        CreatedAt => created_at,
+        UpdatedAt => updated_at,
+        DeletedAt => deleted_at,
+        Version => version,
+    },
+    SearchColumnRow => bb_core::saved_search::SearchColumn {
+        Search => search,
+        Position => position,
+        Field => field,
+        Width => width,
+    },
+    SearchShareRow => bb_core::saved_search::SearchShare {
+        Search => search,
+        Kind => target,
+        Target => target,
+        SharedAt => shared_at,
+    },
+    ProjectDefaultListRow => bb_core::saved_search::ProjectDefaultList {
+        Project => project,
+        Search => search,
     },
     FollowerRow => bb_core::follow::Follower {
         Issue => issue,

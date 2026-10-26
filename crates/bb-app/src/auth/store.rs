@@ -40,6 +40,7 @@ use crate::offers::OfferStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
+use crate::saved_searches::SavedSearchStore;
 use crate::search::SearchStore;
 use crate::settings::SettingsStore;
 use crate::store_macros::{reads, writes};
@@ -346,6 +347,7 @@ pub trait AuthStore:
     + LayoutStore
     + WorkflowStore
     + SettingsStore
+    + SavedSearchStore
     + SearchStore
     + 'static
 {

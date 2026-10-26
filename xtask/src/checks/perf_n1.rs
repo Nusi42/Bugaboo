@@ -2,7 +2,7 @@
 //!
 //! A list endpoint must run as many statements for forty rows as for five, and the database counts
 //! them itself. The tests of the issue page, the list of issues, tag suggestions, the types and
-//! groups of a project and the notifications are named below; one that is renamed, deleted or
+//! groups of a project, the notifications and the saved searches are named below; one that is renamed, deleted or
 //! switched off without the list changing fails here (the one implementation is `required_tests`).
 //! The suites run on both databases in `cargo xtask ci`.
 
@@ -11,9 +11,10 @@ use super::{Check, Context, Finding};
 
 const QUERIES: &str = "crates/bb-server/src/tests/sign_in/perf_queries.rs";
 const NOTIFICATIONS: &str = "crates/bb-server/src/tests/sign_in/perf_notifications.rs";
+const SAVED_SEARCHES: &str = "crates/bb-server/src/tests/sign_in/saved_searches_http.rs";
 
 /// The reads that must not grow with the number of rows.
-pub(super) const REQUIRED: [Required; 10] = [
+pub(super) const REQUIRED: [Required; 11] = [
     // The history names a type and a label group from one read, not one read for each row.
     Required::anywhere("sec_03_the_history_names_a_type_and_a_label_only_where_the_reader_may_know_them"),
     Required::anywhere("sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it"),
@@ -46,6 +47,10 @@ pub(super) const REQUIRED: [Required; 10] = [
         "perf_05_the_number_on_the_menu_runs_as_many_statements_for_forty_unread_as_for_five",
     )
     .within(NOTIFICATIONS),
+    Required::both(
+        "perf_05_a_page_of_forty_saved_searches_runs_as_many_statements_as_a_page_of_five",
+    )
+    .within(SAVED_SEARCHES),
 ];
 
 pub(crate) struct PerfN1;

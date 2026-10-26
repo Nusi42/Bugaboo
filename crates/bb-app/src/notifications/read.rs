@@ -16,10 +16,8 @@ use bb_core::history::FileEvent;
 use bb_core::id::{AttachmentId, CommentId, EntityId, IssueId, NotificationId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
-use bb_core::notification::{
-    AT_ONCE_MAX, LOOKED_AT_MAX, Notification, NotificationFilter, NotificationKind,
-};
-use bb_core::paging::{Cut, page_len, read_len};
+use bb_core::notification::{AT_ONCE_MAX, Notification, NotificationFilter, NotificationKind};
+use bb_core::paging::{Cut, LOOKED_AT_MAX, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place};
 use serde_json::json;

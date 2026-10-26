@@ -196,6 +196,11 @@ impl Shown {
         }
     }
 
+    /// The tree of projects the view was made with.
+    pub(crate) const fn tree(&self) -> &Tree {
+        &self.tree
+    }
+
     /// The person it is the view of.
     pub(crate) const fn person(&self) -> UserId {
         self.person

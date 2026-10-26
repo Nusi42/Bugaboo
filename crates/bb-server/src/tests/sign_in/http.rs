@@ -476,9 +476,14 @@ pub(super) fn example_path(template: &str) -> String {
     format!("{path}{}", required_query(template).unwrap_or_default())
 }
 
-/// The query a route cannot be asked without: the field the groups of a search are made by.
+/// The query a route cannot be asked without: the field the groups of a search are made by, and the
+/// kind of the places a saved search is shared with.
 pub(super) fn required_query(template: &str) -> Option<&'static str> {
-    (template == "/api/v1/search/issues/groups").then_some("?by=priority")
+    match template {
+        "/api/v1/search/issues/groups" => Some("?by=priority"),
+        "/api/v1/saved-searches/share-choices" => Some("?kind=group"),
+        _ => None,
+    }
 }
 
 /// Whether the address is the route written as `template`, whose `{…}` parts stand for any one

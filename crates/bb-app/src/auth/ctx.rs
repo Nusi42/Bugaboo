@@ -223,6 +223,9 @@ pub(crate) type NamesRead<Id> = Mutex<Option<Arc<Vec<(Id, String)>>>>;
 pub(crate) struct Known {
     /// The people looked up by ID; `None` for a person who is not there.
     pub(crate) people: Mutex<HashMap<UserId, Option<bb_core::person::Person>>>,
+    /// The label of the first role of a person at a place, for a viewer who sees people by their
+    /// role: filled for the people of a page in one read (`None` for a person with no role there).
+    pub(crate) role_labels: Mutex<HashMap<(UserId, Place), Option<String>>>,
     /// What the handle of a mention named, for a reader of an issue at a level of *Mentions*.
     pub(crate) handles: Mutex<
         HashMap<

@@ -17,6 +17,7 @@ use bb_core::history::HistoryTab;
 use bb_core::mail::MailServerReadiness;
 use bb_core::message::Message;
 use bb_core::notification::{NotificationFilter, NotificationKind};
+use bb_core::saved_search::{SearchSet, ShareKind};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation as OperationSpec, ParameterIn, PathItem};
@@ -59,7 +60,9 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         HistoryTab,
         MailServerReadiness,
         NotificationFilter,
-        NotificationKind
+        NotificationKind,
+        SearchSet,
+        ShareKind
     )),
     tags(
         (name = "server", description = "The server itself."),
@@ -67,7 +70,8 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         (name = "admin", description = "What only administrators see: the state of the server."),
         (name = "settings", description = "Settings in layers: the organization's, a project's and a person's own."),
         (name = "editing", description = "Edit locks, drafts and the check of what is on the screen: nobody loses text, and no change overwrites another unseen."),
-        (name = "access", description = "What roles see (field permissions, who sees people) and what a person can do and why (check access).")
+        (name = "access", description = "What roles see (field permissions, who sees people) and what a person can do and why (check access)."),
+        (name = "saved-searches", description = "Searches that people save with how their results are shown, share with groups and projects, and the list a project shows.")
     )
 )]
 struct ApiDoc;

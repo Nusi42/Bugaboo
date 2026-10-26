@@ -2602,6 +2602,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/projects/{project}/list": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The list a project shows: the saved search the project chose, when the person may open it, else
+     *     `null` and the client shows the built-in default list. Needs the right to see the project.
+     */
+    get: operations["getProjectList"];
+    /**
+     * Chooses the saved search a project shows as its list, or none. Needs *Change project settings*;
+     *     the search has to be shared with the project.
+     */
+    put: operations["setProjectList"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/projects/{project}/move": {
     parameters: {
       query?: never;
@@ -2941,6 +2965,147 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-searches": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The saved searches the person made, or the ones shared with them, a page at a time, oldest
+     *     first.
+     */
+    get: operations["listSavedSearches"];
+    put?: never;
+    /** Saves a search under a name. It is private and the person's own. */
+    post: operations["createSavedSearch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-searches/share-choices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The groups or the projects the person may share a saved search with, by name, a page at a
+     *     time: what a *Share* window lists.
+     */
+    get: operations["listShareChoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-searches/{search}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Opens a saved search: the person's own, or one shared with them. For anybody else, and for one
+     *     that does not exist or is in the trash, the answer is `not found`.
+     */
+    get: operations["getSavedSearch"];
+    put?: never;
+    post?: never;
+    /**
+     * Puts a saved search into the trash (*Undo* takes it out again). Its maker may, and so may
+     *     whoever may change organization settings.
+     */
+    delete: operations["deleteSavedSearch"];
+    options?: never;
+    head?: never;
+    /** Changes a saved search. Only its maker does. */
+    patch: operations["changeSavedSearch"];
+    trace?: never;
+  };
+  "/api/v1/saved-searches/{search}/copy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * *Save a copy*: a private saved search of the person with the text and the presentation of one
+     *     they may open.
+     */
+    post: operations["copySavedSearch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-searches/{search}/restore": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Takes a saved search out of the trash (*Undo*). */
+    post: operations["restoreSavedSearch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-searches/{search}/shares": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Shares a saved search with a group or a project. Only its maker does, with *Share searches* in
+     *     the project; for a group, by being in it and holding *Share searches* for the whole
+     *     organization, or with *Manage groups*. Sharing it again changes nothing.
+     */
+    post: operations["shareSavedSearch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-searches/{search}/shares/{kind}/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Stops sharing a saved search with a group or a project. Only its maker does. */
+    delete: operations["stopSharingSavedSearch"];
     options?: never;
     head?: never;
     patch?: never;
@@ -3785,6 +3950,19 @@ export interface components {
        */
       version: number;
     };
+    /** @description What to change in a saved search. What is left out stays as it is. */
+    ChangeSavedSearchBody: {
+      /** @description A new name. */
+      name?: string | null;
+      presentation?: components["schemas"]["PresentationRef"] | null;
+      /** @description A new search text. */
+      search_text?: string | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at; a change made meanwhile stops this one.
+       */
+      version: number;
+    };
     /** @description What to change about a tag: what is left out stays as it is. */
     ChangeTagBody: {
       color?: components["schemas"]["ChoiceColor"] | null;
@@ -3934,6 +4112,16 @@ export interface components {
       /** @description A code from the code app (six digits) or a backup code. */
       code: string;
     };
+    /** @description One column of a list: the field by its search word, and its width if the person set one. */
+    ColumnBody: {
+      /** @description The search word of the field (`assignedTo`). */
+      field: string;
+      /**
+       * Format: int32
+       * @description How wide the column is, in the units of the list; `null` for the width the list chooses.
+       */
+      width: number | null;
+    };
     /** @description The tag that takes the issues of another. */
     CombineBody: {
       /** @description The ID of the tag or label that stays. */
@@ -4045,6 +4233,11 @@ export interface components {
        */
       mistakes?: components["schemas"]["MistakeBody"][] | null;
       taken_over_by?: components["schemas"]["PersonRef"] | null;
+    };
+    /** @description The name of a copy. */
+    CopyBody: {
+      /** @description What the copy is called; the name of the original when left out. */
+      name?: string | null;
     };
     /** @description An access key to make. */
     CreateKeyBody: {
@@ -5786,6 +5979,14 @@ export interface components {
       /** @description Whether everybody with it needs two-step sign-in. */
       two_step: boolean;
     };
+    /** @description A search to save. */
+    NewSavedSearchBody: {
+      /** @description What it is called. */
+      name: string;
+      presentation?: components["schemas"]["PresentationRef"] | null;
+      /** @description The search text. */
+      search_text: string;
+    };
     /** @description A new value for a setting. */
     NewValueBody: {
       /** @description The value. It must be of the type of the setting and one it accepts. */
@@ -5905,6 +6106,14 @@ export interface components {
      * @enum {string}
      */
     OnlyIfTest: "filled" | "empty";
+    /**
+     * @description A saved search that may be missing: the list a project shows (`null` for the built-in default
+     *     list) and what taking a search out of the trash answers (`null` for somebody who may only take
+     *     it out and may not open it, who is told nothing of its name or text).
+     */
+    OptionalSavedSearchBody: {
+      search: components["schemas"]["SavedSearchItem"] | null;
+    };
     /** @description The change that is about to be made. */
     OwnChangeBody:
       | {
@@ -6149,6 +6358,20 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_SavedSearchItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["SavedSearchItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
+    Page_ShareChoiceItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["ShareChoiceItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_TagItem: {
       /** @description The items of this page. */
       items: components["schemas"]["TagItem"][];
@@ -6307,6 +6530,7 @@ export interface components {
       | "comment"
       | "delete-issues"
       | "move-issues"
+      | "share-searches"
       | "edit-anyway"
       | "manage-issue-types"
       | "manage-workflows"
@@ -6455,6 +6679,17 @@ export interface components {
           /** @enum {string} */
           kind: "hidden";
         };
+    /** @description How the results of a saved search are shown. */
+    PresentationRef: {
+      /** @description The columns, in order. None at all means the columns of the project's list. */
+      columns: components["schemas"]["ColumnBody"][];
+      /** @description The field the rows are grouped by, by its search word. */
+      group_by: string | null;
+      /** @description How close together the rows are: a choice of the setting `appearance.spacing`. */
+      spacing: string;
+      /** @description The kind of view. M5 shows the kind `list`. */
+      view: components["schemas"]["ViewKind"];
+    };
     /** @description What to preview: a new name, or the one it would be combined with. */
     PreviewChangeBody: {
       /** @description The ID of the tag or label it would be combined with. */
@@ -6635,6 +6870,11 @@ export interface components {
       short_name?: string | null;
       /** @description `visible` or `hidden`. */
       shown: components["schemas"]["ProjectShown"];
+    };
+    /** @description The saved search a project shows as its list. */
+    ProjectListChoiceBody: {
+      /** @description The saved search, shared with the project; `null` for the built-in default list. */
+      search: string | null;
     };
     /** @description A project as a small reference: what a name in a sentence needs. */
     ProjectRef: {
@@ -6823,6 +7063,7 @@ export interface components {
       | "relation-kind"
       | "workflow"
       | "role"
+      | "saved-search"
       | "session"
       | "setting"
       | "setup-code"
@@ -7086,6 +7327,33 @@ export interface components {
        */
       version: number;
     };
+    /** @description A saved search as the person sees it. */
+    SavedSearchItem: {
+      /** @description The ID, in the address `/s/<id>`. */
+      id: string;
+      /** @description Who made it, as the person sees people who write. */
+      maker: components["schemas"]["PersonRef"];
+      /** @description Whether the person made it. */
+      mine: boolean;
+      /** @description What it is called. */
+      name: string;
+      /** @description How its results are shown. */
+      presentation: components["schemas"]["PresentationRef"];
+      /** @description The search text, in the canonical spelling of the search language. */
+      search_text: string;
+      /** @description Whom it is shared with; only its maker is told. */
+      shared_with: components["schemas"]["ShareRef"][];
+      /**
+       * Format: date-time
+       * @description When it was last changed.
+       */
+      updated_at: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
+    };
     /** @description Where a field is used, in a request. */
     ScopeInput: {
       /** @description The IDs of the issue types the field is limited to; empty for all. */
@@ -7230,6 +7498,11 @@ export interface components {
       /** @description Its name; left out where the person may not know it. */
       name?: string | null;
     };
+    /**
+     * @description Which set of saved searches a list shows: the person's own, or the ones shared with them.
+     * @enum {string}
+     */
+    SearchSet: "mine" | "shared";
     /** @description Which ways there are to finish signing in. */
     SecondStepBody: {
       /** @description A backup code (only with a code app). */
@@ -7435,6 +7708,38 @@ export interface components {
       name: string;
       /** @description The password of the administrator. */
       password: string;
+    };
+    /** @description The group or the project to share with. */
+    ShareBody: {
+      /** @description The ID of the group or the project. */
+      id: string;
+      /** @description A group or a project. */
+      kind: components["schemas"]["ShareKind"];
+    };
+    /** @description A group or a project the person may share with. */
+    ShareChoiceItem: {
+      /** @description The ID of the group or the project. */
+      id: string;
+      /** @description Its name. */
+      name: string;
+      /** @description The short name of a project. */
+      short_name?: string | null;
+    };
+    /**
+     * @description What a saved search is shared with: a group or a project.
+     * @enum {string}
+     */
+    ShareKind: "group" | "project";
+    /** @description A group or a project a saved search is shared with. */
+    ShareRef: {
+      /** @description The ID of the group or the project. */
+      id: string;
+      /** @description A group or a project. */
+      kind: components["schemas"]["ShareKind"];
+      /** @description Its name; left out for a project the person may not know. */
+      name?: string | null;
+      /** @description The short name of a project the person may know. */
+      short_name?: string | null;
     };
     /** @description What a person types to sign in. */
     SignInBody: {
@@ -7746,6 +8051,11 @@ export interface components {
       /** @description One entry for each record asked about. */
       items: components["schemas"]["RecordVersionBody"][];
     };
+    /**
+     * @description The kind of view a saved search is shown as. Other kinds come with their views.
+     * @enum {string}
+     */
+    ViewKind: "list";
     /** @description Where a project would go. */
     WhereToBody: {
       /** @description The ID of the project it would go into; `null` for the top level. */
@@ -13332,6 +13642,71 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  getProjectList: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The list. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OptionalSavedSearchBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  setProjectList: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProjectListChoiceBody"];
+      };
+    };
+    responses: {
+      /** @description The list as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OptionalSavedSearchBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   moveProject: {
     parameters: {
       query?: never;
@@ -14052,6 +14427,331 @@ export interface operations {
         };
       };
       304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listSavedSearches: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: components["parameters"]["Limit"];
+        /** @description The ones the person made (`mine`, the default) or the ones shared with them (`shared`). */
+        scope?: components["schemas"]["SearchSet"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The saved searches. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_SavedSearchItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createSavedSearch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewSavedSearchBody"];
+      };
+    };
+    responses: {
+      /** @description The saved search. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearchItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listShareChoices: {
+    parameters: {
+      query: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: components["parameters"]["Limit"];
+        /** @description Groups or projects. */
+        kind: components["schemas"]["ShareKind"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What may be shared with. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ShareChoiceItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getSavedSearch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The saved search. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearchItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deleteSavedSearch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The saved search is in the trash. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeSavedSearch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeSavedSearchBody"];
+      };
+    };
+    responses: {
+      /** @description The saved search as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearchItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  copySavedSearch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CopyBody"];
+      };
+    };
+    responses: {
+      /** @description The copy. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearchItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  restoreSavedSearch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The saved search is out of the trash; the search is in the answer when it is one the person may open. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OptionalSavedSearchBody"];
+        };
+      };
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  shareSavedSearch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ShareBody"];
+      };
+    };
+    responses: {
+      /** @description The saved search as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearchItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  stopSharingSavedSearch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+        /** @description A group or a project. */
+        kind: components["schemas"]["ShareKind"];
+        /** @description The ID of the group or the project. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The saved search as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearchItem"];
+        };
+      };
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];

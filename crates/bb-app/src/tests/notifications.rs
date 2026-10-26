@@ -883,7 +883,7 @@ async fn sec_06_a_person_who_may_not_see_authors_does_not_see_who_did_it() -> Ou
 async fn ntf_01_one_request_for_the_list_looks_at_a_bounded_number_of_rows_and_says_there_is_more()
 -> Outcome {
     use bb_core::id::{IssueId, NotificationId};
-    use bb_core::notification::{LOOKED_AT_MAX, Notification};
+    use bb_core::{notification::Notification, paging::LOOKED_AT_MAX};
 
     use crate::context::SystemIds;
 

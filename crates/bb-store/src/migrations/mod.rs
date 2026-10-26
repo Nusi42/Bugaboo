@@ -52,6 +52,7 @@ mod m0020_mention_read_at;
 mod m0021_kebab_words;
 mod m0022_text_index;
 mod m0023_search_indexes;
+mod m0024_saved_searches;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -262,6 +263,11 @@ const ALL: &[Definition] = &[
         version: 23,
         name: "search_indexes",
         steps: || Ok(m0023_search_indexes::steps()),
+    },
+    Definition {
+        version: 24,
+        name: "saved_searches",
+        steps: || Ok(m0024_saved_searches::steps()),
     },
 ];
 

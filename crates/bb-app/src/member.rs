@@ -135,3 +135,18 @@ pub(crate) mod label_group {
     /// Where the group is offered, in the event of the group.
     pub(crate) const OFFERED: &str = "offered";
 }
+
+/// The members of a saved search (QRY-06).
+pub(crate) mod saved_search {
+    pub(crate) const NAME: &str = "name";
+    pub(crate) const TEXT: &str = "text";
+    pub(crate) const VIEW: &str = "view";
+    pub(crate) const COLUMNS: &str = "columns";
+    pub(crate) const SPACING: &str = "spacing";
+    pub(crate) const GROUP_BY: &str = "group_by";
+    /// The group or project it is shared with.
+    pub(crate) const SHARED_WITH: &str = "shared_with";
+    pub(crate) const DELETED_AT: &str = crate::issues::member::DELETED_AT;
+    /// The saved search a project shows as its list (an event about the project).
+    pub(crate) const DEFAULT_LIST: &str = "default_list";
+}

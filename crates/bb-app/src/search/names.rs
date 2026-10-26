@@ -36,6 +36,18 @@ const PEOPLE_PER_NAME: u64 = 100;
 /// reads (the people past them are not found by that name).
 const PEOPLE_PAGES_PER_NAME: usize = 5;
 
+/// The most names that a request resolves with a read for each name (a person, an Issue ID): the
+/// texts of a list of saved searches are written by other people, so what they name is bounded
+/// (`LOOKED_AT_MAX` searches of up to `MAX_FILTERS` names each would be 25,000 reads otherwise). A
+/// name past it is never answered as unknown: the resolver says it is out of budget
+/// ([`NameCache::spent`]) and the list ends its page before that search, which the next request
+/// reads again with a budget of its own. The groups, the tags and the labels cost one read of the
+/// whole list or catalogue and are not counted.
+pub(crate) const NAME_RESOLUTIONS_MAX: usize = 200;
+
+// A search that a person runs (at most `MAX_FILTERS` names) is never out of budget.
+const _: () = assert!(NAME_RESOLUTIONS_MAX > bb_searchlang::MAX_FILTERS);
+
 /// What a name in a search is the name of.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum What {
@@ -135,6 +147,88 @@ fn put_values(target: FieldTarget, values: &[Operand], put: &mut impl FnMut(What
     }
 }
 
+/// What resolving the names of the texts of one request has read and found, so that each text of a
+/// list does not read it again: what every name stood for (also the names that stood for nothing),
+/// and the groups, the tags and the labels the person may know, read once.
+#[derive(Default)]
+pub(crate) struct NameCache {
+    /// What the names stood for, with the unknown names of the last text.
+    pub(crate) names: Names,
+    seeded: bool,
+    viewer: Option<std::sync::Arc<bb_policy::Evaluation>>,
+    groups: Option<Vec<bb_core::access::Group>>,
+    mine: Option<Vec<GroupId>>,
+    tags_known: Option<Vec<(String, bb_core::id::TagId)>>,
+    labels_known: Option<Vec<(String, bb_core::id::LabelId)>>,
+    missing_issues: Vec<String>,
+    /// How many names were resolved with a read each for the request, against
+    /// [`NAME_RESOLUTIONS_MAX`].
+    resolutions: usize,
+    /// Whether the last text needed a name resolved past the bound: its answer is not an answer.
+    spent: bool,
+    /// Whether the bound is lifted: a page that has no search yet goes on to the first one it can
+    /// show, so a cursor never has to name a search that was left out.
+    lifted: bool,
+}
+
+impl NameCache {
+    /// Whether a name that has to be read may be: counts it, and says no past the bound (and
+    /// remembers that the text is out of budget), unless the bound is lifted.
+    fn may_resolve(&mut self) -> bool {
+        if self.lifted {
+            return true;
+        }
+        if self.resolutions >= NAME_RESOLUTIONS_MAX {
+            self.spent = true;
+            return false;
+        }
+        self.resolutions += 1;
+        true
+    }
+
+    /// Whether the last text needed a name past the bound, so that its answer cannot be used.
+    pub(crate) const fn spent(&self) -> bool {
+        self.spent
+    }
+
+    /// Lifts the bound for the rest of the request.
+    pub(crate) const fn lift(&mut self) {
+        self.lifted = true;
+    }
+}
+
+/// What a text can name that needs no read: the statuses, the issue types and the choices of the
+/// own fields, which `looked` holds already.
+fn seed(names: &mut Names, looked: &Looked) {
+    for status in &looked.statuses {
+        let (key, stored) = (name_key(&status.name), status.key.to_string());
+        match names.statuses.iter_mut().find(|(each, _)| *each == key) {
+            Some((_, keys)) if !keys.contains(&stored) => keys.push(stored),
+            Some(_) => {}
+            None => names.statuses.push((key, vec![stored])),
+        }
+    }
+    for found in &looked.types {
+        let key = name_key(&found.name);
+        match names.issue_types.iter_mut().find(|(each, _)| *each == key) {
+            Some((_, ids)) => ids.push(found.id),
+            None => names.issue_types.push((key, vec![found.id])),
+        }
+    }
+    for definition in &looked.own {
+        if !definition.choices.is_empty() {
+            names.choices.push((
+                definition.field.id,
+                definition
+                    .choices
+                    .iter()
+                    .map(|choice| (name_key(&choice.name), choice.id))
+                    .collect(),
+            ));
+        }
+    }
+}
+
 impl Names {
     /// The groups after `member of`, or the groups of a field that holds one.
     fn group_list(&mut self, member_of: bool) -> &mut Vec<(String, Vec<GroupId>)> {
@@ -165,82 +259,91 @@ impl<S: AuthStore> Ctx<'_, S> {
         looked: &Looked,
         checked: &CheckedSearch,
     ) -> Result<Names, AppError> {
-        let mut names = Names::default();
-        for status in &looked.statuses {
-            let (key, stored) = (name_key(&status.name), status.key.to_string());
-            match names.statuses.iter_mut().find(|(each, _)| *each == key) {
-                Some((_, keys)) if !keys.contains(&stored) => keys.push(stored),
-                Some(_) => {}
-                None => names.statuses.push((key, vec![stored])),
-            }
+        let mut cache = NameCache::default();
+        self.search_names_in(actor, looked, checked, &mut cache)
+            .await?;
+        Ok(cache.names)
+    }
+
+    /// The same, for the many texts of one request (the list of the saved searches shared with a
+    /// person): what a name stood for, or that it stood for nothing, and what was read to find out
+    /// (the groups, the tags and labels, the viewer), stays in `cache`, so each is read once for
+    /// the request. `cache.names.unknown` holds the names of the last text only.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn search_names_in(
+        &self,
+        actor: &Actor,
+        looked: &Looked,
+        checked: &CheckedSearch,
+        cache: &mut NameCache,
+    ) -> Result<(), AppError> {
+        if !cache.seeded {
+            seed(&mut cache.names, looked);
+            cache.seeded = true;
         }
-        for found in &looked.types {
-            let key = name_key(&found.name);
-            match names.issue_types.iter_mut().find(|(each, _)| *each == key) {
-                Some((_, ids)) => ids.push(found.id),
-                None => names.issue_types.push((key, vec![found.id])),
-            }
-        }
-        for definition in &looked.own {
-            if !definition.choices.is_empty() {
-                names.choices.push((
-                    definition.field.id,
-                    definition
-                        .choices
-                        .iter()
-                        .map(|choice| (name_key(&choice.name), choice.id))
-                        .collect(),
-                ));
-            }
-        }
+        cache.names.unknown.clear();
+        cache.spent = false;
         let mut asked: Vec<Ask> = Vec::new();
         if let Some(filter) = &checked.search().filter {
             ask(filter, looked, &mut asked);
         }
-        let viewer = self.evaluation_of(actor, Where::Organization).await?;
+        let viewer = if let Some(viewer) = &cache.viewer {
+            viewer.clone()
+        } else {
+            let viewer = self.evaluation_of(actor, Where::Organization).await?;
+            cache.viewer = Some(viewer.clone());
+            viewer
+        };
         for each in &asked {
             let found = self
-                .resolve_name(actor, looked, &viewer, each, &mut names)
+                .resolve_name(actor, looked, &viewer, each, cache)
                 .await?;
             if !found {
-                names.unknown.push(UnknownName {
+                cache.names.unknown.push(UnknownName {
                     span: each.span,
                     field: each.field.clone(),
                     text: each.text.clone(),
                 });
             }
         }
-        Ok(names)
+        Ok(())
     }
 
-    /// Resolves one name into `names`; whether it stands for anything the person may know.
+    /// Resolves one name into `cache.names`; whether it stands for anything the person may know.
     async fn resolve_name(
         &self,
         actor: &Actor,
         looked: &Looked,
         viewer: &bb_policy::Evaluation,
         each: &Ask,
-        names: &mut Names,
+        cache: &mut NameCache,
     ) -> Result<bool, AppError> {
         let key = name_key(&each.text);
         match each.what {
             What::Person(kind) => {
-                if let Some((_, _, found)) = names
+                if let Some((_, _, found)) = cache
+                    .names
                     .people
                     .iter()
                     .find(|(of, name, _)| *of == kind && *name == key)
                 {
                     return Ok(!found.is_empty());
                 }
+                if !cache.may_resolve() {
+                    return Ok(true);
+                }
                 let found = self.people_named(actor, viewer, kind, &each.text).await?;
                 let known = !found.is_empty();
-                names.people.push((kind, key, found));
+                cache.names.people.push((kind, key, found));
                 Ok(known)
             }
             What::Group | What::MemberOf => {
                 let member_of = each.what == What::MemberOf;
                 // The groups after `member of` and the groups of a group field are told apart.
-                if let Some((_, found)) = names
+                if let Some((_, found)) = cache
+                    .names
                     .group_list(member_of)
                     .iter()
                     .find(|(name, _)| *name == key)
@@ -248,13 +351,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Ok(!found.is_empty());
                 }
                 let found = self
-                    .groups_named(actor, viewer, &each.text, member_of)
+                    .groups_named(actor, viewer, &each.text, member_of, cache)
                     .await?;
                 let known = !found.is_empty();
-                names.group_list(member_of).push((key, found));
+                cache.names.group_list(member_of).push((key, found));
                 Ok(known)
             }
-            What::Tag | What::Label => self.tag_or_label_named(looked, each, names).await,
+            What::Tag | What::Label => self.tag_or_label_named(looked, each, cache).await,
             What::Project => Ok(ProjectLink::named_in(
                 &looked.seen.links(&looked.projects),
                 &each.text,
@@ -265,12 +368,19 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Ok(false);
                 };
                 let key = id.to_string();
-                if names.issues.iter().any(|(name, _)| *name == key) {
+                if cache.names.issues.iter().any(|(name, _)| *name == key) {
+                    return Ok(true);
+                }
+                if cache.missing_issues.contains(&key) {
+                    return Ok(false);
+                }
+                if !cache.may_resolve() {
                     return Ok(true);
                 }
                 let found = self.issue_named(actor, looked, &id).await?;
-                if let Some(issue) = found {
-                    names.issues.push((key, issue));
+                match found {
+                    Some(issue) => cache.names.issues.push((key, issue)),
+                    None => cache.missing_issues.push(key),
                 }
                 Ok(found.is_some())
             }
@@ -304,79 +414,105 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The groups of this name the person may name: all of them where they are shown groups by
-    /// name; for `member of`, only the groups they are in, unless they manage groups.
+    /// name; for `member of`, only the groups they are in, unless they manage groups. The groups
+    /// and the groups of the person are read once for the cache.
     async fn groups_named(
         &self,
         actor: &Actor,
         viewer: &bb_policy::Evaluation,
         text: &str,
         member_of: bool,
+        cache: &mut NameCache,
     ) -> Result<Vec<GroupId>, AppError> {
         if !viewer.sees_names_in(FieldType::Group) {
             return Ok(Vec::new());
         }
-        let groups = self
-            .store()
-            .groups()
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let mine: Vec<GroupId> = if member_of && !viewer.allows(Permission::ManageGroups) {
-            self.store()
-                .groups_of(actor.person.id)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .iter()
-                .map(|group| group.id)
-                .collect()
-        } else {
-            Vec::new()
-        };
+        if cache.groups.is_none() {
+            cache.groups = Some(
+                self.store()
+                    .groups()
+                    .await
+                    .map_err(|error| internal::<S>(&error))?,
+            );
+        }
         let everyone = !member_of || viewer.allows(Permission::ManageGroups);
-        Ok(groups
+        if !everyone && cache.mine.is_none() {
+            cache.mine = Some(
+                self.store()
+                    .groups_of(actor.person.id)
+                    .await
+                    .map_err(|error| internal::<S>(&error))?
+                    .iter()
+                    .map(|group| group.id)
+                    .collect(),
+            );
+        }
+        let mine = cache.mine.as_deref().unwrap_or_default();
+        Ok(cache
+            .groups
             .iter()
+            .flatten()
             .filter(|group| same_name(&group.name, text) && (everyone || mine.contains(&group.id)))
             .map(|group| group.id)
             .collect())
     }
 
     /// A tag or a label the search names, among those the person may know (the same rule as the
-    /// lists of tags and labels).
+    /// lists of tags and labels). The catalogues are read once for the cache.
     async fn tag_or_label_named(
         &self,
         looked: &Looked,
         each: &Ask,
-        names: &mut Names,
+        cache: &mut NameCache,
     ) -> Result<bool, AppError> {
         let key = name_key(&each.text);
         if each.what == What::Tag {
-            if let Some((_, found)) = names.tags.iter().find(|(name, _)| *name == key) {
+            if let Some((_, found)) = cache.names.tags.iter().find(|(name, _)| *name == key) {
                 return Ok(!found.is_empty());
             }
-            let catalogue = self.tag_catalogue().await?;
-            let ids: Vec<_> = self
-                .tags_known(&catalogue, &looked.seen)
-                .await?
-                .into_iter()
-                .filter(|tag| same_name(&tag.name, &each.text))
-                .map(|tag| tag.id)
+            if cache.tags_known.is_none() {
+                let catalogue = self.tag_catalogue().await?;
+                cache.tags_known = Some(
+                    self.tags_known(&catalogue, &looked.seen)
+                        .await?
+                        .into_iter()
+                        .map(|tag| (tag.name.clone(), tag.id))
+                        .collect(),
+                );
+            }
+            let ids: Vec<_> = cache
+                .tags_known
+                .iter()
+                .flatten()
+                .filter(|(name, _)| same_name(name, &each.text))
+                .map(|(_, id)| *id)
                 .collect();
             let found = !ids.is_empty();
-            names.tags.push((key, ids));
+            cache.names.tags.push((key, ids));
             return Ok(found);
         }
-        if let Some((_, found)) = names.labels.iter().find(|(name, _)| *name == key) {
+        if let Some((_, found)) = cache.names.labels.iter().find(|(name, _)| *name == key) {
             return Ok(!found.is_empty());
         }
-        let mut catalogue = self.label_catalogue().await?;
-        let ids: Vec<_> = self
-            .labels_known(&looked.seen, &mut catalogue, None)
-            .await?
-            .into_iter()
-            .filter(|label| same_name(&label.name, &each.text))
-            .map(|label| label.id)
+        if cache.labels_known.is_none() {
+            let mut catalogue = self.label_catalogue().await?;
+            cache.labels_known = Some(
+                self.labels_known(&looked.seen, &mut catalogue, None)
+                    .await?
+                    .into_iter()
+                    .map(|label| (label.name.clone(), label.id))
+                    .collect(),
+            );
+        }
+        let ids: Vec<_> = cache
+            .labels_known
+            .iter()
+            .flatten()
+            .filter(|(name, _)| same_name(name, &each.text))
+            .map(|(_, id)| *id)
             .collect();
         let found = !ids.is_empty();
-        names.labels.push((key, ids));
+        cache.names.labels.push((key, ids));
         Ok(found)
     }
 
@@ -453,4 +589,24 @@ pub(crate) fn status_groups(looked: &Looked) -> Vec<(StatusGroup, Vec<String>)> 
             (*group, keys)
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{NAME_RESOLUTIONS_MAX, NameCache};
+
+    #[test]
+    fn perf_05_a_request_resolves_no_more_than_a_bounded_number_of_names_with_reads() {
+        let mut cache = NameCache::default();
+        for _ in 0..NAME_RESOLUTIONS_MAX {
+            assert!(cache.may_resolve());
+        }
+        assert!(!cache.spent());
+        // Past the bound the text is out of budget, whatever comes.
+        assert!(!cache.may_resolve());
+        assert!(cache.spent());
+        // Lifted, the page that has no search yet goes on.
+        cache.lift();
+        assert!(cache.may_resolve());
+    }
 }

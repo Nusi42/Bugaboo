@@ -11,7 +11,7 @@ use bb_app::auth::{CreateAccessKey, DeleteAccessKey};
 use bb_auth::AccessKeySecret;
 use bb_core::access_key::KeyChoice;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::{Failure, TestResult, each_database};
+use bb_testing::{Failure, TestDatabase, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{ADA_EMAIL, Browser, called, example_path};
@@ -477,37 +477,50 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> TestResult
     .await
 }
 
+/// Requests a key sends where no key may go, each with an address, a query or a body that is
+/// malformed: the key gets the answer of a key, not a 400 or a 404 that depends on what it sent,
+/// and every one is written into the security log (AUTH-07).
+pub(super) async fn a_key_is_turned_away_first(
+    db: &TestDatabase,
+    requests: &[(&str, String, Option<Value>)],
+) -> TestResult {
+    let rig = Rig::start_with(db, Tries::Roomy).await?;
+    let org = Org::start(&rig).await?;
+    let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
+    let app = app_with_probe(&rig, None);
+    let mut script = Browser::new(&app, &called());
+    let before = rig.database.security_log_entries(0, 1000).await?.len();
+    for (method, path, body) in requests {
+        let reply = script.script(method, path, body.clone(), &key).await?;
+        assert_eq!(reply.status, StatusCode::FORBIDDEN, "{method} {path}");
+        assert_eq!(
+            reply.code(),
+            "auth.access-key-not-allowed",
+            "{method} {path}"
+        );
+    }
+    let entries = rig.database.security_log_entries(0, 1000).await?;
+    let refused = entries
+        .iter()
+        .skip(before)
+        .filter(|entry| entry.action.as_str() == SecurityAction::AccessKeyRefused.code())
+        .count();
+    assert_eq!(refused, requests.len());
+    Ok(())
+}
+
 #[tokio::test]
 async fn auth_07_a_key_is_judged_before_the_body_or_the_address_of_the_request_is_read()
 -> TestResult {
     each_database("auth_07_actor_before_body", async |db| {
-        let rig = Rig::start_with(db, Tries::Roomy).await?;
-        let org = Org::start(&rig).await?;
-        let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
-        let app = app_with_probe(&rig, None);
-        let mut script = Browser::new(&app, &called());
-        let before = rig.database.security_log_entries(0, 1000).await?.len();
-        // A body that is not valid, and an address that is not a key: a key gets the answer of a
-        // key where no key may go, not a 400 or a 404 that depends on what it sent.
-        let bad_body = script
-            .script("POST", "/api/v1/access-keys", Some(json!({})), &key)
-            .await?;
-        assert_eq!(bad_body.status, StatusCode::FORBIDDEN);
-        assert_eq!(bad_body.code(), "auth.access-key-not-allowed");
-        let bad_address = script
-            .script("DELETE", "/api/v1/access-keys/not-an-id", None, &key)
-            .await?;
-        assert_eq!(bad_address.status, StatusCode::FORBIDDEN);
-        assert_eq!(bad_address.code(), "auth.access-key-not-allowed");
-        // Both are written into the security log.
-        let entries = rig.database.security_log_entries(0, 1000).await?;
-        let refused = entries
-            .iter()
-            .skip(before)
-            .filter(|entry| entry.action.as_str() == SecurityAction::AccessKeyRefused.code())
-            .count();
-        assert_eq!(refused, 2);
-        Ok(())
+        a_key_is_turned_away_first(
+            db,
+            &[
+                ("POST", "/api/v1/access-keys".to_owned(), Some(json!({}))),
+                ("DELETE", "/api/v1/access-keys/not-an-id".to_owned(), None),
+            ],
+        )
+        .await
     })
     .await
 }

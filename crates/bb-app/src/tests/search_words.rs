@@ -391,8 +391,9 @@ async fn qry_05_a_name_whose_word_is_taken_is_refused_when_a_field_is_made_or_re
     let made = async |name: &str| {
         create_field(&world.ctx(), new_field(&world, name, FieldType::Text, &[])).await
     };
-    // The word of a built-in field, of a field every issue has, and of one that cannot be searched yet.
-    for name in ["Priority", "Created", "Due date", "assigned To"] {
+    // The word of a built-in field, of a field every issue has, of one that cannot be searched yet,
+    // and of the column of the Issue ID.
+    for name in ["Priority", "Created", "Due date", "assigned To", "Id"] {
         let refused = made(name).await.err();
         assert_eq!(
             refused,

@@ -7,6 +7,18 @@
 
 [[exempt]]
 routes = [
+  "POST /api/v1/saved-searches",
+  "DELETE /api/v1/saved-searches/{search}",
+  "POST /api/v1/saved-searches/{search}/restore",
+  "POST /api/v1/saved-searches/{search}/copy",
+  "POST /api/v1/saved-searches/{search}/shares",
+  "DELETE /api/v1/saved-searches/{search}/shares/{kind}/{id}",
+  "PUT /api/v1/projects/{project}/list",
+]
+reason = "A saved search is made, or put into the trash and taken out, by its maker alone, and a share or a choice is set to a value and can be set again: a version would only protect a change of the text, which has one (M5 WP-06)."
+
+[[exempt]]
+routes = [
   "POST /api/v1/auth/sign-in",
   "POST /api/v1/auth/sign-up",
   "POST /api/v1/auth/setup",

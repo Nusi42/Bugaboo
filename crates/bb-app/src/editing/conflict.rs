@@ -21,7 +21,7 @@ use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, Re
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
     FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId, ProjectId,
-    RelationKindId, RoleId, TagId, UserId, WorkflowId,
+    RelationKindId, RoleId, SavedSearchId, TagId, UserId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -265,6 +265,16 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .comment_facts(stale.viewer, record)
                 .await?
                 .map(|facts| facts.version),
+            // A saved search is private to its maker: nobody else is told its version. The
+            // filter mirrors `own_search` (only the maker changes it, never in the trash),
+            // which made this stale record; `Stale` holds no actor to call it with.
+            RecordKind::SavedSearch => found(SavedSearchId::from_bytes(bytes).ok(), |id| {
+                store.saved_search(id)
+            })
+            .await
+            .map_err(failed)?
+            .filter(|search| search.maker == stale.viewer && search.deleted_at.is_none())
+            .map(|search| search.version),
             _ => return self.version_by_kind(stale).await,
         };
         Ok(version)

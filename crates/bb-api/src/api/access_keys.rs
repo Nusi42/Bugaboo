@@ -12,7 +12,7 @@ use axum::response::Response;
 use bb_app::access::ProjectLabel;
 use bb_app::auth::{
     AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, CreateAccessKey, DeleteAccessKey,
-    ProjectChoice, ProjectChoicesQuery, RequireSessionQuery,
+    ProjectChoice, ProjectChoicesQuery,
 };
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{AccessKeyId, ProjectId};
@@ -306,21 +306,15 @@ async fn create_access_key(
     Session(session_token): Session,
     body: Result<ApiJson<CreateKeyBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    // Who asks comes before what is asked: a key is turned away before its body is looked at.
-    auth.api()?
-        .require_session(
-            info.clone(),
-            RequireSessionQuery {
-                session_token: session_token.clone(),
-            },
-        )
-        .await?;
-    let ApiJson(body) = body?;
-    let projects = body
-        .projects
-        .iter()
-        .map(|project| body_id::<ProjectId>(project))
-        .collect::<Result<Vec<_>, _>>()?;
+    let read = body.and_then(|ApiJson(body)| {
+        let projects = body
+            .projects
+            .iter()
+            .map(|project| body_id::<ProjectId>(project))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok((body, projects))
+    });
+    let (body, projects) = auth.after_who_asks(&info, &session_token, read).await?;
     let created = auth
         .api()?
         .create_access_key(
@@ -357,16 +351,9 @@ async fn delete_access_key(
     Session(session_token): Session,
     ApiPath(access_key_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    // Who asks comes before what is asked: a key is turned away before the address is looked at.
-    auth.api()?
-        .require_session(
-            info.clone(),
-            RequireSessionQuery {
-                session_token: session_token.clone(),
-            },
-        )
+    let id: AccessKeyId = auth
+        .after_who_asks(&info, &session_token, path_id(&access_key_id))
         .await?;
-    let id: AccessKeyId = path_id(&access_key_id)?;
     auth.api()?
         .delete_access_key(info, DeleteAccessKey { session_token, id })
         .await?;

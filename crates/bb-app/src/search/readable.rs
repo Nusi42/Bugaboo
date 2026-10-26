@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
-use bb_core::fields::{Field, FieldKey};
+use bb_core::fields::{Field, FieldKey, ID_WORD};
 use bb_core::id::{FieldId, ProjectId};
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
@@ -125,6 +125,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         scope: SearchScope,
     ) -> Result<Looked, AppError> {
         let seen = self.shown_with_levels_to(actor).await?;
+        self.looked_in(seen, scope).await
+    }
+
+    /// The same, from the tree and the levels of the person that the caller has read already (the
+    /// saved searches read them once for a request and judge many texts with them).
+    ///
+    /// # Errors
+    /// `resource.not-found` for a project that the person does not see; an internal error when the
+    /// store fails.
+    pub(crate) async fn looked_in(
+        &self,
+        seen: crate::projects::Leveled,
+        scope: SearchScope,
+    ) -> Result<Looked, AppError> {
         let within = match scope {
             SearchScope::Everywhere => None,
             SearchScope::Within(project) if seen.sees(project) => Some(project),
@@ -345,6 +359,8 @@ pub(crate) fn reserved_words() -> Vec<String> {
         .iter()
         .map(|field| field.search_word())
         .chain(IssueField::ALL.iter().map(|each| each.word().to_owned()))
+        // The column of the Issue ID is a word that needs no field, and no field may take it.
+        .chain([ID_WORD.to_owned()])
         .collect()
 }
 

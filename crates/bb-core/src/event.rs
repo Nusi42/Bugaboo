@@ -145,6 +145,8 @@ words! {
         Workflow => "workflow",
         /// A role.
         Role => "role",
+        /// A saved search (QRY-06).
+        SavedSearch => "saved_search",
         /// A sign-in session.
         Session => "session",
         /// A setting.

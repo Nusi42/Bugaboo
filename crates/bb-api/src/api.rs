@@ -72,6 +72,7 @@ mod projects;
 mod projects_move;
 mod relations;
 mod roles;
+mod saved_searches;
 mod search;
 mod second_step_gap;
 mod settings;
@@ -174,6 +175,7 @@ where
         .merge(files::routes())
         .merge(history::routes())
         .merge(follow::routes())
+        .merge(saved_searches::routes())
         .merge(notifications::routes())
         .merge(handles::routes())
         .merge(people::routes())

@@ -5,7 +5,7 @@
 
 [[exempt]]
 path = "crates/bb-api/src/permissions.rs"
-lines = 886
+lines = 864
 reason = "The table of the permissions and what each route needs; it grew with the routes of M4. Split by area in M4-F130."
 
 [[exempt]]
