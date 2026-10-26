@@ -116,10 +116,14 @@ async fn qry_06_a_shared_search_with_a_hidden_person_group_or_project_in_its_tex
 -> Outcome {
     let crew = Crew::new().await?;
     a_group_of(&crew.world, "Night shift", &[&crew.cleo]).await?;
-    a_project(&crew.world, "SECRET").await?;
-    // A person: Dan sees people by their role only, so he cannot search by one.
+    let secret = a_project(&crew.world, "SECRET").await?;
+    // An issue to name: an Issue ID that names no issue the person may read is an unknown name.
+    let hidden_issue = super::search_run::issue_of(&crew.world, secret).await?;
+    // A person: Ben and Dan are shown other people by their role only, so neither can search by
+    // one (the one rule of the names of a search); Ada, an administrator, can.
     let person = shared_with_acme(&crew, "By person", "assignedTo is \"Ada Admin\"").await?;
-    assert!(is_there_for(&crew, &crew.ben, person.id).await?);
+    assert!(open(&crew.world, &crew.ada(), person.id).await.is_ok());
+    assert!(!is_there_for(&crew, &crew.ben, person.id).await?);
     assert!(!is_there_for(&crew, &crew.dan, person.id).await?);
     // A group: Cleo is in it, Ben is not.
     let group = shared_with_acme(&crew, "By group", "assignedTo member of \"Night shift\"").await?;
@@ -130,7 +134,8 @@ async fn qry_06_a_shared_search_with_a_hidden_person_group_or_project_in_its_tex
     assert!(!is_there_for(&crew, &crew.ben, project.id).await?);
     let within = shared_with_acme(&crew, "By seen project", "project within ACME").await?;
     assert!(is_there_for(&crew, &crew.ben, within.id).await?);
-    let issue = shared_with_acme(&crew, "Under", "under SECRET-1").await?;
+    let under = format!("under SECRET-{}", hidden_issue.code.as_str());
+    let issue = shared_with_acme(&crew, "Under", &under).await?;
     assert!(!is_there_for(&crew, &crew.ben, issue.id).await?);
     Ok(())
 }
@@ -339,7 +344,7 @@ async fn qry_06_a_walk_past_more_than_five_hundred_hidden_searches_ends_short_wi
     // Five hundred and twenty searches that Dan cannot read, shared with ACME, older than the one
     // he can read.
     {
-        let template = shared_with_acme(&crew, "Hidden", "assignedTo is \"Bob Baker\"").await?;
+        let template = shared_with_acme(&crew, "Hidden", "assignedTo is \"Ada Admin\"").await?;
         let mut shared = crew.world.store.lock();
         let search = shared.state.saved_searches[0].clone();
         let share = shared.state.search_shares[0].clone();
