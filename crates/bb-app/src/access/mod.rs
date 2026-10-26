@@ -348,7 +348,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The label of the first role of `person` at `place`: the one a page filled in one read
     /// (`known.role_labels`), else their evaluation there.
-    pub(crate) async fn role_label_of(
+    async fn role_label_of(
         &self,
         person: UserId,
         place: Place,
