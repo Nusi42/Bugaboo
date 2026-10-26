@@ -310,7 +310,12 @@ fn qry_01_the_limits_five_steps_pass_and_six_fail() {
 fn iss_13_a_word_with_a_star_needs_two_letters_before_it() {
     assert!(checked("title contains \"cr*\"").is_ok());
     assert!(checked("title contains \"crash on sa*\"").is_ok());
-    for text in ["title contains \"c*\"", "title contains \"crash o*\""] {
+    for text in [
+        "title contains \"c*\"",
+        "title contains \"crash o*\"",
+        "title contains \"a a*\"",
+        "title contains \"a* a\"",
+    ] {
         let mistakes = mistakes_of(text);
         assert_eq!(mistakes.len(), 1, "{text}");
         assert_eq!(mistakes[0].key, messages::PREFIX_TOO_SHORT);

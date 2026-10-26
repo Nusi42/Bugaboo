@@ -575,7 +575,8 @@ async fn iss_13_a_second_writer_waits_for_the_first_and_then_reads_the_newest_te
             },
         )
         .await?;
-        // B starts and must wait for A: it would otherwise read, write and commit now.
+        // B must wait for A at the lock. Without it B would read the old texts now, and its rows
+        // would clash with A's or leave A's comment behind; the checks after the commit tell.
         let touched = [Touched::Issue(id)];
         let mut second = Box::pin(storage.store_text_index(&touched, 0, at(11)));
         let waited = tokio::time::timeout(Duration::from_millis(500), second.as_mut()).await;

@@ -16,7 +16,6 @@ use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, to_micros};
 use crate::error::StoreError;
-use crate::events::consumer_name;
 use crate::schema::HistoryEntryRow;
 
 fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
@@ -88,9 +87,7 @@ impl HistoryStore for AuthStorage {
             }
             transaction.commit().await?;
         }
-        database
-            .outbox_done(&consumer_name(CONSUMER)?, position, now)
-            .await
+        database.outbox_set(CONSUMER, position, now).await
     }
 
     async fn history_page(

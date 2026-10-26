@@ -56,8 +56,11 @@ pub fn search_words(text: &str) -> Vec<SearchWord> {
         let same = |other: &SearchWord| {
             other.text == word.text && other.matches_by_start() == word.matches_by_start()
         };
-        if !words.iter().any(same) {
-            words.push(word);
+        // The same lookup again keeps the first word, and its `*` if the later one had it, so
+        // whether a short start is seen does not depend on the order of the words.
+        match words.iter_mut().find(|other| same(other)) {
+            Some(kept) => kept.prefix |= word.prefix,
+            None => words.push(word),
         }
     }
     words
