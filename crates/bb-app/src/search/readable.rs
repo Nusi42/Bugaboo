@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
-use bb_core::fields::{Field, FieldKey};
+use bb_core::fields::{Field, FieldKey, ID_WORD};
 use bb_core::id::{FieldId, ProjectId};
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
@@ -359,6 +359,8 @@ pub(crate) fn reserved_words() -> Vec<String> {
         .iter()
         .map(|field| field.search_word())
         .chain(IssueField::ALL.iter().map(|each| each.word().to_owned()))
+        // The column of the Issue ID is a word that needs no field, and no field may take it.
+        .chain([ID_WORD.to_owned()])
         .collect()
 }
 

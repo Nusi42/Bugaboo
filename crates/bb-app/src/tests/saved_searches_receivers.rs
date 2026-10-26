@@ -294,16 +294,18 @@ async fn qry_06_a_shared_search_runs_with_the_rights_of_the_person_who_opens_it(
 }
 
 #[tokio::test]
-async fn qry_06_an_own_field_named_id_never_takes_the_word_of_the_id_column() -> Outcome {
+async fn qry_06_a_field_named_id_is_refused_and_the_column_of_the_id_is_a_word_of_its_own()
+-> Outcome {
     let crew = Crew::new().await?;
-    super::scenarios_fields::a_field(&crew.world, "Id", bb_core::own_fields::FieldType::Text, &[])
-        .await?;
-    let ctx = crew.world.ctx();
-    let actor = ctx.actor(&crew.ada()).await?;
-    let fields = ctx
-        .readable_fields_of(&actor, crate::search::SearchScope::Everywhere)
-        .await?;
-    assert!(fields.field("id").is_none());
+    // The word of the Issue ID column is reserved, so an own field never takes it (name.taken).
+    let refused = super::scenarios_fields::a_field(
+        &crew.world,
+        "Id",
+        bb_core::own_fields::FieldType::Text,
+        &[],
+    )
+    .await;
+    assert!(refused.is_err(), "a field named Id must be refused");
     // The column of the Issue ID is a word that needs no field.
     let ben = &crew.ben.session_token;
     let mut shown = a_presentation();
