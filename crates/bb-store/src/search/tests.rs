@@ -396,11 +396,9 @@ pub(super) fn request_with(
 }
 
 pub(super) async fn titles(storage: &AuthStorage, data: &Data, text: &str) -> Vec<String> {
-    let hits = storage
-        .search_page(&request(data, text, None, 100))
+    super::tests_more::titles_of(storage, &request(data, text, None, 100))
         .await
-        .unwrap();
-    hits.into_iter().map(|hit| hit.issue.title).collect()
+        .unwrap()
 }
 
 /// The searches every database must answer alike: the text, and the titles in order.

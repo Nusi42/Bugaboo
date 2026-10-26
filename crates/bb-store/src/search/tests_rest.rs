@@ -634,6 +634,12 @@ async fn perf_02_only_the_first_contains_that_every_issue_must_satisfy_orders_by
             found("contains typo and not contains zebra").await?,
             oldest_first
         );
+        // A `title contains` is no `contains` on its own: it narrows, and the bare one decides the
+        // order (only Slow page has `page` in its title and `typo` somewhere).
+        assert_eq!(
+            found("title contains page and contains typo").await?,
+            ["Slow page"]
+        );
         Ok(())
     })
     .await

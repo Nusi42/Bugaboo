@@ -154,6 +154,7 @@ async fn searches_nothing_of(ada: &mut Browser, writer: &mut Browser) -> Result<
     assert_eq!(groups.status, StatusCode::BAD_REQUEST, "{}", groups.body);
     // A `contains` on its own does not look in own fields, so it finds nothing of the text.
     let bare = writer.send("GET", &search("contains words"), None).await?;
+    assert_eq!(bare.status, StatusCode::OK, "{}", bare.body);
     assert!(!bare.body.to_string().contains("Secret"), "{}", bare.body);
     let offered = writer.send("GET", "/api/v1/search/fields", None).await?;
     assert!(
