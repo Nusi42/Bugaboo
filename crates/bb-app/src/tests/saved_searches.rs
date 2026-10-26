@@ -203,7 +203,8 @@ async fn qry_06_a_change_made_from_an_old_version_is_refused() -> Outcome {
     };
     change_search(&crew.world.ctx(), rename(made.version, "First")).await?;
     let stale = change_search(&crew.world.ctx(), rename(made.version, "Second")).await;
-    assert!(refused(&stale, ErrorCode::VersionChanged));
+    // The API turns the stale record into the answer that names the version the search has now.
+    assert!(matches!(stale, Err(AppError::Stale(_))), "{stale:?}");
     // Nothing changed is nothing written: the version stays.
     let same = change_search(&crew.world.ctx(), rename(made.version + 1, "First"))
         .await?

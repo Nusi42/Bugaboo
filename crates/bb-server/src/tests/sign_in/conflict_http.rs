@@ -18,7 +18,7 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 29] = [
+const VERSIONED: [&str; 30] = [
     "changeSignUpPolicy",
     "saveComment",
     "changeField",
@@ -27,6 +27,7 @@ const VERSIONED: [&str; 29] = [
     "changeChoice",
     "combineChoices",
     "changeGroup",
+    "changeSavedSearch",
     "changeIssueType",
     "changeIssueTypeOffers",
     "changeIssue",
@@ -145,6 +146,20 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
                 format!("/api/v1/groups/{}", text_in(&group, "id")?),
                 json!({"name": "Frontend"}),
                 &group["version"],
+            )
+        }
+        "changeSavedSearch" => {
+            let search = made(
+                ada,
+                "/api/v1/saved-searches",
+                json!({"name": "Open bugs", "search_text": ""}),
+            )
+            .await?;
+            Save::new(
+                "PATCH",
+                format!("/api/v1/saved-searches/{}", text_in(&search, "id")?),
+                json!({"name": "Closed bugs"}),
+                &search["version"],
             )
         }
         "changeIssueTypeOffers" => {
