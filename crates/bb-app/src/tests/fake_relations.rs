@@ -14,6 +14,7 @@ use crate::comments::CommentStore;
 use crate::follow::FollowStore;
 use crate::history::HistoryStore;
 use crate::relations::RelationStore;
+use crate::text_index::{TextIndexStore, Touched};
 
 fn kinds_of(state: &State) -> Vec<RelationKind> {
     let mut kinds = state.relation_kinds.clone();
@@ -385,5 +386,35 @@ impl HistoryStore for FakeStore {
             found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             found
         }))
+    }
+}
+
+impl TextIndexStore for FakeStore {
+    async fn text_index_events(&self, limit: u64) -> Result<Vec<(i64, DomainEvent)>, FakeError> {
+        let shared = self.lock();
+        let done = usize::try_from(shared.state.text_index_position).unwrap_or(usize::MAX);
+        Ok(shared
+            .events
+            .iter()
+            .enumerate()
+            .skip(done)
+            .take(usize::try_from(limit).unwrap_or(usize::MAX))
+            .map(|(at, event)| (i64::try_from(at + 1).unwrap_or(i64::MAX), event.clone()))
+            .collect())
+    }
+
+    async fn store_text_index(
+        &self,
+        _touched: &[Touched],
+        position: i64,
+        _now: Timestamp,
+    ) -> Result<(), FakeError> {
+        let mut shared = self.lock();
+        shared.state.text_index_position = shared.state.text_index_position.max(position);
+        Ok(())
+    }
+
+    async fn rebuild_text_index(&self) -> Result<u64, FakeError> {
+        Ok(0)
     }
 }

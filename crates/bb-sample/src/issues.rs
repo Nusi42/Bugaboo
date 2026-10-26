@@ -139,6 +139,14 @@ impl Later for Everything {
             .catch_up_history()
             .await
             .map_err(|error| SampleError::step(Step::History, &error))?;
+        // And the index of the text search follows the changes the same way (the job
+        // `text-index.catch-up`), so a search on the sample finds what was written.
+        world
+            .services
+            .ctx(world.request())
+            .catch_up_text_index()
+            .await
+            .map_err(|error| SampleError::step(Step::TextIndex, &error))?;
         Ok(())
     }
 }

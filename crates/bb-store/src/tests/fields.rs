@@ -3,17 +3,15 @@
 //! before the level for all types.
 
 use bb_app::access::PolicyStore as _;
-use bb_app::fields::{Definition, FieldStore};
+use bb_app::fields::FieldStore;
 use bb_app::issues::IssueStore as _;
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::access::FieldLevel;
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::fields::FieldKey;
-use bb_core::id::{ChoiceId, EntityId, FieldId, IdSource, IssueTypeId, ProjectId, RoleId};
+use bb_core::id::{EntityId, IdSource, IssueTypeId, ProjectId, RoleId};
 use bb_core::issue::{IssueIcon, IssueType};
-use bb_core::own_fields::{
-    ChoiceColor, FieldChoice, FieldFor, FieldType, Look, OwnField, Rules, Scope,
-};
+use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::FieldValue;
 use bb_core::project::{Project, ShortName};
 use bb_core::version::FIRST_VERSION;
@@ -23,7 +21,7 @@ use proptest::strategy::{Strategy, ValueTree};
 use proptest::test_runner::{Config, TestRunner};
 
 use super::*;
-use crate::test_support::{at, event, fixture, ids, world};
+use crate::test_support::{at, definition, event, fixture, ids, world};
 
 /// Runs `write` as a change with its event, the way a use case does.
 async fn changed<T: Send>(
@@ -32,45 +30,6 @@ async fn changed<T: Send>(
     write: impl for<'t> FnOnce(&'t mut Transaction) -> BoxFuture<'t, Result<T, StoreError>> + Send,
 ) -> Result<T, StoreError> {
     ChangeStore::record_change(storage, &event(source, 5), write).await
-}
-
-fn definition(source: &mut impl IdSource, kind: FieldType, position: i64) -> Definition {
-    let id = FieldId::generate(source).unwrap();
-    let choices = if kind.has_choices() {
-        ["Minor", "Major", "Critical"]
-            .iter()
-            .zip(0_i64..)
-            .map(|(name, at)| FieldChoice {
-                id: ChoiceId::generate(source).unwrap(),
-                field: id,
-                name: (*name).to_owned(),
-                color: ChoiceColor::nth(usize::try_from(at).unwrap()),
-                icon: None,
-                position: at,
-                retired_at: None,
-            })
-            .collect()
-    } else {
-        Vec::new()
-    };
-    Definition {
-        field: OwnField {
-            id,
-            name: format!("Field {position}"),
-            help: String::new(),
-            kind,
-            applies_to: FieldFor::Issues,
-            rules: Rules::default(),
-            default_value: String::new(),
-            look: Look::starting(kind),
-            never_to_assistant: false,
-            position,
-            retired_at: None,
-            version: FIRST_VERSION,
-        },
-        scope: Scope::default(),
-        choices,
-    }
 }
 
 /// Values of this type that the type can hold, drawn by proptest.

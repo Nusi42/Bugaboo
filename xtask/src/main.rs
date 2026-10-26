@@ -31,6 +31,7 @@ mod repo;
 mod runner;
 mod rust_registry;
 mod rust_source;
+mod search_index;
 mod setup;
 mod source;
 mod steps;
@@ -124,11 +125,27 @@ enum Command {
     Freeze,
     /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
     Setup,
+    /// The index of the text search (ADR-0016).
+    SearchIndex {
+        #[command(subcommand)]
+        action: SearchIndexAction,
+    },
     /// Write files that are generated from a single source.
     Gen {
         /// What to generate.
         #[arg(value_parser = generate::possible_values())]
         target: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum SearchIndexAction {
+    /// Build the index again from the stored texts: for a database that has none yet, and after
+    /// the rule that prepares texts changed.
+    Rebuild {
+        /// The data folder (default: the one `cargo xtask dev` uses).
+        #[arg(long)]
+        data_dir: Option<PathBuf>,
     },
 }
 
@@ -274,6 +291,12 @@ fn run() -> anyhow::Result<ExitCode> {
             output::generated(&generate::write_named(&repo, &catalog, &target)?);
             Ok(ExitCode::SUCCESS)
         }
+        Command::SearchIndex {
+            action: SearchIndexAction::Rebuild { data_dir },
+        } => Ok(steps::exit_code(search_index::rebuild(
+            repo.root(),
+            data_dir.as_deref(),
+        )?)),
         Command::Dev { sample } => Ok(steps::exit_code(dev::run(repo.root(), sample)?)),
         Command::Dataset { kind } => Ok(steps::exit_code(dataset::run(&repo, &request_of(kind))?)),
         Command::Bench { database } => Ok(steps::exit_code(bench::run(

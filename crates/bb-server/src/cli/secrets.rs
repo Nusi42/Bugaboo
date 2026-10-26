@@ -116,7 +116,7 @@ fn require_own_installation(
 }
 
 /// The installation the command works on, found from the settings, and its opened store.
-async fn open(
+pub(super) async fn open(
     args: &StoreArgs,
     command: &str,
     folder: Option<&Path>,

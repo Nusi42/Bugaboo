@@ -8,15 +8,16 @@
 //! only holds what the person may read.
 
 use bb_core::names::same_name;
+use bb_core::text_words::search_words;
 
 use crate::fields::{Field, FieldKind, Operator, ReadableFields};
-use crate::limits::{MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS};
+use crate::limits::{MAX_CONTAINS_WORDS, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MIN_PREFIX_CHARS};
 use crate::messages as key;
 use crate::mistake::Mistake;
 use crate::parser::value_span;
 use crate::similar::closest;
 use crate::span::Span;
-use crate::syntax::{Expr, FieldRef, Operand, Search, Test};
+use crate::syntax::{Expr, FieldRef, Operand, Search, Test, Text};
 use crate::words::Keyword;
 
 /// A search that the checker has accepted, for readable fields. The compiler of the server takes this
@@ -144,6 +145,28 @@ impl<'a> Checker<'a> {
         found
     }
 
+    /// The mistakes of the words of a `contains`: too many, or a start with too few letters.
+    fn words_mistakes(&mut self, text: &Text) {
+        let words = search_words(&text.text);
+        if words.len() > MAX_CONTAINS_WORDS {
+            self.mistakes.push(Mistake::new(
+                text.span,
+                key::TOO_MANY_WORDS,
+                &[("limit", &MAX_CONTAINS_WORDS.to_string())],
+            ));
+        }
+        if words
+            .iter()
+            .any(|word| word.is_prefix() && !word.matches_by_start())
+        {
+            self.mistakes.push(Mistake::new(
+                text.span,
+                key::PREFIX_TOO_SHORT,
+                &[("limit", &MIN_PREFIX_CHARS.to_string())],
+            ));
+        }
+    }
+
     fn test(&mut self, field: &Field, test: &Test) {
         let (operator, span) = operator_of(test);
         if !field.operators.contains(&operator) {
@@ -153,6 +176,9 @@ impl<'a> Checker<'a> {
                 &[("field", &field.word), ("operator", &operator.text())],
             ));
             return;
+        }
+        if let Test::Contains { text, .. } = test {
+            self.words_mistakes(text);
         }
         let values: &[Operand] = match test {
             Test::Is { value, .. } | Test::IsNot { value, .. } | Test::Compare { value, .. } => {

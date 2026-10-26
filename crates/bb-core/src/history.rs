@@ -15,9 +15,6 @@ use crate::technical::TechnicalName;
 /// kept under this name.
 pub const CONSUMER: &str = "history";
 
-/// How many events the consumer reads in one go.
-pub const BATCH: u64 = 200;
-
 words! {
     /// What a row of the history is.
     pub enum HistoryKind {

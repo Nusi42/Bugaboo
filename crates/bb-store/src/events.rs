@@ -304,6 +304,39 @@ impl Database {
         outbox_move(&mut transaction, consumer, position, now).await?;
         transaction.commit().await
     }
+
+    /// The next events the reader named `consumer` has not finished, with their places in the
+    /// outbox: what the history, the notifications and the text index each read.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn outbox_events(
+        &self,
+        consumer: &'static str,
+        limit: u64,
+    ) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
+        Ok(self
+            .outbox_after(&consumer_name(consumer)?, limit)
+            .await?
+            .into_iter()
+            .map(|(entry, event)| (entry.position, event))
+            .collect())
+    }
+
+    /// Records that the reader named `consumer` has finished everything up to `position`
+    /// ([`Database::outbox_done`] for a reader that is named by its constant).
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn outbox_set(
+        &self,
+        consumer: &'static str,
+        position: i64,
+        now: Timestamp,
+    ) -> Result<(), StoreError> {
+        self.outbox_done(&consumer_name(consumer)?, position, now)
+            .await
+    }
 }
 
 /// The store is the adapter of the port the use cases write through (ARCH-EVENTS).
@@ -348,6 +381,11 @@ async fn transaction_has_no_row(
         .from(OutboxPosition::Table)
         .and_where(Expr::col(OutboxPosition::Consumer).eq(consumer.as_str()));
     Ok(transaction.fetch_optional(&select).await?.is_none())
+}
+
+/// The name of an outbox consumer (ADR-0007) as the outbox keeps it: the one place a reader makes it.
+pub(crate) fn consumer_name(name: &'static str) -> Result<TechnicalName, StoreError> {
+    TechnicalName::new(name).map_err(|_| StoreError::Corrupt("the name of an outbox reader"))
 }
 
 /// Records, inside the transaction of the reader that gives its place, that `consumer` has

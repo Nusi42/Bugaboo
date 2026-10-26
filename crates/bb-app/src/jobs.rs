@@ -460,6 +460,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Err(error) = self.catch_up_notifications().await {
             tracing::warn!(cause = %error, "the notifications could not catch up");
         }
+        // The index of the text search follows the changes within a round, and so is caught up
+        // after a start as soon as the first round runs (it has no daily job of its own).
+        if let Err(error) = self.catch_up_text_index().await {
+            tracing::warn!(cause = %error, "the text index could not catch up");
+        }
         let worker = self.worker_name()?;
         let jobs = self
             .store()

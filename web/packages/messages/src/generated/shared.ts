@@ -233,6 +233,8 @@ export const messages = {
   "search.mistake.expected-sort-by": "Write “{by}” after “{sort}”.",
   "search.mistake.expected-sort-field": "Write the field to sort by here.",
   "search.mistake.expected-direction": "Write how to sort here: {directions}.",
+  "search.mistake.prefix-too-short":
+    "A word that ends in * needs at least {limit} letters before the *.",
   "search.mistake.reserved-word":
     "“{word}” is a word of the search language. To search for it, put it in quotes.",
   "search.mistake.unclosed-quote": "This text in quotes does not end. Add the closing quote.",
@@ -257,6 +259,7 @@ export const messages = {
   "search.mistake.too-many-sort-keys": "A search can be sorted by at most {limit} fields.",
   "search.mistake.too-long": "This search is too long. Please shorten it.",
   "search.mistake.too-many-steps": "A search can look at most {limit} steps away.",
+  "search.mistake.too-many-words": "A text to find can have at most {limit} different words.",
   "shortcut.quick-search": "Open quick search",
   "shortcut.show-shortcuts": "Show all keyboard shortcuts",
   "shortcut.go-home": "Go to the start page",

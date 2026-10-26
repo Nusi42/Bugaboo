@@ -42,6 +42,7 @@ use crate::relations::RelationStore;
 use crate::settings::SettingsStore;
 use crate::store_macros::{reads, writes};
 use crate::tags::TagStore;
+use crate::text_index::TextIndexStore;
 use crate::workflows::WorkflowStore;
 
 /// A person with the password hash they sign in with.
@@ -332,6 +333,7 @@ pub trait AuthStore:
     + AttachmentStore
     + FollowStore
     + HistoryStore
+    + TextIndexStore
     + NotificationStore
     + OfferStore
     + HandleStore

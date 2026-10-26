@@ -23,13 +23,9 @@ use zeroize::Zeroizing;
 use crate::auth::AuthStorage;
 use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
-use crate::events::outbox_move;
+use crate::events::{consumer_name, outbox_move};
 use crate::jobs::{NewJob, enqueue};
 use crate::schema::NotificationRow;
-
-fn consumer() -> Result<TechnicalName, StoreError> {
-    TechnicalName::new(CONSUMER).map_err(|_| StoreError::Corrupt("the name of the notifications"))
-}
 
 fn password_name() -> Result<TechnicalName, StoreError> {
     TechnicalName::new(PASSWORD_SECRET).map_err(|_| StoreError::Corrupt("the name of a secret"))
@@ -143,13 +139,7 @@ impl Database {
 
 impl NotificationStore for AuthStorage {
     async fn notification_events(&self, limit: u64) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
-        Ok(self
-            .database()
-            .outbox_after(&consumer()?, limit)
-            .await?
-            .into_iter()
-            .map(|(entry, event)| (entry.position, event))
-            .collect())
+        self.database().outbox_events(CONSUMER, limit).await
     }
 
     async fn store_notifications(
@@ -174,7 +164,7 @@ impl NotificationStore for AuthStorage {
             };
             enqueue(&mut transaction, queued.id, &job, now).await?;
         }
-        outbox_move(&mut transaction, &consumer()?, position, now).await?;
+        outbox_move(&mut transaction, &consumer_name(CONSUMER)?, position, now).await?;
         transaction.commit().await
     }
 
