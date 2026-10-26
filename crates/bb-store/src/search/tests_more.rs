@@ -381,9 +381,10 @@ async fn qry_05_the_sight_hides_the_issues_of_a_hidden_type_from_a_list() -> Tes
                 .windows(2)
                 .all(|pair| pair[0].issue.created_at >= pair[1].issue.created_at)
         );
-        // Where the sight hides a type (the app fills this for the lookups of tags and labels
-        // only, so this proves the store keeps to the sight, not a rule of the list), none of
-        // its issues is listed.
+        // No rule hides the issues of a type from a person: a type is hidden only in the offers
+        // of a project. The sight holds `hidden` for the lookups of tags and labels (a role that
+        // hides *Tags* for a type), and the store keeps to it in every statement; there is
+        // nothing more to build for the list (the lead, M5 WP-04).
         list.sight.hidden = vec![(data.project, data.issue_type)];
         let none = storage
             .search_page(&list)
