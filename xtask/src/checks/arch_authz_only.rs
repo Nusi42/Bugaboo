@@ -19,10 +19,10 @@
 //!   lines) outside the same places: it would bring `evaluate` and `Inputs` in without naming them
 //!   (M2-F24);
 //! - in `bb-app` outside its access module: a judgment about the actor that skips the narrowing of
-//!   an access key, `ctx.evaluate(actor.person.id, …)` or the policy's `visible(` and
-//!   `evaluate_at(`, `evaluate_with(` and `rows_of(` (use `ctx.evaluation_of(actor, …)`, `ctx.require(…)`, `visible_as` and
-//!   `evaluate_as` with the actor's key scope), so a key can never see more than it was given
-//!   (M2-F27);
+//!   an access key, `ctx.evaluate(actor.person.id, …)` or the policy's `visible(`, `evaluate_at(`,
+//!   `evaluate_with(` and `rows_of(` (use `ctx.evaluation_of(actor, …)`, `ctx.require(…)`,
+//!   `visible_as` and `evaluate_as` with the actor's key scope), so a key can never see more than
+//!   it was given (M2-F27);
 //! - inside `bb-policy`: a `pub` field in the definition of `Authorized`, a `pub` constructor
 //!   (`new`, `from`), or a derive that would make one out of nothing (`Default`, `Deserialize`).
 //!
@@ -40,6 +40,8 @@ const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
 /// The one place outside `bb-policy` and the access module that builds the input of the engine,
 /// from the stored rows.
 const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
+/// What to say of the engine call that `Policy::evaluate_at` is made of.
+const ENGINE_CALL_NOT_NARROWED: &str = "`Policy::evaluate_with` and `Policy::rows_of` are the      engine call of `evaluate_at`, which does not narrow to an access key. Judge the actor with      `evaluate_as(person, actor.key_scope(), tree, place)`; about another person, ask in the      access module.";
 /// What a use case must not write about the actor: each skips the narrowing of an access key
 /// (M2-F27), with what to write instead.
 const UNNARROWED: [(&str, &str); 7] = [
@@ -68,14 +70,8 @@ const UNNARROWED: [(&str, &str); 7] = [
         "`Policy::evaluate_at` does not narrow to an access key. Use `evaluate_as(person, \
          actor.key_scope(), tree, place)` for the actor.",
     ),
-    (
-        ".evaluate_with(",
-        "`Policy::evaluate_with` and `Policy::rows_of` are the engine call of `evaluate_at`, which          does not narrow to an access key. Judge the actor with `evaluate_as(person,          actor.key_scope(), tree, place)`; about another person, ask in the access module.",
-    ),
-    (
-        ".rows_of(",
-        "`Policy::evaluate_with` and `Policy::rows_of` are the engine call of `evaluate_at`, which          does not narrow to an access key. Judge the actor with `evaluate_as(person,          actor.key_scope(), tree, place)`; about another person, ask in the access module.",
-    ),
+    (".evaluate_with(", ENGINE_CALL_NOT_NARROWED),
+    (".rows_of(", ENGINE_CALL_NOT_NARROWED),
 ];
 /// The narrowed forms, which narrow to nothing when they are given no key: the second argument
 /// of each is the key scope.
