@@ -950,6 +950,9 @@ pub const ERROR_RESOURCE_NOT_FOUND: MessageKey = MessageKey::new("error.resource
 /// The message `error.role.in-use`.
 pub const ERROR_ROLE_IN_USE: MessageKey = MessageKey::new("error.role.in-use");
 
+/// The message `error.search.invalid`.
+pub const ERROR_SEARCH_INVALID: MessageKey = MessageKey::new("error.search.invalid");
+
 /// The message `error.search.too-slow`.
 pub const ERROR_SEARCH_TOO_SLOW: MessageKey = MessageKey::new("error.search.too-slow");
 
@@ -10939,6 +10942,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.role.in-use",
         "Someone has this role. Choose the role that takes its place before you delete it.",
+    ),
+    (
+        "error.search.invalid",
+        "The search has a mistake. Read the notes next to it and correct it.",
     ),
     (
         "error.search.too-slow",

@@ -7,6 +7,7 @@ mod request;
 mod run;
 mod target;
 
+pub use bb_searchlang::Mistake;
 pub(crate) use readable::word_is_taken;
 pub use readable::{ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
 pub use request::{
@@ -14,7 +15,7 @@ pub use request::{
     SearchStore, UnknownName,
 };
 pub use run::{
-    SearchCount, SearchCountQuery, SearchError, SearchGroups, SearchGroupsQuery, SearchPage,
-    SearchQuery, search, search_count, search_groups,
+    SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,
+    ShownKey, search, search_count, search_groups,
 };
 pub use target::{FieldTarget, Searchable, target_of};

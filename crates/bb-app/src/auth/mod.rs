@@ -109,6 +109,11 @@ use crate::roles::{
     change_role, check_access, copy_role, create_role, delete_role, permissions, remove_assignment,
     reset_role, role, role_levels, roles, set_level,
 };
+use crate::search::{
+    ReadableFieldsQuery, SearchCount, SearchCountQuery, SearchFields, SearchGroups,
+    SearchGroupsQuery, SearchPage, SearchQuery, readable_fields, search, search_count,
+    search_groups,
+};
 use crate::settings::{
     ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
     SettingList, SettingView, SettingsQuery, change_setting, document_image_hosts, image_hosts,
@@ -425,6 +430,14 @@ use_cases! {
     change_offers(ChangeOffers) -> Authorized<Offers>;
     /// Lists the issues of a project a person sees.
     issues(IssuesQuery) -> Authorized<IssuePage>;
+    /// A page of the issues a search finds, in the projects the person sees.
+    search(SearchQuery) -> Authorized<SearchPage>;
+    /// How many issues a search finds.
+    search_count(SearchCountQuery) -> Authorized<SearchCount>;
+    /// How many issues a search finds in each group of a field.
+    search_groups(SearchGroupsQuery) -> Authorized<SearchGroups>;
+    /// The fields the person may search by, where a search looks.
+    readable_fields(ReadableFieldsQuery) -> Authorized<SearchFields>;
     /// Lists the people an issue of a project can be assigned to.
     assignable_people(AssignablePeopleQuery) -> Authorized<AssignablePeoplePage>;
     /// Creates an issue.

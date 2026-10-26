@@ -65,21 +65,6 @@ pub struct SearchGroupsQuery {
     pub by: String,
 }
 
-/// Why a search did not give an answer.
-#[derive(Debug)]
-pub enum SearchError {
-    /// The text is not a search the person may run: every mistake, with where it is.
-    Mistakes(Vec<Mistake>),
-    /// The request failed for another reason.
-    Failed(AppError),
-}
-
-impl From<AppError> for SearchError {
-    fn from(error: AppError) -> Self {
-        Self::Failed(error)
-    }
-}
-
 /// A page of issues. Each issue is shown with the rights of the person in its own project, so the
 /// page holds issues that are each authorized by themselves.
 #[derive(Debug, Serialize)]
@@ -128,12 +113,16 @@ pub enum ShownKey {
     Person(PersonRef),
     /// A tag, by its name if the person may know it.
     Tag {
+        /// The tag.
         id: bb_core::id::TagId,
+        /// Its name, when the person may know it.
         name: Option<String>,
     },
     /// A label, by its name if the person may know it.
     Label {
+        /// The label.
         id: bb_core::id::LabelId,
+        /// Its name, when the person may know it.
         name: Option<String>,
     },
 }
@@ -153,15 +142,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         text: &str,
         scope: SearchScope,
-    ) -> Result<Prepared, SearchError> {
+    ) -> Result<Prepared, AppError> {
         let looked = self.looked_at(actor, scope).await?;
         let readable = readable_of(&looked.fields);
-        let parsed = parse_with(text, &readable).map_err(|mistake| vec![mistake])?;
-        let checked = check(parsed, &readable)?;
+        let parsed =
+            parse_with(text, &readable).map_err(|mistake| AppError::Mistakes(vec![mistake]))?;
+        let checked = check(parsed, &readable).map_err(AppError::Mistakes)?;
         let names = self.search_names(actor, &looked, &checked).await?;
         // A name the person cannot know is refused, as unknown as one that does not exist.
         if names.names_unknown() {
-            return Err(SearchError::Mistakes(
+            return Err(AppError::Mistakes(
                 names
                     .unknown
                     .iter()
@@ -200,12 +190,6 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-impl From<Vec<Mistake>> for SearchError {
-    fn from(mistakes: Vec<Mistake>) -> Self {
-        Self::Mistakes(mistakes)
-    }
-}
-
 fn stopped(error: SearchFailure) -> AppError {
     match error {
         SearchFailure::TooSlow => AppError::Refused(ErrorCode::SearchTooSlow),
@@ -223,7 +207,7 @@ fn stopped(error: SearchFailure) -> AppError {
 pub async fn search<S: AuthStore + SearchStore>(
     ctx: &Ctx<'_, S>,
     query: SearchQuery,
-) -> Result<Authorized<SearchPage>, SearchError> {
+) -> Result<Authorized<SearchPage>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
     let mut prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
     let len = page_len(Some(query.limit));
@@ -275,7 +259,7 @@ pub async fn search<S: AuthStore + SearchStore>(
 pub async fn search_count<S: AuthStore + SearchStore>(
     ctx: &Ctx<'_, S>,
     query: SearchCountQuery,
-) -> Result<Authorized<SearchCount>, SearchError> {
+) -> Result<Authorized<SearchCount>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
     let prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
     let issues = ctx
@@ -295,7 +279,7 @@ pub async fn search_count<S: AuthStore + SearchStore>(
 pub async fn search_groups<S: AuthStore + SearchStore>(
     ctx: &Ctx<'_, S>,
     query: SearchGroupsQuery,
-) -> Result<Authorized<SearchGroups>, SearchError> {
+) -> Result<Authorized<SearchGroups>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
     let prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
     if !prepared
@@ -304,7 +288,7 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
         .iter()
         .any(|each| each.field.word == query.by)
     {
-        return Err(AppError::Refused(ErrorCode::InvalidRequest).into());
+        return Err(AppError::Refused(ErrorCode::InvalidRequest));
     }
     let found = ctx
         .store()
@@ -350,7 +334,9 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
             ),
             // A person is never given out but through `PersonRef`.
             (GroupKey::Person(_), None) => {
-                return Err(AppError::Internal("a group of people without a kind".into()).into());
+                return Err(AppError::Internal(
+                    "a group of people without a kind".into(),
+                ));
             }
             (GroupKey::Tag(id), _) => ShownKey::Tag {
                 id,

@@ -16,8 +16,7 @@ use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::issues::IssueStore as _;
 use crate::search::{
-    SearchCountQuery, SearchError, SearchFailure, SearchHit, SearchQuery, SearchScope, search,
-    search_count,
+    SearchCountQuery, SearchFailure, SearchHit, SearchQuery, SearchScope, search, search_count,
 };
 
 fn asked(session: &str, text: &str) -> SearchQuery {
@@ -49,7 +48,7 @@ async fn qry_05_a_mistake_is_answered_before_the_store_is_asked() -> Outcome {
     let world = World::new().await?;
     a_project(&world, "OPEN").await?;
     let answer = search(&world.ctx(), asked(&token(&world), "nonsense is x")).await;
-    assert!(matches!(answer, Err(SearchError::Mistakes(ref found)) if found.len() == 1));
+    assert!(matches!(answer, Err(AppError::Mistakes(ref found)) if found.len() == 1));
     assert!(world.store.lock().searches.is_empty());
     Ok(())
 }
@@ -67,7 +66,7 @@ async fn qry_05_a_hidden_field_in_a_search_is_the_mistake_of_an_unknown_field() 
         let (world, bob) = (&world, bob.clone());
         async move {
             match search(&world.ctx(), asked(&bob, text)).await {
-                Err(SearchError::Mistakes(found)) => found,
+                Err(AppError::Mistakes(found)) => found,
                 other => panic!("{text}: {other:?}"),
             }
         }
@@ -150,9 +149,7 @@ async fn perf_02_a_page_has_a_cursor_that_the_next_request_continues_from() -> O
     };
     assert!(matches!(
         search(&world.ctx(), bad).await,
-        Err(SearchError::Failed(AppError::Refused(
-            ErrorCode::InvalidRequest
-        )))
+        Err(AppError::Refused(ErrorCode::InvalidRequest))
     ));
     Ok(())
 }
@@ -165,9 +162,7 @@ async fn sec_17_a_search_over_its_time_answers_too_slow() -> Outcome {
     let answer = search(&world.ctx(), asked(&token(&world), "")).await;
     assert!(matches!(
         answer,
-        Err(SearchError::Failed(AppError::Refused(
-            ErrorCode::SearchTooSlow
-        )))
+        Err(AppError::Refused(ErrorCode::SearchTooSlow))
     ));
     Ok(())
 }
@@ -227,7 +222,7 @@ async fn qry_05_the_count_comes_from_the_same_search() -> Outcome {
     .await;
     // `contains` waits for the full-text port (WP-05): the text is checked, the count is asked
     // only when the search can be compiled by the store.
-    assert!(counted.is_ok() || matches!(counted, Err(SearchError::Mistakes(_))));
+    assert!(counted.is_ok() || matches!(counted, Err(AppError::Mistakes(_))));
     let counted = search_count(
         &world.ctx(),
         SearchCountQuery {
@@ -294,7 +289,7 @@ async fn qry_05_a_hidden_field_takes_as_long_as_an_unknown_field() -> Outcome {
                 let started = Instant::now();
                 let answer = search(&world.ctx(), asked(&bob, text)).await;
                 times.push(started.elapsed());
-                assert!(matches!(answer, Err(SearchError::Mistakes(_))));
+                assert!(matches!(answer, Err(AppError::Mistakes(_))));
                 reads.push(world.store.reads() - before);
             }
             times.sort();
@@ -316,7 +311,7 @@ async fn qry_05_a_hidden_field_takes_as_long_as_an_unknown_field() -> Outcome {
 /// The mistakes of a search that is refused, or none.
 async fn refused(world: &World, session: &str, text: &str) -> Vec<bb_searchlang::Mistake> {
     match search(&world.ctx(), asked(session, text)).await {
-        Err(SearchError::Mistakes(found)) => found,
+        Err(AppError::Mistakes(found)) => found,
         _ => Vec::new(),
     }
 }
