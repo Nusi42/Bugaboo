@@ -41,7 +41,10 @@ const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
 /// from the stored rows.
 const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
 /// What to say of the engine call that `Policy::evaluate_at` is made of.
-const ENGINE_CALL_NOT_NARROWED: &str = "`Policy::evaluate_with` and `Policy::rows_of` are the      engine call of `evaluate_at`, which does not narrow to an access key. Judge the actor with      `evaluate_as(person, actor.key_scope(), tree, place)`; about another person, ask in the      access module.";
+const ENGINE_CALL_NOT_NARROWED: &str = "`Policy::evaluate_with` and `Policy::rows_of` are the \
+     engine call of `evaluate_at`, which does not narrow to an access key. Judge the actor with \
+     `evaluate_as(person, actor.key_scope(), tree, place)`; about another person, ask in the \
+     access module.";
 /// What a use case must not write about the actor: each skips the narrowing of an access key
 /// (M2-F27), with what to write instead.
 const UNNARROWED: [(&str, &str); 7] = [
@@ -614,6 +617,8 @@ const T: &str = \"use bb_policy::*;\";
             "fn f() { let held = Policy::evaluate_at(&policy, person, &tree, place); }\n",
             "fn f() { let seen = Policy::visible(&policy, person, &tree); }\n",
             "fn f() { let held = policy.evaluate_as(person, None, &tree, place); }\n",
+            "fn f() { let rows = policy.rows_of(person); }\n",
+            "fn f() { let held = policy.evaluate_with(person, &rows, &tree, place); }\n",
             "fn f() { let seen = policy.visible_as(\n    person,\n    None,\n    &tree,\n); }\n",
         ] {
             let found = evaluate(&source("crates/bb-app/src/projects/x.rs", text));
