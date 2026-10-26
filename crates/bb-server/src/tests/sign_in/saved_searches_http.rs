@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 
 use super::access_keys_http::a_key_is_turned_away_first;
 use super::http::{Browser, Reply, rig_and_app};
-use super::issues_site::{PROJECTS, Site, id_of, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, id_of, key_of, ok};
 use super::perf_queries::{Counter, assert_as_many_statements, five_and_forty};
 
 const SEARCHES: &str = "/api/v1/saved-searches";
@@ -22,6 +22,10 @@ const AT_MOST: usize = 40;
 /// The same for a guest, who sees the makers by their role only: the roles of all the makers of a
 /// page are read once (not for each maker), which costs the reads of that one policy (measured: 43).
 const AT_MOST_FOR_A_GUEST: usize = 43;
+/// The same for a list whose texts name a group, a tag and an issue: each is read once for the
+/// request (the groups, the catalogue of tags, the issue and what the person sees of it), so the
+/// reads are those of the three names and do not grow with the page (measured: 56).
+const AT_MOST_WITH_NAMES: usize = 56;
 
 async fn save(browser: &mut Browser, name: &str) -> Result<Reply, Failure> {
     browser
@@ -654,6 +658,53 @@ async fn auth_07_a_key_is_turned_away_from_saved_searches_before_its_address_or_
             ],
         )
         .await
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_05_forty_searches_that_name_a_group_a_tag_and_an_issue_cost_no_more_statements_than_five()
+-> TestResult {
+    each_database("perf_05_saved_searches_names", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bea, _) = site
+            .person_called(StartingRole::Administrator, "bea", "Bea Boss")
+            .await?;
+        // What the texts name: a group, a tag and an issue. Every text of the list is checked for
+        // Bea, who is shown groups by name and may manage them, and the names are read once for
+        // the request, not once for each search.
+        ok(&ada
+            .send(
+                "POST",
+                "/api/v1/groups",
+                Some(json!({"name": "Night shift"})),
+            )
+            .await?)?;
+        let issue = key_of(&site.create(&mut ada, "Slow page").await?)?;
+        ok(&ada
+            .send(
+                "POST",
+                &format!("{ISSUES}/{issue}/tags"),
+                Some(json!({"name": "slow"})),
+            )
+            .await?)?;
+        let text =
+            format!("assignedTo member of \"Night shift\" and tags is slow and under {issue}");
+        for number in 0..40 {
+            ada_shares(&site, &mut ada, &format!("Search {number}"), &text).await?;
+        }
+        let (on_five, on_forty) = five_and_forty(&mut bea, &rig.database, |limit| {
+            format!("{SEARCHES}?scope=shared&limit={limit}&fields=name")
+        })
+        .await?;
+        assert_as_many_statements(
+            on_five,
+            on_forty,
+            AT_MOST_WITH_NAMES,
+            "more searches that name things",
+        );
+        Ok(())
     })
     .await
 }
