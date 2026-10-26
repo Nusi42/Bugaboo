@@ -7,6 +7,7 @@ mod request;
 mod run;
 mod target;
 
+pub(crate) use readable::word_is_taken;
 pub use readable::{ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
 pub use request::{
     GroupCount, Names, ProjectLink, SearchFailure, SearchHit, SearchPosition, SearchRequest,

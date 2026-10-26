@@ -309,12 +309,24 @@ fn own_search_field(word: &str, definition: &Definition) -> SearchField {
 
 /// The words that belong to the built-in fields for everyone: those of the catalogue (also the
 /// ones that cannot be searched yet) and those of the fields every issue has.
-fn reserved_words() -> Vec<String> {
+pub(crate) fn reserved_words() -> Vec<String> {
     Field::ALL
         .iter()
         .map(|field| field.search_word())
         .chain(IssueField::ALL.iter().map(|each| each.word().to_owned()))
         .collect()
+}
+
+/// Whether the word that `name` would make for an own field is already a word of the language: one
+/// of a built-in field or of a field every issue has, or the word of one of the `others`. A name
+/// like that is refused when a field is made or renamed (ADR-0005 amendment M5, decision 9), so a
+/// word never changes hands.
+pub(crate) fn word_is_taken<'a>(name: &str, others: impl IntoIterator<Item = &'a str>) -> bool {
+    let word = own_field_word(name);
+    reserved_words().contains(&word)
+        || others
+            .into_iter()
+            .any(|other| own_field_word(other) == word)
 }
 
 /// The word each own field is searched by, `None` for one that lost its word to a built-in field or

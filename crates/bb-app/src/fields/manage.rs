@@ -42,15 +42,16 @@ fn clean_help(help: Option<&str>) -> Result<String, AppError> {
     }
 }
 
-/// Whether another field than `except` already has the name (`bb_core::names`).
+/// Whether another field than `except` already has the name (`bb_core::names`), or the name would
+/// make a word in the search language that a built-in field or another field already has.
 fn name_taken(definitions: &[Definition], name: &str, except: Option<FieldId>) -> bool {
-    name_among(
+    let others = || {
         definitions
             .iter()
             .filter(|found| Some(found.field.id) != except)
-            .map(|found| found.field.name.as_str()),
-        name,
-    )
+            .map(|found| found.field.name.as_str())
+    };
+    name_among(others(), name) || crate::search::word_is_taken(name, others())
 }
 
 /// Checks that the rules make sense for the type and that the pattern can be checked.
