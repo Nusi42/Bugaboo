@@ -28,17 +28,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         let failed = |error| internal::<S>(&error);
         Ok(match kind {
             FieldType::Person | FieldType::People => {
-                let Ok(person) = UserId::from_bytes(bytes) else {
+                let (Ok(person), Some(people_kind), Some(project)) = (
+                    UserId::from_bytes(bytes),
+                    kind.people_kind(),
+                    item.chain.last(),
+                ) else {
                     return Ok(false);
                 };
-                let Some(project) = item.chain.last() else {
-                    return Ok(false);
-                };
+                let you = actor.person.id;
                 if access {
-                    self.may_name(actor.person.id, viewer, person, *project, item.reported_by)
+                    let by = item.reported_by;
+                    self.may_name(you, viewer, people_kind, person, *project, by)
                         .await?
                 } else {
-                    self.may_name_person(actor.person.id, viewer, person)
+                    self.may_name_person(you, viewer, people_kind, person)
                         .await?
                 }
             }

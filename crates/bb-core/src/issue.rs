@@ -32,15 +32,11 @@ words! {
 words_in_api!(StatusGroup, "The group of a status.");
 
 impl StatusGroup {
-    /// The word of the group in the search language: one English word, the same in every language
-    /// of the app (ADR-0005 amendment M5, decision 9), defined here next to the group.
+    /// The word of the group in the search language: its code in lower camel case, the same in
+    /// every language of the app (ADR-0005 amendment M5, decision 9).
     #[must_use]
-    pub const fn search_word(self) -> &'static str {
-        match self {
-            Self::NotStarted => "notStarted",
-            Self::InProgress => "inProgress",
-            Self::Done => "done",
-        }
+    pub fn search_word(self) -> String {
+        crate::fields::code_word(self.code())
     }
 
     /// The closed date after an issue enters a status of this group, given the date it had: the
@@ -70,16 +66,11 @@ words! {
 words_in_api!(Priority, "How important an issue is.");
 
 impl Priority {
-    /// The word of the priority in the search language: one English word, the same in every
-    /// language of the app (ADR-0005 amendment M5, decision 9), defined here next to the priority.
+    /// The word of the priority in the search language: its code in lower camel case, the same in
+    /// every language of the app (ADR-0005 amendment M5, decision 9).
     #[must_use]
-    pub const fn search_word(self) -> &'static str {
-        match self {
-            Self::Low => "low",
-            Self::Normal => "normal",
-            Self::High => "high",
-            Self::Critical => "critical",
-        }
+    pub fn search_word(self) -> String {
+        crate::fields::code_word(self.code())
     }
 
     /// The priority of a new issue.
@@ -290,9 +281,11 @@ pub struct IssueCounter {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn qry_05_the_search_words_of_priorities_and_status_groups_are_one_word_each_and_different() {
-        let mut words: Vec<&str> = Priority::ALL
+        let mut words: Vec<String> = Priority::ALL
             .iter()
             .map(|each| each.search_word())
             .collect();
@@ -307,8 +300,6 @@ mod tests {
         words.dedup();
         assert_eq!(words.len(), all);
     }
-
-    use super::*;
 
     fn at(second: i64) -> Timestamp {
         Timestamp::from_second(second).unwrap()

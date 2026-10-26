@@ -232,7 +232,7 @@ fn catalogue_field(field: Field, kind: FieldKind, sources: &Sources) -> SearchFi
         Field::Status => sources.statuses.clone(),
         Field::Priority => Priority::ALL
             .iter()
-            .map(|each| each.search_word().to_owned())
+            .map(|each| each.search_word())
             .collect(),
         _ => Vec::new(),
     };
@@ -288,11 +288,11 @@ fn own_words(own: &[Definition]) -> Vec<Option<String>> {
         .collect()
 }
 
-/// The names of the status groups, as shown.
+/// The words of the status groups in the search language.
 fn status_group_names() -> Vec<String> {
     StatusGroup::ALL
         .iter()
-        .map(|group| group.search_word().to_owned())
+        .map(|group| group.search_word())
         .collect()
 }
 
@@ -347,8 +347,7 @@ fn fields_in(places: &[Place], sources: &Sources) -> Vec<Searchable> {
             .iter()
             .filter(|place| definition.scope.reaches_project(&place.chain))
             .collect();
-        let readable = definition.field.applies_to == FieldFor::Issues
-            && !reached.is_empty()
+        let readable = !reached.is_empty()
             && reached.iter().all(|place| {
                 place.may_use(
                     FieldKey::Own(definition.field.id),

@@ -531,22 +531,6 @@ impl Evaluation {
         self.level(kind)
     }
 
-    /// Whether the person sees the names of the people of this kind (*Names*, not *Role only* or
-    /// *Hidden*): what lets them show, search, sort or group by people of that kind (ADR-0022).
-    #[must_use]
-    pub fn sees_names(&self, kind: PeopleKind) -> bool {
-        self.kind_level(kind) == PeopleLevel::Names
-    }
-
-    /// Whether the person sees the names of the people or groups an own field of this type holds:
-    /// `false` for a type that holds none.
-    #[must_use]
-    pub fn sees_names_in(&self, field_type: bb_core::own_fields::FieldType) -> bool {
-        field_type
-            .people_kind()
-            .is_some_and(|kind| self.sees_names(kind))
-    }
-
     /// The rows of the evaluation with what was made of each, strongest first.
     #[must_use]
     pub fn trace(&self) -> &[RowTrace] {

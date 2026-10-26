@@ -54,6 +54,18 @@ words! {
     messages name = "issue-field.";
 }
 
+/// The kind of people information that the people in *Assigned to* are shown as: what the
+/// field says ([`Field::person_kind`]), and what the places that choose or check a person for it ask.
+pub const ASSIGNED_TO_PEOPLE: PeopleKind = PeopleKind::AssignedTo;
+
+/// The word of a stable code in the search language: the code in lower camel case (`assigned-to` is
+/// `assignedTo`). The one rule for the fields, the priorities and the status groups, so no second
+/// list of words can disagree with the codes.
+#[must_use]
+pub fn code_word(code: &str) -> String {
+    lower_camel(code.split('-'))
+}
+
 /// Parts of a name written as one word in lower camel case: the first part in lower case at its
 /// start, each next part with a capital at its start, the rest of every part as it is. The one
 /// rule for the word of a built-in field (`assigned-to` is `assignedTo`) and of an own field
@@ -223,7 +235,7 @@ impl Field {
     /// second list of words can disagree with the catalogue.
     #[must_use]
     pub fn search_word(self) -> String {
-        lower_camel(self.code().split('-'))
+        code_word(self.code())
     }
 
     /// The kind of people information the field holds, when it holds a person: a person in the
@@ -231,7 +243,7 @@ impl Field {
     #[must_use]
     pub const fn person_kind(self) -> Option<PeopleKind> {
         match self {
-            Self::AssignedTo => Some(PeopleKind::AssignedTo),
+            Self::AssignedTo => Some(ASSIGNED_TO_PEOPLE),
             Self::ReportedBy => Some(PeopleKind::ReportedBy),
             _ => None,
         }

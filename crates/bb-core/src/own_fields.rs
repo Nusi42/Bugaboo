@@ -611,14 +611,21 @@ mod tests {
 
     #[test]
     fn qry_05_only_people_and_groups_are_a_kind_of_people_information() {
-        for kind in FieldType::ALL {
-            let expected = match kind {
-                FieldType::Person | FieldType::People => Some(PERSON_FIELD_KIND),
-                FieldType::Group => Some(GROUP_FIELD_KIND),
-                _ => None,
-            };
-            assert_eq!(kind.people_kind(), expected, "{kind:?}");
-        }
+        // ADR-0022: a person in a field is shown as *Assigned to*, a group is named by *Mentions*.
+        assert_eq!(
+            FieldType::Person.people_kind(),
+            Some(PeopleKind::AssignedTo)
+        );
+        assert_eq!(
+            FieldType::People.people_kind(),
+            Some(PeopleKind::AssignedTo)
+        );
+        assert_eq!(FieldType::Group.people_kind(), Some(PeopleKind::Mentions));
+        let others = FieldType::ALL
+            .iter()
+            .filter(|kind| kind.people_kind().is_none())
+            .count();
+        assert_eq!(others, FieldType::ALL.len() - 3);
     }
 
     #[test]

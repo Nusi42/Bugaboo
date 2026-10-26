@@ -98,11 +98,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Vec<(IssueType, Arc<WorkflowContent>)>, AppError> {
         let directory = self.workflow_directory().await?;
         let types = self
-            .known_types(shown, self.all_issue_types().await?.to_vec())
+            .known_types_reaching(shown, self.all_issue_types().await?.to_vec(), |owner| {
+                reaches(owner, chain)
+            })
             .await?;
         Ok(types
             .into_iter()
-            .filter(|found| reaches(found.project, chain))
             .map(|found| {
                 let workflow = directory.in_force(chain, Some(found.id));
                 (found, workflow)

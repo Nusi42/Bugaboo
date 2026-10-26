@@ -57,6 +57,8 @@ pub(crate) enum Members<'a> {
         actor: UserId,
         /// What they are shown.
         viewer: &'a Evaluation,
+        /// The kind of people information of the field the person is named in.
+        kind: PeopleKind,
         /// Who reported the issue the person is named in, or `None` for a project.
         reported_by: Option<UserId>,
     },
@@ -74,8 +76,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         wanted: usize,
         members: Members<'_>,
     ) -> Result<Vec<Person>, AppError> {
-        if let Members::Naming { actor, viewer, .. } = members
-            && !names_other_people(viewer)
+        if let Members::Naming {
+            actor,
+            viewer,
+            kind,
+            ..
+        } = members
+            && !names_other_people(viewer, kind)
         {
             // Only the viewer can be named: the first page holds them (when the search fits their
             // name), a later one nobody. The person still goes through `is_listed`.
@@ -128,10 +135,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             Members::Naming {
                 actor,
                 viewer,
+                kind,
                 reported_by,
             } => match place {
                 Place::Project(project) => {
-                    self.may_name(actor, viewer, person, project, reported_by)
+                    self.may_name(actor, viewer, kind, person, project, reported_by)
                         .await
                 }
                 Place::Organization => Ok(false),
@@ -199,16 +207,17 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Whether `viewer` (the evaluation of `actor`) may name a person that exists: themselves, or
-    /// anybody when they are shown people by name (`names_other_people`). A viewer who is shown
+    /// anybody when they are shown people by name (`names_other_people`, of the kind of the field). A viewer who is shown
     /// others only as a role has no ID to name them by, so one sent anyway is refused alike for a
     /// person who is there and one who is not. The part of `may_name` that holds without access.
     pub(crate) async fn may_name_person(
         &self,
         actor: UserId,
         viewer: &Evaluation,
+        kind: PeopleKind,
         person: UserId,
     ) -> Result<bool, AppError> {
-        Ok((person == actor || names_other_people(viewer))
+        Ok((person == actor || names_other_people(viewer, kind))
             && self
                 .store()
                 .person(person)
@@ -225,11 +234,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: UserId,
         viewer: &Evaluation,
+        kind: PeopleKind,
         person: UserId,
         project: ProjectId,
         reported_by: Option<UserId>,
     ) -> Result<bool, AppError> {
-        Ok(self.may_name_person(actor, viewer, person).await?
+        Ok(self.may_name_person(actor, viewer, kind, person).await?
             && self.may_be_named(person, project, reported_by).await?)
     }
 
@@ -306,10 +316,10 @@ pub(crate) fn position_of(person: &Person) -> PeoplePosition {
 }
 
 /// Whether the viewer is shown other people by name where people are named in a field of an item
-/// (*Assigned to* and *Project members* both show names, ADR-0022): only then can they choose
-/// anybody but themselves, whose name they know.
-pub(crate) fn names_other_people(viewer: &Evaluation) -> bool {
-    [PeopleKind::AssignedTo, PeopleKind::ProjectMembers]
+/// (the kind of the field and *Project members* both show names, ADR-0022): only then can they
+/// choose anybody but themselves, whose name they know.
+pub(crate) fn names_other_people(viewer: &Evaluation, kind: PeopleKind) -> bool {
+    [kind, PeopleKind::ProjectMembers]
         .into_iter()
-        .all(|kind| viewer.people_level(kind, PeopleContext::Ordinary) == PeopleLevel::Names)
+        .all(|each| viewer.sees_names(each))
 }
