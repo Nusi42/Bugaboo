@@ -106,7 +106,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The saved search the actor may open, or `resource.not-found`: a search that does not
     /// exist, is in the trash, is not theirs and not shared with them, or does not check cleanly
-    /// for them is one and the same answer, and the same reads (ADR-0034, decision 4).
+    /// for them is one and the same answer; a search that is not there and one that does not reach the
+    /// person run the same reads (ADR-0034, decision 4).
     pub(crate) async fn open_search(
         &self,
         actor: &Actor,
@@ -115,19 +116,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         let stored = self.stored_search(id).await?;
         let reaching = self.reaching(actor).await?;
         let mut judge = self.judge(actor, &reaching).await?;
-        let mut clean = None;
-        match stored {
+        let clean = match stored {
             Some(found) if self.may_open(&mut judge, actor, &reaching, &found).await? => {
-                clean = Some(found);
+                Some(found)
             }
-            Some(_) => {}
-            None => {
-                // Nothing there: the same reads are done on a text with no names, so the answer
-                // does not come sooner than one for a search that is there and does not check.
-                self.canonical_text(&mut judge, "", &Presentation::default())
-                    .await?;
-            }
-        }
+            _ => None,
+        };
         drop(judge);
         let stored = clean.ok_or(AppError::Refused(ErrorCode::NotFound))?;
         Ok(Opened { stored, reaching })

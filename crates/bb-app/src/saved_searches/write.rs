@@ -222,8 +222,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         let sees = if let Some(found) = &found {
             self.may_open(&mut judge, actor, &reaching, found).await?
         } else {
-            self.canonical_text(&mut judge, "", &Presentation::default())
-                .await?;
             false
         };
         if sees {
