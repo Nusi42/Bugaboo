@@ -106,6 +106,8 @@ pub struct LimitsConfig {
     pub sign_in_failures_per_minute: u32,
     /// Requests per minute that come with one access key.
     pub access_key_requests_per_minute: u32,
+    /// Searches per person and minute, whether they come with a session or with a key.
+    pub searches_per_minute: u32,
 }
 
 impl Default for LimitsConfig {
@@ -115,6 +117,7 @@ impl Default for LimitsConfig {
             sign_in_attempts_per_minute: DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
             sign_in_failures_per_minute: DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
             access_key_requests_per_minute: DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
+            searches_per_minute: SEARCHES_PER_MINUTE,
         }
     }
 }
@@ -259,7 +262,7 @@ impl Limits {
             ),
             // A full table refuses a person it does not know yet: a search is not worth more
             // than the rest of the server.
-            searches: Window::new(SEARCHES_PER_MINUTE, Overflow::Refuse),
+            searches: Window::new(config.searches_per_minute, Overflow::Refuse),
         })
     }
 

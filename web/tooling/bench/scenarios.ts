@@ -59,6 +59,36 @@ async function notificationsPage(context: Context): Promise<number> {
   ).ms;
 }
 
+/** The first page of a search across every project the person sees. */
+async function searchPage(context: Context, q: string): Promise<number> {
+  return (
+    await timed(() =>
+      context.session.client.GET("/api/v1/search/issues", { params: { query: { q, limit: 40 } } }),
+    )
+  ).ms;
+}
+
+/** How many issues a search finds. */
+async function searchCount(context: Context, q: string): Promise<number> {
+  return (
+    await timed(() =>
+      context.session.client.GET("/api/v1/search/issues/count", { params: { query: { q } } }),
+    )
+  ).ms;
+}
+
+/** The groups of a search by one field. */
+async function searchGroups(context: Context, by: string, q: string): Promise<number> {
+  return (
+    await timed(() =>
+      context.session.client.GET("/api/v1/search/issues/groups", { params: { query: { q, by } } }),
+    )
+  ).ms;
+}
+
+/** The complex search of architecture section 8, across 500 projects. */
+const COMPLEX = "statusGroup is not Done and priority is high";
+
 export const scenarios: readonly Scenario[] = [
   {
     name: "issue-page",
@@ -102,5 +132,60 @@ export const scenarios: readonly Scenario[] = [
           }),
         )
       ).ms,
+  },
+  {
+    name: "search-complex",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchPage(context, COMPLEX),
+  },
+  {
+    name: "search-complex-sorted",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchPage(context, `${COMPLEX} sort by created, oldest first`),
+  },
+  {
+    name: "search-count",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchCount(context, COMPLEX),
+  },
+  {
+    name: "search-groups-status",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchGroups(context, "status", "priority is high"),
+  },
+  {
+    name: "search-groups-assigned-to",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchGroups(context, "assignedTo", COMPLEX),
+  },
+  // The text search (M5-F50): a word in very many issues, a word in few, and the start of a word.
+  {
+    name: "search-text-common-word",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchPage(context, 'contains "wrong"'),
+  },
+  {
+    name: "search-text-rare-word",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchPage(context, 'contains "barcode"'),
+  },
+  {
+    name: "search-text-prefix",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchPage(context, 'contains "notif*"'),
+  },
+  {
+    name: "search-text-and-filter",
+    budget: "search",
+    runs: RUNS,
+    once: (context) => searchPage(context, `contains "wrong" and ${COMPLEX}`),
   },
 ];

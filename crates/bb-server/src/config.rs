@@ -43,6 +43,7 @@ words! {
         SignInAttemptsPerMinute => "sign_in_attempts_per_minute",
         SignInFailuresPerMinute => "sign_in_failures_per_minute",
         AccessKeyRequestsPerMinute => "access_key_requests_per_minute",
+        SearchesPerMinute => "searches_per_minute",
         MailBatchSeconds => "mail_batch_seconds",
     }
 }
@@ -494,6 +495,11 @@ fn limits_from(values: &BTreeMap<SettingName, String>) -> Result<LimitsConfig, C
             values,
             SettingName::AccessKeyRequestsPerMinute,
             DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
+        )?,
+        searches_per_minute: rate_limit(
+            values,
+            SettingName::SearchesPerMinute,
+            LimitsConfig::default().searches_per_minute,
         )?,
     })
 }
