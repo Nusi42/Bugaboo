@@ -1205,6 +1205,15 @@ body {
   justify-self: end;
 }
 
+[data-part="list-row"][data-variant~="phone"][data-variant~="plain"] {
+  grid-template-columns: var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-areas: "status key priority" "title title title" "person person changed";
+}
+
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="status"] {
+  justify-content: flex-start;
+}
+
 [data-part="list-row"][data-variant~="slim"] {
   grid-template-columns: var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
   grid-template-areas: "status key priority" "title title title";
@@ -1245,6 +1254,7 @@ body {
 [data-part="list-row"][data-variant~="grid"] {
   display: grid;
   grid-template-columns: var(--list-columns);
+  gap: var(--space-2);
 }
 
 [data-part="list-row"][data-variant~="grid"] [data-part="list-row.cell"] {
@@ -1263,6 +1273,15 @@ body {
 
 [data-part="list-frame"][data-variant~="compact"] [data-part="list-row"][data-variant~="head"] {
   min-height: var(--size-row-compact);
+}
+
+[data-part="list-frame"][data-variant~="compact"] [data-part="checkbox"] {
+  min-height: var(--size-target-least);
+}
+
+[data-part="list-frame"][data-variant~="compact"] [data-part="checkbox.box"] {
+  width: var(--size-icon-small);
+  height: var(--size-icon-small);
 }
 
 [data-part="list-scroll"] {
@@ -1369,6 +1388,11 @@ body {
   white-space: nowrap;
 }
 
+[data-part="list-frame"][data-variant~="compact"] [data-part="list-group"],
+[data-part="list-frame"][data-variant~="compact"] [data-part="list-group.toggle"] {
+  min-height: var(--size-row-compact);
+}
+
 [data-part="list-group.note"] {
   color: var(--fg-muted);
   font-weight: var(--weight-regular);
@@ -1416,11 +1440,23 @@ body {
   gap: var(--space-1);
 }
 
+[data-part="list-nothing"] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--pad-box) var(--pad-nothing);
+}
+
 [data-part="list-options"] {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--space-3) var(--space-5);
+}
+
+[data-part="list-options"] [data-part="button"] {
+  align-self: flex-end;
 }
 
 [data-part="timeline-bar"] {

@@ -32,7 +32,7 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
       id={id}
       textValue={line.title}
       {...partOf(part.listRow, {
-        variants: [context.phone ? "phone" : "grid"],
+        variants: [context.phone ? "phone" : "grid", context.phone && !context.ticks && "plain"],
         states: [...rowStates(line), selected && "selected", current && "current"],
       })}
     >

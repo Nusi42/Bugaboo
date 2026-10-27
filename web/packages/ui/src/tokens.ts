@@ -135,6 +135,7 @@ export const tokenNames = [
   "size-control",
   "size-control-small",
   "size-row",
+  "pad-nothing",
   "size-row-compact",
   "size-list-scroll",
   "size-edge",
@@ -351,6 +352,7 @@ export const part = {
   listPanelTitle: "list-panel.title",
   listPanelItem: "list-panel.item",
   listPanelItems: "list-panel.items",
+  listNothing: "list-nothing",
   listOptions: "list-options",
   nameValues: "name-values",
   nameValue: "name-value",
@@ -785,7 +787,7 @@ export const partWords = {
     state: ["selected", "group-in-progress", "group-done", "priority-critical", "priority-high"],
   },
   "list-row": {
-    variant: ["head", "phone", "slim", "grid"],
+    variant: ["head", "phone", "slim", "plain", "grid"],
     state: [
       "group-in-progress",
       "selected",
@@ -830,6 +832,7 @@ export const partWords = {
   "list-panel.title": { variant: [], state: [] },
   "list-panel.item": { variant: [], state: [] },
   "list-panel.items": { variant: [], state: [] },
+  "list-nothing": { variant: [], state: [] },
   "list-options": { variant: [], state: [] },
   "name-values": { variant: [], state: [] },
   "name-value": { variant: [], state: [] },
