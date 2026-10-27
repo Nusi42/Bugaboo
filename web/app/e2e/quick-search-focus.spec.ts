@@ -81,17 +81,15 @@ test("cfg_08 the local rows get the focus when the typing pause ends, before the
   answer();
 });
 
-test("cfg_08 a later answer that lands on top does not take the focus from the row it is on", async ({
-  page,
-}) => {
+test("cfg_08 a later answer does not take the focus from the row it is on", async ({ page }) => {
   await signIn(page, ada);
   const answer = await holdBackSearches(page);
-  // The pages answer at once; the issues, for a text that looks like an ID, come first when they land.
+  // The pages answer at once; the issues land later, below them (only a real Issue ID comes first).
   await ask(page, "sign-in");
   await expect.poll(() => pointsAtFirst(page)).toBe(true);
   const row = await focusedTitle(page).innerText();
   answer();
-  await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
+  await expect(result(page, titles.passkey)).toBeVisible();
   // The box still points at the same row, and that is what Enter opens.
   await expect(focusedTitle(page)).toHaveText(row);
   await page.keyboard.press("Enter");
@@ -99,7 +97,7 @@ test("cfg_08 a later answer that lands on top does not take the focus from the r
   await expect(dialog(page)).toHaveCount(0);
 });
 
-test("cfg_08 an arrow key before the answer keeps the person's row when the answer lands on top", async ({
+test("cfg_08 an arrow key before the answer keeps the person's row when the answer lands", async ({
   page,
 }) => {
   await signIn(page, ada);
@@ -112,14 +110,14 @@ test("cfg_08 an arrow key before the answer keeps the person's row when the answ
   const row = await focusedTitle(page).innerText();
   await expect(list(page).getByRole("option").first()).not.toContainText(row);
   answer();
-  await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
+  await expect(result(page, titles.passkey)).toBeVisible();
   await expect(focusedTitle(page)).toHaveText(row);
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(addressEndingAt(paths.signInRules));
   await expect(dialog(page)).toHaveCount(0);
 });
 
-test("cfg_08 an arrow key at once after the words keeps the first row when the answer lands on top", async ({
+test("cfg_08 an arrow key at once after the words keeps the first row when the answer lands", async ({
   page,
 }) => {
   await signIn(page, ada);
@@ -133,7 +131,7 @@ test("cfg_08 an arrow key at once after the words keeps the first row when the a
   const row = await focusedTitle(page).innerText();
   await expect(list(page).getByRole("option").first()).toContainText(row);
   answer();
-  await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
+  await expect(result(page, titles.passkey)).toBeVisible();
   await expect(focusedTitle(page)).toHaveText(row);
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(addressEndingAt(paths.security));
