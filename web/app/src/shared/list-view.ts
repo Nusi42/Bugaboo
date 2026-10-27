@@ -77,9 +77,10 @@ function sameWidths(
  * an address stays short and goes back to the defaults when a person does.
  */
 export function withView(state: SearchState, view: ListView, defaults: ListView): SearchState {
-  const { text, project, saved, view: kind, open } = state;
+  const { text, everything, project, saved, view: kind, open } = state;
   return {
     text,
+    ...(everything === undefined ? {} : { everything }),
     ...(open === undefined ? {} : { open }),
     ...(project === undefined ? {} : { project }),
     ...(saved === undefined ? {} : { saved }),

@@ -122,6 +122,11 @@ const wordsWithText: ReadonlySet<string> = new Set([
   listWord.statusGroup,
 ]);
 
+/** Whether a column or a group is a field of the organization: a word with no cell of its own and no text drawn from the row. */
+export function isOwnField(word: string): boolean {
+  return cellOf(word) === "value" && !wordsWithText.has(word);
+}
+
 /** The words that cannot be grouped by: a long text and the Issue ID have no groups. */
 export const notGroupable: ReadonlySet<string> = new Set([listWord.description, listWord.id]);
 

@@ -44,3 +44,27 @@ export function useListView(
     },
   };
 }
+
+/** Whether the address changes any part of how the results are shown, so that it differs from the defaults. */
+export function viewIsChanged(state: SearchState): boolean {
+  return (
+    state.columns !== undefined ||
+    state.widths !== undefined ||
+    state.spacing !== undefined ||
+    state.groupBy !== undefined
+  );
+}
+
+/** The state with nothing unsaved: no text of its own and no change of the view (what a saved search has once it was saved). */
+export function withoutChanges(state: SearchState): SearchState {
+  const {
+    text: _t,
+    everything: _e,
+    columns: _c,
+    widths: _w,
+    spacing: _s,
+    groupBy: _g,
+    ...rest
+  } = state;
+  return { ...rest, text: "" };
+}

@@ -1,7 +1,7 @@
 import { useLayout } from "@bugaboo/ui";
 import type { SearchLanguage } from "@bugaboo/wasm-search";
 
-import { cellOf, phoneColumns } from "../../shared/list-columns.ts";
+import { isOwnField, phoneColumns } from "../../shared/list-columns.ts";
 import type { SearchState } from "../../shared/search-address.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import { useNow } from "../../shared/use-now.ts";
@@ -31,8 +31,7 @@ export function useListContextValue(input: ContextInput): ListContextValue {
   const { view } = input;
   const own = useOwnColumns(
     input.language,
-    view.columns.some((word) => cellOf(word) === "value") ||
-      (view.groupBy !== null && cellOf(view.groupBy) === "value"),
+    view.columns.some(isOwnField) || (view.groupBy !== null && isOwnField(view.groupBy)),
   );
   return {
     words: phone ? phoneColumns : view.columns,

@@ -5,8 +5,10 @@ import {
   panelClosedAddress,
   readSearch,
   searchHref,
+  textShown,
   searchLocation,
   validateSearch,
+  withText,
   type SearchState,
 } from "./search-address.ts";
 
@@ -125,5 +127,22 @@ describe("the issue open in the side panel is part of the address", () => {
     expect(panelClosedAddress(readSearch(locationOf(opened)))).toBe(searchHref(state));
     // From a page that is no list of that project the list is the project's own.
     expect(issuePanelAddress(undefined, "WEB", "WEB-2")).toBe("/p/WEB/issues?open=WEB-2");
+  });
+});
+
+describe("a list that has a text of its own can be asked for everything", () => {
+  it("writes an emptied text as `s=` and reads it back as everything", () => {
+    const emptied = withText({ text: "", project: "WEB" }, "", "status is Open");
+    expect(emptied).toEqual({ text: "", project: "WEB", everything: true });
+    expect(searchHref(emptied)).toBe("/p/WEB/issues?s=");
+    expect(readSearch(locationOf(searchHref(emptied)))).toEqual(emptied);
+    expect(textShown(emptied, "status is Open")).toBe("");
+  });
+
+  it("brings back the text of the list where the address says nothing", () => {
+    expect(textShown({ text: "" }, "status is Open")).toBe("status is Open");
+    expect(withText({ text: "x", everything: true }, "status is Open", "status is Open")).toEqual({
+      text: "",
+    });
   });
 });

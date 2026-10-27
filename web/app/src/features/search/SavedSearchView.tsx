@@ -3,8 +3,19 @@ import { Card, part, partOf } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { personName } from "../../shared/person.ts";
-import { historyStep, type HistoryStep, type SearchState } from "../../shared/search-address.ts";
-import { useListView, type ResultsInput } from "../../shared/use-list-view.ts";
+import {
+  historyStep,
+  textShown,
+  withText,
+  type HistoryStep,
+  type SearchState,
+} from "../../shared/search-address.ts";
+import {
+  useListView,
+  viewIsChanged,
+  withoutChanges,
+  type ResultsInput,
+} from "../../shared/use-list-view.ts";
 import { ChangedActions } from "./ChangedActions.tsx";
 import type { SavedSearch } from "./saved-searches.ts";
 import { SearchBar } from "./SearchBar.tsx";
@@ -22,27 +33,28 @@ export interface SavedSearchViewProps {
 /** A saved search that was opened: its name, the bar with its text, what it finds with its columns. */
 export function SavedSearchView({ search, state, onState, results }: SavedSearchViewProps) {
   const [stale, setStale] = useState(false);
-  const text = state.text === "" ? search.search_text : state.text;
+  const text = textShown(state, search.search_text);
   const { view, defaults, onView } = useListView(state, onState, {
     everywhere: true,
     presentation: search.presentation,
   });
   // Back at the saved text there is nothing to save, and the address is the saved search's own.
   const onText = (canonical: string, step: HistoryStep): void => {
-    onState({ ...state, text: canonical === search.search_text ? "" : canonical }, step);
+    onState(withText(state, canonical, search.search_text), step);
   };
   return (
     <Card
       heading={search.name}
       level={1}
       actions={
-        text === search.search_text ? null : (
+        text === search.search_text && !viewIsChanged(state) ? null : (
           <ChangedActions
             search={search}
             text={text}
+            view={view}
             hasMistake={stale}
             onSaved={() => {
-              onState({ ...state, text: "" }, historyStep.replace);
+              onState(withoutChanges(state), historyStep.replace);
             }}
           />
         )

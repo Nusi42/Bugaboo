@@ -29,11 +29,16 @@ function choicesOf(
 
 /** The column a field stands for, by its search word; nothing for a field that came without what a column needs. */
 function ownColumnOf(language: SearchLanguage | undefined) {
-  return (field: Schema<"FieldItem">): readonly [string, OwnColumn] | undefined => {
+  return (
+    field: Schema<"FieldItem">,
+  ): { readonly word: string; readonly column: OwnColumn } | undefined => {
     const [id, name, kind] = [known(field.id), known(field.name), known(field.kind)];
     return language === undefined || id === undefined || name === undefined || kind === undefined
       ? undefined
-      : [language.ownFieldWord(name), { id, kind, choices: choicesOf(field.choices) }];
+      : {
+          word: language.ownFieldWord(name),
+          column: { id, kind, choices: choicesOf(field.choices) },
+        };
   };
 }
 
@@ -50,7 +55,12 @@ export function useOwnColumns(language: SearchLanguage | undefined, needed: bool
         await api.client.GET("/api/v1/fields", { params: { query: { limit: pageSize.largest } } }),
       ),
   });
-  return Object.fromEntries(linesFrom([fields.data ?? { items: [] }], ownColumnOf(language)));
+  return Object.fromEntries(
+    linesFrom([fields.data ?? { items: [] }], ownColumnOf(language)).map(({ word, column }) => [
+      word,
+      column,
+    ]),
+  );
 }
 
 /** The words of a value of a field of the organization as it stands in a row: a choice by its name, the rest as the details word it. */

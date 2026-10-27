@@ -1,6 +1,11 @@
 import { useState } from "react";
 
-import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
+import {
+  textShown,
+  withText,
+  type HistoryStep,
+  type SearchState,
+} from "../../shared/search-address.ts";
 import { useListView } from "../../shared/use-list-view.ts";
 import { SearchBar, useProjectListChoice } from "../search/index.ts";
 import { IssueResults } from "./IssueResults.tsx";
@@ -37,9 +42,9 @@ export function ProjectList({ project, state, onState, openIn, selection }: Proj
     presentation: chosen?.presentation,
   });
   const usual = chosen?.search_text ?? "";
-  const text = state.text === "" ? usual : state.text;
+  const text = textShown(state, usual);
   const onText = (canonical: string, step: HistoryStep): void => {
-    onState({ ...state, text: canonical === usual ? "" : canonical }, step);
+    onState(withText(state, canonical, usual), step);
   };
   const save = (
     <ProjectSave text={text} shortName={project.shortName} view={list.view} hasMistake={stale} />

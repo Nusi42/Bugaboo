@@ -36,6 +36,11 @@ export function spacingOf(word: string | undefined): SearchSpacing | undefined {
 /** What an address says about a search and how its results are shown. */
 export interface SearchState {
   readonly text: string;
+  /**
+   * The text is empty on purpose (`s=` in the address): everything, where a list or a saved search
+   * has a text of its own that an empty address would bring back.
+   */
+  readonly everything?: boolean | undefined;
   /** The short name of the project the list belongs to; none for the other pages. */
   readonly project?: string;
   /** The ID of the saved search whose page this is (`/s/<ID>`). */
@@ -114,6 +119,7 @@ export function readSearch(location: {
   const open = textOf(raw, "open");
   return {
     text: written === undefined || written.trim() === "" ? "" : written,
+    ...(written === "" ? { everything: true } : {}),
     ...(project === undefined ? {} : { project }),
     ...(saved === undefined ? {} : { saved }),
     ...(columns === undefined || columns.length === 0 ? {} : { columns }),
@@ -130,6 +136,8 @@ export function searchLocation(state: SearchState): SearchLocation {
   const search: { -readonly [Part in keyof SearchParts]: string } = {};
   if (state.text.trim() !== "") {
     search.s = state.text;
+  } else if (state.everything === true) {
+    search.s = "";
   }
   if (state.view !== undefined) {
     search.show = state.view;
@@ -175,6 +183,23 @@ export function searchHref(state: SearchState): string {
   const { pathname, search } = searchLocation(state);
   const query = new URLSearchParams(Object.entries(search)).toString();
   return query === "" ? pathname : `${pathname}?${query}`;
+}
+
+/** The text a list shows: the address's own, nothing where the address asks for everything, else `usual` (the text of the project's list or of the saved search). */
+export function textShown(state: SearchState, usual: string): string {
+  if (state.text !== "") {
+    return state.text;
+  }
+  return state.everything === true ? "" : usual;
+}
+
+/** The state after the text in the box became `canonical`, for a list whose own text is `usual`: the address keeps nothing where the text is that one, and says "everything" where it was emptied. */
+export function withText(state: SearchState, canonical: string, usual: string): SearchState {
+  const { everything: _everything, ...rest } = state;
+  if (canonical === usual) {
+    return { ...rest, text: "" };
+  }
+  return canonical === "" ? { ...rest, text: "", everything: true } : { ...rest, text: canonical };
 }
 
 /**
