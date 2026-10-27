@@ -48,7 +48,7 @@ pub(super) fn steps() -> Vec<Step> {
 mod tests {
     use bb_app::auth::{AccountStore as _, SearchIn};
     use bb_testing::{TestResult, each_database};
-    use sea_query::{Expr, Query};
+    use sea_query::{Expr, ExprTrait as _, Query};
 
     use super::super::Database;
     use crate::db::StoredId as _;
@@ -128,6 +128,17 @@ mod tests {
             database.migrate_until(26, at(1)).await?;
             assert_eq!(database.fill_name_keys().await?, u64::from(wanted));
             assert_eq!(database.fill_name_keys().await?, 0);
+            // A key is the value of the rule, not only a non-empty text.
+            let mut select = Query::select();
+            select
+                .column(PersonRow::NameKey)
+                .from(PersonRow::Table)
+                .and_where(Expr::col(PersonRow::Email).eq("5@example.test"));
+            let row = database.fetch_optional(&select).await?.ok_or("no person")?;
+            assert_eq!(
+                row.get::<String>(PersonRow::NameKey)?,
+                bb_core::names::name_key("\u{d6}ZIL  No 5")
+            );
             Ok(())
         })
         .await
