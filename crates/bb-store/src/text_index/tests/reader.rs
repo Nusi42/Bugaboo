@@ -133,6 +133,59 @@ fn attachment(source: &mut impl IdSource, issue: IssueId, name: &str) -> Attachm
     }
 }
 
+/// A word that is far longer than a real word (a line of Chinese text without a stop, a hash)
+/// is not stored, and neither stops the reader nor fails a search (PostgreSQL refuses a lexeme of
+/// more than 2046 bytes): the other words of the text are found, and the long word is found
+/// nowhere, on both databases.
+#[tokio::test]
+async fn iss_13_a_word_too_long_for_the_index_does_not_stop_the_reader_or_a_search() -> TestResult {
+    each_database("iss_13_long_word", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 2).await;
+        let (first, second) = (world.issues[0].id, world.issues[1].id);
+        // 683 characters of three bytes are 2049 bytes; the hex dump is 2047 bytes.
+        let chinese = "\u{4e2d}".repeat(683);
+        let dump = "ab".repeat(1023) + "c";
+        assert_eq!((chinese.len(), dump.len()), (2049, 2047));
+        let said = comment(&mut source, first, &format!("kept {chinese} words"));
+        changed_issue(storage, &mut source, first, move |tx| {
+            Box::pin(async move { AuthStorage::insert_comment(tx, &said).await })
+        })
+        .await?;
+        let named = attachment(&mut source, second, &format!("{dump} report.txt"));
+        changed_issue(storage, &mut source, second, move |tx| {
+            let file = file();
+            Box::pin(async move {
+                AuthStorage::insert_stored_file(tx, &file).await?;
+                AuthStorage::insert_attachment(tx, &named).await
+            })
+        })
+        .await?;
+
+        // The reader goes through both texts and the move of its place is committed.
+        assert!(catch_up(storage, at(9)).await? > 0);
+        assert_eq!(catch_up(storage, at(10)).await?, 0);
+        let everywhere = TextScope::Everywhere;
+        assert_eq!(found(storage, "kept words", everywhere).await?, [hit(1)]);
+        assert_eq!(found(storage, "report txt", everywhere).await?, [hit(2)]);
+        // The long words are in no row, and a search for one is a clean answer: nothing.
+        let left = rows(storage).await?;
+        assert!(left.iter().all(|(_, words)| words.len() < 1000), "{left:?}");
+        for typed in [
+            chinese.as_str(),
+            dump.as_str(),
+            &format!("{dump}*"),
+            &format!("kept {chinese}"),
+        ] {
+            assert!(found(storage, typed, everywhere).await?.is_empty());
+        }
+        Ok(())
+    })
+    .await
+}
+
 #[tokio::test]
 async fn iss_13_a_change_while_the_reader_was_stopped_is_in_the_index_after_a_start() -> TestResult
 {

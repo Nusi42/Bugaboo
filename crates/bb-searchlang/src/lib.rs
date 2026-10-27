@@ -41,7 +41,7 @@ pub use checker::{CheckedSearch, check};
 pub use fields::{Field, FieldKind, IssueField, NO, Operator, ReadableFields, YES, own_field_word};
 pub use limits::{
     MAX_CONTAINS_WORDS, MAX_DEPTH, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MAX_TEXT_BYTES,
-    MIN_PREFIX_CHARS,
+    MAX_WORD_BYTES, MIN_PREFIX_CHARS,
 };
 pub use mistake::Mistake;
 pub use printer::print;

@@ -3834,6 +3834,10 @@ pub const SEARCH_MISTAKE_TOO_LONG: MessageKey = MessageKey::new("search.mistake.
 pub const SEARCH_MISTAKE_UNCLOSED_QUOTE: MessageKey =
     MessageKey::new("search.mistake.unclosed-quote");
 
+/// The message `search.mistake.word-too-long`.
+pub const SEARCH_MISTAKE_WORD_TOO_LONG: MessageKey =
+    MessageKey::new("search.mistake.word-too-long");
+
 /// The message `search.nothing`.
 pub const SEARCH_NOTHING: MessageKey = MessageKey::new("search.nothing");
 
@@ -13407,6 +13411,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "search.mistake.unreadable",
         "“{text}” is not understood here.",
+    ),
+    (
+        "search.mistake.word-too-long",
+        "A word in this text is too long to be found. Split it into shorter words.",
     ),
     (
         "search.mistake.wrong-date",

@@ -236,6 +236,8 @@ export const messages = {
   "search.mistake.expected-sort-by": "Write “{by}” after “{sort}”.",
   "search.mistake.expected-sort-field": "Write the field to sort by here.",
   "search.mistake.expected-direction": "Write how to sort here: {directions}.",
+  "search.mistake.word-too-long":
+    "A word in this text is too long to be found. Split it into shorter words.",
   "search.mistake.prefix-too-short":
     "A word that ends in * needs at least {limit} letters before the *.",
   "search.mistake.reserved-word":

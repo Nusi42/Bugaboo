@@ -32,6 +32,14 @@ pub struct SearchWord {
 /// shorter start, and the search looks it up as the whole word: both ask [`SearchWord::matches_by_start`].
 pub const MIN_PREFIX_CHARS: usize = 2;
 
+/// The most bytes a word may have to be stored in the index or to be looked up (ADR-0016). A real
+/// word is never this long; a longer run of letters is a dump (a key, a hash, a line of text
+/// without a space or a stop) that nobody searches for. Both databases stay below their own limits
+/// by far (a lexeme of PostgreSQL may have 2046 bytes at most, and one over it fails the whole
+/// statement). A longer run is not stored, so a text never fails to be indexed, and a longer word
+/// is refused when it is typed in a search (the checker), so a search never fails either.
+pub const MAX_WORD_BYTES: usize = 255;
+
 /// How many letters a word has: its characters that are not combining marks, so a letter written
 /// as two characters counts once. The one place that counts them; what asks whether a start has
 /// enough letters calls it.
@@ -52,6 +60,14 @@ impl SearchWord {
     #[must_use]
     pub fn text(&self) -> &str {
         &self.text
+    }
+
+    /// Whether the word is longer than the index keeps a word ([`MAX_WORD_BYTES`]): such a word is
+    /// refused by the checker as typed, and is found nowhere in the index. The one place that
+    /// compares a word with the bound.
+    #[must_use]
+    pub const fn is_too_long(&self) -> bool {
+        self.text.len() > MAX_WORD_BYTES
     }
 
     /// Whether the word matches by its start (it was typed with a `*` at its end).
@@ -80,12 +96,14 @@ pub fn search_words(text: &str) -> Vec<SearchWord> {
 }
 
 /// The words of `text` as they are stored, in order. A word that comes twice comes twice: this is
-/// what the index keeps.
+/// what the index keeps. A word over [`MAX_WORD_BYTES`] is left out, so storing a text never
+/// fails because of one.
 #[must_use]
 #[cfg(any(test, feature = "canonical-text"))]
 pub fn prepare(text: &str) -> Vec<String> {
     split(&canonical(text))
         .into_iter()
+        .filter(|word| !word.is_too_long())
         .map(|word| word.text)
         .collect()
 }
@@ -152,7 +170,8 @@ fn split(text: &str) -> Vec<SearchWord> {
 
 /// Whether the character is a combining mark: the blocks that hold the accents written after
 /// their letter (U+0300 to U+036F and the extensions), and the marks that NFC leaves on a letter
-/// of another script (the nukta of Devanagari, Bengali, Gurmukhi and Oriya, and the signs of Japanese). A table of the
+/// of another script (the nukta of Devanagari, Bengali, Gurmukhi, Oriya and Kaithi, the sign of
+/// Sinhala that two of its vowel signs end in, and the signs of Japanese). A table of the
 /// general categories would add 14 KB to the search module of the browser (PERF-04).
 fn is_mark(c: char) -> bool {
     matches!(
@@ -166,6 +185,8 @@ fn is_mark(c: char) -> bool {
             | '\u{9bc}'
             | '\u{a3c}'
             | '\u{b3c}'
+            | '\u{dca}'
+            | '𑂺'
             | '\u{3099}'..='\u{309a}'
     )
 }
@@ -316,23 +337,82 @@ mod tests {
     }
 
     /// A letter that NFC takes apart or puts together stays one word with the letter after it,
-    /// whatever its script: the list is every letter there is, not a list written by hand.
+    /// whatever its script: the list is every letter there is, not a list written by hand. The
+    /// checker, which does not put the text into NFC, counts the words of the same text the same.
     #[test]
     fn every_letter_stays_one_word_in_every_form() {
-        use unicode_normalization::UnicodeNormalization as _;
         let mut broken = Vec::new();
+        let mut uncounted = Vec::new();
         for letter in ('\0'..=char::MAX).filter(|c| c.is_alphanumeric()) {
             let forms = [
                 letter.to_string(),
                 letter.to_string().nfd().collect::<String>(),
             ];
             for form in forms {
-                if words(&format!("{form}x")).len() != 1 {
+                let text = format!("{form}x");
+                if words(&text).len() != 1 {
                     broken.push(format!("{:04X}", u32::from(letter)));
+                    break;
+                }
+                if checked_words(&text).len() != 1 {
+                    uncounted.push(format!("{:04X}", u32::from(letter)));
                     break;
                 }
             }
         }
         assert!(broken.is_empty(), "these letters split a word: {broken:?}");
+        assert!(
+            uncounted.is_empty(),
+            "the checker counts these letters as more than one word: {uncounted:?}"
+        );
+    }
+
+    /// A word is stored whole or not at all: a run over the bound is left out, the words around it
+    /// stay (a text never fails to be indexed because of one). The bound counts bytes, so a word of
+    /// a script with three bytes for a letter is cut earlier than one of ASCII letters.
+    #[test]
+    fn a_word_over_the_bound_is_not_stored_and_the_others_are() {
+        let ascii = "a".repeat(MAX_WORD_BYTES);
+        assert_eq!(words(&format!("x {ascii} y")), ["x", ascii.as_str(), "y"]);
+        let long_ascii = "a".repeat(MAX_WORD_BYTES + 1);
+        assert_eq!(words(&format!("x {long_ascii} y")), ["x", "y"]);
+        let long_cjk = "\u{4e2d}".repeat(MAX_WORD_BYTES / 3 + 1);
+        assert!(long_cjk.len() > MAX_WORD_BYTES);
+        assert_eq!(words(&format!("x {long_cjk} y")), ["x", "y"]);
+        let cjk_fits = "\u{4e2d}".repeat(MAX_WORD_BYTES / 3);
+        assert_eq!(words(&cjk_fits), [cjk_fits.as_str()]);
+        assert_eq!(prepare_joined(&long_cjk), "");
+    }
+
+    /// The checker sees the long word (it refuses it); the lookup keeps it too, and it fits
+    /// nowhere.
+    #[test]
+    fn a_word_over_the_bound_is_seen_by_the_checker_and_fits_nowhere() {
+        let long = "A".repeat(MAX_WORD_BYTES + 1);
+        let checked = checked_words(&format!("ok {long}"));
+        assert_eq!(checked.len(), 2);
+        assert!(!checked[0].is_too_long());
+        assert!(checked[1].is_too_long());
+        assert!(search_words(&long)[0].is_too_long());
+    }
+
+    /// The edge of the bound: the checker counts the word as typed, the lookup the word in NFC. A
+    /// letter that NFC takes apart grows; this finds how much, and a word that passed the checker
+    /// stays below the limit of PostgreSQL (2046 bytes) when it is looked up.
+    #[test]
+    fn nfc_cannot_grow_a_checked_word_beyond_what_a_database_takes() {
+        const POSTGRES_LEXEME_BYTES: usize = 2046;
+        let most = ('\0'..=char::MAX)
+            .filter(|c| c.is_alphanumeric() || is_mark(*c))
+            .map(|c| {
+                let one = c.to_string();
+                one.nfc().collect::<String>().len().div_ceil(one.len())
+            })
+            .max()
+            .unwrap_or(1);
+        assert!(
+            MAX_WORD_BYTES * most <= POSTGRES_LEXEME_BYTES,
+            "NFC grows a word {most} times"
+        );
     }
 }

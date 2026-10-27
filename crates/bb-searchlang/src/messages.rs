@@ -109,6 +109,9 @@ pub const UNKNOWN_FIELD_DID_YOU_MEAN: &str = "search.mistake.unknown-field-did-y
 /// The message `search.mistake.unreadable`.
 pub const UNREADABLE: &str = "search.mistake.unreadable";
 
+/// The message `search.mistake.word-too-long`.
+pub const WORD_TOO_LONG: &str = "search.mistake.word-too-long";
+
 /// The message `search.mistake.wrong-date`.
 pub const WRONG_DATE: &str = "search.mistake.wrong-date";
 
