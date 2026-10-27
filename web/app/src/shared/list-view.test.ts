@@ -15,16 +15,7 @@ const everywhere = builtInView({ everywhere: true, spacing: "comfortable" });
 
 describe("the view of a list that the address and the defaults give (UX 2.1, 4.2)", () => {
   it("is the columns of UX 4.2, grouped by status group, for a project's list", () => {
-    expect(project.columns).toEqual([
-      "status",
-      "id",
-      "type",
-      "title",
-      "labels",
-      "priority",
-      "assignedTo",
-      "changed",
-    ]);
+    expect(project.columns).toEqual(["status", "id", "title", "priority", "assignedTo", "changed"]);
     expect(project.groupBy).toBe("statusGroup");
     expect(project.spacing).toBe("comfortable");
     expect(project.widths).toEqual({});

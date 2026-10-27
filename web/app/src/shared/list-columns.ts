@@ -33,9 +33,16 @@ const choiceCells = listColumns.filter(
   (cell): cell is Exclude<ColumnCell, "value"> => cell in wordOfCell,
 );
 
-/** The columns a project's list has by default, as search words, in the order of UX §4.2: a project's list has no *Project* column. */
+/**
+ * The cells that are not in the default list, though a person can add them in *Customize*: *Project*
+ * is the *Search* page's, and *Type* and *Labels* leave the title room on a window of 1280 (the title
+ * is what people read: about a third of the window).
+ */
+const notByDefault: ReadonlySet<ColumnCell> = new Set(["project", "type", "labels"]);
+
+/** The columns a project's list has by default, as search words, in the order of UX §4.2. */
 export const projectColumns: readonly string[] = choiceCells
-  .filter((cell) => cell !== "project")
+  .filter((cell) => !notByDefault.has(cell))
   .map((cell) => wordOfCell[cell]);
 
 /** The columns of the *Search* page by default: those of a project's list, and *Project* after the ID (UX §4.2). */

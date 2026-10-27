@@ -5,7 +5,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, webIssues } from "./support/issues.ts";
-import { layoutOf, onThisLayout } from "./support/layout.ts";
+import { layoutOf } from "./support/layout.ts";
 import { rowOf } from "./support/list-look.ts";
 
 // The list of issues for a screen reader and a finger (UX §4.2, §8, M3 WP-13): the type of an
@@ -13,16 +13,18 @@ import { rowOf } from "./support/list-look.ts";
 
 test.use({ preparation: { run: prepareWeb } });
 
-test("ux_08 a row names the type of its issue, and a tick is told", async ({ page }) => {
+test("ux_08 a column names the type of its issue, and a tick is told", async ({ page }) => {
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   const row = rowOf(page, webIssues.passkey);
-  // The type is named, not only drawn (the scenarios make their issues of the type Task); a phone row has no type.
+  // The type is no column by default (the title keeps the room), and no card of a phone has it.
   const task = row.getByRole("img", { name: "Task", exact: true });
-  const typeIs = (count: number) => async () => {
-    await expect(task).toHaveCount(count);
-  };
-  await onThisLayout(page, { computer: typeIs(1), tablet: typeIs(1), phone: typeIs(0) });
+  await expect(task).toHaveCount(0);
+  // Chosen as a column, the type is named, not only drawn (the scenarios make their issues of the type Task).
+  await page.goto(`${projectIssuesAddress("WEB")}?cols=status,id,type,title`);
+  await expect(
+    rowOf(page, webIssues.passkey).getByRole("img", { name: "Task", exact: true }),
+  ).toHaveCount(Number(layoutOf(page) !== "phone"));
   // A person presses the box they see, not the input behind it.
   await row.locator("label").click();
   await expect(

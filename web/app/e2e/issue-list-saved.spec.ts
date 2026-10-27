@@ -15,7 +15,7 @@ import { boxOf } from "./support/windows.ts";
 test.use({ preparation: { run: prepareLook } });
 test.describe.configure({ mode: "serial" });
 
-const column = { title: t("issue-field.title"), type: t("issue-field.issue-type") };
+const column = { title: t("issue-field.title"), type: t("issue-field.priority") };
 
 test("cfg_02 columns chosen in customize are kept in the saved search", async ({
   page,
@@ -30,14 +30,14 @@ test("cfg_02 columns chosen in customize are kept in the saved search", async ({
   await expect(columnButton(page, column.type)).toHaveCount(0);
   await page.getByRole("button", { name: t("search.save"), exact: true }).click();
   const dialog = page.getByRole("alertdialog", { name: t("search.save") });
-  await dialog.getByLabel(t("search.save-name")).fill("Without types");
+  await dialog.getByLabel(t("search.save-name")).fill("Without priorities");
   await dialog.getByRole("button", { name: t("search.save-confirm") }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Without types" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Without priorities" })).toBeVisible();
   await expect(columnButton(page, column.type)).toHaveCount(0);
   await expect(columnButton(page, column.title)).toBeVisible();
   const admin = await signedInAdmin(server);
-  const fields = await savedColumns(admin, "Without types");
-  expect(fields).not.toContain("type");
+  const fields = await savedColumns(admin, "Without priorities");
+  expect(fields).not.toContain("priority");
   expect(fields).toContain("title");
   await admin.dispose();
 });

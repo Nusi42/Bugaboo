@@ -12,16 +12,7 @@ const readable = ["title", "status", "priority", "labels", "plannedFor"];
 
 describe("the columns a person chooses in Customize", () => {
   it("starts with the columns of UX 4.2 as search words, with no tick box or buttons", () => {
-    expect(projectColumns).toEqual([
-      "status",
-      "id",
-      "type",
-      "title",
-      "labels",
-      "priority",
-      "assignedTo",
-      "changed",
-    ]);
+    expect(projectColumns).toEqual(["status", "id", "title", "priority", "assignedTo", "changed"]);
   });
 
   it("draws a search word in the cell of its field, and a field without a cell as a plain value", () => {
@@ -48,7 +39,11 @@ describe("the columns a person chooses in Customize", () => {
   });
 
   it("moves a column up and down and stops at the ends", () => {
-    expect(moveColumn(projectColumns, "type", "up").slice(0, 3)).toEqual(["status", "type", "id"]);
+    expect(moveColumn(projectColumns, "title", "up").slice(0, 3)).toEqual([
+      "status",
+      "title",
+      "id",
+    ]);
     expect(moveColumn(projectColumns, "status", "up")).toEqual(projectColumns);
     expect(moveColumn(projectColumns, "changed", "down")).toEqual(projectColumns);
   });
