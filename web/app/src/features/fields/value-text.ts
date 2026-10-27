@@ -164,13 +164,23 @@ function partsPerDay(kind: OwnField["kind"]): number {
   return kind === "date" ? 1 : msPerDay * 1000;
 }
 
-/** The bound of a range in the unit the API stores (the start of that day, UTC), for a day typed as `2026-10-25`; `undefined` for text that is no day. */
-export function dayBound(kind: OwnField["kind"], day: string): number | undefined {
+/** Which end of a range a bound is: the lowest value allowed, or the highest. */
+export const bound = { lowest: "lowest", highest: "highest" } as const;
+export type Bound = (typeof bound)[keyof typeof bound];
+
+/**
+ * The bound of a range in the unit the API stores, for a day typed as `2026-10-25`; `undefined`
+ * for text that is no day. The lowest bound is the start of that day (UTC). The highest bound of a
+ * *Date and time* is the last moment of that day, so the day itself is still allowed; a *Date* is
+ * a whole day already.
+ */
+export function dayBound(kind: OwnField["kind"], day: string, end: Bound): number | undefined {
   if (!isCalendarDay(day)) {
     return undefined;
   }
   const [year, month, date] = dayNumbersOf(day);
-  return (Date.UTC(year, month - 1, date) / msPerDay) * partsPerDay(kind);
+  const start = (Date.UTC(year, month - 1, date) / msPerDay) * partsPerDay(kind);
+  return end === bound.highest && kind !== "date" ? start + partsPerDay(kind) - 1 : start;
 }
 
 /** The day of a stored bound, as `2026-10-25`. */

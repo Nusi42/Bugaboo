@@ -9,8 +9,10 @@ import { QueryGate } from "../shell/index.ts";
 import { useFieldTypes, type OwnField } from "./fields.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
 import {
+  bound,
   boundDay,
   dayBound,
+  type Bound,
   decimalToMillionths,
   durationSeconds,
   millionthsToDecimal,
@@ -36,13 +38,13 @@ function boxOf(field: OwnField, stored: number | null | undefined): string {
 }
 
 /** What a box means in the unit the API stores; `null` for an empty box, `undefined` for text that is none. */
-function storedOf(field: OwnField, text: string): number | null | undefined {
+function storedOf(field: OwnField, text: string, end: Bound): number | null | undefined {
   const trimmed = text.trim();
   if (trimmed === "") {
     return null;
   }
   if (isDated(field)) {
-    return dayBound(field.kind, trimmed);
+    return dayBound(field.kind, trimmed, end);
   }
   if (field.kind === "decimal") {
     return decimalToMillionths(trimmed);
@@ -118,8 +120,8 @@ function boxesOf(field: OwnField): Boxes {
 
 /** The rules the boxes say, or `undefined` when one box holds text that is no number. */
 function rulesOf(field: OwnField, boxes: Boxes, shape: Shape): Record<string, unknown> | undefined {
-  const lowest = shape.ranged ? storedOf(field, boxes.min) : null;
-  const highest = shape.ranged ? storedOf(field, boxes.max) : null;
+  const lowest = shape.ranged ? storedOf(field, boxes.min, bound.lowest) : null;
+  const highest = shape.ranged ? storedOf(field, boxes.max, bound.highest) : null;
   const fewest = shape.counted ? countOf(boxes.shortest) : null;
   const most = shape.counted ? countOf(boxes.longest) : null;
   if (lowest === undefined || highest === undefined || fewest === undefined || most === undefined) {
