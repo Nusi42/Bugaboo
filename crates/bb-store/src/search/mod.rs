@@ -145,8 +145,12 @@ fn group_order(group: &GroupCount) -> (bool, String, i64) {
         GroupKey::Label(id) => (false, id.to_string(), 0),
         GroupKey::IssueType(id) => (false, id.to_string(), 0),
         GroupKey::Choice(id) => (false, id.to_string(), 0),
-        GroupKey::Priority(each) => (false, String::new(), place_in(Priority::ALL, each)),
-        GroupKey::StatusGroup(each) => (false, String::new(), place_in(StatusGroup::ALL, each)),
+        GroupKey::Priority(each) => (false, String::new(), place_in(&Priority::LIST_ORDER, each)),
+        GroupKey::StatusGroup(each) => (
+            false,
+            String::new(),
+            place_in(&StatusGroup::LIST_ORDER, each),
+        ),
     }
 }
 

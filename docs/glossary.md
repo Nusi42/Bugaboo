@@ -77,7 +77,7 @@ Rules:
 | Say                      | Meaning                                                            | Don't say                          |
 |--------------------------|--------------------------------------------------------------------|------------------------------------|
 | **Status**               | Where an issue stands right now (*Open*, *Fixing*, *Testing*, *Done*) | state                           |
-| **Status group**         | Every status belongs to one of: *Not started*, *In progress*, *Done* | status category, To Do         |
+| **Status group**         | Every status belongs to one of: *In progress*, *Not started*, *Done* (the order a list shows its groups in) | status category, To Do         |
 | **Workflow**             | The statuses an issue type can have and the allowed changes between them | —                            |
 | **Status change**        | Moving an issue from one status to another                         | transition                         |
 | **Who can do it**        | Rule: which people may make a status change                        | condition                          |

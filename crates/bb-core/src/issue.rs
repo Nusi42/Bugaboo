@@ -32,6 +32,10 @@ words! {
 words_in_api!(StatusGroup, "The group of a status.");
 
 impl StatusGroup {
+    /// The order of the groups of a list: what is going on first, then what waits, then what is
+    /// finished (the glossary names the same order).
+    pub const LIST_ORDER: [Self; 3] = [Self::InProgress, Self::NotStarted, Self::Done];
+
     /// The word of the group in the search language: its code in lower camel case, the same in
     /// every language of the app (ADR-0005 amendment M5, decision 9).
     #[must_use]
@@ -75,6 +79,9 @@ impl Priority {
 
     /// The priority of a new issue.
     pub const NEW: Self = Self::Normal;
+
+    /// The order of the groups of a list: the most important first.
+    pub const LIST_ORDER: [Self; 4] = [Self::Critical, Self::High, Self::Normal, Self::Low];
 }
 
 words! {
