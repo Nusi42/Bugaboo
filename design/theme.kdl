@@ -12064,12 +12064,13 @@ part "search-panel" {
     overflow-y auto
 }
 
-// The head of a panel: its title, and the button that closes it at the end of the same row.
+// The sheet of the search bar on a phone has a fixed height (see size-bar-sheet).
 part "search-panel[variant=sheet]" {
     height "$size-bar-sheet"
     max-height "100%"
 }
 
+// The head of a panel: its title, and the button that closes it at the end of the same row.
 part "search-panel.head" {
     display flex
     align-items center

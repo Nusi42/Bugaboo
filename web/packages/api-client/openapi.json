@@ -21192,11 +21192,11 @@
           },
           "message_key": {
             "type": ["string", "null"],
-            "description": "The message that names a field every issue has; left out for an own field."
+            "description": "The message that names a field every issue has; null for an own field."
           },
           "name": {
             "type": ["string", "null"],
-            "description": "The name of an own field; left out for a field every issue has."
+            "description": "The name of an own field; null for a field every issue has."
           },
           "operators": {
             "type": "array",
@@ -21472,7 +21472,7 @@
           },
           "name": {
             "type": ["string", "null"],
-            "description": "Its name; left out where the person may not know it."
+            "description": "Its name; null where the person may not know it."
           }
         }
       },

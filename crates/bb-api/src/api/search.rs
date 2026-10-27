@@ -102,7 +102,7 @@ pub(crate) enum SearchGroupKeyBody {
 pub(crate) struct SearchNamedBody {
     /// Its ID.
     id: String,
-    /// Its name; left out where the person may not know it.
+    /// Its name; null where the person may not know it.
     name: Option<String>,
 }
 
@@ -136,9 +136,9 @@ pub(crate) struct SearchFieldBody {
     operators: Vec<String>,
     /// The values of a fixed list; empty when anything goes.
     choices: Vec<String>,
-    /// The message that names a field every issue has; left out for an own field.
+    /// The message that names a field every issue has; null for an own field.
     message_key: Option<String>,
-    /// The name of an own field; left out for a field every issue has.
+    /// The name of an own field; null for a field every issue has.
     name: Option<String>,
 }
 

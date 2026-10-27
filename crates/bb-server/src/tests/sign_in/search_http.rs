@@ -6,7 +6,7 @@
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::json;
+use serde_json::{Value, json};
 
 use super::fields_http::create_field;
 use super::http::{Browser, called, rig_and_app};
@@ -473,12 +473,13 @@ async fn qry_05_a_readable_field_says_how_it_is_called() -> TestResult {
         // A field every issue has is called by a message, an own field by the name it was given.
         let built_in = called("assignedTo").ok_or("assignedTo")?;
         assert_eq!(built_in["message_key"], "issue-field.assigned-to");
-        assert!(built_in["name"].is_null());
+        // The members are always there: a null is present, not left out.
+        assert_eq!(built_in.get("name"), Some(&Value::Null));
         let status_group = called("statusGroup").ok_or("statusGroup")?;
         assert_eq!(status_group["message_key"], "issue-field.status-group");
         let own = called("timeToFix").ok_or("timeToFix")?;
         assert_eq!(own["name"], "Time to fix");
-        assert!(own["message_key"].is_null());
+        assert_eq!(own.get("message_key"), Some(&Value::Null));
         Ok(())
     })
     .await
