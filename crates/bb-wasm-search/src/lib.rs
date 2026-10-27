@@ -78,6 +78,14 @@ pub fn own_field_word(name: &str) -> String {
     bb_searchlang::own_field_word(name)
 }
 
+/// The text of a person who is still typing, with a `*` after the last word when it can take
+/// one (`bb_searchlang::open_last_word`).
+#[must_use]
+#[wasm_bindgen]
+pub fn open_last_word(text: &str) -> String {
+    bb_searchlang::open_last_word(text)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

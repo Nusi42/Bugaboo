@@ -8,16 +8,19 @@ const nowhere = { start: 0, end: 0 } as const;
 
 /**
  * The search `title contains "<words>"` as the search language writes it, so a quote in the words
- * cannot become part of the language. Nothing when the text holds no word.
+ * cannot become part of the language, and the last word is a start while it is being typed. Nothing
+ * when the text holds no word.
  */
 export function titleSearchText(
-  language: Pick<SearchLanguage, "print">,
+  language: Pick<SearchLanguage, "print" | "openLastWord">,
   words: string,
 ): string | undefined {
-  const text = words.trim();
-  if (text === "") {
+  if (words.trim() === "") {
     return undefined;
   }
+  // The last word is still being typed unless a space follows it: it finds the words that start
+  // with it, as far as the language lets a start be short.
+  const text = language.openLastWord(words.trimStart()).trimEnd();
   return language.print({
     filter: {
       type: "field",

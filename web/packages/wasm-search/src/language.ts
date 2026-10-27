@@ -3,7 +3,14 @@
  * the places are turned into places in the string (`offsets.ts`), and an input the module refuses
  * is a defect of the build, which throws: the browser and the Rust types differ.
  */
-import { check, own_field_word, parse, print, suggest } from "../generated/bb_wasm_search.js";
+import {
+  check,
+  open_last_word,
+  own_field_word,
+  parse,
+  print,
+  suggest,
+} from "../generated/bb_wasm_search.js";
 import { inStringUnits, offsetsOf } from "./offsets.ts";
 import type { Answer, ReadableFields, Search, Suggestions } from "./types.generated.ts";
 
@@ -17,6 +24,8 @@ export interface SearchLanguage {
   readonly print: (search: Search) => string;
   /** What may come next at the cursor, a place in the string. */
   readonly suggest: (text: string, cursor: number, fields: ReadableFields) => Suggestions;
+  /** The text of a person who is still typing, with a `*` after the last word when it can take one. */
+  readonly openLastWord: (text: string) => string;
   /** The word of an own field, made from its name by the one rule of the language. */
   readonly ownFieldWord: (name: string) => string;
 }
@@ -39,6 +48,7 @@ function answerFor(text: string, json: string): Answer {
 }
 
 export const language: SearchLanguage = {
+  openLastWord: (text) => open_last_word(text),
   parse: (text) => answerFor(text, parse(text)),
   check: (text, fields) => answerFor(text, check(text, JSON.stringify(fields))),
   print: (search) => print(JSON.stringify(search)),

@@ -8,7 +8,9 @@ import { doNothing } from "../../shared/do-nothing.ts";
  * printer only says what it was given, so this source is tested without the module.
  */
 const print = vi.fn<(search: Search) => string>(() => 'title contains "login"');
-vi.mock("@bugaboo/wasm-search", () => ({ loadSearchLanguage: () => Promise.resolve({ print }) }));
+vi.mock("@bugaboo/wasm-search", () => ({
+  loadSearchLanguage: () => Promise.resolve({ print, openLastWord: (text: string) => text }),
+}));
 
 const get = vi.fn<(path: string, options: unknown) => Promise<{ data?: unknown }>>();
 vi.mock("../../shared/api.ts", () => ({

@@ -45,6 +45,16 @@ test("cfg_08_words_find_issues_by_title", async ({ page }) => {
   await expect(page).toHaveURL(addressEndingAt(issueAddress("WEB-2")));
 });
 
+test("cfg_08 the start of a word finds the issues with the word", async ({ page }) => {
+  await signIn(page, bob);
+  await ask(page, "passk");
+  await expect(result(page, titles.passkey)).toBeVisible();
+  // A single letter is no start: it is searched as the whole word, and finds nothing.
+  await box(page).fill("p");
+  await page.waitForTimeout(1000);
+  await expect(result(page, titles.passkey)).toHaveCount(0);
+});
+
 test("cfg_08_quick_search_never_shows_what_the_person_may_not_see", async ({ page }) => {
   await signIn(page, bob);
   // The words of a hidden issue, a hidden project, a saved search of somebody else, and the ID of

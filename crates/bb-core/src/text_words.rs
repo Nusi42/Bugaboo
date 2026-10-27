@@ -66,6 +66,25 @@ pub fn search_words(text: &str) -> Vec<SearchWord> {
     words
 }
 
+/// The text of a person who is still typing, ready to be searched: when the last word is not
+/// finished (the text ends in a letter or a digit) and has at least [`MIN_PREFIX_CHARS`] letters,
+/// it gets a `*`, so it finds every word that starts with it (`logi` finds `login`). A word that
+/// is finished (a space after it), a start that is too short, and a text that already ends in
+/// `*` stay as they are. The letters are counted on the prepared word, as the checker of the
+/// search language counts them.
+#[must_use]
+pub fn open_last_word(text: &str) -> String {
+    let unfinished = text.chars().next_back().is_some_and(char::is_alphanumeric);
+    let long_enough = prepare(text)
+        .last()
+        .is_some_and(|word| word.chars().count() >= MIN_PREFIX_CHARS);
+    if unfinished && long_enough {
+        format!("{text}*")
+    } else {
+        text.to_owned()
+    }
+}
+
 /// Every word of the text in order, repeated ones too.
 fn words_of(text: &str) -> Vec<SearchWord> {
     let mut words = Vec::new();
@@ -137,6 +156,32 @@ mod tests {
 
     fn words(text: &str) -> Vec<String> {
         prepare(text)
+    }
+
+    #[test]
+    fn a_last_word_of_one_letter_gets_no_star() {
+        assert_eq!(open_last_word("login l"), "login l");
+        assert_eq!(open_last_word("l"), "l");
+    }
+
+    #[test]
+    fn a_last_word_of_two_letters_gets_a_star() {
+        assert_eq!(open_last_word("lo"), "lo*");
+        assert_eq!(open_last_word("fix logi"), "fix logi*");
+    }
+
+    #[test]
+    fn a_finished_word_or_an_empty_text_gets_no_star() {
+        assert_eq!(open_last_word("login "), "login ");
+        assert_eq!(open_last_word("login*"), "login*");
+        assert_eq!(open_last_word(""), "");
+    }
+
+    #[test]
+    fn a_word_with_an_umlaut_counts_its_letters() {
+        assert_eq!(open_last_word("ü"), "ü");
+        assert_eq!(open_last_word("mü"), "mü*");
+        assert_eq!(open_last_word("Müll"), "Müll*");
     }
 
     #[test]

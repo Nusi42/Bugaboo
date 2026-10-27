@@ -35,6 +35,7 @@ pub mod vectors;
 mod words;
 
 pub use answer::{Answer, read};
+pub use bb_core::text_words::open_last_word;
 #[cfg(feature = "browser")]
 pub use browser::{Problem, print_from_json, readable_fields_from_json, search_from_json};
 pub use checker::{CheckedSearch, check};
