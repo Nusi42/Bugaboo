@@ -193,12 +193,12 @@ fn the_media_query_of_a_choice_may_name_a_breakpoint_token() {
 fn only_the_marked_sizes_are_variables_the_code_may_set() {
     let file = file();
     let ts = typescript(&file).unwrap();
-    let marked: String = file
-        .tokens
-        .iter()
-        .filter(|token| token.run_time)
-        .map(|token| format!("  \"{}\",\n", token.name))
-        .collect();
+    let mut marked = String::new();
+    for token in file.tokens.iter().filter(|token| token.run_time) {
+        marked.push_str("  \"");
+        marked.push_str(&token.name);
+        marked.push_str("\",\n");
+    }
     assert!(!marked.is_empty());
     assert!(
         ts.contains(&format!("runTimeVariables = [\n{marked}] as const;")),
