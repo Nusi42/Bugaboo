@@ -27,9 +27,25 @@ export async function prepareLook(server: Instance): Promise<void> {
   await admin.dispose();
 }
 
-/** The list of the issues of the project, as a table. */
+/** The list of the issues of the project, as a grid whose rows are drawn only where they are on screen. */
 export function grid(page: Page): Locator {
-  return page.getByRole("table", { name: t("issues.list"), exact: true });
+  return page.getByRole("grid", { name: t("issues.list"), exact: true });
+}
+
+/** The button with the name of a column in the head of the list: pressing it sorts by the column. */
+export function columnButton(page: Page, column: string): Locator {
+  // The name for a screen reader changes with the order, so the button is found by the name it shows.
+  return page.locator("[data-part='list-sort']").filter({ hasText: column });
+}
+
+/** The header of a group of rows, found by the name of the group. */
+export function groupOf(page: Page, name: string): Locator {
+  return partIn(grid(page), "list-group").filter({ hasText: name });
+}
+
+/** The titles of the issues in the rows, from the top. */
+export function titlesInOrder(page: Page): Promise<string[]> {
+  return partIn(grid(page), "list-row.cell", "title").allInnerTexts();
 }
 
 /** The row of an issue in the list, found by its title. */
@@ -44,9 +60,11 @@ export async function openList(page: Page): Promise<void> {
   await expect(rowOf(page, webIssues.login)).toBeVisible();
 }
 
-/** The place of a text among the rows of the grid, from the top. */
+/** The place of a text among the rows and the group headers of the grid, from the top. */
 export async function placeInGrid(page: Page, text: string): Promise<number> {
-  const rows = await grid(page).getByRole("row").allInnerTexts();
+  const rows = await grid(page)
+    .locator("[data-part='list-row'], [data-part='list-group']")
+    .allInnerTexts();
   return rows.findIndex((row) => row.includes(text));
 }
 

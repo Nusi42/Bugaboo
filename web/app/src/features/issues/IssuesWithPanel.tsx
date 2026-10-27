@@ -1,20 +1,19 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Card, cardLook, useLayout, partOf, part } from "@bugaboo/ui";
-import { useEffect } from "react";
+import { Card, cardLook, useLayout, partOf, part } from "@bugaboo/ui";
 
-import { IssueLegend } from "./IssueLegend.tsx";
-import { IssueList } from "./IssueList.tsx";
-import { openNewIssue, rememberProject } from "./new-issue-state.ts";
+import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
+
 import { OpenIssue } from "./OpenIssue.tsx";
 import { useOpenIssuesIn } from "./open-in.ts";
-import { Selected } from "./Selected.tsx";
+import { ProjectList, type ListedProject } from "./ProjectList.tsx";
+import { ProjectToolbar } from "./ProjectToolbar.tsx";
 import { useSelection } from "./use-selection.ts";
 
 export interface IssuesWithPanelProps {
-  readonly shortName: string;
-  readonly name: string;
-  /** The issue open in the side panel, from the address. */
-  readonly open: string | undefined;
+  readonly project: ListedProject;
+  /** What the address says about the search and how its results are shown. */
+  readonly state: SearchState;
+  readonly onState: (state: SearchState, step: HistoryStep) => void;
   /** Opens an issue in the focus view. */
   readonly onFocus: (key: string) => void;
   /** Closes the side panel. */
@@ -22,32 +21,35 @@ export interface IssuesWithPanelProps {
 }
 
 /** The list of a project and, beside it, the issue that is open in the side panel. */
-export function IssuesWithPanel({ shortName, name, open, onFocus, onClose }: IssuesWithPanelProps) {
+export function IssuesWithPanel({
+  project,
+  state,
+  onState,
+  onFocus,
+  onClose,
+}: IssuesWithPanelProps) {
   const openIn = useOpenIssuesIn();
+  const { open } = state;
   const selection = useSelection();
   // A phone shows one thing at a time: the open issue takes the screen and Back closes it.
   const layout = useLayout();
   const alone = layout === "phone" && open !== undefined;
-  useEffect(() => {
-    rememberProject(shortName);
-  }, [shortName]);
   return (
-    <Card heading={t("issues.page-title", { project: name })} level={1} look={cardLook.openOnPhone}>
+    <Card
+      heading={t("issues.page-title", { project: project.name })}
+      level={1}
+      look={cardLook.openOnPhone}
+    >
       <div {...partOf(part.listEditor)}>
         <div {...partOf(part.listEditorList, { states: [alone && "hidden"] })} hidden={alone}>
-          <div {...partOf(part.listToolbar)}>
-            <Button
-              look={buttonLook.primary}
-              onPress={() => {
-                openNewIssue(shortName);
-              }}
-            >
-              {t("issues.new")}
-            </Button>
-            <IssueLegend />
-          </div>
-          <Selected selection={selection} project={shortName} />
-          <IssueList project={shortName} openIn={openIn} open={open} selection={selection} />
+          <ProjectToolbar shortName={project.shortName} selection={selection} />
+          <ProjectList
+            project={project}
+            state={state}
+            onState={onState}
+            openIn={openIn}
+            selection={selection}
+          />
         </div>
         {open === undefined ? null : <OpenIssue open={open} onFocus={onFocus} onClose={onClose} />}
       </div>

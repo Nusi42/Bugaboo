@@ -605,6 +605,35 @@ async fn qry_05_the_count_and_the_groups_come_from_the_same_search() -> TestResu
                 .any(|group| group.key == GroupKey::Priority(Priority::High) && group.issues == 3)
         );
         assert_eq!(groups.iter().map(|group| group.issues).sum::<u64>(), 6);
+        // The groups of priorities come the most important first, the groups of status groups
+        // with what is going on first (the one place that orders them).
+        let places: Vec<usize> = groups
+            .iter()
+            .filter_map(|group| match group.key {
+                GroupKey::Priority(each) => {
+                    Priority::LIST_ORDER.iter().position(|one| *one == each)
+                }
+                _ => None,
+            })
+            .collect();
+        assert!(
+            places.windows(2).all(|pair| pair[0] < pair[1]),
+            "{places:?}"
+        );
+        let by_group = storage
+            .search_groups(&request(&data, "", None, 1), "statusGroup")
+            .await
+            .unwrap();
+        let places: Vec<usize> = by_group
+            .iter()
+            .filter_map(|group| match group.key {
+                GroupKey::StatusGroup(each) => {
+                    StatusGroup::LIST_ORDER.iter().position(|one| *one == each)
+                }
+                _ => None,
+            })
+            .collect();
+        assert!(places.len() > 1 && places.windows(2).all(|pair| pair[0] < pair[1]));
         // An issue with two tags stands in the group of each; one with none in the group without a
         // value, which comes last. The count line is still the number of issues.
         let by_tag = storage

@@ -85,3 +85,6 @@ export async function closeBar(page: Page): Promise<void> {
       .click();
   }
 }
+
+// The folder the pictures go to: the one flag of every picture spec, re-exported so a spec that already imports this file takes no other import.
+export { screenshotFolder } from "./screenshots.ts";

@@ -9,12 +9,13 @@ import {
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
-import { ana, lea, createPeopleWithRoles, roleName } from "./access.ts";
+import { ana, lea, createPeopleWithRoles, roleName, signedInAdmin } from "./access.ts";
 import { bob, createAdmin, signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { createProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
 import { serverWord } from "./server-words.ts";
+import { inOrder } from "./sequence.ts";
 
 // The notes and rows of the issue page are found by helpers of their own; they are named here too,
 // so a test asks one place for everything of the issue page.
@@ -281,4 +282,18 @@ export async function changeField(page: Page, name: string, choice: string): Pro
   await (name === t("issue-field.status")
     ? chooseStatus(page, choice)
     : page.getByLabel(name, { exact: true }).selectOption({ label: choice }));
+}
+
+/** The project WEB as `prepareWeb` makes it, with `count` more issues: a list that is more than a page long. */
+export async function prepareManyWeb(server: Instance, count: number): Promise<void> {
+  await prepareWeb(server);
+  const admin = await signedInAdmin(server);
+  await inOrder(
+    Array.from(
+      { length: count },
+      (_, made) => () =>
+        createIssue(admin, "WEB", `Another issue ${String(made).padStart(3, "0")}`),
+    ),
+  );
+  await admin.dispose();
 }

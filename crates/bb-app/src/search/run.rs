@@ -114,6 +114,12 @@ pub struct GroupShown {
     pub key: ShownKey,
     /// How many issues the search finds in it.
     pub issues: u64,
+    /// The filter that selects exactly its issues, as search text, written by the printer of the
+    /// language with the name the person may know and checked by the one resolution of names; none
+    /// when the group has no such name or the name stands for more than the group.
+    pub filter: Option<String>,
+    /// The name the group is shown by (the name of its filter), when it has one the person may use.
+    pub name: Option<String>,
 }
 
 /// The key of a group, as it is shown.
@@ -383,16 +389,8 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     } else {
         Vec::new()
     };
-    // The people of the groups are read in one go, as the people of a page are.
-    let people: Vec<_> = found
-        .iter()
-        .filter_map(|group| match group.key {
-            GroupKey::Person(person) => Some(person),
-            _ => None,
-        })
-        .collect();
-    ctx.preload_people(&people).await?;
-    let mut groups = Vec::with_capacity(found.len());
+    ctx.preload_group_people(&found).await?;
+    let mut shown = Vec::with_capacity(found.len());
     for group in found {
         let key = match (group.key, kind) {
             (GroupKey::Person(person), Some(kind)) => ShownKey::Person(
@@ -421,15 +419,36 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
             },
             (other, _) => ShownKey::Other(other),
         };
-        groups.push(GroupShown {
-            key,
-            issues: group.issues,
-        });
+        shown.push((key, group.issues));
     }
+    let groups = ctx
+        .groups_with_filters(
+            &actor,
+            &organization,
+            &prepared.looked,
+            (&query.by, target),
+            shown,
+        )
+        .await?;
     Ok(organization.authorize(SearchGroups { groups, truncated }))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The people of the groups are read in one go, as the people of a page are.
+    async fn preload_group_people(
+        &self,
+        found: &[super::request::GroupCount],
+    ) -> Result<(), AppError> {
+        let people: Vec<_> = found
+            .iter()
+            .filter_map(|group| match group.key {
+                GroupKey::Person(person) => Some(person),
+                _ => None,
+            })
+            .collect();
+        self.preload_people(&people).await
+    }
+
     /// The kinds of relation that mean *blocks*: those whose forward name is the starting one.
     async fn blocking_kinds(&self) -> Result<Vec<bb_core::id::RelationKindId>, AppError> {
         let blocks =

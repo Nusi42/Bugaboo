@@ -47,7 +47,7 @@ test("iss_01 the issues of a project are listed and one opens in the focus view"
 }) => {
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
-  const list = page.getByRole("table", { name: t("issues.list"), exact: true });
+  const list = page.getByRole("grid", { name: t("issues.list"), exact: true });
   await expect(list.getByRole("link")).toHaveCount(3);
   await list.getByRole("link", { name: webIssues.login }).click();
   await expect(page).toHaveURL(new RegExp(`${issueAddress("WEB-1")}$`, "u"));
@@ -81,7 +81,7 @@ test("ux_04 the issue opens in the side panel when the person chose that view", 
   await openIssuesIn(admin, "panel");
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
-  const list = page.getByRole("table", { name: t("issues.list"), exact: true });
+  const list = page.getByRole("grid", { name: t("issues.list"), exact: true });
   await list.getByRole("link", { name: webIssues.passkey }).click();
   await expect(page).toHaveURL(/open=WEB-2$/u);
   const panel = page.getByRole("complementary", { name: "WEB-2", exact: true });

@@ -29,6 +29,7 @@ mod arch_wasm;
 mod arch_web_api;
 mod arch_web_features;
 mod arch_web_keys;
+mod arch_web_roles;
 mod build_location;
 mod data_logs;
 mod data_marks;
@@ -220,6 +221,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_web_api::ArchWebApi),
         Box::new(arch_web_features::ArchWebFeatures),
         Box::new(arch_web_keys::ArchWebKeys),
+        Box::new(arch_web_roles::ArchWebRoles),
         Box::new(sty_parts::StyParts),
         Box::new(data_marks::DataMarks),
         Box::new(arch_db_parity::ArchDbParity),

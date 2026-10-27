@@ -5,6 +5,11 @@ export { SavedSearchPage, type SavedSearchPageProps } from "./SavedSearchPage.ts
 export { SearchPage, type SearchPageProps } from "./SearchPage.tsx";
 export { IssuePicker } from "./IssueChoice.tsx";
 export { registerSearch } from "./register.tsx";
+export { SearchBar, type SearchBarProps } from "./SearchBar.tsx";
+export { useSearchFields, type SearchFieldsAnswer } from "./search-fields.ts";
+export { useSearchLanguage } from "./search-language.ts";
+export { useProjectListChoice } from "./saved-searches.ts";
+export { SaveSearchButton, type SaveSearchButtonProps } from "./SaveSearchButton.tsx";
 export { withSortBy } from "../../shared/sort-by.ts";
 export {
   historyStep,
@@ -17,4 +22,4 @@ export {
   type SearchSpacing,
   type SearchState,
 } from "../../shared/search-address.ts";
-export { withFilter, type FilterValue } from "../../shared/with-filter.ts";
+export { withGroupFilter } from "../../shared/with-filter.ts";

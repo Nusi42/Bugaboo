@@ -61,6 +61,11 @@ export interface NewSearch {
   readonly presentation?: Presentation | undefined;
 }
 
+/** The presentation as the body of a request takes it: no part of it is read-only. */
+function writable(presentation: Presentation) {
+  return { ...presentation, columns: presentation.columns.map((column) => ({ ...column })) };
+}
+
 /** *Save search*: keeps the search under a name; it is private and the person's own. */
 export function useSaveSearch() {
   return useMutation({
@@ -73,10 +78,7 @@ export function useSaveSearch() {
             ...(presentation === undefined
               ? {}
               : {
-                  presentation: {
-                    ...presentation,
-                    columns: presentation.columns.map((column) => ({ ...column })),
-                  },
+                  presentation: writable(presentation),
                 }),
           },
         }),
@@ -85,14 +87,22 @@ export function useSaveSearch() {
   });
 }
 
-/** *Save*: changes the text of a saved search on the version that was looked at. */
+/** *Save*: changes the text and the view of a saved search on the version that was looked at. */
 export function useChangeSearch(id: string) {
   return useMutation({
-    mutationFn: async ({ text, version }: { readonly text: string; readonly version: number }) =>
+    mutationFn: async ({
+      text,
+      presentation,
+      version,
+    }: {
+      readonly text: string;
+      readonly presentation: Presentation;
+      readonly version: number;
+    }) =>
       dataOf(
         await api.client.PATCH("/api/v1/saved-searches/{search}", {
           params: { path: { search: id } },
-          body: { search_text: text, version },
+          body: { search_text: text, presentation: writable(presentation), version },
         }),
       ),
     onSuccess: refreshSavedSearches,

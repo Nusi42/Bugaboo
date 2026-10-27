@@ -18,7 +18,7 @@ An **issue** is anything that is being tracked: a bug, a task, an idea. Every is
 - You can **change an issue** if your role has "Change anybody's issues", or "Change the issues they reported" and you reported it. Each field also has a level for your role: you can change a field only where it says "Can change".
 - You can **delete an issue into the trash** if your role has "Delete issues into the trash". It stays in the trash, with its ID, and "Undo" takes it out again.
 
-Lists of issues come a page at a time. They never say how many issues there are, because that number could include issues you may not see.
+Lists of issues come a page at a time. The count line says how many issues a search finds among the issues you may read, never more.
 
 ## Status
 

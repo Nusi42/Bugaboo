@@ -466,6 +466,15 @@ files = ["web/app/src/**/*.{ts,tsx}", "web/app/e2e/**/*.ts"]
 status = "active"
 
 [[check]]
+id = "ARCH-WEB-ROLES"
+title = "The roles of the issue list's head, rows and cells are written in ui/ListRoles.tsx only"
+rule = "coding-standards §4 (the exception to prefer-tag-over-role), ADR-0026"
+tool = "xtask (reads web/app/src and web/packages/ui/src: a literal of a grid role word, and role= given an expression on a plain element, outside ListRoles.tsx, the listed role-constant homes and the tests)"
+when = ["edit", "commit", "ci"]
+files = ["web/app/src/**/*.{ts,tsx}", "web/packages/ui/src/**/*.{ts,tsx}"]
+status = "active"
+
+[[check]]
 id = "ARCH-MAP-SYNC"
 title = "The module map in the architecture docs lists exactly the crates and packages that exist"
 rule = "architecture §4, COMP-06"

@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
+import { presentationOf, type ListView } from "../../shared/list-view.ts";
 import { SaveSearchButton } from "./SaveSearchButton.tsx";
 import { useChangeSearch, type SavedSearch } from "./saved-searches.ts";
 
@@ -9,11 +10,14 @@ import { useChangeSearch, type SavedSearch } from "./saved-searches.ts";
 export function ChangedActions({
   search,
   text,
+  view,
   hasMistake,
   onSaved,
 }: {
   readonly search: SavedSearch;
   readonly text: string;
+  /** How the results are shown now: kept with the text. */
+  readonly view: ListView;
   /** The text in the box has a mistake: what would be kept is not what the person sees. */
   readonly hasMistake: boolean;
   /** The changes were saved: the address of the search holds no unsaved text any more. */
@@ -28,7 +32,10 @@ export function ChangedActions({
           isPending={change.isPending}
           isDisabled={hasMistake}
           onPress={() => {
-            change.mutate({ text, version: search.version }, { onSuccess: onSaved });
+            change.mutate(
+              { text, presentation: presentationOf(view), version: search.version },
+              { onSuccess: onSaved },
+            );
           }}
         >
           {t("search.save-changes")}
@@ -36,7 +43,7 @@ export function ChangedActions({
       ) : (
         <SaveSearchButton
           text={text}
-          presentation={search.presentation}
+          presentation={presentationOf(view)}
           copy
           hasMistake={hasMistake}
           startName={t("search.copy-name", { name: search.name })}

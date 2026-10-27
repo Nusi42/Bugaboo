@@ -8,8 +8,29 @@ export const searchKeys = {
   language: () => ["search", "language"],
   /** The fields the person may search by, for a search inside a project or everywhere. */
   fields: (within?: string) => ["search", "fields", within ?? null],
-  /** The issues a search finds, for its canonical text (and the project it looks in). */
-  issues: (text: string, within?: string) => ["search", "issues", within ?? null, text],
+  /**
+   * The issues a search finds, a page at a time, with the fields a list asks for. They start with
+   * the keys of the lists of issues, so a change of an issue reads them again (`issues.lists()`).
+   */
+  found: (text: string, within: string | undefined, fields: string) => [
+    "issues",
+    "list",
+    "found",
+    within ?? null,
+    text,
+    fields,
+  ],
+  /** How many issues a search finds. */
+  foundCount: (text: string, within?: string) => ["issues", "list", "count", within ?? null, text],
+  /** How many issues a search finds in each group of a field. */
+  foundGroups: (text: string, within: string | undefined, by: string) => [
+    "issues",
+    "list",
+    "groups",
+    within ?? null,
+    text,
+    by,
+  ],
   /** The names that a suggestion asks the server for (people, groups, projects, issues). */
   names: (kind: string, startingWith: string) => ["search", "names", kind, startingWith],
   /** Every saved search and every list of them. */

@@ -57,7 +57,18 @@ export {
   type LegendProps,
 } from "./Legend.tsx";
 export { Link, type LinkProps } from "./Link.tsx";
-export { listColumns, type ListColumn } from "./list-columns.ts";
+export { headId, listColumns, type ListColumn } from "./list-columns.ts";
+export {
+  ListCell,
+  ListColumnHead,
+  ListFrame,
+  type ListCellProps,
+  type ListColumnHeadProps,
+  type ListFrameProps,
+} from "./ListColumns.tsx";
+export { RowBox, TableBox } from "./ListRoles.tsx";
+export { pixelsOf, type ListColumnSpec } from "./list-template.ts";
+export type { ColumnResize } from "./use-column-resize.ts";
 export {
   ListGrid,
   ListGroup,

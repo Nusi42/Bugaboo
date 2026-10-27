@@ -22,6 +22,8 @@ use bb_core::readable_id::ReadableId;
 use bb_policy::{Permission, Place as Where};
 use bb_searchlang::{CheckedSearch, Expr as Node, Operand, Span, Test};
 
+mod suggest;
+
 use super::readable::Looked;
 use super::request::{Names, ProjectLink, UnknownName};
 use super::target::{FieldTarget, target_of};
@@ -207,6 +209,14 @@ impl NameCache {
     /// Whether the last text needed a name past the bound, so that its answer cannot be used.
     pub(crate) const fn spent(&self) -> bool {
         self.spent
+    }
+
+    /// Remembers an issue the person reads, by its Issue ID, so naming it costs no read.
+    pub(crate) fn know_issue(&mut self, readable: &ReadableId, issue: bb_core::id::IssueId) {
+        let key = readable.to_string();
+        if !self.names.issues.iter().any(|(name, _)| *name == key) {
+            self.names.issues.push((key, issue));
+        }
     }
 
     /// Lifts the bound for the rest of the request.
@@ -426,9 +436,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(None);
         };
         Ok(self
-            .seen_in(actor, &found.issue, IssueWhere::Live)
+            .readable_id_of(actor, looked, &found.issue)
             .await?
             .map(|_| found.issue.id))
+    }
+
+    /// The Issue ID of an issue the person reads in a project they see: the one rule of which issues
+    /// an Issue ID may name, for the search and for the groups of an issue field.
+    pub(crate) async fn readable_id_of(
+        &self,
+        actor: &Actor,
+        looked: &Looked,
+        issue: &bb_core::issue::Issue,
+    ) -> Result<Option<ReadableId>, AppError> {
+        let links = looked.seen.links(&looked.projects);
+        let Some(project) = links.iter().find(|link| link.id == issue.project) else {
+            return Ok(None);
+        };
+        Ok(self
+            .seen_in(actor, issue, IssueWhere::Live)
+            .await?
+            .map(|_| ReadableId::new(project.short_name.clone(), issue.code.clone())))
     }
 
     /// The groups of this name the person may name: all of them where they are shown groups by
@@ -450,6 +478,39 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
+    /// The name of a group of people, when the person may name groups: read from the same list
+    /// of groups as the names of a search are (the cache holds it once for the request).
+    pub(crate) async fn group_name_of(
+        &self,
+        viewer: &bb_policy::Evaluation,
+        id: GroupId,
+        cache: &mut NameCache,
+    ) -> Result<Option<String>, AppError> {
+        if !viewer.sees_names_in(FieldType::Group) {
+            return Ok(None);
+        }
+        self.load_groups(cache).await?;
+        Ok(cache
+            .groups
+            .iter()
+            .flatten()
+            .find(|group| group.id == id)
+            .map(|group| group.name.clone()))
+    }
+
+    /// Reads the groups of people into the cache, once.
+    async fn load_groups(&self, cache: &mut NameCache) -> Result<(), AppError> {
+        if cache.groups.is_none() {
+            cache.groups = Some(
+                self.store()
+                    .groups()
+                    .await
+                    .map_err(|error| internal::<S>(&error))?,
+            );
+        }
+        Ok(())
+    }
+
     /// The groups whose names match, among those the person may name (see `groups_named`): the one
     /// place that decides it, for a search and for the names a suggestion offers.
     async fn groups_matching(
@@ -464,14 +525,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !viewer.sees_names_in(FieldType::Group) {
             return Ok(Vec::new());
         }
-        if cache.groups.is_none() {
-            cache.groups = Some(
-                self.store()
-                    .groups()
-                    .await
-                    .map_err(|error| internal::<S>(&error))?,
-            );
-        }
+        self.load_groups(cache).await?;
         let everyone = !member_of || viewer.allows(Permission::ManageGroups);
         if !everyone && cache.mine.is_none() {
             cache.mine = Some(
@@ -670,79 +724,6 @@ pub(crate) fn status_groups(looked: &Looked) -> Vec<(StatusGroup, Vec<String>)> 
             (*group, keys)
         })
         .collect()
-}
-
-/// The kinds of people a name offered for a suggestion has to be nameable for: a suggestion does
-/// not know the field it stands in, so it offers only names that every person field takes.
-const OFFERED_KINDS: [PeopleKind; 2] = [PeopleKind::AssignedTo, PeopleKind::ReportedBy];
-
-impl<S: AuthStore> Ctx<'_, S> {
-    /// The names of people that this person may use in a search and that start with the words
-    /// typed, at most `limit`, in the order of the names.
-    ///
-    /// # Errors
-    /// An internal error when the store fails.
-    pub(crate) async fn people_name_choices(
-        &self,
-        actor: &Actor,
-        starting_with: &str,
-        limit: usize,
-    ) -> Result<(Vec<String>, bool), AppError> {
-        let viewer = self.evaluation_of(actor, Where::Organization).await?;
-        // The names every person field takes: one read answers for all the kinds when they agree;
-        // when one of them names only the person themselves, that one decides (it is the narrowest).
-        let kind = OFFERED_KINDS
-            .into_iter()
-            .find(|kind| !names_other_people(&viewer, *kind))
-            .unwrap_or(OFFERED_KINDS[0]);
-        let matched = self
-            .people_matching(actor, &viewer, kind, starting_with, Matching::Start, limit)
-            .await?;
-        let mut names: Vec<String> = Vec::new();
-        for person in matched.people {
-            // Two people of one name are one name in a search: it is offered once.
-            if !names
-                .iter()
-                .any(|name| same_name(name, &person.display_name))
-            {
-                names.push(person.display_name);
-            }
-        }
-        let cut = matched.cut || names.len() > limit;
-        names.truncate(limit);
-        Ok((names, cut))
-    }
-
-    /// The names of groups that this person may name after `member of` and that start with the
-    /// words typed, at most `limit`.
-    ///
-    /// # Errors
-    /// An internal error when the store fails.
-    pub(crate) async fn group_name_choices(
-        &self,
-        actor: &Actor,
-        starting_with: &str,
-        limit: usize,
-    ) -> Result<Vec<String>, AppError> {
-        let viewer = self.evaluation_of(actor, Where::Organization).await?;
-        let mut cache = NameCache::default();
-        // All the groups are read once, so the list is never cut by a bound: the caller asks for
-        // one more than it shows.
-        Ok(self
-            .groups_matching(
-                actor,
-                &viewer,
-                starting_with,
-                true,
-                Matching::Start,
-                &mut cache,
-            )
-            .await?
-            .into_iter()
-            .map(|group| group.name)
-            .take(limit)
-            .collect())
-    }
 }
 
 #[cfg(test)]

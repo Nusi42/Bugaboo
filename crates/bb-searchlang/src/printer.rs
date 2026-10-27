@@ -3,7 +3,8 @@
 //! kept. The address, the API and a saved search carry this text (ADR-0005, amendment M5).
 
 use crate::literal::{quoted, value_or_quoted, word_or_quoted};
-use crate::syntax::{Expr, Operand, Search, SortKey, Test, Text};
+use crate::span::Span;
+use crate::syntax::{Expr, FieldRef, Operand, Search, SortKey, Test, Text};
 use crate::words::{Keyword, steps_word, unit_word};
 
 /// Whether this build checks that a canonical text reads back as the same search.
@@ -48,6 +49,48 @@ pub fn print(search: &Search) -> String {
         ));
     }
     parts.join(" ")
+}
+
+/// The canonical text of the one filter `<field> is <value>`: how a group of a list says which issues
+/// it holds. The value is written as the language needs it (quoted where it is not one plain word),
+/// the one rule of the printer. None when the text would not read back as the same search (a text
+/// too long, a number with too many digits): such a filter is never given out.
+#[must_use]
+pub fn is_filter_text(word: &str, value: Operand) -> Option<String> {
+    canonical_text(&only(
+        word,
+        Test::Is {
+            value,
+            span: Span::default(),
+        },
+    ))
+}
+
+/// The canonical text of the one filter `<field> is empty`, as [`is_filter_text`].
+#[must_use]
+pub fn empty_filter_text(word: &str) -> Option<String> {
+    canonical_text(&only(
+        word,
+        Test::IsEmpty {
+            span: Span::default(),
+        },
+    ))
+}
+
+/// A search with this one filter on a field.
+fn only(word: &str, test: Test) -> Search {
+    Search {
+        filter: Some(Expr::Field {
+            field: FieldRef {
+                word: word.to_owned(),
+                span: Span::default(),
+            },
+            test,
+            span: Span::default(),
+        }),
+        sort: Vec::new(),
+        span: Span::default(),
+    }
 }
 
 /// How tightly an expression binds. A part that binds less than its place asks for is put in

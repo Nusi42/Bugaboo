@@ -220,11 +220,6 @@ export function projectIssuesAddress(shortName: string): string {
   return addressInProject(paths.projectIssues, shortName);
 }
 
-/** The address of the issues of a project with one issue open in the side panel. */
-export function issuePanelAddress(shortName: string, key: string): string {
-  return `${projectIssuesAddress(shortName)}?open=${encodeURIComponent(key)}`;
-}
-
 /** The address of a saved search, `/s/<ID>`: its own address, which is shared. */
 export function savedSearchAddress(id: string): string {
   return filled(paths.savedSearch, routeParam.search, id);

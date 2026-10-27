@@ -1,6 +1,7 @@
 import type { SettingChoice } from "@bugaboo/api-client";
 
-import { issueAddress, issuePanelAddress } from "../../shared/paths.ts";
+import { issueAddress } from "../../shared/paths.ts";
+import { issuePanelAddress, type SearchState } from "../../shared/search-address.ts";
 
 /** How an issue is open: in the focus view or in the side panel (the choices of *Open issues in*). */
 export type IssueShow = SettingChoice<"appearanceIssueView">;
@@ -12,6 +13,11 @@ export const issueShow = {
 } as const satisfies Record<string, IssueShow>;
 
 /** Where the title of an issue goes: the focus view, or the list of its project with the issue in the side panel. */
-export function hrefOf(openIn: IssueShow, project: string, key: string): string {
-  return openIn === issueShow.focus ? issueAddress(key) : issuePanelAddress(project, key);
+export function hrefOf(
+  openIn: IssueShow,
+  state: SearchState | undefined,
+  project: string,
+  key: string,
+): string {
+  return openIn === issueShow.focus ? issueAddress(key) : issuePanelAddress(state, project, key);
 }

@@ -1,6 +1,5 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import type { FieldLook } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
@@ -201,5 +200,4 @@ export function useLabelsToAdd(
   );
 }
 
-/** The look of a tag or label on an issue: a small colored label. */
-export const chipLook = "badge" satisfies FieldLook;
+export { chipLook } from "../../shared/chip-look.ts";

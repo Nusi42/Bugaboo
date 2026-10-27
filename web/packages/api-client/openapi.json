@@ -21239,8 +21239,12 @@
       "SearchGroupBody": {
         "type": "object",
         "description": "One group of a search.",
-        "required": ["key", "issues"],
+        "required": ["key", "issues", "filter", "name"],
         "properties": {
+          "filter": {
+            "type": ["string", "null"],
+            "description": "The filter that selects the issues of the group, as search text written by the server with\nthe name the person may use (`priority is high`, `project is WEB`, `assignedTo is empty`);\nnull when the group has no name the person may use. Add it to the search with `and`."
+          },
           "issues": {
             "type": "integer",
             "format": "int64",
@@ -21250,6 +21254,10 @@
           "key": {
             "$ref": "#/components/schemas/SearchGroupKeyBody",
             "description": "What the group is."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name the group is shown by (the name its filter uses: a person, a tag, a label, a\nproject, an issue type, a status, a choice, a group of people or an Issue ID); null when the\ngroup has none the person may use."
           }
         }
       },

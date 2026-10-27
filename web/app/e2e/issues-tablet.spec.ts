@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { issuePanelAddress } from "../src/shared/paths.ts";
+import { panelAddress } from "./support/addresses.ts";
 import { viewports } from "../../tooling/viewports.ts";
 import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -18,7 +18,7 @@ test("ux_03 held upright, a tablet opens the issue as a full-height sheet over t
 }) => {
   await signIn(page, ada);
   await page.setViewportSize(viewports.tablet);
-  await page.goto(issuePanelAddress("WEB", "WEB-2"));
+  await page.goto(panelAddress("WEB", "WEB-2"));
   // The sheet is named after the issue, and it closes with the words it has on a phone.
   const sheet = page.getByRole("dialog", {
     name: t("issues.title-of", { key: "WEB-2", title: webIssues.passkey }),
@@ -36,7 +36,7 @@ test("ux_03 held upright, a tablet opens the issue as a full-height sheet over t
   await expect(page).toHaveURL(/\/issues$/u);
   // Turned sideways the same window has room for the panel next to the list.
   await page.setViewportSize(viewports.tabletSideways);
-  await page.goto(issuePanelAddress("WEB", "WEB-2"));
+  await page.goto(panelAddress("WEB", "WEB-2"));
   await expect(page.getByRole("complementary", { name: "WEB-2", exact: true })).toBeVisible();
   await expect(sheet).toHaveCount(0);
 });

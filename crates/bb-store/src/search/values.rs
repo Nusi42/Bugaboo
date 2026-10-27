@@ -203,8 +203,8 @@ impl Compiler<'_> {
             | Domain::Tag
             | Domain::Label => self.equals_named(domain, subject, operand),
             Domain::YesNo => match key.as_str() {
-                bb_searchlang::YES => Cond::all().add(subject.eq(1)),
-                bb_searchlang::NO => Cond::all().add(subject.eq(0)),
+                bb_searchlang::YES => Cond::all().add(subject.eq(1_i64)),
+                bb_searchlang::NO => Cond::all().add(subject.eq(0_i64)),
                 _ => nothing(),
             },
             Domain::Number(parts) => match parts_of(operand, parts, Rounding::Exact) {

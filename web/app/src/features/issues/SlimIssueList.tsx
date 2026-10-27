@@ -4,7 +4,7 @@ import { listRowLook, listShowsWord, ListGrid, ListRow, Priority } from "@bugabo
 import { issueAddress } from "../../shared/paths.ts";
 import { issueCells } from "./issue-cells.tsx";
 import type { IssueLine } from "./issues.ts";
-import { slimColumns } from "./list-labels.ts";
+import { slimColumns } from "./slim-columns.ts";
 
 export interface SlimIssueListProps {
   readonly lines: readonly IssueLine[];

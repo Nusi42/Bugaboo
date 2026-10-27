@@ -12,7 +12,11 @@ export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
 
 /** The folder of a milestone (or of a set of pictures) inside the screenshot folder, made if it is missing. */
 function folderOf(milestone: string): string {
-  const target = join(screenshotFolder ?? ".", milestone);
+  // No fallback: a picture is never written into the folder the tests run in.
+  if (screenshotFolder === undefined) {
+    throw new TypeError("Set BB_SCREENSHOT_DIR to take the screenshots.");
+  }
+  const target = join(screenshotFolder, milestone);
   mkdirSync(target, { recursive: true });
   return target;
 }
@@ -178,6 +182,21 @@ export function shootWholeAs(
       mask: [...mask],
     });
   });
+}
+
+/**
+ * Takes the window as it is in the theme it shows, as `<name>-<theme>.png` in the folder of the
+ * milestone, without growing it to the page: for a list that reads more rows when it is made taller.
+ */
+export async function shootWindowAs(
+  page: Page,
+  name: string,
+  milestone: string,
+  theme: string,
+): Promise<void> {
+  await pointerAway(page);
+  await expectLook(page, theme);
+  await page.screenshot({ path: join(folderOf(milestone), `${name}-${theme}.png`) });
 }
 
 /** How long a sheet, a menu or a list takes to settle; the picture is taken when it has stopped. */

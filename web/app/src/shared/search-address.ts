@@ -8,6 +8,8 @@
  * lost when another changes.
  */
 
+import { settingChoices, type SettingChoice } from "@bugaboo/api-client";
+
 import {
   partOfAddress,
   paths,
@@ -25,11 +27,22 @@ export const historyStep = { push: "push", replace: "replace" } as const;
 export type HistoryStep = (typeof historyStep)[keyof typeof historyStep];
 
 /** How close together the rows are: the two words of the setting `appearance.spacing`. */
-export type SearchSpacing = "comfortable" | "compact";
+export const searchSpacings = settingChoices.appearanceSpacing;
+export type SearchSpacing = SettingChoice<"appearanceSpacing">;
+
+/** The spacing a word names, or nothing for any other word (the one place that reads it). */
+export function spacingOf(word: string | undefined): SearchSpacing | undefined {
+  return searchSpacings.find((each) => each === word);
+}
 
 /** What an address says about a search and how its results are shown. */
 export interface SearchState {
   readonly text: string;
+  /**
+   * The text is empty on purpose (`s=` in the address): everything, where a list or a saved search
+   * has a text of its own that an empty address would bring back.
+   */
+  readonly everything?: boolean | undefined;
   /** The short name of the project the list belongs to; none for the other pages. */
   readonly project?: string;
   /** The ID of the saved search whose page this is (`/s/<ID>`). */
@@ -40,6 +53,8 @@ export interface SearchState {
   readonly groupBy?: string;
   /** How it is shown (`list`, `board` …). */
   readonly view?: string;
+  /** The issue open in the side panel of a project's list, by its issue ID. */
+  readonly open?: string | undefined;
 }
 
 /** The parts of the address after the question mark that belong to a search, as written. */
@@ -50,6 +65,7 @@ export interface SearchParts {
   readonly widths?: string;
   readonly spacing?: string;
   readonly group?: string;
+  readonly open?: string;
 }
 
 /** Where a search state is written: the path and the parts after the question mark. */
@@ -99,18 +115,21 @@ export function readSearch(location: {
     ?.split(",")
     .filter((each) => each !== "");
   const widths = widthsOf(textOf(raw, "widths"));
-  const spacing = textOf(raw, "spacing");
+  const spacing = spacingOf(textOf(raw, "spacing"));
   const groupBy = textOf(raw, "group");
   const view = textOf(raw, "show");
+  const open = textOf(raw, "open");
   return {
     text: written === undefined || written.trim() === "" ? "" : written,
+    ...(written === "" ? { everything: true } : {}),
     ...(project === undefined ? {} : { project }),
     ...(saved === undefined ? {} : { saved }),
     ...(columns === undefined || columns.length === 0 ? {} : { columns }),
     ...(widths === undefined ? {} : { widths }),
-    ...(spacing === "comfortable" || spacing === "compact" ? { spacing } : {}),
+    ...(spacing === undefined ? {} : { spacing }),
     ...(groupBy === undefined || groupBy === "" ? {} : { groupBy }),
     ...(view === undefined ? {} : { view }),
+    ...(open === undefined || open === "" ? {} : { open }),
   };
 }
 
@@ -119,6 +138,8 @@ export function searchLocation(state: SearchState): SearchLocation {
   const search: { -readonly [Part in keyof SearchParts]: string } = {};
   if (state.text.trim() !== "") {
     search.s = state.text;
+  } else if (state.everything === true) {
+    search.s = "";
   }
   if (state.view !== undefined) {
     search.show = state.view;
@@ -138,6 +159,9 @@ export function searchLocation(state: SearchState): SearchLocation {
   }
   if (state.groupBy !== undefined) {
     search.group = state.groupBy;
+  }
+  if (state.open !== undefined) {
+    search.open = state.open;
   }
   let pathname: string = paths.search;
   if (state.saved !== undefined) {
@@ -161,4 +185,41 @@ export function searchHref(state: SearchState): string {
   const { pathname, search } = searchLocation(state);
   const query = new URLSearchParams(Object.entries(search)).toString();
   return query === "" ? pathname : `${pathname}?${query}`;
+}
+
+/** The text a list shows: the address's own, nothing where the address asks for everything, else `usual` (the text of the project's list or of the saved search). */
+export function textShown(state: SearchState, usual: string): string {
+  if (state.text !== "") {
+    return state.text;
+  }
+  return state.everything === true ? "" : usual;
+}
+
+/** The state after the text in the box became `canonical`, for a list whose own text is `usual`: the address keeps nothing where the text is that one, and says "everything" where it was emptied. */
+export function withText(state: SearchState, canonical: string, usual: string): SearchState {
+  const { everything: _everything, ...rest } = state;
+  if (canonical === usual) {
+    return { ...rest, text: "" };
+  }
+  return canonical === "" ? { ...rest, text: "", everything: true } : { ...rest, text: canonical };
+}
+
+/**
+ * The address of an issue shown in the side panel of the list of its project: the search and the
+ * view of the list stay as they are, and the issue is added (the one writer, {@link searchHref}).
+ * From anywhere else the list is the project's own.
+ */
+export function issuePanelAddress(
+  state: SearchState | undefined,
+  project: string,
+  key: string,
+): string {
+  return searchHref(
+    state?.project === project ? { ...state, open: key } : { text: "", project, open: key },
+  );
+}
+
+/** The address of the list without the issue that is open in the side panel: the rest of the search stays. */
+export function panelClosedAddress(state: SearchState): string {
+  return searchHref({ ...state, open: undefined });
 }

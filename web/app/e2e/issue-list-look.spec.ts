@@ -34,7 +34,8 @@ test("iss_01 the issues are a grid in groups by status group, each with its name
   page,
 }) => {
   await openList(page);
-  await expect(grid(page).getByRole("rowheader")).toHaveText([
+  // The groups stand in the order the server gives them (in progress, not started, done).
+  await expect(partIn(grid(page), "list-group.name")).toHaveText([
     groups.running,
     groups.waiting,
     groups.finished,
@@ -50,8 +51,9 @@ test("iss_01 the issues are a grid in groups by status group, each with its name
   const login = await placeInGrid(page, webIssues.login);
   const passkey = await placeInGrid(page, webIssues.passkey);
   expect(login).toBeGreaterThan(running);
-  expect(login).toBeLessThan(waiting);
+  expect(login).toBeLessThan(finished);
   expect(passkey).toBeGreaterThan(finished);
+  expect(waiting).toBeGreaterThan(running);
 });
 
 test("ux_08 a row says its status and its priority by icon and name, not by color alone (R5)", async ({
@@ -95,7 +97,7 @@ test("ux_4_2 a row is tinted by its status group and edged by its priority (R4)"
   await expect(plain).toHaveCSS("border-left-color", none);
 });
 
-test("ux_4_2 a key beside the list says what the row color and the left edge mean", async ({
+test("ux_4_2 the Legend beside the list says what the row color and the left edge mean", async ({
   page,
 }) => {
   await openList(page);

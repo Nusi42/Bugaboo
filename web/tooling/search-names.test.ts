@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { applyWord, issueSource, nameSource } from "../app/src/shared/apply-suggestion.ts";
 import { withSortBy } from "../app/src/shared/sort-by.ts";
-import { withFilter } from "../app/src/shared/with-filter.ts";
+import { withGroupFilter } from "../app/src/shared/with-filter.ts";
 
 const language = startSearchLanguage(() => readFileSync(moduleLocation));
 
@@ -90,19 +90,20 @@ describe("qry_01 sort by is changed through the parser and printer", () => {
 
 describe("qry_01 a filter is added through the parser and printer", () => {
   it("adds a value by its shown name, quoted where needed", () => {
-    expect(withFilter(language, "", "status", "Open")).toBe("status is Open");
-    expect(withFilter(language, "assignedTo is me", "status", "In progress")).toBe(
+    expect(withGroupFilter(language, "", "status is Open")).toBe("status is Open");
+    expect(withGroupFilter(language, "assignedTo is me", 'status is "In progress"')).toBe(
       'assignedTo is me and status is "In progress"',
     );
   });
 
   it("adds an empty field and keeps the order", () => {
-    expect(
-      withFilter(language, "status is Open sort by title", "assignedTo", { empty: true }),
-    ).toBe("status is Open and assignedTo is empty sort by title");
+    expect(withGroupFilter(language, "status is Open sort by title", "assignedTo is empty")).toBe(
+      "status is Open and assignedTo is empty sort by title",
+    );
   });
 
-  it("returns a text that does not parse as it was", () => {
-    expect(withFilter(language, "status is", "status", "Open")).toBe("status is");
+  it("gives no search where the text does not parse, never the whole list in place of the group", () => {
+    expect(withGroupFilter(language, "status is", "status is Open")).toBeUndefined();
+    expect(withGroupFilter(language, "", "status is")).toBeUndefined();
   });
 });

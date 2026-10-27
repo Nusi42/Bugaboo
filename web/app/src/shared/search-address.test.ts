@@ -1,12 +1,31 @@
 import { describe, expect, it } from "vitest";
 
-import { readSearch, searchHref, searchLocation, validateSearch } from "./search-address.ts";
+import {
+  issuePanelAddress,
+  panelClosedAddress,
+  readSearch,
+  searchHref,
+  textShown,
+  searchLocation,
+  validateSearch,
+  withText,
+  type SearchState,
+} from "./search-address.ts";
+
+/** The path and the parts after the question mark of an address, as the router reads them. */
+function locationOf(address: string): { pathname: string; search: Record<string, string> } {
+  const url = new URL(address, "http://example.test");
+  return { pathname: url.pathname, search: Object.fromEntries(url.searchParams) };
+}
 
 describe("qry_01 the search in the address is read and written in one place", () => {
-  it("reads the text and the view, and nothing else of the address", () => {
-    expect(validateSearch({ s: "status is Open", show: "board", open: "WEB-1" })).toEqual({
+  it("reads the text, the view and the open issue, and nothing else of the address", () => {
+    expect(
+      validateSearch({ s: "status is Open", show: "board", open: "WEB-1", other: "x" }),
+    ).toEqual({
       s: "status is Open",
       show: "board",
+      open: "WEB-1",
     });
   });
 
@@ -89,5 +108,41 @@ describe("qry_01 the address of the other pages of a search", () => {
     const state = readSearch({ pathname: "/search", search: validateSearch(raw) });
     const next = readSearch(searchLocation({ ...state, text: "c is d" }));
     expect(searchLocation(next).search).toEqual({ ...raw, s: "c is d" });
+  });
+});
+
+describe("the issue open in the side panel is part of the address", () => {
+  it("opens and closes an issue in the side panel with everything else of the address kept", () => {
+    const state: SearchState = {
+      text: "status is Open",
+      project: "WEB",
+      columns: ["status", "title"],
+      widths: { title: 300 },
+      spacing: "compact",
+      groupBy: "priority",
+      view: "list",
+    };
+    const opened = issuePanelAddress(state, "WEB", "WEB-2");
+    expect(readSearch(locationOf(opened))).toEqual({ ...state, open: "WEB-2" });
+    expect(panelClosedAddress(readSearch(locationOf(opened)))).toBe(searchHref(state));
+    // From a page that is no list of that project the list is the project's own.
+    expect(issuePanelAddress(undefined, "WEB", "WEB-2")).toBe("/p/WEB/issues?open=WEB-2");
+  });
+});
+
+describe("a list that has a text of its own can be asked for everything", () => {
+  it("writes an emptied text as `s=` and reads it back as everything", () => {
+    const emptied = withText({ text: "", project: "WEB" }, "", "status is Open");
+    expect(emptied).toEqual({ text: "", project: "WEB", everything: true });
+    expect(searchHref(emptied)).toBe("/p/WEB/issues?s=");
+    expect(readSearch(locationOf(searchHref(emptied)))).toEqual(emptied);
+    expect(textShown(emptied, "status is Open")).toBe("");
+  });
+
+  it("brings back the text of the list where the address says nothing", () => {
+    expect(textShown({ text: "" }, "status is Open")).toBe("status is Open");
+    expect(withText({ text: "x", everything: true }, "status is Open", "status is Open")).toEqual({
+      text: "",
+    });
   });
 });

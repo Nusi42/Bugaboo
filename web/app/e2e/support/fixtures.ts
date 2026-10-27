@@ -26,6 +26,9 @@ const reports: string[] = [];
  */
 const REFUSED = /^Failed to load resource: the server responded with a status of (4\d\d)/u;
 
+/** The notice of a browser that a measured list asks for another round of measuring (no defect). */
+const RESIZE_NOTICE = /^ResizeObserver loop completed with undelivered notifications\.$/u;
+
 /** The console lines a test expects of a browser that it cuts off the network (see `tolerate`). */
 const tolerances = new Tolerances();
 
@@ -37,9 +40,13 @@ export function watchApp(context: BrowserContext): void {
       reports.push(text);
     }
   });
-  // An uncaught error is never expected, whatever the network does.
+  // An uncaught error is never expected, whatever the network does. The one notice that WebKit gives
+  // when a list that is drawn by what is on screen measures its rows is no error of the app.
   context.on("weberror", (error) => {
-    reports.push(`uncaught: ${error.error().message}`);
+    const { message } = error.error();
+    if (!RESIZE_NOTICE.test(message)) {
+      reports.push(`uncaught: ${message}`);
+    }
   });
 }
 

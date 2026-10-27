@@ -32,6 +32,10 @@ words! {
 words_in_api!(StatusGroup, "The group of a status.");
 
 impl StatusGroup {
+    /// The order of the groups of a list: what is going on first, then what waits, then what is
+    /// finished (the glossary names the same order).
+    pub const LIST_ORDER: [Self; 3] = [Self::InProgress, Self::NotStarted, Self::Done];
+
     /// The word of the group in the search language: its code in lower camel case, the same in
     /// every language of the app (ADR-0005 amendment M5, decision 9).
     #[must_use]
@@ -75,6 +79,9 @@ impl Priority {
 
     /// The priority of a new issue.
     pub const NEW: Self = Self::Normal;
+
+    /// The order of the groups of a list: the most important first.
+    pub const LIST_ORDER: [Self; 4] = [Self::Critical, Self::High, Self::Normal, Self::Low];
 }
 
 words! {
@@ -282,6 +289,22 @@ pub struct IssueCounter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn qry_04_the_list_orders_hold_every_word_once() {
+        // `place_in` of the store falls back to the first place for a word it does not find, so a
+        // list order that left one out would put its group first.
+        let mut priorities = Priority::LIST_ORDER.to_vec();
+        priorities.sort();
+        let mut all = Priority::ALL.to_vec();
+        all.sort();
+        assert_eq!(priorities, all);
+        let mut groups = StatusGroup::LIST_ORDER.to_vec();
+        groups.sort();
+        let mut all = StatusGroup::ALL.to_vec();
+        all.sort();
+        assert_eq!(groups, all);
+    }
 
     #[test]
     fn qry_05_the_search_words_of_priorities_and_status_groups_are_one_word_each_and_different() {

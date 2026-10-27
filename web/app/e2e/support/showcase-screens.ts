@@ -19,13 +19,13 @@ import {
   addressInProject,
   groupAddress,
   issueAddress,
-  issuePanelAddress,
   paths,
   personAddress,
   projectAddress,
   projectIssuesAddress,
   roleAddress,
 } from "../../src/shared/paths.ts";
+import { issuePanelAddress } from "../../src/shared/search-address.ts";
 
 /** One screen of the tour: its name in the file names, one plain sentence, who sees it, how to open it. */
 function screen(
@@ -186,7 +186,7 @@ export const screens: readonly Screen[] = [
     "issue-panel",
     "administrator",
     "The issues of a project with one issue open in the side panel",
-    at(issuePanelAddress(ISSUE_PROJECT, ISSUE)),
+    at(issuePanelAddress(undefined, ISSUE_PROJECT, ISSUE)),
   ),
   screen(
     "new-issue",
