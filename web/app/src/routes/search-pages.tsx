@@ -1,11 +1,12 @@
-import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 import { NotFoundPage } from "../features/shell/index.ts";
-import { paths, routeParam, savedSearchAddress } from "../shared/paths.ts";
-import { readSearchAddress, searchHref, type SearchAddress } from "../shared/search-address.ts";
+import { paths, routeParam } from "../shared/paths.ts";
+import { validateSearch } from "../shared/search-address.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute } from "./layouts.tsx";
 import { loadsScreen } from "./preload.ts";
+import { useSearchNavigation, useSearchState } from "./search-address.ts";
 
 // The search is loaded when it is first opened, so the first page stays small
 // (coding-standards section 6).
@@ -20,20 +21,12 @@ const SavedSearchScreen = lazyRouteComponent(
 export const searchRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.search,
-  validateSearch: readSearchAddress,
+  validateSearch,
   loader: loadsScreen(SearchScreen),
   component: function Search() {
-    const address: SearchAddress = useSearch({ strict: false });
-    const navigate = useNavigate();
-    return (
-      <SearchScreen
-        address={address}
-        onAddress={(next: SearchAddress) => {
-          // Typing changes the search many times: it replaces the address, so back is not a step per letter.
-          void navigate({ to: paths.search, search: next, replace: true });
-        }}
-      />
-    );
+    const state = useSearchState();
+    const navigateTo = useSearchNavigation();
+    return <SearchScreen state={state} onState={navigateTo} />;
   },
 });
 
@@ -41,21 +34,14 @@ export const searchRoute = createRoute({
 export const savedSearchRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.savedSearch,
-  validateSearch: readSearchAddress,
+  validateSearch,
   loader: loadsScreen(SavedSearchScreen),
   component: function SavedSearch() {
     const id = useAddressPart(routeParam.search);
-    const address: SearchAddress = useSearch({ strict: false });
-    const navigate = useNavigate();
+    const state = useSearchState();
+    const navigateTo = useSearchNavigation();
     return id === undefined ? null : (
-      <SavedSearchScreen
-        id={id}
-        address={address}
-        notFound={<NotFoundPage />}
-        onAddress={(next: SearchAddress) => {
-          void navigate({ href: searchHref(savedSearchAddress(id), next), replace: true });
-        }}
-      />
+      <SavedSearchScreen id={id} state={state} onState={navigateTo} notFound={<NotFoundPage />} />
     );
   },
 });

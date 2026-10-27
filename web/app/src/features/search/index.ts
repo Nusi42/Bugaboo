@@ -7,8 +7,12 @@ export { IssuePicker } from "./IssueChoice.tsx";
 export { registerSearch } from "./register.tsx";
 export { withSortBy } from "../../shared/sort-by.ts";
 export {
+  historyStep,
   readSearch,
+  searchHref,
   searchLocation,
+  validateSearch,
+  type HistoryStep,
   type SearchLocation,
   type SearchSpacing,
   type SearchState,

@@ -83,6 +83,20 @@ function filled(path: Path, param: RouteParam, value: string): string {
   return path.replace(`$${param}`, encodeURIComponent(value));
 }
 
+/**
+ * The word of a changing part in an address that has the form of `path`, or none when the address
+ * is of another form: `/p/WEB/issues` against `/p/$project/issues` and `project` is `WEB`.
+ */
+export function partOfAddress(path: Path, param: RouteParam, address: string): string | undefined {
+  const [before = "", after = ""] = path.split(`$${param}`);
+  const whole = address.endsWith("/") ? address.slice(0, -1) : address;
+  if (!whole.startsWith(before) || !whole.endsWith(after)) {
+    return undefined;
+  }
+  const word = whole.slice(before.length, whole.length - after.length);
+  return word === "" || word.includes("/") ? undefined : decodeURIComponent(word);
+}
+
 /** The address of a project: its short name, or an old one, in `/p/WEB`. */
 export function projectAddress(shortName: string): string {
   return filled(paths.project, routeParam.project, shortName);

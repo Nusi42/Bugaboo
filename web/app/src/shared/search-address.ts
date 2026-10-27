@@ -1,81 +1,39 @@
 /**
  * The search in the address (UX design section 2.1, ADR-0005 amendment M5, decision 4): the
- * canonical text travels in `s`, and how the results are shown in `show`. This file is the one
- * place that reads and writes them, so a list, a board and the search bar can never disagree about
- * the address (ODR); every route that has a search bar takes its `validateSearch` from here.
+ * canonical text travels in `s`, and how the results are shown in `show`, `cols`, `widths`,
+ * `spacing` and `group`. {@link readSearch} is the one reader and {@link searchLocation} the one
+ * writer, so a list, a board, the *Search* page, a saved search and the search bar can never
+ * disagree about the address (ODR). Every route that has a search bar takes its `validateSearch`
+ * from here, and every change of the search is written through here, so no part of the address is
+ * lost when another changes.
  */
 
-/** The name of the part of the address that holds the canonical text of the search. */
-export const searchParam = "s";
+import {
+  partOfAddress,
+  paths,
+  projectIssuesAddress,
+  routeParam,
+  savedSearchAddress,
+} from "./paths.ts";
 
-/** The name of the part of the address that says how the results are shown (`list`, `board`, …). */
-export const viewParam = "show";
-
-/** The search and the view as the address holds them; a part that is not there is `undefined`. */
-export interface SearchAddress {
-  readonly s?: string | undefined;
-  readonly show?: string | undefined;
-}
-
-/** A part of the address as text. The router reads `7` as a number; the text is what was written. */
-function textOf(value: unknown): string | undefined {
-  if (typeof value === "string") {
-    return value;
-  }
-  return typeof value === "number" || typeof value === "boolean" ? String(value) : undefined;
-}
-
-/** What the address says about the search; anything else in it is left to the page. */
-export function readSearchAddress(raw: Readonly<Record<string, unknown>>): SearchAddress {
-  const text = textOf(raw[searchParam]);
-  return {
-    [searchParam]: text === undefined || text.trim() === "" ? undefined : text,
-    [viewParam]: textOf(raw[viewParam]),
-  };
-}
-
-/** The text of the search that the address holds; the empty text finds everything. */
-export function searchTextOf(address: SearchAddress): string {
-  return address.s ?? "";
-}
-
-/** The address with another search text in it; the empty text takes `s` out. */
-export function withSearchText(address: SearchAddress, text: string): SearchAddress {
-  return { ...address, [searchParam]: text.trim() === "" ? undefined : text };
-}
-
-/** `path` with the search and the view written as the address says, e.g. `/search?s=status%20is%20Open`. */
-export function searchHref(path: string, address: SearchAddress): string {
-  const query = new URLSearchParams();
-  if (address.s !== undefined) {
-    query.set(searchParam, address.s);
-  }
-  if (address.show !== undefined) {
-    query.set(viewParam, address.show);
-  }
-  const written = query.toString();
-  return written === "" ? path : `${path}?${written}`;
-}
+/**
+ * How a change of the search enters the history of the browser (UX design section 2.1): typing in
+ * Advanced search replaces the step it began, so Back is not a step per letter; a change in Simple
+ * search, and the first text of a stretch of typing, add a step.
+ */
+export const historyStep = { push: "push", replace: "replace" } as const;
+export type HistoryStep = (typeof historyStep)[keyof typeof historyStep];
 
 /** How close together the rows are: the two words of the setting `appearance.spacing`. */
 export type SearchSpacing = "comfortable" | "compact";
 
-/** The names of the view parts of the address next to `s` (UX design section 2.1). */
-export const viewParts = {
-  columns: "cols",
-  widths: "widths",
-  spacing: "spacing",
-  groupBy: "group",
-} as const;
-
-/** The project page `/p/<short name>/issues`: the project the search looks in is in the path. */
-const projectPath = /^\/p\/([^/]+)\/issues\/?$/u;
-
 /** What an address says about a search and how its results are shown. */
 export interface SearchState {
   readonly text: string;
-  /** The short name of the project the list belongs to; none for the *Search* page. */
+  /** The short name of the project the list belongs to; none for the other pages. */
   readonly project?: string;
+  /** The ID of the saved search whose page this is (`/s/<ID>`). */
+  readonly saved?: string;
   readonly columns?: readonly string[];
   readonly widths?: Readonly<Record<string, number>>;
   readonly spacing?: SearchSpacing;
@@ -84,10 +42,29 @@ export interface SearchState {
   readonly view?: string;
 }
 
+/** The parts of the address after the question mark that belong to a search, as written. */
+export interface SearchParts {
+  readonly s?: string;
+  readonly show?: string;
+  readonly cols?: string;
+  readonly widths?: string;
+  readonly spacing?: string;
+  readonly group?: string;
+}
+
 /** Where a search state is written: the path and the parts after the question mark. */
 export interface SearchLocation {
   readonly pathname: string;
-  readonly search: Readonly<Record<string, string>>;
+  readonly search: SearchParts;
+}
+
+/** A part of the address as text. The router reads `7` as a number; the text is what was written. */
+function textOf(raw: object, name: keyof SearchParts): string | undefined {
+  const value: unknown = Reflect.get(raw, name);
+  if (typeof value === "string") {
+    return value;
+  }
+  return typeof value === "number" || typeof value === "boolean" ? String(value) : undefined;
 }
 
 function widthsOf(written: string | undefined): Record<string, number> | undefined {
@@ -105,59 +82,83 @@ function widthsOf(written: string | undefined): Record<string, number> | undefin
 }
 
 /**
- * Reads a search from an address (the one place that does): the path says the project, `s` the
- * text, and the other parts how the results are shown. `search` is what the router read.
+ * Reads a search from an address (the one place that does): the path says the project or the
+ * saved search, `s` the text, and the other parts how the results are shown. `search` is what the
+ * router read. A part that is not there, or is empty, is not in the state.
  */
 export function readSearch(location: {
   readonly pathname?: string;
-  readonly search: Readonly<Record<string, unknown>>;
+  readonly search: object;
 }): SearchState {
   const raw = location.search;
-  const address = readSearchAddress(raw);
-  const project = projectPath.exec(location.pathname ?? "")?.[1];
-  const columns = textOf(raw[viewParts.columns])
+  const pathname = location.pathname ?? "";
+  const written = textOf(raw, "s");
+  const project = partOfAddress(paths.projectIssues, routeParam.project, pathname);
+  const saved = partOfAddress(paths.savedSearch, routeParam.search, pathname);
+  const columns = textOf(raw, "cols")
     ?.split(",")
     .filter((each) => each !== "");
-  const widths = widthsOf(textOf(raw[viewParts.widths]));
-  const spacing = textOf(raw[viewParts.spacing]);
-  const groupBy = textOf(raw[viewParts.groupBy]);
+  const widths = widthsOf(textOf(raw, "widths"));
+  const spacing = textOf(raw, "spacing");
+  const groupBy = textOf(raw, "group");
+  const view = textOf(raw, "show");
   return {
-    text: searchTextOf(address),
-    ...(project === undefined ? {} : { project: decodeURIComponent(project) }),
+    text: written === undefined || written.trim() === "" ? "" : written,
+    ...(project === undefined ? {} : { project }),
+    ...(saved === undefined ? {} : { saved }),
     ...(columns === undefined || columns.length === 0 ? {} : { columns }),
     ...(widths === undefined ? {} : { widths }),
     ...(spacing === "comfortable" || spacing === "compact" ? { spacing } : {}),
     ...(groupBy === undefined || groupBy === "" ? {} : { groupBy }),
-    ...(address.show === undefined ? {} : { view: address.show }),
+    ...(view === undefined ? {} : { view }),
   };
 }
 
 /** The address of a search state: the inverse of {@link readSearch}, and the only place that writes it. */
-export function searchLocation(state: SearchState, searchPage = "/search"): SearchLocation {
-  const search: Record<string, string> = {};
+export function searchLocation(state: SearchState): SearchLocation {
+  const search: { -readonly [Part in keyof SearchParts]: string } = {};
   if (state.text.trim() !== "") {
-    search[searchParam] = state.text;
+    search.s = state.text;
   }
   if (state.view !== undefined) {
-    search[viewParam] = state.view;
+    search.show = state.view;
   }
   if (state.columns !== undefined && state.columns.length > 0) {
-    search[viewParts.columns] = state.columns.join(",");
+    search.cols = state.columns.join(",");
   }
   const widths: string[] = [];
   for (const [field, width] of Object.entries(state.widths ?? {})) {
     widths.push(`${field}:${String(width)}`);
   }
   if (widths.length > 0) {
-    search[viewParts.widths] = widths.join(",");
+    search.widths = widths.join(",");
   }
   if (state.spacing !== undefined) {
-    search[viewParts.spacing] = state.spacing;
+    search.spacing = state.spacing;
   }
   if (state.groupBy !== undefined) {
-    search[viewParts.groupBy] = state.groupBy;
+    search.group = state.groupBy;
   }
-  const pathname =
-    state.project === undefined ? searchPage : `/p/${encodeURIComponent(state.project)}/issues`;
+  let pathname: string = paths.search;
+  if (state.saved !== undefined) {
+    pathname = savedSearchAddress(state.saved);
+  } else if (state.project !== undefined) {
+    pathname = projectIssuesAddress(state.project);
+  }
   return { pathname, search };
+}
+
+/**
+ * What the router keeps of the search part of an address: the parts of a search, normalized, and
+ * nothing else. This is the `validateSearch` of every route that has a search bar.
+ */
+export function validateSearch(raw: object): SearchParts {
+  return searchLocation(readSearch({ search: raw })).search;
+}
+
+/** The address of a search state as one text, `/search?s=status%20is%20Open`, for a link or a navigation. */
+export function searchHref(state: SearchState): string {
+  const { pathname, search } = searchLocation(state);
+  const query = new URLSearchParams(Object.entries(search)).toString();
+  return query === "" ? pathname : `${pathname}?${query}`;
 }

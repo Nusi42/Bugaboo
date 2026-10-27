@@ -1,6 +1,8 @@
 import type { Answer, ReadableFields, Search, SearchLanguage } from "@bugaboo/wasm-search";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { historyStep, type HistoryStep } from "../../shared/search-address.ts";
+
 /** The two ways to write the same search. */
 export const barMode = { simple: "simple", advanced: "advanced" } as const;
 export type BarMode = (typeof barMode)[keyof typeof barMode];
@@ -10,8 +12,8 @@ export interface SearchBarInput {
   readonly fields: ReadableFields;
   /** The canonical text the address holds. */
   readonly text: string;
-  /** Writes the canonical text of the search into the address. */
-  readonly onText: (canonical: string) => void;
+  /** Writes the canonical text of the search into the address, as a new step or in place of one. */
+  readonly onText: (canonical: string, step: HistoryStep) => void;
 }
 
 export interface SearchBarState {
@@ -26,8 +28,10 @@ export interface SearchBarState {
   readonly search: Search | null;
   /** Advanced search types: a valid text goes to the address, a text with mistakes stays in the box. */
   readonly type: (text: string) => void;
-  /** Simple search changed the tree: its canonical text goes to the address. */
+  /** Simple search changed the tree: its canonical text goes to the address as a new step. */
   readonly change: (search: Search) => void;
+  /** The typing in Advanced search stopped (the box lost the focus): the next text is a new step. */
+  readonly endTyping: () => void;
   /** Switches; the search is the same on both sides. Returns whether it switched. */
   readonly switchTo: (mode: BarMode) => boolean;
 }
@@ -37,7 +41,7 @@ export interface SearchBarState {
  * it is valid. `write` sends a canonical text to the address once; when the address changes by
  * itself (back, a link) what was typed is dropped.
  */
-function useTypedText(text: string, onText: (canonical: string) => void) {
+function useTypedText(text: string, onText: SearchBarInput["onText"]) {
   const [draft, setDraft] = useState<string | null>(null);
   const written = useRef(text);
   useEffect(() => {
@@ -46,10 +50,10 @@ function useTypedText(text: string, onText: (canonical: string) => void) {
       setDraft(null);
     }
   }, [text]);
-  const write = (canonical: string): void => {
+  const write = (canonical: string, step: HistoryStep): void => {
     if (canonical !== written.current) {
       written.current = canonical;
-      onText(canonical);
+      onText(canonical, step);
     }
   };
   return { shown: draft ?? text, draft, setDraft, write };
@@ -63,6 +67,8 @@ function useTypedText(text: string, onText: (canonical: string) => void) {
 export function useSearchBar({ language, fields, text, onText }: SearchBarInput): SearchBarState {
   const [mode, setMode] = useState<BarMode>(barMode.simple);
   const { shown, draft, setDraft, write } = useTypedText(text, onText);
+  // The first text of a stretch of typing is a step of its own; the rest of it replaces that step.
+  const typing = useRef(false);
   const answer = useMemo(() => language.check(shown, fields), [language, fields, shown]);
   const clean = answer.mistakes.length === 0;
   // An address that holds a text in another spelling (a link, an old address) is written again
@@ -70,7 +76,7 @@ export function useSearchBar({ language, fields, text, onText }: SearchBarInput)
   const canonical = clean && draft === null ? answer.canonical : null;
   useEffect(() => {
     if (canonical !== null && canonical !== text) {
-      write(canonical);
+      write(canonical, historyStep.replace);
     }
   });
   return {
@@ -84,12 +90,17 @@ export function useSearchBar({ language, fields, text, onText }: SearchBarInput)
       setDraft(next);
       const checked = language.check(next, fields);
       if (checked.mistakes.length === 0 && checked.canonical !== null) {
-        write(checked.canonical);
+        write(checked.canonical, typing.current ? historyStep.replace : historyStep.push);
+        typing.current = true;
       }
     },
     change: (search) => {
       setDraft(null);
-      write(language.print(search));
+      typing.current = false;
+      write(language.print(search), historyStep.push);
+    },
+    endTyping: () => {
+      typing.current = false;
     },
     switchTo: (next) => {
       if (next === barMode.simple && !clean) {
@@ -97,6 +108,7 @@ export function useSearchBar({ language, fields, text, onText }: SearchBarInput)
       }
       setMode(next);
       setDraft(null);
+      typing.current = false;
       return true;
     },
   };

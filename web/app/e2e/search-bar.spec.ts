@@ -159,12 +159,77 @@ test("qry_03 a duration is written and seen as hours and minutes", async ({ page
     page.getByText(
       textByKey("search.mistake.wrong-duration", {
         field: "hoursLogged",
+        hour: "hour",
         hours: "hours",
         minutes: "minutes",
       }),
       { exact: true },
     ),
   ).toBeVisible();
+});
+
+test("qry_02 back and forward step through the searches, typing is not a step per letter", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  // A change in Simple search is a step.
+  await page
+    .getByRole("button", { name: t("search.bar.remove-filter", { filter: "Priority: high" }) })
+    .click();
+  await expect.poll(() => addressText(page)).toBe("");
+  // Typing in Advanced search is one step, however many letters, and stops being one at the next change.
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await box(page).pressSequentially("assignedTo is me and priority is high");
+  await expect.poll(() => addressText(page)).toBe("assignedTo is me and priority is high");
+  await page.goBack();
+  await expect.poll(() => addressText(page)).toBe("");
+  await page.goBack();
+  await expect.poll(() => addressText(page)).toBe("priority is high");
+  await page.goForward();
+  await expect.poll(() => addressText(page)).toBe("");
+  await page.goForward();
+  await expect.poll(() => addressText(page)).toBe("assignedTo is me and priority is high");
+});
+
+test("qry_01 the columns, widths, spacing and grouping of the address stay when the search changes", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(
+    `/search?s=${encodeURIComponent("priority is high")}&cols=id,title&widths=title:300&spacing=compact&group=status`,
+  );
+  await openBar(page);
+  await page
+    .getByRole("button", { name: t("search.bar.remove-filter", { filter: "Priority: high" }) })
+    .click();
+  await expect.poll(() => addressText(page)).toBe("");
+  const address = new URL(page.url()).searchParams;
+  expect(address.get("cols")).toBe("id,title");
+  expect(address.get("widths")).toBe("title:300");
+  expect(address.get("spacing")).toBe("compact");
+  expect(address.get("group")).toBe("status");
+});
+
+test("qry_03 words that are an Issue ID and more are not offered as an Issue ID", async ({
+  page,
+}) => {
+  await openSearch(page, "");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+  await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Part of" }) }).click();
+  const finder = page.getByRole("searchbox", { name: t("search.bar.issue-search") });
+  await finder.fill("WEB-1 or status is Open");
+  await expect(page.getByText(t("search.bar.issue-none"))).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: t("search.bar.issue-take", { issue: "WEB-1 or status is Open" }),
+    }),
+  ).toHaveCount(0);
+  // The whole Issue ID is offered, and taking it works.
+  await finder.fill("web-1");
+  await page.getByRole("button", { name: t("search.bar.issue-take", { issue: "WEB-1" }) }).click();
+  await expect(page.getByText(t("search.bar.issue-chosen", { id: "WEB-1" }))).toBeVisible();
 });
 
 test("qry_06 a saved search opens at its address with its text, and a change is kept in the address", async ({

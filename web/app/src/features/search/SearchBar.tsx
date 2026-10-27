@@ -19,13 +19,13 @@ import { useSearchLanguage } from "./search-language.ts";
 import { filtersOf } from "../../shared/search-tree.ts";
 import { SearchBarBody } from "./SearchBarBody.tsx";
 import { useSearchKey } from "./use-search-key.ts";
-import { useSearchBar } from "./use-search-bar.ts";
+import { useSearchBar, type SearchBarInput } from "./use-search-bar.ts";
 
 export interface SearchBarProps {
   /** The canonical text the address holds. */
   readonly text: string;
   /** Writes the canonical text of the search into the address. */
-  readonly onText: (canonical: string) => void;
+  readonly onText: SearchBarInput["onText"];
   /** The ID of the project the search looks in; none looks in every project the person sees. */
   readonly within?: string;
   /** Called when the text in the box has a mistake (`true`) or has none (`false`). */
