@@ -20,21 +20,22 @@ function found(count: number, rest: Partial<QuickFound> = {}): QuickFound {
 
 describe("cfg_08 what a screen reader says about the results", () => {
   it("says how many results there are", () => {
-    expect(announcement(found(1))).toBe("1 result");
-    expect(announcement(found(3))).toBe("3 results");
+    expect(announcement(found(1))).toEqual(["1 result"]);
+    expect(announcement(found(3))).toEqual(["3 results"]);
   });
 
   it("says Nothing found, in the words of the list, when there are none", () => {
-    expect(announcement(found(0))).toBe("Nothing found. Try another word.");
+    expect(announcement(found(0))).toEqual(["Nothing found. Try another word."]);
   });
 
   it("says that some results could not be loaded", () => {
-    expect(announcement(found(2, { failed: true }))).toBe(
-      "2 results Some results could not be loaded.",
-    );
+    expect(announcement(found(2, { failed: true }))).toEqual([
+      "2 results",
+      "Some results could not be loaded.",
+    ]);
   });
 
   it("says nothing while the server has yet to answer", () => {
-    expect(announcement(found(0, { waiting: true }))).toBe("");
+    expect(announcement(found(0, { waiting: true }))).toEqual([]);
   });
 });

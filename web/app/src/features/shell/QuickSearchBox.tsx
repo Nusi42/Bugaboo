@@ -41,7 +41,11 @@ export function QuickSearchBox() {
           <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
         <QuickResults found={found} firstIsReady={ready.firstIsReady} onOpen={open} />
-        <Announce>{announcement(found)}</Announce>
+        <Announce>
+          {announcement(found).map((sentence) => (
+            <span key={sentence}>{sentence}</span>
+          ))}
+        </Announce>
         {found.failed ? <p {...partOf(part.quickSearchQuiet)}>{t("search.partial")}</p> : null}
       </div>
     </Autocomplete>
