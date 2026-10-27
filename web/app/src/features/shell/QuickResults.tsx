@@ -22,7 +22,9 @@ export interface QuickResultsProps {
 export function QuickResults({ found, listKey, onOpen }: QuickResultsProps) {
   const { groups, waiting } = found;
   return (
-    // The list is busy while the server has yet to answer for the words now typed.
+    // The list is busy while the server has yet to answer for the words now typed. React Aria
+    // drops `aria-busy` from the section of a group, so it is set on the element around the whole
+    // list, the smallest one that renders it; the rows of busy groups are disabled besides.
     <div aria-busy={waiting}>
       <ListBox
         key={listKey}
