@@ -9,8 +9,20 @@ import { askerFor } from "../../shared/quick-search-testing.ts";
  * printer only says what it was given, so this source is tested without the module.
  */
 const print = vi.fn<(search: Search) => string>(() => 'title contains "login"');
+/** The Issue IDs the mocked module knows how to read: it is the module that holds the rule (ADR-0021). */
+const knownIds: Readonly<Record<string, string>> = {
+  "WEB-12": "WEB-12",
+  "web-12": "WEB-12",
+  "WEB-404": "WEB-404",
+  "web-1": "WEB-1",
+};
 vi.mock("@bugaboo/wasm-search", () => ({
-  loadSearchLanguage: () => Promise.resolve({ print, openLastWord: (text: string) => text }),
+  loadSearchLanguage: () =>
+    Promise.resolve({
+      print,
+      openLastWord: (text: string) => text,
+      issueIdOf: (words: string) => knownIds[words.trim()],
+    }),
 }));
 
 const get = vi.fn<(path: string, options: unknown) => Promise<{ data?: unknown }>>();
@@ -18,7 +30,7 @@ vi.mock("../../shared/api.ts", () => ({
   api: { client: { GET: (path: string, options: unknown) => get(path, options) } },
 }));
 
-const { issuesSource, looksLikeIssueId } = await import("./quick-search.ts");
+const { issuesSource } = await import("./quick-search.ts");
 
 const asker = askerFor();
 
@@ -91,12 +103,12 @@ describe("cfg_08 an ID opens the issue", () => {
     expect(await issuesSource.search("web-12", asker)).toHaveLength(1);
   });
 
-  it("tells an ID from words", () => {
-    expect(looksLikeIssueId("web-142")).toBe(true);
-    expect(looksLikeIssueId(" WEB-K7Q2X ")).toBe(true);
-    expect(looksLikeIssueId("login page")).toBe(false);
-    expect(looksLikeIssueId("sign-in page")).toBe(false);
-    expect(looksLikeIssueId("")).toBe(false);
+  it("comes first for a text the module reads as an ID, and not for words", async () => {
+    answers({ [ISSUE]: { issue: { readable_id: "WEB-12", title: "x" } }, [SEARCH]: { items: [] } });
+    // The module is loaded by the first search; the order of the groups asks it after that.
+    await issuesSource.search("web-12", asker);
+    expect(issuesSource.firstFor?.("web-12")).toBe(true);
+    expect(issuesSource.firstFor?.("login page")).toBe(false);
   });
 });
 

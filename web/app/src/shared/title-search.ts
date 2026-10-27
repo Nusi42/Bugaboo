@@ -1,10 +1,9 @@
 import type { SearchLanguage } from "@bugaboo/wasm-search";
 
+import { fieldFilter, nowhere } from "./search-tree.ts";
+
 /** The word of the field whose text quick search looks in: only the title, not the long texts. */
 const TITLE_FIELD = "title";
-
-/** No place in a text: the printer writes the text from the words, and the places mean nothing to it. */
-const nowhere = { start: 0, end: 0 } as const;
 
 /**
  * The search `title contains "<words>"` as the search language writes it, so a quote in the words
@@ -22,12 +21,11 @@ export function titleSearchText(
   // with it, as far as the language lets a start be short.
   const text = language.openLastWord(words.trimStart()).trimEnd();
   return language.print({
-    filter: {
-      type: "field",
-      field: { word: TITLE_FIELD, span: nowhere },
-      test: { type: "contains", text: { text, span: nowhere }, span: nowhere },
+    filter: fieldFilter(TITLE_FIELD, {
+      type: "contains",
+      text: { text, span: nowhere },
       span: nowhere,
-    },
+    }),
     sort: [],
     span: nowhere,
   });

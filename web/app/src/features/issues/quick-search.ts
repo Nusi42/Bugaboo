@@ -1,5 +1,6 @@
 import { ApiError, type ReadonlyDeep } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import type { SearchLanguage } from "@bugaboo/wasm-search";
 
 import { api } from "../../shared/api.ts";
 import { fieldList } from "../../shared/paged.ts";
@@ -12,12 +13,24 @@ import { titleSearchText } from "../../shared/title-search.ts";
 export const ISSUE_RESULTS = 10;
 
 /**
- * Whether a text looks like the ID of an issue (ADR-0021): a short name, a hyphen and a code, as
- * in `WEB-142` or `web-k7q2x`. Only for the order of the results and for the question to the
- * server; the server decides what an ID is and whether the person may see the issue.
+ * The module of the search language, once it was loaded: it is fetched when words are first
+ * searched, not before. Its rule of what an Issue ID is (ADR-0021) is the only one; the order of
+ * the groups asks it too, and has the answer by the time there is a group to order.
  */
-export function looksLikeIssueId(text: string): boolean {
-  return /^[a-z][a-z0-9]*-[a-z0-9]+$/iu.test(text.trim());
+let language: SearchLanguage | undefined;
+
+async function searchLanguage(): Promise<SearchLanguage> {
+  const { loadSearchLanguage } = await import("@bugaboo/wasm-search");
+  language ??= await loadSearchLanguage();
+  return language;
+}
+
+/**
+ * The Issue ID that the words are, as the module reads it; none when they are not exactly one or
+ * when the module is not loaded yet. The server decides whether the issue exists and may be seen.
+ */
+export function issueIdIn(words: string): string | undefined {
+  return language?.issueIdOf(words);
 }
 
 /** What a line of the answer needs: the readable ID and the title. */
@@ -51,10 +64,10 @@ function isRefusedText(error: unknown): boolean {
  * The issue with this ID, if it exists and the person may see it; a hidden one and a missing one
  * are the same: the client throws for both, and both are nothing here.
  */
-async function issueWithId(text: string): Promise<readonly QuickResult[]> {
+async function issueWithId(id: string): Promise<readonly QuickResult[]> {
   try {
     const { data } = await api.client.GET("/api/v1/issues/{issue}", {
-      params: { path: { issue: text.trim() } },
+      params: { path: { issue: id } },
     });
     return data === undefined ? [] : resultOf(data.issue);
   } catch (error) {
@@ -66,10 +79,11 @@ async function issueWithId(text: string): Promise<readonly QuickResult[]> {
 }
 
 /** The first issues whose title holds the words, among those the person may see. */
-async function issuesWithWords(words: string): Promise<readonly QuickResult[]> {
-  // The module of the search language is loaded when words are first searched, not before.
-  const { loadSearchLanguage } = await import("@bugaboo/wasm-search");
-  const q = titleSearchText(await loadSearchLanguage(), words);
+async function issuesWithWords(
+  module: SearchLanguage,
+  words: string,
+): Promise<readonly QuickResult[]> {
+  const q = titleSearchText(module, words);
   if (q === undefined) {
     return [];
   }
@@ -101,11 +115,13 @@ export const issuesSource: QuickSearchSource = {
   id: "issues",
   heading: t("search.issues"),
   paused: true,
-  firstFor: looksLikeIssueId,
+  firstFor: (query) => issueIdIn(query) !== undefined,
   search: async (query): Promise<readonly QuickResult[]> => {
+    const module = await searchLanguage();
+    const id = module.issueIdOf(query);
     const [byId, byWords] = await Promise.all([
-      looksLikeIssueId(query) ? issueWithId(query) : [],
-      issuesWithWords(query),
+      id === undefined ? [] : issueWithId(id),
+      issuesWithWords(module, query),
     ]);
     const seen = new Set(byId.map((each) => each.id));
     return [...byId, ...byWords.filter((each) => !seen.has(each.id))];
