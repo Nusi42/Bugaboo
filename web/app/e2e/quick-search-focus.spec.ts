@@ -190,6 +190,9 @@ test("cfg_08 the live region says the count and that a source failed, one senten
   await ask(page, "passkey");
   const said = dialog(page).getByRole("status");
   await expect(said).toContainText(t("search.partial"));
-  await expect(said.getByRole("paragraph")).toHaveText([t("search.nothing"), t("search.partial")]);
+  await expect(said.locator("[data-part='quick-search.said']")).toHaveText([
+    t("search.nothing"),
+    t("search.partial"),
+  ]);
   await refused.end();
 });
