@@ -19,11 +19,12 @@ export interface ListHeaderProps {
 
 /** The head of the list wired to the search and to the view (UX §4.2): sorting, widths and *Tick the issues shown*. */
 export function ListHeader({ view, fields, shown, onView, onText, onDragged }: ListHeaderProps) {
-  const { words, ticks, selection, search, language } = useListContext();
+  const { listId, words, ticks, selection, search, language } = useListContext();
   const kindOf = (word: string) =>
     fields.fields.fields.find((field) => field.word === word)?.kind ?? "text";
   return (
     <ListHeadRow
+      listId={listId}
       words={words}
       names={fields.names}
       sort={sortOf(language, search.text)}

@@ -4,7 +4,7 @@ import { Alert, alertTone, part, partOf } from "@bugaboo/ui";
 import { messageOf } from "../../shared/errors.ts";
 import type { SearchSpacing } from "../../shared/search-address.ts";
 import { useFoundGroups } from "./found-issues.ts";
-import { groupOfKey } from "./group-keys.ts";
+import { groupsOfKeys } from "./group-keys.ts";
 import { GroupSection } from "./GroupSection.tsx";
 import { useListContext } from "./list-context.ts";
 import { ListEmpty } from "./ListEmpty.tsx";
@@ -27,10 +27,11 @@ export function GroupedList({ spacing }: GroupedListProps) {
   return (
     <>
       <ListScroll spacing={spacing} busy={groups.isFetching}>
-        {(groups.data?.groups ?? []).map((each, at) => {
-          const group = groupOfKey(each, at, groupBy === null ? undefined : own[groupBy]);
-          return <GroupSection key={group.id} group={group} count={each.issues} />;
-        })}
+        {groupsOfKeys(groups.data?.groups ?? [], groupBy === null ? undefined : own[groupBy]).map(
+          (group) => (
+            <GroupSection key={group.id} group={group} count={group.count} />
+          ),
+        )}
       </ListScroll>
       {groups.data?.truncated === true ? (
         <p {...partOf(part.muted)}>{t("issues.groups-cut")}</p>

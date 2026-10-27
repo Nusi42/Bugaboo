@@ -12,7 +12,6 @@ import {
 } from "@bugaboo/ui";
 
 import { cellOf } from "../../shared/list-columns.ts";
-import { listId } from "./list-context.ts";
 import type { ListSort } from "./list-sort.ts";
 
 const selectColumn = "select" satisfies ListColumn;
@@ -24,6 +23,8 @@ export interface HeadTick {
 }
 
 export interface ListHeadRowProps {
+  /** What the head cells and the cells under them name each other by. */
+  readonly listId: string;
   /** The search words of the columns, in order. */
   readonly words: readonly string[];
   /** The name of each field, by its search word. */
@@ -35,6 +36,20 @@ export interface ListHeadRowProps {
   readonly onSort: (word: string) => void;
   /** The width of a column while it is dragged, and when the drag ends. */
   readonly onResize: (word: string, width: number, final: boolean) => void;
+}
+
+/** The box in the head that ticks the rows shown. */
+function TickCell({ tick }: { readonly tick: HeadTick }) {
+  return (
+    <ListCell column={selectColumn} head>
+      <Checkbox
+        hideLabel
+        label={t("issues.select-shown")}
+        isSelected={tick.isSelected}
+        onChange={tick.onChange}
+      />
+    </ListCell>
+  );
 }
 
 /** What a press on the name of a column does, told to a screen reader. */
@@ -50,20 +65,19 @@ function sortLabelOf(name: string, arrow: "up" | "down" | null): string {
  * writes `sort by` into the search; dragging the edge of a column, or moving it with the arrow
  * keys, sets its width. It has the columns of the rows, so the cells line up.
  */
-export function ListHeadRow({ words, names, sort, tick, onSort, onResize }: ListHeadRowProps) {
+export function ListHeadRow({
+  listId,
+  words,
+  names,
+  sort,
+  tick,
+  onSort,
+  onResize,
+}: ListHeadRowProps) {
   return (
     <TableBox look={partOf(part.listHead)} label={t("issues.columns-head")}>
       <RowBox look={partOf(part.listRow, { variants: ["head", "grid"] })}>
-        {tick === null ? null : (
-          <ListCell column={selectColumn} head>
-            <Checkbox
-              hideLabel
-              label={t("issues.select-shown")}
-              isSelected={tick.isSelected}
-              onChange={tick.onChange}
-            />
-          </ListCell>
-        )}
+        {tick === null ? null : <TickCell tick={tick} />}
         {words.map((word) => {
           const name = names[word] ?? word;
           const arrow = sort?.word === word ? sort.arrow : null;

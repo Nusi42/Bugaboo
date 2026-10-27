@@ -7,11 +7,10 @@ import type { IssueShow } from "./issue-show.ts";
 import type { OwnColumns } from "./own-columns.ts";
 import type { IssueSelection } from "./use-selection.ts";
 
-/** What the head cells of the list and the cells under them name each other by. */
-export const listId = "issue-list";
-
 /** What every row and every group of one list shares. */
 export interface ListContextValue {
+  /** What the head cells of the list and the cells under them name each other by (one for each list on the page). */
+  readonly listId: string;
   /** The search words of the columns, in order. */
   readonly words: readonly string[];
   /** A phone draws a card for each issue and has no columns of its own. */

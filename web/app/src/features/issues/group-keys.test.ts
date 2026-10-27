@@ -1,7 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { groupOfKey } from "./group-keys.ts";
+import { formatCalendarDay } from "../../shared/format.ts";
+import { groupOfKey, groupsOfKeys } from "./group-keys.ts";
 
 type Group = Schema<"SearchGroupBody">;
 
@@ -13,7 +14,7 @@ describe("the group the server sends (UX 4.2, ADR-0005 item 9)", () => {
       filter: "priority is high",
       name: null,
     };
-    expect(groupOfKey(high, 0)).toMatchObject({
+    expect(groupOfKey(high)).toMatchObject({
       filter: "priority is high",
       priority: "high",
     });
@@ -23,7 +24,7 @@ describe("the group the server sends (UX 4.2, ADR-0005 item 9)", () => {
       filter: "statusGroup is inProgress",
       name: null,
     };
-    expect(groupOfKey(progress, 0)).toMatchObject({ statusGroup: "in-progress" });
+    expect(groupOfKey(progress)).toMatchObject({ statusGroup: "in-progress" });
   });
 
   it("names a group by a person or a label as the viewer sees it", () => {
@@ -33,14 +34,14 @@ describe("the group the server sends (UX 4.2, ADR-0005 item 9)", () => {
       filter: "assignedTo is Ana",
       name: "Ana",
     };
-    expect(groupOfKey(person, 0).name).toBe("Ana");
+    expect(groupOfKey(person).name).toBe("Ana");
     const hidden: Group = {
       key: { type: "tag", value: { id: "t1", name: null } },
       issues: 1,
       filter: null,
       name: null,
     };
-    expect(groupOfKey(hidden, 0).filter).toBeUndefined();
+    expect(groupOfKey(hidden).filter).toBeUndefined();
   });
 
   it("names a group by an ID with the name the server gave it", () => {
@@ -50,8 +51,8 @@ describe("the group the server sends (UX 4.2, ADR-0005 item 9)", () => {
       filter: "project is WEB",
       name: "WEB",
     };
-    expect(groupOfKey(project, 0).name).toBe("WEB");
-    expect(groupOfKey({ ...project, name: null }, 0).name).toBeUndefined();
+    expect(groupOfKey(project).name).toBe("WEB");
+    expect(groupOfKey({ ...project, name: null }).name).toBeUndefined();
   });
 });
 
@@ -74,7 +75,7 @@ describe("the places of the groups", () => {
         name: null,
       },
     ];
-    expect(new Set(keys.map((key, at) => groupOfKey(key, at).id)).size).toBe(keys.length);
+    expect(new Set(groupsOfKeys(keys).map((group) => group.id)).size).toBe(keys.length);
   });
 });
 
@@ -88,10 +89,10 @@ const column = (kind: Schema<"FieldType">) => ({ id: "f1", kind, choices: {} });
 
 describe("a group of whole numbers", () => {
   it("is worded as the issue page words the field", () => {
-    expect(groupOfKey(whole(1), 0, column("yes-no")).name).toBe("Yes");
-    expect(groupOfKey(whole(5400), 0, column("duration")).name).toBe("1h 30m");
-    expect(groupOfKey(whole(1_500_000), 0, column("decimal")).name).toMatch(/1[.,]5/u);
-    expect(groupOfKey(whole(20_000), 0, column("date")).name).not.toBe("20000");
-    expect(groupOfKey(whole(7), 0).name).toBe("7");
+    expect(groupOfKey(whole(1), column("yes-no")).name).toBe("Yes");
+    expect(groupOfKey(whole(5400), column("duration")).name).toBe("1h 30m");
+    expect(groupOfKey(whole(1_500_000), column("decimal")).name).toMatch(/1[.,]5/u);
+    expect(groupOfKey(whole(20_000), column("date")).name).toBe(formatCalendarDay("2024-10-04"));
+    expect(groupOfKey(whole(7)).name).toBe("7");
   });
 });

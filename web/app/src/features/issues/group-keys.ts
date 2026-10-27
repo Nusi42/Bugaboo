@@ -18,6 +18,8 @@ export interface GroupOfKey {
   readonly statusGroup: Schema<"StatusGroup"> | undefined;
   /** The priority it is. */
   readonly priority: Schema<"Priority"> | undefined;
+  /** How many issues the search finds in it. */
+  readonly count: number;
   /** The name of the group where the key holds one; none where the screen words it itself. */
   readonly name: string | undefined;
 }
@@ -43,23 +45,30 @@ function valueOfWhole(kind: Schema<"FieldType">, whole: number): unknown {
   return kind === "date-time" ? new Date(whole / 1000).toISOString() : whole;
 }
 
+/** What tells a person's group from the others: the ID of a person shown by name, else the words that show them. */
+function personPlace(person: Schema<"PersonRef">): string {
+  if (person.shown === "name") {
+    return person.id;
+  }
+  if (person.shown === "role") {
+    return `role:${person.role}`;
+  }
+  return person.shown === "former" ? `former:${person.code}` : "someone";
+}
+
 /**
  * The place and the name of a group: what tells it from the others, and what its header says where
  * the server gave it a name (`name`, found by the one resolution of names), a person as the viewer
  * sees them, or a tag or a label by its name.
  */
-function placed(
-  group: FoundGroup,
-  at: number,
-  column: OwnColumn | undefined,
-): Pick<GroupOfKey, "id" | "name"> {
+function placed(group: FoundGroup, column: OwnColumn | undefined): Pick<GroupOfKey, "id" | "name"> {
   const { key } = group;
   if (key.type === "tag" || key.type === "label") {
     return { id: `${key.type}:${key.value.id}`, name: key.value.name ?? undefined };
   }
   if (key.type === "person") {
     return {
-      id: key.value.shown === "name" ? `person:${key.value.id}` : `person:${String(at)}`,
+      id: `person:${personPlace(key.value)}`,
       name: personName(key.value),
     };
   }
@@ -82,13 +91,31 @@ function placed(
   return { id: `${key.type}:${key.value}`, name: group.name ?? undefined };
 }
 
-/** The group the server sends, the `at`-th of the field: its header, and the filter that selects its issues. */
-export function groupOfKey(group: FoundGroup, at: number, column?: OwnColumn): GroupOfKey {
+/** The group the server sends: its header, and the filter that selects its issues. */
+export function groupOfKey(group: FoundGroup, column?: OwnColumn): GroupOfKey {
   const { key } = group;
   return {
-    ...placed(group, at, column),
+    ...placed(group, column),
     statusGroup: key.type === "status-group" ? key.value : undefined,
     priority: key.type === "priority" ? key.value : undefined,
     filter: group.filter ?? undefined,
+    count: group.issues,
   };
+}
+
+/**
+ * The groups the server sends for a field, each with a place of its own: two groups that show the
+ * same words (two people of one role) get the number of their turn after it.
+ */
+export function groupsOfKeys(
+  groups: readonly FoundGroup[],
+  column?: OwnColumn,
+): readonly GroupOfKey[] {
+  const seen = new Map<string, number>();
+  return groups.map((each) => {
+    const group = groupOfKey(each, column);
+    const turn = seen.get(group.id) ?? 0;
+    seen.set(group.id, turn + 1);
+    return turn === 0 ? group : { ...group, id: `${group.id}#${String(turn)}` };
+  });
 }

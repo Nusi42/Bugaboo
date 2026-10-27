@@ -5,7 +5,7 @@ import { Collection, GridListItem, GridListLoadMoreItem } from "react-aria-compo
 import type { FoundLine } from "./found-issues.ts";
 import { hrefOf } from "./issue-show.ts";
 import { rowCells } from "./list-cells.tsx";
-import { listId, useListContext } from "./list-context.ts";
+import { useListContext } from "./list-context.ts";
 
 const selectColumn = "select" satisfies ListColumn;
 
@@ -28,11 +28,12 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
     own: context.own,
     current,
   });
+  const spoken = `${line.key} ${line.title}`;
   return (
     <GridListItem
       id={id}
       href={href}
-      textValue={line.title}
+      textValue={spoken}
       {...partOf(part.listRow, {
         variants: [context.phone ? "phone" : "grid", context.phone && !context.ticks && "plain"],
         states: [...rowStates(line), selected && "selected", current && "current"],
@@ -54,7 +55,7 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
         <ListCell
           key={word}
           column={cell}
-          headedBy={context.phone ? undefined : headId(listId, word)}
+          headedBy={context.phone ? undefined : headId(context.listId, word)}
         >
           {content}
         </ListCell>

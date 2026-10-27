@@ -1,5 +1,5 @@
 import { useLayout } from "@bugaboo/ui";
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 
 import { isOwnField, phoneColumns } from "../../shared/list-columns.ts";
 import type { SearchState } from "../../shared/search-address.ts";
@@ -23,14 +23,17 @@ export interface ContextInput {
   readonly report: ListContextValue["report"];
 }
 
+/** Whether a column or the grouping is a field of the organization, so its fields must be read. */
+function needsOwn(view: ContextInput["view"]): boolean {
+  return view.columns.some(isOwnField) || (view.groupBy !== null && isOwnField(view.groupBy));
+}
+
 /** What every row and group of the list shares: the columns it draws, the search, and who may tick. */
 export function useListContextValue(input: ContextInput): ListContextValue {
   const phone = useLayout() === "phone";
   const { view } = input;
-  const own = useOwnColumns(
-    input.language,
-    view.columns.some(isOwnField) || (view.groupBy !== null && isOwnField(view.groupBy)),
-  );
+  const own = useOwnColumns(input.language, needsOwn(view));
+  const listId = useId();
   const now = useNow();
   const { text, within, project, language, openIn, state, open, selection, onClear, report } =
     input;
@@ -39,6 +42,7 @@ export function useListContextValue(input: ContextInput): ListContextValue {
   // The same value while nothing it holds changed: every row and group reads it.
   return useMemo(
     () => ({
+      listId,
       words: phone ? phoneColumns : columns.split(","),
       phone,
       ticks: project !== undefined,
@@ -56,6 +60,7 @@ export function useListContextValue(input: ContextInput): ListContextValue {
       report,
     }),
     [
+      listId,
       phone,
       columns,
       groupBy,
