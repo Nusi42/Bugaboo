@@ -97,7 +97,7 @@ test("ux_4_2 a row is tinted by its status group and edged by its priority (R4)"
   await expect(plain).toHaveCSS("border-left-color", none);
 });
 
-test("ux_4_2 a key beside the list says what the row color and the left edge mean", async ({
+test("ux_4_2 the Legend beside the list says what the row color and the left edge mean", async ({
   page,
 }) => {
   await openList(page);

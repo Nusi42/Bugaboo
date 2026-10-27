@@ -24,13 +24,26 @@ export async function listInFourThemes(page: Page, name: string): Promise<void> 
   );
 }
 
+/** Waits until the page has drawn the theme it was given: two frames, not a guess of time. */
+async function settled(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await new Promise<void>((done) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          done();
+        });
+      });
+    });
+  });
+}
+
 /** The same without growing the window to the list: what a person sees, for a list that reads more rows when it is taller. */
 export async function listWindowInFourThemes(page: Page, name: string): Promise<void> {
   const layout = layoutOf(page);
   await inOrder(
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
-      await page.waitForTimeout(300);
+      await settled(page);
       await shootWindowAs(page, `${name}-${layout}`, MILESTONE, theme.id);
     }),
   );

@@ -2031,6 +2031,11 @@ part "list-group.toggle[focus-visible]" {
     use "ring-inside"
 }
 
+// A row or a group header that has the focus of the keyboard shows it all round, inside its box.
+part "list-row[focus-visible]" "list-group[focus-visible]" {
+    use "ring-inside"
+}
+
 part "list-group.name" {
     min-width 0
     overflow hidden

@@ -2159,6 +2159,12 @@ body {
   outline-offset: calc(var(--ring-width) * -1);
 }
 
+[data-part="list-row"][data-focus-visible],
+[data-part="list-group"][data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: calc(var(--ring-width) * -1);
+}
+
 [data-part="list-group.name"] {
   min-width: 0;
   overflow: hidden;
