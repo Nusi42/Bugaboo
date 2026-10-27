@@ -81,6 +81,8 @@
   --size-reading: 75ch;
   --size-main: 780px;
   --size-sheet-share: 85%;
+  --size-side-panel: 30rem;
+  --size-bar-sheet: 80dvh;
   --size-matrix-cell: calc(var(--size-control) * 4);
   --size-list-tall: calc(var(--size-list) * 2);
   --size-line-medium: 80%;

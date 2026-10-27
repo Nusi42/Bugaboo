@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, Overlay, overlayEdge, part, partOf } from "@bugaboo/ui";
 import type { ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 
-import { useFieldName } from "./field-names.ts";
+import { useFieldName } from "./field-name-context.ts";
 import { helpGroups, type HelpGroup } from "./help-examples.ts";
 
 export interface HelpSheetProps {
@@ -66,8 +66,8 @@ export function HelpSheet({ language, fields, isOpen, onClose, onExample }: Help
       from={overlayEdge.end}
     >
       <div {...partOf(part.searchPanel)}>
-        <h2 {...partOf(part.searchHelpTitle)}>{t("search.help-title")}</h2>
-        <div {...partOf(part.searchPanelActions)}>
+        <div {...partOf(part.searchPanelHead)}>
+          <h2 {...partOf(part.searchHelpTitle)}>{t("search.help-title")}</h2>
           <Button look={buttonLook.primary} onPress={onClose}>
             {t("common.close")}
           </Button>

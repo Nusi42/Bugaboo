@@ -2,6 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { createAdmin } from "./support/accounts.ts";
+import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { ana, createPeopleWithRoles, projectIdOf, roleName } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -100,7 +101,12 @@ test("qry_03 the results of the last good search stay, say so, and Save waits fo
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).fill("priority is");
   await expect(page.getByText(t("search.found-stale"))).toBeVisible();
-  await expect(page.locator("[data-part='search-results'][data-state='stale']")).toBeVisible();
+  // Only the list is dimmed; the note is not part of it.
+  await expect(page.locator("[data-part='search-results'][data-state='stale']")).toHaveCount(0);
+  await expect(page.locator("[data-part='search-results.list'][data-state='stale']")).toBeVisible();
+  // The offers are closed first, so the note can be seen; it is good in every theme.
+  await box(page).press("Escape");
+  await expectGoodInEveryTheme(page);
   await expect(page.getByRole("button", { name: t("search.save"), exact: true })).toBeDisabled();
   await box(page).fill("priority is high");
   await expect(page.getByText(t("search.found-stale"))).toHaveCount(0);
@@ -117,4 +123,6 @@ test("qry_01 the help puts an example into the search", async ({ page }) => {
     .getByRole("button", { name: t("search.help-use", { example: "assignedTo is me" }) })
     .click();
   await expect.poll(() => addressText(page)).toContain("assignedTo is me");
+  // The panel closes when the example is taken into the search.
+  await expect(help).toHaveCount(0);
 });

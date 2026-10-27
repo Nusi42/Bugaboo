@@ -47,26 +47,25 @@ export function FoundIssues({ text, within, stale }: FoundIssuesProps) {
   }
   const items = query.data?.items ?? [];
   return (
-    <div
-      {...partOf(part.searchResults, { states: [stale && "stale"] })}
-      aria-busy={query.isFetching}
-    >
+    <div {...partOf(part.searchResults)} aria-busy={query.isFetching}>
       {stale ? <output {...partOf(part.text)}>{t("search.found-stale")}</output> : null}
-      {query.data === undefined ? null : items.length === 0 ? (
-        <p {...partOf(part.text)}>{t("search.found-none")}</p>
-      ) : (
-        <ul {...partOf(part.searchList)} aria-label={t("search.found-list")}>
-          {items.map((issue, index) => (
-            <li key={issue.readable_id ?? index} {...partOf(part.searchListItem)}>
-              {issue.readable_id === undefined || issue.readable_id === null ? null : (
-                <Link href={issueAddress(issue.readable_id)}>
-                  {t("search.found-issue", { id: issue.readable_id, title: issue.title ?? "" })}
-                </Link>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div {...partOf(part.searchResultsList, { states: [stale && "stale"] })}>
+        {query.data === undefined ? null : items.length === 0 ? (
+          <p {...partOf(part.text)}>{t("search.found-none")}</p>
+        ) : (
+          <ul {...partOf(part.searchList)} aria-label={t("search.found-list")}>
+            {items.map((issue, index) => (
+              <li key={issue.readable_id ?? index} {...partOf(part.searchListItem)}>
+                {issue.readable_id === undefined || issue.readable_id === null ? null : (
+                  <Link href={issueAddress(issue.readable_id)}>
+                    {t("search.found-issue", { id: issue.readable_id, title: issue.title ?? "" })}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

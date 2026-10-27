@@ -13,9 +13,9 @@ export interface NameChoiceProps extends Omit<NameFinderProps, "onPick"> {
 /** The value of a filter on a person, a group or a project: the chosen name, and the finder. */
 export function NameChoice({ language, what, chosen, onChoose }: NameChoiceProps) {
   return (
-    <div {...partOf(part.searchList)}>
+    <div {...partOf(part.searchChoice)}>
       {chosen === "" ? null : (
-        <p {...partOf(part.muted)}>{t("search.bar.pick-chosen", { name: chosen })}</p>
+        <output {...partOf(part.muted)}>{t("search.bar.pick-chosen", { name: chosen })}</output>
       )}
       <NameFinder
         language={language}

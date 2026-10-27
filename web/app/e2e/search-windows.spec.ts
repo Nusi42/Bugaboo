@@ -4,8 +4,8 @@ import { createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
-import { onThisLayout } from "./support/layout.ts";
-import { openBar, openSearch } from "./support/search-bar.ts";
+import { nothing, onThisLayout } from "./support/layout.ts";
+import { box, openBar, openSearch } from "./support/search-bar.ts";
 
 // The windows of the search bar (UX design section 4.3): the button of a phone with its count and its
 // Close button, and every window of the bar in the four themes.
@@ -60,4 +60,25 @@ test("qry_01 the windows of the search are good in every theme", async ({ page }
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: t("search.save"), exact: true }).click();
   await expectGoodInEveryTheme(page);
+});
+
+test("qry_01 the sheet of a phone does not move when the offers come and go", async ({ page }) => {
+  await openSearch(page, "assignedTo is me");
+  await onThisLayout(page, {
+    computer: nothing,
+    tablet: nothing,
+    phone: async () => {
+      await openBar(page);
+      await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+      const toSimple = page.getByRole("button", { name: t("search.bar.to-simple") });
+      await box(page).fill("priority is ");
+      await expect(page.getByRole("listbox")).toBeVisible();
+      const withOffers = await toSimple.boundingBox();
+      await box(page).press("Escape");
+      await expect(page.getByRole("listbox")).toHaveCount(0);
+      const withoutOffers = await toSimple.boundingBox();
+      // The same place, so a tap that closes the offers is also a tap on what was under the finger.
+      expect(withoutOffers?.y).toBe(withOffers?.y);
+    },
+  });
 });

@@ -162,6 +162,11 @@ tokens {
     size "size-reading" "75ch"
     size "size-main" "780px"
     size "size-sheet-share" "85%"
+    // A panel at the end of the screen, beside the page (the help of the search bar): about 30 rem.
+    size "size-side-panel" "30rem"
+    // The sheet of the search bar on a phone is always this high, so what is under a finger does not
+    // move when the offers under the box come and go.
+    size "size-bar-sheet" "80dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
     size "size-list-tall" "calc($size-list * 2)"
@@ -1243,7 +1248,7 @@ part "overlay.modal[variant=start]" {
 
 // A panel at the end of the screen, beside the page (the help of the search bar).
 part "overlay.modal[variant=end]" {
-    width "$size-sheet-share"
+    width "$size-side-panel"
     max-width "100%"
     height "100%"
     border-radius "$r-card 0 0 $r-card"
@@ -12059,10 +12064,35 @@ part "search-panel" {
     overflow-y auto
 }
 
+// The head of a panel: its title, and the button that closes it at the end of the same row.
+part "search-panel[variant=sheet]" {
+    height "$size-bar-sheet"
+    max-height "100%"
+}
+
+part "search-panel.head" {
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+}
+
+// The chosen name and the finder of a filter on a person, a group or a project.
+part "search-choice" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+}
+
 part "search-panel.actions" {
     display flex
     justify-content flex-end
     gap "$space-2"
+}
+
+// The button that closes the sheet stays at the foot of it.
+part "search-panel[variant=sheet] search-panel.actions" {
+    margin-block-start auto
 }
 
 // In the sheet of a phone the filters stand under each other, as wide as the sheet.
@@ -12239,8 +12269,9 @@ part "search-results" {
     gap "$space-2"
 }
 
-// The results of the search that was fixed last stay while the text has a mistake, dimmed.
-part "search-results[state=stale]" {
+// The results of the search that was fixed last stay while the text has a mistake, dimmed; the
+// note that says so is not part of them and stays as clear as any text.
+part "search-results.list[state=stale]" {
     opacity "$opacity-busy"
 }
 

@@ -124,7 +124,7 @@ function PhoneSheet({
       label={t("search.bar.filters")}
       from={overlayEdge.bottom}
     >
-      <div {...partOf(part.searchPanel)}>
+      <div {...partOf(part.searchPanel, { variants: ["sheet"] })}>
         <div {...partOf(part.searchBar)}>{children}</div>
         <div {...partOf(part.searchPanelActions)}>
           <Button

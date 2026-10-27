@@ -38,6 +38,7 @@ export function HelpButton({ language, fields, bar }: HelpButtonProps) {
           if (example !== null && bar.search !== null) {
             bar.change(withExample(bar.search, example));
           }
+          setOpen(false);
         }}
       />
     </>
