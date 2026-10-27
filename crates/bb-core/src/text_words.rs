@@ -100,23 +100,24 @@ fn words_of(text: &str) -> Vec<SearchWord> {
         }
         if !current.is_empty() {
             words.push(SearchWord {
-                text: canonical(std::mem::take(&mut current)),
+                text: canonical(&current),
                 prefix: c == '*',
             });
+            current.clear();
         }
     }
     words
 }
 
 /// The word in NFC where the feature is on.
-fn canonical(word: String) -> String {
+fn canonical(word: &str) -> String {
     #[cfg(any(test, feature = "canonical-text"))]
     {
         use unicode_normalization::UnicodeNormalization as _;
         word.nfc().collect()
     }
     #[cfg(not(any(test, feature = "canonical-text")))]
-    word
+    word.to_owned()
 }
 
 /// Whether the character is a combining mark of the blocks that hold the accents written after
