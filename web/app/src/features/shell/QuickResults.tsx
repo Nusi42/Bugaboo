@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 import { Header, ListBox, ListBoxItem, ListBoxSection, Text } from "react-aria-components";
 
-import { busyKeys, firstReady, resultKey } from "./quick-search-collect.ts";
+import { busyKeys, resultKey } from "./quick-search-collect.ts";
 import type { QuickFound } from "./use-quick-results.ts";
 
 /** The words of React Aria Components for the slots of an item, not text for people. */
@@ -10,16 +10,13 @@ const descriptionSlot = "description";
 
 export interface QuickResultsProps {
   readonly found: QuickFound;
-  /** Whether the first result is the one that is ready to open: no arrow key was pressed yet. */
-  readonly firstIsReady: boolean;
   /** Opens a result by its name. */
   readonly onOpen: (key: string | number) => void;
 }
 
 /** What quick search found, grouped by where it was found. */
-export function QuickResults({ found, firstIsReady, onOpen }: QuickResultsProps) {
+export function QuickResults({ found, onOpen }: QuickResultsProps) {
   const { groups, waiting } = found;
-  const ready = firstIsReady ? firstReady(groups) : undefined;
   return (
     // The list is busy while the server has yet to answer for the words now typed.
     <div aria-busy={waiting}>
@@ -41,7 +38,6 @@ export function QuickResults({ found, firstIsReady, onOpen }: QuickResultsProps)
                 key={resultKey(group, result)}
                 id={resultKey(group, result)}
                 textValue={result.title}
-                data-ready={resultKey(group, result) === ready ? true : undefined}
                 {...partOf(part.quickSearchItem)}
               >
                 <span {...partOf(part.quickSearchTitle)}>{result.title}</span>

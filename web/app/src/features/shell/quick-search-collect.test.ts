@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   arrange,
   busyKeys,
-  firstReady,
+  firstEnabled,
   markStale,
   collectResults,
   resultByKey,
@@ -119,9 +119,10 @@ describe("cfg_08 the rows of older words", () => {
     const waiting = issues.groups.map((group) => ({ ...group, busy: true }));
     expect(busyKeys([...pages.groups, ...waiting])).toEqual(["issues:Login", "issues:Logout"]);
     expect(busyKeys([...pages.groups, ...issues.groups])).toEqual([]);
-    // A busy group is never the ready one; a group that is not busy is.
-    expect(firstReady(waiting)).toBeUndefined();
-    expect(firstReady([...pages.groups, ...waiting])).toBe("pages:Home");
-    expect(firstReady([])).toBeUndefined();
+    // The first result that can be chosen is never one of a busy group.
+    expect(firstEnabled(waiting)).toBeUndefined();
+    expect(firstEnabled([...waiting, ...pages.groups])).toBe("pages:Home");
+    expect(firstEnabled([...pages.groups, ...waiting])).toBe("pages:Home");
+    expect(firstEnabled([])).toBeUndefined();
   });
 });

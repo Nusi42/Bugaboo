@@ -11,15 +11,13 @@ export interface ResultGroup {
 }
 
 /**
- * The name of the result that is ready to open while no arrow key was pressed: the first one, unless
- * it is of older words. Nothing when there is none.
+ * The name of the first result that can be chosen: the first of the groups that are not busy (the
+ * rows of a busy group are of older words). Nothing when there is none.
  */
-export function firstReady(groups: readonly ResultGroup[]): string | undefined {
-  const [group] = groups;
-  const first = group?.results[0];
-  return group === undefined || group.busy === true || first === undefined
-    ? undefined
-    : resultKey(group, first);
+export function firstEnabled(groups: readonly ResultGroup[]): string | undefined {
+  return groups
+    .filter((group) => group.busy !== true)
+    .flatMap((group) => group.results.map((result) => resultKey(group, result)))[0];
 }
 
 /**

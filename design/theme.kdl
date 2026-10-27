@@ -3727,7 +3727,7 @@ part "quick-search.item[disabled]" {
     opacity "$opacity-disabled"
 }
 
-part "quick-search.item[ready]" "quick-search.item[focused]" {
+part "quick-search.item[focused]" {
     background "$bg-selected"
     use "ring-inside"
 }

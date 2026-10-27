@@ -3168,7 +3168,6 @@ body {
   opacity: var(--opacity-disabled);
 }
 
-[data-part="quick-search.item"][data-ready],
 [data-part="quick-search.item"][data-focused] {
   background: var(--bg-selected);
   outline: var(--ring-width) solid var(--accent);
