@@ -20,7 +20,13 @@ On a page that is part of another one, "Back" at the top takes you one step back
 
 ## Quick search
 
-Press `Ctrl+K` (or `/`, or the search button) to open quick search. Type a few letters of a page, such as "appearance", use the arrow keys to pick one and press Enter. "Esc" closes quick search and puts you back where you were. Quick search shows only pages you may open.
+Press `Ctrl+K` (or the search button) to open quick search. It finds issues, saved searches, projects, settings pages and a few actions, in groups with their kind above them:
+
+- Type the ID of an issue, such as "WEB-142", to open it.
+- Type words of a title to see the first ten issues whose title has them. The list follows you when you stop typing for a moment.
+- The actions are *Create issue* and *Sign out*. The pages include *Notification settings*.
+
+Use the arrow keys to pick a result and press Enter. "Esc" closes quick search and puts you back where you were. Quick search shows only what you may see: an issue you may not see is not found, exactly like one that does not exist.
 
 ## Settings
 
