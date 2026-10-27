@@ -25,7 +25,13 @@ export const historyStep = { push: "push", replace: "replace" } as const;
 export type HistoryStep = (typeof historyStep)[keyof typeof historyStep];
 
 /** How close together the rows are: the two words of the setting `appearance.spacing`. */
-export type SearchSpacing = "comfortable" | "compact";
+export const searchSpacings = ["comfortable", "compact"] as const;
+export type SearchSpacing = (typeof searchSpacings)[number];
+
+/** The spacing a word names, or nothing for any other word (the one place that reads it). */
+export function spacingOf(word: string | undefined): SearchSpacing | undefined {
+  return searchSpacings.find((each) => each === word);
+}
 
 /** What an address says about a search and how its results are shown. */
 export interface SearchState {
@@ -102,7 +108,7 @@ export function readSearch(location: {
     ?.split(",")
     .filter((each) => each !== "");
   const widths = widthsOf(textOf(raw, "widths"));
-  const spacing = textOf(raw, "spacing");
+  const spacing = spacingOf(textOf(raw, "spacing"));
   const groupBy = textOf(raw, "group");
   const view = textOf(raw, "show");
   const open = textOf(raw, "open");
@@ -112,7 +118,7 @@ export function readSearch(location: {
     ...(saved === undefined ? {} : { saved }),
     ...(columns === undefined || columns.length === 0 ? {} : { columns }),
     ...(widths === undefined ? {} : { widths }),
-    ...(spacing === "comfortable" || spacing === "compact" ? { spacing } : {}),
+    ...(spacing === undefined ? {} : { spacing }),
     ...(groupBy === undefined || groupBy === "" ? {} : { groupBy }),
     ...(view === undefined ? {} : { view }),
     ...(open === undefined || open === "" ? {} : { open }),

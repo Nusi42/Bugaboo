@@ -2,6 +2,7 @@ import { ApiError, dataOf, type Schema } from "@bugaboo/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import { listWord } from "../../shared/list-columns.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { known } from "../../shared/present.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
@@ -20,18 +21,24 @@ const BASE_FIELDS = ["id", "readable_id", "title", "status", "priority", "projec
  * here is a field of the organization, which an issue carries in `own_fields`.
  */
 const fieldOfWord: Readonly<Record<string, keyof FoundItem>> = {
-  type: "issue_type",
-  assignedTo: "assigned_to",
-  changed: "updated_at",
-  created: "created_at",
-  closed: "closed_at",
-  reportedBy: "reported_by",
-  labels: "labels",
-  project: "project",
+  [listWord.type]: "issue_type",
+  [listWord.assignedTo]: "assigned_to",
+  [listWord.changed]: "updated_at",
+  [listWord.created]: "created_at",
+  [listWord.closed]: "closed_at",
+  [listWord.reportedBy]: "reported_by",
+  [listWord.labels]: "labels",
+  [listWord.project]: "project",
 };
 
 /** The words whose values the row already has, and which add nothing to the fields asked for. */
-const inBase: ReadonlySet<string> = new Set(["id", "title", "status", "priority", "statusGroup"]);
+const inBase: ReadonlySet<string> = new Set([
+  listWord.id,
+  listWord.title,
+  listWord.status,
+  listWord.priority,
+  listWord.statusGroup,
+]);
 
 /** What a column of this search word asks of the server: nothing, one field, or the own fields. */
 function fieldFor(word: string): keyof FoundItem | undefined {

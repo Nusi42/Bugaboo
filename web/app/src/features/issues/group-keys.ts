@@ -1,6 +1,9 @@
-import type { Schema } from "@bugaboo/api-client";
+import { decimalParts, type Schema } from "@bugaboo/api-client";
 
+import { addDays } from "../../shared/format.ts";
+import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName } from "../../shared/person.ts";
+import type { OwnColumn } from "./own-columns.ts";
 
 /** A group of a search as the server sends it. */
 type FoundGroup = Schema<"SearchGroupBody">;
@@ -19,12 +22,37 @@ export interface GroupOfKey {
   readonly name: string | undefined;
 }
 
+/** The day the store counts days from. */
+const epoch = "1970-01-01";
+
+/**
+ * What a group of a field of whole numbers holds, as the value the field has on the issue page: a
+ * number, seconds, a flag, a day or a moment (the store counts a day as days and a moment as
+ * microseconds).
+ */
+function valueOfWhole(kind: Schema<"FieldType">, whole: number): unknown {
+  if (kind === "decimal") {
+    return whole / decimalParts;
+  }
+  if (kind === "yes-no") {
+    return whole !== 0;
+  }
+  if (kind === "date") {
+    return addDays(epoch, whole);
+  }
+  return kind === "date-time" ? new Date(whole / 1000).toISOString() : whole;
+}
+
 /**
  * The place and the name of a group: what tells it from the others, and what its header says where
  * the server gave it a name (`name`, found by the one resolution of names), a person as the viewer
  * sees them, or a tag or a label by its name.
  */
-function placed(group: FoundGroup, at: number): Pick<GroupOfKey, "id" | "name"> {
+function placed(
+  group: FoundGroup,
+  at: number,
+  column: OwnColumn | undefined,
+): Pick<GroupOfKey, "id" | "name"> {
   const { key } = group;
   if (key.type === "tag" || key.type === "label") {
     return { id: `${key.type}:${key.value.id}`, name: key.value.name ?? undefined };
@@ -39,7 +67,11 @@ function placed(group: FoundGroup, at: number): Pick<GroupOfKey, "id" | "name"> 
     return { id: "empty", name: undefined };
   }
   if (key.type === "whole") {
-    return { id: `whole:${String(key.value)}`, name: String(key.value) };
+    const name =
+      column === undefined
+        ? undefined
+        : ownValueText(column.kind, valueOfWhole(column.kind, key.value));
+    return { id: `whole:${String(key.value)}`, name: name ?? String(key.value) };
   }
   if (key.type === "text") {
     return { id: `text:${key.value}`, name: key.value };
@@ -51,10 +83,10 @@ function placed(group: FoundGroup, at: number): Pick<GroupOfKey, "id" | "name"> 
 }
 
 /** The group the server sends, the `at`-th of the field: its header, and the filter that selects its issues. */
-export function groupOfKey(group: FoundGroup, at: number): GroupOfKey {
+export function groupOfKey(group: FoundGroup, at: number, column?: OwnColumn): GroupOfKey {
   const { key } = group;
   return {
-    ...placed(group, at),
+    ...placed(group, at, column),
     statusGroup: key.type === "status-group" ? key.value : undefined,
     priority: key.type === "priority" ? key.value : undefined,
     filter: group.filter ?? undefined,

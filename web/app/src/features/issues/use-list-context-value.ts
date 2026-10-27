@@ -1,7 +1,7 @@
 import { useLayout } from "@bugaboo/ui";
 import type { SearchLanguage } from "@bugaboo/wasm-search";
 
-import { cellOf } from "../../shared/list-columns.ts";
+import { cellOf, phoneColumns } from "../../shared/list-columns.ts";
 import type { SearchState } from "../../shared/search-address.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import { useNow } from "../../shared/use-now.ts";
@@ -9,16 +9,6 @@ import type { IssueShow } from "./issue-show.ts";
 import type { ListContextValue } from "./list-context.ts";
 import { useOwnColumns } from "./own-columns.ts";
 import type { IssueSelection } from "./use-selection.ts";
-
-/** What a phone draws in each card (UX section 4.2): columns are not offered there. */
-const phoneColumns: readonly string[] = [
-  "status",
-  "id",
-  "priority",
-  "title",
-  "assignedTo",
-  "changed",
-];
 
 /** What the context of a list is made of. */
 export interface ContextInput {
@@ -41,7 +31,8 @@ export function useListContextValue(input: ContextInput): ListContextValue {
   const { view } = input;
   const own = useOwnColumns(
     input.language,
-    view.columns.some((word) => cellOf(word) === "value"),
+    view.columns.some((word) => cellOf(word) === "value") ||
+      (view.groupBy !== null && cellOf(view.groupBy) === "value"),
   );
   return {
     words: phone ? phoneColumns : view.columns,

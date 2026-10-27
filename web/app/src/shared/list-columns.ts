@@ -22,6 +22,27 @@ const wordOfCell = {
   changed: "changed",
 } as const satisfies Readonly<Record<Exclude<ListColumn, FixedCell>, SearchWord>>;
 
+/**
+ * The search words of the fields the list names besides those of its cells: the one place where
+ * the list spells a word of a field, typed by the generated words (ODR).
+ */
+export const listWord = {
+  id: "id",
+  title: "title",
+  description: "description",
+  statusGroup: "statusGroup",
+  assignedTo: "assignedTo",
+  reportedBy: "reportedBy",
+  created: "created",
+  changed: "changed",
+  closed: "closed",
+  labels: "labels",
+  project: "project",
+  type: "type",
+  status: "status",
+  priority: "priority",
+} as const satisfies Readonly<Record<string, SearchWord>>;
+
 /** The cell a column is drawn in: one the list has a cell for, or a plain value (an own field). */
 export type ColumnCell = Exclude<ListColumn, FixedCell> | "value";
 
@@ -93,6 +114,27 @@ export function moveColumn(
   return moved;
 }
 
+/** The words with no cell of their own that the list draws as text from the row (`valueOf`). */
+const wordsWithText: ReadonlySet<string> = new Set([
+  listWord.created,
+  listWord.closed,
+  listWord.reportedBy,
+  listWord.statusGroup,
+]);
+
+/** The words that cannot be grouped by: a long text and the Issue ID have no groups. */
+export const notGroupable: ReadonlySet<string> = new Set([listWord.description, listWord.id]);
+
+/** The columns a phone draws in each card (UX section 4.2): columns are not offered there. */
+export const phoneColumns: readonly string[] = [
+  listWord.status,
+  listWord.id,
+  listWord.priority,
+  listWord.title,
+  listWord.assignedTo,
+  listWord.changed,
+];
+
 /** The kinds of field whose value an issue carries only as an ID: no cell shows them yet (M5-F84). */
 const kindsOfIds: ReadonlySet<string> = new Set(["person", "project", "issue"]);
 
@@ -115,7 +157,11 @@ export function isDrawnColumn(word: string, field?: ColumnField): boolean {
   if (cellOf(word) !== "value") {
     return true;
   }
-  if (field === undefined) {
+  if (wordsWithText.has(word)) {
+    return true;
+  }
+  // A long text has no value a cell can show.
+  if (field === undefined || word === listWord.description) {
     return false;
   }
   return !kindsOfIds.has(field.kind) && !(field.kind === "choice" && field.choices.length === 0);

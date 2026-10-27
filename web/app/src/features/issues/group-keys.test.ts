@@ -77,3 +77,21 @@ describe("the places of the groups", () => {
     expect(new Set(keys.map((key, at) => groupOfKey(key, at).id)).size).toBe(keys.length);
   });
 });
+
+const whole = (value: number): Group => ({
+  key: { type: "whole", value },
+  issues: 1,
+  filter: null,
+  name: null,
+});
+const column = (kind: Schema<"FieldType">) => ({ id: "f1", kind, choices: {} });
+
+describe("a group of whole numbers", () => {
+  it("is worded as the issue page words the field", () => {
+    expect(groupOfKey(whole(1), 0, column("yes-no")).name).toBe("Yes");
+    expect(groupOfKey(whole(5400), 0, column("duration")).name).toBe("1h 30m");
+    expect(groupOfKey(whole(1_500_000), 0, column("decimal")).name).toMatch(/1[.,]5/u);
+    expect(groupOfKey(whole(20_000), 0, column("date")).name).not.toBe("20000");
+    expect(groupOfKey(whole(7), 0).name).toBe("7");
+  });
+});

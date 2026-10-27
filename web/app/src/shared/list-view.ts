@@ -9,8 +9,8 @@
 
 import type { Schema } from "@bugaboo/api-client";
 
-import { projectColumns, searchColumns } from "./list-columns.ts";
-import type { SearchSpacing, SearchState } from "./search-address.ts";
+import { listWord, projectColumns, searchColumns } from "./list-columns.ts";
+import { spacingOf, type SearchSpacing, type SearchState } from "./search-address.ts";
 
 /**
  * What `group` says in the address when the person chose no grouping: the built-in list is grouped,
@@ -19,7 +19,7 @@ import type { SearchSpacing, SearchState } from "./search-address.ts";
 export const noGrouping = "-";
 
 /** The word of the field that the built-in lists group by: the status group (UX section 4.2). */
-const builtInGroup = "statusGroup";
+const builtInGroup = listWord.statusGroup;
 
 /** How a list shows its results. */
 export interface ListView {
@@ -77,9 +77,10 @@ function sameWidths(
  * an address stays short and goes back to the defaults when a person does.
  */
 export function withView(state: SearchState, view: ListView, defaults: ListView): SearchState {
-  const { text, project, saved, view: kind } = state;
+  const { text, project, saved, view: kind, open } = state;
   return {
     text,
+    ...(open === undefined ? {} : { open }),
     ...(project === undefined ? {} : { project }),
     ...(saved === undefined ? {} : { saved }),
     ...(kind === undefined ? {} : { view: kind }),
@@ -120,7 +121,7 @@ export function viewFromPresentation(
         ? defaults.columns
         : presentation.columns.map((column) => column.field),
     widths,
-    spacing: presentation.spacing === "compact" ? "compact" : "comfortable",
+    spacing: spacingOf(presentation.spacing) ?? "comfortable",
     groupBy: presentation.group_by,
   };
 }

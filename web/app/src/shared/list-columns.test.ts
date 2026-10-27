@@ -68,3 +68,12 @@ describe("the columns that can be drawn", () => {
     expect(isDrawnColumn("estimate", field("duration"))).toBe(true);
   });
 });
+
+describe("the columns the list draws as text of the row", () => {
+  it("draws Reported by, the days of making and closing and the status group, and never the long description", () => {
+    for (const word of ["reportedBy", "created", "closed", "statusGroup"]) {
+      expect(isDrawnColumn(word, field("person"))).toBe(true);
+    }
+    expect(isDrawnColumn("description", field("text"))).toBe(false);
+  });
+});

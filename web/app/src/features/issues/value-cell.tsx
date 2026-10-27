@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { chipLook } from "../../shared/chip-look.ts";
 import { formatDateTime } from "../../shared/format.ts";
+import { listWord } from "../../shared/list-columns.ts";
 import { listText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 import type { FoundLine } from "./found-issues.ts";
@@ -20,13 +21,13 @@ function momentText(moment: string | undefined): string | undefined {
  */
 export function valueOf(word: string, line: FoundLine, own: OwnColumns): string | undefined {
   switch (word) {
-    case "created":
+    case listWord.created:
       return momentText(line.createdAt);
-    case "closed":
+    case listWord.closed:
       return momentText(line.closedAt);
-    case "reportedBy":
+    case listWord.reportedBy:
       return line.reportedBy === undefined ? undefined : personName(line.reportedBy);
-    case "statusGroup":
+    case listWord.statusGroup:
       return t(`status-group.${line.group}`);
     default: {
       const column = own[word];

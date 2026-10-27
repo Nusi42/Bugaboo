@@ -16,7 +16,7 @@ export interface GroupedListProps {
 
 /** The groups of the search in the server's order, each with its count and its own rows (UX section 4.2). */
 export function GroupedList({ spacing }: GroupedListProps) {
-  const { search, groupBy } = useListContext();
+  const { search, groupBy, own } = useListContext();
   const groups = useFoundGroups(search, groupBy);
   if (groups.isError) {
     return <Alert tone={alertTone.danger}>{messageOf(groups.error)}</Alert>;
@@ -28,7 +28,7 @@ export function GroupedList({ spacing }: GroupedListProps) {
     <>
       <ListScroll spacing={spacing}>
         {(groups.data?.groups ?? []).map((each, at) => {
-          const group = groupOfKey(each, at);
+          const group = groupOfKey(each, at, groupBy === null ? undefined : own[groupBy]);
           return <GroupSection key={group.id} group={group} count={each.issues} />;
         })}
       </ListScroll>

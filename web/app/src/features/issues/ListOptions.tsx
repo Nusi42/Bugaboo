@@ -1,21 +1,16 @@
 import { t } from "@bugaboo/messages";
 import { Button, ChoiceGroup, SelectField, part, partOf, useLayout } from "@bugaboo/ui";
 
+import { notGroupable } from "../../shared/list-columns.ts";
 import { noGrouping, type ListView } from "../../shared/list-view.ts";
 import type { SearchFieldsAnswer } from "../search/index.ts";
-import type { SearchSpacing } from "../../shared/search-address.ts";
-
-/** The two spacings, by the words the address and the saved search use. */
-const spacings: readonly SearchSpacing[] = ["comfortable", "compact"];
+import { searchSpacings } from "../../shared/search-address.ts";
 
 /** A field the list can be grouped by. */
 export interface GroupChoice {
   readonly word: string;
   readonly name: string;
 }
-
-/** The words that cannot be grouped by: a long text and the Issue ID have no groups. */
-const notGroupable: ReadonlySet<string> = new Set(["description", "id"]);
 
 export interface ListOptionsProps {
   readonly view: ListView;
@@ -54,7 +49,10 @@ export function ListOptions({ view, fields, customizing, onView, onCustomize }: 
       />
       <ChoiceGroup
         legend={t("appearance.spacing.legend")}
-        choices={spacings.map((word) => ({ value: word, label: t(`appearance.spacing.${word}`) }))}
+        choices={searchSpacings.map((word) => ({
+          value: word,
+          label: t(`appearance.spacing.${word}`),
+        }))}
         value={view.spacing}
         onChange={(spacing) => {
           onView({ ...view, spacing });
