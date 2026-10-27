@@ -36,6 +36,12 @@ pub(crate) const ALL_OUTPUT: &str = generated_folder!("all.ts");
 /// names on its own (for instance the ones the server sends by key, or an enum makes).
 pub(crate) const SHARED: &str = "shared";
 
+/// The keys that no browser code names, because the search module of WebAssembly makes them, but
+/// that only one feature ever shows: they go to the part of that feature and not to `shared`, so
+/// the first page does not load them (PERF-04). A key here that a word of an enum makes stays
+/// `shared`, as every such key does.
+const FEATURE_ONLY_KEYS: [(&str, &str); 1] = [("search.mistake.", "search")];
+
 /// How an area names its part when it imports it (the package export of `@bugaboo/messages`).
 pub(crate) const PART_IMPORT: &str = "@bugaboo/messages/parts/";
 
@@ -322,8 +328,14 @@ pub(crate) fn parts_of<'a>(
     }
     keys.into_iter()
         .map(|key| {
+            let only = FEATURE_ONLY_KEYS
+                .iter()
+                .find(|(prefix, _)| key.starts_with(prefix))
+                .map(|(_, feature)| *feature);
             let part = match users.get(key) {
-                Some(Users::Feature(feature)) if !made.contains(&key) => feature,
+                _ if made.contains(&key) => SHARED,
+                Some(Users::Feature(feature)) => feature,
+                None => only.unwrap_or(SHARED),
                 _ => SHARED,
             };
             (key, part)
