@@ -10,14 +10,17 @@
 use crate::id::ProjectId;
 use crate::offer::can_meet;
 
+/// A name with the spaces in it squeezed to one, and none at the ends.
+#[must_use]
+pub fn squeezed(name: &str) -> String {
+    name.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 /// The name by which names are told apart: lower case, with the spaces in it squeezed. Two names
 /// with the same key are the same name.
 #[must_use]
 pub fn name_key(name: &str) -> String {
-    name.split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
-        .to_lowercase()
+    squeezed(name).to_lowercase()
 }
 
 /// Whether two names are the same name.

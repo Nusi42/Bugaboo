@@ -170,13 +170,14 @@ test("thm_06 with more contrast the parts draw their lines and text with the str
   await page.goto(paths.roles);
   const field = partOn(page, part.fieldInput).first();
   const hint = partOn(page, part.muted).first();
-  const usual = await resolved(page, "border-top-color", "var(--border)");
+  const usual = await resolved(page, "border-top-color", "var(--border-control)");
   await page.emulateMedia({ contrast: "more" });
   await inEveryLook(page, async () => {
-    await expectCss(page, field, "border-top-color", "var(--border)");
+    // The edge of a box that is typed in is the edge of a control (3:1), stronger still here.
+    await expectCss(page, field, "border-top-color", "var(--border-control)");
     await expectCss(page, hint, "color", "var(--fg-muted)");
   });
-  expect(await resolved(page, "border-top-color", "var(--border)")).not.toBe(usual);
+  expect(await resolved(page, "border-top-color", "var(--border-control)")).not.toBe(usual);
 });
 
 test("thm_20 under forced colors the ring, the chosen choice and the thumb use the device colors", async ({

@@ -106,6 +106,8 @@ pub enum SearchIn {
     Names,
     /// The names and the e-mail addresses.
     NamesAndAddresses,
+    /// The start of the names: those that begin with the whole text, without regard to capitals.
+    NameStarts,
 }
 
 /// Where a page of people ends: the name of the last one (as it is written) and their ID.

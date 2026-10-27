@@ -1,6 +1,7 @@
 import type { EditTarget } from "@bugaboo/api-client";
 
 import { queryClient } from "./query-client.ts";
+import { searchKeys } from "./search-keys.ts";
 
 /**
  * The keys of what the screens keep in the query cache. They are defined once, here, and nowhere
@@ -77,6 +78,7 @@ export const queryKeys = {
     all: ["relation-kinds"],
     list: () => ["relation-kinds", "list"],
   },
+  search: searchKeys,
   tags: {
     all: ["tags"],
     list: () => ["tags", "list"],

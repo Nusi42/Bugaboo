@@ -118,9 +118,9 @@ use crate::saved_searches::{
     stop_sharing_search,
 };
 use crate::search::{
-    ReadableFieldsQuery, SearchCount, SearchCountQuery, SearchFields, SearchGroups,
-    SearchGroupsQuery, SearchPage, SearchQuery, SearcherQuery, readable_fields, search,
-    search_count, search_groups, searcher,
+    NameChoices, NameChoicesQuery, ReadableFieldsQuery, SearchCount, SearchCountQuery,
+    SearchFields, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery, SearcherQuery,
+    name_choices, readable_fields, search, search_count, search_groups, searcher,
 };
 use crate::settings::{
     ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
@@ -448,6 +448,8 @@ use_cases! {
     searcher(SearcherQuery) -> bb_core::id::UserId;
     /// The fields the person may search by, where a search looks.
     readable_fields(ReadableFieldsQuery) -> Authorized<SearchFields>;
+    /// The names of people or groups the person may use in a search, starting with some words.
+    name_choices(NameChoicesQuery) -> Authorized<NameChoices>;
     /// Lists the people an issue of a project can be assigned to.
     assignable_people(AssignablePeopleQuery) -> Authorized<AssignablePeoplePage>;
     /// Creates an issue.

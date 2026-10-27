@@ -240,7 +240,7 @@ fn items(
             .collect(),
         Situation::SortAfterKey => vec![sign(",")],
         Situation::Direction { typed: words } => next_direction_words(&words),
-        Situation::Count | Situation::Text => Vec::new(),
+        Situation::Count | Situation::Duration | Situation::Text => Vec::new(),
     };
     offered
         .into_iter()
@@ -282,7 +282,7 @@ fn values(field: Option<&Field>, typed: &str) -> Vec<Suggestion> {
         FieldKind::Project => vec![ask(AskKind::Projects, typed)],
         FieldKind::Issue => vec![ask(AskKind::Issues, typed)],
         FieldKind::Date => TimeWord::ALL.map(|word| value(word.text())).into(),
-        FieldKind::Text | FieldKind::Number => Vec::new(),
+        FieldKind::Text | FieldKind::Number | FieldKind::Duration => Vec::new(),
     }
 }
 

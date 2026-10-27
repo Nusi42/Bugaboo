@@ -91,10 +91,11 @@
       <tr><td><code>/notifications</code></td><td>Notifications</td></tr>
       <tr><td><code>/i/WEB-142</code> or <code>/i/WEB-K7Q2X</code></td><td>Issue, by counting or random ID (keeps working if the issue moves or the project switches between counting and random IDs)</td></tr>
       <tr><td><code>/p/WEB</code></td><td>Project overview</td></tr>
-      <tr><td><code>/p/WEB/issues?show=board&amp;s=…</code></td><td>Project issues, with how they're shown and the search</td></tr>
+      <tr><td><code>/p/WEB/issues?show=board&amp;s=…</code></td><td>Project issues, with how they're shown and the search. The search is in <code>s</code> (its canonical text); how it is shown is in <code>show</code> (the kind of view), <code>cols</code> (the columns, e.g. <code>status,title</code>), <code>widths</code> (<code>title:300</code>), <code>spacing</code> (<code>comfortable</code> or <code>compact</code>) and <code>group</code> (the field to group by). Back and forward work, and a shared address opens the same search for anyone who may see it (M5).</td></tr>
       <tr><td><code>/i/WEB-142/map</code></td><td>Relation map of an issue</td></tr>
       <tr><td><code>/p/WEB/docs/specs/login-flow</code></td><td>Document page</td></tr>
-      <tr><td><code>/s/&lt;id&gt;</code></td><td>Saved search</td></tr>
+      <tr><td><code>/search?s=…</code></td><td>Search across every project the person sees (M5)</td></tr>
+      <tr><td><code>/s/&lt;id&gt;</code></td><td>Saved search; a change that is not saved is kept in <code>?s=…</code> (M5)</td></tr>
       <tr><td><code>/time</code></td><td>Timesheet</td></tr>
       <tr><td><code>/settings/…</code> · <code>/p/WEB/settings/…</code> · <code>/me/…</code></td><td>Organization, project and my settings</td></tr>
     </tbody></table></div>

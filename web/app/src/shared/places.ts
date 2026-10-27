@@ -23,6 +23,21 @@ export const places: readonly Place[] = [
     parent: paths.home,
     listed: false,
   },
+  {
+    // The search over every project, and a saved search: reached from the menu's *Saved searches*.
+    path: paths.search,
+    name: "search.page.title",
+    icon: iconName.search,
+    parent: paths.home,
+    listed: false,
+  },
+  {
+    path: paths.savedSearch,
+    name: "search.saved-heading",
+    icon: iconName.search,
+    parent: paths.search,
+    listed: false,
+  },
 ];
 
 /** The screen at an address, if there is one. */

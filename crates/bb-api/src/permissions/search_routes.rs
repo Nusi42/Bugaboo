@@ -20,4 +20,5 @@ pub(super) const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route("listSearchFields", Declared::SignedIn, Answer::NeverStored),
+    route("listSearchNames", Declared::SignedIn, Answer::NeverStored),
 ];

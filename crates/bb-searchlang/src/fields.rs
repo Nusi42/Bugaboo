@@ -38,6 +38,8 @@ pub enum FieldKind {
     Text,
     /// A number.
     Number,
+    /// A length of time, written in hours and minutes.
+    Duration,
     /// A day or a moment.
     Date,
     /// One of a list, or several (a status, a priority, a tag).
@@ -97,7 +99,7 @@ every!(
     MemberOf,
     Within
 );
-every!(FieldKind: Text, Number, Date, Choice, Person, Project, Issue);
+every!(FieldKind: Text, Number, Duration, Date, Choice, Person, Project, Issue);
 
 impl Operator {
     /// How the operator is written, the way a person is offered it.
@@ -159,7 +161,7 @@ impl FieldKind {
         };
         match self {
             Self::Text => &[Is, IsNot, Contains, IsEmpty, IsNotEmpty],
-            Self::Number => &[
+            Self::Number | Self::Duration => &[
                 Is,
                 IsNot,
                 Less,

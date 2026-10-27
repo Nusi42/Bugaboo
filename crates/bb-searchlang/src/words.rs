@@ -2,6 +2,8 @@
 //! and the suggestions offer them from this one table (ADR-0005, amendment M5): a word that the
 //! language gains is added here and nowhere else.
 
+use bb_core::time::MINUTES_PER_HOUR;
+
 use crate::syntax::{Direction, TimeWord, Unit};
 
 /// Makes the enum of the words, with the spelling of each (lower case, as the printer writes it).
@@ -60,6 +62,10 @@ keywords! {
     Weeks => "weeks",
     Month => "month",
     Months => "months",
+    Minute => "minute",
+    Minutes => "minutes",
+    Hour => "hour",
+    Hours => "hours",
     First => "first",
     Highest => "highest",
     Lowest => "lowest",
@@ -221,6 +227,61 @@ pub(crate) fn phrase_text(phrase: &[Part]) -> String {
 #[must_use]
 pub(crate) fn starts_phrase(phrase: &[Part], words: &[&str]) -> bool {
     words.len() <= phrase.len() && phrase.iter().zip(words).all(|(part, word)| part.is(word))
+}
+
+/// A unit of a length of time (`1 hour 30 minutes`), carrying the minutes it stands for, so no
+/// other place writes the number.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TimeUnit {
+    /// A minute.
+    Minute,
+    /// An hour.
+    Hour,
+}
+
+impl TimeUnit {
+    /// The units, the longest first (the order a length of time is written in).
+    pub(crate) const LONGEST_FIRST: [Self; 2] = [Self::Hour, Self::Minute];
+
+    /// How many minutes one of the unit is.
+    #[must_use]
+    pub(crate) const fn minutes(self) -> u32 {
+        match self {
+            Self::Minute => 1,
+            Self::Hour => MINUTES_PER_HOUR,
+        }
+    }
+
+    /// The keyword for the unit, in the form that fits the count (`1 hour`, `2 hours`).
+    #[must_use]
+    pub(crate) const fn word(self, count: u32) -> Keyword {
+        match (self, count == 1) {
+            (Self::Hour, true) => Keyword::Hour,
+            (Self::Hour, false) => Keyword::Hours,
+            (Self::Minute, true) => Keyword::Minute,
+            (Self::Minute, false) => Keyword::Minutes,
+        }
+    }
+
+    /// The unit that a keyword names, singular or plural.
+    #[must_use]
+    pub(crate) const fn of(keyword: Keyword) -> Option<Self> {
+        match keyword {
+            Keyword::Minute | Keyword::Minutes => Some(Self::Minute),
+            Keyword::Hour | Keyword::Hours => Some(Self::Hour),
+            _ => None,
+        }
+    }
+}
+
+/// The words of the units of a length of time for the placeholders of a message about it.
+#[must_use]
+pub(crate) const fn duration_words() -> [(&'static str, &'static str); 3] {
+    [
+        ("hour", Keyword::Hour.text()),
+        ("hours", Keyword::Hours.text()),
+        ("minutes", Keyword::Minutes.text()),
+    ]
 }
 
 #[cfg(test)]

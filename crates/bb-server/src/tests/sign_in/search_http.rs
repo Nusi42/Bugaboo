@@ -6,10 +6,11 @@
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::json;
+use serde_json::{Value, json};
 
+use super::fields_http::create_field;
 use super::http::{Browser, called, rig_and_app};
-use super::issues_site::{PROJECTS, Site, ok, text_in};
+use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_in, ok, text_in};
 use super::perf_queries::{Counter, assert_as_many_statements, five_and_forty};
 
 /// More than any search may run, however long the page or the list of projects (a ceiling that a
@@ -364,6 +365,121 @@ async fn sec_14_a_key_for_one_project_searches_that_project_only() -> TestResult
         // the answer.
         assert_eq!(acme.status, StatusCode::NOT_FOUND, "{}", acme.body);
         assert!(!acme.body.to_string().contains("In ACME"), "{}", acme.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_05_a_duration_is_searched_in_hours_and_minutes_over_http() -> TestResult {
+    each_database("search_http_duration", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let effort = id_in(
+            &create_field(
+                &mut ada,
+                json!({"name": "Effort", "kind": "duration", "applies_to": "issues"}),
+            )
+            .await?,
+        )?;
+        let issue = key_in(ok(&site.create(&mut ada, "Slow").await?)?)?;
+        let path = format!("{ISSUES}/{issue}");
+        let version = ok(&ada.send("GET", &path, None).await?)?["issue"]["version"].clone();
+        // 5400 seconds are 1 hour 30 minutes.
+        ok(&ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": version, "fields": { effort: 5400 }})),
+            )
+            .await?)?;
+        for (text, found) in [
+            ("effort is 1 hour 30 minutes", 1),
+            ("effort is 90 minutes", 1),
+            ("effort >= 1 hour 30 minutes", 1),
+            ("effort > 1 hour 30 minutes", 0),
+            ("effort < 90 minutes", 0),
+            ("effort < 2 hours", 1),
+        ] {
+            let query = text
+                .replace(' ', "%20")
+                .replace('>', "%3E")
+                .replace('<', "%3C");
+            let count = ada
+                .send(
+                    "GET",
+                    &format!("/api/v1/search/issues/count?q={query}"),
+                    None,
+                )
+                .await?;
+            assert_eq!(count.status, StatusCode::OK, "{text}");
+            assert_eq!(count.body["issues"], found, "{text}");
+        }
+        // A whole number is needed before the unit, and the mistake says so.
+        let wrong = ada
+            .send(
+                "GET",
+                "/api/v1/search/issues/count?q=effort%20is%201.5%20hours",
+                None,
+            )
+            .await?;
+        assert_eq!(wrong.code(), "search.invalid");
+        assert_eq!(
+            wrong.body["mistakes"][0]["key"],
+            "search.mistake.expected-duration"
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_17_suggestions_have_an_allowance_apart_from_searches() -> TestResult {
+    each_database("search_http_suggestion_limit", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        for number in 0..bb_api::limits::DEFAULT_SEARCHES_PER_MINUTE {
+            let done = ada.send("GET", "/api/v1/search/issues/count", None).await?;
+            assert_eq!(done.status, StatusCode::OK, "search {number}");
+        }
+        // The searches are used up; the names a suggestion offers are still answered.
+        let names = ada
+            .send(
+                "GET",
+                "/api/v1/search/names?kind=people&starting_with=a",
+                None,
+            )
+            .await?;
+        assert_eq!(names.status, StatusCode::OK);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_05_a_readable_field_says_how_it_is_called() -> TestResult {
+    each_database("search_http_field_names", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        create_field(
+            &mut ada,
+            json!({"name": "Time to fix", "kind": "duration", "applies_to": "issues"}),
+        )
+        .await?;
+        let reply = ada.send("GET", "/api/v1/search/fields", None).await?;
+        assert_eq!(reply.status, StatusCode::OK);
+        let fields = reply.body["fields"].as_array().ok_or("fields")?;
+        let called = |word: &str| fields.iter().find(|field| field["word"] == word);
+        // A field every issue has is called by a message, an own field by the name it was given.
+        let built_in = called("assignedTo").ok_or("assignedTo")?;
+        assert_eq!(built_in["message_key"], "issue-field.assigned-to");
+        // The members are always there: a null is present, not left out.
+        assert_eq!(built_in.get("name"), Some(&Value::Null));
+        let status_group = called("statusGroup").ok_or("statusGroup")?;
+        assert_eq!(status_group["message_key"], "issue-field.status-group");
+        let own = called("timeToFix").ok_or("timeToFix")?;
+        assert_eq!(own["name"], "Time to fix");
+        assert_eq!(own.get("message_key"), Some(&Value::Null));
         Ok(())
     })
     .await

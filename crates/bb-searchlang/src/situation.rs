@@ -25,6 +25,8 @@ pub(crate) enum Situation {
     ListNext,
     /// A whole number of at least one.
     Count,
+    /// A whole number before `hours` or `minutes`.
+    Duration,
     /// `days`, `weeks` or `months`.
     Unit,
     /// `step` or `steps`.

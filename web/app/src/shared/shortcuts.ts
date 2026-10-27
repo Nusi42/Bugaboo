@@ -54,6 +54,13 @@ export const shortcutDefinitions = [
     button: "issues.new",
   },
   {
+    id: "focus-search-bar",
+    keys: ["/"],
+    message: "shortcut.focus-search-bar",
+    where: "everywhere",
+    button: "search.bar.filters",
+  },
+  {
     id: "list-next",
     keys: ["j"],
     message: "shortcut.list-next",

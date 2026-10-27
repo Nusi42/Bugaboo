@@ -2,9 +2,10 @@
 
 use bb_app::auth::{Account, AccountStore, PeoplePosition, SearchIn};
 use bb_core::id::UserId;
+use bb_core::names::squeezed;
 use bb_core::person::Person;
 use jiff::Timestamp;
-use sea_query::{BinOper, Cond, Expr, ExprTrait as _, Func, Order, Query};
+use sea_query::{Cond, Expr, ExprTrait as _, Func, Order, Query};
 
 use crate::db::{StoredId, Transaction, to_micros};
 use crate::error::StoreError;
@@ -30,16 +31,6 @@ pub(crate) fn read_person(row: &Row) -> Result<Person, StoreError> {
         email: row.get(PersonRow::Email)?,
         created_at: row.time(PersonRow::CreatedAt)?,
     })
-}
-
-/// The words of a search without the characters that `LIKE` takes for wildcards, so that a search
-/// for `50%` finds names with `50` in them and never every name.
-fn wildcards_removed(words: &str) -> String {
-    words
-        .trim()
-        .chars()
-        .filter(|character| !matches!(character, '%' | '_' | '\\'))
-        .collect()
 }
 
 impl AuthStorage {
@@ -116,20 +107,28 @@ impl AccountStore for AuthStorage {
             .order_by_expr(name().into(), Order::Asc)
             .order_by(PersonRow::Id, Order::Asc)
             .limit(limit);
-        // Every word of the search is held by the name (or, if asked for, by the address).
-        let words = search.map(wildcards_removed).unwrap_or_default();
-        for word in words.split_whitespace() {
-            let pattern = format!("%{word}%");
-            let mut any = Cond::any().add(
-                Expr::expr(name()).binary(BinOper::Like, Func::lower(Expr::val(pattern.clone()))),
-            );
-            if look_at == SearchIn::NamesAndAddresses {
-                any = any.add(
-                    Expr::expr(Func::lower(Expr::col(PersonRow::Email)))
-                        .binary(BinOper::Like, Func::lower(Expr::val(pattern))),
-                );
+        if look_at == SearchIn::NameStarts {
+            // The start as typed, its spaces squeezed; the database folds the capitals.
+            let start = squeezed(search.unwrap_or_default());
+            select.and_where(crate::like::starting_with_any_case(
+                Expr::col(PersonRow::DisplayName),
+                &start,
+            ));
+        } else {
+            // Every word of the search is held by the name (or, if asked for, by the address).
+            for word in search.unwrap_or_default().split_whitespace() {
+                let mut any = Cond::any().add(crate::like::containing_any_case(
+                    Expr::col(PersonRow::DisplayName),
+                    word,
+                ));
+                if look_at == SearchIn::NamesAndAddresses {
+                    any = any.add(crate::like::containing_any_case(
+                        Expr::col(PersonRow::Email),
+                        word,
+                    ));
+                }
+                select.cond_where(any);
             }
-            select.cond_where(any);
         }
         if let Some(position) = after {
             select.cond_where(after_last(

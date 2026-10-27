@@ -51,7 +51,8 @@ export const messages = {
   "fields.rule-pattern": "Pattern",
   "fields.rule-pattern-help":
     "The whole text has to match. For example, [A-Z]+-[0-9]+ matches CAB-12.",
-  "fields.rules-not-a-number": "One of the rules is not a number in the form this field uses.",
+  "fields.rules-not-a-number":
+    "One of the rules is not in the form this field uses: a number, a length of time or a day like 2026-10-25.",
   "fields.look": "Look",
   "fields.look-label": "How values are shown",
   "fields.look-preview": "The look in all four themes",
@@ -108,7 +109,6 @@ export const messages = {
   "fields.pick-take-out": "Take out",
   "fields.pick-take-out-name": "Take out {name}",
   "fields.pick-choose-name": "Choose {name}",
-  "fields.pick-issue-find": "Find the issue",
   "fields.pick-no-issue": "No issue has that ID.",
   "fields.chosen-count": "{count, plural, one {# chosen} other {# chosen}}",
 } as const;

@@ -8,6 +8,7 @@ An **issue** is anything that is being tracked: a bug, a task, an idea. Every is
 - [Issue types](issue-types.md): Bug, Task, Feature and Goal, and how an administrator changes them
 - [Sub-issues and relations](relations.md): parts of an issue, *blocks* and *duplicate of*, and the kinds of relation
 - [Changing many issues at once](change-many.md): tick issues, read what would change, apply, and undo
+- [Searching for issues](search.md): Simple and Advanced search, lengths of time, saved searches and sharing
 - [Comments, mentions, history and following](comments.md): writing to each other, naming people, reading what changed, and keeping track
 
 ## Who sees and changes what

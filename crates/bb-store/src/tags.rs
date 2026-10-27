@@ -12,7 +12,7 @@ use bb_core::own_fields::ChoiceColor;
 use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject};
 use bb_core::version::Version;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, LikeExpr, Order, Query, SelectStatement};
+use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, STATEMENT_ITEMS, StoredId, Transaction, to_micros};
@@ -159,21 +159,6 @@ fn read_issue_label(row: &Row) -> Result<IssueLabel, StoreError> {
 /// The key a label holds for its group: the group's ID, or nothing.
 fn group_key(group: Option<LabelGroupId>) -> String {
     group.map(|group| group.to_string()).unwrap_or_default()
-}
-
-/// `text` as the middle of a `LIKE` pattern, with the characters `LIKE` reads as its own written
-/// as themselves (the escape is `\`).
-fn contains_pattern(text: &str) -> String {
-    let mut pattern = String::with_capacity(text.len() + 2);
-    pattern.push('%');
-    for character in text.chars() {
-        if matches!(character, '%' | '_' | '\\') {
-            pattern.push('\\');
-        }
-        pattern.push(character);
-    }
-    pattern.push('%');
-    pattern
 }
 
 /// The IDs in order and once each, cut into chunks that one statement can bind
@@ -393,7 +378,7 @@ impl TagStore for AuthStorage {
             .cond_where(sight_condition(sight))
             .and_where(
                 Expr::col((TagRow::Table, TagRow::NameKey))
-                    .like(LikeExpr::new(contains_pattern(&name_key(part))).escape('\\')),
+                    .like(crate::like::containing(&name_key(part))),
             )
             .order_by((TagRow::Table, TagRow::NameKey), Order::Asc)
             .order_by((TagRow::Table, TagRow::Id), Order::Asc)

@@ -5,6 +5,9 @@ import { wholeNumberIn } from "../../shared/number.ts";
 import { formatNumber } from "../../shared/format.ts";
 import { durationText, ownValueText } from "../../shared/own-value-text.ts";
 import {
+  bound,
+  boundDay,
+  dayBound,
   durationSeconds,
   isDecimalText,
   decimalToMillionths,
@@ -80,5 +83,25 @@ describe("value-text digits", () => {
     // Beyond the exact whole numbers of a JavaScript number the millionths are none, not rounded.
     expect(decimalToMillionths("9223372036854.775807")).toBeUndefined();
     expect(isDecimalText(`1${"0".repeat(400)}`)).toBe(false);
+  });
+});
+
+describe("cf_03 the bounds of a range of days", () => {
+  const microsPerDay = 86_400_000_000;
+
+  it("keeps a Date in days, the same day for both ends", () => {
+    expect(dayBound("date", "2026-12-31", bound.lowest)).toBe(20_818);
+    expect(dayBound("date", "2026-12-31", bound.highest)).toBe(20_818);
+  });
+
+  it("lets the highest day of a Date and time stand for the whole day", () => {
+    const start = 20_818 * microsPerDay;
+    expect(dayBound("date-time", "2026-12-31", bound.lowest)).toBe(start);
+    expect(dayBound("date-time", "2026-12-31", bound.highest)).toBe(start + microsPerDay - 1);
+    expect(boundDay("date-time", start + microsPerDay - 1)).toBe("2026-12-31");
+  });
+
+  it("has no bound for text that is no day of the calendar", () => {
+    expect(dayBound("date", "2026-02-30", bound.lowest)).toBeUndefined();
   });
 });

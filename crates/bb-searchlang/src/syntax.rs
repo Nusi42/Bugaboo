@@ -10,9 +10,11 @@
 
 use serde::Serialize;
 
+#[cfg(feature = "round-trip-guard")]
 use serde_json::Value as Json;
 
 use crate::span::Span;
+use crate::words::Keyword;
 
 /// A whole search: the filters and the order of the results.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -207,6 +209,14 @@ pub enum Operand {
         /// Where it stands.
         span: Span,
     },
+    /// A length of time (`2 hours`, `1 hour 30 minutes`), in whole minutes: the units have one
+    /// fixed length, so the text means the same for everyone.
+    Duration {
+        /// The minutes.
+        minutes: u32,
+        /// Where it stands.
+        span: Span,
+    },
     /// A day.
     Date {
         /// The day.
@@ -234,6 +244,23 @@ pub enum Operand {
         /// Where it stands.
         span: Span,
     },
+}
+
+impl Operand {
+    /// The words of the value as a person reads them, without quotes: the one text that the
+    /// checker compares with the choices of a field, the printer writes and the store compares.
+    #[must_use]
+    pub fn spelling(&self) -> String {
+        match self {
+            Self::Text { text, .. } => text.clone(),
+            Self::Number { number, .. } => number.text(),
+            Self::Duration { minutes, .. } => crate::duration::duration_text(*minutes),
+            Self::Date { date, .. } => date.text(),
+            Self::Issue { id, .. } => id.text.clone(),
+            Self::Me { .. } => Keyword::Me.text().to_owned(),
+            Self::Time { word, .. } => word.text(),
+        }
+    }
 }
 
 /// A text in a filter that always asks for words (`contains`, `member of`).
@@ -359,6 +386,7 @@ pub enum Direction {
     ZToA,
 }
 
+#[cfg(feature = "round-trip-guard")]
 impl Search {
     /// Whether the two searches say the same, whatever the places of their words: the words, the
     /// order and the brackets decide, the bytes of the text they were read from do not. `==` also
@@ -372,6 +400,7 @@ impl Search {
     }
 }
 
+#[cfg(feature = "round-trip-guard")]
 /// The search as JSON with every place (a `Span`) taken out. A place is found by its shape, the
 /// members of a `Span`, so no type of the tree needs to say which of its members is one.
 fn without_places(search: &Search) -> Option<Json> {
