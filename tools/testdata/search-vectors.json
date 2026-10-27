@@ -3485,6 +3485,7 @@
             "key": "search.mistake.wrong-duration",
             "args": {
               "field": "timeSpent",
+              "hour": "hour",
               "hours": "hours",
               "minutes": "minutes"
             },
@@ -3504,8 +3505,12 @@
               "start": 12,
               "end": 15
             },
-            "key": "search.mistake.expected-count",
-            "args": {},
+            "key": "search.mistake.expected-duration",
+            "args": {
+              "hour": "hour",
+              "hours": "hours",
+              "minutes": "minutes"
+            },
             "suggestions": []
           }
         ]

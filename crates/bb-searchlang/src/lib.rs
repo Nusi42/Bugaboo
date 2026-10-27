@@ -37,7 +37,10 @@ mod words;
 
 pub use answer::{Answer, read};
 #[cfg(feature = "browser")]
-pub use browser::{Problem, print_from_json, readable_fields_from_json, search_from_json};
+pub use browser::{
+    Problem, duration_minutes_of, issue_id_of, operand_source_from_json, print_from_json,
+    readable_fields_from_json, search_from_json,
+};
 pub use checker::{CheckedSearch, check};
 pub use fields::{Field, FieldKind, IssueField, NO, Operator, ReadableFields, YES, own_field_word};
 pub use limits::{

@@ -127,18 +127,18 @@ fn joined(items: &[Expr], keyword: Keyword, needed: Level) -> String {
 
 fn test_text(test: &Test) -> String {
     match test {
-        Test::Is { value, .. } => format!("{} {}", Keyword::Is.text(), value_text(value)),
+        Test::Is { value, .. } => format!("{} {}", Keyword::Is.text(), operand_source(value)),
         Test::IsNot { value, .. } => format!(
             "{} {} {}",
             Keyword::Is.text(),
             Keyword::Not.text(),
-            value_text(value)
+            operand_source(value)
         ),
         Test::Compare {
             operator, value, ..
-        } => format!("{} {}", operator.sign(), value_text(value)),
+        } => format!("{} {}", operator.sign(), operand_source(value)),
         Test::In { values, .. } => {
-            let values: Vec<String> = values.iter().map(value_text).collect();
+            let values: Vec<String> = values.iter().map(operand_source).collect();
             format!("{} ({})", Keyword::In.text(), values.join(", "))
         }
         Test::Contains { text, .. } => format!("{} {}", Keyword::Contains.text(), text_of(text)),
@@ -173,7 +173,8 @@ fn text_of(text: &Text) -> String {
     quoted(&text.text)
 }
 
-fn value_text(value: &Operand) -> String {
+/// How a value stands in the text of a search, quoted where the language needs it.
+pub(crate) fn operand_source(value: &Operand) -> String {
     match value {
         Operand::Text { text, .. } => value_or_quoted(text),
         other => other.spelling(),

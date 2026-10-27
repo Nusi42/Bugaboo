@@ -643,3 +643,25 @@ fn qry_02_a_length_of_time_is_no_choice_even_when_a_choice_is_spelled_like_it() 
     let search = parse_with("size is Large", &fields).expect("parses");
     assert!(check(search, &fields).is_ok());
 }
+
+#[test]
+fn qry_03_the_browser_gets_values_and_ids_written_by_the_language() {
+    use bb_searchlang::{duration_minutes_of, issue_id_of, operand_source_from_json};
+    let text = r#"{"type":"text","text":"Ada Lovelace","span":{"start":0,"end":0}}"#;
+    assert_eq!(
+        operand_source_from_json(text).as_deref(),
+        Ok("\"Ada Lovelace\"")
+    );
+    let plain = r#"{"type":"text","text":"Open","span":{"start":0,"end":0}}"#;
+    assert_eq!(operand_source_from_json(plain).as_deref(), Ok("Open"));
+    assert!(operand_source_from_json(r#"{"type":"nonsense"}"#).is_err());
+    // Only an Issue ID, and no other words, is one.
+    assert_eq!(issue_id_of(" web-1 ").as_deref(), Some("WEB-1"));
+    assert_eq!(issue_id_of("WEB-1 or status is Open"), None);
+    assert_eq!(issue_id_of("fix the printer"), None);
+    // Only a length of time and nothing else is one.
+    assert_eq!(duration_minutes_of("1 hour 30 minutes"), Some(90));
+    assert_eq!(duration_minutes_of("2 hours and more"), None);
+    assert_eq!(duration_minutes_of("1.5 hours"), None);
+    assert_eq!(duration_minutes_of(""), None);
+}

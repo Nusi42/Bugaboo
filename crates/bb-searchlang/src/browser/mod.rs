@@ -47,6 +47,31 @@ pub fn search_from_json(json: &str) -> Result<Search, Problem> {
     Ok(search)
 }
 
+/// How a value (an operand as JSON) stands in the text of a search: quoted where the language needs
+/// it. Simple search offers names and values this way, so the browser never writes the syntax.
+///
+/// # Errors
+/// The JSON is not a value, or breaks a rule of a tree.
+pub fn operand_source_from_json(json: &str) -> Result<String, Problem> {
+    let value = reader::read_operand(&parsed(json)?)?;
+    operand(&value)?;
+    Ok(crate::printer::operand_source(&value))
+}
+
+/// The Issue ID that these words are, in capitals; none when they are not exactly one.
+#[must_use]
+pub fn issue_id_of(words: &str) -> Option<String> {
+    issue_id(words.trim())
+}
+
+/// The minutes of a text that is a length of time and nothing else (`1 hour 30 minutes`).
+#[must_use]
+pub fn duration_minutes_of(text: &str) -> Option<u32> {
+    let tokens = crate::lexer::tokens(text);
+    let (minutes, used) = crate::duration::read_duration(&tokens, 0)?;
+    (used > 0 && used == tokens.len()).then_some(minutes)
+}
+
 /// The canonical text of a tree in JSON. The tree must keep the rules. With the feature
 /// `round-trip-guard` (the server, the tests) the language must also read the text back as the same
 /// tree, or the text would not be the search that Simple search shows; the module of the browser is
