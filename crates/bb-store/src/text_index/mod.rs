@@ -8,6 +8,7 @@ mod write;
 pub use port::{TextScope, TextSearch, text_issues, text_of_issue};
 #[cfg(any(test, feature = "testing"))]
 pub use write::index_text;
+pub(crate) use write::reindex_all;
 #[cfg(test)]
 pub(crate) use write::reindex_issues;
 

@@ -14,14 +14,14 @@ use bb_core::event::DomainEvent;
 use bb_core::id::IssueId;
 use bb_core::text_index::CONSUMER;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, Order, Query};
+use sea_query::{Expr, ExprTrait as _, Query};
 
-use super::write::{ISSUES_PER_STEP, reindex_issues};
+use super::write::{ISSUES_PER_STEP, issues_after, reindex_issues};
 use crate::auth::AuthStorage;
 use crate::db::{STATEMENT_ITEMS, StoredId as _, Transaction};
 use crate::error::StoreError;
 use crate::events::{consumer_name, outbox_move};
-use crate::schema::{AttachmentRow, CommentRow, IssueRow};
+use crate::schema::{AttachmentRow, CommentRow};
 
 /// The issues a batch of events touches: the ones named, and the issues of the comments and files
 /// named (two statements for the batch, not one for each).
@@ -100,34 +100,16 @@ impl TextIndexStore for AuthStorage {
 
     async fn rebuild_text_index(&self) -> Result<u64, StoreError> {
         let database = self.database();
-        let mut after: Option<Vec<u8>> = None;
+        let mut after: Option<[u8; 16]> = None;
         let mut read = 0_u64;
         loop {
             let mut transaction = database.begin().await?;
-            let mut select = Query::select();
-            select
-                .column(IssueRow::Id)
-                .from(IssueRow::Table)
-                .order_by(IssueRow::Id, Order::Asc)
-                .limit(u64::try_from(ISSUES_PER_STEP).unwrap_or(u64::MAX));
-            if let Some(after) = &after {
-                select.and_where(Expr::col(IssueRow::Id).gt(after.clone()));
-            }
-            let ids: Vec<Vec<u8>> = transaction
-                .fetch_all(&select)
-                .await?
-                .iter()
-                .map(|row| row.get(IssueRow::Id))
-                .collect::<Result<_, _>>()?;
-            let issues = ids
-                .iter()
-                .map(|bytes| IssueId::read(bytes.clone()))
-                .collect::<Result<Vec<_>, _>>()?;
+            let issues = issues_after(&mut transaction, after.as_ref()).await?;
             reindex_issues(&mut transaction, &issues).await?;
             transaction.commit().await?;
-            read = read.saturating_add(u64::try_from(ids.len()).unwrap_or(u64::MAX));
-            match ids.last() {
-                Some(last) if ids.len() == ISSUES_PER_STEP => after = Some(last.clone()),
+            read = read.saturating_add(u64::try_from(issues.len()).unwrap_or(u64::MAX));
+            match issues.last() {
+                Some(last) if issues.len() == ISSUES_PER_STEP => after = Some(last.to_stored()),
                 _ => return Ok(read),
             }
         }

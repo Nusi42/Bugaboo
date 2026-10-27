@@ -185,29 +185,56 @@ async fn iss_13_crash_does_not_find_crashes_but_crash_star_does() -> TestResult 
     .await
 }
 
+/// The one rule of the words (M5-F53): lower case and NFC, no letter changed into another, so
+/// *Müller* is found by *müller* however it is written, and not by *Muller* or *Mueller*.
 #[tokio::test]
-async fn iss_13_accents_and_case_do_not_matter() -> TestResult {
-    each_database("iss_13_accents", async |db| {
+async fn iss_13_case_and_the_way_a_letter_is_written_do_not_matter_but_the_letter_does()
+-> TestResult {
+    each_database("iss_13_letters", async |db| {
         let fixture = fixture(db).await?;
         let mut ids = ids();
         let world = world(&fixture.storage, &mut ids, 2).await;
         let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
         let mut tx = fixture.storage.database().begin().await?;
+        // The first title writes the umlaut as one character in some words and as two in others.
         index_text(
             &mut tx,
             issue[0],
             TextSource::Title,
             issue[0].into(),
-            "Die Größe, très ÜBER",
+            "Die Größe, très ÜBER, Mu\u{308}ller, Æther",
         )
         .await?;
         tx.commit().await?;
         let everywhere = TextScope::Everywhere;
-        for words in ["GROSSE", "grösse", "tres", "TRÈS", "uber", "Über*"] {
+        let found_by = [
+            "größe",
+            "GRÖ\u{1e9e}E",
+            "Gro\u{308}ße",
+            "TRÈS",
+            "Über*",
+            "u\u{308}ber",
+            "müller",
+            "MÜLLER",
+            "Mu\u{308}ller",
+            "mül*",
+            "æther",
+        ];
+        for words in found_by {
             assert_eq!(
                 found(&fixture.storage, words, everywhere).await?,
                 [hit(1)],
-                "{words}"
+                "{words:?}"
+            );
+        }
+        let not_found_by = [
+            "grosse", "GROSSE", "grösse", "tres", "uber", "muller", "mueller", "mu*", "aether",
+        ];
+        for words in not_found_by {
+            assert_eq!(
+                found(&fixture.storage, words, everywhere).await?,
+                Vec::<String>::new(),
+                "{words:?}"
             );
         }
         Ok(())

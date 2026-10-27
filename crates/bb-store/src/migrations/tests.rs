@@ -6,7 +6,7 @@ use crate::test_support::at;
 
 /// By the number of the migration, not by place in the list: the numbers of other migrations that
 /// are added later fall between these.
-const APPLIED: [(i64, &str); 24] = [
+const APPLIED: [(i64, &str); 25] = [
     (
         1,
         "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
@@ -102,6 +102,10 @@ const APPLIED: [(i64, &str); 24] = [
     (
         24,
         "3d545c9597c91786bb3d0fc0536f2508dcfb39e8de6c51cfaaa584e381255563",
+    ),
+    (
+        25,
+        "0a2dd1963bff6e37fd5910bd96dddc26019b21fb249af6c906525a905df1f0fa",
     ),
 ];
 

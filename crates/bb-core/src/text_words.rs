@@ -1,6 +1,16 @@
 //! The one rule that makes a text comparable for the full-text search (ADR-0016, amendment M5):
-//! lower case, accents removed, split into words. The index and the words of a search both go
-//! through [`prepare`] / [`search_words`], so a word is found exactly when it was indexed.
+//! lower case, Unicode NFC, split into words. No letter is changed into another: an accent stays
+//! (*müller* finds *Müller*, not *Muller* or *Mueller*), `ß` stays `ß`. The index and the words of
+//! a search both go through `prepare` / [`search_words`], so a word is found exactly when it
+//! was indexed.
+//!
+//! Only the words that go into the index are made NFC, and only with the feature `canonical-text`
+//! (the NFC tables are too large for the search module of the browser, which checks a search and
+//! never writes an index). Without it `prepare` and `prepare_joined` do not exist, so no code
+//! can store a word that is not NFC; [`search_words`] still splits and lowers a text the same way,
+//! and everything the checker asks of a word (how many letters, how many words) is counted so that
+//! the NFC step cannot change it, except that a letter typed twice, once as one character and once
+//! as two, is two words to the browser and one to the server, which checks again.
 
 /// A word of a search. A word typed with a `*` at its end matches every word that starts with it.
 /// Only [`search_words`] makes one, so every word is letters and digits of the one rule and
@@ -21,10 +31,16 @@ impl SearchWord {
     /// [`MIN_PREFIX_CHARS`] letters. The one place that decides it.
     #[must_use]
     pub fn matches_by_start(&self) -> bool {
-        self.prefix && self.text.chars().count() >= MIN_PREFIX_CHARS
+        self.prefix && self.letters() >= MIN_PREFIX_CHARS
     }
 
-    /// The prepared word (lower case, no accents).
+    /// How many letters the word has: its characters that are not combining marks, so a letter
+    /// written as two characters counts once, with or without the NFC step.
+    fn letters(&self) -> usize {
+        self.text.chars().filter(|c| !is_mark(*c)).count()
+    }
+
+    /// The prepared word (lower case, NFC).
     #[must_use]
     pub fn text(&self) -> &str {
         &self.text
@@ -37,10 +53,12 @@ impl SearchWord {
     }
 }
 
-/// The words of `text`, in order: lower case, accents removed, a word is a run of letters and
-/// digits, everything else (spaces, hyphens, dots, `@`, punctuation) separates words. A word that
+/// The words of `text`, in order: lower case, NFC (a letter written as two characters is the same
+/// word as the letter written as one), a word is a run of letters and digits with the combining
+/// marks that belong to them, everything else (spaces, hyphens, dots, `@`, punctuation) separates words. A word that
 /// comes twice comes twice: this is what the index keeps.
 #[must_use]
+#[cfg(any(test, feature = "canonical-text"))]
 pub fn prepare(text: &str) -> Vec<String> {
     words_of(text).into_iter().map(|word| word.text).collect()
 }
@@ -72,17 +90,17 @@ fn words_of(text: &str) -> Vec<SearchWord> {
     let mut current = String::new();
     let mut chars = text.chars().peekable();
     while let Some(c) = chars.next() {
-        if c.is_alphanumeric() {
-            for lower in c.to_lowercase() {
-                fold(lower, &mut current);
-            }
+        // A combining mark belongs to the letter before it (a letter written as two characters);
+        // one with no letter before it separates, like any other sign.
+        if c.is_alphanumeric() || (!current.is_empty() && is_mark(c)) {
+            current.extend(c.to_lowercase());
             if chars.peek().is_some() {
                 continue;
             }
         }
         if !current.is_empty() {
             words.push(SearchWord {
-                text: std::mem::take(&mut current),
+                text: canonical(std::mem::take(&mut current)),
                 prefix: c == '*',
             });
         }
@@ -90,45 +108,38 @@ fn words_of(text: &str) -> Vec<SearchWord> {
     words
 }
 
+/// The word in NFC where the feature is on.
+fn canonical(word: String) -> String {
+    #[cfg(any(test, feature = "canonical-text"))]
+    {
+        use unicode_normalization::UnicodeNormalization as _;
+        word.nfc().collect()
+    }
+    #[cfg(not(any(test, feature = "canonical-text")))]
+    word
+}
+
+/// Whether the character is a combining mark of the blocks that hold the accents written after
+/// their letter (U+0300 to U+036F and the extensions). The marks of other scripts (vowel signs of
+/// Indic scripts, Arabic marks) are alphabetic for Rust's `is_alphanumeric` and so belong to their
+/// word already. Ranges, not the table of general categories: that table would add 14 KB to the
+/// search module of the browser (PERF-04).
+fn is_mark(c: char) -> bool {
+    matches!(
+        c,
+        '\u{300}'..='\u{36f}'
+            | '\u{1ab0}'..='\u{1aff}'
+            | '\u{1dc0}'..='\u{1dff}'
+            | '\u{20d0}'..='\u{20ff}'
+            | '\u{fe20}'..='\u{fe2f}'
+    )
+}
+
 /// The text of a words list as it is stored in the index: the words, one space between.
+#[cfg(any(test, feature = "canonical-text"))]
 #[must_use]
 pub fn prepare_joined(text: &str) -> String {
     prepare(text).join(" ")
-}
-
-/// Appends `c` (already lower case) without its accent. `ß` is `ss`, `æ` is `ae`, `œ` is `oe`.
-fn fold(c: char, out: &mut String) {
-    let plain = match c {
-        'à' | 'á' | 'â' | 'ã' | 'ä' | 'å' | 'ā' | 'ă' | 'ą' => "a",
-        'ç' | 'ć' | 'ĉ' | 'ċ' | 'č' => "c",
-        'ď' | 'đ' => "d",
-        'è' | 'é' | 'ê' | 'ë' | 'ē' | 'ĕ' | 'ė' | 'ę' | 'ě' => "e",
-        'ĝ' | 'ğ' | 'ġ' | 'ģ' => "g",
-        'ĥ' | 'ħ' => "h",
-        'ì' | 'í' | 'î' | 'ï' | 'ĩ' | 'ī' | 'ĭ' | 'į' | 'ı' => "i",
-        'ĵ' => "j",
-        'ķ' => "k",
-        'ĺ' | 'ļ' | 'ľ' | 'ŀ' | 'ł' => "l",
-        'ñ' | 'ń' | 'ņ' | 'ň' => "n",
-        'ò' | 'ó' | 'ô' | 'õ' | 'ö' | 'ø' | 'ō' | 'ŏ' | 'ő' => "o",
-        'ŕ' | 'ŗ' | 'ř' => "r",
-        'ś' | 'ŝ' | 'ş' | 'š' => "s",
-        'ţ' | 'ť' | 'ŧ' => "t",
-        'ù' | 'ú' | 'û' | 'ü' | 'ũ' | 'ū' | 'ŭ' | 'ů' | 'ű' | 'ų' => "u",
-        'ŵ' => "w",
-        'ý' | 'ÿ' | 'ŷ' => "y",
-        'ź' | 'ż' | 'ž' => "z",
-        'ß' => "ss",
-        'æ' => "ae",
-        'œ' => "oe",
-        // A combining accent after a letter written as two characters.
-        '\u{0300}'..='\u{036f}' => "",
-        other => {
-            out.push(other);
-            return;
-        }
-    };
-    out.push_str(plain);
 }
 
 #[cfg(test)]
@@ -145,18 +156,27 @@ mod tests {
     }
 
     #[test]
-    fn german_umlauts_and_sharp_s_lose_their_accent() {
+    fn letters_are_not_changed_into_other_letters() {
         assert_eq!(
             words("Größe Äpfel über Straße"),
-            ["grosse", "apfel", "uber", "strasse"]
+            ["größe", "äpfel", "über", "straße"]
         );
-        assert_eq!(words("GROSSE"), words("Größe"));
+        assert_eq!(words("Æther Œuvre Ørsted"), ["æther", "œuvre", "ørsted"]);
+        assert_eq!(words("Café naïve résumé"), ["café", "naïve", "résumé"]);
+        assert_ne!(words("Müller"), words("Muller"));
+        assert_ne!(words("Müller"), words("Mueller"));
+        assert_ne!(words("Straße"), words("Strasse"));
+        assert_eq!(words("MÜLLER"), words("müller"));
     }
 
     #[test]
-    fn english_and_french_accents_are_removed() {
-        assert_eq!(words("Café naïve résumé"), ["cafe", "naive", "resume"]);
-        assert_eq!(words("Cafe\u{0301}"), ["cafe"]);
+    fn a_letter_written_as_two_characters_is_the_letter_written_as_one() {
+        assert_eq!(words("Mu\u{308}ller"), words("M\u{fc}ller"));
+        assert_eq!(words("Mu\u{308}ller"), ["m\u{fc}ller"]);
+        assert_eq!(words("A\u{308}pfel"), ["\u{e4}pfel"]);
+        assert_eq!(words("Cafe\u{301}"), ["café"]);
+        // A mark with no letter before it separates words.
+        assert_eq!(words("a \u{301}b"), ["a", "b"]);
     }
 
     #[test]
@@ -215,8 +235,25 @@ mod tests {
 
     #[test]
     fn the_same_rule_prepares_what_is_stored_and_what_is_searched() {
-        assert_eq!(prepare_joined("Größe, BB-1"), "grosse bb 1");
-        let searched: Vec<String> = search_words("GRÖSSE").into_iter().map(|w| w.text).collect();
+        assert_eq!(prepare_joined("Größe, BB-1"), "größe bb 1");
+        let searched: Vec<String> = search_words("GRÖ\u{1e9e}E")
+            .into_iter()
+            .map(|w| w.text)
+            .collect();
         assert_eq!(searched, words("Größe"));
+        let decomposed: Vec<String> = search_words("Gro\u{308}\u{df}e")
+            .into_iter()
+            .map(|w| w.text)
+            .collect();
+        assert_eq!(decomposed, words("Größe"));
+    }
+
+    #[test]
+    fn a_start_counts_letters_not_characters() {
+        let by_start = |text: &str| search_words(text)[0].matches_by_start();
+        assert!(!by_start("\u{e4}*"));
+        assert!(!by_start("a\u{308}*"));
+        assert!(by_start("\u{e4}b*"));
+        assert!(by_start("a\u{308}b*"));
     }
 }

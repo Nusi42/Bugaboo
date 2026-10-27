@@ -153,7 +153,7 @@ Each question has a proposal. Accepting all of them takes every proposal as writ
   - The nightly run is on this computer, at night, on SQLite and PostgreSQL, release build. Results are kept in `.work/` and a short summary in the repository.
   - The budgets of PERF-01 count on this computer until a reference server exists: issue page and saved search p95 under 100 ms, a complex search under 300 ms.
 - **M5-Q5: Words in full-text search.**
-  - No stemming: "crash" does not find "crashes" unless typed as `crash*`. The words are compared without accents and without case.
+  - No stemming: "crash" does not find "crashes" unless typed as `crash*`. The words are compared without case and in Unicode NFC; no letter is changed into another (*müller* finds *Müller*, not *Muller*).
   - This works the same for German and English text, and SQLite and PostgreSQL give the same results.
   - Results with words in the title come first, then the newest.
 - **M5-Q6: What full-text search covers.**

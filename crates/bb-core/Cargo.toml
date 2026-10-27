@@ -18,11 +18,19 @@ fake-ids = []
 # tested while no real setting is set on a project. Only `[dev-dependencies]` switch it on.
 test-settings = []
 
+# Unicode NFC for the words of the full-text search (`text_words::prepare`, what the index stores).
+# Its tables are about 50 KB of WebAssembly, so the search module of the browser (which only checks
+# a search and never prepares an index) leaves it off, and the code that needs the prepared words
+# (`bb-store`) switches it on. Without it `prepare` does not exist, so no code can write words
+# that are not NFC.
+canonical-text = ["dep:unicode-normalization"]
+
 [dependencies]
 bb-macros = { path = "../bb-macros" }
 jiff = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+unicode-normalization = { version = "0.1.25", default-features = false, optional = true }
 unicode-properties = { version = "0.1.4", default-features = false, features = [
   "general-category",
 ] }
@@ -30,6 +38,7 @@ utoipa = { workspace = true, optional = true }
 uuid = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
+unicode-normalization = { version = "0.1.25", default-features = false }
 # The zones that the wording tests name (the server turns the same data on in bb-app).
 jiff = { workspace = true, features = ["tzdb-bundle-always"] }
 proptest = { workspace = true }

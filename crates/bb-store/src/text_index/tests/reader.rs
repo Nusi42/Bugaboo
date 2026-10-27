@@ -178,7 +178,7 @@ async fn iss_13_a_change_while_the_reader_was_stopped_is_in_the_index_after_a_st
 
         // A start: the reader reads what it has not read.
         assert!(catch_up(storage, at(9)).await? > 0);
-        for words in ["absturz", "STEPS grosse", "crashes", "protokoll ubersicht*"] {
+        for words in ["absturz", "STEPS größe", "crashes", "protokoll übersicht*"] {
             assert_eq!(
                 found(storage, words, everywhere).await?,
                 [hit(1)],
@@ -634,7 +634,7 @@ async fn iss_13_a_word_with_a_combining_mark_is_split_alike_on_both_databases() 
         index_text(&mut tx, id, TextSource::Title, id.into(), "हिन्दी كِتاب done").await?;
         tx.commit().await?;
         let everywhere = TextScope::Everywhere;
-        for words in ["हिन्दी", "हि*", "كِتاب", "done"] {
+        for words in ["हिन्दी", "हिन*", "كِتاب", "done"] {
             assert_eq!(
                 found(storage, words, everywhere).await?,
                 [hit(1)],
