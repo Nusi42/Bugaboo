@@ -2,7 +2,7 @@
 //! (`%`, `_` and the escape itself) are written as themselves, so one place decides it for every
 //! read that looks for the start or the middle of a text.
 
-use sea_query::LikeExpr;
+use sea_query::{BinOper, Expr, ExprTrait as _, Func, LikeExpr};
 
 /// The character that makes the next one in a pattern mean itself.
 const ESCAPE: char = '\\';
@@ -27,6 +27,30 @@ pub(crate) fn containing(text: &str) -> LikeExpr {
 /// Texts that begin with `text`.
 pub(crate) fn starting_with(text: &str) -> LikeExpr {
     LikeExpr::new(format!("{}%", plain(text))).escape(ESCAPE)
+}
+
+/// `column` matches `pattern`, with capitals not counting the way the database folds them: both
+/// sides go through the database's own `lower`, so the rule is one rule on both sides of the
+/// comparison. `lower` folds only the letters of ASCII on SQLite (and on PostgreSQL without a
+/// locale), so a capital outside ASCII is found by the same capital (`Ö` finds `Özil`) and a
+/// lower-case start outside ASCII is a known gap, until a stored name key is there (M5-F94).
+fn any_case(column: impl Into<Expr>, pattern: String) -> Expr {
+    let like = Expr::Binary(
+        Box::new(Func::lower(Expr::val(pattern)).into()),
+        BinOper::Escape,
+        Box::new(Expr::Constant(ESCAPE.into())),
+    );
+    Expr::expr(Func::lower(column.into())).binary(BinOper::Like, like)
+}
+
+/// `column` begins with `text`, capitals not counting (see [`any_case`]).
+pub(crate) fn starting_with_any_case(column: impl Into<Expr>, text: &str) -> Expr {
+    any_case(column, format!("{}%", plain(text)))
+}
+
+/// `column` holds `text` anywhere, capitals not counting (see [`any_case`]).
+pub(crate) fn containing_any_case(column: impl Into<Expr>, text: &str) -> Expr {
+    any_case(column, format!("%{}%", plain(text)))
 }
 
 #[cfg(test)]
