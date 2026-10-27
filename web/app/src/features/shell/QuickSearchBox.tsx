@@ -6,7 +6,7 @@ import { Autocomplete } from "react-aria-components";
 import { closeOverlay } from "./overlay-state.ts";
 import { QuickResults } from "./QuickResults.tsx";
 import { announcement } from "./quick-search-announce.ts";
-import { useFollowFirst } from "./use-follow-first.ts";
+import { useFreshList } from "./use-fresh-list.ts";
 import { useOpenResult } from "./use-open-result.ts";
 import { useQuickResults } from "./use-quick-results.ts";
 
@@ -17,10 +17,10 @@ export function QuickSearchBox() {
   const open = useOpenResult(found.groups);
   const root = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLDivElement>(null);
-  // The first result has the focus of the list, and so is what Enter opens, until the person moves it.
-  // The list does it itself (`disableAutoFocusFirst`): the box's own way waits half a second and
-  // would leave the box pointing at a result that is gone.
-  useFollowFirst(root, found.groups, query);
+  // The list is made new when the answer lands, so its first result has the focus Enter opens. The
+  // box's own focus of the first result when a letter is typed (`disableAutoFocusFirst`) waits half a
+  // second and then names the row it saw at the time, which may be gone by then.
+  const fresh = useFreshList(root, found.waiting);
   // The dialog is made for typing: the box has the focus as soon as it appears.
   useEffect(() => {
     field.current?.querySelector("input")?.focus();
@@ -40,7 +40,7 @@ export function QuickSearchBox() {
           </div>
           <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
-        <QuickResults found={found} onOpen={open} />
+        <QuickResults found={found} listKey={fresh} onOpen={open} />
         <Announce>
           {announcement(found).map((sentence) => (
             <span key={sentence}>{sentence}</span>

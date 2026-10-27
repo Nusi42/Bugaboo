@@ -7,20 +7,27 @@ import type { QuickFound } from "./use-quick-results.ts";
 
 /** The words of React Aria Components for the slots of an item, not text for people. */
 const descriptionSlot = "description";
+/** The way a list that appears gives its first result the virtual focus. */
+const focusFirst = "first";
 
 export interface QuickResultsProps {
   readonly found: QuickFound;
+  /** Changes when the list is to be made new, so that its first result gets the focus. */
+  readonly listKey: number;
   /** Opens a result by its name. */
   readonly onOpen: (key: string | number) => void;
 }
 
 /** What quick search found, grouped by where it was found. */
-export function QuickResults({ found, onOpen }: QuickResultsProps) {
+export function QuickResults({ found, listKey, onOpen }: QuickResultsProps) {
   const { groups, waiting } = found;
   return (
     // The list is busy while the server has yet to answer for the words now typed.
     <div aria-busy={waiting}>
       <ListBox
+        key={listKey}
+        // oxlint-disable-next-line jsx-a11y/no-autofocus -- coding-standards §4 and UX §6.2: the rule guards against taking the focus of the page when it loads; this gives only the virtual focus inside the list box of a dialog that is open already, the focus of the page stays in the box, and it is the first result that Enter opens
+        autoFocus={focusFirst}
         disabledKeys={busyKeys(groups)}
         aria-label={t("search.results")}
         {...partOf(part.quickSearchResults)}

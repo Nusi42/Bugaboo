@@ -11,16 +11,6 @@ export interface ResultGroup {
 }
 
 /**
- * The name of the first result that can be chosen: the first of the groups that are not busy (the
- * rows of a busy group are of older words). Nothing when there is none.
- */
-export function firstEnabled(groups: readonly ResultGroup[]): string | undefined {
-  return groups
-    .filter((group) => group.busy !== true)
-    .flatMap((group) => group.results.map((result) => resultKey(group, result)))[0];
-}
-
-/**
  * What the server found for older words while it is asked again: every group keeps its place and is
  * marked busy, so its rows cannot be chosen; once the answer is in, nothing is marked.
  */
