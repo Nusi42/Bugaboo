@@ -449,7 +449,7 @@ mixin "marked" {
 mixin "control-box" {
     box-sizing border-box
     min-height "$size-control"
-    border "$border-width solid $border"
+    border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
 }
