@@ -103,7 +103,6 @@ pub(crate) struct SearchNamedBody {
     /// Its ID.
     id: String,
     /// Its name; left out where the person may not know it.
-    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
 }
 
@@ -138,10 +137,8 @@ pub(crate) struct SearchFieldBody {
     /// The values of a fixed list; empty when anything goes.
     choices: Vec<String>,
     /// The message that names a field every issue has; left out for an own field.
-    #[serde(skip_serializing_if = "Option::is_none")]
     message_key: Option<String>,
     /// The name of an own field; left out for a field every issue has.
-    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
 }
 
