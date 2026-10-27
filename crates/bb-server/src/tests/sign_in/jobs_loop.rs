@@ -9,6 +9,7 @@ use bb_app::context::SystemIds;
 use bb_app::jobs::JobStore as _;
 use bb_core::id::{JobId, UserId};
 use bb_core::technical::TechnicalName;
+use bb_core::text_index::{CONSUMER, REBUILD_WANTED};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
@@ -99,6 +100,41 @@ async fn adr_0017_a_job_that_dies_does_not_stop_the_loop() -> TestResult {
         until_the_queue_is_empty(&rig).await?;
         running.abort();
         assert_eq!(rig.database.dead_jobs(10).await?.len(), 1);
+        Ok(())
+    })
+    .await
+}
+
+/// A migration that changed the rule of the text index leaves a mark on the place of its reader
+/// (M5-F53): the worker makes the index again at its start, beside the jobs, and the reader is at
+/// the head of the outbox afterwards.
+#[tokio::test]
+async fn m5_f53_the_worker_makes_the_text_index_again_when_a_migration_asked_for_it() -> TestResult
+{
+    each_database("m5_f53_loop_rebuild", async |db| {
+        let rig = Rig::start(db).await?;
+        let reader = TechnicalName::new(CONSUMER)?;
+        rig.database
+            .outbox_set(CONSUMER, REBUILD_WANTED, rig.clock_now())
+            .await?;
+        queue_a_job_that_is_done_at_once(&rig, 4).await?;
+        let running = bb_jobs::spawn(Arc::clone(&rig.services), TEST_POLL);
+        let waited = tokio::time::timeout(WAIT_AT_MOST, async {
+            while rig.database.outbox_position(&reader).await? == REBUILD_WANTED {
+                tokio::time::sleep(TEST_POLL).await;
+            }
+            Ok::<(), Failure>(())
+        })
+        .await;
+        // The jobs were not held up by it either.
+        until_the_queue_is_empty(&rig).await?;
+        running.abort();
+        waited.map_err(|_| "the worker did not make the index again in time")??;
+        let head = rig
+            .database
+            .outbox_position(&TechnicalName::new("head")?)
+            .await?;
+        assert_eq!(rig.database.outbox_position(&reader).await?, head);
         Ok(())
     })
     .await

@@ -18,39 +18,44 @@ use tokio::time::MissedTickBehavior;
 /// How often the worker looks for jobs that are due.
 pub const POLL_EVERY: Duration = Duration::from_secs(2);
 
+/// The longest wait between two tries to make the text index again. The wait starts at the
+/// polling time of the worker and doubles after each failure up to this.
+pub const REBUILD_RETRY_AT_MOST: Duration = Duration::from_secs(60);
+
 /// Starts the worker; it looks for jobs when it starts and then every `every`. The caller stops it
 /// with [`JoinHandle::abort`] when the server stops.
 ///
 /// Beside the jobs, the first thing it does is make the index of the text search again when a
 /// migration asked for it (M5-F53): that takes as long as the data is large, and the jobs do not
-/// wait for it. A failed try is made again after `every`.
+/// wait for it. A failed try is made again after a wait that starts at `every` and doubles up to
+/// [`REBUILD_RETRY_AT_MOST`]; a try that panics is logged and made again the same way.
 pub fn spawn<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration) -> JoinHandle<()> {
     tokio::spawn(async move {
         // The set goes away with this task, and takes the rebuild with it when the worker stops.
         let mut beside = JoinSet::new();
-        let for_index = Arc::clone(&services);
-        beside.spawn(async move {
-            loop {
-                match for_index
-                    .ctx(RequestInfo::default())
-                    .rebuild_text_index_if_wanted()
-                    .await
-                {
-                    Ok(_) => break,
-                    Err(error) => {
-                        tracing::warn!(
-                            cause = %error,
-                            "the text index could not be made again; the next try follows"
-                        );
-                        tokio::time::sleep(every).await;
-                    }
-                }
-            }
-        });
+        let mut retry_in = every;
+        beside.spawn(rebuild_text_index(Arc::clone(&services), every));
         let mut ticks = tokio::time::interval(every);
         ticks.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
             ticks.tick().await;
+            // A finished rebuild is joined; one that panicked is logged (the panic would
+            // otherwise be lost with the task) and, after a wait, started again.
+            while let Some(done) = beside.try_join_next() {
+                if let Err(error) = done {
+                    tracing::error!(
+                        cause = %error,
+                        "the task that makes the text index again stopped; it is started again"
+                    );
+                    // The wait is inside the new task: the jobs do not wait for it.
+                    let (services, wait) = (Arc::clone(&services), retry_in);
+                    beside.spawn(async move {
+                        tokio::time::sleep(wait).await;
+                        rebuild_text_index(services, every).await;
+                    });
+                    retry_in = (retry_in * 2).min(REBUILD_RETRY_AT_MOST);
+                }
+            }
             loop {
                 match services.ctx(RequestInfo::default()).run_due_jobs().await {
                     Ok(0) => break,
@@ -66,4 +71,26 @@ pub fn spawn<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration) -> J
             }
         }
     })
+}
+
+/// Makes the text index again if a migration asked for it, until it has gone through once.
+async fn rebuild_text_index<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration) {
+    let mut wait = every;
+    loop {
+        match services
+            .ctx(RequestInfo::default())
+            .rebuild_text_index_if_wanted()
+            .await
+        {
+            Ok(_) => return,
+            Err(error) => {
+                tracing::warn!(
+                    cause = %error,
+                    "the text index could not be made again; the next try follows"
+                );
+                tokio::time::sleep(wait).await;
+                wait = (wait * 2).min(REBUILD_RETRY_AT_MOST);
+            }
+        }
+    }
 }
