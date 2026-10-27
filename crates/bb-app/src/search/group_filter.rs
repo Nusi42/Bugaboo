@@ -247,20 +247,29 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut groups = Vec::with_capacity(keyed.len());
         for (key, count) in keyed {
             let wanted = self
-                .wanted_of(viewer, looked, &links, (target, &issues), &key, &mut cache)
+                .wanted_of(
+                    (actor, viewer),
+                    looked,
+                    &links,
+                    (target, &issues),
+                    &key,
+                    &mut cache,
+                )
                 .await?;
             let (filter, name) = match wanted {
-                Some(wanted) => (
-                    self.checked_filter(
-                        actor,
-                        looked,
-                        (word, &readable, &links),
-                        &wanted,
-                        &mut cache,
-                    )
-                    .await?,
-                    wanted.name,
-                ),
+                Some(wanted) => {
+                    let (filter, usable) = self
+                        .checked_filter(
+                            actor,
+                            looked,
+                            (word, &readable, &links),
+                            &wanted,
+                            &mut cache,
+                        )
+                        .await?;
+                    // A name the resolution refused is not given either.
+                    (filter, wanted.name.filter(|_| usable))
+                }
                 None => (None, None),
             };
             groups.push(GroupShown {
@@ -274,7 +283,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The text of the filter of a group, when it is a search the language reads and its name stands
-    /// for exactly the thing of the group.
+    /// for exactly the thing of the group; and whether the name is one this person may use at all.
     async fn checked_filter(
         &self,
         actor: &Actor,
@@ -282,31 +291,34 @@ impl<S: AuthStore> Ctx<'_, S> {
         (word, readable, links): (&str, &ReadableFields, &[ProjectLink]),
         wanted: &Wanted,
         cache: &mut NameCache,
-    ) -> Result<Option<String>, AppError> {
+    ) -> Result<(Option<String>, bool), AppError> {
         let written = match wanted.value.clone() {
             Some(value) => is_filter_text(word, value),
             None => empty_filter_text(word),
         };
         let Some(written) = written else {
-            return Ok(None);
+            return Ok((None, false));
         };
         let Ok(parsed) = parse_with(&written, readable) else {
-            return Ok(None);
+            return Ok((None, false));
         };
         let Ok(checked) = check(parsed, readable) else {
-            return Ok(None);
+            return Ok((None, false));
         };
         self.search_names_in(actor, looked, &checked, cache).await?;
-        Ok(
-            (!cache.names.names_unknown() && stands_for_only(&cache.names, links, wanted))
-                .then_some(written),
-        )
+        if cache.names.names_unknown() {
+            return Ok((None, false));
+        }
+        Ok((
+            (stands_for_only(&cache.names, links, wanted)).then_some(written),
+            true,
+        ))
     }
 
     /// What the group asks for, or nothing when it has no name this person may use.
     async fn wanted_of(
         &self,
-        viewer: &Evaluation,
+        (actor, viewer): (&Actor, &Evaluation),
         looked: &Looked,
         links: &[ProjectLink],
         (target, issues): (Option<FieldTarget>, &IssuesRead),
@@ -331,15 +343,22 @@ impl<S: AuthStore> Ctx<'_, S> {
                 thing: Thing::Plain,
             }),
             ShownKey::Other(other) => {
-                self.other_wanted(viewer, looked, links, (target, issues), other, cache)
-                    .await?
+                self.other_wanted(
+                    (actor, viewer),
+                    looked,
+                    links,
+                    (target, issues),
+                    other,
+                    cache,
+                )
+                .await?
             }
         })
     }
 
     async fn other_wanted(
         &self,
-        viewer: &Evaluation,
+        (actor, viewer): (&Actor, &Evaluation),
         looked: &Looked,
         links: &[ProjectLink],
         (target, issues): (Option<FieldTarget>, &IssuesRead),
@@ -385,21 +404,28 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .group_name_of(viewer, *id, cache)
                 .await?
                 .map(|name| Wanted::named(&name, Thing::Group(*id))),
-            GroupKey::Issue(id) => issues.get(id).and_then(|issue| {
-                let link = links.iter().find(|link| link.id == issue.project)?;
-                let readable = format!("{}-{}", link.short_name, issue.code);
-                Some(Wanted {
-                    value: Some(Operand::Issue {
-                        id: IssueRef {
-                            text: readable.clone(),
-                            span: Span::default(),
-                        },
-                        span: Span::default(),
-                    }),
-                    name: Some(readable),
-                    thing: Thing::Issue(*id),
-                })
-            }),
+            GroupKey::Issue(id) => match issues.get(id) {
+                Some(issue) => match self.readable_id_of(actor, looked, issue).await? {
+                    Some(readable) => {
+                        // Read once for the group: naming it in the filter costs no second read.
+                        cache.know_issue(&readable, *id);
+                        let name = readable.to_string();
+                        Some(Wanted {
+                            value: Some(Operand::Issue {
+                                id: IssueRef {
+                                    text: name.clone(),
+                                    span: Span::default(),
+                                },
+                                span: Span::default(),
+                            }),
+                            name: Some(name),
+                            thing: Thing::Issue(*id),
+                        })
+                    }
+                    None => None,
+                },
+                None => None,
+            },
             GroupKey::Empty | GroupKey::Person(_) | GroupKey::Tag(_) | GroupKey::Label(_) => None,
         })
     }
