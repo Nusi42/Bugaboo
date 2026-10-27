@@ -10,6 +10,7 @@ import {
   roleAddress,
   addressInProject,
   issueAddress,
+  savedSearchAddress,
 } from "../src/shared/paths.ts";
 import {
   ada,
@@ -43,6 +44,7 @@ let somebody = "";
 let someRole = "";
 let someField = "";
 let someIssue = "";
+let someSearch = "";
 
 test.use({
   preparation: {
@@ -66,6 +68,11 @@ test.use({
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
       someIssue = (await createProjectWithIssue(admin, "WEB", "Website")).id;
+      someSearch = dataOf(
+        await admin.client.POST("/api/v1/saved-searches", {
+          body: { name: "Open issues", search_text: "status is Open" },
+        }),
+      ).id;
       await setSignUpPolicy(admin, { enabled: true, domains: ["example.test"] });
       await admin.dispose();
       await session.dispose();
@@ -234,6 +241,12 @@ const visits: readonly Visit[] = [
     guest: false,
   },
   { address: paths.issue, open: signedInAt(() => issueAddress(someIssue)), guest: false },
+  { address: paths.search, open: signedIn(paths.search), guest: false },
+  {
+    address: paths.savedSearch,
+    open: signedInAt(() => savedSearchAddress(someSearch)),
+    guest: false,
+  },
 ];
 
 for (const visit of visits) {

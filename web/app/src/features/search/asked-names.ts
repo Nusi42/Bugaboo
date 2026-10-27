@@ -1,0 +1,143 @@
+/**
+ * The names that only the server knows (UX design section 4.3, WP-02 task 5): people, groups,
+ * projects and issues. The module says what to ask for and what the names start with; this asks
+ * the routes that exist and gives each name as the language writes it. A person who may not list
+ * something (people, groups) is simply not offered those names: the checker of the server still
+ * decides when the search runs.
+ */
+import { dataOf, type Schema } from "@bugaboo/api-client";
+import type { AskKind, SearchLanguage } from "@bugaboo/wasm-search";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+
+import { api } from "../../shared/api.ts";
+import { pageSize } from "../../shared/paged.ts";
+import { queryKeys } from "../../shared/query-keys.ts";
+import { issueSource, nameSource } from "../../shared/apply-suggestion.ts";
+
+/** A name that can be taken into the text. */
+export interface AskedName {
+  /** What stands in the text, written as the language writes it. */
+  readonly source: string;
+  /** What the person reads: the name, with the short name or the title beside it. */
+  readonly label: string;
+}
+
+/** How many names are offered at once. */
+const offered = 8;
+
+async function peopleStarting(
+  language: SearchLanguage,
+  words: string,
+): Promise<readonly AskedName[]> {
+  const page: Schema<"Page_PersonItem"> = dataOf(
+    await api.client.GET("/api/v1/people", {
+      params: { query: { search: words, limit: offered, fields: "person" } },
+    }),
+  );
+  return page.items.flatMap((item) => {
+    const person = item.person;
+    return person?.shown === "name"
+      ? [{ source: nameSource(language, person.name), label: person.name }]
+      : [];
+  });
+}
+
+async function groupsStarting(
+  language: SearchLanguage,
+  words: string,
+): Promise<readonly AskedName[]> {
+  const page: Schema<"Page_NamedVersionItem"> = dataOf(
+    await api.client.GET("/api/v1/groups", {
+      params: { query: { limit: pageSize.largest, fields: "name" } },
+    }),
+  );
+  const start = words.toLowerCase();
+  return page.items
+    .flatMap((item) => (item.name === undefined || item.name === null ? [] : [item.name]))
+    .filter((name) => name.toLowerCase().startsWith(start))
+    .slice(0, offered)
+    .map((name) => ({ source: nameSource(language, name), label: name }));
+}
+
+async function projectsStarting(words: string): Promise<readonly AskedName[]> {
+  const page: Schema<"Page_ProjectItem"> = dataOf(
+    await api.client.GET("/api/v1/projects", {
+      params: { query: { search: words, limit: offered, fields: "short_name,name" } },
+    }),
+  );
+  return page.items.flatMap((item) =>
+    item.short_name === undefined || item.short_name === null
+      ? []
+      : [{ source: item.short_name, label: `${item.short_name} · ${item.name ?? ""}` }],
+  );
+}
+
+async function issuesStarting(
+  language: SearchLanguage,
+  words: string,
+): Promise<readonly AskedName[]> {
+  // What looks like an Issue ID is offered as the ID; the words are looked for in the titles.
+  const asId = language.parse(`under ${words}`);
+  const found = asId.mistakes.length === 0 && words !== "";
+  const titles: Schema<"Page_IssueItem"> = dataOf(
+    await api.client.GET("/api/v1/search/issues", {
+      params: {
+        query: {
+          q: `title contains ${nameSource(language, words)}`,
+          limit: offered,
+          fields: "readable_id,title",
+        },
+      },
+    }),
+  );
+  const named = titles.items.flatMap((item) =>
+    item.readable_id === undefined || item.readable_id === null
+      ? []
+      : [
+          {
+            source: issueSource(language, item.readable_id),
+            label: `${item.readable_id} · ${item.title ?? ""}`,
+          },
+        ],
+  );
+  return found ? [{ source: words, label: words }, ...named] : named;
+}
+
+function namesStarting(
+  language: SearchLanguage,
+  what: AskKind,
+  words: string,
+): Promise<readonly AskedName[]> {
+  if (what === "people") {
+    return peopleStarting(language, words);
+  }
+  if (what === "groups") {
+    return groupsStarting(language, words);
+  }
+  return what === "projects" ? projectsStarting(words) : issuesStarting(language, words);
+}
+
+/** The names of one kind that start with the words typed; none when nothing is asked or the server will not say. */
+export function useAskedNames(
+  language: SearchLanguage,
+  ask: { readonly what: AskKind; readonly startingWith: string } | undefined,
+): readonly AskedName[] {
+  const query = useQuery({
+    queryKey: queryKeys.search.names(ask?.what ?? "", ask?.startingWith ?? ""),
+    enabled: ask !== undefined,
+    placeholderData: keepPreviousData,
+    retry: false,
+    queryFn: async () => {
+      if (ask === undefined) {
+        return [];
+      }
+      try {
+        return await namesStarting(language, ask.what, ask.startingWith);
+      } catch {
+        // Not allowed to list, or the search was not understood: no names to offer, no mistake to show.
+        return [];
+      }
+    },
+  });
+  return ask === undefined ? [] : (query.data ?? []);
+}

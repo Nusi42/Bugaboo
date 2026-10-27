@@ -11970,6 +11970,256 @@ part "drawing-head" {
     fill "$fg-muted"
 }
 
+// ───────────── Search bar (features/search) ─────────────
+//
+// One bar above every list (UX design section 4.3): the filter buttons of Simple search, or the
+// box of Advanced search, with the words marked under the text and the mistakes listed below.
+
+part "search-bar" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "search-bar.head" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-3"
+}
+
+part "search-bar.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    margin-inline-start auto
+}
+
+part "search-filters" {
+    use "list-reset"
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    flex 1
+    min-width 0
+}
+
+// A filter: the button that changes it and the button that takes it away, in one outline.
+part "search-filter" {
+    use "control-box"
+    display inline-flex
+    align-items center
+    max-width "100%"
+}
+
+part "search-filter[variant=text]" {
+    border-style dashed
+}
+
+part "search-filter.name" {
+    color "$fg-muted"
+}
+
+part "search-filter.value" {
+    font-weight "$weight-bold"
+    overflow-wrap anywhere
+}
+
+// The box of Advanced search: the marked words are drawn under the text of the box, so both are
+// one grid cell and have to keep exactly the same type.
+part "search-text" {
+    use "input-box"
+    display grid
+    position relative
+    height auto
+    line-height "$lh-text"
+}
+
+part "search-text:focus-within" {
+    use "ring-line"
+    outline-offset 0
+    border-color "$accent"
+}
+
+part "search-text[state=mistake]" {
+    border-color "$danger"
+}
+
+part "search-text.marks" "search-text.input" {
+    grid-area "1 / 1"
+    box-sizing border-box
+    min-width 0
+    margin 0
+    padding 0
+    border 0
+    font-family inherit
+    font-size inherit
+    letter-spacing inherit
+    line-height inherit
+    white-space pre-wrap
+    overflow-wrap anywhere
+    tab-size 4
+}
+
+part "search-text.marks" {
+    color transparent
+    pointer-events none
+    user-select none
+}
+
+part "search-text.input" {
+    resize none
+    overflow hidden
+    background transparent
+    color "$fg"
+    outline none
+}
+
+part "search-mark[variant=field]" {
+    border-radius "$r-ctl"
+    background "$accent-soft"
+}
+
+part "search-mark[variant=value]" {
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+}
+
+part "search-mark[variant=mistake]" {
+    text-decoration underline wavy
+    text-decoration-color "$danger"
+    text-underline-offset "$space-1"
+}
+
+part "search-suggestions" {
+    use "floating-box"
+    position absolute
+    inset-inline 0
+    top "100%"
+    z-index "$z-panel"
+    max-height "calc($size-row * 6)"
+    overflow-y auto
+    margin 0
+    padding "$space-1"
+    list-style none
+    border-radius "$r-card"
+}
+
+part "search-suggestion" {
+    display flex
+    align-items baseline
+    gap "$space-3"
+    box-sizing border-box
+    min-height "$size-control"
+    padding "$space-2 $space-3"
+    color "$fg"
+    cursor pointer
+    border-radius "$r-ctl"
+    font-size "$fs-ui"
+}
+
+part "search-suggestion:hover" {
+    background "$bg-hover"
+}
+
+part "search-suggestion[state=active]" {
+    background "$bg-selected"
+    use "ring-inside"
+}
+
+part "search-suggestion.kind" {
+    color "$fg-muted"
+    font-size "$fs-base"
+}
+
+part "search-wrap" {
+    position relative
+}
+
+part "search-mistakes" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "search-mistake" {
+    color "$danger"
+    font-size "$fs-base"
+    line-height "$lh-body"
+    overflow-wrap anywhere
+}
+
+// The results of the search that was fixed last stay while the text has a mistake, dimmed.
+part "search-results[state=stale]" {
+    opacity "$opacity-disabled"
+}
+
+// The lists of the Share window and of Saved searches.
+part "search-list" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "search-list.item" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-3"
+    min-height "$size-control"
+    padding 0 "$space-2"
+    border-radius "$r-ctl"
+}
+
+part "search-help.title" {
+    margin 0
+    padding 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+}
+
+// The name of a list in the sidebar (*Mine*, *Shared with me*).
+part "nav-subheading" {
+    margin 0
+    padding "$space-2 $space-3"
+    color "$fg-muted"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+}
+
+// An example of the help sheet that can be put into the search with one click.
+part "search-example" {
+    use "sunken-box"
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-3"
+    padding "$space-2" "$space-3"
+    font-family "$mono"
+    font-size "$fs-base"
+    overflow-wrap anywhere
+}
+
+part "search-help" {
+    display flex
+    flex-direction column
+    gap "$space-5"
+}
+
+part "search-help.group" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
 // ───────────── Boxes in the Details ─────────────
 //
 // At the end of the file, after the parts they reach into.

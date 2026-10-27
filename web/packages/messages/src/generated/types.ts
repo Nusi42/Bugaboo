@@ -21,6 +21,7 @@ import type { messages as projects } from "./projects.ts";
 import type { messages as relationKinds } from "./relation-kinds.ts";
 import type { messages as relations } from "./relations.ts";
 import type { messages as roles } from "./roles.ts";
+import type { messages as search } from "./search.ts";
 import type { messages as settings } from "./settings.ts";
 import type { messages as setup } from "./setup.ts";
 import type { messages as shared } from "./shared.ts";
@@ -51,6 +52,7 @@ export type MessageKey =
   | keyof typeof relationKinds
   | keyof typeof relations
   | keyof typeof roles
+  | keyof typeof search
   | keyof typeof settings
   | keyof typeof setup
   | keyof typeof shared
@@ -407,6 +409,26 @@ export interface MessageArguments {
   "roles.used-by-nobody": { places: string | number };
   "roles.used-projects": { count: number };
   "save.saved-at": { time: string | number };
+  "search.bar.add-filter-text": { field: string | number };
+  "search.bar.change-filter": { filter: string | number };
+  "search.bar.change-filter-text": { field: string | number };
+  "search.bar.contains": { text: string | number };
+  "search.bar.filter-by": { field: string | number };
+  "search.bar.filters-count": { count: string | number };
+  "search.bar.issue-chosen": { id: string | number };
+  "search.bar.issue-take": { issue: string | number };
+  "search.bar.last-days": { count: number };
+  "search.bar.last-months": { count: number };
+  "search.bar.last-weeks": { count: number };
+  "search.bar.member-of": { group: string | number };
+  "search.bar.name-colon": { name: string | number };
+  "search.bar.name-value": { name: string | number; value: string | number };
+  "search.bar.not": { value: string | number };
+  "search.bar.remove-filter": { filter: string | number };
+  "search.copy-name": { name: string | number };
+  "search.found-issue": { id: string | number; title: string | number };
+  "search.help-use": { example: string | number };
+  "search.made-by": { person: string | number };
   "search.mistake.expected-blocked-by": { blocked: string | number; by: string | number };
   "search.mistake.expected-connected-to": { connected: string | number; to: string | number };
   "search.mistake.expected-continue": {
@@ -454,6 +476,10 @@ export interface MessageArguments {
   "search.mistake.wrong-number": { field: string | number };
   "search.mistake.wrong-person": { field: string | number; me: string | number };
   "search.mistake.wrong-text": { field: string | number };
+  "search.project-list-stop": { project: string | number };
+  "search.project-list-use": { project: string | number };
+  "search.saved-by": { name: string | number; person: string | number };
+  "search.share-title": { name: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };

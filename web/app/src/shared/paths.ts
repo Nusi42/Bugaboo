@@ -58,6 +58,8 @@ export const paths = {
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
   issue: appPaths.issue,
+  search: "/search",
+  savedSearch: "/s/$search",
 } as const;
 
 /** An address of the app, as the routes know it. */
@@ -70,6 +72,7 @@ export const routeParam = {
   role: "role",
   field: "field",
   issue: "issue",
+  search: "search",
 } as const;
 
 /** The name of a part of an address that changes. */
@@ -206,4 +209,9 @@ export function projectIssuesAddress(shortName: string): string {
 /** The address of the issues of a project with one issue open in the side panel. */
 export function issuePanelAddress(shortName: string, key: string): string {
   return `${projectIssuesAddress(shortName)}?open=${encodeURIComponent(key)}`;
+}
+
+/** The address of a saved search, `/s/<ID>`: its own address, which is shared. */
+export function savedSearchAddress(id: string): string {
+  return filled(paths.savedSearch, routeParam.search, id);
 }
