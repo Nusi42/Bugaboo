@@ -7,14 +7,14 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { grid, openList, prepareLook, rowOf } from "./support/list-look.ts";
-import { listInFourThemes, tickIssues, picturesWanted } from "./support/list-pictures.ts";
+import { listInFourThemes, tickIssues, screenshotFolder } from "./support/list-pictures.ts";
 import { webIssues } from "./support/issues.ts";
 
 // The pictures of the issue list (M5 WP-08, task 8): the list in the four themes on a computer and
 // on a phone, grouped and not, compact and comfortable, ticked, with the columns panel, empty, and
 // with an error. Taken only when `BB_SCREENSHOT_DIR` is set; the builder looks at each.
 
-test.skip(!picturesWanted, "Set BB_SCREENSHOT_DIR to take the screenshots.");
+test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
 
 test.use({ preparation: { run: prepareLook } });
 test.describe.configure({ mode: "serial" });

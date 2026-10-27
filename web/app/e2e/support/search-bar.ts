@@ -6,10 +6,7 @@ import { chooseTheme, themes } from "./checks.ts";
 import { expect } from "./fixtures.ts";
 import { signIn } from "./flows.ts";
 import { layoutOf, onThisLayout } from "./layout.ts";
-import { screenshotFolder, shotWholeAs } from "./screenshots.ts";
-
-/** Whether the pictures are wanted: `BB_SCREENSHOT_DIR` is set. */
-export const picturesWanted = screenshotFolder !== undefined;
+import { shotWholeAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 
 const MILESTONE = "M5/search";
@@ -88,3 +85,6 @@ export async function closeBar(page: Page): Promise<void> {
       .click();
   }
 }
+
+// The folder the pictures go to: the one flag of every picture spec, re-exported so a spec that already imports this file takes no other import.
+export { screenshotFolder } from "./screenshots.ts";

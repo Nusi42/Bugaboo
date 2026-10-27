@@ -5,10 +5,7 @@ import { tickBox } from "./issues.ts";
 import { setBox } from "./list-keys.ts";
 import { chooseTheme, themes } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
-import { screenshotFolder, shootWindowAs, shotWholeAs } from "./screenshots.ts";
-
-/** Whether the pictures are wanted: `BB_SCREENSHOT_DIR` is set. */
-export const picturesWanted = screenshotFolder !== undefined;
+import { shootWindowAs, shotWholeAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 
 const MILESTONE = "M5/list";
@@ -58,3 +55,6 @@ export async function tickIssues(page: Page, keys: readonly string[]): Promise<v
 export async function tickShown(page: Page): Promise<void> {
   await setBox(page.getByRole("checkbox", { name: t("issues.select-shown"), exact: true }), true);
 }
+
+// The folder the pictures go to: the one flag of every picture spec, re-exported so a spec that already imports this file takes no other import.
+export { screenshotFolder } from "./screenshots.ts";

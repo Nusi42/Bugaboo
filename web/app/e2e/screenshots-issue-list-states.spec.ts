@@ -7,14 +7,14 @@ import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { grid, groupOf, rowOf } from "./support/list-look.ts";
-import { listInFourThemes, picturesWanted } from "./support/list-pictures.ts";
+import { listInFourThemes, screenshotFolder } from "./support/list-pictures.ts";
 import { preparePanel } from "./support/list-panel.ts";
 
 // More states of the issue list (M5 WP-08): a folded group, the focus of the keyboard, an issue open
 // in the side panel over a search that is kept, and Customize under the list. Taken only when
 // `BB_SCREENSHOT_DIR` is set; the builder looks at each.
 
-test.skip(!picturesWanted, "Set BB_SCREENSHOT_DIR to take the screenshots.");
+test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
 test.use({ preparation: { run: preparePanel } });
 test.describe.configure({ mode: "serial" });
 

@@ -13,7 +13,7 @@ import {
   inFourThemes,
   openBar,
   openSearch,
-  picturesWanted,
+  screenshotFolder,
 } from "./support/search-bar.ts";
 
 // The pictures of the search bar (M5 WP-07, task 9): every new screen in the four themes, on a
@@ -21,7 +21,7 @@ import {
 
 let someSearch = "";
 
-test.skip(!picturesWanted, "Set BB_SCREENSHOT_DIR to take the screenshots.");
+test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
 
 test.use({
   preparation: {

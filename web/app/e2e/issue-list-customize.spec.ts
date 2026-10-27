@@ -24,9 +24,17 @@ test("ux_4_2 Customize sits beside the list on a computer window of 1280", async
   const panel = page.getByRole("complementary", { name: t("issues.customize") });
   const [list, side] = [await boxOf(page.locator("[data-part='list-main']")), await boxOf(panel)];
   expect(side.x).toBeGreaterThanOrEqual(list.x + list.width);
-  // The title keeps about a third of the window, though Customize is open (the list scrolls sideways).
-  const title = await boxOf(
-    page.locator("[data-part='list-head'] [data-part='list-row.cell'][data-variant='title']"),
+  // Every default column stays in view beside Customize: the list does not scroll sideways, and
+  // the head of each column is inside the box of the list (UX §4.2, R5, R9).
+  const frame = page.locator("[data-part='list-frame']");
+  expect(await frame.evaluate((box) => box.scrollWidth - box.clientWidth)).toBeLessThanOrEqual(1);
+  const main = await boxOf(page.locator("[data-part='list-main']"));
+  const heads = await Promise.all(
+    [t("issue-field.priority"), t("issue-field.assigned-to"), t("issue-field.changed")].map(
+      (column) => boxOf(page.getByRole("columnheader", { name: column, exact: true })),
+    ),
   );
-  expect(title.width).toBeGreaterThanOrEqual(1280 * 0.33 - 1);
+  for (const head of heads) {
+    expect(head.x + head.width).toBeLessThanOrEqual(main.x + main.width + 1);
+  }
 });
