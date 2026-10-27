@@ -7,6 +7,7 @@ import {
   collectResults,
   resultByKey,
   resultKey,
+  sourceTimeoutMs,
 } from "./quick-search-collect.ts";
 import { doNothing } from "../../shared/do-nothing.ts";
 import { askerFor } from "../../shared/quick-search-testing.ts";
@@ -133,9 +134,19 @@ describe("cfg_08 a source that never answers", () => {
         heading: "Never",
         search: () => new Promise<never>(doNothing),
       };
-      const asking = collectResults([never, source("pages", ["Home"])], "x", asker);
-      await vi.advanceTimersByTimeAsync(600_000);
+      let settled = false;
+      const asking = collectResults([never, source("pages", ["Home"])], "x", asker).then(
+        (answer) => {
+          settled = true;
+          return answer;
+        },
+      );
+      // Not yet one millisecond before the bound, failed at the bound.
+      await vi.advanceTimersByTimeAsync(sourceTimeoutMs - 1);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
       const found = await asking;
+      expect(settled).toBe(true);
       expect(found.failed).toBe(true);
       expect(found.groups.map((group) => group.id)).toEqual(["pages"]);
     } finally {

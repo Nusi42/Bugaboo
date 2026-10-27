@@ -108,7 +108,8 @@ export async function statusOfIssue(page: Page, key: string): Promise<number> {
 
 /**
  * Holds back the answers to the searches of issues until the returned function is called, so a test
- * can look at the dialog while the server has yet to answer.
+ * can look at the dialog while the server has yet to answer. The app gives up on a search that is
+ * held back longer than `sourceTimeoutMs`, so a test that holds it must release it sooner.
  */
 export async function holdBackSearches(page: Page): Promise<() => void> {
   let release = doNothing;
