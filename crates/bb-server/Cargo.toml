@@ -60,6 +60,7 @@ bb-files = { path = "../bb-files", features = ["testing"] }
 bb-load-check = { path = "../bb-load-check" }
 # The settings that only exist for tests, so the project level can be tested (CFG-06).
 bb-core = { path = "../bb-core", features = ["test-settings"] }
+bb-jobs = { path = "../bb-jobs", features = ["testing"] }
 bb-store = { path = "../bb-store", features = ["testing"] }
 bb-testing = { path = "../bb-testing" }
 h2 = { workspace = true }

@@ -37,16 +37,36 @@ fn next_wait(wait: Duration) -> Duration {
 /// wait for it. A failed try is made again after a wait that starts at `every` and doubles up to
 /// [`REBUILD_RETRY_AT_MOST`]; a try that panics is logged and made again the same way.
 pub fn spawn<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration) -> JoinHandle<()> {
-    spawn_with(services, every, rebuild_text_index)
+    supervise(services, every, rebuild_text_index)
 }
 
 /// [`spawn`] with the task that makes the index again given, so a test can make it panic. The task
 /// takes the services and the wait to start from, and ends when the index has been made.
+#[cfg(feature = "testing")]
 pub fn spawn_with<S, R, F>(
     services: Arc<AuthServices<S>>,
     every: Duration,
     rebuild: R,
 ) -> JoinHandle<()>
+where
+    S: AuthStore,
+    R: Fn(Arc<AuthServices<S>>, Duration) -> F + Clone + Send + 'static,
+    F: Future<Output = ()> + Send + 'static,
+{
+    supervise(services, every, rebuild)
+}
+
+/// What a test hands [`spawn_with`] after its own task has failed: the real task.
+#[cfg(feature = "testing")]
+pub async fn rebuild_text_index_for_a_test<S: AuthStore>(
+    services: Arc<AuthServices<S>>,
+    wait: Duration,
+) {
+    rebuild_text_index(services, wait).await;
+}
+
+/// The loop of the worker with the task that makes the index again given.
+fn supervise<S, R, F>(services: Arc<AuthServices<S>>, every: Duration, rebuild: R) -> JoinHandle<()>
 where
     S: AuthStore,
     R: Fn(Arc<AuthServices<S>>, Duration) -> F + Clone + Send + 'static,
@@ -98,7 +118,7 @@ where
 
 /// Makes the text index again if a migration asked for it, until it has gone through once; a failed
 /// try waits `wait`, then twice as long each time.
-pub async fn rebuild_text_index<S: AuthStore>(services: Arc<AuthServices<S>>, mut wait: Duration) {
+async fn rebuild_text_index<S: AuthStore>(services: Arc<AuthServices<S>>, mut wait: Duration) {
     loop {
         match services
             .ctx(RequestInfo::default())
