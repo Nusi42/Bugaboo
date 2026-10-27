@@ -7,7 +7,7 @@
 //! the generated page `docs/privacy/personal-data.md` (`cargo xtask gen privacy`).
 //!
 //! A table is stored data too: every table of `bb-store` (an enum with a `Table` variant in
-//! `schema.rs`) must be named in the `stored_tables!` list with the entity it holds, and that
+//! `schema.rs` or in a file of `schema/`) must be named in the `stored_tables!` list with the entity it holds, and that
 //! entity must carry marks and be in the `entities!` list. A table that is created in a migration
 //! without being listed is found as well (ADR-0015, ADR-0003).
 
@@ -103,10 +103,9 @@ fn listed_tables(schema: &str) -> Vec<ListedTable> {
 /// variants, which are its columns.
 fn table_enums(schema: &str) -> Vec<(String, Vec<String>)> {
     let schema = strip_comments(schema);
-    let before_macro = schema.split("macro_rules!").next().unwrap_or(&schema);
     let mut enums = Vec::new();
     let mut current: Option<(String, Vec<String>, bool)> = None;
-    for line in before_macro.lines() {
+    for line in schema.lines() {
         let line = line.trim();
         if let Some(rest) = line.strip_prefix("pub(crate) enum ") {
             let name = rest
@@ -505,6 +504,17 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
     const MIGRATION_GOOD: &str = "Table::create()\n    .table(Event::Table)\n    .col(x)\n";
 
     fn table_findings(schema: &str, migration: &str, list: &str) -> String {
+        table_findings_with(schema, None, migration, list)
+    }
+
+    /// The findings for `schema` (the file with the list) and, if given, `apart` (the enums in a
+    /// file of `schema/` beside it).
+    fn table_findings_with(
+        schema: &str,
+        apart: Option<&str>,
+        migration: &str,
+        list: &str,
+    ) -> String {
         let entity = "#[derive(Entity)]\npub struct DomainEvent {\n    #[not_personal]\n    pub id: u32,\n}\n";
         let mut sources: Vec<Source> = vec![
             (privacy::VOCABULARY_PATH.to_owned(), VOCABULARY.to_owned()),
@@ -513,6 +523,9 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
         ];
         let model = privacy::read_model(&sources).unwrap();
         sources.push((SCHEMA_PATH.to_owned(), schema.to_owned()));
+        if let Some(enums) = apart {
+            sources.push((format!("{SCHEMA_FOLDER}system.rs"), enums.to_owned()));
+        }
         sources.push((
             format!("{MIGRATIONS_FOLDER}/m0001.rs"),
             migration.to_owned(),
@@ -541,29 +554,44 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
     #[test]
     fn good_example_the_enums_of_the_tables_may_be_in_files_beside_the_list() {
         let (enums, list) = SCHEMA_GOOD.split_at(SCHEMA_GOOD.find("macro_rules!").unwrap());
-        let entity = "#[derive(Entity)]
-pub struct DomainEvent {
-    #[not_personal]
-    pub id: u32,
-}
-";
-        let mut sources: Vec<Source> = vec![
-            (privacy::VOCABULARY_PATH.to_owned(), VOCABULARY.to_owned()),
-            (privacy::LIST_PATH.to_owned(), LIST_GOOD.to_owned()),
-            ("crates/bb-core/src/event.rs".to_owned(), entity.to_owned()),
-        ];
-        let model = privacy::read_model(&sources).unwrap();
-        sources.push((SCHEMA_PATH.to_owned(), list.to_owned()));
-        sources.push((format!("{SCHEMA_FOLDER}system.rs"), enums.to_owned()));
-        sources.push((
-            format!("{MIGRATIONS_FOLDER}/m0001.rs"),
-            MIGRATION_GOOD.to_owned(),
-        ));
-        let found: Vec<String> = evaluate_tables(&model, &sources)
-            .into_iter()
-            .map(|finding| finding.message)
-            .collect();
-        assert!(found.is_empty(), "{found:?}");
+        let found = findings_with_enums_apart(enums, list);
+        assert!(found.is_empty(), "{found}");
+    }
+
+    /// Findings for a schema whose enums are in a file beside the list, after the macro that
+    /// the list of `schema.rs` is made of.
+    fn findings_with_enums_apart(enums: &str, list: &str) -> String {
+        table_findings_with(list, Some(enums), MIGRATION_GOOD, LIST_GOOD)
+    }
+
+    #[test]
+    fn bad_example_the_columns_of_enums_in_a_file_beside_the_list_are_checked() {
+        let (enums, list) = SCHEMA_GOOD.split_at(SCHEMA_GOOD.find("macro_rules!").unwrap());
+        let uncovered = enums.replace(
+            "    Time,
+}",
+            "    Time,
+    Extra,
+}",
+        );
+        let all = findings_with_enums_apart(&uncovered, list);
+        assert!(
+            all.contains("The column `Event::Extra` is not covered"),
+            "{all}"
+        );
+        // A mapped column renamed to one the enum does not have.
+        let renamed = enums.replace(
+            "    Time,
+}",
+            "    Moment,
+}",
+        );
+        let all = findings_with_enums_apart(&renamed, list);
+        assert!(all.contains("names the column `Event::Time`"), "{all}");
+        assert!(
+            all.contains("The column `Event::Moment` is not covered"),
+            "{all}"
+        );
     }
 
     #[test]

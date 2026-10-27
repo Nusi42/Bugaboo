@@ -59,7 +59,7 @@ impl AccountStore for FakeStore {
         after: Option<&PeoplePosition>,
         limit: u64,
     ) -> Result<Vec<Person>, FakeError> {
-        let key = |name: &str, id: UserId| (name.to_lowercase(), id);
+        let key = |name: &str, id: UserId| (bb_core::names::name_key(name), id);
         Ok(self.read(|state| {
             let mut people: Vec<Person> = state
                 .people
