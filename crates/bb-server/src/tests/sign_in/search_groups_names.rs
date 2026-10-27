@@ -10,6 +10,7 @@ use serde_json::{Value, json};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{PROJECTS, Site, id_in, key_of, ok};
 use super::search_groups_http::{GROUPS, create_in, encoded, every_group_selects_its_issues};
+use super::workflows_http::{go, lock_workflow};
 
 const LABELS: &str = "/api/v1/labels";
 const FIELDS: &str = "/api/v1/fields";
@@ -366,6 +367,76 @@ async fn qry_04_a_renamed_project_and_a_renamed_type_give_their_new_names() -> T
             assert!(found[0]["filter"].is_string(), "{by}: {groups:?}");
         }
         every_group_selects_its_issues(&mut ada, "type", "").await?;
+        // The renamed project is asked for by its new short name, and the filter finds its issues.
+        every_group_selects_its_issues(&mut ada, "project", "").await?;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_04_a_status_renamed_to_the_name_of_a_status_of_another_workflow_has_no_filter()
+-> TestResult {
+    each_database("search_group_status_names", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ok(&ada
+            .send(
+                "POST",
+                PROJECTS,
+                Some(json!({"short_name": "BETA", "name": "Beta"})),
+            )
+            .await?)?;
+        // ACME gets a workflow of its own whose status *review* is called *Done*, as *Done* of the
+        // starter workflow that BETA keeps.
+        let editor = ok(&ada
+            .send(
+                "POST",
+                "/api/v1/workflows",
+                Some(json!({"project": site.acme})),
+            )
+            .await?)?
+        .clone();
+        let workflow = id_in(&editor["workflow"])?;
+        let lock = lock_workflow(&mut ada, &workflow).await?;
+        ok(&ada
+            .send(
+                "PUT",
+                &format!("/api/v1/workflows/{workflow}"),
+                Some(json!({
+                    "version": editor["workflow"]["version"],
+                    "lock_token": lock,
+                    "name": "Review",
+                    "statuses": [
+                        {"key": "open", "name": "Open", "status_group": "not-started"},
+                        {"key": "review", "name": "Done", "status_group": "done"},
+                    ],
+                    "changes": [
+                        {"from": "open", "to": "review", "button": "Finish"},
+                        {"from": "review", "to": "open", "button": "Reopen"},
+                    ],
+                    "moves": [],
+                })),
+            )
+            .await?)?;
+        let acme = key_of(&site.create(&mut ada, "In ACME").await?)?;
+        ok(&go(&mut ada, &acme, "review").await?)?;
+        let beta = key_of(
+            &ada.send(
+                "POST",
+                &format!("{PROJECTS}/BETA/issues"),
+                Some(site.new_issue("In BETA")),
+            )
+            .await?,
+        )?;
+        ok(&go(&mut ada, &beta, "done").await?)?;
+        let groups = groups_of(&mut ada, "status").await?;
+        let done = named(&groups, "Done");
+        assert_eq!(done.len(), 2, "{groups:?}");
+        assert!(
+            done.iter().all(|group| group["filter"].is_null()),
+            "{groups:?}"
+        );
         Ok(())
     })
     .await

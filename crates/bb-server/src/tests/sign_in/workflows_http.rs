@@ -25,7 +25,11 @@ async fn type_named(ada: &mut Browser, name: &str) -> Result<String, Failure> {
 }
 
 /// Changes the status of an issue; the reply.
-async fn go(ada: &mut Browser, issue: &str, status: &str) -> Result<super::http::Reply, Failure> {
+pub(super) async fn go(
+    ada: &mut Browser,
+    issue: &str,
+    status: &str,
+) -> Result<super::http::Reply, Failure> {
     let path = format!("{ISSUES}/{issue}");
     let version = ok(&ada.send("GET", &path, None).await?)?["issue"]["version"].clone();
     ada.send(

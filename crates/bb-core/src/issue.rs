@@ -288,6 +288,8 @@ pub struct IssueCounter {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn qry_04_the_list_orders_hold_every_word_once() {
         // `place_in` of the store falls back to the first place for a word it does not find, so a
@@ -303,8 +305,6 @@ mod tests {
         all.sort();
         assert_eq!(groups, all);
     }
-
-    use super::*;
 
     #[test]
     fn qry_05_the_search_words_of_priorities_and_status_groups_are_one_word_each_and_different() {
