@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 use super::exit_masks::{issue_of_type, person_with_levels};
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
+use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in, version_of};
 use super::perf_queries::{Counter, assert_as_many_statements, five_and_forty};
 
 const LABELS: &str = "/api/v1/labels";
@@ -98,6 +98,64 @@ async fn cfg_02_the_list_and_the_search_carry_the_labels_when_asked_for() -> Tes
             .send("GET", &format!("{PROJECTS}/{}/issues", site.acme), None)
             .await?;
         assert!(ok(&plain)?["items"][0].get("labels").is_none());
+        Ok(())
+    })
+    .await
+}
+
+/// An answer to a change does not read the labels, so it does not say the issue has none: the
+/// member is left out of it (the API is frozen; a client takes the labels from their own route).
+#[tokio::test]
+async fn cfg_02_the_answers_to_a_change_do_not_claim_that_the_issue_has_no_labels() -> TestResult {
+    each_database("cfg_02_change_answers", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let key = text_in(
+            ok(&site.create(&mut ada, "Has a label").await?)?,
+            "readable_id",
+        )?;
+        let urgent = label(&mut ada, "urgent").await?;
+        put(&mut ada, &key, &urgent).await?;
+        let path = format!("{ISSUES}/{key}");
+        let version = version_of(&mut ada, &key).await?;
+        let changed = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": version, "title": "Renamed"})),
+            )
+            .await?;
+        assert!(ok(&changed)?.get("labels").is_none(), "{}", changed.body);
+        let other = ok(&ada
+            .send(
+                "POST",
+                PROJECTS,
+                Some(json!({"short_name": "BETA", "name": "Beta"})),
+            )
+            .await?)?
+        .clone();
+        let version = version_of(&mut ada, &key).await?;
+        let moved = ada
+            .send(
+                "POST",
+                &format!("{path}/move"),
+                Some(json!({"version": version, "project": text_in(&other, "id")?})),
+            )
+            .await?;
+        assert!(ok(&moved)?.get("labels").is_none(), "{}", moved.body);
+        ok(&ada.send("DELETE", &path, None).await?).ok();
+        let restored = ada.send("POST", &format!("{path}/restore"), None).await?;
+        assert!(ok(&restored)?.get("labels").is_none(), "{}", restored.body);
+        // The labels are still on the issue, and a list that asks for them says so.
+        let list = ada
+            .send("GET", &format!("{SEARCH}?fields=readable_id,labels"), None)
+            .await?;
+        let labelled = ok(&list)?["items"]
+            .as_array()
+            .ok_or("no items")?
+            .iter()
+            .any(|item| label_names(item) == ["urgent"]);
+        assert!(labelled, "{}", list.body);
         Ok(())
     })
     .await

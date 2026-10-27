@@ -197,7 +197,10 @@ impl From<&IssueView> for IssueItem {
             updated_at: Some(issue.updated_at.to_string()),
             closed_at: issue.closed_at.map(|at| at.to_string()),
             own_fields: Some(issue.own_fields.clone()),
-            labels: Some(issue.labels.iter().map(LabelRefBody::from).collect()),
+            labels: issue
+                .labels
+                .as_ref()
+                .map(|labels| labels.iter().map(LabelRefBody::from).collect()),
             version: Some(issue.version),
         }
     }

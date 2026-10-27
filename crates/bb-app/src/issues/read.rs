@@ -79,11 +79,8 @@ pub async fn issue<S: AuthStore>(
         .into_iter()
         .map(|assigned_person| assigned_person.person)
         .collect();
-    let labels = ctx.labels_of_page(&[issue.id]).await?;
-    let mut views = ctx
-        .issue_views(&actor, held.clone(), project)
-        .await?
-        .with_labels(labels);
+    // The labels of the issue are read through their own route, not here.
+    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
     let may_change = held.may_change_issue(issue.reported_by);
     let mask = held.field_mask_for(Some(issue.issue_type));

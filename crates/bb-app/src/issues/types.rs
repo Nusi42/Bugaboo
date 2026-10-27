@@ -218,10 +218,11 @@ pub struct IssueView {
     /// fields the viewer may see on an issue of this type.
     #[masked(own_fields)]
     pub own_fields: OwnValues,
-    /// The labels on it, in the order they were put there; empty when they were not asked for. A
-    /// reader whose level for *Labels* is *Hidden* is not shown them.
+    /// The labels on it, in the order they were put there; `None` when they were not read (only a
+    /// list or a search that asks for them reads them), which is not the same as none. A reader
+    /// whose level for *Labels* is *Hidden* is not shown them.
     #[masked(field = "labels")]
-    pub labels: Vec<LabelRef>,
+    pub labels: Option<Vec<LabelRef>>,
     /// Counts up with every change; a change is made on the version that was looked at.
     #[masked(open)]
     pub version: i64,

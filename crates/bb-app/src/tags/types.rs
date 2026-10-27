@@ -4,9 +4,10 @@
 
 use bb_core::id::{IssueId, IssueTypeId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::{ChoiceColor, Edit};
-use bb_core::tags::{Label, Tag};
+use bb_core::tags::{IssueLabel, Label, Tag};
 use bb_policy::Masked;
 use serde::Serialize;
+use std::collections::HashMap;
 
 use crate::access::ProjectLabel;
 use crate::issues::IssueTypeRef;
@@ -57,6 +58,29 @@ impl From<&Label> for LabelRef {
             color: label.color,
             group: label.group,
         }
+    }
+}
+
+/// The labels of the catalogue by ID: the one place that turns the label links of issues into
+/// labels with their names, colors and groups. A link whose label is gone is left out.
+pub(crate) struct LabelCatalogue<'a>(HashMap<LabelId, &'a Label>);
+
+impl<'a> LabelCatalogue<'a> {
+    pub(crate) fn new(labels: &'a [Label]) -> Self {
+        Self(labels.iter().map(|label| (label.id, label)).collect())
+    }
+
+    /// The label a link points to.
+    pub(crate) fn of(&self, link: &IssueLabel) -> Option<LabelRef> {
+        self.0.get(&link.label).map(|label| LabelRef::from(*label))
+    }
+
+    /// The labels of these links, in the order of the links.
+    pub(crate) fn of_all<'l>(
+        &self,
+        links: impl IntoIterator<Item = &'l IssueLabel>,
+    ) -> Vec<LabelRef> {
+        links.into_iter().filter_map(|link| self.of(link)).collect()
     }
 }
 

@@ -20,7 +20,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::ItemValues;
 use crate::projects::ProjectRef;
-use crate::tags::LabelRef;
+use crate::tags::{LabelCatalogue, LabelRef};
 use crate::workflows::{StatusChangeView, StatusCheck, StatusView};
 
 /// What turns the issues of one project into views for one viewer. The people are resolved once
@@ -42,7 +42,8 @@ pub(crate) struct IssueViews {
     show_people: bool,
     /// The labels of the issues shown so far, by issue, in the order they were put on. Read once
     /// for the page; an issue not in it has none.
-    labels: HashMap<IssueId, Vec<LabelRef>>,
+    /// `None` when the labels were not asked for.
+    labels: Option<Arc<HashMap<IssueId, Vec<LabelRef>>>>,
 }
 
 /// What a page of issues shows besides what every issue has: each is read only when it is asked
@@ -81,8 +82,8 @@ impl IssueViews {
     }
 
     /// Gives the views the labels of the issues of the page.
-    pub(crate) fn with_labels(mut self, labels: HashMap<IssueId, Vec<LabelRef>>) -> Self {
-        self.labels = labels;
+    pub(crate) fn with_labels(mut self, labels: Arc<HashMap<IssueId, Vec<LabelRef>>>) -> Self {
+        self.labels = Some(labels);
         self
     }
 }
@@ -113,9 +114,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?;
         // One statement for the links of the whole page and one for the catalogue of labels.
         let labels = if shown.labels {
-            self.labels_of_page(&ids).await?
+            Some(Arc::new(self.labels_of_page(&ids).await?))
         } else {
-            HashMap::new()
+            None
         };
         let mut views: HashMap<ProjectId, IssueViews> = HashMap::new();
         let mut projects: Vec<ProjectId> = issues.iter().map(|issue| issue.project).collect();
@@ -128,8 +129,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             let mut made = self
                 .issue_views(actor, Arc::clone(&place.held), place.project.clone())
                 .await?
-                .with_page(place.chain.clone(), values.clone())
-                .with_labels(labels.clone());
+                .with_page(place.chain.clone(), values.clone());
+            if let Some(labels) = &labels {
+                made = made.with_labels(Arc::clone(labels));
+            }
             if !shown.people {
                 made = made.without_people();
             }
@@ -182,7 +185,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             chain: None,
             workflows: HashMap::new(),
             show_people: true,
-            labels: HashMap::new(),
+            labels: None,
         })
     }
 
@@ -206,13 +209,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         if links.is_empty() {
             return Ok(found);
         }
-        let catalogue = self.store().labels().await.map_err(internal)?;
-        for link in links {
-            if let Some(label) = catalogue.iter().find(|label| label.id == link.label) {
-                found
-                    .entry(link.issue)
-                    .or_default()
-                    .push(LabelRef::from(label));
+        let labels = self.store().labels().await.map_err(internal)?;
+        let catalogue = LabelCatalogue::new(&labels);
+        for link in &links {
+            if let Some(label) = catalogue.of(link) {
+                found.entry(link.issue).or_default().push(label);
             }
         }
         Ok(found)
@@ -347,7 +348,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             updated_at: issue.updated_at,
             closed_at: issue.closed_at,
             own_fields,
-            labels: views.labels.get(&issue.id).cloned().unwrap_or_default(),
+            labels: views
+                .labels
+                .as_ref()
+                .map(|page| page.get(&issue.id).cloned().unwrap_or_default()),
             version: issue.version,
         })
     }

@@ -26,7 +26,7 @@ use serde_json::json;
 use super::judge::{LabelAddition, TagAddition, judge_label, judge_tag, label_refs, tag_names};
 use super::refs::{NameRef, labels_json};
 use super::types::{
-    AddLabel, AddTag, IssueLabelsAndTags, IssueLabelsAndTagsQuery, LabelRef, RemoveLabel,
+    AddLabel, AddTag, IssueLabelsAndTags, IssueLabelsAndTagsQuery, LabelCatalogue, RemoveLabel,
     RemoveTag, TagRef,
 };
 use crate::access::Actor;
@@ -105,11 +105,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .filter_map(|link| tags.iter().find(|tag| tag.id == link.tag))
                 .map(TagRef::from)
                 .collect(),
-            labels: held_labels
-                .iter()
-                .filter_map(|link| labels.iter().find(|label| label.id == link.label))
-                .map(LabelRef::from)
-                .collect(),
+            labels: LabelCatalogue::new(&labels).of_all(&held_labels),
             may_change_tags: may_change && mask.can_change(Field::Tags),
             may_change_labels: may_change && mask.can_change(Field::Labels),
         })
