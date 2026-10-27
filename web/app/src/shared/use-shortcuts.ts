@@ -51,7 +51,10 @@ export function useShortcutHost(): void {
       if (event.defaultPrevented) {
         return;
       }
-      const target = event.target instanceof HTMLElement ? event.target : null;
+      // Where the focus is decides whether somebody types, not where the key press was sent: a
+      // box with a list under it (quick search) sends every key on to the list as well, and the
+      // list is no field.
+      const target = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       const pressed = engine({
         key: event.key,
         ctrlKey: event.ctrlKey,
