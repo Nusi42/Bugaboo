@@ -8,6 +8,8 @@
  * lost when another changes.
  */
 
+import { settingChoices, type SettingChoice } from "@bugaboo/api-client";
+
 import {
   partOfAddress,
   paths,
@@ -25,8 +27,8 @@ export const historyStep = { push: "push", replace: "replace" } as const;
 export type HistoryStep = (typeof historyStep)[keyof typeof historyStep];
 
 /** How close together the rows are: the two words of the setting `appearance.spacing`. */
-export const searchSpacings = ["comfortable", "compact"] as const;
-export type SearchSpacing = (typeof searchSpacings)[number];
+export const searchSpacings = settingChoices.appearanceSpacing;
+export type SearchSpacing = SettingChoice<"appearanceSpacing">;
 
 /** The spacing a word names, or nothing for any other word (the one place that reads it). */
 export function spacingOf(word: string | undefined): SearchSpacing | undefined {

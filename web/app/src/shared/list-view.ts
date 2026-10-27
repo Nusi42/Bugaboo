@@ -7,7 +7,7 @@
  * presentation, is here (ODR).
  */
 
-import type { Schema } from "@bugaboo/api-client";
+import { settingDefaults, type Schema } from "@bugaboo/api-client";
 
 import { listWord, projectColumns, searchColumns } from "./list-columns.ts";
 import { spacingOf, type SearchSpacing, type SearchState } from "./search-address.ts";
@@ -122,7 +122,7 @@ export function viewFromPresentation(
         ? defaults.columns
         : presentation.columns.map((column) => column.field),
     widths,
-    spacing: spacingOf(presentation.spacing) ?? "comfortable",
+    spacing: spacingOf(presentation.spacing) ?? settingDefaults.appearanceSpacing,
     groupBy: presentation.group_by,
   };
 }

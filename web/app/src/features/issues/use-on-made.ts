@@ -1,8 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { issueAddress } from "../../shared/paths.ts";
-import { issuePanelAddress } from "../../shared/search-address.ts";
 import { closeOverlay } from "../shell/index.ts";
+import { hrefOf } from "./issue-show.ts";
 import { useOpenIssuesIn } from "./open-in.ts";
 
 /**
@@ -14,8 +13,6 @@ export function useOnMade(): (key: string, project: string) => void {
   const navigate = useNavigate();
   return (key, project) => {
     closeOverlay();
-    void navigate({
-      href: openIn === "focus" ? issueAddress(key) : issuePanelAddress(undefined, project, key),
-    });
+    void navigate({ href: hrefOf(openIn, undefined, project, key) });
   };
 }

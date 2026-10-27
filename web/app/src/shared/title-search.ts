@@ -1,10 +1,10 @@
-import type { SearchWord } from "@bugaboo/api-client";
 import type { SearchLanguage } from "@bugaboo/wasm-search";
 
+import { listWord } from "./list-columns.ts";
 import { fieldFilter, nowhere } from "./search-tree.ts";
 
-/** The word of the field whose text the finders look in: only the title, not the long texts. Checked against the words the API generates. */
-export const titleWord = "title" satisfies SearchWord;
+/** The word of the field whose text the finders look in: only the title, not the long texts. The word is the list's (`listWord`). */
+export const titleWord = listWord.title;
 
 /**
  * The search `title contains "<words>"` as the search language writes it, so a quote in the words

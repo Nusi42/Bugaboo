@@ -5,24 +5,6 @@ import { listColumns, type ListColumn } from "@bugaboo/ui";
 type FixedCell = "select" | "action" | "value";
 
 /**
- * The search word of the field each cell shows. A saved search stores its columns by search word
- * (ADR-0034), so this is the one place that says which cell a word is drawn in. The words are the
- * generated ones, so a word that does not exist is a type error; so is a new cell in the theme file
- * until it is here. `id` is the Issue ID, the one word that is no field.
- */
-const wordOfCell = {
-  status: "status",
-  key: "id",
-  project: "project",
-  type: "type",
-  title: "title",
-  labels: "labels",
-  priority: "priority",
-  person: "assignedTo",
-  changed: "changed",
-} as const satisfies Readonly<Record<Exclude<ListColumn, FixedCell>, SearchWord>>;
-
-/**
  * The search words of the fields the list names besides those of its cells: the one place where
  * the list spells a word of a field, typed by the generated words (ODR).
  */
@@ -42,6 +24,24 @@ export const listWord = {
   status: "status",
   priority: "priority",
 } as const satisfies Readonly<Record<string, SearchWord>>;
+
+/**
+ * The search word of the field each cell shows. A saved search stores its columns by search word
+ * (ADR-0034), so this is the one place that says which cell a word is drawn in. The words are the
+ * generated ones, so a word that does not exist is a type error; so is a new cell in the theme file
+ * until it is here. `id` is the Issue ID, the one word that is no field.
+ */
+const wordOfCell = {
+  status: listWord.status,
+  key: listWord.id,
+  project: listWord.project,
+  type: listWord.type,
+  title: listWord.title,
+  labels: listWord.labels,
+  priority: listWord.priority,
+  person: listWord.assignedTo,
+  changed: listWord.changed,
+} as const satisfies Readonly<Record<Exclude<ListColumn, FixedCell>, SearchWord>>;
 
 /** The cell a column is drawn in: one the list has a cell for, or a plain value (an own field). */
 export type ColumnCell = Exclude<ListColumn, FixedCell> | "value";
