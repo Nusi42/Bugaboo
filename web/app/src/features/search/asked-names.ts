@@ -21,6 +21,8 @@ export interface AskedName {
   readonly source: string;
   /** What the person reads: the name, with the short name or the title beside it. */
   readonly label: string;
+  /** The name itself, for a filter that writes it through the language: the short name, the ID. */
+  readonly value: string;
 }
 
 /** How many names are offered at once. */
@@ -37,7 +39,11 @@ async function serverNamesStarting(
       params: { query: { kind, starting_with: words, limit: offered } },
     }),
   );
-  return found.names.map((name) => ({ source: nameSource(language, name), label: name }));
+  return found.names.map((name) => ({
+    source: nameSource(language, name),
+    label: name,
+    value: name,
+  }));
 }
 
 async function projectsStarting(words: string): Promise<readonly AskedName[]> {
@@ -52,6 +58,7 @@ async function projectsStarting(words: string): Promise<readonly AskedName[]> {
       : [
           {
             source: item.short_name,
+            value: item.short_name,
             label: t("search.found-project", { short: item.short_name, name: item.name ?? "" }),
           },
         ],
@@ -89,11 +96,12 @@ async function issuesStarting(
       : [
           {
             source: issueSource(language, item.readable_id),
+            value: item.readable_id,
             label: t("search.found-issue", { id: item.readable_id, title: item.title ?? "" }),
           },
         ],
   );
-  return id === undefined ? named : [{ source: id, label: id }, ...named];
+  return id === undefined ? named : [{ source: id, value: id, label: id }, ...named];
 }
 
 function namesStarting(

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { dayOf, decimalOf, numberTyped, textOperand } from "./filter-draft.ts";
 import { dayText, operandText, timeWordText } from "./filter-text.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
+import { NameChoice } from "./NameChoice.tsx";
 import { nowhere } from "../../shared/search-tree.ts";
 
 export interface ValueInputProps {
@@ -68,14 +69,40 @@ function ChoiceSelect({ field, values, onValues }: ValueInputProps) {
   );
 }
 
-/** A text, a name or a number, typed: the value is only kept while it is one the field takes. */
+/** A person or a project, found by name; for a person, the one who searches may be chosen as *me*. */
+function NamedValue({ field, language, values, onValues }: ValueInputProps) {
+  const [first] = values;
+  const me = first?.type === "me";
+  return (
+    <>
+      <NameChoice
+        language={language}
+        what={field.kind === "person" ? "people" : "projects"}
+        chosen={first?.type === "text" ? first.text : ""}
+        onChoose={(name) => {
+          onValues([textOperand(name)]);
+        }}
+      />
+      {field.kind === "person" ? (
+        <Checkbox
+          label={t("search.bar.me")}
+          isSelected={me}
+          onChange={(on) => {
+            onValues(on ? [{ type: "me", span: nowhere }] : []);
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+/** A text or a number, typed: the value is only kept while it is one the field takes. */
 function TypedValue({ field, values, onValues }: ValueInputProps) {
   const isNumber = field.kind === "number";
   const [first] = values;
   const [typed, setTyped] = useState(
     isNumber ? numberTyped(first) : first?.type === "text" ? first.text : "",
   );
-  const me = first?.type === "me";
   const operand = (text: string): readonly Operand[] => {
     if (text.trim() === "") {
       return [];
@@ -87,30 +114,19 @@ function TypedValue({ field, values, onValues }: ValueInputProps) {
     return [textOperand(text.trim())];
   };
   return (
-    <>
-      <TextField
-        label={t("search.bar.value")}
-        value={me ? "" : typed}
-        errorMessage={
-          isNumber && typed.trim() !== "" && decimalOf(typed) === null
-            ? t("search.bar.not-a-number")
-            : undefined
-        }
-        onChange={(text) => {
-          setTyped(text);
-          onValues(operand(text));
-        }}
-      />
-      {field.kind === "person" ? (
-        <Checkbox
-          label={t("search.bar.me")}
-          isSelected={me}
-          onChange={(on) => {
-            onValues(on ? [{ type: "me", span: nowhere }] : operand(typed));
-          }}
-        />
-      ) : null}
-    </>
+    <TextField
+      label={t("search.bar.value")}
+      value={typed}
+      errorMessage={
+        isNumber && typed.trim() !== "" && decimalOf(typed) === null
+          ? t("search.bar.not-a-number")
+          : undefined
+      }
+      onChange={(text) => {
+        setTyped(text);
+        onValues(operand(text));
+      }}
+    />
   );
 }
 
@@ -195,6 +211,9 @@ export function ValueInputs(props: ValueInputProps & { readonly many: boolean })
     return (
       <IssueChoice language={props.language} values={props.values} onValues={props.onValues} />
     );
+  }
+  if (field.kind === "person" || field.kind === "project") {
+    return <NamedValue {...props} />;
   }
   return <TypedValue {...props} />;
 }

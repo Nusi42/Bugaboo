@@ -652,6 +652,12 @@ keyframes "from-start" {
     }
 }
 
+keyframes "from-end" {
+    from {
+        transform "translateX(100%)"
+    }
+}
+
 // The placeholder lines pulse while the text is on its way.
 keyframes "pulse" {
     from {
@@ -1185,6 +1191,10 @@ part "overlay[variant=start]" {
     justify-content flex-start
 }
 
+part "overlay[variant=end]" {
+    justify-content flex-end
+}
+
 part "overlay[variant=top]" {
     align-items flex-start
 }
@@ -1231,6 +1241,14 @@ part "overlay.modal[variant=start]" {
     border-radius "0 $r-card $r-card 0"
 }
 
+// A panel at the end of the screen, beside the page (the help of the search bar).
+part "overlay.modal[variant=end]" {
+    width "$size-sheet-share"
+    max-width "100%"
+    height "100%"
+    border-radius "$r-card 0 0 $r-card"
+}
+
 part "overlay.modal[variant=top]" {
     width "100%"
     max-height "100%"
@@ -1268,6 +1286,14 @@ part "overlay.modal[variant=start][entering]" {
 
 part "overlay.modal[variant=start][exiting]" {
     animation "from-start $motion-base $ease-in reverse"
+}
+
+part "overlay.modal[variant=end][entering]" {
+    animation "from-end $motion-base $ease-out"
+}
+
+part "overlay.modal[variant=end][exiting]" {
+    animation "from-end $motion-base $ease-in reverse"
 }
 
 part "overlay.modal[variant=center][entering]" "overlay.modal[variant=top][entering]" "overlay.modal[variant=question][entering]" "overlay.modal[variant=full][entering]" {
@@ -11982,17 +12008,19 @@ part "search-bar" {
     min-width 0
 }
 
+// The buttons at the end stand level with the first row of the filters, not centered against a
+// block of several rows.
 part "search-bar.head" {
     display flex
     flex-wrap wrap
-    align-items center
+    align-items flex-start
     gap "$space-2" "$space-3"
 }
 
 part "search-bar.actions" {
     display flex
     flex-wrap wrap
-    align-items center
+    align-items flex-start
     gap "$space-2"
     margin-inline-start auto
 }
@@ -12050,6 +12078,16 @@ part "search-panel search-filters" {
 
 part "search-panel search-filter" {
     justify-content space-between
+}
+
+// *+ Add filter* and *Any of* are as wide as the sheet, like the filters above them.
+part "search-filters.action" {
+    display flex
+    flex-direction column
+}
+
+part "search-filters.action > button" {
+    width "100%"
 }
 
 part "search-panel search-bar.actions" {
@@ -12194,6 +12232,13 @@ part "search-mistake" {
     overflow-wrap anywhere
 }
 
+// What a search finds, with the note that says whose results they are while the text has a mistake.
+part "search-results" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
 // The results of the search that was fixed last stay while the text has a mistake, dimmed.
 part "search-results[state=stale]" {
     opacity "$opacity-busy"
@@ -12280,10 +12325,6 @@ part "name-value.value > row > field" {
 }
 
 // At the end of the file, after the parts they reach into.
-
-// A quiet button hangs back by its padding at the start of a row; a filter is a box of its own, so
-// its words stay inside it.
-
 
 part "search-panel search-suggestions" {
     position static

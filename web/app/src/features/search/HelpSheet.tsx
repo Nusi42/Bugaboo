@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, part, partOf, Window } from "@bugaboo/ui";
+import { Button, buttonLook, Overlay, overlayEdge, part, partOf } from "@bugaboo/ui";
 import type { ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 
-import { windowLabels } from "../../shared/window-labels.ts";
 import { useFieldName } from "./field-names.ts";
 import { helpGroups, type HelpGroup } from "./help-examples.ts";
 
@@ -56,46 +55,47 @@ function HelpGroupView({
 export function HelpSheet({ language, fields, isOpen, onClose, onExample }: HelpSheetProps) {
   const nameOf = useFieldName();
   return (
-    <Window
+    <Overlay
       isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open) {
           onClose();
         }
       }}
-      title={t("search.help-title")}
-      labels={windowLabels()}
-      footer={
-        <div {...partOf(part.windowFooterActions)}>
+      label={t("search.help-title")}
+      from={overlayEdge.end}
+    >
+      <div {...partOf(part.searchPanel)}>
+        <h2 {...partOf(part.searchHelpTitle)}>{t("search.help-title")}</h2>
+        <div {...partOf(part.searchPanelActions)}>
           <Button look={buttonLook.primary} onPress={onClose}>
             {t("common.close")}
           </Button>
         </div>
-      }
-    >
-      <div {...partOf(part.searchHelp)}>
-        {helpGroups.map((group) => (
-          <HelpGroupView
-            key={group.heading}
-            group={group}
-            language={language}
-            fields={fields}
-            onExample={onExample}
-          />
-        ))}
-        <section {...partOf(part.searchHelpGroup)}>
-          <h3 {...partOf(part.searchHelpTitle)}>{t("search.help-your-fields")}</h3>
-          <p {...partOf(part.muted)}>{t("search.help-your-fields-text")}</p>
-          <ul {...partOf(part.searchList)}>
-            {fields.fields.map((field) => (
-              <li key={field.word} {...partOf(part.searchListItem)}>
-                <span>{nameOf(field.word)}</span>
-                <code>{field.word}</code>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <div {...partOf(part.searchHelp)}>
+          {helpGroups.map((group) => (
+            <HelpGroupView
+              key={group.heading}
+              group={group}
+              language={language}
+              fields={fields}
+              onExample={onExample}
+            />
+          ))}
+          <section {...partOf(part.searchHelpGroup)}>
+            <h3 {...partOf(part.searchHelpTitle)}>{t("search.help-your-fields")}</h3>
+            <p {...partOf(part.muted)}>{t("search.help-your-fields-text")}</p>
+            <ul {...partOf(part.searchList)}>
+              {fields.fields.map((field) => (
+                <li key={field.word} {...partOf(part.searchListItem)}>
+                  <span>{nameOf(field.word)}</span>
+                  <code>{field.word}</code>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </div>
-    </Window>
+    </Overlay>
   );
 }

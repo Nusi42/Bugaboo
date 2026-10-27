@@ -3,6 +3,7 @@ import { SelectField, TextField } from "@bugaboo/ui";
 import type { Field, SearchLanguage, Unit } from "@bugaboo/wasm-search";
 
 import type { Draft } from "./filter-draft.ts";
+import { NameChoice } from "./NameChoice.tsx";
 import { ValueInputs } from "./ValueInputs.tsx";
 
 const units: readonly Unit[] = ["day", "week", "month"];
@@ -57,7 +58,19 @@ export function OperatorInputs(props: {
   if (operator === "in_last") {
     return <LastInputs draft={draft} onDraft={onDraft} />;
   }
-  if (operator === "contains" || operator === "member_of" || operator === "within") {
+  if (operator === "member_of" || operator === "within") {
+    return (
+      <NameChoice
+        language={language}
+        what={operator === "member_of" ? "groups" : "projects"}
+        chosen={draft.text}
+        onChoose={(text) => {
+          onDraft({ ...draft, text });
+        }}
+      />
+    );
+  }
+  if (operator === "contains") {
     return (
       <TextField
         label={t("search.bar.value")}

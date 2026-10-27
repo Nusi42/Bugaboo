@@ -425,6 +425,8 @@ export interface MessageArguments {
   "search.bar.name-colon": { name: string | number };
   "search.bar.name-value": { name: string | number; value: string | number };
   "search.bar.not": { value: string | number };
+  "search.bar.pick-chosen": { name: string | number };
+  "search.bar.pick-take": { name: string | number };
   "search.bar.remove-filter": { filter: string | number };
   "search.copy-name": { name: string | number };
   "search.found-issue": { id: string | number; title: string | number };

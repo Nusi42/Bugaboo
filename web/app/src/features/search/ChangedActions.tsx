@@ -9,9 +9,15 @@ import { useChangeSearch, type SavedSearch } from "./saved-searches.ts";
 export function ChangedActions({
   search,
   text,
+  hasMistake,
+  onSaved,
 }: {
   readonly search: SavedSearch;
   readonly text: string;
+  /** The text in the box has a mistake: what would be kept is not what the person sees. */
+  readonly hasMistake: boolean;
+  /** The changes were saved: the address of the search holds no unsaved text any more. */
+  readonly onSaved: () => void;
 }) {
   const change = useChangeSearch(search.id);
   return (
@@ -20,8 +26,9 @@ export function ChangedActions({
         <Button
           look={buttonLook.primary}
           isPending={change.isPending}
+          isDisabled={hasMistake}
           onPress={() => {
-            change.mutate({ text, version: search.version });
+            change.mutate({ text, version: search.version }, { onSuccess: onSaved });
           }}
         >
           {t("search.save-changes")}
@@ -31,6 +38,7 @@ export function ChangedActions({
           text={text}
           presentation={search.presentation}
           copy
+          hasMistake={hasMistake}
           startName={t("search.copy-name", { name: search.name })}
         />
       )}

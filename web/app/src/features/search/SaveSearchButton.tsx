@@ -16,6 +16,8 @@ export interface SaveSearchButtonProps {
   readonly copy?: boolean;
   /** The name the box starts with. */
   readonly startName?: string;
+  /** The text in the box has a mistake, so the text to keep is not what the person sees: nothing is kept. */
+  readonly hasMistake?: boolean;
 }
 
 /**
@@ -28,6 +30,7 @@ export function SaveSearchButton({
   presentation,
   copy = false,
   startName = "",
+  hasMistake = false,
 }: SaveSearchButtonProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(startName);
@@ -36,7 +39,7 @@ export function SaveSearchButton({
   return (
     <>
       <Button
-        isDisabled={save.isPending}
+        isDisabled={save.isPending || hasMistake}
         onPress={() => {
           setName(startName);
           setOpen(true);

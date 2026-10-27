@@ -19,6 +19,23 @@ function isSharedWith(search: SavedSearch, kind: Schema<"ShareKind">, id: string
   return search.shared_with.some((share) => share.kind === kind && share.id === id);
 }
 
+/** *Show more* under a list of choices that has another page. */
+function MoreChoices({
+  hasMore,
+  isPending,
+  onMore,
+}: {
+  readonly hasMore: boolean;
+  readonly isPending: boolean;
+  readonly onMore: () => void;
+}) {
+  return hasMore ? (
+    <Button isPending={isPending} onPress={onMore}>
+      {t("search.share-more")}
+    </Button>
+  ) : null;
+}
+
 /** The groups or the projects the person may share with, each a box to tick; a tick shares at once. */
 function Choices({
   search,
@@ -50,6 +67,7 @@ function Choices({
               }}
             />
             {kind === shareKind.project &&
+            isSharedWith(search, kind, item.id) &&
             item.short_name !== undefined &&
             item.short_name !== null ? (
               <ProjectListToggle search={search} project={item.short_name} />
@@ -57,6 +75,13 @@ function Choices({
           </li>
         ))}
       </ul>
+      <MoreChoices
+        hasMore={choices.hasNextPage}
+        isPending={choices.isFetchingNextPage}
+        onMore={() => {
+          void choices.fetchNextPage();
+        }}
+      />
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
     </fieldset>
   );

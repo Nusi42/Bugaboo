@@ -1,6 +1,5 @@
 /** Words of the HTML and ARIA standards for the box and the list of offers, not text for people. */
 export const ariaWords = {
-  combobox: "combobox",
   listbox: "listbox",
   option: "option",
   list: "list",

@@ -47,10 +47,10 @@ export function FilterList({
           }}
         />
       ))}
-      <li>
+      <li {...partOf(part.searchFiltersAction)}>
         <AddFilter fields={fields} onPick={onAdd} />
       </li>
-      <li>
+      <li {...partOf(part.searchFiltersAction)}>
         <Button onPress={onAnyOf}>{t("search.bar.any-of")}</Button>
       </li>
     </ul>

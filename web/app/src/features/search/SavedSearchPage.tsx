@@ -1,8 +1,11 @@
-import type { ReactNode } from "react";
+import { t } from "@bugaboo/messages";
+import { useMemo, type ReactNode } from "react";
+
+import { paths, savedSearchAddress } from "../../shared/paths.ts";
 
 import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { QueryGate } from "../shell/index.ts";
+import { QueryGate, usePageTrail } from "../shell/index.ts";
 import { useSavedSearch, type SavedSearch } from "./saved-searches.ts";
 import { SavedSearchView } from "./SavedSearchView.tsx";
 
@@ -23,6 +26,18 @@ export interface SavedSearchPageProps {
 export function SavedSearchPage({ id, state, onState, notFound }: SavedSearchPageProps) {
   const saved = useSavedSearch(id);
   usePageTitle(saved.data?.name ?? "");
+  const name = saved.data?.name;
+  const trail = useMemo(
+    () =>
+      name === undefined
+        ? undefined
+        : [
+            { label: t("search.page.title"), href: paths.search },
+            { label: name, href: savedSearchAddress(id) },
+          ],
+    [name, id],
+  );
+  usePageTrail(trail);
   return (
     <QueryGate error={saved.error} data={saved.data} notFound={notFound}>
       {(search: SavedSearch) => <SavedSearchView search={search} state={state} onState={onState} />}

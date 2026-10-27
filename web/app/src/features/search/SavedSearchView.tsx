@@ -3,7 +3,7 @@ import { Card, part, partOf } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { personName } from "../../shared/person.ts";
-import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
+import { historyStep, type HistoryStep, type SearchState } from "../../shared/search-address.ts";
 import { ChangedActions } from "./ChangedActions.tsx";
 import { FoundIssues } from "./FoundIssues.tsx";
 import type { SavedSearch } from "./saved-searches.ts";
@@ -25,7 +25,18 @@ export function SavedSearchView({ search, state, onState }: SavedSearchViewProps
     <Card
       heading={search.name}
       level={1}
-      actions={text === search.search_text ? null : <ChangedActions search={search} text={text} />}
+      actions={
+        text === search.search_text ? null : (
+          <ChangedActions
+            search={search}
+            text={text}
+            hasMistake={stale}
+            onSaved={() => {
+              onState({ ...state, text: "" }, historyStep.replace);
+            }}
+          />
+        )
+      }
     >
       <p {...partOf(part.muted)}>{t("search.made-by", { person: personName(search.maker) })}</p>
       <SearchBar

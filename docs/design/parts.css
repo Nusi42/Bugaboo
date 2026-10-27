@@ -19,6 +19,12 @@
   }
 }
 
+@keyframes from-end {
+  from {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes pulse {
   from {
     opacity: var(--opacity-faint);
@@ -569,6 +575,10 @@ body {
   justify-content: flex-start;
 }
 
+[data-part="overlay"][data-variant~="end"] {
+  justify-content: flex-end;
+}
+
 [data-part="overlay"][data-variant~="top"] {
   align-items: flex-start;
 }
@@ -618,6 +628,13 @@ body {
   border-radius: 0 var(--r-card) var(--r-card) 0;
 }
 
+[data-part="overlay.modal"][data-variant~="end"] {
+  width: var(--size-sheet-share);
+  max-width: 100%;
+  height: 100%;
+  border-radius: var(--r-card) 0 0 var(--r-card);
+}
+
 [data-part="overlay.modal"][data-variant~="top"] {
   width: 100%;
   max-height: 100%;
@@ -655,6 +672,14 @@ body {
 
 [data-part="overlay.modal"][data-variant~="start"][data-exiting] {
   animation: from-start var(--motion-base) var(--ease-in) reverse;
+}
+
+[data-part="overlay.modal"][data-variant~="end"][data-entering] {
+  animation: from-end var(--motion-base) var(--ease-out);
+}
+
+[data-part="overlay.modal"][data-variant~="end"][data-exiting] {
+  animation: from-end var(--motion-base) var(--ease-in) reverse;
 }
 
 [data-part="overlay.modal"][data-variant~="center"][data-entering],
@@ -5030,14 +5055,14 @@ body {
 [data-part="search-bar.head"] {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2) var(--space-3);
 }
 
 [data-part="search-bar.actions"] {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   margin-inline-start: auto;
 }
@@ -5097,6 +5122,15 @@ body {
 
 [data-part="search-panel"] [data-part="search-filter"] {
   justify-content: space-between;
+}
+
+[data-part="search-filters.action"] {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-part="search-filters.action"] > [data-part="button"] {
+  width: 100%;
 }
 
 [data-part="search-panel"] [data-part="search-bar.actions"] {
@@ -5253,6 +5287,12 @@ body {
   font-size: var(--fs-base);
   line-height: var(--lh-body);
   overflow-wrap: anywhere;
+}
+
+[data-part="search-results"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 [data-part="search-results"][data-state~="stale"] {

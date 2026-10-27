@@ -31,7 +31,7 @@ export function SearchPage({ state, onState }: SearchPageProps) {
           onState({ ...state, text: canonical }, step);
         }}
         onStale={setStale}
-        actions={<SaveSearchButton text={state.text} />}
+        actions={<SaveSearchButton text={state.text} hasMistake={stale} />}
       />
       <FoundIssues text={state.text} stale={stale} />
     </Card>

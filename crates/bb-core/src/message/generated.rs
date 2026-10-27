@@ -4000,6 +4000,30 @@ pub const SEARCH_BAR_OPERATOR: MessageKey = MessageKey::new("search.bar.operator
 /// The message `search.bar.pick`.
 pub const SEARCH_BAR_PICK: MessageKey = MessageKey::new("search.bar.pick");
 
+/// The message `search.bar.pick-choose`.
+pub const SEARCH_BAR_PICK_CHOOSE: MessageKey = MessageKey::new("search.bar.pick-choose");
+
+/// The message `search.bar.pick-clear`.
+pub const SEARCH_BAR_PICK_CLEAR: MessageKey = MessageKey::new("search.bar.pick-clear");
+
+/// The message `search.bar.pick-groups`.
+pub const SEARCH_BAR_PICK_GROUPS: MessageKey = MessageKey::new("search.bar.pick-groups");
+
+/// The message `search.bar.pick-list`.
+pub const SEARCH_BAR_PICK_LIST: MessageKey = MessageKey::new("search.bar.pick-list");
+
+/// The message `search.bar.pick-none`.
+pub const SEARCH_BAR_PICK_NONE: MessageKey = MessageKey::new("search.bar.pick-none");
+
+/// The message `search.bar.pick-people`.
+pub const SEARCH_BAR_PICK_PEOPLE: MessageKey = MessageKey::new("search.bar.pick-people");
+
+/// The message `search.bar.pick-projects`.
+pub const SEARCH_BAR_PICK_PROJECTS: MessageKey = MessageKey::new("search.bar.pick-projects");
+
+/// The message `search.bar.pick-search`.
+pub const SEARCH_BAR_PICK_SEARCH: MessageKey = MessageKey::new("search.bar.pick-search");
+
 /// The message `search.bar.text-filter`.
 pub const SEARCH_BAR_TEXT_FILTER: MessageKey = MessageKey::new("search.bar.text-filter");
 
@@ -4056,6 +4080,9 @@ pub const SEARCH_FOUND_LIST: MessageKey = MessageKey::new("search.found-list");
 
 /// The message `search.found-none`.
 pub const SEARCH_FOUND_NONE: MessageKey = MessageKey::new("search.found-none");
+
+/// The message `search.found-stale`.
+pub const SEARCH_FOUND_STALE: MessageKey = MessageKey::new("search.found-stale");
 
 /// The message `search.help`.
 pub const SEARCH_HELP: MessageKey = MessageKey::new("search.help");
@@ -4209,6 +4236,9 @@ pub const SEARCH_SHARE_DONE: MessageKey = MessageKey::new("search.share-done");
 
 /// The message `search.share-groups`.
 pub const SEARCH_SHARE_GROUPS: MessageKey = MessageKey::new("search.share-groups");
+
+/// The message `search.share-more`.
+pub const SEARCH_SHARE_MORE: MessageKey = MessageKey::new("search.share-more");
 
 /// The message `search.share-none`.
 pub const SEARCH_SHARE_NONE: MessageKey = MessageKey::new("search.share-none");
@@ -9251,6 +9281,24 @@ pub fn search_bar_not(value: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search.bar.pick-chosen`.
+#[must_use]
+pub fn search_bar_pick_chosen(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.pick-chosen"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `search.bar.pick-take`.
+#[must_use]
+pub fn search_bar_pick_take(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.pick-take"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `search.bar.remove-filter`.
 #[must_use]
 pub fn search_bar_remove_filter(filter: impl std::fmt::Display) -> Message {
@@ -13977,7 +14025,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.fields-none", "No field has these words."),
     ("search.bar.fields-search", "Find a field"),
     ("search.bar.filter-as-text", "The filter as text"),
-    ("search.bar.filter-by", "Filter by {field}"),
+    ("search.bar.filter-by", "Choose {field} to filter by"),
     ("search.bar.filter-by-short", "Choose"),
     ("search.bar.filters", "Filters"),
     ("search.bar.filters-count", "Filters ({count})"),
@@ -14042,6 +14090,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.op-within", "is inside the project"),
     ("search.bar.operator", "Compare"),
     ("search.bar.pick", "Choose …"),
+    ("search.bar.pick-choose", "Choose"),
+    ("search.bar.pick-chosen", "Chosen: {name}"),
+    ("search.bar.pick-clear", "Clear the name"),
+    ("search.bar.pick-groups", "Group"),
+    ("search.bar.pick-list", "Names found"),
+    ("search.bar.pick-none", "Nothing found."),
+    ("search.bar.pick-people", "Person"),
+    ("search.bar.pick-projects", "Project"),
+    ("search.bar.pick-search", "Type the start of a name"),
+    ("search.bar.pick-take", "Choose {name}"),
     ("search.bar.remove-filter", "Remove the filter {filter}"),
     ("search.bar.text-filter", "Filter written as text"),
     (
@@ -14068,6 +14126,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.found-list", "Issues found"),
     ("search.found-none", "No issues match this search."),
     ("search.found-project", "{short} · {name}"),
+    (
+        "search.found-stale",
+        "These are the issues of the last search without a mistake. Fix the mistake to update them.",
+    ),
     ("search.help", "Help"),
     ("search.help-comparing", "Comparing"),
     (
@@ -14100,7 +14162,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Days are written like 2026-12-31. Words like today and this week also work.",
     ),
     ("search.help-title", "The words of the search"),
-    ("search.help-use", "Put {example} into the search"),
+    ("search.help-use", "Use {example} in the search"),
     ("search.help-use-short", "Use"),
     ("search.help-your-fields", "Your fields"),
     (
@@ -14306,6 +14368,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.share", "Share"),
     ("search.share-done", "Done"),
     ("search.share-groups", "Groups"),
+    ("search.share-more", "Show more"),
     ("search.share-none", "There is nothing you may share with."),
     (
         "search.share-note",

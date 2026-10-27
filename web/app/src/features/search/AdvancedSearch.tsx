@@ -44,10 +44,8 @@ export function AdvancedSearch({ language, fields, bar }: AdvancedSearchProps) {
           placeholder={t("search.bar.advanced-placeholder")}
           value={bar.shown}
           onChange={doNothing}
-          role={ariaWords.combobox}
           aria-autocomplete={ariaWords.list}
-          aria-expanded={showing}
-          aria-controls={listId}
+          {...(showing ? { "aria-controls": listId } : {})}
           aria-invalid={mistakes.length > 0}
           {...(mistakes.length > 0 ? { "aria-describedby": mistakesId } : {})}
           {...(active === undefined ? {} : { "aria-activedescendant": offerId(listId, active) })}
