@@ -65,7 +65,7 @@ async function projectsStarting(words: string): Promise<readonly AskedName[]> {
   );
 }
 
-async function issuesStarting(
+export async function issuesStarting(
   language: SearchLanguage,
   words: string,
 ): Promise<readonly AskedName[]> {
