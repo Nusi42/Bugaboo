@@ -8,6 +8,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -22,6 +23,12 @@ pub const POLL_EVERY: Duration = Duration::from_secs(2);
 /// polling time of the worker and doubles after each failure up to this.
 pub const REBUILD_RETRY_AT_MOST: Duration = Duration::from_mins(1);
 
+/// The wait after a wait: twice as long, never longer than [`REBUILD_RETRY_AT_MOST`]. The one place
+/// that doubles a wait.
+fn next_wait(wait: Duration) -> Duration {
+    (wait * 2).min(REBUILD_RETRY_AT_MOST)
+}
+
 /// Starts the worker; it looks for jobs when it starts and then every `every`. The caller stops it
 /// with [`JoinHandle::abort`] when the server stops.
 ///
@@ -30,11 +37,26 @@ pub const REBUILD_RETRY_AT_MOST: Duration = Duration::from_mins(1);
 /// wait for it. A failed try is made again after a wait that starts at `every` and doubles up to
 /// [`REBUILD_RETRY_AT_MOST`]; a try that panics is logged and made again the same way.
 pub fn spawn<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration) -> JoinHandle<()> {
+    spawn_with(services, every, rebuild_text_index)
+}
+
+/// [`spawn`] with the task that makes the index again given, so a test can make it panic. The task
+/// takes the services and the wait to start from, and ends when the index has been made.
+pub fn spawn_with<S, R, F>(
+    services: Arc<AuthServices<S>>,
+    every: Duration,
+    rebuild: R,
+) -> JoinHandle<()>
+where
+    S: AuthStore,
+    R: Fn(Arc<AuthServices<S>>, Duration) -> F + Clone + Send + 'static,
+    F: Future<Output = ()> + Send + 'static,
+{
     tokio::spawn(async move {
         // The set goes away with this task, and takes the rebuild with it when the worker stops.
         let mut beside = JoinSet::new();
         let mut retry_in = every;
-        beside.spawn(rebuild_text_index(Arc::clone(&services), every));
+        beside.spawn(rebuild(Arc::clone(&services), every));
         let mut ticks = tokio::time::interval(every);
         ticks.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
@@ -48,12 +70,13 @@ pub fn spawn<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration) -> J
                         "the task that makes the text index again stopped; it is started again"
                     );
                     // The wait is inside the new task: the jobs do not wait for it.
-                    let (services, wait) = (Arc::clone(&services), retry_in);
+                    let (services, wait, rebuild) =
+                        (Arc::clone(&services), retry_in, rebuild.clone());
                     beside.spawn(async move {
                         tokio::time::sleep(wait).await;
-                        rebuild_text_index(services, every).await;
+                        rebuild(services, every).await;
                     });
-                    retry_in = (retry_in * 2).min(REBUILD_RETRY_AT_MOST);
+                    retry_in = next_wait(retry_in);
                 }
             }
             loop {
@@ -73,9 +96,9 @@ pub fn spawn<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration) -> J
     })
 }
 
-/// Makes the text index again if a migration asked for it, until it has gone through once.
-async fn rebuild_text_index<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration) {
-    let mut wait = every;
+/// Makes the text index again if a migration asked for it, until it has gone through once; a failed
+/// try waits `wait`, then twice as long each time.
+pub async fn rebuild_text_index<S: AuthStore>(services: Arc<AuthServices<S>>, mut wait: Duration) {
     loop {
         match services
             .ctx(RequestInfo::default())
@@ -89,8 +112,24 @@ async fn rebuild_text_index<S: AuthStore>(services: Arc<AuthServices<S>>, every:
                     "the text index could not be made again; the next try follows"
                 );
                 tokio::time::sleep(wait).await;
-                wait = (wait * 2).min(REBUILD_RETRY_AT_MOST);
+                wait = next_wait(wait);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_wait_doubles_up_to_the_longest() {
+        let mut wait = POLL_EVERY;
+        let mut seen = Vec::new();
+        for _ in 0..7 {
+            seen.push(wait.as_secs());
+            wait = next_wait(wait);
+        }
+        assert_eq!(seen, [2, 4, 8, 16, 32, 60, 60]);
     }
 }

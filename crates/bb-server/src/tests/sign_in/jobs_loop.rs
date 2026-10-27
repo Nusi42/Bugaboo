@@ -3,6 +3,7 @@
 //! `bb-app`; this is the loop around it, on both databases.
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use bb_app::context::SystemIds;
@@ -130,6 +131,50 @@ async fn m5_f53_the_worker_makes_the_text_index_again_when_a_migration_asked_for
         until_the_queue_is_empty(&rig).await?;
         running.abort();
         waited.map_err(|_| "the worker did not make the index again in time")??;
+        let head = rig
+            .database
+            .outbox_position(&TechnicalName::new("head")?)
+            .await?;
+        assert_eq!(rig.database.outbox_position(&reader).await?, head);
+        Ok(())
+    })
+    .await
+}
+
+/// A rebuild that panics is logged and made again: after one panic the reader still reaches the
+/// head of the outbox.
+#[tokio::test]
+async fn m5_f53_a_rebuild_that_panics_once_is_started_again() -> TestResult {
+    each_database("m5_f53_loop_rebuild_panics", async |db| {
+        let rig = Rig::start(db).await?;
+        let reader = TechnicalName::new(CONSUMER)?;
+        rig.database
+            .outbox_set(CONSUMER, REBUILD_WANTED, rig.clock_now())
+            .await?;
+        let tries = Arc::new(AtomicUsize::new(0));
+        let counted = Arc::clone(&tries);
+        let running = bb_jobs::spawn_with(
+            Arc::clone(&rig.services),
+            TEST_POLL,
+            move |services, wait| {
+                let first = counted.fetch_add(1, Ordering::SeqCst) == 0;
+                async move {
+                    // The first try dies in the middle of its work.
+                    assert!(!first, "the rebuild dies once");
+                    bb_jobs::rebuild_text_index(services, wait).await;
+                }
+            },
+        );
+        let waited = tokio::time::timeout(WAIT_AT_MOST, async {
+            while rig.database.outbox_position(&reader).await? == REBUILD_WANTED {
+                tokio::time::sleep(TEST_POLL).await;
+            }
+            Ok::<(), Failure>(())
+        })
+        .await;
+        running.abort();
+        waited.map_err(|_| "the rebuild was not started again after it died")??;
+        assert_eq!(tries.load(Ordering::SeqCst), 2);
         let head = rig
             .database
             .outbox_position(&TechnicalName::new("head")?)
