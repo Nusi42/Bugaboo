@@ -150,8 +150,8 @@ fn issues_with(dialect: Dialect, word: Lookup<'_>, scope: &SimpleExpr) -> Select
 }
 
 /// The condition that the words of a row have this word, as the database says it. The word is
-/// letters and digits and nothing else (`SearchWord` is made by `search_words` only), so it carries
-/// no syntax of the query of the database.
+/// letters, digits and the marks of a letter and nothing else (`SearchWord` is made by
+/// `search_words` only), so it carries no syntax of the query of the database.
 fn word_matches(dialect: Dialect, (text, prefix): Lookup<'_>) -> SimpleExpr {
     match dialect {
         Dialect::Sqlite => {

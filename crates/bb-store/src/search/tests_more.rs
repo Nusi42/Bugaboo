@@ -449,7 +449,7 @@ async fn qry_05_contains_finds_the_words_of_a_title_and_of_a_field_where_it_is_r
             Box::pin(async move { crate::text_index::reindex_issues(tx, &all).await })
         })
         .await?;
-        // A title: every word in the one title, a start with `*`, accents and case alike.
+        // A title: every word in the one title, a start with `*`, case and the way a letter is written alike.
         let titled = |text: &str| {
             request(
                 &data,

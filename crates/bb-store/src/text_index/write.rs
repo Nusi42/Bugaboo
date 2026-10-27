@@ -239,50 +239,6 @@ pub(crate) async fn reindex_issues(
     Ok(())
 }
 
-/// The next page of issues in the order of their IDs, after the one given (the first page if none).
-/// Every step of a rebuild reads one.
-///
-/// # Errors
-/// Fails when the database fails.
-pub(crate) async fn issues_after(
-    transaction: &mut Transaction,
-    after: Option<&[u8; 16]>,
-) -> Result<Vec<IssueId>, StoreError> {
-    let mut select = Query::select();
-    select
-        .column(IssueRow::Id)
-        .from(IssueRow::Table)
-        .order_by(IssueRow::Id, Order::Asc)
-        .limit(u64::try_from(ISSUES_PER_STEP).unwrap_or(u64::MAX));
-    if let Some(after) = after {
-        select.and_where(Expr::col(IssueRow::Id).gt(after.to_vec()));
-    }
-    transaction
-        .fetch_all(&select)
-        .await?
-        .iter()
-        .map(|row| IssueId::read(row.get(IssueRow::Id)?))
-        .collect()
-}
-
-/// Makes the rows of every issue what its stored texts say now, in the one transaction given. The
-/// migration that follows a change of the rule that prepares texts uses it (the rebuild of the
-/// command makes one transaction for each step instead).
-///
-/// # Errors
-/// Fails when the database fails.
-pub(crate) async fn reindex_all(transaction: &mut Transaction) -> Result<(), StoreError> {
-    let mut after: Option<[u8; 16]> = None;
-    loop {
-        let issues = issues_after(transaction, after.as_ref()).await?;
-        reindex_issues(transaction, &issues).await?;
-        match issues.last() {
-            Some(last) if issues.len() == ISSUES_PER_STEP => after = Some(last.to_stored()),
-            _ => return Ok(()),
-        }
-    }
-}
-
 /// Adds rows, as many to a statement as one may bind.
 async fn insert_rows(
     transaction: &mut Transaction,

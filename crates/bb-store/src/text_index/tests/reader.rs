@@ -634,7 +634,7 @@ async fn iss_13_a_word_with_a_combining_mark_is_split_alike_on_both_databases() 
         index_text(&mut tx, id, TextSource::Title, id.into(), "हिन्दी كِتاب done").await?;
         tx.commit().await?;
         let everywhere = TextScope::Everywhere;
-        for words in ["हिन्दी", "हिन*", "كِتاب", "done"] {
+        for words in ["हिन्दी", "हि*", "كِتاب", "done"] {
             assert_eq!(
                 found(storage, words, everywhere).await?,
                 [hit(1)],

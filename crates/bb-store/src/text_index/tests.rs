@@ -242,6 +242,58 @@ async fn iss_13_case_and_the_way_a_letter_is_written_do_not_matter_but_the_lette
     .await
 }
 
+/// Letters that NFC joins, takes apart or leaves with a mark on them stay one word in the index
+/// and are found by the same words on both databases: the tokenizer of SQLite (`unicode61`, no
+/// accents removed) and `simple` of PostgreSQL keep the stored word as it is (M5-F53).
+#[tokio::test]
+async fn iss_13_letters_that_nfc_joins_or_leaves_marked_are_found_alike_on_both_databases()
+-> TestResult {
+    each_database("iss_13_nfc_letters", async |db| {
+        let fixture = fixture(db).await?;
+        let mut ids = ids();
+        let world = world(&fixture.storage, &mut ids, 2).await;
+        let issue: Vec<IssueId> = world.issues.iter().map(|made| made.id).collect();
+        let mut tx = fixture.storage.database().begin().await?;
+        // A capital I with a dot above (it keeps its mark after lower case and NFC), a Japanese
+        // syllable written as two characters, and a Devanagari letter with a dot written as one.
+        index_text(
+            &mut tx,
+            issue[0],
+            TextSource::Title,
+            issue[0].into(),
+            "\u{130}stanbul \u{304b}\u{3099}x \u{958}y",
+        )
+        .await?;
+        tx.commit().await?;
+        let everywhere = TextScope::Everywhere;
+        for words in [
+            "\u{130}stanbul",
+            "i\u{307}stanbul",
+            "i\u{307}st*",
+            "\u{304c}x",
+            "\u{304b}\u{3099}x",
+            "\u{915}\u{93c}y",
+            "\u{958}y",
+        ] {
+            assert_eq!(
+                found(&fixture.storage, words, everywhere).await?,
+                [hit(1)],
+                "{words:?}"
+            );
+        }
+        // The letters are kept: an I without the dot is another letter.
+        for words in ["istanbul", "istan*", "\u{304b}x", "\u{915}y"] {
+            assert_eq!(
+                found(&fixture.storage, words, everywhere).await?,
+                Vec::<String>::new(),
+                "{words:?}"
+            );
+        }
+        Ok(())
+    })
+    .await
+}
+
 #[tokio::test]
 async fn iss_13_the_words_may_be_in_different_texts_of_one_issue() -> TestResult {
     each_database("iss_13_words_anywhere", async |db| {

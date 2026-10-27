@@ -1,20 +1,26 @@
 //! The one rule that makes a text comparable for the full-text search (ADR-0016, amendment M5):
 //! lower case, Unicode NFC, split into words. No letter is changed into another: an accent stays
-//! (*müller* finds *Müller*, not *Muller* or *Mueller*), `ß` stays `ß`. The index and the words of
-//! a search both go through `prepare` / [`search_words`], so a word is found exactly when it
-//! was indexed.
+//! (*müller* finds *Müller*, not *Muller* or *Mueller*), `ß` stays `ß`.
 //!
-//! Only the words that go into the index are made NFC, and only with the feature `canonical-text`
-//! (the NFC tables are too large for the search module of the browser, which checks a search and
-//! never writes an index). Without it `prepare` and `prepare_joined` do not exist, so no code
-//! can store a word that is not NFC; [`search_words`] still splits and lowers a text the same way,
-//! and everything the checker asks of a word (how many letters, how many words) is counted so that
-//! the NFC step cannot change it, except that a letter typed twice, once as one character and once
-//! as two, is two words to the browser and one to the server, which checks again.
+//! Two steps, each with one rule:
+//!
+//! - **What the checker decides** ([`checked_words`]): how many words a `contains` has, and
+//!   whether a word typed with `*` has enough letters ([`letters`]). The text is lower-cased and
+//!   split as typed, with no NFC, so the browser and the server give the same answer.
+//! - **What is stored and matched** (`search_words`, `prepare`, `prepare_joined`): the whole text
+//!   is lower-cased, put into NFC and then split, so a letter written as two characters is the
+//!   same word as the letter written as one. They exist only with the feature `canonical-text`
+//!   (see ADR-0016), so no code can store a word that is not NFC.
+//!
+//! Both go through the same function that splits, and the index and the words of a search both go
+//! through the second step, so a word is found exactly when it was indexed.
+
+#[cfg(any(test, feature = "canonical-text"))]
+use unicode_normalization::UnicodeNormalization as _;
 
 /// A word of a search. A word typed with a `*` at its end matches every word that starts with it.
-/// Only [`search_words`] makes one, so every word is letters and digits of the one rule and
-/// nothing else: it cannot carry the syntax of a database query.
+/// Only [`checked_words`] and `search_words` make one, so a word holds no character that could be
+/// the syntax of a database query: letters, digits and the marks of a letter.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchWord {
     text: String,
@@ -22,25 +28,27 @@ pub struct SearchWord {
 }
 
 /// The fewest letters a word of a search needs before its `*` (`cra*` is fine, `c*` would match
-/// nearly every word), counted on the prepared word. The checker of the search language refuses
-/// a shorter start, and the search looks it up as the whole word: both ask [`SearchWord::matches_by_start`].
+/// nearly every word), counted by [`letters`]. The checker of the search language refuses a
+/// shorter start, and the search looks it up as the whole word: both ask [`SearchWord::matches_by_start`].
 pub const MIN_PREFIX_CHARS: usize = 2;
+
+/// How many letters a word has: its characters that are not combining marks, so a letter written
+/// as two characters counts once. The one place that counts them; what asks whether a start has
+/// enough letters calls it.
+#[must_use]
+pub fn letters(word: &str) -> usize {
+    word.chars().filter(|c| !is_mark(*c)).count()
+}
 
 impl SearchWord {
     /// Whether the word is looked up by its start: it was typed with a `*` and has at least
     /// [`MIN_PREFIX_CHARS`] letters. The one place that decides it.
     #[must_use]
     pub fn matches_by_start(&self) -> bool {
-        self.prefix && self.letters() >= MIN_PREFIX_CHARS
+        self.prefix && letters(&self.text) >= MIN_PREFIX_CHARS
     }
 
-    /// How many letters the word has: its characters that are not combining marks, so a letter
-    /// written as two characters counts once, with or without the NFC step.
-    fn letters(&self) -> usize {
-        self.text.chars().filter(|c| !is_mark(*c)).count()
-    }
-
-    /// The prepared word (lower case, NFC).
+    /// The word (lower case; NFC where the feature is on).
     #[must_use]
     pub fn text(&self) -> &str {
         &self.text
@@ -53,29 +61,61 @@ impl SearchWord {
     }
 }
 
-/// The words of `text`, in order: lower case, NFC (a letter written as two characters is the same
-/// word as the letter written as one), a word is a run of letters and digits with the combining
-/// marks that belong to them, everything else (spaces, hyphens, dots, `@`, punctuation) separates words. A word that
-/// comes twice comes twice: this is what the index keeps.
+/// The words of a search text as the checker counts them: lower case, as typed (no NFC), each with
+/// whether it ended in `*`. A word that is looked up twice (the same text, both times whole or
+/// both times by its start, as [`SearchWord::matches_by_start`] says) is returned once. The
+/// answer is the same in the browser and on the server.
+#[must_use]
+pub fn checked_words(text: &str) -> Vec<SearchWord> {
+    once_each(split(&lowered(text)))
+}
+
+/// The words of a search text as they are looked up in the index: lower case and NFC for the whole
+/// text, then split; each with whether it ended in `*`. A word looked up twice is returned once, so
+/// a repeated word costs the database nothing.
+#[must_use]
+#[cfg(any(test, feature = "canonical-text"))]
+pub fn search_words(text: &str) -> Vec<SearchWord> {
+    once_each(split(&canonical(text)))
+}
+
+/// The words of `text` as they are stored, in order. A word that comes twice comes twice: this is
+/// what the index keeps.
 #[must_use]
 #[cfg(any(test, feature = "canonical-text"))]
 pub fn prepare(text: &str) -> Vec<String> {
-    words_of(text).into_iter().map(|word| word.text).collect()
+    split(&canonical(text))
+        .into_iter()
+        .map(|word| word.text)
+        .collect()
 }
 
-/// The words of a search text, as [`prepare`] makes them, each with whether it ended in `*`. A
-/// word that is looked up twice (the same text, both times whole or both times by its start, as
-/// [`SearchWord::matches_by_start`] says) is returned once, so a repeated word costs the database
-/// nothing.
+/// The text of a words list as it is stored in the index: the words, one space between.
 #[must_use]
-pub fn search_words(text: &str) -> Vec<SearchWord> {
+#[cfg(any(test, feature = "canonical-text"))]
+pub fn prepare_joined(text: &str) -> String {
+    prepare(text).join(" ")
+}
+
+/// The text in lower case, character by character.
+fn lowered(text: &str) -> String {
+    text.chars().flat_map(char::to_lowercase).collect()
+}
+
+/// The text in lower case and NFC.
+#[cfg(any(test, feature = "canonical-text"))]
+fn canonical(text: &str) -> String {
+    lowered(text).nfc().collect()
+}
+
+/// Each lookup once. The same lookup again keeps the first word, and its `*` if the later one had
+/// it, so whether a short start is seen does not depend on the order of the words.
+fn once_each(all: Vec<SearchWord>) -> Vec<SearchWord> {
     let mut words: Vec<SearchWord> = Vec::new();
-    for word in words_of(text) {
+    for word in all {
         let same = |other: &SearchWord| {
             other.text == word.text && other.matches_by_start() == word.matches_by_start()
         };
-        // The same lookup again keeps the first word, and its `*` if the later one had it, so
-        // whether a short start is seen does not depend on the order of the words.
         match words.iter_mut().find(|other| same(other)) {
             Some(kept) => kept.prefix |= word.prefix,
             None => words.push(word),
@@ -84,8 +124,10 @@ pub fn search_words(text: &str) -> Vec<SearchWord> {
     words
 }
 
-/// Every word of the text in order, repeated ones too.
-fn words_of(text: &str) -> Vec<SearchWord> {
+/// Every word of a lower-cased text in order, repeated ones too: a run of letters and digits with
+/// the combining marks that belong to them. Everything else (spaces, hyphens, dots, `@`,
+/// punctuation) separates words.
+fn split(text: &str) -> Vec<SearchWord> {
     let mut words = Vec::new();
     let mut current = String::new();
     let mut chars = text.chars().peekable();
@@ -93,38 +135,25 @@ fn words_of(text: &str) -> Vec<SearchWord> {
         // A combining mark belongs to the letter before it (a letter written as two characters);
         // one with no letter before it separates, like any other sign.
         if c.is_alphanumeric() || (!current.is_empty() && is_mark(c)) {
-            current.extend(c.to_lowercase());
+            current.push(c);
             if chars.peek().is_some() {
                 continue;
             }
         }
         if !current.is_empty() {
             words.push(SearchWord {
-                text: canonical(&current),
+                text: std::mem::take(&mut current),
                 prefix: c == '*',
             });
-            current.clear();
         }
     }
     words
 }
 
-/// The word in NFC where the feature is on.
-fn canonical(word: &str) -> String {
-    #[cfg(any(test, feature = "canonical-text"))]
-    {
-        use unicode_normalization::UnicodeNormalization as _;
-        word.nfc().collect()
-    }
-    #[cfg(not(any(test, feature = "canonical-text")))]
-    word.to_owned()
-}
-
-/// Whether the character is a combining mark of the blocks that hold the accents written after
-/// their letter (U+0300 to U+036F and the extensions). The marks of other scripts (vowel signs of
-/// Indic scripts, Arabic marks) are alphabetic for Rust's `is_alphanumeric` and so belong to their
-/// word already. Ranges, not the table of general categories: that table would add 14 KB to the
-/// search module of the browser (PERF-04).
+/// Whether the character is a combining mark: the blocks that hold the accents written after
+/// their letter (U+0300 to U+036F and the extensions), and the marks that NFC leaves on a letter
+/// of another script (the dot of Devanagari, the signs of Japanese and Korean). A table of the
+/// general categories would add 14 KB to the search module of the browser (PERF-04).
 fn is_mark(c: char) -> bool {
     matches!(
         c,
@@ -133,14 +162,9 @@ fn is_mark(c: char) -> bool {
             | '\u{1dc0}'..='\u{1dff}'
             | '\u{20d0}'..='\u{20ff}'
             | '\u{fe20}'..='\u{fe2f}'
+            | '\u{93c}'
+            | '\u{3099}'..='\u{309a}'
     )
-}
-
-/// The text of a words list as it is stored in the index: the words, one space between.
-#[cfg(any(test, feature = "canonical-text"))]
-#[must_use]
-pub fn prepare_joined(text: &str) -> String {
-    prepare(text).join(" ")
 }
 
 #[cfg(test)]
@@ -256,5 +280,35 @@ mod tests {
         assert!(!by_start("a\u{308}*"));
         assert!(by_start("\u{e4}b*"));
         assert!(by_start("a\u{308}b*"));
+    }
+
+    /// What the checker decides is made on the text as typed, so it is the same with or without
+    /// the NFC step (the browser has none).
+    #[test]
+    fn the_checker_counts_the_text_as_typed() {
+        let starts = |text: &str| checked_words(text)[0].matches_by_start();
+        assert!(starts("\u{1100}\u{1161}*"));
+        assert!(!starts("\u{fb1d}*"));
+        assert!(!starts("\u{958}*"));
+        assert!(!starts("\u{304b}\u{3099}*"));
+        let nine: Vec<String> = (1..=9).map(|n| format!("a{n}")).collect();
+        let text = format!("{} m\u{fc} mu\u{308}", nine.join(" "));
+        assert_eq!(checked_words(&text).len(), 11);
+        // What is stored and looked up is NFC: the same two are one word.
+        assert_eq!(search_words(&text).len(), 10);
+        assert_eq!(letters("mu\u{308}ller"), 6);
+    }
+
+    /// NFC is applied to the whole text before it is split, so a letter that NFC joins or takes
+    /// apart stays inside its word.
+    #[test]
+    fn the_whole_text_is_made_nfc_before_it_is_split() {
+        assert_eq!(words("\u{304b}\u{3099}"), ["\u{304c}"]);
+        assert_eq!(words("\u{304b}\u{3099}x"), ["\u{304c}x"]);
+        // Devanagari: the letter with a dot is one letter written as one or as two characters.
+        assert_eq!(words("\u{958}x"), ["\u{915}\u{93c}x"]);
+        assert_eq!(words("\u{915}\u{93c}x"), ["\u{915}\u{93c}x"]);
+        // A capital I with a dot above keeps its mark and stays in its word.
+        assert_eq!(words("\u{130}stanbul"), ["i\u{307}stanbul"]);
     }
 }

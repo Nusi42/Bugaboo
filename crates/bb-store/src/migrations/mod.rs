@@ -81,10 +81,6 @@ pub(crate) enum Step {
     /// Take an index away that a later rule no longer wants (a unique key that became a rule of
     /// the program).
     DropIndex(IndexDropStatement),
-    /// Make the rows of the full-text index again from the stored texts, after the rule that
-    /// prepares a text changed (M5-F53). Rust, not a statement: the words are prepared by
-    /// `bb_core::text_words`.
-    RebuildTextIndex,
     /// Statements that only one database knows (a virtual table, a generated column).
     Sql(FixedSql),
 }
@@ -142,10 +138,6 @@ impl Definition {
                     statement.build(PostgresQueryBuilder),
                 ],
                 Step::Sql(sql) => sql.texts(),
-                Step::RebuildTextIndex => [
-                    "rebuild the text index from the stored texts".to_owned(),
-                    "rebuild the text index from the stored texts".to_owned(),
-                ],
             };
             for text in texts {
                 hasher.update(u64::try_from(text.len()).unwrap_or(u64::MAX).to_be_bytes());
@@ -401,9 +393,6 @@ impl Database {
                     Step::Rename(statement) => transaction.execute_schema(&statement).await?,
                     Step::DropIndex(statement) => transaction.execute_schema(&statement).await?,
                     Step::Sql(sql) => transaction.execute_fixed(&sql).await?,
-                    Step::RebuildTextIndex => {
-                        crate::text_index::reindex_all(&mut transaction).await?;
-                    }
                 }
             }
             record(&mut transaction, next, now).await?;

@@ -8,7 +8,7 @@
 //! only holds what the person may read.
 
 use bb_core::names::same_name;
-use bb_core::text_words::search_words;
+use bb_core::text_words::checked_words;
 
 use crate::fields::{Field, FieldKind, Operator, ReadableFields};
 use crate::limits::{MAX_CONTAINS_WORDS, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS, MIN_PREFIX_CHARS};
@@ -164,7 +164,7 @@ impl<'a> Checker<'a> {
 
     /// The mistakes of the words of a `contains`: too many, or a start with too few letters.
     fn words_mistakes(&mut self, text: &Text) {
-        let words = search_words(&text.text);
+        let words = checked_words(&text.text);
         if words.len() > MAX_CONTAINS_WORDS {
             self.mistakes.push(Mistake::new(
                 text.span,

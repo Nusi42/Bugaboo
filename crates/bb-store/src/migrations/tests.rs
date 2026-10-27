@@ -105,7 +105,7 @@ const APPLIED: [(i64, &str); 25] = [
     ),
     (
         25,
-        "0a2dd1963bff6e37fd5910bd96dddc26019b21fb249af6c906525a905df1f0fa",
+        "49c5ef684f12261c32a15bf25618f876ca8cddb285771c2046ed95260078fdb0",
     ),
 ];
 

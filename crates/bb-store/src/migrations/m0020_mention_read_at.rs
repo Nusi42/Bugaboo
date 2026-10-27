@@ -133,7 +133,7 @@ mod tests {
     -> TestResult {
         each_database("migration_20_mention", async |db| {
             let (database, comment, recipient) = old_database_with_a_mention(db.url()).await?;
-            database.migrate_until(20, at(1)).await?;
+            database.migrate(at(1)).await?;
 
             // The column is gone: an UPDATE that names it fails (a SELECT would read the missing
             // column as a string on SQLite).
