@@ -22,8 +22,8 @@ use bb_core::readable_id::ReadableId;
 use bb_core::time::SECONDS_PER_MINUTE;
 use bb_policy::{Evaluation, PersonRef};
 use bb_searchlang::{
-    Date, Decimal, IssueRef, NO, Operand, Span, YES, check, empty_filter_text, is_filter_text,
-    parse_with,
+    Date, Decimal, IssueRef, NO, Operand, ReadableFields, Span, YES, check, empty_filter_text,
+    is_filter_text, parse_with,
 };
 
 use super::names::NameCache;
@@ -249,27 +249,20 @@ impl<S: AuthStore> Ctx<'_, S> {
             let wanted = self
                 .wanted_of(viewer, looked, &links, (target, &issues), &key, &mut cache)
                 .await?;
-            let mut filter = None;
-            let mut name = None;
-            if let Some(wanted) = wanted {
-                let written = match wanted.value.clone() {
-                    Some(value) => is_filter_text(word, value),
-                    None => empty_filter_text(word),
-                };
-                if let Some(written) = written
-                    && let Ok(parsed) = parse_with(&written, &readable)
-                    && let Ok(checked) = check(parsed, &readable)
-                {
-                    self.search_names_in(actor, looked, &checked, &mut cache)
-                        .await?;
-                    if !cache.names.names_unknown()
-                        && stands_for_only(&cache.names, &links, &wanted)
-                    {
-                        filter = Some(written);
-                    }
-                }
-                name = wanted.name;
-            }
+            let (filter, name) = match wanted {
+                Some(wanted) => (
+                    self.checked_filter(
+                        actor,
+                        looked,
+                        (word, &readable, &links),
+                        &wanted,
+                        &mut cache,
+                    )
+                    .await?,
+                    wanted.name,
+                ),
+                None => (None, None),
+            };
             groups.push(GroupShown {
                 key,
                 issues: count,
@@ -278,6 +271,36 @@ impl<S: AuthStore> Ctx<'_, S> {
             });
         }
         Ok(groups)
+    }
+
+    /// The text of the filter of a group, when it is a search the language reads and its name stands
+    /// for exactly the thing of the group.
+    async fn checked_filter(
+        &self,
+        actor: &Actor,
+        looked: &Looked,
+        (word, readable, links): (&str, &ReadableFields, &[ProjectLink]),
+        wanted: &Wanted,
+        cache: &mut NameCache,
+    ) -> Result<Option<String>, AppError> {
+        let written = match wanted.value.clone() {
+            Some(value) => is_filter_text(word, value),
+            None => empty_filter_text(word),
+        };
+        let Some(written) = written else {
+            return Ok(None);
+        };
+        let Ok(parsed) = parse_with(&written, readable) else {
+            return Ok(None);
+        };
+        let Ok(checked) = check(parsed, readable) else {
+            return Ok(None);
+        };
+        self.search_names_in(actor, looked, &checked, cache).await?;
+        Ok(
+            (!cache.names.names_unknown() && stands_for_only(&cache.names, links, wanted))
+                .then_some(written),
+        )
     }
 
     /// What the group asks for, or nothing when it has no name this person may use.

@@ -389,15 +389,7 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     } else {
         Vec::new()
     };
-    // The people of the groups are read in one go, as the people of a page are.
-    let people: Vec<_> = found
-        .iter()
-        .filter_map(|group| match group.key {
-            GroupKey::Person(person) => Some(person),
-            _ => None,
-        })
-        .collect();
-    ctx.preload_people(&people).await?;
+    ctx.preload_group_people(&found).await?;
     let mut shown = Vec::with_capacity(found.len());
     for group in found {
         let key = match (group.key, kind) {
@@ -442,6 +434,21 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The people of the groups are read in one go, as the people of a page are.
+    async fn preload_group_people(
+        &self,
+        found: &[super::request::GroupCount],
+    ) -> Result<(), AppError> {
+        let people: Vec<_> = found
+            .iter()
+            .filter_map(|group| match group.key {
+                GroupKey::Person(person) => Some(person),
+                _ => None,
+            })
+            .collect();
+        self.preload_people(&people).await
+    }
+
     /// The kinds of relation that mean *blocks*: those whose forward name is the starting one.
     async fn blocking_kinds(&self) -> Result<Vec<bb_core::id::RelationKindId>, AppError> {
         let blocks =
