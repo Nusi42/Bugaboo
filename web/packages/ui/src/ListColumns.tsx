@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
 import type { ColumnResize } from "./use-column-resize.ts";
 import { iconColumns, type ListColumn } from "./list-columns.ts";
-import { listMinWidth, listTemplate, type ListColumnSpec } from "./list-template.ts";
+import { listTemplate, type ListColumnSpec } from "./list-template.ts";
 import { CellGroup, ColumnHeaderCell } from "./ListRoles.tsx";
 import { partOf } from "./parts.ts";
 import { buttonType, iconSize } from "./props.ts";
@@ -14,40 +14,50 @@ export interface ListFrameProps {
   readonly columns: readonly ListColumnSpec[];
   /** *Spacing: Compact*. */
   readonly compact: boolean;
-  /** The columns have the widths they were given (a head over rows), not the card of a phone. */
-  readonly fixed: boolean;
   readonly children: ReactNode;
 }
 
 /**
- * Keeps the room of the bar the rows have at the end of the head, so the columns stand over each
- * other. Only the box of the rows and the first thing in it are measured, not what is drawn in it.
+ * Gives the rows what only the head knows. The rows are virtualized and have no width of their
+ * own, so the head, which is not and is as wide as its columns need (`max-content`, at least the
+ * frame), is measured and its width is given to them (`list-width`); and the room of the bar the
+ * rows have is kept at the end of the head (`list-gutter`), so the columns stand over each other.
+ * Only the head, the box of the rows and the first thing in it are measured, not what is drawn in it.
  */
-function keepGutterOfRows(frame: HTMLElement): () => void {
+function keepHeadAndRows(frame: HTMLElement): () => void {
   let box: HTMLElement | null = null;
-  let gutter = "";
-  const sync = (): void => {
-    if (box === null) {
-      return;
+  let head: HTMLElement | null = null;
+  const written = { gutter: "", width: "" };
+  const give = (
+    name: "list-gutter" | "list-width",
+    value: string,
+    was: "gutter" | "width",
+  ): void => {
+    if (value !== written[was]) {
+      written[was] = value;
+      frame.style.setProperty(variableOf(name), value);
     }
-    const now = `${String(box.offsetWidth - box.clientWidth)}px`;
-    if (now !== gutter) {
-      gutter = now;
-      frame.style.setProperty(variableOf("list-gutter"), now);
+  };
+  const sync = (): void => {
+    if (box !== null) {
+      give("list-gutter", `${String(box.offsetWidth - box.clientWidth)}px`, "gutter");
+    }
+    if (head !== null) {
+      give("list-width", `${String(head.offsetWidth)}px`, "width");
     }
   };
   const watching = new ResizeObserver(sync);
   const attach = (): void => {
-    const found = frame.querySelector<HTMLElement>(`[data-part="${part.listScroll}"]`);
-    if (found === box) {
+    const foundBox = frame.querySelector<HTMLElement>(`[data-part="${part.listScroll}"]`);
+    const foundHead = frame.querySelector<HTMLElement>(`[data-part="${part.listHead}"]`);
+    if (foundBox === box && foundHead === head) {
       return;
     }
     watching.disconnect();
-    box = found;
-    if (box !== null) {
-      watching.observe(box);
-      if (box.firstElementChild !== null) {
-        watching.observe(box.firstElementChild);
+    [box, head] = [foundBox, foundHead];
+    for (const watched of [box, box?.firstElementChild, head]) {
+      if (watched !== null && watched !== undefined) {
+        watching.observe(watched);
       }
     }
     sync();
@@ -62,15 +72,13 @@ function keepGutterOfRows(frame: HTMLElement): () => void {
 }
 
 /** The box around the head and the rows of an issue list: it holds the columns they share. */
-export function ListFrame({ columns, compact, fixed, children }: ListFrameProps) {
+export function ListFrame({ columns, compact, children }: ListFrameProps) {
   const frame = useRef<HTMLDivElement>(null);
   const template = listTemplate(columns);
-  const needed = fixed ? `${String(listMinWidth(columns))}px` : "0px";
   useLayoutEffect(() => {
     frame.current?.style.setProperty(variableOf("list-columns"), template);
-    frame.current?.style.setProperty(variableOf("list-width"), needed);
-  }, [template, needed]);
-  useEffect(() => (frame.current === null ? undefined : keepGutterOfRows(frame.current)), []);
+  }, [template]);
+  useEffect(() => (frame.current === null ? undefined : keepHeadAndRows(frame.current)), []);
   return (
     <div ref={frame} {...partOf(part.listFrame, { variants: [compact && "compact"] })}>
       {children}

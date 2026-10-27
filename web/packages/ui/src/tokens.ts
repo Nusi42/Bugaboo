@@ -158,7 +158,6 @@ export const tokenNames = [
   "size-col-labels",
   "size-col-project",
   "size-col-title",
-  "size-title-share",
   "size-col-least",
   "size-col-most",
   "size-col-step",

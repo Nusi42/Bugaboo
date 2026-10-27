@@ -128,11 +128,12 @@ tokens {
     size "size-col-person" "96px"
     size "size-col-labels" "96px"
     size "size-col-project" "96px"
-    // The title takes the room that is left, and no less than this; a column a person drags is no
-    // narrower than the least and moves by the step with the arrow keys.
+    // The title takes the room that is left, and no less than this; the columns of fields (priority, assigned to,
+    // changed, project, labels, an own field) are as wide as their token where there is room and give it up, down to
+    // the least, before the title or a column that is only its icon or its ID does; a column a person drags is no
+    // narrower than the least and moves by the step with the arrow keys. Only columns added beyond the defaults make a list
+    // wider than its box (it scrolls sideways).
     size "size-col-title" "140px"
-    // The title keeps at least this share of the window, with Customize open too (UX §4.2: the title is what people read); a list that cannot give it scrolls sideways, and the columns of fields give up their room first (down to the least).
-    size "size-title-share" "33vw"
     size "size-col-least" "48px"
     size "size-col-most" "800px"
     size "size-col-step" "16px"
@@ -1949,10 +1950,11 @@ part "list-scroll" {
     border-bottom "$border-width solid $border-subtle"
 }
 
-// The head is as wide as the rows and scrolls sideways with them inside the frame.
+// The head is as wide as its columns need (their least) and at least the frame (the code gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
 part "list-head" {
     box-sizing border-box
-    min-width "$list-width"
+    width "min-content"
+    min-width "100%"
     padding-inline-end "$list-gutter"
     overflow hidden
 }
@@ -6788,7 +6790,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         flex-wrap wrap
         align-items center
         margin "$doc-space-10 auto"
-        width max-content
+        width "max-content"
         max-width "calc(100% - $space-5)"
         background "$bg-raised"
         border "$border-width solid $border"
@@ -7198,7 +7200,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         border-radius "$r-ctl"
         padding "$doc-space-3"
         background "$bg-surface"
-        width max-content
+        width "max-content"
         max-width "100%"
         font-size "$doc-font-11-5"
     }
@@ -9085,7 +9087,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         position sticky
         bottom "$space-3"
         margin "$space-3 auto 0"
-        width max-content
+        width "max-content"
         max-width "100%"
         display flex
         flex-wrap wrap
@@ -9829,7 +9831,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         border-radius "$r-ctl"
         padding "$space-1"
         margin "$space-3 0 $doc-space-20"
-        width max-content
+        width "max-content"
         max-width "100%"
         background "$bg-surface"
     }
@@ -12155,7 +12157,7 @@ part "workflow-add field.error" "workflow-status.head field.error" {
     position absolute
     top "100%"
     inset-inline-start 0
-    width max-content
+    width "max-content"
 }
 
 part "app-layout[variant=phone] workflow-add[variant=error]" "app-layout[variant=phone] workflow-status.head[variant=error]" {

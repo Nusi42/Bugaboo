@@ -23,6 +23,16 @@ const widthToken = {
   action: "size-col-icon",
 } as const satisfies Readonly<Record<ListColumn, TokenName | undefined>>;
 
+/** The columns whose width is a most: they are narrower where the list has no room for it. */
+const shrinks: ReadonlySet<ListColumn> = new Set([
+  "project",
+  "labels",
+  "priority",
+  "person",
+  "value",
+  "changed",
+]);
+
 function variable(token: TokenName): string {
   return `var(--${token})`;
 }
@@ -38,40 +48,18 @@ export function listTemplate(columns: readonly ListColumnSpec[]): string {
         return `${String(width)}px`;
       }
       if (column === "title") {
-        return `minmax(max(${variable("size-col-title")}, ${variable("size-title-share")}), 1fr)`;
-      }
-      if (column === "value") {
-        return `minmax(${variable("size-col-least")}, ${variable("size-col-value")})`;
+        return `minmax(${variable("size-col-title")}, 1fr)`;
       }
       const token = widthToken[column];
-      return token === undefined ? variable("size-col-title") : variable(token);
+      if (token === undefined) {
+        return variable("size-col-title");
+      }
+      // The columns of fields give up room, down to the least, before the title or another column does.
+      return shrinks.has(column)
+        ? `minmax(${variable("size-col-least")}, ${variable(token)})`
+        : variable(token);
     })
     .join(" ");
-}
-
-/**
- * The width the columns need together, in pixels: each column, the gaps between them and the room
- * the row keeps at its ends. A list narrower than this scrolls sideways, head and rows together.
- */
-export function listMinWidth(columns: readonly ListColumnSpec[]): number {
-  const widths = columns.map(({ column, width }) => {
-    if (width !== undefined) {
-      return width;
-    }
-    if (column === "title") {
-      return Math.max(pixelsOf("size-col-title"), pixelsOf("size-title-share"));
-    }
-    return pixelsOf(
-      column === "value" ? "size-col-least" : (widthToken[column] ?? "size-col-title"),
-    );
-  });
-  const gaps = Math.max(0, columns.length - 1) * pixelsOf("space-2");
-  return (
-    widths.reduce((sum, each) => sum + each, 0) +
-    gaps +
-    2 * pixelsOf("pad-box") +
-    pixelsOf("size-edge")
-  );
 }
 
 /** The size in pixels of a length token of the theme file, as the page has it; none where there is no page. */
@@ -84,6 +72,5 @@ export function pixelsOf(token: TokenName): number {
   if (Number.isNaN(found)) {
     return 0;
   }
-  // A share of the window is as wide as that part of the window is now.
-  return written.trim().endsWith("vw") ? (found * window.innerWidth) / 100 : found;
+  return found;
 }

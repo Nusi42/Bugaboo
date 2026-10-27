@@ -1300,7 +1300,8 @@ body {
 
 [data-part="list-head"] {
   box-sizing: border-box;
-  min-width: var(--list-width);
+  width: min-content;
+  min-width: 100%;
   padding-inline-end: var(--list-gutter);
   overflow: hidden;
 }

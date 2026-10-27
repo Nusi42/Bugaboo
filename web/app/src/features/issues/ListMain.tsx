@@ -50,7 +50,7 @@ export function ListMain({
         onCustomize={onCustomize}
       />
       <ListInfo scopeName={props.scopeName} shown={shown} />
-      <ListFrame columns={specs} compact={compact} fixed={!phone}>
+      <ListFrame columns={specs} compact={compact}>
         {phone ? null : (
           <ListHeader
             view={view}
