@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { issueAddress } from "../src/shared/paths.ts";
+import { issueAddress, paths } from "../src/shared/paths.ts";
 import { ada, bob } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, signIn } from "./support/flows.ts";
@@ -9,6 +9,7 @@ import {
   box,
   dialog,
   expectBoxPointsAtFirst,
+  pointsAtFirst,
   FAST_TYPING_MS,
   holdBackSearches,
   list,
@@ -65,21 +66,75 @@ test("cfg_08 a last letter that keeps the same results still points at a result"
   await expect(page).toHaveURL(addressEndingAt(issueAddress("WEB-2")));
 });
 
-test("cfg_08 the box points at the first result when a later answer lands on top, and Enter opens it", async ({
+test("cfg_08 the local rows get the focus when the typing pause ends, before the server answers", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  const answer = await holdBackSearches(page);
+  await ask(page, "appear");
+  // Within the pause and a little more, whatever the server does: the first row is the one Enter opens.
+  await expect(list(page).getByRole("option").first()).toContainText(t("nav.appearance"));
+  await expect.poll(() => pointsAtFirst(page), { timeout: 1500 }).toBe(true);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(addressEndingAt(paths.appearance));
+  answer();
+});
+
+test("cfg_08 a later answer that lands on top does not take the focus from the row it is on", async ({
   page,
 }) => {
   await signIn(page, ada);
   const answer = await holdBackSearches(page);
   // The pages answer at once; the issues, for a text that looks like an ID, come first when they land.
   await ask(page, "sign-in");
-  await expect(list(page).getByRole("option").first()).toContainText(/sign-in/iu);
+  await expect.poll(() => pointsAtFirst(page), { timeout: 1500 }).toBe(true);
+  const row = await list(page).locator("[data-focused='true']").innerText();
   answer();
   await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
-  // What the box points at is the first row now, and that is what Enter opens.
-  await expectBoxPointsAtFirst(page);
-  await expect(list(page).locator("[data-focused='true']")).toContainText(titles.passkey);
+  // The box still points at the same row, and that is what Enter opens.
+  await expect(list(page).locator("[data-focused='true']")).toHaveText(row);
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(addressEndingAt(issueAddress("WEB-2")));
+  await expect(dialog(page)).toHaveCount(0);
+  await expect(page).not.toHaveURL(/\/issues\//u);
+});
+
+test("cfg_08 an arrow key before the answer keeps the person's row when the answer lands on top", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  const answer = await holdBackSearches(page);
+  await ask(page, "sign-in");
+  await expect.poll(() => pointsAtFirst(page), { timeout: 1500 }).toBe(true);
+  await page.keyboard.press("ArrowDown");
+  const focused = list(page).locator("[data-focused='true']");
+  await expect(focused).toHaveCount(1);
+  await expect(list(page).getByRole("option").first()).not.toHaveText(await focused.innerText());
+  const row = await focused.innerText();
+  answer();
+  await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
+  await expect(focused).toHaveText(row);
+  await page.keyboard.press("Enter");
+  await expect(dialog(page)).toHaveCount(0);
+  await expect(page).not.toHaveURL(/\/issues\//u);
+});
+
+test("cfg_08 an arrow key at once after the words keeps the first row when the answer lands on top", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  const answer = await holdBackSearches(page);
+  await page.keyboard.press("Control+k");
+  await box(page).pressSequentially("sign-in", { delay: FAST_TYPING_MS });
+  await page.keyboard.press("ArrowDown");
+  const focused = list(page).locator("[data-focused='true']");
+  await expect(focused).toHaveCount(1);
+  const row = await focused.innerText();
+  answer();
+  await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
+  await expect(focused).toHaveText(row);
+  await page.keyboard.press("Enter");
+  await expect(dialog(page)).toHaveCount(0);
+  await expect(page).not.toHaveURL(/\/issues\//u);
 });
 
 test("cfg_08 End goes to the last result and Enter opens it", async ({ page }) => {

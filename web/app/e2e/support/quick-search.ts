@@ -124,12 +124,12 @@ export async function holdBackSearches(page: Page): Promise<() => void> {
 
 /** The box names the result that has the focus of the list: it is the first option, with its id. */
 export async function expectBoxPointsAtFirst(page: Page): Promise<void> {
+  await expect.poll(() => pointsAtFirst(page)).toBe(true);
+}
+
+/** Whether the box points at the option that is first in the list, now. */
+export async function pointsAtFirst(page: Page): Promise<boolean> {
   const first = list(page).getByRole("option").first();
-  await expect
-    .poll(
-      async () =>
-        (await box(page).getAttribute("aria-activedescendant")) ===
-        (await first.getAttribute("id")),
-    )
-    .toBe(true);
+  const pointed = await box(page).getAttribute("aria-activedescendant");
+  return pointed !== null && pointed === (await first.getAttribute("id"));
 }

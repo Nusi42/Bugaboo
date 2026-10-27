@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   arrange,
@@ -8,6 +8,7 @@ import {
   resultByKey,
   resultKey,
 } from "./quick-search-collect.ts";
+import { doNothing } from "../../shared/do-nothing.ts";
 import { askerFor } from "../../shared/quick-search-testing.ts";
 import type { QuickSearchSource } from "./quick-search-sources.ts";
 
@@ -120,5 +121,25 @@ describe("cfg_08 the rows of older words", () => {
     const waiting = issues.groups.map((group) => ({ ...group, busy: true }));
     expect(busyKeys([...pages.groups, ...waiting])).toEqual(["issues:Login", "issues:Logout"]);
     expect(busyKeys([...pages.groups, ...issues.groups])).toEqual([]);
+  });
+});
+
+describe("cfg_08 a source that never answers", () => {
+  it("is a failed source after a while, and the others are shown", async () => {
+    vi.useFakeTimers();
+    try {
+      const never: QuickSearchSource = {
+        id: "never",
+        heading: "Never",
+        search: () => new Promise<never>(doNothing),
+      };
+      const asking = collectResults([never, source("pages", ["Home"])], "x", asker);
+      await vi.advanceTimersByTimeAsync(600_000);
+      const found = await asking;
+      expect(found.failed).toBe(true);
+      expect(found.groups.map((group) => group.id)).toEqual(["pages"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
