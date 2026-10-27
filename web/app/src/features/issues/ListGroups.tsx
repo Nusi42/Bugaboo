@@ -27,8 +27,8 @@ export function GroupedList({ spacing }: GroupedListProps) {
   return (
     <>
       <ListScroll spacing={spacing}>
-        {(groups.data?.groups ?? []).map((each) => {
-          const group = groupOfKey(each, groupBy ?? "");
+        {(groups.data?.groups ?? []).map((each, at) => {
+          const group = groupOfKey(each, at);
           return <GroupSection key={group.id} group={group} count={each.issues} />;
         })}
       </ListScroll>
