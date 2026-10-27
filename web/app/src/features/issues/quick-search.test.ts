@@ -1,8 +1,6 @@
-import { ApiError } from "@bugaboo/api-client";
+import { ApiError, type ErrorCode, type Problem } from "@bugaboo/api-client";
 import type { Search } from "@bugaboo/wasm-search";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import { asker } from "../../shared/quick-search-testing.ts";
 
 /**
  * The search language is the module of Rust, whose tests start it (`web/tooling`); here the
@@ -18,7 +16,27 @@ vi.mock("../../shared/api.ts", () => ({
   api: { client: { GET: (path: string, options: unknown) => get(path, options) } },
 }));
 
+// The shell reads a stored choice when it is loaded; there is no browser here.
+vi.stubGlobal("localStorage", {
+  getItem: vi.fn<(key: string) => string | null>(),
+  setItem: vi.fn<(key: string, value: string) => void>(),
+});
+
 const { issuesSource, looksLikeIssueId } = await import("./quick-search.ts");
+const { testAsker: asker } = await import("../shell/index.ts");
+
+/** What the server sends with a refusal that has this code. */
+function refusal(code: ErrorCode, status: number): ApiError {
+  const problem: Problem = {
+    type: code,
+    title: "x",
+    status,
+    code,
+    message_key: "error.server.unavailable",
+    params: {},
+  };
+  return new ApiError(status, problem);
+}
 
 const ISSUE = "/api/v1/issues/{issue}";
 const SEARCH = "/api/v1/search/issues";
@@ -53,20 +71,20 @@ describe("cfg_08 an ID opens the issue", () => {
   });
 
   it("shows nothing for an ID of an issue that is hidden or missing: the two look the same", async () => {
-    answers({ [ISSUE]: new ApiError(404, undefined), [SEARCH]: { items: [] } });
+    answers({ [ISSUE]: refusal("resource.not-found", 404), [SEARCH]: { items: [] } });
     expect(await issuesSource.search("WEB-404", asker)).toEqual([]);
   });
 
   it("keeps the issues of the words when the text is no ID the server knows (e-mail)", async () => {
     answers({
-      [ISSUE]: new ApiError(400, undefined),
+      [ISSUE]: refusal("resource.not-found", 404),
       [SEARCH]: { items: [{ readable_id: "WEB-3", title: "E-mail bounces" }] },
     });
     expect((await issuesSource.search("e-mail", asker)).map((one) => one.id)).toEqual(["WEB-3"]);
   });
 
   it("is a broken source when the server fails, not when it finds nothing", async () => {
-    answers({ [ISSUE]: new ApiError(500, undefined), [SEARCH]: { items: [] } });
+    answers({ [ISSUE]: refusal("server.internal", 500), [SEARCH]: { items: [] } });
     await expect(issuesSource.search("web-1", asker)).rejects.toBeInstanceOf(ApiError);
   });
 
@@ -111,8 +129,18 @@ describe("cfg_08 words find issues by title", () => {
   });
 
   it("finds nothing, and is not broken, for a text the checker of the language refuses", async () => {
-    answers({ [SEARCH]: new ApiError(400, undefined) });
+    answers({ [SEARCH]: refusal("search.invalid", 400) });
     expect(await issuesSource.search("many words", asker)).toEqual([]);
+  });
+
+  it("is a broken source for any other refusal of the search, such as an unknown field", async () => {
+    answers({ [SEARCH]: refusal("request.unknown-field", 400) });
+    await expect(issuesSource.search("login", asker)).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("is a broken source when an ID is refused with a 400, which the ID route never does", async () => {
+    answers({ [ISSUE]: refusal("request.unknown-field", 400), [SEARCH]: { items: [] } });
+    await expect(issuesSource.search("web-1", asker)).rejects.toBeInstanceOf(ApiError);
   });
 
   it("asks nothing for an empty box", async () => {

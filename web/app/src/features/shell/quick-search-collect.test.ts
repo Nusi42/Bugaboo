@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { arrange, collectResults, resultByKey, resultKey } from "./quick-search-collect.ts";
-import { asker } from "../../shared/quick-search-testing.ts";
+import { testAsker as asker } from "./quick-search-testing.ts";
 import type { QuickSearchSource } from "./quick-search-sources.ts";
 
 /** A source that answers with these titles, as a list or after a moment. */

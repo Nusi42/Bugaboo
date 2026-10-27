@@ -31,12 +31,20 @@ function resultOf(item: Line): QuickResult[] {
     : [];
 }
 
-/**
- * Whether the server turned a text away as no issue and no search (404, or 400 for a text it does
- * not take): that is no result, not a broken source. Any other error is one.
- */
-function isMissed(error: unknown): boolean {
-  return error instanceof ApiError && (error.status === 404 || error.status === 400);
+/** The status with which the server says there is no such issue, or none the person may see. */
+const NOT_FOUND = 404;
+
+/** The problem with which the server refuses a text of the search language (the checker's mistakes). */
+const SEARCH_INVALID = "search.invalid";
+
+/** The server says there is no such issue: nothing to show, not a broken source. */
+function isNoIssue(error: unknown): boolean {
+  return error instanceof ApiError && error.status === NOT_FOUND;
+}
+
+/** The server refuses the text as a search (too many words, too long): it finds nothing. */
+function isRefusedText(error: unknown): boolean {
+  return error instanceof ApiError && error.problem?.code === SEARCH_INVALID;
 }
 
 /**
@@ -50,7 +58,7 @@ async function issueWithId(text: string): Promise<readonly QuickResult[]> {
     });
     return data === undefined ? [] : resultOf(data.issue);
   } catch (error) {
-    if (isMissed(error)) {
+    if (isNoIssue(error)) {
       return [];
     }
     throw error;
@@ -77,8 +85,7 @@ async function issuesWithWords(words: string): Promise<readonly QuickResult[]> {
     });
     return (data?.items ?? []).flatMap((item: Line) => resultOf(item));
   } catch (error) {
-    // A text the checker of the language refuses (too many words, too long) finds nothing.
-    if (isMissed(error)) {
+    if (isRefusedText(error)) {
       return [];
     }
     throw error;
