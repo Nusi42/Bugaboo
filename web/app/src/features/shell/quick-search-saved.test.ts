@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { pageSize } from "../../shared/paged.ts";
-import { testAsker as asker } from "./quick-search-testing.ts";
+import { askerFor } from "../../shared/quick-search-testing.ts";
+
+const asker = askerFor();
 
 const get = vi.fn<(path: string, options: unknown) => Promise<{ data?: unknown }>>();
 vi.mock("../../shared/api.ts", () => ({

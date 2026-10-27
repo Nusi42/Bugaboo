@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { askerFor } from "../../shared/quick-search-testing.ts";
 import { actionsSource, addQuickAction } from "./quick-search-actions.ts";
 
 const sign = vi.fn<() => void>();
-const asker = { permissions: [], signOut: sign };
+const asker = askerFor(sign);
 
 describe("cfg_08 the actions of quick search", () => {
   it("offers Sign out, which signs out", async () => {

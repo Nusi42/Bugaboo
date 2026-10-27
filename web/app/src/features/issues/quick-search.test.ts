@@ -2,8 +2,7 @@ import { ApiError, type ErrorCode, type Problem } from "@bugaboo/api-client";
 import type { Search } from "@bugaboo/wasm-search";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { doNothing } from "../../shared/do-nothing.ts";
-import type { QuickSearchAsker } from "../shell/index.ts";
+import { askerFor } from "../../shared/quick-search-testing.ts";
 
 /**
  * The search language is the module of Rust, whose tests start it (`web/tooling`); here the
@@ -21,8 +20,7 @@ vi.mock("../../shared/api.ts", () => ({
 
 const { issuesSource, looksLikeIssueId } = await import("./quick-search.ts");
 
-/** Somebody who asks quick search: no permissions, and signing out does nothing. */
-const asker: QuickSearchAsker = { permissions: [], signOut: doNothing };
+const asker = askerFor();
 
 /** What the server sends with a refusal that has this code. */
 function refusal(code: ErrorCode, status: number): ApiError {

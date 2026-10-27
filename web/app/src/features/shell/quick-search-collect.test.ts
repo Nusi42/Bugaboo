@@ -8,8 +8,10 @@ import {
   resultByKey,
   resultKey,
 } from "./quick-search-collect.ts";
-import { testAsker as asker } from "./quick-search-testing.ts";
+import { askerFor } from "../../shared/quick-search-testing.ts";
 import type { QuickSearchSource } from "./quick-search-sources.ts";
+
+const asker = askerFor();
 
 /** A source that answers with these titles, as a list or after a moment. */
 function source(id: string, titles: readonly string[]): QuickSearchSource {

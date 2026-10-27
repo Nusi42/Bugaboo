@@ -4,7 +4,9 @@ import { paths } from "../../shared/paths.ts";
 import type { Permissions } from "../../shared/permissions.ts";
 import { mayOpen, placeAt, places, placesFor, topicGroups, trailTo } from "../../shared/places.ts";
 import { pagesSource } from "./quick-search-pages.ts";
-import { testAsker as asker } from "./quick-search-testing.ts";
+import { askerFor } from "../../shared/quick-search-testing.ts";
+
+const asker = askerFor();
 
 /**
  * The addresses of the pages before sign-in, and the one page of a person who may only set up a
