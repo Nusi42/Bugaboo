@@ -12,4 +12,4 @@ pub use write::index_text;
 pub(crate) use write::reindex_issues;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

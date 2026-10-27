@@ -203,7 +203,8 @@ async fn qry_05_an_own_date_compares_and_sorts_where_its_field_reaches() -> Test
     let cell = Cell {
         text: None,
         number: None,
-        date: Some(1_800_000_000_000_000),
+        // A day is held as the days since 1970-01-01 (20 833 is 2027-01-15).
+        date: Some(20_833),
         reference: None,
     };
     each_database("search_own_date", async |db| {
@@ -213,6 +214,46 @@ async fn qry_05_an_own_date_compares_and_sorts_where_its_field_reaches() -> Test
             cell.clone(),
             "rack < 2020-01-01",
             "rack > 2020-01-01",
+        )
+        .await
+    })
+    .await
+}
+
+/// 5400 seconds, which are 1 hour 30 minutes.
+fn an_hour_and_a_half() -> Cell {
+    Cell {
+        text: None,
+        number: Some(5_400),
+        date: None,
+        reference: None,
+    }
+}
+
+#[tokio::test]
+async fn qry_05_an_own_duration_is_told_in_hours_and_minutes_and_held_in_seconds() -> TestResult {
+    each_database("search_own_duration", async |db| {
+        own_field_case(
+            db,
+            FieldType::Duration,
+            an_hour_and_a_half(),
+            "rack < 1 hour 30 minutes",
+            "rack >= 1 hour 30 minutes",
+        )
+        .await
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_05_an_own_duration_is_found_by_minutes_and_by_hours_and_minutes() -> TestResult {
+    each_database("search_own_duration_is", async |db| {
+        own_field_case(
+            db,
+            FieldType::Duration,
+            an_hour_and_a_half(),
+            "rack <= 89 minutes",
+            "rack is 90 minutes",
         )
         .await
     })
@@ -235,10 +276,10 @@ async fn own_field_case(
     let own = bb_app::search::Searchable {
         field: Field::new(
             "rack",
-            if kind == FieldType::Date {
-                FieldKind::Date
-            } else {
-                FieldKind::Number
+            match kind {
+                FieldType::Date => FieldKind::Date,
+                FieldType::Duration => FieldKind::Duration,
+                _ => FieldKind::Number,
             },
         ),
         target: FieldTarget::Own { field, kind },

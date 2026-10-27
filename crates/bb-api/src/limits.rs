@@ -95,6 +95,13 @@ pub const DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE: u32 = 300;
 /// network. The sixty-first waits for the next minute.
 pub const DEFAULT_SEARCHES_PER_MINUTE: u32 = 60;
 
+/// Asks for suggestions (names of people and groups) per person and minute (SEC-17). A suggestion
+/// is asked at nearly every key press and is a small read, so it has an allowance of its own and
+/// typing never uses up the allowance of searches: a quick typist presses about 8 keys a second, and
+/// the browser waits for a pause, so a minute of continuous typing asks for far fewer than this; it
+/// is a bound against a script, not against a person.
+pub const SUGGESTIONS_PER_MINUTE: u32 = 600;
+
 /// The limits, from the start-up settings (OPS-10; they move to the settings registry later).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LimitsConfig {
@@ -243,6 +250,7 @@ pub struct Limits {
     sign_up_hours: Window<NetworkPrefix>,
     access_keys: Window<Digest>,
     searches: Window<UserId>,
+    suggestions: Window<UserId>,
 }
 
 impl Limits {
@@ -263,6 +271,7 @@ impl Limits {
             // A full table refuses a person it does not know yet: a search is not worth more
             // than the rest of the server.
             searches: Window::new(config.searches_per_minute, Overflow::Refuse),
+            suggestions: Window::new(SUGGESTIONS_PER_MINUTE, Overflow::Refuse),
         })
     }
 
@@ -302,6 +311,19 @@ impl Limits {
 
     fn check_search_at(&self, person: UserId, now: Instant) -> Result<(), ApiError> {
         self.searches.hit(person, now).map_err(too_many)
+    }
+
+    /// Counts one ask for suggestions of `person` against their allowance of suggestions
+    /// ([`SUGGESTIONS_PER_MINUTE`]), which is not the one of searches.
+    ///
+    /// # Errors
+    /// `429` with `Retry-After` when the person is over it.
+    pub fn check_suggestion(&self, person: UserId) -> Result<(), ApiError> {
+        self.check_suggestion_at(person, Instant::now())
+    }
+
+    fn check_suggestion_at(&self, person: UserId, now: Instant) -> Result<(), ApiError> {
+        self.suggestions.hit(person, now).map_err(too_many)
     }
 
     /// Counts one sign-in attempt of `client`.
@@ -498,6 +520,26 @@ mod tests {
         limits
             .check_search_at(person, start + Duration::from_secs(61))
             .unwrap();
+    }
+
+    #[test]
+    fn sec_17_suggestions_have_an_allowance_apart_from_searches() {
+        let limits = limits(1_000, 1_000);
+        let start = Instant::now();
+        let mut source = bb_core::id::SequentialIds::default();
+        let person = UserId::generate(&mut source);
+        for _ in 0..SUGGESTIONS_PER_MINUTE {
+            limits.check_suggestion_at(person, start).unwrap();
+        }
+        assert_eq!(
+            limits
+                .check_suggestion_at(person, start)
+                .unwrap_err()
+                .code(),
+            ErrorCode::TooManyRequests
+        );
+        // The searches of the person are not used up by their suggestions.
+        limits.check_search_at(person, start).unwrap();
     }
 
     #[test]

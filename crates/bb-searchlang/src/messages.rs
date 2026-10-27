@@ -22,6 +22,9 @@ pub const EXPECTED_COUNT: &str = "search.mistake.expected-count";
 /// The message `search.mistake.expected-direction`.
 pub const EXPECTED_DIRECTION: &str = "search.mistake.expected-direction";
 
+/// The message `search.mistake.expected-duration`.
+pub const EXPECTED_DURATION: &str = "search.mistake.expected-duration";
+
 /// The message `search.mistake.expected-filter`.
 pub const EXPECTED_FILTER: &str = "search.mistake.expected-filter";
 
@@ -109,8 +112,14 @@ pub const UNKNOWN_FIELD_DID_YOU_MEAN: &str = "search.mistake.unknown-field-did-y
 /// The message `search.mistake.unreadable`.
 pub const UNREADABLE: &str = "search.mistake.unreadable";
 
+/// The message `search.mistake.word-too-long`.
+pub const WORD_TOO_LONG: &str = "search.mistake.word-too-long";
+
 /// The message `search.mistake.wrong-date`.
 pub const WRONG_DATE: &str = "search.mistake.wrong-date";
+
+/// The message `search.mistake.wrong-duration`.
+pub const WRONG_DURATION: &str = "search.mistake.wrong-duration";
 
 /// The message `search.mistake.wrong-issue`.
 pub const WRONG_ISSUE: &str = "search.mistake.wrong-issue";

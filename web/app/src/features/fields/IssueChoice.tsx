@@ -1,18 +1,21 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, SubmitButton, TextField } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
+import { IssuePicker } from "../search/index.ts";
 import { ChoiceDialog } from "./ChoiceDialog.tsx";
 import type { OtherChoiceProps } from "./OtherChoices.tsx";
 
-/** *Issue*: the readable ID of an issue (like WEB-12), looked up before it is chosen. */
+/**
+ * *Issue*: an issue found by its readable ID (like WEB-12) or by words of its title (M3-F62),
+ * looked up before it is chosen.
+ */
 export function IssueChoice({ field, onCommit }: OtherChoiceProps) {
-  const [key, setKey] = useState("");
   const [problem, setProblem] = useState<string | undefined>();
-  const find = async (done: () => void) => {
+  const find = async (key: string, done: () => void) => {
     try {
       const found = dataOf(
         await api.client.GET("/api/v1/issues/{issue}", {
@@ -34,20 +37,14 @@ export function IssueChoice({ field, onCommit }: OtherChoiceProps) {
   return (
     <ChoiceDialog field={field}>
       {(done) => (
-        <Form
-          onSubmit={() => {
-            void find(done);
-          }}
-        >
-          <TextField
-            label={t("common.issue-id")}
-            requiredMessage={t("error.field.required")}
-            value={key}
-            onChange={setKey}
+        <>
+          <IssuePicker
+            onPick={(key) => {
+              void find(key, done);
+            }}
           />
           {problem === undefined ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
-          <SubmitButton isPending={false}>{t("fields.pick-issue-find")}</SubmitButton>
-        </Form>
+        </>
       )}
     </ChoiceDialog>
   );

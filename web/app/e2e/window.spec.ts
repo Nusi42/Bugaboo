@@ -20,6 +20,7 @@ import {
   pickSizeStep,
   pressSizeKey,
   scrollFormToEnd,
+  sizesSaved,
   textStartOf,
   titleBox,
   windowBox,
@@ -109,21 +110,23 @@ test("ux_04 Ctrl and Alt with the arrow keys resize the window, and the size is 
 }) => {
   await openIt(page);
   const before = await windowSize(page);
-  await pressSizeKey(page, "ArrowRight");
-  await expect
-    .poll(() => windowSize(page))
-    .toEqual({
-      width: before.width + keyboardStep,
-      height: before.height,
-    });
-  // The window is as tall as the page lets it be, so a step up makes it shorter.
-  await pressSizeKey(page, "ArrowUp");
-  await expect
-    .poll(() => windowSize(page))
-    .toEqual({
-      width: before.width + keyboardStep,
-      height: before.height - keyboardStep,
-    });
+  await sizesSaved(page, 2, async () => {
+    await pressSizeKey(page, "ArrowRight");
+    await expect
+      .poll(() => windowSize(page))
+      .toEqual({
+        width: before.width + keyboardStep,
+        height: before.height,
+      });
+    // The window is as tall as the page lets it be, so a step up makes it shorter.
+    await pressSizeKey(page, "ArrowUp");
+    await expect
+      .poll(() => windowSize(page))
+      .toEqual({
+        width: before.width + keyboardStep,
+        height: before.height - keyboardStep,
+      });
+  });
   const after = await windowSize(page);
   await page.reload();
   await openWindowReady(page);
@@ -133,22 +136,24 @@ test("ux_04 Ctrl and Alt with the arrow keys resize the window, and the size is 
 test("ux_04 a person who cannot drag changes the size with the size menu", async ({ page }) => {
   await openIt(page);
   const before = await windowSize(page);
-  await pickSizeStep(page, "wider");
-  await expect
-    .poll(() => windowSize(page))
-    .toEqual({
-      width: before.width + menuStep,
-      height: before.height,
-    });
-  await pickSizeStep(page, "shorter");
-  await expect
-    .poll(() => windowSize(page))
-    .toEqual({
-      width: before.width + menuStep,
-      height: before.height - menuStep,
-    });
-  // The menu gives the focus back to its button, and the size is remembered like any other.
-  await expect(windowButton(page, t("window.size-menu"))).toBeFocused();
+  await sizesSaved(page, 2, async () => {
+    await pickSizeStep(page, "wider");
+    await expect
+      .poll(() => windowSize(page))
+      .toEqual({
+        width: before.width + menuStep,
+        height: before.height,
+      });
+    await pickSizeStep(page, "shorter");
+    await expect
+      .poll(() => windowSize(page))
+      .toEqual({
+        width: before.width + menuStep,
+        height: before.height - menuStep,
+      });
+    // The menu gives the focus back to its button, and the size is remembered like any other.
+    await expect(windowButton(page, t("window.size-menu"))).toBeFocused();
+  });
   const after = await windowSize(page);
   await page.reload();
   await openWindowReady(page);
@@ -280,7 +285,13 @@ test("ux_6_3 the title bar and the footer stay in place while the form scrolls",
   await scrollFormToEnd(page);
   expect(await boxOf(footer)).toEqual(before);
   // The main button is the last one, at the right of the footer (R6).
-  const create = dialog(page).getByRole("button", { name: t("issues.create"), exact: true });
-  const cancel = dialog(page).getByRole("button", { name: t("common.cancel"), exact: true });
+  const create = dialog(page).getByRole("button", {
+    name: t("issues.create"),
+    exact: true,
+  });
+  const cancel = dialog(page).getByRole("button", {
+    name: t("common.cancel"),
+    exact: true,
+  });
   expect((await boxOf(create)).x).toBeGreaterThan((await boxOf(cancel)).x);
 });

@@ -131,6 +131,43 @@ fn a_key_that_no_code_names_is_on_the_first_page() {
     assert_eq!(parts["error.resource.not-found"], "shared");
 }
 
+/// The texts of a search's mistakes are named by a template in the search feature only (the search
+/// module makes the keys), and the rule that already reads templates puts them in its part.
+#[test]
+fn keys_that_the_search_names_by_a_template_go_to_the_part_of_the_search() {
+    let sources = [code(
+        "web/app/src/features/search/mistake-text.ts",
+        "textByKey(`search.mistake.${name}`, args)",
+    )];
+    let keys = ["search.mistake.expected-value", "error.resource.not-found"];
+    let parts = parts_of(keys, &sources, &[]);
+    assert_eq!(parts["search.mistake.expected-value"], "search");
+    assert_eq!(parts["error.resource.not-found"], "shared");
+}
+
+/// Another feature that names such a key makes it a key of two users, so it stays on the first page.
+#[test]
+fn a_search_mistake_named_outside_the_search_stays_on_the_first_page() {
+    let sources = [
+        code(
+            "web/app/src/features/search/mistake-text.ts",
+            "textByKey(`search.mistake.${name}`, args)",
+        ),
+        code(
+            "web/app/src/features/issues/A.tsx",
+            r#"t("search.mistake.expected-value")"#,
+        ),
+    ];
+    let parts = parts_of(
+        ["search.mistake.expected-value", "search.mistake.other"],
+        &sources,
+        &[],
+    );
+    assert_eq!(parts["search.mistake.expected-value"], "shared");
+    // The key the other feature does not name is still the search's.
+    assert_eq!(parts["search.mistake.other"], "search");
+}
+
 #[test]
 fn tests_and_the_generated_catalog_do_not_decide_where_a_key_goes() {
     let sources = [

@@ -29,6 +29,34 @@ const MIGRATIONS: &str = "crates/bb-store/src/migrations";
 /// dataset was made (the nightly run compares names, not file times, which a checkout changes).
 const MADE_FOR: &str = "made-for";
 
+/// The file in the folder of a dataset that holds the number of the migration that last changed the
+/// rule that prepares a text for the search (`RULE_MIGRATION`) when the dataset's text index was
+/// built. The dataset writes its issues without the outbox, so its index is built once from the
+/// stored texts: the program that makes the dataset does it, and `bench` builds it for a dataset
+/// whose marker is older than the rule (`bugaboo search-index rebuild`).
+const INDEX_BUILT: &str = "text-index.built";
+
+/// Whether a marker says the index was built under the rule of this program or a newer one.
+fn marker_is_current(marker: Option<&str>) -> bool {
+    marker
+        .and_then(|text| text.trim().parse::<i64>().ok())
+        .is_some_and(|built_under| built_under >= bb_core::text_index::RULE_MIGRATION)
+}
+
+/// Whether the text index of the dataset in `folder` was built under the current rule.
+pub(crate) fn index_is_current(folder: &Path) -> bool {
+    marker_is_current(fs::read_to_string(folder.join(INDEX_BUILT)).ok().as_deref())
+}
+
+/// Records that the text index of the dataset in `folder` was built under the current rule.
+pub(crate) fn mark_index_current(folder: &Path) -> anyhow::Result<()> {
+    fs::write(
+        folder.join(INDEX_BUILT),
+        bb_core::text_index::RULE_MIGRATION.to_string(),
+    )
+    .with_context(|| format!("could not write {INDEX_BUILT} in {}", folder.display()))
+}
+
 /// What the program prints before the fingerprint of a run.
 const FINGERPRINT_WORD: &str = "Fingerprint ";
 
@@ -208,6 +236,8 @@ fn build_on(
         newest_migration(repo.root()).unwrap_or_default(),
     )
     .with_context(|| format!("could not write {MADE_FOR} in {}", out.display()))?;
+    // The program built the index itself, with the same store function as a server start.
+    mark_index_current(&out)?;
     output::info(&format!(
         "dataset large: {} done in {:.1} minutes, {} on disk.",
         database.code(),
@@ -322,6 +352,29 @@ mod tests {
         let said = "Checked the large dataset: 3 issues. Fingerprint 0ffb\nCreated.";
         assert_eq!(fingerprint(said).as_deref(), Some("0ffb"));
         assert_eq!(fingerprint("nothing"), None);
+    }
+
+    #[test]
+    fn a_marker_older_than_the_rule_or_unreadable_asks_for_a_new_index() {
+        let current = bb_core::text_index::RULE_MIGRATION;
+        assert!(!marker_is_current(None));
+        assert!(!marker_is_current(Some("")));
+        assert!(!marker_is_current(Some("not a number")));
+        assert!(!marker_is_current(Some(&(current - 1).to_string())));
+        assert!(marker_is_current(Some(&current.to_string())));
+        assert!(marker_is_current(Some(&format!(
+            "{}
+",
+            current + 1
+        ))));
+    }
+
+    #[test]
+    fn a_dataset_marked_as_built_is_current_and_one_without_a_marker_is_not() {
+        let folder = tempfile::tempdir().unwrap();
+        assert!(!index_is_current(folder.path()));
+        mark_index_current(folder.path()).unwrap();
+        assert!(index_is_current(folder.path()));
     }
 
     #[test]

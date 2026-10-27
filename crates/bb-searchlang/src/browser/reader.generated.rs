@@ -188,6 +188,10 @@ pub(super) fn read_operand(json: &Json) -> Read<Operand> {
             number: read_decimal(member(object, "number")?)?,
             span: read_span(member(object, "span")?)?,
         }),
+        "duration" => Ok(Operand::Duration {
+            minutes: integer(member(object, "minutes")?)?,
+            span: read_span(member(object, "span")?)?,
+        }),
         "date" => Ok(Operand::Date {
             date: read_date(member(object, "date")?)?,
             span: read_span(member(object, "span")?)?,
@@ -326,6 +330,7 @@ pub(super) fn read_field_kind(json: &Json) -> Read<FieldKind> {
     match word(json)? {
         "text" => Ok(FieldKind::Text),
         "number" => Ok(FieldKind::Number),
+        "duration" => Ok(FieldKind::Duration),
         "date" => Ok(FieldKind::Date),
         "choice" => Ok(FieldKind::Choice),
         "person" => Ok(FieldKind::Person),

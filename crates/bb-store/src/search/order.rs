@@ -182,7 +182,7 @@ impl Compiler<'_> {
             Domain::Text | Domain::Status => {
                 Ok((self.bytes(Self::plain(&subject, first)), Kind::Text))
             }
-            Domain::Number(_) | Domain::YesNo | Domain::Time(_) => {
+            Domain::Number(_) | Domain::Duration | Domain::YesNo | Domain::Time(_) => {
                 let value = Self::plain(&subject, first);
                 // A column of whole numbers is the same on both databases and stays the column, so an
                 // index of it can give the order.
@@ -469,6 +469,7 @@ const fn kind_of(domain: Domain) -> Kind {
         Domain::Priority
         | Domain::StatusGroup
         | Domain::Number(_)
+        | Domain::Duration
         | Domain::YesNo
         | Domain::Time(_) => Kind::Whole,
         _ => Kind::Text,
@@ -486,7 +487,7 @@ const fn group_value_of(domain: Domain) -> GroupValue {
         Domain::Choice(_) => GroupValue::Id(IdOf::Choice),
         Domain::Priority => GroupValue::Priority,
         Domain::StatusGroup => GroupValue::StatusGroup,
-        Domain::Number(_) | Domain::YesNo | Domain::Time(_) => GroupValue::Whole,
+        Domain::Number(_) | Domain::Duration | Domain::YesNo | Domain::Time(_) => GroupValue::Whole,
         Domain::Tag => GroupValue::Id(IdOf::Tag),
         Domain::Label => GroupValue::Id(IdOf::Label),
         Domain::Text | Domain::Status => GroupValue::Text,

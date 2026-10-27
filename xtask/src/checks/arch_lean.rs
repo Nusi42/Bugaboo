@@ -15,8 +15,8 @@
 //! Two more rules (PERF-03, PERF-02). Every `GET` documents the `ETag` header of its `200` answer
 //! and the `304` answer, so a client can ask again cheaply. A `GET` marked `x-never-stored` (its
 //! answer holds personal data and no cache keeps it) has no tag to ask with and is left out. A list names related things by ID
-//! (or by a reference schema whose name ends in `Ref` or `LabelBody`, like `PersonRef` and
-//! `ProjectLabelBody`); an item that embeds
+//! (or by a reference schema whose name ends in `Ref`, `RefBody` or `LabelBody`, like `PersonRef`,
+//! `LabelRefBody` and `ProjectLabelBody`); an item that embeds
 //! another object is only allowed when the route declares the query parameter `include` with the
 //! closed set of names it may embed, and `include` is only allowed on a route that embeds.
 
@@ -38,8 +38,9 @@ const ETAG_HEADER: &str = "etag";
 const NOT_MODIFIED: &str = "304";
 /// A schema whose name ends like one of these is a reference to a thing, not the thing itself: its
 /// ID and the words to show for it. `LabelBody` is there for `ProjectLabelBody`, a project that may
-/// be shown or hidden (M4 WP-02, the map row `KeyProjectRef`).
-const REFERENCE_SUFFIXES: [&str; 2] = ["Ref", "LabelBody"];
+/// be shown or hidden (M4 WP-02, the map row `KeyProjectRef`). `RefBody` is there for `LabelRefBody`,
+/// a label as a list item shows it (M5 WP-08, the lead).
+const REFERENCE_SUFFIXES: [&str; 3] = ["Ref", "RefBody", "LabelBody"];
 
 pub(crate) struct ArchLean;
 
@@ -629,17 +630,16 @@ mod tests {
         assert!(found.contains("matches no list"), "{found}");
     }
 
+    /// The names that make a schema a reference besides `Ref`: the label of a project that may be
+    /// hidden, and a label as a list item shows it.
     #[test]
-    fn good_example_a_label_of_a_project_is_a_reference_too() {
-        let text = std::fs::read_to_string(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../tools/checks/fixtures/ARCH-LEAN/good/references-by-id.json"),
-        )
-        .unwrap();
-        let spec: Value =
-            serde_json::from_str(&text.replace("PersonRef", "ProjectLabelBody")).unwrap();
-        let found = messages(&spec, &[]);
-        assert!(found.is_empty(), "{found:?}");
+    fn good_example_a_label_reference_is_a_reference_too() {
+        let fixture = fixture("good", "references-by-id.json").to_string();
+        for name in ["ProjectLabelBody", "LabelRefBody"] {
+            let spec: Value = serde_json::from_str(&fixture.replace("PersonRef", name)).unwrap();
+            let found = messages(&spec, &[]);
+            assert!(found.is_empty(), "{name}: {found:?}");
+        }
     }
 
     #[test]

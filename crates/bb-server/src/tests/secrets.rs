@@ -338,3 +338,62 @@ fn sec_16_an_export_that_fails_on_a_file_leaves_no_copy_behind() -> TestResult {
     );
     Ok(())
 }
+
+/// The mark of a rebuild wanted (a migration set it) is cleared by the command, and the reader of
+/// the index is where the outbox ends afterwards.
+#[tokio::test]
+async fn m5_f53_search_index_rebuild_puts_the_reader_at_the_head_of_the_outbox() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (args, data) = installation(folder.path()).await?;
+    let database = bb_store::Database::connect_file(&data.database_file()).await?;
+    let reader = TechnicalName::new(bb_core::text_index::CONSUMER)?;
+    let head = database
+        .outbox_position(&TechnicalName::new("head")?)
+        .await?;
+    database
+        .outbox_set(
+            bb_core::text_index::CONSUMER,
+            bb_core::text_index::REBUILD_WANTED,
+            Timestamp::now(),
+        )
+        .await?;
+    super::super::search_index::rebuild(&args).await?;
+    assert_eq!(database.outbox_position(&reader).await?, head);
+    Ok(())
+}
+
+/// Like the other commands it migrates nothing: data older or newer than the program is refused,
+/// and left as it was. The state is the one `Database::schema_state` says.
+#[tokio::test]
+async fn m5_f53_search_index_rebuild_refuses_data_that_is_older_or_newer_than_the_program()
+-> TestResult {
+    let folder = tempfile::tempdir()?;
+    let data = DataFolder::prepare(&folder.path().join("data"))?;
+    let old = bb_store::Database::connect_file(&data.database_file()).await?;
+    old.migrate_up_to(bb_store::latest_version() - 1, Timestamp::now())
+        .await?;
+    old.open_keys(&data.keys()).await?;
+    let args = StoreArgs {
+        data_dir: Some(data.root().to_string_lossy().into_owned()),
+        ..StoreArgs::default()
+    };
+    assert_eq!(old.schema_state().await?, bb_store::SchemaState::Older);
+    let refused = super::super::search_index::rebuild(&args)
+        .await
+        .err()
+        .ok_or("the command went on with old data")?;
+    assert!(format!("{refused:#}").contains("older"), "{refused:#}");
+    assert_eq!(old.schema_state().await?, bb_store::SchemaState::Older);
+
+    // A newer program recorded a migration this one does not have.
+    old.migrate(Timestamp::now()).await?;
+    assert_eq!(old.schema_state().await?, bb_store::SchemaState::Current);
+    old.record_newer_migration(Timestamp::now()).await?;
+    assert_eq!(old.schema_state().await?, bb_store::SchemaState::Newer);
+    let refused = super::super::search_index::rebuild(&args)
+        .await
+        .err()
+        .ok_or("the command went on with newer data")?;
+    assert!(format!("{refused:#}").contains("newer"), "{refused:#}");
+    Ok(())
+}

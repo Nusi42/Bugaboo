@@ -1,11 +1,13 @@
 //! What the browser app takes from the Rust code as constants, so it never writes them a second
 //! time: the keys, the choices and the defaults of the settings (ADR-0018), the page sizes of
 //! the lists (PERF-02), the times and sizes of editing (the lease, the heartbeat, how long a
-//! draft is kept, how many records one check of versions takes: ADR-0019), and the words of the
-//! fixed vocabularies the browser has to list (the icons of issue types).
+//! draft is kept, how many records one check of versions takes: ADR-0019), the most issues one
+//! change names, the words a search names the fields of an issue by, and the words of the fixed
+//! vocabularies the browser has to list (the icons of issue types).
 //!
-//! xtask does not link the product crates, so the first two are read as Rust source and the words
-//! from the API description, which holds every vocabulary of the server as a list of words.
+//! xtask links only the pure crates (`bb-core`, `bb-searchlang`, `bb-policy`), not `bb-api` or the
+//! store: a plain `const` is read as Rust source, the search words are asked of the code that owns
+//! them, and the vocabularies come from the API description.
 
 use std::fmt::Write as _;
 
@@ -29,6 +31,7 @@ const TIME_SOURCE: &str = "crates/bb-core/src/time.rs";
 const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const FILES_SOURCE: &str = "crates/bb-core/src/files.rs";
+const MANY_CHANGES_SOURCE: &str = "crates/bb-core/src/many_changes.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -692,6 +695,55 @@ export const partBytes = {part};
 export const megabyte = {megabyte};
 "
     ))
+}
+
+/// The most issues one change to many issues names, as a constant for the browser client: the rule
+/// of *Tick all results* is this number and is not written a second time.
+pub(super) fn many_changes(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == MANY_CHANGES_SOURCE) else {
+        bail!("{MANY_CHANGES_SOURCE} is missing");
+    };
+    let file =
+        syn::parse_file(text).with_context(|| format!("{MANY_CHANGES_SOURCE} is not Rust"))?;
+    let most = number_const(&file, MANY_CHANGES_SOURCE, "MANY_CHANGES_ISSUES_MAX")?;
+    Ok(format!(
+        "{TS_HEADER}/** The most issues one change to many issues names (`MANY_CHANGES_ISSUES_MAX` of the server). */
+export const manyChangesIssuesMax = {most};
+"
+    ))
+}
+
+/// The words a search names its fields by, as constants for the browser client: the Issue ID
+/// column's `id`, the built-in fields of the issue, and the fields every issue has. A saved search
+/// keeps its columns by these words, so the list names them through this type and does not write
+/// them a second time. The words come from the code itself (`Field::search_word`,
+/// `IssueField::word`), which xtask links.
+pub(super) fn search_words() -> String {
+    let words: Vec<String> = std::iter::once(bb_core::fields::ID_WORD.to_owned())
+        .chain(
+            bb_core::fields::Field::ALL
+                .iter()
+                .map(|field| field.search_word()),
+        )
+        .chain(
+            bb_searchlang::IssueField::ALL
+                .iter()
+                .map(|field| field.word().to_owned()),
+        )
+        .collect();
+    let list = words
+        .iter()
+        .map(|word| format!("{word:?}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "{TS_HEADER}/** The words a search names a field of an issue by, `id` (the Issue ID) first. */
+export const searchWords = [{list}] as const;
+
+/** One of the words a search names a field of an issue by. */
+export type SearchWord = (typeof searchWords)[number];
+"
+    )
 }
 
 /// The addresses of the app pages that the server links to as constants for the browser app, so

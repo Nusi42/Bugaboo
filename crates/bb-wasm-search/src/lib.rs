@@ -61,6 +61,31 @@ pub fn print(search: &str) -> Result<String, JsError> {
     bb_searchlang::print_from_json(search).map_err(|e| thrown(&format!("unreadable input: {e}")))
 }
 
+/// How a value (an operand as JSON) stands in the text of a search, quoted where the language
+/// needs it.
+///
+/// # Errors
+/// The text is not an operand as JSON.
+#[wasm_bindgen]
+pub fn operand_source(operand: &str) -> Result<String, JsError> {
+    bb_searchlang::operand_source_from_json(operand)
+        .map_err(|e| thrown(&format!("unreadable input: {e}")))
+}
+
+/// The Issue ID that the words are, written as the language writes it; none when they are not one.
+#[must_use]
+#[wasm_bindgen]
+pub fn issue_id_of(words: &str) -> Option<String> {
+    bb_searchlang::issue_id_of(words)
+}
+
+/// The minutes of a text that is a length of time and nothing else; none otherwise.
+#[must_use]
+#[wasm_bindgen]
+pub fn duration_minutes_of(text: &str) -> Option<u32> {
+    bb_searchlang::duration_minutes_of(text)
+}
+
 /// What may come next at byte `cursor` of the text (`bb_searchlang::Suggestions`, as JSON).
 ///
 /// # Errors

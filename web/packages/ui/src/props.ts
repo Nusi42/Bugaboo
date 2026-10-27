@@ -43,6 +43,7 @@ export const overlayEdge = {
   full: "full",
   bottom: "bottom",
   start: "start",
+  end: "end",
   top: "top",
 } as const;
 export type OverlayEdge = (typeof overlayEdge)[keyof typeof overlayEdge];

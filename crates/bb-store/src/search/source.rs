@@ -82,6 +82,8 @@ pub(super) enum Domain {
     Label,
     /// A whole number or a decimal; the number is the count of parts in one.
     Number(i64),
+    /// A length of time, held in seconds.
+    Duration,
     /// Yes or no.
     YesNo,
     /// A moment or a day.
@@ -263,9 +265,13 @@ fn own_subject(
             own_values(field, FieldValueRow::ValueText, reach),
             Domain::Text,
         ),
-        FieldType::WholeNumber | FieldType::Duration => (
+        FieldType::WholeNumber => (
             own_values(field, FieldValueRow::ValueNumber, reach),
             Domain::Number(1),
+        ),
+        FieldType::Duration => (
+            own_values(field, FieldValueRow::ValueNumber, reach),
+            Domain::Duration,
         ),
         FieldType::Decimal => (
             own_values(field, FieldValueRow::ValueNumber, reach),

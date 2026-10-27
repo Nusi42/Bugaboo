@@ -162,6 +162,11 @@ tokens {
     size "size-reading" "75ch"
     size "size-main" "780px"
     size "size-sheet-share" "85%"
+    // A panel at the end of the screen, beside the page (the help of the search bar): about 30 rem.
+    size "size-side-panel" "30rem"
+    // The sheet of the search bar on a phone is always this high, so what is under a finger does not
+    // move when the offers under the box come and go.
+    size "size-bar-sheet" "80dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
     size "size-list-tall" "calc($size-list * 2)"
@@ -239,7 +244,7 @@ tokens {
     color "border" daylight="#dfe3e9" paper="#e1d8ca" dusk="#3b414d" midnight="#272a31" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     // The edge of a control that is drawn by its edge (a box to tick, the track of a switch): a line a
     // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked by the `lines` rule of the contrast rules), unlike the dividers.
-    color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" forced="ButtonText"
+    color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
     color "fg-muted" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
@@ -449,7 +454,7 @@ mixin "marked" {
 mixin "control-box" {
     box-sizing border-box
     min-height "$size-control"
-    border "$border-width solid $border"
+    border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
 }
@@ -649,6 +654,12 @@ keyframes "from-bottom" {
 keyframes "from-start" {
     from {
         transform "translateX(-100%)"
+    }
+}
+
+keyframes "from-end" {
+    from {
+        transform "translateX(100%)"
     }
 }
 
@@ -1185,6 +1196,10 @@ part "overlay[variant=start]" {
     justify-content flex-start
 }
 
+part "overlay[variant=end]" {
+    justify-content flex-end
+}
+
 part "overlay[variant=top]" {
     align-items flex-start
 }
@@ -1231,6 +1246,14 @@ part "overlay.modal[variant=start]" {
     border-radius "0 $r-card $r-card 0"
 }
 
+// A panel at the end of the screen, beside the page (the help of the search bar).
+part "overlay.modal[variant=end]" {
+    width "$size-side-panel"
+    max-width "100%"
+    height "100%"
+    border-radius "$r-card 0 0 $r-card"
+}
+
 part "overlay.modal[variant=top]" {
     width "100%"
     max-height "100%"
@@ -1268,6 +1291,14 @@ part "overlay.modal[variant=start][entering]" {
 
 part "overlay.modal[variant=start][exiting]" {
     animation "from-start $motion-base $ease-in reverse"
+}
+
+part "overlay.modal[variant=end][entering]" {
+    animation "from-end $motion-base $ease-out"
+}
+
+part "overlay.modal[variant=end][exiting]" {
+    animation "from-end $motion-base $ease-in reverse"
 }
 
 part "overlay.modal[variant=center][entering]" "overlay.modal[variant=top][entering]" "overlay.modal[variant=question][entering]" "overlay.modal[variant=full][entering]" {
@@ -11979,6 +12010,344 @@ part "drawing-head" {
     fill "$fg-muted"
 }
 
+// ───────────── Search bar (features/search) ─────────────
+//
+// One bar above every list (UX design section 4.3): the filter buttons of Simple search, or the
+// box of Advanced search, with the words marked under the text and the mistakes listed below.
+
+part "search-bar" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+// The buttons at the end stand level with the first row of the filters, not centered against a
+// block of several rows.
+part "search-bar.head" {
+    display flex
+    flex-wrap wrap
+    align-items flex-start
+    gap "$space-2" "$space-3"
+}
+
+part "search-bar.actions" {
+    display flex
+    flex-wrap wrap
+    align-items flex-start
+    gap "$space-2"
+    margin-inline-start auto
+}
+
+part "search-filters" {
+    use "list-reset"
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    flex 1
+    min-width 0
+}
+
+// A filter: the button that changes it and the button that takes it away, in one outline.
+part "search-filter" {
+    use "control-box"
+    display inline-flex
+    align-items center
+    max-width "100%"
+}
+
+// The text of the button of a filter starts a little in from the edge of its outline (R3).
+part "search-filter > button" {
+    padding-inline-start "$space-3"
+    border-color transparent
+}
+
+// What opens over the page for the search: a window of the bar on a phone, the list of fields.
+part "search-panel" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    box-sizing border-box
+    padding "$space-5"
+    overflow-y auto
+}
+
+// The sheet of the search bar on a phone has a fixed height (see size-bar-sheet).
+part "search-panel[variant=sheet]" {
+    height "$size-bar-sheet"
+    max-height "100%"
+}
+
+// The head of a panel: its title, and the button that closes it at the end of the same row.
+part "search-panel.head" {
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+}
+
+// The chosen name and the finder of a filter on a person, a group or a project.
+part "search-choice" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+}
+
+part "search-panel.actions" {
+    display flex
+    justify-content flex-end
+    gap "$space-2"
+}
+
+// The button that closes the sheet stays at the foot of it.
+part "search-panel[variant=sheet] search-panel.actions" {
+    margin-block-start auto
+}
+
+// In the sheet of a phone the filters stand under each other, as wide as the sheet.
+part "search-panel search-bar.head" {
+    flex-direction column
+    align-items stretch
+}
+
+part "search-panel search-filters" {
+    flex-direction column
+    align-items stretch
+}
+
+part "search-panel search-filter" {
+    justify-content space-between
+}
+
+// *+ Add filter* and *Any of* are as wide as the sheet, like the filters above them.
+part "search-filters.action" {
+    display flex
+    flex-direction column
+}
+
+part "search-filters.action > button" {
+    width "100%"
+}
+
+part "search-panel search-bar.actions" {
+    margin-inline-start 0
+}
+
+part "search-filter[variant=text]" {
+    border-style dashed
+}
+
+part "search-filter.name" {
+    color "$fg-muted"
+}
+
+part "search-filter.value" {
+    font-weight "$weight-bold"
+    overflow-wrap anywhere
+}
+
+// The box of Advanced search: the marked words are drawn under the text of the box, so both are
+// one grid cell and have to keep exactly the same type.
+part "search-text" {
+    use "input-box"
+    display grid
+    position relative
+    height auto
+    line-height "$lh-text"
+}
+
+part "search-text:focus-within" {
+    use "ring-line"
+    outline-offset 0
+    border-color "$accent"
+}
+
+part "search-text[state=mistake]" {
+    border-color "$danger"
+}
+
+part "search-text.marks" "search-text.input" {
+    grid-area "1 / 1"
+    box-sizing border-box
+    min-width 0
+    margin 0
+    padding 0
+    border 0
+    font-family inherit
+    font-size inherit
+    letter-spacing inherit
+    line-height inherit
+    white-space pre-wrap
+    overflow-wrap anywhere
+    tab-size 4
+}
+
+part "search-text.marks" {
+    color transparent
+    pointer-events none
+    user-select none
+}
+
+part "search-text.input" {
+    resize none
+    overflow hidden
+    background transparent
+    color "$fg"
+    outline none
+}
+
+part "search-mark[variant=field]" {
+    border-radius "$r-ctl"
+    background "$accent-soft"
+}
+
+part "search-mark[variant=value]" {
+    border-radius "$r-ctl"
+    background "$bg-hover"
+}
+
+part "search-mark[variant=mistake]" {
+    text-decoration underline wavy
+    text-decoration-color "$danger"
+    text-underline-offset "$space-1"
+}
+
+part "search-suggestions" {
+    use "floating-box"
+    position absolute
+    inset-inline 0
+    top "100%"
+    z-index "$z-panel"
+    max-height "calc($size-row * 6)"
+    overflow-y auto
+    margin 0
+    padding "$space-1"
+    list-style none
+    border-radius "$r-card"
+}
+
+part "search-suggestion" {
+    display flex
+    align-items baseline
+    gap "$space-3"
+    box-sizing border-box
+    min-height "$size-control"
+    padding "$space-2 $space-3"
+    color "$fg"
+    cursor pointer
+    border-radius "$r-ctl"
+    font-size "$fs-ui"
+}
+
+part "search-suggestion:hover" {
+    background "$bg-hover"
+}
+
+part "search-suggestion[state=active]" {
+    background "$bg-selected"
+    use "ring-inside"
+}
+
+part "search-suggestion.kind" {
+    color "$fg-muted"
+    font-size "$fs-base"
+}
+
+part "search-wrap" {
+    position relative
+}
+
+part "search-mistakes" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "search-mistake" {
+    color "$danger"
+    font-size "$fs-base"
+    line-height "$lh-body"
+    overflow-wrap anywhere
+}
+
+// What a search finds, with the note that says whose results they are while the text has a mistake.
+part "search-results" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+// The results of the search that was fixed last stay while the text has a mistake, dimmed; the
+// note that says so is not part of them and stays as clear as any text.
+part "search-results.list[state=stale]" {
+    opacity "$opacity-busy"
+}
+
+// The lists of the Share window and of Saved searches.
+part "search-list" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "search-list.item" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-3"
+    min-height "$size-control"
+    padding 0 "$space-2"
+    border-radius "$r-ctl"
+}
+
+part "search-help.title" {
+    margin 0
+    margin-block-end "$space-2"
+    padding 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+}
+
+// The name of a list in the sidebar (*Mine*, *Shared with me*).
+part "nav-subheading" {
+    margin 0
+    padding "$space-2 $space-3"
+    color "$fg-muted"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+}
+
+// An example of the help sheet that can be put into the search with one click.
+part "search-example" {
+    use "sunken-box"
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-3"
+    padding "$space-2" "$space-3"
+    font-family "$mono"
+    font-size "$fs-base"
+    overflow-wrap anywhere
+}
+
+part "search-help" {
+    display flex
+    flex-direction column
+    gap "$space-5"
+}
+
+part "search-help.group" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
 // ───────────── Boxes in the Details ─────────────
 //
 // At the end of the file, after the parts they reach into.
@@ -11995,3 +12364,11 @@ part "name-value.value > row > field" {
     flex "1 1 auto"
     min-width 0
 }
+
+// At the end of the file, after the parts they reach into.
+
+part "search-panel search-suggestions" {
+    position static
+    margin-block-start "$space-1"
+}
+

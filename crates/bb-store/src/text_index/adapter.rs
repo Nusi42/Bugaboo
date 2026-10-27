@@ -12,16 +12,17 @@ use std::collections::BTreeSet;
 use bb_app::text_index::{TextIndexStore, Touched};
 use bb_core::event::DomainEvent;
 use bb_core::id::IssueId;
-use bb_core::text_index::CONSUMER;
+use bb_core::text_index::{CONSUMER, REBUILD_WANTED};
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use super::write::{ISSUES_PER_STEP, reindex_issues};
 use crate::auth::AuthStorage;
-use crate::db::{STATEMENT_ITEMS, StoredId as _, Transaction};
+use crate::db::{Database, STATEMENT_ITEMS, StoredId as _, Transaction};
 use crate::error::StoreError;
-use crate::events::{consumer_name, outbox_move};
-use crate::schema::{AttachmentRow, CommentRow, IssueRow};
+use crate::events::{OUTBOX_HEAD, consumer_name, outbox_move};
+use crate::rows::to_micros;
+use crate::schema::{AttachmentRow, CommentRow, IssueRow, OutboxPosition};
 
 /// The issues a batch of events touches: the ones named, and the issues of the comments and files
 /// named (two statements for the batch, not one for each).
@@ -98,38 +99,91 @@ impl TextIndexStore for AuthStorage {
         transaction.commit().await
     }
 
-    async fn rebuild_text_index(&self) -> Result<u64, StoreError> {
+    async fn rebuild_text_index(&self, now: Timestamp) -> Result<u64, StoreError> {
         let database = self.database();
-        let mut after: Option<Vec<u8>> = None;
-        let mut read = 0_u64;
-        loop {
-            let mut transaction = database.begin().await?;
-            let mut select = Query::select();
-            select
-                .column(IssueRow::Id)
-                .from(IssueRow::Table)
-                .order_by(IssueRow::Id, Order::Asc)
-                .limit(u64::try_from(ISSUES_PER_STEP).unwrap_or(u64::MAX));
-            if let Some(after) = &after {
-                select.and_where(Expr::col(IssueRow::Id).gt(after.clone()));
-            }
-            let ids: Vec<Vec<u8>> = transaction
-                .fetch_all(&select)
-                .await?
-                .iter()
-                .map(|row| row.get(IssueRow::Id))
-                .collect::<Result<_, _>>()?;
-            let issues = ids
-                .iter()
-                .map(|bytes| IssueId::read(bytes.clone()))
-                .collect::<Result<Vec<_>, _>>()?;
-            reindex_issues(&mut transaction, &issues).await?;
-            transaction.commit().await?;
-            read = read.saturating_add(u64::try_from(ids.len()).unwrap_or(u64::MAX));
-            match ids.last() {
-                Some(last) if ids.len() == ISSUES_PER_STEP => after = Some(last.clone()),
-                _ => return Ok(read),
-            }
+        // The head first: what is committed after it is read as an event afterwards, and what is
+        // committed before it is in the stored texts the rebuild reads.
+        let head = database
+            .outbox_position(&consumer_name(OUTBOX_HEAD)?)
+            .await?;
+        let read = rebuild_pages(database).await?;
+        move_reader_to(database, head, now).await?;
+        Ok(read)
+    }
+
+    async fn rebuild_text_index_if_wanted(
+        &self,
+        now: Timestamp,
+    ) -> Result<Option<u64>, StoreError> {
+        let wanted = self
+            .database()
+            .outbox_position(&consumer_name(CONSUMER)?)
+            .await?
+            == REBUILD_WANTED;
+        if wanted {
+            self.rebuild_text_index(now).await.map(Some)
+        } else {
+            Ok(None)
         }
     }
+}
+
+/// Makes the rows of every issue what the stored texts say now, a page of issues and a
+/// transaction at a time, without moving the place of the reader. Returns how many issues it
+/// read. The one loop of the rebuild.
+async fn rebuild_pages(database: &Database) -> Result<u64, StoreError> {
+    let mut after: Option<Vec<u8>> = None;
+    let mut read = 0_u64;
+    loop {
+        let mut transaction = database.begin().await?;
+        let mut select = Query::select();
+        select
+            .column(IssueRow::Id)
+            .from(IssueRow::Table)
+            .order_by(IssueRow::Id, Order::Asc)
+            .limit(u64::try_from(ISSUES_PER_STEP).unwrap_or(u64::MAX));
+        if let Some(after) = &after {
+            select.and_where(Expr::col(IssueRow::Id).gt(after.clone()));
+        }
+        let ids: Vec<Vec<u8>> = transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| row.get(IssueRow::Id))
+            .collect::<Result<_, _>>()?;
+        let issues = ids
+            .iter()
+            .map(|bytes| IssueId::read(bytes.clone()))
+            .collect::<Result<Vec<_>, _>>()?;
+        reindex_issues(&mut transaction, &issues).await?;
+        transaction.commit().await?;
+        read = read.saturating_add(u64::try_from(ids.len()).unwrap_or(u64::MAX));
+        match ids.last() {
+            Some(last) if ids.len() == ISSUES_PER_STEP => after = Some(last.clone()),
+            _ => return Ok(read),
+        }
+    }
+}
+
+/// Puts the place of the reader at `head`, if that is further than where it is, and clears the mark
+/// (`REBUILD_WANTED`, the largest place there is). A reader that has gone past the head by itself
+/// stays where it is: everything up to the head is in the rows the rebuild made, and a place that
+/// only ever moves on cannot make an event be read twice or skipped.
+pub(super) async fn move_reader_to(
+    database: &Database,
+    head: i64,
+    now: Timestamp,
+) -> Result<(), StoreError> {
+    let consumer = consumer_name(CONSUMER)?;
+    let mut transaction = database.begin().await?;
+    let mut clear = Query::update();
+    clear
+        .table(OutboxPosition::Table)
+        .value(OutboxPosition::Position, head)
+        .value(OutboxPosition::UpdatedAt, to_micros(now))
+        .and_where(Expr::col(OutboxPosition::Consumer).eq(consumer.as_str()))
+        .and_where(Expr::col(OutboxPosition::Position).eq(REBUILD_WANTED));
+    transaction.execute(&clear).await?;
+    outbox_move(&mut transaction, &consumer, head, now).await?;
+    transaction.commit().await
 }

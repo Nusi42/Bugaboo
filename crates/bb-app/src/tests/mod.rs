@@ -18,6 +18,7 @@ mod fake_layouts;
 mod fake_many_changes;
 mod fake_notifications;
 mod fake_offers;
+mod fake_people;
 mod fake_policy;
 mod fake_projects;
 mod fake_relations;

@@ -153,14 +153,11 @@ impl HandleStore for AuthStorage {
                 Order::Asc,
             )
             .limit(limit);
-        // A handle holds only letters, digits, `_`, `.` and `-`: the start has none of the
-        // characters a pattern gives a meaning to, except `_`, which is escaped.
+        // A handle holds only letters, digits, `_`, `.` and `-`; the pattern writes each as itself.
         if !start.is_empty() {
             select.and_where(
-                Expr::col((PersonHandleRow::Table, PersonHandleRow::Handle)).like(
-                    sea_query::LikeExpr::new(format!("{}%", start.replace('_', "\\_")))
-                        .escape('\\'),
-                ),
+                Expr::col((PersonHandleRow::Table, PersonHandleRow::Handle))
+                    .like(crate::like::starting_with(start)),
             );
         }
         self.database()

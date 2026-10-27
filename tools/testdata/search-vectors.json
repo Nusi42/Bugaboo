@@ -178,6 +178,21 @@
           "is_not_empty"
         ],
         "choices": []
+      },
+      {
+        "word": "timeSpent",
+        "kind": "duration",
+        "operators": [
+          "is",
+          "is_not",
+          "less",
+          "greater",
+          "less_or_equal",
+          "greater_or_equal",
+          "is_empty",
+          "is_not_empty"
+        ],
+        "choices": []
       }
     ]
   },
@@ -656,6 +671,263 @@
           }
         },
         "canonical": "estimate <= 2.5 or estimate > 10",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "timeSpent > 2 hours",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "timeSpent",
+              "span": {
+                "start": 0,
+                "end": 9
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "greater",
+              "value": {
+                "type": "duration",
+                "minutes": 120,
+                "span": {
+                  "start": 12,
+                  "end": 19
+                }
+              },
+              "span": {
+                "start": 10,
+                "end": 19
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 19
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 19
+          }
+        },
+        "canonical": "timeSpent > 2 hours",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "timeSpent <= 1 hour 30 minutes",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "timeSpent",
+              "span": {
+                "start": 0,
+                "end": 9
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "less_or_equal",
+              "value": {
+                "type": "duration",
+                "minutes": 90,
+                "span": {
+                  "start": 13,
+                  "end": 30
+                }
+              },
+              "span": {
+                "start": 10,
+                "end": 30
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 30
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 30
+          }
+        },
+        "canonical": "timeSpent <= 1 hour 30 minutes",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "timeSpent is 45 minutes",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "timeSpent",
+              "span": {
+                "start": 0,
+                "end": 9
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "duration",
+                "minutes": 45,
+                "span": {
+                  "start": 13,
+                  "end": 23
+                }
+              },
+              "span": {
+                "start": 10,
+                "end": 23
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 23
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 23
+          }
+        },
+        "canonical": "timeSpent is 45 minutes",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "timeSpent < 90 minutes and timeSpent >= 1 hour",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "timeSpent",
+                  "span": {
+                    "start": 0,
+                    "end": 9
+                  }
+                },
+                "test": {
+                  "type": "compare",
+                  "operator": "less",
+                  "value": {
+                    "type": "duration",
+                    "minutes": 90,
+                    "span": {
+                      "start": 12,
+                      "end": 22
+                    }
+                  },
+                  "span": {
+                    "start": 10,
+                    "end": 22
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 22
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "timeSpent",
+                  "span": {
+                    "start": 27,
+                    "end": 36
+                  }
+                },
+                "test": {
+                  "type": "compare",
+                  "operator": "greater_or_equal",
+                  "value": {
+                    "type": "duration",
+                    "minutes": 60,
+                    "span": {
+                      "start": 40,
+                      "end": 46
+                    }
+                  },
+                  "span": {
+                    "start": 37,
+                    "end": 46
+                  }
+                },
+                "span": {
+                  "start": 27,
+                  "end": 46
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 46
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 46
+          }
+        },
+        "canonical": "timeSpent < 1 hour 30 minutes and timeSpent >= 1 hour",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "timeSpent is 2 hours 90 minutes",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "timeSpent",
+              "span": {
+                "start": 0,
+                "end": 9
+              }
+            },
+            "test": {
+              "type": "is",
+              "value": {
+                "type": "duration",
+                "minutes": 210,
+                "span": {
+                  "start": 13,
+                  "end": 31
+                }
+              },
+              "span": {
+                "start": 10,
+                "end": 31
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 31
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 31
+          }
+        },
+        "canonical": "timeSpent is 3 hours 30 minutes",
         "mistakes": []
       }
     },
@@ -2972,6 +3244,58 @@
       }
     },
     {
+      "text": "title contains \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "title",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "contains",
+              "text": {
+                "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "span": {
+                  "start": 15,
+                  "end": 273
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 273
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 273
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 273
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 15,
+              "end": 273
+            },
+            "key": "search.mistake.word-too-long",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
       "text": "contains",
       "answer": {
         "search": null,
@@ -3150,6 +3474,146 @@
             "span": {
               "start": 12,
               "end": 16
+            },
+            "key": "search.mistake.wrong-number",
+            "args": {
+              "field": "estimate"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "timeSpent > 5",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "timeSpent",
+              "span": {
+                "start": 0,
+                "end": 9
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "greater",
+              "value": {
+                "type": "number",
+                "number": {
+                  "value": 5,
+                  "scale": 0
+                },
+                "span": {
+                  "start": 12,
+                  "end": 13
+                }
+              },
+              "span": {
+                "start": 10,
+                "end": 13
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 13
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 13
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 12,
+              "end": 13
+            },
+            "key": "search.mistake.wrong-duration",
+            "args": {
+              "field": "timeSpent",
+              "hour": "hour",
+              "hours": "hours",
+              "minutes": "minutes"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "timeSpent > 1.5 hours",
+      "answer": {
+        "search": null,
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 12,
+              "end": 15
+            },
+            "key": "search.mistake.expected-duration",
+            "args": {
+              "hour": "hour",
+              "hours": "hours",
+              "minutes": "minutes"
+            },
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
+      "text": "estimate > 2 hours",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "estimate",
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "greater",
+              "value": {
+                "type": "duration",
+                "minutes": 120,
+                "span": {
+                  "start": 11,
+                  "end": 18
+                }
+              },
+              "span": {
+                "start": 9,
+                "end": 18
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 18
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 11,
+              "end": 18
             },
             "key": "search.mistake.wrong-number",
             "args": {
@@ -4122,6 +4586,11 @@
           },
           {
             "type": "word",
+            "text": "timeSpent",
+            "kind": "field"
+          },
+          {
+            "type": "word",
             "text": "not",
             "kind": "keyword"
           },
@@ -4780,6 +5249,11 @@
           },
           {
             "type": "word",
+            "text": "timeSpent",
+            "kind": "field"
+          },
+          {
+            "type": "word",
             "text": "not",
             "kind": "keyword"
           },
@@ -5011,6 +5485,11 @@
             "type": "word",
             "text": "storyPoints",
             "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "timeSpent",
+            "kind": "field"
           }
         ]
       }
@@ -5173,6 +5652,11 @@
             "type": "word",
             "text": "storyPoints",
             "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "timeSpent",
+            "kind": "field"
           }
         ]
       }
@@ -5331,6 +5815,11 @@
           {
             "type": "word",
             "text": "storyPoints",
+            "kind": "field"
+          },
+          {
+            "type": "word",
+            "text": "timeSpent",
             "kind": "field"
           },
           {

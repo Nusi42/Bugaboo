@@ -59,13 +59,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))
     }
 
-    /// Builds the whole index again from the stored texts. Returns how many issues it read.
+    /// Makes the index again if a migration asked for it (see `TextIndexStore`): once at a start,
+    /// beside the jobs, which do not wait for it. Returns how many issues it read, `None` when
+    /// nothing was asked.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub async fn rebuild_text_index_if_wanted(&self) -> Result<Option<u64>, AppError> {
+        self.store()
+            .rebuild_text_index_if_wanted(self.now())
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
+    /// Builds the whole index again from the stored texts and puts the reader at the head of the
+    /// outbox (`TextIndexStore::rebuild_text_index`). Returns how many issues it read.
     ///
     /// # Errors
     /// An internal error when the store fails.
     pub async fn rebuild_text_index(&self) -> Result<u64, AppError> {
         self.store()
-            .rebuild_text_index()
+            .rebuild_text_index(self.now())
             .await
             .map_err(|error| internal::<S>(&error))
     }

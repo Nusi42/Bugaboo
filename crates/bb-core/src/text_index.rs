@@ -10,6 +10,19 @@ use crate::personal::Entity;
 /// kept under this name.
 pub const CONSUMER: &str = "text-index";
 
+/// The number of the newest migration that changed the rule that prepares a text, so an index made
+/// before it has to be made again (migration 25, M5-F53). A tool that keeps an index of its own
+/// (the benchmark's dataset) compares its marker with this. It is also the number the list of
+/// migrations gives migration 25 (one definition); when the rule changes again, give migration 25
+/// its literal 25 back and set this to the new number.
+pub const RULE_MIGRATION: i64 = 25;
+
+/// The place the consumer has when the whole index has to be made again from the stored texts (the
+/// rule that prepares a text changed, migration 25): the largest place there is, so a read of the
+/// events after it finds none and the consumer waits. The first thing a start does about it is to
+/// take the head of the outbox, make the rows in pieces, and put the place at that head.
+pub const REBUILD_WANTED: i64 = i64::MAX;
+
 words! {
     /// Where a text of an index row comes from. A search leaves out every source the reader may
     /// not see.

@@ -170,17 +170,13 @@ pub(crate) async fn run(
     ctx.catch_up_history()
         .await
         .map_err(|error| SampleError::step(Step::History, &error))?;
-    // The index of the text search is built from the stored texts in big steps: the events of a
-    // million issues would be read one by one.
+    // The index of the text search is built from the stored texts in big steps (the events of a
+    // million issues would be read one by one), and the reader starts at the end, so the first
+    // round of a server does not read them again.
     ctx.rebuild_text_index()
         .await
         .map_err(|error| SampleError::step(Step::TextIndex, &error))?;
     let last = database.outbox_position(&head).await?;
-    // Everything the rebuild read is in the index: the reader starts at the end, so the first
-    // round of a server does not read the events of a million issues again.
-    database
-        .outbox_set(bb_core::text_index::CONSUMER, last, world.clock.now())
-        .await?;
     let window = (last - first) * i64::from(bank.plan.notified_percent) / 100;
     database
         .outbox_set(

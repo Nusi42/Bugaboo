@@ -56,6 +56,7 @@ mod notifications_http;
 mod offers_http;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
 // browser of these tests.
+mod list_labels_http;
 #[path = "../matrix/mod.rs"]
 mod matrix;
 mod own_access_http;
@@ -78,6 +79,7 @@ pub(crate) mod rig;
 mod roles_http;
 mod saved_searches_http;
 mod search_http;
+mod search_names_http;
 mod second_step;
 mod second_step_by_role;
 mod secrets;

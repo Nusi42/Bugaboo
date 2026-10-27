@@ -58,6 +58,8 @@ export const paths = {
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
   issue: appPaths.issue,
+  search: "/search",
+  savedSearch: "/s/$search",
 } as const;
 
 /** An address of the app, as the routes know it. */
@@ -70,6 +72,7 @@ export const routeParam = {
   role: "role",
   field: "field",
   issue: "issue",
+  search: "search",
 } as const;
 
 /** The name of a part of an address that changes. */
@@ -78,6 +81,20 @@ export type RouteParam = (typeof routeParam)[keyof typeof routeParam];
 /** The address of a route with one changing part filled in: `/p/$project` and `WEB` is `/p/WEB`. */
 function filled(path: Path, param: RouteParam, value: string): string {
   return path.replace(`$${param}`, encodeURIComponent(value));
+}
+
+/**
+ * The word of a changing part in an address that has the form of `path`, or none when the address
+ * is of another form: `/p/WEB/issues` against `/p/$project/issues` and `project` is `WEB`.
+ */
+export function partOfAddress(path: Path, param: RouteParam, address: string): string | undefined {
+  const [before = "", after = ""] = path.split(`$${param}`);
+  const whole = address.endsWith("/") ? address.slice(0, -1) : address;
+  if (!whole.startsWith(before) || !whole.endsWith(after)) {
+    return undefined;
+  }
+  const word = whole.slice(before.length, whole.length - after.length);
+  return word === "" || word.includes("/") ? undefined : decodeURIComponent(word);
 }
 
 /** The address of a project: its short name, or an old one, in `/p/WEB`. */
@@ -208,10 +225,7 @@ export function issuePanelAddress(shortName: string, key: string): string {
   return `${projectIssuesAddress(shortName)}?open=${encodeURIComponent(key)}`;
 }
 
-/** The first part of the address of a saved search, `/s/<ID>` (ADR-0034). */
-const savedSearchRoot = "/s";
-
-/** The address of a saved search, `/s/<ID>`: its text is run when the page opens. */
+/** The address of a saved search, `/s/<ID>`: its own address, which is shared. */
 export function savedSearchAddress(id: string): string {
-  return `${savedSearchRoot}/${encodeURIComponent(id)}`;
+  return filled(paths.savedSearch, routeParam.search, id);
 }

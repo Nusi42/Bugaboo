@@ -22,6 +22,7 @@ use serde_json::Value;
 use crate::access::ProjectLabel;
 use crate::offers::OfferedHere;
 use crate::projects::ProjectRef;
+use crate::tags::LabelRef;
 use crate::workflows::{StatusChangeView, StatusView};
 
 /// Make an issue in a project.
@@ -129,6 +130,8 @@ pub struct IssuesQuery {
     pub project: String,
     /// Whether the people each issue is assigned to are wanted: they are read only then.
     pub assigned_to: bool,
+    /// Whether the labels of each issue are wanted: they are read only then, once for the page.
+    pub labels: bool,
     /// Where the page after the last one starts (`next_cursor` of the page before), if any.
     pub cursor: Option<String>,
     /// How many issues a page holds at most.
@@ -215,6 +218,11 @@ pub struct IssueView {
     /// fields the viewer may see on an issue of this type.
     #[masked(own_fields)]
     pub own_fields: OwnValues,
+    /// The labels on it, in the order they were put there; `None` when they were not read (only a
+    /// list or a search that asks for them reads them), which is not the same as none. A reader
+    /// whose level for *Labels* is *Hidden* is not shown them.
+    #[masked(field = "labels")]
+    pub labels: Option<Vec<LabelRef>>,
     /// Counts up with every change; a change is made on the version that was looked at.
     #[masked(open)]
     pub version: i64,

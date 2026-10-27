@@ -20,9 +20,16 @@ pub trait TextIndexStore: IssueStore + 'static {
         /// finished everything up to `position`. A consumer that stops half way reads the same
         /// events again and makes the same rows.
         fn store_text_index(touched: &[Touched], position: i64, now: Timestamp) -> ();
-        /// Makes the rows of every issue what the stored texts say now, in pieces, without
-        /// moving the place of the consumer: the first build of a database and the build after the
-        /// rule that prepares texts changed. Returns how many issues it read.
-        fn rebuild_text_index() -> u64;
+        /// Builds the whole index again from the stored texts: takes the head of the outbox, makes
+        /// the rows of every issue in pieces (one transaction for each), and puts the place of the
+        /// consumer at that head if that is further than it is (it also clears the mark
+        /// `bb_core::text_index::REBUILD_WANTED`), so the events after the head are read as always.
+        /// The one function the start of the server, `bugaboo search-index rebuild` and the sample
+        /// organization use. Returns how many issues it read.
+        fn rebuild_text_index(now: Timestamp) -> u64;
+        /// [`rebuild_text_index`](Self::rebuild_text_index) when the place of the consumer says the
+        /// index has to be made again (the mark), else nothing. `None` when nothing was wanted,
+        /// else how many issues it read.
+        fn rebuild_text_index_if_wanted(now: Timestamp) -> Option<u64>;
     }
 }
