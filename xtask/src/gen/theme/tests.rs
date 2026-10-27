@@ -191,9 +191,17 @@ fn the_media_query_of_a_choice_may_name_a_breakpoint_token() {
 
 #[test]
 fn only_the_marked_sizes_are_variables_the_code_may_set() {
-    let ts = typescript(&file()).unwrap();
+    let file = file();
+    let ts = typescript(&file).unwrap();
+    let mut marked = String::new();
+    for token in file.tokens.iter().filter(|token| token.run_time) {
+        marked.push_str("  \"");
+        marked.push_str(&token.name);
+        marked.push_str("\",\n");
+    }
+    assert!(!marked.is_empty());
     assert!(
-        ts.contains("runTimeVariables = [\n  \"window-width\",\n  \"window-height\",\n] as const;"),
+        ts.contains(&format!("runTimeVariables = [\n{marked}] as const;")),
         "{ts}"
     );
     let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();

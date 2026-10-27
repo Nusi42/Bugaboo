@@ -7,7 +7,7 @@
 //! no component has it). This check lists every part of the theme file that is named in no file of
 //! the browser app and its packages, so the rule is given a real part or is removed.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 use super::{Check, Context, Finding};
 use crate::generate::all_paths;
@@ -63,31 +63,36 @@ fn camel(name: &str) -> String {
     out
 }
 
-/// Whether `text` names the part: `part.fieldLabel`, or its name as a string.
-fn names_the_part(text: &str, name: &str) -> bool {
-    let key = format!("part.{}", camel(name));
-    let at_word_end = |found: usize, length: usize| {
-        !text[found + length..]
-            .chars()
-            .next()
-            .is_some_and(|next| next.is_alphanumeric() || next == '_')
-    };
-    text.match_indices(&key)
-        .any(|(found, _)| at_word_end(found, key.len()))
-        || text.contains(&format!("\"{name}\""))
+/// Everything the sources name that can be a part, found in one pass over each text: the word
+/// after each `part.` and every text between two neighbouring quotes.
+fn names_in(sources: &[Source]) -> HashSet<&str> {
+    let mut found = HashSet::new();
+    for (_, text) in sources {
+        for (at, _) in text.match_indices("part.") {
+            let rest = &text[at + "part.".len()..];
+            let end = rest
+                .find(|c: char| !(c.is_alphanumeric() || c == '_'))
+                .unwrap_or(rest.len());
+            found.insert(&rest[..end]);
+        }
+        let mut quotes = text.match_indices('"').map(|(at, _)| at).peekable();
+        while let Some(open) = quotes.next() {
+            if let Some(&close) = quotes.peek() {
+                found.insert(&text[open + 1..close]);
+            }
+        }
+    }
+    found
 }
 
 /// The parts, with the line of their first rule, that no source names.
 fn unused(parts: &[(String, usize)], sources: &[Source]) -> Vec<Finding> {
     let mut seen = BTreeSet::new();
+    let named = names_in(sources);
     parts
         .iter()
         .filter(|(name, _)| seen.insert(name.clone()))
-        .filter(|(name, _)| {
-            !sources
-                .iter()
-                .any(|(_, text)| names_the_part(text, name))
-        })
+        .filter(|(name, _)| !named.contains(camel(name).as_str()) && !named.contains(name.as_str()))
         .map(|(name, line)| {
             Finding::at(
                 format!("{THEME_PATH}:{line}"),
