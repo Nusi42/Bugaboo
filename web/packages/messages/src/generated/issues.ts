@@ -52,6 +52,11 @@ export const messages = {
   "issues.groups-cut":
     "There are more groups than can be shown. Narrow the search to see the others.",
   "issues.select-shown": "Tick the issues shown",
+  "issues.columns-head": "Columns of the list",
+  "issues.group-open":
+    "{group}, {count, plural, one {# issue} other {# issues}}. Press to fold the group.",
+  "issues.group-folded":
+    "{group}, {count, plural, one {# issue} other {# issues}}, folded. Press to unfold the group.",
   "issues.sort-by": "Sort by {column}",
   "issues.sorted-up": "Sorted by {column}, smallest first. Press to turn the order around.",
   "issues.sorted-down": "Sorted by {column}, largest first. Press to turn the order around.",
