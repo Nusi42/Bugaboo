@@ -40,6 +40,25 @@ export function reportNotSaved(): void {
   report({ state: "not-saved", problem: null });
 }
 
+/**
+ * The last request on its way for each setting. The server keeps whatever arrives last, and two
+ * requests sent together may arrive in either order, so a setting's requests go one after the other.
+ */
+const tails = new Map<string, Promise<unknown>>();
+
+/** Runs `request` after every request of the same setting that was asked for before it is done. */
+export function inOrderOfKey<Answer>(key: string, request: () => Promise<Answer>): Promise<Answer> {
+  const run = (tails.get(key) ?? Promise.resolve()).then(request, request);
+  const tail = run.then(forget, forget);
+  function forget(): void {
+    if (tails.get(key) === tail) {
+      tails.delete(key);
+    }
+  }
+  tails.set(key, tail);
+  return run;
+}
+
 /** Sends one change: the value counts at once, and goes back when the server refuses. */
 function send(change: SettingChange): Promise<void> {
   const path = { params: { path: { key: change.key } } };
@@ -48,16 +67,17 @@ function send(change: SettingChange): Promise<void> {
     isCached: isMySettings,
     apply: (before: MySettings | undefined) =>
       before === undefined ? undefined : withChange(before, change),
-    send: async (changed: SettingChange) => {
-      if (changed.value === null) {
-        await api.client.DELETE("/api/v1/me/settings/{key}", path);
-        return;
-      }
-      await api.client.PUT("/api/v1/me/settings/{key}", {
-        ...path,
-        body: { value: changed.value },
-      });
-    },
+    send: (changed: SettingChange) =>
+      inOrderOfKey(changed.key, async () => {
+        if (changed.value === null) {
+          await api.client.DELETE("/api/v1/me/settings/{key}", path);
+          return;
+        }
+        await api.client.PUT("/api/v1/me/settings/{key}", {
+          ...path,
+          body: { value: changed.value },
+        });
+      }),
   })(change);
 }
 
