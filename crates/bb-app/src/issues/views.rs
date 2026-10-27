@@ -49,7 +49,7 @@ pub(crate) struct IssueViews {
 /// What a page of issues shows besides what every issue has: each is read only when it is asked
 /// for.
 #[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct Shown {
+pub(crate) struct ReadOnRequest {
     /// The people each issue is assigned to.
     pub(crate) people: bool,
     /// The labels of each issue.
@@ -98,7 +98,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         issues: &[Issue],
         places: &HashMap<ProjectId, PagePlace>,
-        shown: Shown,
+        extras: ReadOnRequest,
     ) -> Result<Vec<(Arc<Evaluation>, IssueView)>, AppError> {
         let ids: Vec<IssueId> = issues.iter().map(|issue| issue.id).collect();
         let assigned = self
@@ -113,7 +113,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await?;
         // One statement for the links of the whole page and one for the catalogue of labels.
-        let labels = if shown.labels {
+        let labels = if extras.labels {
             Some(Arc::new(self.labels_of_page(&ids).await?))
         } else {
             None
@@ -133,7 +133,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             if let Some(labels) = &labels {
                 made = made.with_labels(Arc::clone(labels));
             }
-            if !shown.people {
+            if !extras.people {
                 made = made.without_people();
             }
             views.insert(project, made);

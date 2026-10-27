@@ -26,7 +26,7 @@ use super::target::{FieldTarget, target_of};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
-use crate::issues::{IssueView, PagePlace, Shown};
+use crate::issues::{IssueView, PagePlace, ReadOnRequest};
 
 /// Ask for a page of the issues a search finds.
 pub struct SearchQuery {
@@ -274,7 +274,7 @@ pub(crate) async fn search_page<S: AuthStore + SearchStore>(
             actor,
             &issues,
             &places,
-            Shown {
+            ReadOnRequest {
                 people: with_people,
                 labels: query.labels,
             },
