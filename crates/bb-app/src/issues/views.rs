@@ -20,6 +20,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::ItemValues;
 use crate::projects::ProjectRef;
+use crate::tags::LabelRef;
 use crate::workflows::{StatusChangeView, StatusCheck, StatusView};
 
 /// What turns the issues of one project into views for one viewer. The people are resolved once
@@ -39,6 +40,19 @@ pub(crate) struct IssueViews {
     /// Whether the people each issue is assigned to are shown. They are always read (a status
     /// change may name *the person assigned*), and left out of the answer when nobody asked.
     show_people: bool,
+    /// The labels of the issues shown so far, by issue, in the order they were put on. Read once
+    /// for the page; an issue not in it has none.
+    labels: HashMap<IssueId, Vec<LabelRef>>,
+}
+
+/// What a page of issues shows besides what every issue has: each is read only when it is asked
+/// for.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct Shown {
+    /// The people each issue is assigned to.
+    pub(crate) people: bool,
+    /// The labels of each issue.
+    pub(crate) labels: bool,
 }
 
 /// A project that a page of issues has issues of: the projects from the top down to it, what the
@@ -65,6 +79,12 @@ impl IssueViews {
         self.show_people = false;
         self
     }
+
+    /// Gives the views the labels of the issues of the page.
+    pub(crate) fn with_labels(mut self, labels: HashMap<IssueId, Vec<LabelRef>>) -> Self {
+        self.labels = labels;
+        self
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -77,7 +97,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         issues: &[Issue],
         places: &HashMap<ProjectId, PagePlace>,
-        show_people: bool,
+        shown: Shown,
     ) -> Result<Vec<(Arc<Evaluation>, IssueView)>, AppError> {
         let ids: Vec<IssueId> = issues.iter().map(|issue| issue.id).collect();
         let assigned = self
@@ -91,6 +111,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 &ids.iter().map(|id| (*id).into()).collect::<Vec<EntityId>>(),
             )
             .await?;
+        // One statement for the links of the whole page and one for the catalogue of labels.
+        let labels = if shown.labels {
+            self.labels_of_page(&ids).await?
+        } else {
+            HashMap::new()
+        };
         let mut views: HashMap<ProjectId, IssueViews> = HashMap::new();
         let mut projects: Vec<ProjectId> = issues.iter().map(|issue| issue.project).collect();
         projects.sort_unstable();
@@ -102,8 +128,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             let mut made = self
                 .issue_views(actor, Arc::clone(&place.held), place.project.clone())
                 .await?
-                .with_page(place.chain.clone(), values.clone());
-            if !show_people {
+                .with_page(place.chain.clone(), values.clone())
+                .with_labels(labels.clone());
+            if !shown.people {
                 made = made.without_people();
             }
             views.insert(project, made);
@@ -155,7 +182,40 @@ impl<S: AuthStore> Ctx<'_, S> {
             chain: None,
             workflows: HashMap::new(),
             show_people: true,
+            labels: HashMap::new(),
         })
+    }
+
+    /// The labels on each of these issues, in the order they were put there: the links of all of
+    /// them in one statement, and the labels they point to in another (PERF-N1). Whether the
+    /// viewer may see labels at all is the mask of each issue's project, applied by the answer.
+    ///
+    /// # Errors
+    /// When the store fails.
+    pub(crate) async fn labels_of_page(
+        &self,
+        ids: &[IssueId],
+    ) -> Result<HashMap<IssueId, Vec<LabelRef>>, AppError> {
+        let internal = |error| internal::<S>(&error);
+        let links = self
+            .store()
+            .labels_of_issues(ids.to_vec())
+            .await
+            .map_err(internal)?;
+        let mut found: HashMap<IssueId, Vec<LabelRef>> = HashMap::new();
+        if links.is_empty() {
+            return Ok(found);
+        }
+        let catalogue = self.store().labels().await.map_err(internal)?;
+        for link in links {
+            if let Some(label) = catalogue.iter().find(|label| label.id == link.label) {
+                found
+                    .entry(link.issue)
+                    .or_default()
+                    .push(LabelRef::from(label));
+            }
+        }
+        Ok(found)
     }
 
     /// The workflow that counts for an issue type in the project of the views.
@@ -287,6 +347,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             updated_at: issue.updated_at,
             closed_at: issue.closed_at,
             own_fields,
+            labels: views.labels.get(&issue.id).cloned().unwrap_or_default(),
             version: issue.version,
         })
     }

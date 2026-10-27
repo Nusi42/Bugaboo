@@ -5044,6 +5044,11 @@ export interface components {
       /** @description The internal ID, which never changes. */
       id?: string | null;
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
+      /**
+       * @description The labels on it, in the order they were put there. Hidden from a reader whose level for
+       *     *Labels* is *Hidden*.
+       */
+      labels?: components["schemas"]["LabelRefBody"][] | null;
       own_fields?: components["schemas"]["OwnValues"] | null;
       priority?: components["schemas"]["Priority"] | null;
       project?: components["schemas"]["ProjectRef"] | null;

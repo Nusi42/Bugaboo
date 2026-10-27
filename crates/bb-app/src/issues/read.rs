@@ -79,7 +79,11 @@ pub async fn issue<S: AuthStore>(
         .into_iter()
         .map(|assigned_person| assigned_person.person)
         .collect();
-    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
+    let labels = ctx.labels_of_page(&[issue.id]).await?;
+    let mut views = ctx
+        .issue_views(&actor, held.clone(), project)
+        .await?
+        .with_labels(labels);
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
     let may_change = held.may_change_issue(issue.reported_by);
     let mask = held.field_mask_for(Some(issue.issue_type));
@@ -145,6 +149,7 @@ pub async fn issues<S: AuthStore>(
         scope: SearchScope::Within(project.id),
         cursor: input.cursor,
         limit: input.limit,
+        labels: input.labels,
     };
     // Always read: a status change may name the person assigned. The people are in the answer only
     // when they were asked for.

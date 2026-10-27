@@ -11,10 +11,11 @@ use super::{Check, Context, Finding};
 
 const QUERIES: &str = "crates/bb-server/src/tests/sign_in/perf_queries.rs";
 const NOTIFICATIONS: &str = "crates/bb-server/src/tests/sign_in/perf_notifications.rs";
+const LIST_LABELS: &str = "crates/bb-server/src/tests/sign_in/list_labels_http.rs";
 const SAVED_SEARCHES: &str = "crates/bb-server/src/tests/sign_in/saved_searches_http.rs";
 
 /// The reads that must not grow with the number of rows.
-pub(super) const REQUIRED: [Required; 11] = [
+pub(super) const REQUIRED: [Required; 12] = [
     // The history names a type and a label group from one read, not one read for each row.
     Required::anywhere("sec_03_the_history_names_a_type_and_a_label_only_where_the_reader_may_know_them"),
     Required::anywhere("sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it"),
@@ -47,6 +48,10 @@ pub(super) const REQUIRED: [Required; 11] = [
         "perf_05_the_number_on_the_menu_runs_as_many_statements_for_forty_unread_as_for_five",
     )
     .within(NOTIFICATIONS),
+    Required::both(
+        "perf_05_a_page_of_forty_issues_with_labels_runs_as_many_statements_as_a_page_of_five",
+    )
+    .within(LIST_LABELS),
     Required::both(
         "perf_05_a_page_of_forty_saved_searches_runs_as_many_statements_as_a_page_of_five",
     )

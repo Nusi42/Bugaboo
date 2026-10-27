@@ -268,6 +268,7 @@ async fn search_issues(
                 text,
                 cursor,
                 limit: params.limit(),
+                labels: params.asks_for(&ISSUE_FIELDS, "labels"),
             },
         )
         .await

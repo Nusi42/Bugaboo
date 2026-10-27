@@ -35,13 +35,14 @@ use super::auth::{
 use super::body_id;
 use super::check_access::{PERSON_FIELDS, PeopleSearch};
 use super::projects::ProjectRef;
+use super::tags::LabelRefBody;
 use super::workflows::{StatusChangeRef, StatusRef, status_in};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-pub(super) const ISSUE_FIELDS: [FieldSpec; 16] = [
+pub(super) const ISSUE_FIELDS: [FieldSpec; 17] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
@@ -57,6 +58,7 @@ pub(super) const ISSUE_FIELDS: [FieldSpec; 16] = [
     FieldSpec::on_request("updated_at"),
     FieldSpec::on_request("closed_at"),
     FieldSpec::on_request("own_fields"),
+    FieldSpec::on_request("labels"),
     FieldSpec::on_request("version"),
 ];
 /// The name of the list, so its cursors are its own.
@@ -160,6 +162,11 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(own_fields)]
     own_fields: Option<OwnValues>,
+    /// The labels on it, in the order they were put there. Hidden from a reader whose level for
+    /// *Labels* is *Hidden*.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "labels")]
+    labels: Option<Vec<LabelRefBody>>,
     /// Counts up with every change. A change is made on the version that was looked at.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
@@ -190,6 +197,7 @@ impl From<&IssueView> for IssueItem {
             updated_at: Some(issue.updated_at.to_string()),
             closed_at: issue.closed_at.map(|at| at.to_string()),
             own_fields: Some(issue.own_fields.clone()),
+            labels: Some(issue.labels.iter().map(LabelRefBody::from).collect()),
             version: Some(issue.version),
         }
     }
@@ -335,6 +343,7 @@ async fn list_issues(
                 session_token,
                 project,
                 assigned_to: params.asks_for(&ISSUE_FIELDS, "assigned_to"),
+                labels: params.asks_for(&ISSUE_FIELDS, "labels"),
                 cursor,
                 limit: params.limit(),
             },
@@ -750,6 +759,7 @@ mod tests {
             updated_at: Some(String::new()),
             closed_at: Some(String::new()),
             own_fields: Some(OwnValues::default()),
+            labels: Some(Vec::new()),
             version: Some(1),
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_FIELDS, &item);
