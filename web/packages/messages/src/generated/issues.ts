@@ -3,6 +3,8 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "search.issues": "Issues",
+  "search.create-issue": "Create issue",
   "issues.changed": "{field} changed to {value}.",
   "issues.changed-people":
     "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",

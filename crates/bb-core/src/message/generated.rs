@@ -3805,6 +3805,9 @@ pub const SEARCH_INDEX_DATA_OLDER: MessageKey = MessageKey::new("search-index.da
 /// The message `search-index.opened-address`.
 pub const SEARCH_INDEX_OPENED_ADDRESS: MessageKey = MessageKey::new("search-index.opened-address");
 
+/// The message `search.actions`.
+pub const SEARCH_ACTIONS: MessageKey = MessageKey::new("search.actions");
+
 /// The message `search.bar.a-day`.
 pub const SEARCH_BAR_A_DAY: MessageKey = MessageKey::new("search.bar.a-day");
 
@@ -4075,6 +4078,9 @@ pub const SEARCH_BAR_WHEN: MessageKey = MessageKey::new("search.bar.when");
 /// The message `search.clear`.
 pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
 
+/// The message `search.create-issue`.
+pub const SEARCH_CREATE_ISSUE: MessageKey = MessageKey::new("search.create-issue");
+
 /// The message `search.found-list`.
 pub const SEARCH_FOUND_LIST: MessageKey = MessageKey::new("search.found-list");
 
@@ -4135,6 +4141,9 @@ pub const SEARCH_HELP_YOUR_FIELDS: MessageKey = MessageKey::new("search.help-you
 /// The message `search.help-your-fields-text`.
 pub const SEARCH_HELP_YOUR_FIELDS_TEXT: MessageKey =
     MessageKey::new("search.help-your-fields-text");
+
+/// The message `search.issues`.
+pub const SEARCH_ISSUES: MessageKey = MessageKey::new("search.issues");
 
 /// The message `search.label`.
 pub const SEARCH_LABEL: MessageKey = MessageKey::new("search.label");
@@ -4229,6 +4238,9 @@ pub const SEARCH_SAVED_HEADING: MessageKey = MessageKey::new("search.saved-headi
 /// The message `search.saved-mine`.
 pub const SEARCH_SAVED_MINE: MessageKey = MessageKey::new("search.saved-mine");
 
+/// The message `search.saved-searches`.
+pub const SEARCH_SAVED_SEARCHES: MessageKey = MessageKey::new("search.saved-searches");
+
 /// The message `search.saved-shared`.
 pub const SEARCH_SAVED_SHARED: MessageKey = MessageKey::new("search.saved-shared");
 
@@ -4252,6 +4264,9 @@ pub const SEARCH_SHARE_NOTE: MessageKey = MessageKey::new("search.share-note");
 
 /// The message `search.share-projects`.
 pub const SEARCH_SHARE_PROJECTS: MessageKey = MessageKey::new("search.share-projects");
+
+/// The message `search.shared-with-me`.
+pub const SEARCH_SHARED_WITH_ME: MessageKey = MessageKey::new("search.shared-with-me");
 
 /// The message `search.title`.
 pub const SEARCH_TITLE: MessageKey = MessageKey::new("search.title");
@@ -9353,6 +9368,15 @@ pub fn search_copy_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search.count`.
+#[must_use]
+pub fn search_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.count"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `search.found-issue`.
 #[must_use]
 pub fn search_found_issue(id: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
@@ -14025,6 +14049,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search-index.rebuilt",
         "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
     ),
+    ("search.actions", "Actions"),
     ("search.bar.a-day", "A day"),
     ("search.bar.above", "above"),
     ("search.bar.add-filter", "Add filter"),
@@ -14166,6 +14191,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.when", "Day"),
     ("search.clear", "Clear the search"),
     ("search.copy-name", "Copy of {name}"),
+    (
+        "search.count",
+        "{count, plural, one {# result} other {# results}}",
+    ),
+    ("search.create-issue", "Create issue"),
     ("search.found-issue", "{id} · {title}"),
     ("search.found-list", "Issues found"),
     ("search.found-none", "No issues match this search."),
@@ -14213,6 +14243,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.help-your-fields-text",
         "The fields you may search by, each with the word that stands for it in the search.",
     ),
+    ("search.issues", "Issues"),
     ("search.label", "Search"),
     ("search.made-by", "Created by {person}"),
     (
@@ -14391,7 +14422,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.page.title", "Search"),
     ("search.pages", "Pages"),
     ("search.partial", "Some results could not be loaded."),
-    ("search.placeholder", "Search pages, settings and projects"),
+    (
+        "search.placeholder",
+        "Search issues, saved searches, projects, pages and actions",
+    ),
     (
         "search.project-list-stop",
         "Stop using as the list of {project}",
@@ -14412,6 +14446,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.saved-by", "{name} · {person}"),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
+    ("search.saved-searches", "Saved searches"),
     ("search.saved-shared", "Shared with me"),
     ("search.share", "Share"),
     ("search.share-done", "Done"),
@@ -14424,6 +14459,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("search.share-projects", "Projects"),
     ("search.share-title", "Share {name}"),
+    ("search.shared-with-me", "Shared with me"),
     ("search.title", "Quick search"),
     ("second-step.back", "Back to sign in"),
     ("second-step.code", "Code"),

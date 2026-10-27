@@ -435,6 +435,7 @@ export interface MessageArguments {
   "search.bar.pick-take": { name: string | number };
   "search.bar.remove-filter": { filter: string | number };
   "search.copy-name": { name: string | number };
+  "search.count": { count: number };
   "search.found-issue": { id: string | number; title: string | number };
   "search.found-project": { name: string | number; short: string | number };
   "search.help-use": { example: string | number };

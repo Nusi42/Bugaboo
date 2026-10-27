@@ -17,6 +17,7 @@ const RESULTS = 8;
 export const projectsSource: QuickSearchSource = {
   id: "projects",
   heading: t("search.projects"),
+  paused: true,
   search: async (query): Promise<readonly QuickResult[]> => {
     const { data } = await api.client.GET("/api/v1/projects", {
       params: {

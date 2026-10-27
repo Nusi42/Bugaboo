@@ -7,6 +7,7 @@ import {
   check,
   duration_minutes_of,
   issue_id_of,
+  open_last_word,
   operand_source,
   own_field_word,
   parse,
@@ -26,6 +27,8 @@ export interface SearchLanguage {
   readonly print: (search: Search) => string;
   /** What may come next at the cursor, a place in the string. */
   readonly suggest: (text: string, cursor: number, fields: ReadableFields) => Suggestions;
+  /** The text of a person who is still typing, with a `*` after the last word when it can take one. */
+  readonly openLastWord: (text: string) => string;
   /** How a value stands in the text of a search, quoted where the language needs it. */
   readonly operandSource: (operand: Operand) => string;
   /** The Issue ID that the words are, in capitals; none when they are not exactly one. */
@@ -54,6 +57,7 @@ function answerFor(text: string, json: string): Answer {
 }
 
 export const language: SearchLanguage = {
+  openLastWord: (text) => open_last_word(text),
   parse: (text) => answerFor(text, parse(text)),
   check: (text, fields) => answerFor(text, check(text, JSON.stringify(fields))),
   print: (search) => print(JSON.stringify(search)),

@@ -3189,6 +3189,10 @@ body {
   background: var(--bg-hover);
 }
 
+[data-part="quick-search.item"][data-disabled] {
+  opacity: var(--opacity-disabled);
+}
+
 [data-part="quick-search.item"][data-focused] {
   background: var(--bg-selected);
   outline: var(--ring-width) solid var(--accent);
@@ -3204,6 +3208,10 @@ body {
   margin: 0;
   padding: var(--space-3);
   color: var(--fg-muted);
+}
+
+[data-part="quick-search.said"] {
+  display: block;
 }
 
 [data-part="quick-search.quiet"] {
