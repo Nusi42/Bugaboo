@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 
 import { Icon } from "./Icon.tsx";
+import type { ColumnResize } from "./use-column-resize.ts";
 import { iconColumns, type ListColumn } from "./list-columns.ts";
 import { listTemplate, type ListColumnSpec } from "./list-template.ts";
+import { CellGroup, ColumnHeaderCell } from "./ListRoles.tsx";
 import { partOf } from "./parts.ts";
 import { buttonType, iconSize } from "./props.ts";
 import { part } from "./tokens.ts";
-import { useColumnResize, type ColumnResize } from "./use-column-resize.ts";
 import { variableOf } from "./variables.ts";
 
 export interface ListFrameProps {
@@ -70,14 +71,17 @@ export interface ListCellProps {
 
 /** One cell of a row, in the column it belongs to (R9: the same things stand in the same places). */
 export function ListCell({ column, headedBy, head = false, children }: ListCellProps) {
+  const look = partOf(part.listRowCell, { variants: [column] });
+  if (head) {
+    return <ColumnHeaderCell look={look}>{children}</ColumnHeaderCell>;
+  }
+  if (headedBy === undefined) {
+    return <div {...look}>{children}</div>;
+  }
   return (
-    <div
-      {...partOf(part.listRowCell, { variants: [column] })}
-      {...(head ? columnHeader : {})}
-      {...(headedBy === undefined ? {} : { ...cellGroup, "aria-labelledby": headedBy })}
-    >
+    <CellGroup look={look} labelledBy={headedBy}>
       {children}
-    </div>
+    </CellGroup>
   );
 }
 
@@ -94,15 +98,6 @@ export interface ListColumnHeadProps {
   readonly onSort: () => void;
   readonly resize: ColumnResize | null;
 }
-
-/**
- * The head and the rows share one grid of boxes, so the roles of the head are given by attribute: a
- * column header names its column (and the way it is sorted), the edge between two of them is a
- * separator with a value, and a cell of a row is a group named by the header of its column.
- */
-const columnHeader = { role: "columnheader" } as const;
-const resizer = { role: "separator", "aria-orientation": "vertical", tabIndex: 0 } as const;
-const cellGroup = { role: "group" } as const;
 
 /** What a screen reader is told of the order a column sorts in. */
 function sortOf(arrow: "up" | "down" | null): "ascending" | "descending" | "none" {
@@ -122,16 +117,13 @@ export function ListColumnHead({
   onSort,
   resize,
 }: ListColumnHeadProps) {
-  const cell = useRef<HTMLDivElement>(null);
-  const handle = useColumnResize(cell, resize ?? undefined);
   return (
-    <div
-      ref={cell}
+    <ColumnHeaderCell
+      resize={resize === null || iconColumns.includes(column) ? null : resize}
       id={id}
-      {...columnHeader}
-      aria-sort={sortOf(arrow)}
-      aria-label={label}
-      {...partOf(part.listRowCell, { variants: [column] })}
+      sort={sortOf(arrow)}
+      label={label}
+      look={partOf(part.listRowCell, { variants: [column] })}
     >
       <button
         type={buttonType.button}
@@ -146,17 +138,6 @@ export function ListColumnHead({
         )}
         {arrow === null ? null : <Icon name={arrow} size={iconSize.small} />}
       </button>
-      {resize === null || iconColumns.includes(column) ? null : (
-        <div
-          {...resizer}
-          aria-label={resize.label}
-          aria-valuenow={handle.value.now}
-          aria-valuemin={handle.value.least}
-          aria-valuemax={handle.value.most}
-          {...partOf(part.listHandle)}
-          {...handle.events}
-        />
-      )}
-    </div>
+    </ColumnHeaderCell>
   );
 }

@@ -2,6 +2,8 @@ import { t } from "@bugaboo/messages";
 import {
   Checkbox,
   headId,
+  HeadRow,
+  HeadTable,
   ListCell,
   ListColumnHead,
   part,
@@ -35,10 +37,6 @@ export interface ListHeadRowProps {
   readonly onResize: (word: string, width: number, final: boolean) => void;
 }
 
-/** The head is a table of one row of column headers; its roles are given by attribute, as the head is a grid of boxes like the rows. */
-const headTable = { role: "table" } as const;
-const headRow = { role: "row" } as const;
-
 /** What a press on the name of a column does, told to a screen reader. */
 function sortLabelOf(name: string, arrow: "up" | "down" | null): string {
   if (arrow === null) {
@@ -54,8 +52,8 @@ function sortLabelOf(name: string, arrow: "up" | "down" | null): string {
  */
 export function ListHeadRow({ words, names, sort, tick, onSort, onResize }: ListHeadRowProps) {
   return (
-    <div {...partOf(part.listHead)} {...headTable} aria-label={t("issues.columns-head")}>
-      <div {...partOf(part.listRow, { variants: ["head", "grid"] })} {...headRow}>
+    <HeadTable look={partOf(part.listHead)} label={t("issues.columns-head")}>
+      <HeadRow look={partOf(part.listRow, { variants: ["head", "grid"] })}>
         {tick === null ? null : (
           <ListCell column={selectColumn} head>
             <Checkbox
@@ -92,7 +90,7 @@ export function ListHeadRow({ words, names, sort, tick, onSort, onResize }: List
             />
           );
         })}
-      </div>
-    </div>
+      </HeadRow>
+    </HeadTable>
   );
 }
