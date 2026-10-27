@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { focusIsFree, momentCame } from "./use-fresh-list.ts";
+import { focusIsFree, momentCame, type Moments } from "./use-fresh-list.ts";
 
 describe("cfg_08 when the list is made new", () => {
   it("does when the typing pause ends", () => {
@@ -11,16 +11,16 @@ describe("cfg_08 when the list is made new", () => {
     expect(momentCame({ waiting: true, quiet: true }, { waiting: false, quiet: true })).toBe(true);
   });
 
-  it("does not between the moments, or when nothing changed", () => {
-    expect(momentCame({ waiting: true, quiet: false }, { waiting: true, quiet: false })).toBe(
-      false,
-    );
-    expect(momentCame({ waiting: false, quiet: true }, { waiting: false, quiet: true })).toBe(
-      false,
-    );
-    expect(momentCame({ waiting: false, quiet: true }, { waiting: true, quiet: false })).toBe(
-      false,
-    );
+  it.each<[string, Moments, Moments]>([
+    ["typing goes on", { waiting: true, quiet: false }, { waiting: true, quiet: false }],
+    [
+      "nothing changed after the answer",
+      { waiting: false, quiet: true },
+      { waiting: false, quiet: true },
+    ],
+    ["a new word is typed", { waiting: false, quiet: true }, { waiting: true, quiet: false }],
+  ])("does not when %s", (_, was, now) => {
+    expect(momentCame(was, now)).toBe(false);
   });
 });
 

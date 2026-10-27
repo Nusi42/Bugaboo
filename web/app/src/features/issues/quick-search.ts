@@ -83,7 +83,7 @@ async function issuesWithWords(
   module: SearchLanguage,
   words: string,
 ): Promise<readonly QuickResult[]> {
-  const q = titleSearchText(module, words, { lastWordIsStart: true });
+  const q = titleSearchText(module, words);
   if (q === undefined) {
     return [];
   }
