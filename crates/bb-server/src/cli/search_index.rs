@@ -3,13 +3,14 @@
 //! WP-05). It works on the stored data and never listens, so it needs no port.
 //!
 //! Like the other commands that look after an installation it migrates nothing: when the data is
-//! older than the program it stops and says so. The index of such data would be made under the
-//! old rule and emptied again by the migration at the next start of the server, which builds it
-//! again by itself.
+//! older or newer than the program it stops and says so (`Database::schema_state`). The index of
+//! older data would be made under the old rule and emptied again by the migration at the next
+//! start of the server, which builds it again by itself.
 
 use std::sync::Arc;
 
 use bb_core::message::{self, Message};
+use bb_store::SchemaState;
 use jiff::Timestamp;
 
 use super::StoreArgs;
@@ -30,16 +31,14 @@ pub(super) async fn rebuild(args: &StoreArgs) -> anyhow::Result<()> {
         message::search_index_opened_built_in(settings.data_dir.display())
     };
     output::line(&opened.render());
-    let newest = store
-        .database
-        .applied_migrations()
-        .await?
-        .iter()
-        .map(|record| record.version)
-        .max()
-        .unwrap_or(0);
-    if newest < bb_store::latest_version() {
-        anyhow::bail!(Message::from(message::SEARCH_INDEX_DATA_OLDER).render());
+    match store.database.schema_state().await? {
+        SchemaState::Current => {}
+        SchemaState::Older => {
+            anyhow::bail!(Message::from(message::SEARCH_INDEX_DATA_OLDER).render())
+        }
+        SchemaState::Newer => {
+            anyhow::bail!(Message::from(message::SEARCH_INDEX_DATA_NEWER).render())
+        }
     }
     let storage = bb_store::AuthStorage::new(store.database, Arc::new(store.keys), store.seal);
     let issues =

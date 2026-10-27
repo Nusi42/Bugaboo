@@ -478,6 +478,7 @@
   "search-index.opened-address": "Opened the database that the settings name by an address (the address is not shown; it can hold a password).",
   "search-index.opened-built-in": "Opened the built-in database in {folder}.",
   "search-index.data-older": "The data in this installation is older than this program. Start the server once: it brings the data up to date and builds the index again by itself. Then run this command again if you still need it.",
+  "search-index.data-newer": "The data in this installation was changed by a newer version of this program. Use the newer version for this command.",
   "search-index.rebuilt": "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
   "search.projects": "Projects",
   "search.title": "Quick search",

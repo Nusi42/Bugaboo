@@ -245,6 +245,21 @@ async fn two_processes_migrating_at_once_apply_each_migration_once() -> TestResu
 }
 
 #[tokio::test]
+async fn the_schema_state_is_older_current_or_newer_than_the_program() -> TestResult {
+    each_database("the_schema_state", async |db| {
+        let database = Database::connect(db.url()).await?;
+        database.migrate_until(latest_version() - 1, at(0)).await?;
+        assert_eq!(database.schema_state().await?, SchemaState::Older);
+        database.migrate(at(1)).await?;
+        assert_eq!(database.schema_state().await?, SchemaState::Current);
+        database.record_newer_migration(at(2)).await?;
+        assert_eq!(database.schema_state().await?, SchemaState::Newer);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn bad_example_a_newer_schema_is_refused() -> TestResult {
     each_database("bad_example_a_newer_schema_is_refused", async |db| {
         let database = Database::connect(db.url()).await?;

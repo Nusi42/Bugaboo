@@ -362,31 +362,38 @@ async fn m5_f53_search_index_rebuild_puts_the_reader_at_the_head_of_the_outbox()
     Ok(())
 }
 
-/// Like the other commands it migrates nothing: data older than the program is refused, and left
-/// as it was.
+/// Like the other commands it migrates nothing: data older or newer than the program is refused,
+/// and left as it was. The state is the one `Database::schema_state` says.
 #[tokio::test]
-async fn m5_f53_search_index_rebuild_refuses_data_that_is_older_than_the_program() -> TestResult {
+async fn m5_f53_search_index_rebuild_refuses_data_that_is_older_or_newer_than_the_program()
+-> TestResult {
     let folder = tempfile::tempdir()?;
     let data = DataFolder::prepare(&folder.path().join("data"))?;
     let old = bb_store::Database::connect_file(&data.database_file()).await?;
-    old.migrate_up_to(bb_core::text_index::RULE_MIGRATION - 1, Timestamp::now())
+    old.migrate_up_to(bb_store::latest_version() - 1, Timestamp::now())
         .await?;
     old.open_keys(&data.keys()).await?;
     let args = StoreArgs {
         data_dir: Some(data.root().to_string_lossy().into_owned()),
         ..StoreArgs::default()
     };
+    assert_eq!(old.schema_state().await?, bb_store::SchemaState::Older);
     let refused = super::super::search_index::rebuild(&args)
         .await
         .err()
         .ok_or("the command went on with old data")?;
     assert!(format!("{refused:#}").contains("older"), "{refused:#}");
-    let newest = old
-        .applied_migrations()
-        .await?
-        .iter()
-        .map(|record| record.version)
-        .max();
-    assert_eq!(newest, Some(bb_core::text_index::RULE_MIGRATION - 1));
+    assert_eq!(old.schema_state().await?, bb_store::SchemaState::Older);
+
+    // A newer program recorded a migration this one does not have.
+    old.migrate(Timestamp::now()).await?;
+    assert_eq!(old.schema_state().await?, bb_store::SchemaState::Current);
+    old.record_newer_migration(Timestamp::now()).await?;
+    assert_eq!(old.schema_state().await?, bb_store::SchemaState::Newer);
+    let refused = super::super::search_index::rebuild(&args)
+        .await
+        .err()
+        .ok_or("the command went on with newer data")?;
+    assert!(format!("{refused:#}").contains("newer"), "{refused:#}");
     Ok(())
 }
