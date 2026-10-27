@@ -11,6 +11,7 @@ import {
   dialog,
   FAST_TYPING_MS,
   list,
+  nothingFound,
   prepareScene,
   result,
   savedSearchName,
@@ -28,7 +29,7 @@ test("cfg_08_an_id_opens_the_issue", async ({ page }) => {
   await signIn(page, bob);
   await ask(page, "web-1");
   await expect(result(page, titles.login)).toBeVisible();
-  await page.keyboard.press("ArrowDown");
+  await expect(list(page).locator("[data-ready]")).toBeVisible();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(addressEndingAt(issueAddress("WEB-1")));
   await expect(dialog(page)).toHaveCount(0);
@@ -65,16 +66,17 @@ test("cfg_08_quick_search_never_shows_what_the_person_may_not_see", async ({ pag
   await expect(result(page, titles.secret)).toHaveCount(0);
   await expect(result(page, savedSearchName)).toHaveCount(0);
   await box(page).fill("secret");
-  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await expect(nothingFound(page)).toBeVisible();
   await box(page).fill("secret-1");
-  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await expect(nothingFound(page)).toBeVisible();
   // An issue that is hidden and one that does not exist look the same: no result, no sign that a
   // source failed, and the server answers the two in the same way.
   await box(page).fill("web-999");
-  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await expect(nothingFound(page)).toBeVisible();
   await expect(dialog(page).getByText(t("search.partial"))).toHaveCount(0);
   const hidden = await statusOfIssue(page, "SECRET-1");
   const missing = await statusOfIssue(page, "WEB-999");
+  expect(missing).toBe(404);
   expect(hidden).toEqual(missing);
 });
 
@@ -95,11 +97,13 @@ test("cfg_08 an ID of the other kind, with random letters, opens its issue too",
   const found = result(page, titles.random);
   await expect(found).toBeVisible();
   const hint = found.locator("[data-part='hint']");
+  // A key of the other kind: letters in it, no counting number.
   await expect(hint).toHaveText(/^RND-/u);
+  await expect(hint).not.toHaveText(/^RND-\d+$/u);
   const key = await hint.innerText();
   await box(page).fill(key.toLowerCase());
   await expect(result(page, titles.random)).toBeVisible();
-  await page.keyboard.press("ArrowDown");
+  await expect(list(page).locator("[data-ready]")).toBeVisible();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(addressEndingAt(issueAddress(key)));
 });
@@ -156,16 +160,39 @@ test("cfg_08_typing_counts_one_search_per_pause", async ({ page }) => {
   expect(searches()).toBe(2);
 });
 
-test("cfg_08 the results are a list box that the arrow keys move through", async ({ page }) => {
+test("cfg_08 the first result is ready to open, and Enter opens the top one", async ({ page }) => {
   await signIn(page, ada);
   await ask(page, "login");
-  await expect(result(page, titles.login)).toBeVisible();
+  // Several results in several groups: the saved search is on top, then the two issues.
+  await expect(list(page).getByRole("option")).toHaveCount(3);
+  await expect(result(page, titles.secret)).toBeVisible();
+  const ready = list(page).locator("[data-ready]");
+  await expect(ready).toHaveCount(1);
+  await expect(ready).toContainText(savedSearchName);
+  await expect(list(page).getByRole("option").first()).toContainText(savedSearchName);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/s\/[^/]+$/u);
+  await expect(dialog(page)).toHaveCount(0);
+});
+
+test("cfg_08 an arrow key starts at the first result and the list stays where it is put", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await ask(page, "login");
+  await expect(list(page).getByRole("option")).toHaveCount(3);
   const focused = list(page).locator("[data-focused='true']");
+  await expect(list(page).locator("[data-ready]")).toHaveCount(1);
+  // Pressed at once, with the answer just in: the key is not lost.
   await page.keyboard.press("ArrowDown");
   await expect(focused).toHaveCount(1);
-  const before = await focused.evaluate((element) => element.id);
+  await expect(focused).toContainText(savedSearchName);
+  // Nothing is "ready" any more: the focus is the one place.
+  await expect(list(page).locator("[data-ready]")).toHaveCount(0);
   await page.keyboard.press("ArrowDown");
-  await expect.poll(() => focused.evaluate((element) => element.id)).not.toBe(before);
+  await expect(focused).toContainText("SECRET-1");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(addressEndingAt(issueAddress("SECRET-1")));
 });
 
 test("cfg_08 pictures of quick search in the four themes", async ({ page }) => {
@@ -178,6 +205,6 @@ test("cfg_08 pictures of quick search in the four themes", async ({ page }) => {
   await expect(result(page, titles.login)).toBeVisible();
   await inFourThemes(page, "id");
   await box(page).fill("zzzzzz");
-  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await expect(nothingFound(page)).toBeVisible();
   await inFourThemes(page, "nothing");
 });

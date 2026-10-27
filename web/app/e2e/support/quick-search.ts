@@ -40,7 +40,8 @@ async function titleIsFound(admin: ApiSession, word: string): Promise<boolean> {
 /** Makes the scene, and waits until the index of titles holds the issues. */
 export async function prepareScene(server: Instance): Promise<void> {
   const admin = await createAdmin(server);
-  // The organization starts with random IDs (`RND-K7Q2X`); the project made now keeps them.
+  // The issue of this project is made before the organization is set to counting IDs, so its
+  // key is one with random letters (`RND-K7Q2X`) and keeps it.
   await createProject(admin, "RND", "Random kinds");
   await createIssue(admin, "RND", titles.random);
   await countIssueIds(admin);
@@ -86,6 +87,11 @@ export async function ask(page: Page, text: string): Promise<void> {
 /** The list of results. */
 export function list(page: Page) {
   return dialog(page).getByRole("listbox", { name: t("search.results") });
+}
+
+/** The empty state under the box: its text is said once more by the announcement, so it is found by its part. */
+export function nothingFound(page: Page) {
+  return dialog(page).locator("[data-part='quick-search.empty']");
 }
 
 /** The results of the list that say this text. */
