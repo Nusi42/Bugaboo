@@ -133,6 +133,10 @@ function TypedValue({ field, values, onValues }: ValueInputProps) {
 /** A length of time typed (`2 hours`, `1 hour 30 minutes`): the search language reads it. */
 function DurationValue({ language, values, onValues }: ValueInputProps) {
   const [first] = values;
+  // The examples are written by the language, so the words are the ones it reads.
+  const example = (minutes: number): string =>
+    language.operandSource({ type: "duration", minutes, span: nowhere });
+  const examples = { hours: example(120), minutes: example(45), both: example(90) };
   // The language writes and reads the length of time, in its own words.
   const [typed, setTyped] = useState(
     first?.type === "duration" ? language.operandSource(first) : "",
@@ -145,10 +149,12 @@ function DurationValue({ language, values, onValues }: ValueInputProps) {
   return (
     <TextField
       label={t("search.bar.value")}
-      description={t("search.bar.duration-help")}
+      description={t("search.bar.duration-help", examples)}
       value={typed}
       errorMessage={
-        typed.trim() !== "" && operand === null ? t("search.bar.not-a-duration") : undefined
+        typed.trim() !== "" && operand === null
+          ? t("search.bar.not-a-duration", examples)
+          : undefined
       }
       onChange={(text) => {
         setTyped(text);

@@ -414,6 +414,11 @@ export interface MessageArguments {
   "search.bar.change-filter-text": { field: string | number };
   "search.bar.compared": { comparison: string | number; value: string | number };
   "search.bar.contains": { text: string | number };
+  "search.bar.duration-help": {
+    both: string | number;
+    hours: string | number;
+    minutes: string | number;
+  };
   "search.bar.filter-by": { field: string | number };
   "search.bar.filters-count": { count: string | number };
   "search.bar.issue-chosen": { id: string | number };
@@ -425,6 +430,7 @@ export interface MessageArguments {
   "search.bar.name-colon": { name: string | number };
   "search.bar.name-value": { name: string | number; value: string | number };
   "search.bar.not": { value: string | number };
+  "search.bar.not-a-duration": { both: string | number; hours: string | number };
   "search.bar.pick-chosen": { name: string | number };
   "search.bar.pick-take": { name: string | number };
   "search.bar.remove-filter": { filter: string | number };

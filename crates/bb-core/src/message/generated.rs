@@ -3853,9 +3853,6 @@ pub const SEARCH_BAR_COUNT: MessageKey = MessageKey::new("search.bar.count");
 /// The message `search.bar.day`.
 pub const SEARCH_BAR_DAY: MessageKey = MessageKey::new("search.bar.day");
 
-/// The message `search.bar.duration-help`.
-pub const SEARCH_BAR_DURATION_HELP: MessageKey = MessageKey::new("search.bar.duration-help");
-
 /// The message `search.bar.fields-clear`.
 pub const SEARCH_BAR_FIELDS_CLEAR: MessageKey = MessageKey::new("search.bar.fields-clear");
 
@@ -3933,9 +3930,6 @@ pub const SEARCH_BAR_KIND_VALUE: MessageKey = MessageKey::new("search.bar.kind-v
 
 /// The message `search.bar.me`.
 pub const SEARCH_BAR_ME: MessageKey = MessageKey::new("search.bar.me");
-
-/// The message `search.bar.not-a-duration`.
-pub const SEARCH_BAR_NOT_A_DURATION: MessageKey = MessageKey::new("search.bar.not-a-duration");
 
 /// The message `search.bar.not-a-number`.
 pub const SEARCH_BAR_NOT_A_NUMBER: MessageKey = MessageKey::new("search.bar.not-a-number");
@@ -9176,6 +9170,23 @@ pub fn search_bar_contains(text: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search.bar.duration-help`.
+#[must_use]
+pub fn search_bar_duration_help(
+    both: impl std::fmt::Display,
+    hours: impl std::fmt::Display,
+    minutes: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.duration-help"),
+        vec![
+            ("both", Value::Text(both.to_string())),
+            ("hours", Value::Text(hours.to_string())),
+            ("minutes", Value::Text(minutes.to_string())),
+        ],
+    )
+}
+
 /// The message `search.bar.filter-by`.
 #[must_use]
 pub fn search_bar_filter_by(field: impl std::fmt::Display) -> Message {
@@ -9278,6 +9289,21 @@ pub fn search_bar_not(value: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.bar.not"),
         vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `search.bar.not-a-duration`.
+#[must_use]
+pub fn search_bar_not_a_duration(
+    both: impl std::fmt::Display,
+    hours: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.not-a-duration"),
+        vec![
+            ("both", Value::Text(both.to_string())),
+            ("hours", Value::Text(hours.to_string())),
+        ],
     )
 }
 
@@ -14017,7 +14043,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.day", "The day"),
     (
         "search.bar.duration-help",
-        "Write hours and minutes, for example 2 hours, 45 minutes or 1 hour 30 minutes.",
+        "Write a length of time, for example {hours}, {minutes} or {both}.",
     ),
     ("search.bar.fields-clear", "Clear the words"),
     ("search.bar.fields-legend", "Fields"),
@@ -14067,7 +14093,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.not", "not {value}"),
     (
         "search.bar.not-a-duration",
-        "Write a length of time like 2 hours or 1 hour 30 minutes.",
+        "Write a length of time like {hours} or {both}.",
     ),
     ("search.bar.not-a-number", "Write a number, like 5 or 2.5."),
     ("search.bar.offers", "Words that can come next"),
