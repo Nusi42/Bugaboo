@@ -6,7 +6,10 @@ import { chooseTheme, themes } from "./checks.ts";
 import { expect } from "./fixtures.ts";
 import { signIn } from "./flows.ts";
 import { layoutOf, onThisLayout } from "./layout.ts";
-import { shotWholeAs } from "./screenshots.ts";
+import { screenshotFolder, shotWholeAs } from "./screenshots.ts";
+
+/** Whether the pictures are wanted: `BB_SCREENSHOT_DIR` is set. */
+export const picturesWanted = screenshotFolder !== undefined;
 import { inOrder } from "./sequence.ts";
 
 const MILESTONE = "M5/search";

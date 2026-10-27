@@ -6,11 +6,13 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { grid } from "./support/list-look.ts";
-import { listWindowInFourThemes, tickShown } from "./support/list-pictures.ts";
+import { listWindowInFourThemes, tickShown, picturesWanted } from "./support/list-pictures.ts";
 import { prepareLong } from "./support/list-pictures-data.ts";
 
 // The pictures of the offer to tick every result and of the sentence that asks to narrow the
 // search (M5 WP-08). Taken only when `BB_SCREENSHOT_DIR` is set; the builder looks at each.
+
+test.skip(!picturesWanted, "Set BB_SCREENSHOT_DIR to take the screenshots.");
 
 test.use({ preparation: { run: prepareLong } });
 test.describe.configure({ mode: "serial" });

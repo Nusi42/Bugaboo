@@ -131,6 +131,8 @@ tokens {
     // The title takes the room that is left, and no less than this; a column a person drags is no
     // narrower than the least and moves by the step with the arrow keys.
     size "size-col-title" "140px"
+    // The title keeps at least this share of the window, with Customize open too (UX §4.2: the title is what people read); a list that cannot give it scrolls sideways, and the columns of fields give up their room first (down to the least).
+    size "size-title-share" "33vw"
     size "size-col-least" "48px"
     size "size-col-most" "800px"
     size "size-col-step" "16px"
@@ -151,6 +153,8 @@ tokens {
     size "list-columns" "auto" run-time="true"
     // The width of the scroll bar the rows of the list have now (none while they fit): the head keeps the same room at its end, so the columns stand over each other and the list meets the edge of its card.
     size "list-gutter" "0px" run-time="true"
+    // The width the columns of the list need together (and no less): a list with more columns than fit is wider than its box and scrolls sideways, head and rows together.
+    size "list-width" "0px" run-time="true"
     size "bp-window-side" "880px"
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at the week zoom.
@@ -1892,6 +1896,7 @@ part "list-frame" {
     display flex
     flex-direction column
     min-width 0
+    overflow-x auto
 }
 
 part "list-row[variant=grid]" {
@@ -1938,14 +1943,16 @@ part "list-frame[variant=compact] checkbox.box" {
 // The rows scroll inside this box; the head stays above them.
 part "list-scroll" {
     box-sizing border-box
+    min-width "$list-width"
     max-height "$size-list-scroll"
     overflow auto
     border-bottom "$border-width solid $border-subtle"
 }
 
-// The head scrolls sideways with the rows (the code keeps the two in step) and has no bar of its own.
+// The head is as wide as the rows and scrolls sideways with them inside the frame.
 part "list-head" {
     box-sizing border-box
+    min-width "$list-width"
     padding-inline-end "$list-gutter"
     overflow hidden
 }

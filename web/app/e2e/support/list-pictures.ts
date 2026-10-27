@@ -5,7 +5,10 @@ import { tickBox } from "./issues.ts";
 import { setBox } from "./list-keys.ts";
 import { chooseTheme, themes } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
-import { shootWindowAs, shotWholeAs } from "./screenshots.ts";
+import { screenshotFolder, shootWindowAs, shotWholeAs } from "./screenshots.ts";
+
+/** Whether the pictures are wanted: `BB_SCREENSHOT_DIR` is set. */
+export const picturesWanted = screenshotFolder !== undefined;
 import { inOrder } from "./sequence.ts";
 
 const MILESTONE = "M5/list";

@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
 import type { ColumnResize } from "./use-column-resize.ts";
 import { iconColumns, type ListColumn } from "./list-columns.ts";
-import { listTemplate, type ListColumnSpec } from "./list-template.ts";
+import { listMinWidth, listTemplate, type ListColumnSpec } from "./list-template.ts";
 import { CellGroup, ColumnHeaderCell } from "./ListRoles.tsx";
 import { partOf } from "./parts.ts";
 import { buttonType, iconSize } from "./props.ts";
@@ -14,45 +14,63 @@ export interface ListFrameProps {
   readonly columns: readonly ListColumnSpec[];
   /** *Spacing: Compact*. */
   readonly compact: boolean;
+  /** The columns have the widths they were given (a head over rows), not the card of a phone. */
+  readonly fixed: boolean;
   readonly children: ReactNode;
 }
 
 /**
- * Keeps the head over the rows: it scrolls sideways with them (the rows are the one box that
- * scrolls) and keeps the room of the bar the rows have, so the columns stand over each other.
+ * Keeps the room of the bar the rows have at the end of the head, so the columns stand over each
+ * other. Only the box of the rows and the first thing in it are measured, not what is drawn in it.
  */
-function keepHeadOverRows(frame: HTMLElement): () => void {
+function keepGutterOfRows(frame: HTMLElement): () => void {
+  let box: HTMLElement | null = null;
+  let gutter = "";
   const sync = (): void => {
-    const rows = frame.querySelector<HTMLElement>(`[data-part="${part.listScroll}"]`);
-    const head = frame.querySelector<HTMLElement>(`[data-part="${part.listHead}"]`);
-    if (rows === null || head === null) {
+    if (box === null) {
       return;
     }
-    head.scrollLeft = rows.scrollLeft;
-    const gutter = `${String(rows.offsetWidth - rows.clientWidth)}px`;
-    frame.style.setProperty(variableOf("list-gutter"), gutter);
+    const now = `${String(box.offsetWidth - box.clientWidth)}px`;
+    if (now !== gutter) {
+      gutter = now;
+      frame.style.setProperty(variableOf("list-gutter"), now);
+    }
   };
-  frame.addEventListener("scroll", sync, true);
   const watching = new ResizeObserver(sync);
-  watching.observe(frame);
-  const changes = new MutationObserver(sync);
+  const attach = (): void => {
+    const found = frame.querySelector<HTMLElement>(`[data-part="${part.listScroll}"]`);
+    if (found === box) {
+      return;
+    }
+    watching.disconnect();
+    box = found;
+    if (box !== null) {
+      watching.observe(box);
+      if (box.firstElementChild !== null) {
+        watching.observe(box.firstElementChild);
+      }
+    }
+    sync();
+  };
+  const changes = new MutationObserver(attach);
   changes.observe(frame, { childList: true, subtree: true });
-  sync();
+  attach();
   return () => {
-    frame.removeEventListener("scroll", sync, true);
     watching.disconnect();
     changes.disconnect();
   };
 }
 
 /** The box around the head and the rows of an issue list: it holds the columns they share. */
-export function ListFrame({ columns, compact, children }: ListFrameProps) {
+export function ListFrame({ columns, compact, fixed, children }: ListFrameProps) {
   const frame = useRef<HTMLDivElement>(null);
   const template = listTemplate(columns);
+  const needed = fixed ? `${String(listMinWidth(columns))}px` : "0px";
   useLayoutEffect(() => {
     frame.current?.style.setProperty(variableOf("list-columns"), template);
-  }, [template]);
-  useEffect(() => (frame.current === null ? undefined : keepHeadOverRows(frame.current)), []);
+    frame.current?.style.setProperty(variableOf("list-width"), needed);
+  }, [template, needed]);
+  useEffect(() => (frame.current === null ? undefined : keepGutterOfRows(frame.current)), []);
   return (
     <div ref={frame} {...partOf(part.listFrame, { variants: [compact && "compact"] })}>
       {children}

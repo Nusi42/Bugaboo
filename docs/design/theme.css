@@ -56,6 +56,7 @@
   --size-col-labels: 96px;
   --size-col-project: 96px;
   --size-col-title: 140px;
+  --size-title-share: 33vw;
   --size-col-least: 48px;
   --size-col-most: 800px;
   --size-col-step: 16px;
@@ -70,6 +71,7 @@
   --window-height: auto;
   --list-columns: auto;
   --list-gutter: 0px;
+  --list-width: 0px;
   --bp-window-side: 880px;
   --bp-window-wide: 1200px;
   --size-day-week: 16px;

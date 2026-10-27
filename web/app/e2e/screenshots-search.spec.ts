@@ -8,12 +8,20 @@ import { ana, createPeopleWithRoles, projectIdOf, roleName } from "./support/acc
 import { signIn } from "./support/flows.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { onThisLayout, nothing } from "./support/layout.ts";
-import { closeBar, inFourThemes, openBar, openSearch } from "./support/search-bar.ts";
+import {
+  closeBar,
+  inFourThemes,
+  openBar,
+  openSearch,
+  picturesWanted,
+} from "./support/search-bar.ts";
 
 // The pictures of the search bar (M5 WP-07, task 9): every new screen in the four themes, on a
 // computer and on a phone. Taken only when `BB_SCREENSHOT_DIR` is set; the builder looks at each.
 
 let someSearch = "";
+
+test.skip(!picturesWanted, "Set BB_SCREENSHOT_DIR to take the screenshots.");
 
 test.use({
   preparation: {

@@ -37,6 +37,7 @@ export const runTimeVariables = [
   "window-height",
   "list-columns",
   "list-gutter",
+  "list-width",
 ] as const;
 export type RunTimeVariable = (typeof runTimeVariables)[number];
 
@@ -157,6 +158,7 @@ export const tokenNames = [
   "size-col-labels",
   "size-col-project",
   "size-col-title",
+  "size-title-share",
   "size-col-least",
   "size-col-most",
   "size-col-step",
@@ -171,6 +173,7 @@ export const tokenNames = [
   "window-height",
   "list-columns",
   "list-gutter",
+  "list-width",
   "bp-window-side",
   "bp-window-wide",
   "size-day-week",

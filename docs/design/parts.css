@@ -1249,6 +1249,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow-x: auto;
 }
 
 [data-part="list-row"][data-variant~="grid"] {
@@ -1291,6 +1292,7 @@ body {
 
 [data-part="list-scroll"] {
   box-sizing: border-box;
+  min-width: var(--list-width);
   max-height: var(--size-list-scroll);
   overflow: auto;
   border-bottom: var(--border-width) solid var(--border-subtle);
@@ -1298,6 +1300,7 @@ body {
 
 [data-part="list-head"] {
   box-sizing: border-box;
+  min-width: var(--list-width);
   padding-inline-end: var(--list-gutter);
   overflow: hidden;
 }
