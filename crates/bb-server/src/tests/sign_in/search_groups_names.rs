@@ -399,28 +399,42 @@ async fn qry_04_a_status_renamed_to_the_name_of_a_status_of_another_workflow_has
         .clone();
         let workflow = id_in(&editor["workflow"])?;
         let lock = lock_workflow(&mut ada, &workflow).await?;
+        let path = format!("/api/v1/workflows/{workflow}");
+        let publish = |version: &Value, lock: &Value, name: &str| {
+            json!({
+                "version": version,
+                "lock_token": lock,
+                "name": "Review",
+                "statuses": [
+                    {"key": "open", "name": "Open", "status_group": "not-started"},
+                    {"key": "review", "name": name, "status_group": "done"},
+                ],
+                "changes": [
+                    {"from": "open", "to": "review", "button": "Finish"},
+                    {"from": "review", "to": "open", "button": "Reopen"},
+                ],
+                "moves": [],
+            })
+        };
+        let first = ok(&ada
+            .send(
+                "PUT",
+                &path,
+                Some(publish(&editor["workflow"]["version"], &lock, "Review")),
+            )
+            .await?)?
+        .clone();
+        let acme = key_of(&site.create(&mut ada, "In ACME").await?)?;
+        ok(&go(&mut ada, &acme, "review").await?)?;
+        // Now the existing status *review* is renamed to *Done*, the name of a status of the starter workflow.
+        let again = lock_workflow(&mut ada, &workflow).await?;
         ok(&ada
             .send(
                 "PUT",
-                &format!("/api/v1/workflows/{workflow}"),
-                Some(json!({
-                    "version": editor["workflow"]["version"],
-                    "lock_token": lock,
-                    "name": "Review",
-                    "statuses": [
-                        {"key": "open", "name": "Open", "status_group": "not-started"},
-                        {"key": "review", "name": "Done", "status_group": "done"},
-                    ],
-                    "changes": [
-                        {"from": "open", "to": "review", "button": "Finish"},
-                        {"from": "review", "to": "open", "button": "Reopen"},
-                    ],
-                    "moves": [],
-                })),
+                &path,
+                Some(publish(&first["workflow"]["version"], &again, "Done")),
             )
             .await?)?;
-        let acme = key_of(&site.create(&mut ada, "In ACME").await?)?;
-        ok(&go(&mut ada, &acme, "review").await?)?;
         let beta = key_of(
             &ada.send(
                 "POST",
