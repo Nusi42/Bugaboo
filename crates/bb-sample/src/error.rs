@@ -80,6 +80,8 @@ pub enum Step {
     Following,
     /// Reading or marking notifications.
     Notifications,
+    /// Saving, sharing or choosing a search.
+    SavedSearches,
     /// Running the jobs that were queued.
     Jobs,
 }
@@ -121,6 +123,7 @@ impl Step {
             Self::Files => message::SAMPLE_STEP_FILES,
             Self::Following => message::SAMPLE_STEP_FOLLOWING,
             Self::Notifications => message::SAMPLE_STEP_NOTIFICATIONS,
+            Self::SavedSearches => message::SAMPLE_STEP_SAVED_SEARCHES,
             Self::Jobs => message::SAMPLE_STEP_JOBS,
         })
     }

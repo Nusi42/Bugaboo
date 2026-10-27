@@ -3796,6 +3796,9 @@ pub const SAMPLE_STEP_RELATION: MessageKey = MessageKey::new("sample.step.relati
 /// The message `sample.step.role`.
 pub const SAMPLE_STEP_ROLE: MessageKey = MessageKey::new("sample.step.role");
 
+/// The message `sample.step.saved-searches`.
+pub const SAMPLE_STEP_SAVED_SEARCHES: MessageKey = MessageKey::new("sample.step.saved-searches");
+
 /// The message `sample.step.settings`.
 pub const SAMPLE_STEP_SETTINGS: MessageKey = MessageKey::new("sample.step.settings");
 
@@ -14197,6 +14200,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "creating a relation or putting an issue under a goal",
     ),
     ("sample.step.role", "creating a role"),
+    (
+        "sample.step.saved-searches",
+        "saving, sharing or choosing a search",
+    ),
     (
         "sample.step.settings",
         "choosing how a project gives out issue IDs",

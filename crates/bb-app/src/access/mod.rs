@@ -27,7 +27,8 @@ use bb_policy::guards::{Refusal, ensure_no_escalation};
 use bb_policy::{Evaluation, Narrowing, PeopleContext, Target, evaluate, resolve};
 
 pub use bb_policy::{
-    Authorized, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree, guards,
+    Authorized, LevelKind, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree,
+    guards,
 };
 pub(crate) use candidates::{Members, names_other_people, position_of};
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};

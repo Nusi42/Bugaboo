@@ -102,11 +102,11 @@ async fn m3_f111_every_role_does_only_what_the_role_may() -> TestResult {
                         }
                     }
                     // Viewers only follow: they write nothing else but their own reading, their
-                    // settings and signing in. (A follower has the ID of its issue, so the dump
+                    // settings, their saved searches and signing in. (A follower has the ID of its issue, so the dump
                     // labels it like the issue; its change is the field `follower`.)
                     "viewer" => assert!(
                         has_change(event, "follower", true)
-                            || matches!(kind, "person" | "setting" | "session"),
+                            || matches!(kind, "person" | "setting" | "session" | "saved_search"),
                         "a Viewer wrote {entity}: {event}"
                     ),
                     _ => {}

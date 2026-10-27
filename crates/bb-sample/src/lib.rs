@@ -52,6 +52,7 @@ mod password;
 mod people_plan;
 mod random;
 mod relations;
+mod searches;
 #[cfg(test)]
 mod tests;
 mod together;
