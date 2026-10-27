@@ -488,7 +488,7 @@ fn said(
 }
 
 /// Writes the comments and indexes every issue, by hand like the outbox reader would.
-async fn comment_and_index(
+pub(super) async fn comment_and_index(
     storage: &AuthStorage,
     data: &mut Data,
     comments: &[(IssueId, &str)],

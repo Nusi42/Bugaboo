@@ -116,6 +116,55 @@ pub fn text_of_issue(
     select
 }
 
+/// How many rows of the index have this word in the scope, up to `most`: `SELECT COUNT(*) FROM
+/// (SELECT 1 … LIMIT most)`. It reads rows one after the other and stops at `most`, so it costs the
+/// same for a word in every text and for one in few, which the set of the issues of a word
+/// (`text_issues`) does not: that is made whole before the first row is read.
+#[must_use]
+pub fn text_rows_up_to(
+    dialect: Dialect,
+    word: &SearchWord,
+    scope: TextScope,
+    most: u64,
+) -> SelectStatement {
+    let mut rows = Query::select();
+    rows.expr(Expr::val(1)).limit(most);
+    match dialect {
+        Dialect::Sqlite => {
+            rows.from(TextIndexExtra::Fts)
+                .inner_join(
+                    TextIndexRow::Table,
+                    Expr::col((TextIndexRow::Table, TextIndexRow::Id))
+                        .equals((TextIndexExtra::Fts, Alias::new("rowid"))),
+                )
+                .and_where(
+                    Expr::col(TextIndexExtra::Fts)
+                        .binary(BinOper::Custom("MATCH"), query_of(dialect, lookup_of(word))),
+                );
+        }
+        Dialect::Postgres => {
+            rows.from(TextIndexRow::Table)
+                .and_where(word_matches(dialect, lookup_of(word)));
+        }
+    }
+    // A word the index does not keep is in no text.
+    rows.and_where(if word.is_too_long() {
+        Expr::val(1).eq(0)
+    } else {
+        in_scope(scope)
+    });
+    let mut counted = Query::select();
+    counted
+        .expr(Func::count(Expr::col(sea_query::Asterisk)))
+        .from_subquery(rows, Alias::new("rows_of_word"));
+    counted
+}
+
+/// The word as it is looked up.
+fn lookup_of(word: &SearchWord) -> Lookup<'_> {
+    (word.text(), word.matches_by_start())
+}
+
 /// The words as they are looked up: the first ten (`search_words` has made each one once), a
 /// short start as a whole word.
 fn lookups(words: &[SearchWord]) -> Vec<Lookup<'_>> {
@@ -161,15 +210,10 @@ fn issues_with(dialect: Dialect, word: Lookup<'_>, scope: &SimpleExpr) -> Select
 /// The condition that the words of a row have this word, as the database says it. The word is
 /// letters, digits and the marks of a letter and nothing else (`SearchWord` is made by
 /// `search_words` only), so it carries no syntax of the query of the database.
-fn word_matches(dialect: Dialect, (text, prefix): Lookup<'_>) -> SimpleExpr {
+fn word_matches(dialect: Dialect, word: Lookup<'_>) -> SimpleExpr {
+    let query = query_of(dialect, word);
     match dialect {
         Dialect::Sqlite => {
-            // FTS5: `"word"` or `"word"*`.
-            let query = if prefix {
-                ["\"", text, "\"*"].concat()
-            } else {
-                ["\"", text, "\""].concat()
-            };
             let mut inner = Query::select();
             inner
                 .expr(Expr::col(Alias::new("rowid")))
@@ -178,19 +222,26 @@ fn word_matches(dialect: Dialect, (text, prefix): Lookup<'_>) -> SimpleExpr {
             Expr::col(TextIndexRow::Id).in_subquery(inner)
         }
         Dialect::Postgres => {
-            // tsquery: `'word'` or `'word':*`. A quoted word is one lexeme exactly as written: no
-            // parser of the locale looks at it, and the vector it is matched against is made of
-            // the stored words split at spaces (migration 25), so the database only compares.
-            let query = if prefix {
-                ["'", text, "':*"].concat()
-            } else {
-                ["'", text, "'"].concat()
-            };
+            // A quoted word is one lexeme exactly as written: no parser of the locale looks at it,
+            // and the vector it is matched against is made of the stored words split at spaces
+            // (migration 25), so the database only compares.
             Expr::col(TextIndexExtra::WordsTsv).binary(
                 BinOper::Custom("@@"),
                 Func::cast_as(query, Alias::new("tsquery")),
             )
         }
+    }
+}
+
+/// The query of the database for one word: FTS5 `"word"` or `"word"*`, a tsquery `'word'` or
+/// `'word':*`. The word is letters, digits and the marks of a letter and nothing else
+/// (`SearchWord` is made by `search_words` only), so it carries no syntax of the query.
+fn query_of(dialect: Dialect, (text, prefix): Lookup<'_>) -> String {
+    match (dialect, prefix) {
+        (Dialect::Sqlite, true) => ["\"", text, "\"*"].concat(),
+        (Dialect::Sqlite, false) => ["\"", text, "\""].concat(),
+        (Dialect::Postgres, true) => ["'", text, "':*"].concat(),
+        (Dialect::Postgres, false) => ["'", text, "'"].concat(),
     }
 }
 

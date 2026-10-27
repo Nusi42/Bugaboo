@@ -14,7 +14,7 @@
 //! `time` (relative times in the zone of the person), `order` (sorting and the cursor) and
 //! `statements` (the statements and their results).
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 
 use bb_app::search::{
     FieldTarget, GroupCount, GroupKey, SearchFailure, SearchHit, SearchRequest, SearchStore,
@@ -24,11 +24,11 @@ use bb_core::issue::{Priority, StatusGroup};
 use sea_query::{CommonTableExpression, Cond, Expr, ExprTrait as _};
 
 use self::statements::{
-    SortPlan, count_statement, groups_statement, page_statement, place_statement, read_count,
-    read_group, read_hit, read_place,
+    Forms, SET_ROWS_AT_MOST, SortPlan, count_statement, groups_statement, page_statement,
+    place_statement, probe_statement, read_count, read_forms, read_group, read_hit, read_place,
 };
 use crate::auth::AuthStorage;
-use crate::db::Dialect;
+use crate::db::{Dialect, Statement};
 use crate::error::StoreError;
 
 mod filter;
@@ -62,9 +62,29 @@ impl std::fmt::Display for CompileError {
 pub(crate) struct Compiler<'a> {
     pub(crate) request: &'a SearchRequest,
     pub(crate) dialect: Dialect,
-    /// Whether the statement is a page, which is cut after its first rows (see `words_in`).
-    pub(crate) paged: bool,
+    /// How the words of a `contains` are found (see [`Form`]); a page is cut after its first rows,
+    /// so it asks about the issues one at a time.
+    pub(crate) form: Cell<Form>,
+    /// Whether the condition made so far asks the text index anything.
+    text_used: Cell<bool>,
+    /// Whether the issues are known to have the words that decide the order by title hits (they
+    /// have them in the title), so a `contains` of those words anywhere is true without asking.
+    pub(crate) has_the_words: Cell<bool>,
     tables: RefCell<Vec<CommonTableExpression>>,
+}
+
+/// How a statement finds the issues that have the words of a `contains`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Form {
+    /// The issues that have the words, made once (`id IN (...)`): for a count or the groups, which
+    /// ask about all of them.
+    Set,
+    /// Each issue is asked (`EXISTS`): a page that is cut after its first rows stops at the first
+    /// ones, which is quick when many issues have the words.
+    Each,
+    /// The issues that have one word of the words, made once, and each of them asked about the
+    /// other words: quick when that word is in few texts. The number is the place of the word.
+    Driven(usize),
 }
 
 impl<'a> Compiler<'a> {
@@ -72,15 +92,22 @@ impl<'a> Compiler<'a> {
         Self {
             request,
             dialect,
-            paged: false,
+            form: Cell::new(Form::Set),
+            text_used: Cell::new(false),
+            has_the_words: Cell::new(false),
             tables: RefCell::new(Vec::new()),
         }
     }
 
     /// The compiler of a statement that is a page.
     pub(crate) const fn paged(mut self) -> Self {
-        self.paged = true;
+        self.form = Cell::new(Form::Each);
         self
+    }
+
+    /// Whether the condition made so far asks the text index.
+    pub(crate) fn text_used(&self) -> bool {
+        self.text_used.get()
     }
 
     /// What the word reads. The word of a field that is not among the readable ones cannot be
@@ -166,8 +193,32 @@ fn stopped(error: StoreError) -> SearchFailure {
     }
 }
 
-impl SearchStore for AuthStorage {
-    async fn search_page(&self, request: &SearchRequest) -> Result<Vec<SearchHit>, SearchFailure> {
+impl AuthStorage {
+    /// How the words that decide the order by title hits are found (see [`Form`]), by asking the
+    /// text index how many rows each word has; every issue is asked about when the order is not by
+    /// title hits.
+    async fn forms_of(
+        &self,
+        request: &SearchRequest,
+        at_most: i64,
+    ) -> Result<Forms, SearchFailure> {
+        let database = self.database();
+        let Some(probe) = probe_statement(request, database.dialect(), at_most) else {
+            return Ok(Forms::EACH);
+        };
+        let rows = database
+            .fetch_all_within(Statement::Select(&probe), SEARCH_TIME)
+            .await
+            .map_err(stopped)?;
+        read_forms(&rows, at_most).map_err(failed)
+    }
+
+    /// A page of a search, with the forms the words are found in.
+    async fn search_page_in(
+        &self,
+        request: &SearchRequest,
+        forms: Forms,
+    ) -> Result<Vec<SearchHit>, SearchFailure> {
         let database = self.database();
         let dialect = database.dialect();
         let plan = SortPlan::of(request, dialect).map_err(failed)?;
@@ -186,7 +237,7 @@ impl SearchStore for AuthStorage {
             None => None,
         };
         let last = place.as_ref().map(|(values, id)| (values.as_slice(), *id));
-        let built = page_statement(request, dialect, &plan, last).map_err(failed)?;
+        let built = page_statement(request, dialect, &plan, last, forms).map_err(failed)?;
         let rows = database
             .fetch_all_within(&built, SEARCH_TIME)
             .await
@@ -195,6 +246,13 @@ impl SearchStore for AuthStorage {
             .map(read_hit)
             .collect::<Result<_, _>>()
             .map_err(failed)
+    }
+}
+
+impl SearchStore for AuthStorage {
+    async fn search_page(&self, request: &SearchRequest) -> Result<Vec<SearchHit>, SearchFailure> {
+        let forms = self.forms_of(request, SET_ROWS_AT_MOST).await?;
+        self.search_page_in(request, forms).await
     }
 
     async fn search_count(&self, request: &SearchRequest) -> Result<u64, SearchFailure> {
@@ -241,3 +299,5 @@ mod tests;
 mod tests_more;
 #[cfg(test)]
 mod tests_rest;
+#[cfg(test)]
+mod tests_streams;
