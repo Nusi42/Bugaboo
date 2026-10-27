@@ -53,6 +53,7 @@ mod m0021_kebab_words;
 mod m0022_text_index;
 mod m0023_search_indexes;
 mod m0024_saved_searches;
+mod m0025_text_in_nfc;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -269,6 +270,11 @@ const ALL: &[Definition] = &[
         name: "saved_searches",
         steps: || Ok(m0024_saved_searches::steps()),
     },
+    Definition {
+        version: bb_core::text_index::RULE_MIGRATION,
+        name: "text_in_nfc",
+        steps: || Ok(m0025_text_in_nfc::steps()),
+    },
 ];
 
 /// The number of the newest migration this program knows.
@@ -300,6 +306,17 @@ fn record_table() -> TableCreateStatement {
         .to_owned()
 }
 
+/// How the schema of a database stands to the program that opened it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SchemaState {
+    /// Every migration the program has is applied.
+    Current,
+    /// The program has migrations the database has not: a start of the server applies them.
+    Older,
+    /// A newer program changed the database: this one must not work on it.
+    Newer,
+}
+
 /// Whether what the database recorded is what this program has.
 fn check(applied: &[MigrationRecord]) -> Result<(), StoreError> {
     let known = latest_version();
@@ -328,6 +345,32 @@ fn check(applied: &[MigrationRecord]) -> Result<(), StoreError> {
 }
 
 impl Database {
+    /// How the schema stands to this program, without changing anything: the one place that
+    /// decides (commands that look after an installation and migrate nothing ask it).
+    ///
+    /// # Errors
+    /// [`StoreError::MigrationMismatch`] when a recorded migration is not the one this program has,
+    /// and when the database fails.
+    pub async fn schema_state(&self) -> Result<SchemaState, StoreError> {
+        let applied = self.applied_migrations().await?;
+        match check(&applied) {
+            Err(StoreError::SchemaTooNew { .. }) => Ok(SchemaState::Newer),
+            Err(other) => Err(other),
+            Ok(()) => {
+                let newest = applied
+                    .iter()
+                    .map(|record| record.version)
+                    .max()
+                    .unwrap_or(0);
+                Ok(if newest < latest_version() {
+                    SchemaState::Older
+                } else {
+                    SchemaState::Current
+                })
+            }
+        }
+    }
+
     /// Brings the schema up to date (`now` is what gets recorded) and returns the numbers of the
     /// migrations it applied.
     ///
@@ -347,6 +390,33 @@ impl Database {
     #[cfg(feature = "testing")]
     pub async fn migrate_up_to(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {
         self.migrate_until(last, now).await
+    }
+
+    /// Records a migration this program does not have, as a newer program would have: the database
+    /// then stands [`SchemaState::Newer`], for the tests of what refuses to work on it.
+    ///
+    /// # Errors
+    /// When the database fails.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn record_newer_migration(&self, now: Timestamp) -> Result<(), StoreError> {
+        let mut insert = Query::insert();
+        insert
+            .into_table(Migration::Table)
+            .columns([
+                Migration::Version,
+                Migration::Name,
+                Migration::Checksum,
+                Migration::AppliedAt,
+            ])
+            .values([
+                Expr::val(latest_version() + 1),
+                Expr::val("from-the-future"),
+                Expr::val(vec![0_u8; 32]),
+                Expr::val(to_micros(now)),
+            ])
+            .map_err(|_| StoreError::Corrupt("a migration"))?;
+        self.execute(&insert).await?;
+        Ok(())
     }
 
     async fn migrate_until(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {

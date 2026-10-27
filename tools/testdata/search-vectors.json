@@ -3244,6 +3244,58 @@
       }
     },
     {
+      "text": "title contains \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "title",
+              "span": {
+                "start": 0,
+                "end": 5
+              }
+            },
+            "test": {
+              "type": "contains",
+              "text": {
+                "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "span": {
+                  "start": 15,
+                  "end": 273
+                }
+              },
+              "span": {
+                "start": 6,
+                "end": 273
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 273
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 273
+          }
+        },
+        "canonical": null,
+        "mistakes": [
+          {
+            "span": {
+              "start": 15,
+              "end": 273
+            },
+            "key": "search.mistake.word-too-long",
+            "args": {},
+            "suggestions": []
+          }
+        ]
+      }
+    },
+    {
       "text": "contains",
       "answer": {
         "search": null,

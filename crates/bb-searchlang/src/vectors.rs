@@ -108,6 +108,8 @@ pub const REFUSED: &[&str] = &[
     "(status is Open",
     "status is Open)",
     "title contains",
+    // A word of 256 bytes, one more than the index keeps (`MAX_WORD_BYTES`).
+    "title contains \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"",
     "contains",
     "contains and status is Open",
     "contains \"unfinished",

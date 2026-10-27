@@ -12,8 +12,8 @@ use bb_searchlang::messages;
 use bb_searchlang::vectors::{ACCEPTED, REFUSED, sample_fields};
 use bb_searchlang::{
     Expr, Field, FieldKind, MAX_CONTAINS_WORDS, MAX_FILTERS, MAX_SORT_KEYS, MAX_STEPS,
-    MAX_TEXT_BYTES, MIN_PREFIX_CHARS, Mistake, Operand, ReadableFields, Suggestion, Test, check,
-    parse, parse_with, print, suggest,
+    MAX_TEXT_BYTES, MAX_WORD_BYTES, MIN_PREFIX_CHARS, Mistake, Operand, ReadableFields, Suggestion,
+    Test, check, parse, parse_with, print, suggest,
 };
 
 /// A text parsed and checked against the sample fields, printed.
@@ -337,6 +337,58 @@ fn iss_13_a_contains_has_at_most_ten_different_words() {
     // A word typed again is not another word.
     let again = format!("title contains \"{}\"", "crash ".repeat(30));
     assert!(checked(&again).is_ok());
+}
+
+/// The checker decides on the text as typed, with no NFC: these answers are the same in the browser
+/// (built without the NFC step) and on the server (built with it), so a search the browser lets
+/// through is never refused by the server, and the other way round (M5-F53).
+#[test]
+fn iss_13_the_checker_counts_letters_and_words_as_typed_on_both_sides() {
+    // A syllable written as two jamo has two letters as typed; a letter of Hebrew or Devanagari
+    // that NFC takes apart still has one.
+    for ok in ["\u{1100}\u{1161}*", "m\u{fc}*", "mu\u{308}*"] {
+        assert!(
+            checked(&format!("title contains \"{ok}\"")).is_ok(),
+            "{ok:?}"
+        );
+    }
+    for short in [
+        "\u{fb1d}*",
+        "\u{958}*",
+        "\u{304b}\u{3099}*",
+        "\u{e4}*",
+        "a\u{308}*",
+    ] {
+        let mistakes = mistakes_of(&format!("title contains \"{short}\""));
+        assert_eq!(mistakes.len(), 1, "{short:?}");
+        assert_eq!(mistakes[0].key, messages::PREFIX_TOO_SHORT);
+    }
+    // Nine words, then a letter written as one character and as two: eleven words as typed.
+    let list: Vec<String> = (1..=9).map(|n| format!("a{n}")).collect();
+    let text = format!("title contains \"{} m\u{fc} mu\u{308}\"", list.join(" "));
+    let mistakes = mistakes_of(&text);
+    assert_eq!(mistakes.len(), 1);
+    assert_eq!(mistakes[0].key, messages::TOO_MANY_WORDS);
+}
+
+/// A word the index cannot hold is refused as typed, in the browser and on the server alike
+/// (the same checker): the bound is in bytes, counted on the lower-cased word.
+#[test]
+fn iss_13_a_word_longer_than_the_index_keeps_is_a_mistake() {
+    let longest = "a".repeat(MAX_WORD_BYTES);
+    assert!(checked(&format!("title contains \"say {longest}\"")).is_ok());
+    for word in [
+        "a".repeat(MAX_WORD_BYTES + 1),
+        "\u{4e2d}".repeat(MAX_WORD_BYTES / 3 + 1),
+        format!("{}*", "a".repeat(MAX_WORD_BYTES + 1)),
+    ] {
+        let mistakes = mistakes_of(&format!("contains \"say {word}\""));
+        assert_eq!(mistakes.len(), 1);
+        assert_eq!(mistakes[0].key, messages::WORD_TOO_LONG);
+    }
+    // The word is counted with the other words.
+    let mistakes = mistakes_of(&format!("title contains \"{}\"", "\u{4e2d}".repeat(683)));
+    assert_eq!(mistakes[0].key, messages::WORD_TOO_LONG);
 }
 
 #[test]

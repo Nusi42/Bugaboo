@@ -16305,6 +16305,13 @@
               }
             ]
           },
+          "labels": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/LabelRefBody"
+            },
+            "description": "The labels on it, in the order they were put there. Hidden from a reader whose level for\n*Labels* is *Hidden*."
+          },
           "own_fields": {
             "oneOf": [
               {

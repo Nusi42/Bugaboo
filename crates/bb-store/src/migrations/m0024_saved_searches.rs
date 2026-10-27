@@ -204,7 +204,7 @@ mod tests {
         each_database("migration_24_saved_searches", async |db| {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(21, at(0)).await?;
-            assert_eq!(database.migrate(at(1)).await?, [22, 23, 24]);
+            assert_eq!(database.migrate_until(24, at(1)).await?, [22, 23, 24]);
             database.execute(&search_row(1)?).await?;
             let column = |search: u8, position: i64| {
                 let mut insert = Query::insert();

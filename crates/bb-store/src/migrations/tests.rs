@@ -6,7 +6,7 @@ use crate::test_support::at;
 
 /// By the number of the migration, not by place in the list: the numbers of other migrations that
 /// are added later fall between these.
-const APPLIED: [(i64, &str); 24] = [
+const APPLIED: [(i64, &str); 25] = [
     (
         1,
         "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
@@ -102,6 +102,10 @@ const APPLIED: [(i64, &str); 24] = [
     (
         24,
         "3d545c9597c91786bb3d0fc0536f2508dcfb39e8de6c51cfaaa584e381255563",
+    ),
+    (
+        25,
+        "4d351f0a5579f265446e4f37450e38e11864a5fa715c3bda0b7442335b553d8e",
     ),
 ];
 
@@ -241,6 +245,21 @@ async fn two_processes_migrating_at_once_apply_each_migration_once() -> TestResu
 }
 
 #[tokio::test]
+async fn the_schema_state_is_older_current_or_newer_than_the_program() -> TestResult {
+    each_database("the_schema_state", async |db| {
+        let database = Database::connect(db.url()).await?;
+        database.migrate_until(latest_version() - 1, at(0)).await?;
+        assert_eq!(database.schema_state().await?, SchemaState::Older);
+        database.migrate(at(1)).await?;
+        assert_eq!(database.schema_state().await?, SchemaState::Current);
+        database.record_newer_migration(at(2)).await?;
+        assert_eq!(database.schema_state().await?, SchemaState::Newer);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn bad_example_a_newer_schema_is_refused() -> TestResult {
     each_database("bad_example_a_newer_schema_is_refused", async |db| {
         let database = Database::connect(db.url()).await?;
@@ -344,4 +363,14 @@ async fn sqlite_runs_in_wal_mode_with_foreign_keys_and_full_sync() -> TestResult
         Ok(())
     })
     .await
+}
+
+/// The number that tools compare their index marker with is the migration that changed the rule.
+#[test]
+fn the_rule_migration_of_the_text_index_is_a_migration_that_exists() {
+    let definition = ALL
+        .iter()
+        .find(|definition| definition.version == bb_core::text_index::RULE_MIGRATION)
+        .unwrap();
+    assert_eq!(definition.name, "text_in_nfc");
 }

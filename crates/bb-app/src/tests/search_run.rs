@@ -26,6 +26,7 @@ pub(super) fn asked(session: &str, text: &str) -> SearchQuery {
         scope: SearchScope::Everywhere,
         cursor: None,
         limit: 1,
+        labels: false,
     }
 }
 
@@ -253,6 +254,7 @@ async fn reads_for_a_page_over(projects: usize) -> Result<usize, String> {
     let before = world.store.reads();
     let query = SearchQuery {
         limit: 100,
+        labels: false,
         ..asked(&admin, "")
     };
     let page = search(&world.ctx(), query)
@@ -458,6 +460,7 @@ async fn reads_for_a_page_of(issues: usize) -> Result<usize, String> {
     let before = world.store.reads();
     let query = SearchQuery {
         limit: 100,
+        labels: false,
         ..asked(&token(&world), "")
     };
     let page = search(&world.ctx(), query)
@@ -559,6 +562,7 @@ async fn qry_05_the_list_of_a_project_is_the_search_within_it() -> Outcome {
         session_token: g.lead.clone(),
         project: g.acme.to_string(),
         assigned_to,
+        labels: false,
         cursor: None,
         limit: 10,
     };

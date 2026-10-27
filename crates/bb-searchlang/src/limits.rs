@@ -9,9 +9,10 @@ pub const MAX_FILTERS: usize = 50;
 /// The most steps `connected to … within N steps` may take.
 pub const MAX_STEPS: u32 = 5;
 
-/// The fewest letters a word of `contains` needs before its `*`; defined with the words
+/// The fewest letters a word of `contains` needs before its `*`, and the most bytes any word may
+/// have; defined with the words
 /// (`bb_core::text_words`), which decide how a start is looked up.
-pub use bb_core::text_words::MIN_PREFIX_CHARS;
+pub use bb_core::text_words::{MAX_WORD_BYTES, MIN_PREFIX_CHARS};
 
 /// The most words one `contains` may have (words that come twice count once). Every word is one
 /// more lookup in the text index, so this bounds the work of one `contains`; the port of the text

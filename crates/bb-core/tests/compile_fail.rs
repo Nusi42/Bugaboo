@@ -7,6 +7,7 @@ use jiff as _;
 use proptest as _;
 use serde as _;
 use serde_json as _;
+use unicode_normalization as _;
 use unicode_properties as _;
 #[cfg(feature = "openapi")]
 use utoipa as _;

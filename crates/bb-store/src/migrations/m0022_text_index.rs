@@ -19,10 +19,13 @@ use super::{Step, id_column};
 use crate::db::FixedSql;
 use crate::schema::{IssueRow, TextIndexRow};
 
-/// The FTS5 table and the triggers that keep it in step (SQLite).
-const SQLITE: [&str; 4] = [
-    "CREATE VIRTUAL TABLE text_index_fts USING fts5(words, content='text_index', \
-     content_rowid='id', prefix='2 3', tokenize='unicode61 remove_diacritics 0')",
+/// The FTS5 table (SQLite).
+const FTS_TABLE: &str = "CREATE VIRTUAL TABLE text_index_fts USING fts5(words, content='text_index', \
+     content_rowid='id', prefix='2 3', tokenize='unicode61 remove_diacritics 0')";
+
+/// The triggers that keep the FTS5 table in step with `text_index` (SQLite). A later migration that
+/// makes the table again takes these, not a copy.
+pub(super) const FTS_TRIGGERS: [&str; 3] = [
     "CREATE TRIGGER text_index_after_insert AFTER INSERT ON text_index BEGIN \
      INSERT INTO text_index_fts(rowid, words) VALUES (new.id, new.words); END",
     "CREATE TRIGGER text_index_after_delete AFTER DELETE ON text_index BEGIN \
@@ -32,11 +35,27 @@ const SQLITE: [&str; 4] = [
      INSERT INTO text_index_fts(rowid, words) VALUES (new.id, new.words); END",
 ];
 
-/// The generated column and its index (PostgreSQL).
-const POSTGRES: [&str; 2] = [
-    "ALTER TABLE text_index ADD COLUMN words_tsv tsvector \
-     GENERATED ALWAYS AS (to_tsvector('simple', words)) STORED",
-    "CREATE INDEX text_index_words ON text_index USING GIN (words_tsv)",
+/// The statements that take the triggers and the FTS5 table away again (SQLite): the names of
+/// [`FTS_TABLE`] and [`FTS_TRIGGERS`] stand here and nowhere else.
+pub(super) const DROP_FTS: [&str; 4] = [
+    "DROP TRIGGER text_index_after_insert",
+    "DROP TRIGGER text_index_after_delete",
+    "DROP TRIGGER text_index_after_update",
+    "DROP TABLE text_index_fts",
+];
+
+/// The generated column (PostgreSQL).
+const TSVECTOR_COLUMN: &str = "ALTER TABLE text_index ADD COLUMN words_tsv tsvector \
+     GENERATED ALWAYS AS (to_tsvector('simple', words)) STORED";
+
+/// The index on the generated column (PostgreSQL).
+pub(super) const TSVECTOR_INDEX: &str =
+    "CREATE INDEX text_index_words ON text_index USING GIN (words_tsv)";
+
+/// The statements that take the index and the column away again (PostgreSQL).
+pub(super) const DROP_TSVECTOR: [&str; 2] = [
+    "DROP INDEX text_index_words",
+    "ALTER TABLE text_index DROP COLUMN words_tsv",
 ];
 
 pub(super) fn steps() -> Vec<Step> {
@@ -74,8 +93,8 @@ pub(super) fn steps() -> Vec<Step> {
                 .to_owned(),
         ),
         Step::Sql(FixedSql {
-            sqlite: SQLITE.to_vec(),
-            postgres: POSTGRES.to_vec(),
+            sqlite: [FTS_TABLE].into_iter().chain(FTS_TRIGGERS).collect(),
+            postgres: vec![TSVECTOR_COLUMN, TSVECTOR_INDEX],
         }),
     ]
 }

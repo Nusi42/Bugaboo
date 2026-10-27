@@ -3796,6 +3796,12 @@ pub const SAVE_SAVED: MessageKey = MessageKey::new("save.saved");
 /// The message `save.saving`.
 pub const SAVE_SAVING: MessageKey = MessageKey::new("save.saving");
 
+/// The message `search-index.data-newer`.
+pub const SEARCH_INDEX_DATA_NEWER: MessageKey = MessageKey::new("search-index.data-newer");
+
+/// The message `search-index.data-older`.
+pub const SEARCH_INDEX_DATA_OLDER: MessageKey = MessageKey::new("search-index.data-older");
+
 /// The message `search-index.opened-address`.
 pub const SEARCH_INDEX_OPENED_ADDRESS: MessageKey = MessageKey::new("search-index.opened-address");
 
@@ -4170,6 +4176,10 @@ pub const SEARCH_MISTAKE_TOO_LONG: MessageKey = MessageKey::new("search.mistake.
 /// The message `search.mistake.unclosed-quote`.
 pub const SEARCH_MISTAKE_UNCLOSED_QUOTE: MessageKey =
     MessageKey::new("search.mistake.unclosed-quote");
+
+/// The message `search.mistake.word-too-long`.
+pub const SEARCH_MISTAKE_WORD_TOO_LONG: MessageKey =
+    MessageKey::new("search.mistake.word-too-long");
 
 /// The message `search.nothing`.
 pub const SEARCH_NOTHING: MessageKey = MessageKey::new("search.nothing");
@@ -13996,6 +14006,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("save.saved-at", "Saved · {time}"),
     ("save.saving", "Saving…"),
     (
+        "search-index.data-newer",
+        "The data in this installation was changed by a newer version of this program. Use the newer version for this command.",
+    ),
+    (
+        "search-index.data-older",
+        "The data in this installation is older than this program. Start the server once: it brings the data up to date and builds the index again by itself. Then run this command again if you still need it.",
+    ),
+    (
         "search-index.opened-address",
         "Opened the database that the settings name by an address (the address is not shown; it can hold a password).",
     ),
@@ -14340,6 +14358,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "search.mistake.unreadable",
         "“{text}” is not understood here.",
+    ),
+    (
+        "search.mistake.word-too-long",
+        "A word in this text is too long to be found. Split it into shorter words.",
     ),
     (
         "search.mistake.wrong-date",

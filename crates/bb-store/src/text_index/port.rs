@@ -17,7 +17,9 @@
 //!
 //! The cost of one search is bounded here, for a caller that did not run the checker: a word that
 //! comes twice counts once (`search_words`), no more than [`MAX_CONTAINS_WORDS`] words are looked
-//! up, and a start of fewer than `MIN_PREFIX_CHARS` letters is looked up as the whole word.
+//! up, a start of fewer than `MIN_PREFIX_CHARS` letters is looked up as the whole word, and a word
+//! over `MAX_WORD_BYTES` (which the checker refuses, and which the index never keeps) matches
+//! nothing instead of reaching the database.
 
 use bb_core::id::FieldId;
 use bb_core::text_index::TextSource;
@@ -60,7 +62,14 @@ type Lookup<'a> = (&'a str, bool);
 /// nothing.
 fn row_conditions(dialect: Dialect, search: &TextSearch<'_>) -> Vec<SimpleExpr> {
     let words = lookups(search.words);
-    let Some((first, rest)) = words.split_first() else {
+    // A word the index does not keep (`MAX_WORD_BYTES`) is in no text, and the issue must have every
+    // word: nothing matches. The database never sees it, for PostgreSQL refuses a lexeme that long.
+    let kept = search
+        .words
+        .iter()
+        .take(MAX_CONTAINS_WORDS)
+        .all(|word| !word.is_too_long());
+    let Some((first, rest)) = words.split_first().filter(|_| kept) else {
         return vec![Expr::val(1).eq(0)];
     };
     let mut conditions = vec![word_matches(dialect, *first), in_scope(search.scope)];
@@ -150,8 +159,8 @@ fn issues_with(dialect: Dialect, word: Lookup<'_>, scope: &SimpleExpr) -> Select
 }
 
 /// The condition that the words of a row have this word, as the database says it. The word is
-/// letters and digits and nothing else (`SearchWord` is made by `search_words` only), so it carries
-/// no syntax of the query of the database.
+/// letters, digits and the marks of a letter and nothing else (`SearchWord` is made by
+/// `search_words` only), so it carries no syntax of the query of the database.
 fn word_matches(dialect: Dialect, (text, prefix): Lookup<'_>) -> SimpleExpr {
     match dialect {
         Dialect::Sqlite => {
@@ -169,17 +178,17 @@ fn word_matches(dialect: Dialect, (text, prefix): Lookup<'_>) -> SimpleExpr {
             Expr::col(TextIndexRow::Id).in_subquery(inner)
         }
         Dialect::Postgres => {
-            // tsquery: `word` or `word:*`.
+            // tsquery: `'word'` or `'word':*`. A quoted word is one lexeme exactly as written: no
+            // parser of the locale looks at it, and the vector it is matched against is made of
+            // the stored words split at spaces (migration 25), so the database only compares.
             let query = if prefix {
-                [text, ":*"].concat()
+                ["'", text, "':*"].concat()
             } else {
-                text.to_owned()
+                ["'", text, "'"].concat()
             };
             Expr::col(TextIndexExtra::WordsTsv).binary(
                 BinOper::Custom("@@"),
-                Func::cust(Alias::new("to_tsquery"))
-                    .arg(Expr::cust("CAST('simple' AS regconfig)"))
-                    .arg(query),
+                Func::cast_as(query, Alias::new("tsquery")),
             )
         }
     }
@@ -216,11 +225,11 @@ mod tests {
         assert!(sqlite.contains(r#"MATCH '"stor"*'"#), "{sqlite}");
         let postgres = text_of(Dialect::Postgres, "crash stor*", TextScope::Everywhere);
         assert!(
-            postgres.contains("to_tsquery(CAST('simple' AS regconfig), 'crash')"),
+            postgres.contains(r"CAST(E'\'crash\'' AS tsquery)"),
             "{postgres}"
         );
         assert!(
-            postgres.contains("to_tsquery(CAST('simple' AS regconfig), 'stor:*')"),
+            postgres.contains(r"CAST(E'\'stor\':*' AS tsquery)"),
             "{postgres}"
         );
     }
@@ -230,8 +239,8 @@ mod tests {
         let text = text_of(Dialect::Postgres, "login error", TextScope::Everywhere);
         // One lookup in the scope for each word: the first in the statement, the second in a
         // sub-select, and nothing about the title (the order is the compiler's).
-        assert_eq!(text.matches("'error')").count(), 1, "{text}");
-        assert_eq!(text.matches("'login')").count(), 1, "{text}");
+        assert_eq!(text.matches(r"\'error\''").count(), 1, "{text}");
+        assert_eq!(text.matches(r"\'login\''").count(), 1, "{text}");
         assert!(!text.contains("source\" = 'title'"), "{text}");
     }
 
@@ -260,23 +269,36 @@ mod tests {
             "crash crash CRASH",
             TextScope::Everywhere,
         );
-        assert_eq!(text.matches("'crash')").count(), 1, "{text}");
+        assert_eq!(text.matches(r"\'crash\''").count(), 1, "{text}");
     }
 
     #[test]
     fn no_more_than_ten_words_are_looked_up() {
         let many: Vec<String> = (0..25).map(|n| format!("word{n}")).collect();
         let text = text_of(Dialect::Postgres, &many.join(" "), TextScope::Everywhere);
-        assert!(text.contains("'word9'"), "{text}");
-        assert!(!text.contains("'word10'"), "{text}");
+        assert!(text.contains(r"\'word9\'"), "{text}");
+        assert!(!text.contains(r"\'word10\'"), "{text}");
     }
 
     #[test]
     fn a_start_of_one_letter_is_looked_up_as_the_whole_word() {
         let text = text_of(Dialect::Postgres, "a* ab*", TextScope::Everywhere);
-        assert!(!text.contains("'a:*'"), "{text}");
-        assert!(text.contains("'a')"), "{text}");
-        assert!(text.contains("'ab:*'"), "{text}");
+        assert!(!text.contains(r"\'a\':*"), "{text}");
+        assert!(text.contains(r"\'a\''"), "{text}");
+        assert!(text.contains(r"\'ab\':*"), "{text}");
+    }
+
+    #[test]
+    fn a_word_the_index_does_not_keep_matches_nothing_and_never_reaches_the_database() {
+        let long = "a".repeat(bb_core::text_words::MAX_WORD_BYTES + 1);
+        for dialect in [Dialect::Sqlite, Dialect::Postgres] {
+            let alone = text_of(dialect, &long, TextScope::Everywhere);
+            assert!(alone.contains("1 = 0"), "{alone}");
+            assert!(!alone.contains(&long), "{alone}");
+            let with_others = text_of(dialect, &format!("crash {long}*"), TextScope::Everywhere);
+            assert!(with_others.contains("1 = 0"), "{with_others}");
+            assert!(!with_others.contains(&long), "{with_others}");
+        }
     }
 
     #[test]

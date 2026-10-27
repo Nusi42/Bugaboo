@@ -3,12 +3,14 @@
 //! `bb-app`; this is the loop around it, on both databases.
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use bb_app::context::SystemIds;
 use bb_app::jobs::JobStore as _;
 use bb_core::id::{JobId, UserId};
 use bb_core::technical::TechnicalName;
+use bb_core::text_index::{CONSUMER, REBUILD_WANTED};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
@@ -37,6 +39,26 @@ async fn until_the_queue_is_empty(rig: &Rig) -> Result<(), Failure> {
     })
     .await;
     waited.map_err(|_| "the loop did not take the jobs in time")?
+}
+
+/// Waits until the reader of the text index has left the mark of a rebuild wanted, and checks it
+/// stands at the head of the outbox.
+async fn until_the_index_is_made(rig: &Rig) -> Result<(), Failure> {
+    let reader = TechnicalName::new(CONSUMER)?;
+    let waited = tokio::time::timeout(WAIT_AT_MOST, async {
+        while rig.database.outbox_position(&reader).await? == REBUILD_WANTED {
+            tokio::time::sleep(TEST_POLL).await;
+        }
+        Ok::<(), Failure>(())
+    })
+    .await;
+    waited.map_err(|_| "the index was not made in time")??;
+    let head = rig
+        .database
+        .outbox_position(&TechnicalName::new("head")?)
+        .await?;
+    assert_eq!(rig.database.outbox_position(&reader).await?, head);
+    Ok(())
 }
 
 /// Puts an e-mail job in the queue that has nothing to send: it is done at once and leaves the
@@ -99,6 +121,59 @@ async fn adr_0017_a_job_that_dies_does_not_stop_the_loop() -> TestResult {
         until_the_queue_is_empty(&rig).await?;
         running.abort();
         assert_eq!(rig.database.dead_jobs(10).await?.len(), 1);
+        Ok(())
+    })
+    .await
+}
+
+/// A migration that changed the rule of the text index leaves a mark on the place of its reader
+/// (M5-F53): the worker makes the index again at its start, beside the jobs, and the reader is at
+/// the head of the outbox afterwards.
+#[tokio::test]
+async fn m5_f53_the_worker_makes_the_text_index_again_when_a_migration_asked_for_it() -> TestResult
+{
+    each_database("m5_f53_loop_rebuild", async |db| {
+        let rig = Rig::start(db).await?;
+        rig.database
+            .outbox_set(CONSUMER, REBUILD_WANTED, rig.clock_now())
+            .await?;
+        queue_a_job_that_is_done_at_once(&rig, 4).await?;
+        let running = bb_jobs::spawn(Arc::clone(&rig.services), TEST_POLL);
+        until_the_index_is_made(&rig).await?;
+        // The jobs were not held up by it either.
+        until_the_queue_is_empty(&rig).await?;
+        running.abort();
+        Ok(())
+    })
+    .await
+}
+
+/// A rebuild that panics is logged and made again: after one panic the reader still reaches the
+/// head of the outbox.
+#[tokio::test]
+async fn m5_f53_a_rebuild_that_panics_once_is_started_again() -> TestResult {
+    each_database("m5_f53_loop_rebuild_panics", async |db| {
+        let rig = Rig::start(db).await?;
+        rig.database
+            .outbox_set(CONSUMER, REBUILD_WANTED, rig.clock_now())
+            .await?;
+        let tries = Arc::new(AtomicUsize::new(0));
+        let counted = Arc::clone(&tries);
+        let running = bb_jobs::spawn_with(
+            Arc::clone(&rig.services),
+            TEST_POLL,
+            move |services, wait| {
+                let first = counted.fetch_add(1, Ordering::SeqCst) == 0;
+                async move {
+                    // The first try dies in the middle of its work.
+                    assert!(!first, "the rebuild dies once");
+                    bb_jobs::rebuild_text_index_for_a_test(services, wait).await;
+                }
+            },
+        );
+        until_the_index_is_made(&rig).await?;
+        running.abort();
+        assert_eq!(tries.load(Ordering::SeqCst), 2);
         Ok(())
     })
     .await

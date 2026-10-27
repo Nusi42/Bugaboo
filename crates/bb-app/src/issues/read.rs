@@ -79,6 +79,7 @@ pub async fn issue<S: AuthStore>(
         .into_iter()
         .map(|assigned_person| assigned_person.person)
         .collect();
+    // The labels of the issue are read through their own route, not here.
     let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
     let may_change = held.may_change_issue(issue.reported_by);
@@ -145,6 +146,7 @@ pub async fn issues<S: AuthStore>(
         scope: SearchScope::Within(project.id),
         cursor: input.cursor,
         limit: input.limit,
+        labels: input.labels,
     };
     // Always read: a status change may name the person assigned. The people are in the answer only
     // when they were asked for.

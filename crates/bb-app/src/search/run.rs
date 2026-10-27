@@ -26,7 +26,7 @@ use super::target::{FieldTarget, target_of};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::cursor_or_invalid;
-use crate::issues::{IssueView, PagePlace};
+use crate::issues::{IssueView, PagePlace, ReadOnRequest};
 
 /// Ask for a page of the issues a search finds.
 pub struct SearchQuery {
@@ -40,6 +40,8 @@ pub struct SearchQuery {
     pub cursor: Option<String>,
     /// How many issues a page holds at most.
     pub limit: u32,
+    /// Whether the labels of each issue are wanted: they are read only then, once for the page.
+    pub labels: bool,
 }
 
 /// Ask who is searching, before a search is run, so the limit of searches is the person's whether
@@ -268,7 +270,15 @@ pub(crate) async fn search_page<S: AuthStore + SearchStore>(
         .collect();
     let issues: Vec<_> = page.items.iter().map(|hit| hit.issue.clone()).collect();
     let items = ctx
-        .issue_items(actor, &issues, &places, with_people)
+        .issue_items(
+            actor,
+            &issues,
+            &places,
+            ReadOnRequest {
+                people: with_people,
+                labels: query.labels,
+            },
+        )
         .await?
         .into_iter()
         .map(|(held, view)| held.authorize(view))
