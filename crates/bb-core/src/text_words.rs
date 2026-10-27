@@ -185,7 +185,9 @@ mod tests {
         // `ß` is `ss` and `æ` is `ae` in the index: two letters each.
         assert_eq!(open_last_word("ß"), "ß*");
         assert_eq!(open_last_word("æ"), "æ*");
-        // A letter and its accent as two characters is one letter.
+        // An accent written as a character of its own is no letter and ends the word, as the
+        // checker reads it: `e` and its accent are one letter, and `me` and its accent end in the
+        // accent, so the word is no start.
         assert_eq!(open_last_word("e\u{301}"), "e\u{301}");
         assert_eq!(open_last_word("e\u{301}t"), "e\u{301}t");
         assert_eq!(open_last_word("me\u{301}"), "me\u{301}");
