@@ -60,6 +60,10 @@ keywords! {
     Weeks => "weeks",
     Month => "month",
     Months => "months",
+    Minute => "minute",
+    Minutes => "minutes",
+    Hour => "hour",
+    Hours => "hours",
     First => "first",
     Highest => "highest",
     Lowest => "lowest",
@@ -253,5 +257,26 @@ mod tests {
         assert_eq!(unit_of(Keyword::Weeks), Some(Unit::Week));
         assert_eq!(unit_of(Keyword::And), None);
         assert_eq!(steps_word(1), Keyword::Step);
+    }
+}
+
+/// How many minutes a keyword that names a length of time stands for (`hour` is 60), or `None`.
+#[must_use]
+pub(crate) const fn minutes_of(keyword: Keyword) -> Option<u32> {
+    match keyword {
+        Keyword::Minute | Keyword::Minutes => Some(1),
+        Keyword::Hour | Keyword::Hours => Some(60),
+        _ => None,
+    }
+}
+
+/// The keyword for a count of hours or minutes (`1 hour`, `2 hours`).
+#[must_use]
+pub(crate) const fn duration_word(hours: bool, count: u32) -> Keyword {
+    match (hours, count == 1) {
+        (true, true) => Keyword::Hour,
+        (true, false) => Keyword::Hours,
+        (false, true) => Keyword::Minute,
+        (false, false) => Keyword::Minutes,
     }
 }

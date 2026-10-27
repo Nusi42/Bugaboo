@@ -207,6 +207,14 @@ pub enum Operand {
         /// Where it stands.
         span: Span,
     },
+    /// A length of time (`2 hours`, `1 hour 30 minutes`), in whole minutes: the units have one
+    /// fixed length, so the text means the same for everyone.
+    Duration {
+        /// The minutes.
+        minutes: u32,
+        /// Where it stands.
+        span: Span,
+    },
     /// A day.
     Date {
         /// The day.

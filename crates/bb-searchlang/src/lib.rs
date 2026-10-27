@@ -13,6 +13,7 @@
 
 #[macro_use]
 mod every;
+mod duration;
 
 mod answer;
 #[cfg(feature = "browser")]

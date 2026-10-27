@@ -51,6 +51,18 @@ export function timeWordText(word: TimeWord): string {
   return timeWords[word]();
 }
 
+/** A length of time in words: `2 hours`, `1 hour 30 minutes`, `45 minutes`. */
+export function durationText(total: number): string {
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  if (hours === 0) {
+    return t("search.bar.duration-minutes", { count: minutes });
+  }
+  return minutes === 0
+    ? t("search.bar.duration-hours", { count: hours })
+    : t("search.bar.duration-both", { hours, minutes });
+}
+
 /** A value as the button shows it. */
 export function operandText(operand: Operand): string {
   if (operand.type === "text") {
@@ -58,6 +70,9 @@ export function operandText(operand: Operand): string {
   }
   if (operand.type === "number") {
     return decimalText(operand.number);
+  }
+  if (operand.type === "duration") {
+    return durationText(operand.minutes);
   }
   if (operand.type === "date") {
     return formatCalendarDay(dayText(operand.date));

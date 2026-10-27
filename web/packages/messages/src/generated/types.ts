@@ -413,6 +413,9 @@ export interface MessageArguments {
   "search.bar.change-filter": { filter: string | number };
   "search.bar.change-filter-text": { field: string | number };
   "search.bar.contains": { text: string | number };
+  "search.bar.duration-both": { hours: number; minutes: number };
+  "search.bar.duration-hours": { count: number };
+  "search.bar.duration-minutes": { count: number };
   "search.bar.filter-by": { field: string | number };
   "search.bar.filters-count": { count: string | number };
   "search.bar.issue-chosen": { id: string | number };
@@ -472,6 +475,11 @@ export interface MessageArguments {
   };
   "search.mistake.unreadable": { text: string | number };
   "search.mistake.wrong-date": { field: string | number };
+  "search.mistake.wrong-duration": {
+    field: string | number;
+    hours: string | number;
+    minutes: string | number;
+  };
   "search.mistake.wrong-issue": { field: string | number };
   "search.mistake.wrong-number": { field: string | number };
   "search.mistake.wrong-person": { field: string | number; me: string | number };

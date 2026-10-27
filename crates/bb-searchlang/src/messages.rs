@@ -112,6 +112,9 @@ pub const UNREADABLE: &str = "search.mistake.unreadable";
 /// The message `search.mistake.wrong-date`.
 pub const WRONG_DATE: &str = "search.mistake.wrong-date";
 
+/// The message `search.mistake.wrong-duration`.
+pub const WRONG_DURATION: &str = "search.mistake.wrong-duration";
+
 /// The message `search.mistake.wrong-issue`.
 pub const WRONG_ISSUE: &str = "search.mistake.wrong-issue";
 

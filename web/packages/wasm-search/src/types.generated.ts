@@ -181,6 +181,13 @@ export type Operand =
       readonly span: Span;
     }
   | {
+      readonly type: "duration";
+      /** The minutes. */
+      readonly minutes: number;
+      /** Where it stands. */
+      readonly span: Span;
+    }
+  | {
       readonly type: "date";
       /** The day. */
       readonly date: Date;
@@ -309,7 +316,15 @@ export interface Field {
 }
 
 /** What kind of values a field holds. */
-export type FieldKind = "text" | "number" | "date" | "choice" | "person" | "project" | "issue";
+export type FieldKind =
+  | "text"
+  | "number"
+  | "duration"
+  | "date"
+  | "choice"
+  | "person"
+  | "project"
+  | "issue";
 
 /** What may be asked of a field. */
 export type Operator =

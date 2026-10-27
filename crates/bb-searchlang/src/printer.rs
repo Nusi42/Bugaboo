@@ -4,7 +4,7 @@
 
 use crate::literal::{quoted, value_or_quoted, word_or_quoted};
 use crate::syntax::{Expr, Operand, Search, SortKey, Test, Text};
-use crate::words::{Keyword, steps_word, unit_word};
+use crate::words::{Keyword, duration_word, steps_word, unit_word};
 
 /// The canonical text of a search.
 #[must_use]
@@ -152,6 +152,7 @@ fn value_text(value: &Operand) -> String {
     match value {
         Operand::Text { text, .. } => value_or_quoted(text),
         Operand::Number { number, .. } => number.text(),
+        Operand::Duration { minutes, .. } => duration_text(*minutes),
         Operand::Date { date, .. } => date.text(),
         Operand::Issue { id, .. } => id.text.clone(),
         Operand::Me { .. } => Keyword::Me.text().to_owned(),
@@ -164,5 +165,17 @@ fn sort_key(key: &SortKey) -> String {
     match key.direction {
         Some(direction) => format!("{field}, {}", direction.text()),
         None => field,
+    }
+}
+
+/// A length of time in words: `2 hours`, `1 hour 30 minutes`, `45 minutes`.
+fn duration_text(minutes: u32) -> String {
+    let (hours, rest) = (minutes / 60, minutes % 60);
+    let hours_text = format!("{hours} {}", duration_word(true, hours).text());
+    let minutes_text = format!("{rest} {}", duration_word(false, rest).text());
+    match (hours, rest) {
+        (0, _) => minutes_text,
+        (_, 0) => hours_text,
+        _ => format!("{hours_text} {minutes_text}"),
     }
 }

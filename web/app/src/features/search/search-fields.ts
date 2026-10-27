@@ -13,6 +13,7 @@ import { queryKeys } from "../../shared/query-keys.ts";
 const kinds: Readonly<Record<FieldKind, true>> = {
   text: true,
   number: true,
+  duration: true,
   date: true,
   choice: true,
   person: true,

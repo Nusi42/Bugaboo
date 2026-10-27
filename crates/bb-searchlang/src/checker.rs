@@ -256,6 +256,7 @@ fn spelled(value: &Operand) -> String {
     match value {
         Operand::Text { text, .. } => text.clone(),
         Operand::Number { number, .. } => number.text(),
+        Operand::Duration { minutes, .. } => minutes.to_string(),
         Operand::Date { date, .. } => date.text(),
         Operand::Issue { id, .. } => id.text.clone(),
         Operand::Me { .. } => Keyword::Me.text().to_owned(),
@@ -270,12 +271,22 @@ fn value_mistake(field: &Field, value: &Operand) -> Option<Mistake> {
     match (field.kind, value) {
         (FieldKind::Text | FieldKind::Project, Operand::Text { .. })
         | (FieldKind::Number, Operand::Number { .. })
+        | (FieldKind::Duration, Operand::Duration { .. })
         | (FieldKind::Date, Operand::Date { .. } | Operand::Time { .. })
         | (FieldKind::Person, Operand::Text { .. } | Operand::Me { .. })
         | (FieldKind::Issue, Operand::Issue { .. }) => None,
         (FieldKind::Choice, _) => unknown_choice(field, value, span),
         (FieldKind::Text | FieldKind::Project, _) => wrong(key::WRONG_TEXT),
         (FieldKind::Number, _) => wrong(key::WRONG_NUMBER),
+        (FieldKind::Duration, _) => Some(Mistake::new(
+            span,
+            key::WRONG_DURATION,
+            &[
+                ("field", &field.word),
+                ("hours", Keyword::Hours.text()),
+                ("minutes", Keyword::Minutes.text()),
+            ],
+        )),
         (FieldKind::Date, _) => wrong(key::WRONG_DATE),
         (FieldKind::Person, _) => Some(Mistake::new(
             span,

@@ -253,6 +253,8 @@ export const messages = {
   "search.mistake.unknown-choice-did-you-mean":
     "“{field}” has no choice called “{value}”. Did you mean “{suggestion}”?",
   "search.mistake.wrong-number": "“{field}” needs a number here.",
+  "search.mistake.wrong-duration":
+    "“{field}” needs a length of time here, like 2 {hours}, 45 {minutes} or 1 hour 30 {minutes}.",
   "search.mistake.wrong-date": "“{field}” needs a day like 2026-10-25, or a word like today.",
   "search.mistake.wrong-text": "“{field}” needs a text here. Put it in quotes.",
   "search.mistake.wrong-person": "“{field}” needs the name of a person here, or “{me}”.",

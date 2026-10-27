@@ -4,7 +4,7 @@ import type { Field, Operand, SearchLanguage, TimeWord } from "@bugaboo/wasm-sea
 import { useState } from "react";
 
 import { dayOf, decimalOf, numberTyped, textOperand } from "./filter-draft.ts";
-import { dayText, operandText, timeWordText } from "./filter-text.ts";
+import { dayText, durationText, operandText, timeWordText } from "./filter-text.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
 import { nowhere } from "../../shared/search-tree.ts";
 
@@ -114,6 +114,34 @@ function TypedValue({ field, values, onValues }: ValueInputProps) {
   );
 }
 
+/** A length of time typed (`2 hours`, `1 hour 30 minutes`): the search language reads it. */
+function DurationValue({ language, values, onValues }: ValueInputProps) {
+  const [first] = values;
+  const [typed, setTyped] = useState(first?.type === "duration" ? durationText(first.minutes) : "");
+  const read = (text: string): Operand | null => {
+    const test = language.parse(`x is ${text}`).search?.filter;
+    return test?.type === "field" && test.test.type === "is" && test.test.value.type === "duration"
+      ? test.test.value
+      : null;
+  };
+  const operand = read(typed);
+  return (
+    <TextField
+      label={t("search.bar.value")}
+      description={t("search.bar.duration-help")}
+      value={typed}
+      errorMessage={
+        typed.trim() !== "" && operand === null ? t("search.bar.not-a-duration") : undefined
+      }
+      onChange={(text) => {
+        setTyped(text);
+        const found = read(text);
+        onValues(found === null ? [] : [found]);
+      }}
+    />
+  );
+}
+
 /** A day typed, or a time word (*today*, *this week*). */
 function DateValue({ values, onValues }: ValueInputProps) {
   const [first] = values;
@@ -158,6 +186,9 @@ export function ValueInputs(props: ValueInputProps & { readonly many: boolean })
   }
   if (field.kind === "date") {
     return <DateValue {...props} />;
+  }
+  if (field.kind === "duration") {
+    return <DurationValue {...props} />;
   }
   if (field.kind === "issue") {
     return (

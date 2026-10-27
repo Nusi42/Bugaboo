@@ -148,6 +148,13 @@ export const messages = {
   "search.help-your-fields": "Your fields",
   "search.help-your-fields-text":
     "The fields you may search by, each with the word that stands for it in the search.",
+  "search.bar.duration-minutes": "{count, plural, one {# minute} other {# minutes}}",
+  "search.bar.duration-hours": "{count, plural, one {# hour} other {# hours}}",
+  "search.bar.duration-both":
+    "{hours, plural, one {# hour} other {# hours}} {minutes, plural, one {# minute} other {# minutes}}",
+  "search.bar.duration-help":
+    "Write hours and minutes, for example 2 hours, 45 minutes or 1 hour 30 minutes.",
+  "search.bar.not-a-duration": "Write a length of time like 2 hours or 1 hour 30 minutes.",
 } as const;
 
 register(messages);

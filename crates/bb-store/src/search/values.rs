@@ -10,6 +10,7 @@ use bb_app::search::ProjectLink;
 use bb_core::issue::Priority;
 use bb_core::names::name_key;
 use bb_core::readable_id::ReadableId;
+use bb_core::time::SECONDS_PER_MINUTE;
 use bb_searchlang::{Comparison, Operand};
 use sea_query::{Cond, Expr, ExprTrait as _, Query, Value};
 
@@ -24,6 +25,7 @@ fn operand_text(operand: &Operand) -> String {
     match operand {
         Operand::Text { text, .. } => text.clone(),
         Operand::Number { number, .. } => decimal_text(number.value, number.scale),
+        Operand::Duration { minutes, .. } => minutes.to_string(),
         Operand::Date { date, .. } => {
             format!("{:04}-{:02}-{:02}", date.year, date.month, date.day)
         }
@@ -353,8 +355,13 @@ impl Compiler<'_> {
 /// The operand as a count of parts (millionths for a decimal), rounded as asked when it does not
 /// fall on a part; `None` when it has to be exact and does not, or is no number.
 fn parts_of(operand: &Operand, parts: i64, rounding: Rounding) -> Option<i64> {
-    let Operand::Number { number, .. } = operand else {
-        return None;
+    let number = match operand {
+        Operand::Number { number, .. } => number,
+        // A length of time is held in seconds; its fields count whole units (parts of 1).
+        Operand::Duration { minutes, .. } => {
+            return i64::from(*minutes).checked_mul(i64::from(SECONDS_PER_MINUTE) * parts);
+        }
+        _ => return None,
     };
     let scaled = i128::from(number.value) * i128::from(parts);
     let divisor = 10_i128.pow(u32::from(number.scale));

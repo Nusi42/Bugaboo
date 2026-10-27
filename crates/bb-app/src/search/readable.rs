@@ -337,9 +337,8 @@ fn own_search_field(word: &str, definition: &Definition) -> SearchField {
         FieldType::Text | FieldType::LongText | FieldType::WebAddress => {
             SearchField::new(word, FieldKind::Text)
         }
-        FieldType::WholeNumber | FieldType::Decimal | FieldType::Duration => {
-            SearchField::new(word, FieldKind::Number)
-        }
+        FieldType::WholeNumber | FieldType::Decimal => SearchField::new(word, FieldKind::Number),
+        FieldType::Duration => SearchField::new(word, FieldKind::Duration),
         FieldType::Date | FieldType::DateTime => SearchField::new(word, FieldKind::Date),
         FieldType::PickOne | FieldType::PickSeveral => SearchField {
             choices: once_each(definition.choices.iter().map(|choice| choice.name.clone())),

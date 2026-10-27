@@ -6,6 +6,7 @@
 //! wants at that place. The mistakes in plain words and the suggestions are both made from it, so
 //! what the person is told and what is offered cannot disagree.
 
+use crate::duration::{read_duration, starts_duration};
 use crate::fields::{FieldKind, ReadableFields};
 use crate::lexer::{Token, TokenKind, tokens};
 use crate::limits::{MAX_DEPTH, MAX_TEXT_BYTES};
@@ -561,10 +562,15 @@ impl Parser<'_> {
                 let span = self.advance();
                 Operand::Text { text, span }
             }
-            Some(TokenKind::Number(number)) => Operand::Number {
-                number,
-                span: self.advance(),
-            },
+            Some(TokenKind::Number(number)) => {
+                if starts_duration(&self.tokens, self.at) {
+                    return self.duration();
+                }
+                Operand::Number {
+                    number,
+                    span: self.advance(),
+                }
+            }
             Some(TokenKind::Date(date)) => Operand::Date {
                 date,
                 span: self.advance(),
@@ -589,6 +595,21 @@ impl Parser<'_> {
             _ => return self.fail(wanted),
         };
         Ok(value)
+    }
+
+    /// A length of time at the next token (`1 hour 30 minutes`), if one starts there.
+    fn duration(&mut self) -> Step<Operand> {
+        let start = self
+            .peek()
+            .map_or(self.text.len(), |token| token.span.start);
+        let Some((minutes, used)) = read_duration(&self.tokens, self.at) else {
+            return self.fail(Situation::Count);
+        };
+        self.at += used;
+        Ok(Operand::Duration {
+            minutes,
+            span: Span::new(start, self.last_end()),
+        })
     }
 
     /// A value that is a word: `me`, a time word, or a plain word.
@@ -770,6 +791,7 @@ pub(crate) fn value_span(value: &Operand) -> Span {
     match value {
         Operand::Text { span, .. }
         | Operand::Number { span, .. }
+        | Operand::Duration { span, .. }
         | Operand::Date { span, .. }
         | Operand::Issue { span, .. }
         | Operand::Me { span }

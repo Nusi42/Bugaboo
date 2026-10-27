@@ -3844,6 +3844,9 @@ pub const SEARCH_BAR_COUNT: MessageKey = MessageKey::new("search.bar.count");
 /// The message `search.bar.day`.
 pub const SEARCH_BAR_DAY: MessageKey = MessageKey::new("search.bar.day");
 
+/// The message `search.bar.duration-help`.
+pub const SEARCH_BAR_DURATION_HELP: MessageKey = MessageKey::new("search.bar.duration-help");
+
 /// The message `search.bar.fields-clear`.
 pub const SEARCH_BAR_FIELDS_CLEAR: MessageKey = MessageKey::new("search.bar.fields-clear");
 
@@ -3921,6 +3924,9 @@ pub const SEARCH_BAR_KIND_VALUE: MessageKey = MessageKey::new("search.bar.kind-v
 
 /// The message `search.bar.me`.
 pub const SEARCH_BAR_ME: MessageKey = MessageKey::new("search.bar.me");
+
+/// The message `search.bar.not-a-duration`.
+pub const SEARCH_BAR_NOT_A_DURATION: MessageKey = MessageKey::new("search.bar.not-a-duration");
 
 /// The message `search.bar.not-a-number`.
 pub const SEARCH_BAR_NOT_A_NUMBER: MessageKey = MessageKey::new("search.bar.not-a-number");
@@ -9113,6 +9119,36 @@ pub fn search_bar_contains(text: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search.bar.duration-both`.
+#[must_use]
+pub fn search_bar_duration_both(hours: i64, minutes: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.duration-both"),
+        vec![
+            ("hours", Value::Number(hours)),
+            ("minutes", Value::Number(minutes)),
+        ],
+    )
+}
+
+/// The message `search.bar.duration-hours`.
+#[must_use]
+pub fn search_bar_duration_hours(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.duration-hours"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `search.bar.duration-minutes`.
+#[must_use]
+pub fn search_bar_duration_minutes(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.duration-minutes"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `search.bar.filter-by`.
 #[must_use]
 pub fn search_bar_filter_by(field: impl std::fmt::Display) -> Message {
@@ -9585,6 +9621,23 @@ pub fn search_mistake_wrong_date(field: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.wrong-date"),
         vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.mistake.wrong-duration`.
+#[must_use]
+pub fn search_mistake_wrong_duration(
+    field: impl std::fmt::Display,
+    hours: impl std::fmt::Display,
+    minutes: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.wrong-duration"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("hours", Value::Text(hours.to_string())),
+            ("minutes", Value::Text(minutes.to_string())),
+        ],
     )
 }
 
@@ -13879,6 +13932,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.contains", "contains {text}"),
     ("search.bar.count", "How many"),
     ("search.bar.day", "The day"),
+    (
+        "search.bar.duration-both",
+        "{hours, plural, one {# hour} other {# hours}} {minutes, plural, one {# minute} other {# minutes}}",
+    ),
+    (
+        "search.bar.duration-help",
+        "Write hours and minutes, for example 2 hours, 45 minutes or 1 hour 30 minutes.",
+    ),
+    (
+        "search.bar.duration-hours",
+        "{count, plural, one {# hour} other {# hours}}",
+    ),
+    (
+        "search.bar.duration-minutes",
+        "{count, plural, one {# minute} other {# minutes}}",
+    ),
     ("search.bar.fields-clear", "Clear the words"),
     ("search.bar.fields-legend", "Fields"),
     ("search.bar.fields-list", "Fields you can filter by"),
@@ -13925,6 +13994,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.name-colon", "{name}:"),
     ("search.bar.name-value", "{name}: {value}"),
     ("search.bar.not", "not {value}"),
+    (
+        "search.bar.not-a-duration",
+        "Write a length of time like 2 hours or 1 hour 30 minutes.",
+    ),
     ("search.bar.not-a-number", "Write a number, like 5 or 2.5."),
     ("search.bar.offers", "Words that can come next"),
     ("search.bar.op-above", "is above"),
@@ -14155,6 +14228,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "search.mistake.wrong-date",
         "“{field}” needs a day like 2026-10-25, or a word like today.",
+    ),
+    (
+        "search.mistake.wrong-duration",
+        "“{field}” needs a length of time here, like 2 {hours}, 45 {minutes} or 1 hour 30 {minutes}.",
     ),
     (
         "search.mistake.wrong-issue",

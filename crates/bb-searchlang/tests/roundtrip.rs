@@ -91,6 +91,10 @@ fn value() -> impl Strategy<Value = Operand> {
             number,
             span: span()
         }),
+        (0..100_000_u32).prop_map(|minutes| Operand::Duration {
+            minutes,
+            span: span()
+        }),
         date().prop_map(|date| Operand::Date { date, span: span() }),
         readable_id().prop_map(|id| Operand::Issue { id, span: span() }),
         Just(Operand::Me { span: span() }),
