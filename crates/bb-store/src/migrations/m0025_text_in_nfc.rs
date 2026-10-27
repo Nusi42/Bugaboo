@@ -85,8 +85,8 @@ mod tests {
     use crate::text_index::tests::found;
 
     /// An issue written before the migration has its title in the index with the accent removed
-    /// (`muller`). After the migration the index is empty, and after the first round of the
-    /// reader (what a start does) the same issue is found by *müller* and no longer by *muller*.
+    /// (`muller`). After the migration the index is empty and the reader reads nothing; after the
+    /// rebuild that a start does, the same issue is found by *müller* and no longer by *muller*.
     /// The title stands for every source: all of them are made again by the one function that the
     /// reader uses (`reader.rs` proves each source).
     #[tokio::test]

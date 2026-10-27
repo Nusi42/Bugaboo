@@ -12,7 +12,9 @@ pub const CONSUMER: &str = "text-index";
 
 /// The number of the newest migration that changed the rule that prepares a text, so an index made
 /// before it has to be made again (migration 25, M5-F53). A tool that keeps an index of its own
-/// (the benchmark's dataset) compares its marker with this.
+/// (the benchmark's dataset) compares its marker with this. It is also the number the list of
+/// migrations gives migration 25 (one definition); when the rule changes again, give migration 25
+/// its literal 25 back and set this to the new number.
 pub const RULE_MIGRATION: i64 = 25;
 
 /// The place the consumer has when the whole index has to be made again from the stored texts (the

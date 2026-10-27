@@ -243,7 +243,8 @@ async fn iss_13_case_and_the_way_a_letter_is_written_do_not_matter_but_the_lette
 }
 
 /// Letters that NFC joins, takes apart or leaves with a mark on them stay one word in the index
-/// and are found by the same words on both databases: the tokenizer of SQLite (`ascii`) and `simple` of PostgreSQL keep the stored word as it is (M5-F53).
+/// and are found by the same words on both databases: the tokenizer of SQLite (`ascii`) and the
+/// words split at spaces of PostgreSQL keep the stored word as it is (M5-F53).
 #[tokio::test]
 async fn iss_13_letters_that_nfc_joins_or_leaves_marked_are_found_alike_on_both_databases()
 -> TestResult {
