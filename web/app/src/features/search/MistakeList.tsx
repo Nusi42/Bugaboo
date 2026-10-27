@@ -1,6 +1,7 @@
-import { textByKey } from "@bugaboo/messages";
 import { part, partOf } from "@bugaboo/ui";
 import type { Mistake } from "@bugaboo/wasm-search";
+
+import { mistakeText } from "./mistake-text.ts";
 
 export interface MistakeListProps {
   /** The ID of the list, which the box names with `aria-describedby`. */
@@ -26,7 +27,7 @@ export function MistakeList({ id, mistakes }: MistakeListProps) {
     <ul {...partOf(part.searchMistakes)} id={id}>
       {mistakes.map((mistake) => (
         <li key={mistakeKey(mistake)} {...partOf(part.searchMistake)}>
-          {textByKey(mistake.key, mistake.args)}
+          {mistakeText(mistake)}
         </li>
       ))}
     </ul>
