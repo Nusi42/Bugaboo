@@ -171,3 +171,40 @@ async fn sec_05_a_group_of_a_project_or_a_person_the_reader_may_not_see_is_not_t
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_05_a_person_shown_only_by_role_gets_a_group_without_a_filter_and_is_never_named()
+-> TestResult {
+    each_database("search_group_role_only", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bob, _) = site
+            .person_called(StartingRole::TeamMember, "bob", "Bob Builder")
+            .await?;
+        create_in(&mut bob, &site, &site.acme, site.new_issue("By Bob")).await?;
+        let (mut cora, _) = site
+            .person_called(StartingRole::TeamMember, "cora", "Cora Hidden")
+            .await?;
+        // The team members see people who reported issues by role only.
+        site.show_people(
+            &mut ada,
+            StartingRole::TeamMember,
+            "reported-by",
+            "role-only",
+        )
+        .await?;
+        let groups = cora
+            .send("GET", &format!("{GROUPS}?by=reportedBy"), None)
+            .await?;
+        let body = ok(&groups)?;
+        assert!(!body.to_string().contains("Bob Builder"), "{body}");
+        let listed = body["groups"].as_array().ok_or("no groups")?;
+        assert!(!listed.is_empty());
+        assert!(
+            listed.iter().all(|group| group["filter"].is_null()),
+            "{body}"
+        );
+        Ok(())
+    })
+    .await
+}

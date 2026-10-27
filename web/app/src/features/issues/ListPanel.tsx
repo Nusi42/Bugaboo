@@ -1,3 +1,4 @@
+import { isDrawnColumn } from "../../shared/list-columns.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import type { SearchFieldsAnswer } from "../search/index.ts";
 import { ColumnsPanel } from "./ColumnsPanel.tsx";
@@ -12,13 +13,13 @@ export interface ListPanelProps {
 
 /** Customize, then Columns: the fields the person may read, in the order the server lists them. */
 export function ListPanel({ view, fields, defaults, onView, onClose }: ListPanelProps) {
+  const kinds = new Map(fields.fields.fields.map((field) => [field.word, field.kind]));
   return (
     <ColumnsPanel
       columns={view.columns}
-      readable={Object.keys(fields.names).map((word) => ({
-        word,
-        name: fields.names[word] ?? word,
-      }))}
+      readable={Object.keys(fields.names)
+        .filter((word) => isDrawnColumn(word, kinds.get(word)))
+        .map((word) => ({ word, name: fields.names[word] ?? word }))}
       onReset={() => {
         onView({ ...view, columns: defaults.columns, widths: defaults.widths });
       }}

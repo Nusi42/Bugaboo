@@ -85,3 +85,17 @@ export function moveColumn(
   moved.splice(to, 0, column);
   return moved;
 }
+
+/** The kinds of field whose value an issue carries only as an ID: no cell shows them yet (M5-F84). */
+const kindsOfIds: ReadonlySet<string> = new Set(["person", "project", "issue"]);
+
+/**
+ * Whether a column can be drawn: the field is one the person may read, and it is not a field of the
+ * organization whose value is an ID (person, people, issue, group, project), which the list cannot
+ * name yet. The fields with a cell of their own (*Assigned to*, *Project*) are fine. A column
+ * that cannot be drawn is left out quietly, wherever it was named: the address, a saved search or
+ * *Customize*.
+ */
+export function isDrawnColumn(word: string, kind?: string): boolean {
+  return kind !== undefined && (cellOf(word) !== "value" || !kindsOfIds.has(kind));
+}

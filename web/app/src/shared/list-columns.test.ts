@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { cellOf, chooseColumns, moveColumn, projectColumns } from "./list-columns.ts";
+import {
+  cellOf,
+  chooseColumns,
+  isDrawnColumn,
+  moveColumn,
+  projectColumns,
+} from "./list-columns.ts";
 
 const readable = ["title", "status", "priority", "labels", "plannedFor"];
 
@@ -45,5 +51,20 @@ describe("the columns a person chooses in Customize", () => {
     expect(moveColumn(projectColumns, "type", "up").slice(0, 3)).toEqual(["status", "type", "id"]);
     expect(moveColumn(projectColumns, "status", "up")).toEqual(projectColumns);
     expect(moveColumn(projectColumns, "changed", "down")).toEqual(projectColumns);
+  });
+});
+
+describe("the columns that can be drawn", () => {
+  it("leaves out a field of the organization that holds an ID, and one that is not readable", () => {
+    expect(isDrawnColumn("reviewer", "person")).toBe(false);
+    expect(isDrawnColumn("relatedIssue", "issue")).toBe(false);
+    expect(isDrawnColumn("secret")).toBe(false);
+  });
+
+  it("keeps the fields that have a cell of their own and the plain values", () => {
+    expect(isDrawnColumn("assignedTo", "person")).toBe(true);
+    expect(isDrawnColumn("project", "project")).toBe(true);
+    expect(isDrawnColumn("plannedFor", "choice")).toBe(true);
+    expect(isDrawnColumn("estimate", "duration")).toBe(true);
   });
 });
