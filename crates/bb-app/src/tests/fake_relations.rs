@@ -415,7 +415,7 @@ impl TextIndexStore for FakeStore {
         Ok(())
     }
 
-    async fn rebuild_text_index(&self) -> Result<u64, FakeError> {
+    async fn rebuild_text_index(&self, _now: Timestamp) -> Result<u64, FakeError> {
         Ok(0)
     }
 

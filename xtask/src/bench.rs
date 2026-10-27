@@ -21,7 +21,7 @@ use serde_json::{Value, json};
 
 use crate::bench_budgets::{BUDGETS_PATH, Budgets, Measured, over};
 use crate::dataset::{in_folder, load_layout};
-use crate::dataset_large::dataset_folder;
+use crate::dataset_large::{dataset_folder, index_is_current, mark_index_current};
 use crate::db;
 use crate::output;
 use crate::repo::Repo;
@@ -45,21 +45,12 @@ pub(crate) fn today() -> String {
     Timestamp::now().to_zoned(TimeZone::UTC).date().to_string()
 }
 
-/// The marker that the index of the text search was built for a dataset: the dataset writes its
-/// issues without the outbox, so the index is built once from the stored texts before the first run.
-/// It holds the number of the migration that last changed the rule that prepares a text
-/// (`RULE_MIGRATION`); an index built under an older rule is built again.
-const INDEX_BUILT: &str = "text-index.built";
-
-/// Builds the index of the text search of the dataset once (`bugaboo search-index rebuild`).
+/// Builds the index of the text search of a dataset whose marker is older than the rule that
+/// prepares a text (`bugaboo search-index rebuild`; see `dataset_large`). A dataset made by
+/// `dataset large` has it and its marker already. The program does not migrate: a dataset made for
+/// an older schema is refused with a sentence that says so, and made again by `dataset large`.
 fn ensure_text_index(server: &Path, folder: &Path, url: Option<&str>) -> anyhow::Result<bool> {
-    let marker = folder.join(INDEX_BUILT);
-    let current = bb_core::text_index::RULE_MIGRATION;
-    let built_under = fs::read_to_string(&marker)
-        .ok()
-        .and_then(|text| text.trim().parse::<i64>().ok())
-        .unwrap_or(0);
-    if built_under >= current {
+    if index_is_current(folder) {
         return Ok(true);
     }
     let mut command = Command::new(server);
@@ -75,7 +66,7 @@ fn ensure_text_index(server: &Path, folder: &Path, url: Option<&str>) -> anyhow:
         .context("could not start the server program to build the text index")?
         .success();
     if built {
-        fs::write(&marker, current.to_string())?;
+        mark_index_current(folder)?;
     }
     Ok(built)
 }

@@ -14,6 +14,7 @@ use bb_core::id::{AttachmentId, CommentId, IdSource, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::FieldValue;
 use bb_core::security_log::Digest;
+use bb_core::text_index::{CONSUMER, REBUILD_WANTED};
 use bb_core::version::FIRST_VERSION;
 use bb_core::version::Version;
 use std::time::Duration;
@@ -22,6 +23,7 @@ use super::*;
 use crate::db::{Dialect, Transaction};
 use crate::schema::TextIndexRow;
 use crate::test_support::{at, definition, event, fixture, ids, world};
+use crate::text_index::adapter::move_reader_to;
 use crate::text_index::write::reindex_issues;
 use crate::{AuthStorage, StoreError};
 
@@ -181,6 +183,70 @@ async fn iss_13_a_word_too_long_for_the_index_does_not_stop_the_reader_or_a_sear
         ] {
             assert!(found(storage, typed, everywhere).await?.is_empty());
         }
+        Ok(())
+    })
+    .await
+}
+
+/// The rebuild takes the head of the outbox first and puts the reader there: a change written after
+/// it is read as an event, and one written before it is already in the rows.
+#[tokio::test]
+async fn iss_13_a_change_after_a_rebuild_is_read_by_the_reader() -> TestResult {
+    each_database("iss_13_change_after_rebuild", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 2).await;
+        let (first, second) = (world.issues[0].id, world.issues[1].id);
+        let before = comment(&mut source, first, "written before the rebuild");
+        changed_issue(storage, &mut source, first, move |tx| {
+            Box::pin(async move { AuthStorage::insert_comment(tx, &before).await })
+        })
+        .await?;
+        assert_eq!(storage.rebuild_text_index(at(5)).await?, 2);
+        let everywhere = TextScope::Everywhere;
+        assert_eq!(found(storage, "rebuild", everywhere).await?, [hit(1)]);
+        // The events up to the head are not read again.
+        assert_eq!(catch_up(storage, at(6)).await?, 0);
+
+        let after = comment(&mut source, second, "written after the rebuild");
+        changed_issue(storage, &mut source, second, move |tx| {
+            Box::pin(async move { AuthStorage::insert_comment(tx, &after).await })
+        })
+        .await?;
+        assert_eq!(catch_up(storage, at(7)).await?, 1);
+        assert_eq!(
+            found(storage, "rebuild", everywhere).await?,
+            [hit(2), hit(1)]
+        );
+        Ok(())
+    })
+    .await
+}
+
+/// The place of the reader only moves on: the mark goes, and a reader that has gone past the head
+/// by itself stays where it is.
+#[tokio::test]
+async fn iss_13_the_reader_is_put_at_the_head_only_forward() -> TestResult {
+    each_database("iss_13_reader_forward", async |db| {
+        let fixture = fixture(db).await?;
+        let database = fixture.storage.database();
+        let reader = crate::events::consumer_name(CONSUMER)?;
+        let position = async || database.outbox_position(&reader).await;
+
+        // A reader that never read anything gets a place.
+        move_reader_to(database, 5, at(1)).await?;
+        assert_eq!(position().await?, 5);
+        // The mark is cleared whatever the head is.
+        database.outbox_set(CONSUMER, REBUILD_WANTED, at(2)).await?;
+        move_reader_to(database, 5, at(3)).await?;
+        assert_eq!(position().await?, 5);
+        // A reader that moved on by itself is left alone, and one behind the head is moved.
+        database.outbox_set(CONSUMER, 8, at(4)).await?;
+        move_reader_to(database, 5, at(5)).await?;
+        assert_eq!(position().await?, 8);
+        move_reader_to(database, 11, at(6)).await?;
+        assert_eq!(position().await?, 11);
         Ok(())
     })
     .await
@@ -540,7 +606,7 @@ async fn iss_13_readers_at_the_same_moment_leave_the_index_as_the_stored_texts_s
             let (first, second, third) = tokio::join!(
                 catch_up(storage, at(20 + round)),
                 catch_up(storage, at(20 + round)),
-                storage.rebuild_text_index()
+                storage.rebuild_text_index(at(0))
             );
             // One of two writers may be refused by a rule of the database; the next round of the
             // reader makes it good, so only the end state counts.
@@ -573,7 +639,7 @@ async fn iss_13_readers_at_the_same_moment_leave_the_index_as_the_stored_texts_s
             }
             let (first, second) = tokio::join!(
                 catch_up(storage, at(40 + round)),
-                storage.rebuild_text_index()
+                storage.rebuild_text_index(at(0))
             );
             let _ = (first, second);
             catch_up(storage, at(50 + round)).await?;
@@ -663,7 +729,7 @@ async fn iss_13_a_rebuild_makes_the_index_from_the_stored_texts() -> TestResult 
         // Nothing was ever indexed (a database from before the index): the rebuild reads
         // every issue, and the title of each is found.
         assert!(rows(storage).await?.is_empty());
-        assert_eq!(storage.rebuild_text_index().await?, 3);
+        assert_eq!(storage.rebuild_text_index(at(0)).await?, 3);
         assert_eq!(
             found(storage, "issue", TextScope::Everywhere).await?.len(),
             world.issues.len()

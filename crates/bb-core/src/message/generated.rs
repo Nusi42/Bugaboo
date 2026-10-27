@@ -3787,6 +3787,9 @@ pub const SAVE_SAVED: MessageKey = MessageKey::new("save.saved");
 /// The message `save.saving`.
 pub const SAVE_SAVING: MessageKey = MessageKey::new("save.saving");
 
+/// The message `search-index.data-older`.
+pub const SEARCH_INDEX_DATA_OLDER: MessageKey = MessageKey::new("search-index.data-older");
+
 /// The message `search-index.opened-address`.
 pub const SEARCH_INDEX_OPENED_ADDRESS: MessageKey = MessageKey::new("search-index.opened-address");
 
@@ -13258,6 +13261,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("save.saved", "Saved"),
     ("save.saved-at", "Saved · {time}"),
     ("save.saving", "Saving…"),
+    (
+        "search-index.data-older",
+        "The data in this installation is older than this program. Start the server once: it brings the data up to date and builds the index again by itself. Then run this command again if you still need it.",
+    ),
     (
         "search-index.opened-address",
         "Opened the database that the settings name by an address (the address is not shown; it can hold a password).",
