@@ -56,8 +56,9 @@ export function resultByKey(
 
 /**
  * How long a source may take before it counts as failed. The server gives up on a search after 2
- * seconds (M5-Q10, `search.too-slow`), and a request that has not been answered after four times
- * that has lost its connection; the list must not stay busy for good because of it.
+ * seconds (M5-Q10, `search.too-slow`); four times that also covers the first load of the search
+ * language module, and a request that has not been answered after it has lost its connection. The
+ * list must not stay busy for good because of it.
  */
 export const sourceTimeoutMs = 8000;
 
