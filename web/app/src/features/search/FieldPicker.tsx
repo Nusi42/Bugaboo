@@ -3,7 +3,7 @@ import { Button, buttonLook, PickerRow, SearchPicker } from "@bugaboo/ui";
 import type { Field, ReadableFields } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
-import { useFieldName, type FieldNameOf } from "./field-names.ts";
+import { useFieldName, type FieldNameOf } from "./field-name-context.ts";
 
 export interface FieldPickerProps {
   readonly fields: ReadableFields;

@@ -4,7 +4,7 @@ import type { ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 import type { ReactNode } from "react";
 
 import { AdvancedSearch } from "./AdvancedSearch.tsx";
-import { FieldNames } from "./field-names.ts";
+import { FieldNames } from "./field-name-context.ts";
 import { HelpButton } from "./HelpButton.tsx";
 import { SimpleSearch } from "./SimpleSearch.tsx";
 import { barMode, type SearchBarState } from "./use-search-bar.ts";

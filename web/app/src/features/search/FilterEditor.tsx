@@ -4,7 +4,7 @@ import type { Expr, Field, ReadableFields, SearchLanguage } from "@bugaboo/wasm-
 import { useState } from "react";
 
 import { draftOf, filterOf, type Draft } from "./filter-draft.ts";
-import { useFieldName } from "./field-names.ts";
+import { useFieldName } from "./field-name-context.ts";
 import { operatorLabel } from "./operator-words.ts";
 import { nowhere, type FieldFilter } from "../../shared/search-tree.ts";
 import { OperatorInputs } from "./OperatorInputs.tsx";

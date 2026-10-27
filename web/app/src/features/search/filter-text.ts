@@ -20,7 +20,7 @@ import { formatCalendarDay } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
 import { durationText } from "../../shared/own-value-text.ts";
 import type { FieldTest } from "../../shared/search-tree.ts";
-import type { FieldNameOf } from "./field-names.ts";
+import type { FieldNameOf } from "./field-name-context.ts";
 
 /** The number a decimal stands for, with its digits after the point. */
 export function decimalText({ value, scale }: Decimal): string {

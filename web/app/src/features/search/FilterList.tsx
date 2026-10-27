@@ -4,7 +4,7 @@ import type { Expr, Field, ReadableFields, SearchLanguage } from "@bugaboo/wasm-
 
 import { AddFilter } from "./AddFilter.tsx";
 import { FilterButton } from "./FilterButton.tsx";
-import { useFieldName } from "./field-names.ts";
+import { useFieldName } from "./field-name-context.ts";
 import { filterLabel, sourceOf } from "./filter-text.ts";
 
 export interface FilterListProps {
