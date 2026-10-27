@@ -103,10 +103,9 @@ fn listed_tables(schema: &str) -> Vec<ListedTable> {
 /// variants, which are its columns.
 fn table_enums(schema: &str) -> Vec<(String, Vec<String>)> {
     let schema = strip_comments(schema);
-    let before_macro = schema.split("macro_rules!").next().unwrap_or(&schema);
     let mut enums = Vec::new();
     let mut current: Option<(String, Vec<String>, bool)> = None;
-    for line in before_macro.lines() {
+    for line in schema.lines() {
         let line = line.trim();
         if let Some(rest) = line.strip_prefix("pub(crate) enum ") {
             let name = rest
@@ -564,6 +563,67 @@ pub struct DomainEvent {
             .map(|finding| finding.message)
             .collect();
         assert!(found.is_empty(), "{found:?}");
+    }
+
+    /// Findings for a schema whose enums are in a file beside the list, after the macro that
+    /// the list of `schema.rs` is made of.
+    fn findings_with_enums_apart(enums: &str, list: &str) -> String {
+        let entity = "#[derive(Entity)]
+pub struct DomainEvent {
+    #[not_personal]
+    pub id: u32,
+}
+";
+        let mut sources: Vec<Source> = vec![
+            (privacy::VOCABULARY_PATH.to_owned(), VOCABULARY.to_owned()),
+            (privacy::LIST_PATH.to_owned(), LIST_GOOD.to_owned()),
+            ("crates/bb-core/src/event.rs".to_owned(), entity.to_owned()),
+        ];
+        let model = privacy::read_model(&sources).unwrap();
+        sources.push((SCHEMA_PATH.to_owned(), list.to_owned()));
+        sources.push((format!("{SCHEMA_FOLDER}system.rs"), enums.to_owned()));
+        sources.push((
+            format!("{MIGRATIONS_FOLDER}/m0001.rs"),
+            MIGRATION_GOOD.to_owned(),
+        ));
+        evaluate_tables(&model, &sources)
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect::<Vec<_>>()
+            .join(
+                "
+",
+            )
+    }
+
+    #[test]
+    fn bad_example_the_columns_of_enums_in_a_file_beside_the_list_are_checked() {
+        let (enums, list) = SCHEMA_GOOD.split_at(SCHEMA_GOOD.find("macro_rules!").unwrap());
+        let uncovered = enums.replace(
+            "    Time,
+}",
+            "    Time,
+    Extra,
+}",
+        );
+        let all = findings_with_enums_apart(&uncovered, list);
+        assert!(
+            all.contains("The column `Event::Extra` is not covered"),
+            "{all}"
+        );
+        // A mapped column renamed to one the enum does not have.
+        let renamed = enums.replace(
+            "    Time,
+}",
+            "    Moment,
+}",
+        );
+        let all = findings_with_enums_apart(&renamed, list);
+        assert!(all.contains("names the column `Event::Time`"), "{all}");
+        assert!(
+            all.contains("The column `Event::Moment` is not covered"),
+            "{all}"
+        );
     }
 
     #[test]
