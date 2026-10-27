@@ -288,6 +288,22 @@ pub struct IssueCounter {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn qry_04_the_list_orders_hold_every_word_once() {
+        // `place_in` of the store falls back to the first place for a word it does not find, so a
+        // list order that left one out would put its group first.
+        let mut priorities = Priority::LIST_ORDER.to_vec();
+        priorities.sort();
+        let mut all = Priority::ALL.to_vec();
+        all.sort();
+        assert_eq!(priorities, all);
+        let mut groups = StatusGroup::LIST_ORDER.to_vec();
+        groups.sort();
+        let mut all = StatusGroup::ALL.to_vec();
+        all.sort();
+        assert_eq!(groups, all);
+    }
+
     use super::*;
 
     #[test]

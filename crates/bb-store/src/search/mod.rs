@@ -130,8 +130,9 @@ fn place_in<T: PartialEq>(all: &[T], one: &T) -> i64 {
         .unwrap_or(0)
 }
 
-/// The place of a group in the order: the group without a value last, the others by the bytes of
-/// their text or ID, or by the size of their number.
+/// The place of a group in the order: the group without a value last, a priority and a status group
+/// by the order of a list (`LIST_ORDER`, not the order that sorting and comparing use), the others
+/// by the bytes of their text or ID, or by the size of their number.
 fn group_order(group: &GroupCount) -> (bool, String, i64) {
     match &group.key {
         GroupKey::Empty => (true, String::new(), 0),

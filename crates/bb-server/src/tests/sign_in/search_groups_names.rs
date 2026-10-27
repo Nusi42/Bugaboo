@@ -205,3 +205,168 @@ async fn qry_04_over_the_cap_the_groups_are_cut_and_the_ones_without_a_value_sta
     })
     .await
 }
+
+/// The groups by `by` whose name is `name`.
+fn named<'a>(groups: &'a [Value], name: &str) -> Vec<&'a Value> {
+    groups
+        .iter()
+        .filter(|group| group["name"].as_str() == Some(name))
+        .collect()
+}
+
+#[tokio::test]
+async fn qry_04_two_labels_of_one_name_in_two_label_groups_have_no_filter() -> TestResult {
+    each_database("search_group_two_labels", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let mut labels = Vec::new();
+        for group in ["Area", "Kind"] {
+            let made = ok(&ada
+                .send(
+                    "POST",
+                    "/api/v1/label-groups",
+                    Some(json!({"name": group, "pick_one": false})),
+                )
+                .await?)?
+            .clone();
+            let label = ok(&ada
+                .send(
+                    "POST",
+                    LABELS,
+                    Some(json!({"name": "Urgent", "label_group": id_in(&made)?})),
+                )
+                .await?)?
+            .clone();
+            labels.push(id_in(&label)?);
+        }
+        for (at, label) in labels.iter().enumerate() {
+            let key = key_of(&site.create(&mut ada, &format!("Issue {at}")).await?)?;
+            ok(&ada
+                .send(
+                    "POST",
+                    &format!("{ISSUES}/{key}/labels"),
+                    Some(json!({"label": label})),
+                )
+                .await?)?;
+        }
+        let groups = groups_of(&mut ada, "labels").await?;
+        let urgent = named(&groups, "Urgent");
+        assert_eq!(urgent.len(), 2, "{groups:?}");
+        assert!(urgent.iter().all(|group| group["filter"].is_null()));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_04_two_types_of_one_name_in_sibling_projects_have_no_filter() -> TestResult {
+    each_database("search_group_two_types", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ok(&ada
+            .send(
+                "POST",
+                PROJECTS,
+                Some(json!({"short_name": "BETA", "name": "Beta"})),
+            )
+            .await?)?;
+        for project in [site.acme.as_str(), "BETA"] {
+            let made = ok(&ada
+                .send(
+                    "POST",
+                    "/api/v1/issue-types",
+                    Some(json!({"name": "Question", "icon": "star", "project": project})),
+                )
+                .await?)?
+            .clone();
+            let body = json!({"issue_type": id_in(&made)?, "title": "Asked"});
+            create_in(&mut ada, project, body).await?;
+        }
+        let groups = groups_of(&mut ada, "type").await?;
+        let questions = named(&groups, "Question");
+        assert_eq!(questions.len(), 2, "{groups:?}");
+        assert!(questions.iter().all(|group| group["filter"].is_null()));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_04_a_group_of_people_field_has_a_filter_that_selects_its_issues() -> TestResult {
+    each_database("search_group_of_people", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let team = id_in(&field(&mut ada, "Team", "group", json!({})).await?)?;
+        for (at, name) in ["Core", "Edge"].into_iter().enumerate() {
+            let group = id_in(ok(&ada
+                .send("POST", "/api/v1/groups", Some(json!({"name": name})))
+                .await?)?)?;
+            let mut body = site.new_issue(&format!("Issue {at}"));
+            body["fields"] = json!({&team: group});
+            create_in(&mut ada, &site.acme, body).await?;
+        }
+        create_in(&mut ada, &site.acme, site.new_issue("Alone")).await?;
+        let found = every_group_selects_its_issues(&mut ada, "team", "").await?;
+        assert_eq!(found, 3);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_04_a_person_with_a_quote_in_the_name_is_found_by_the_filter_of_their_group()
+-> TestResult {
+    each_database("search_group_quoted_name", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut ana, _) = site
+            .person_called(StartingRole::TeamMember, "ana", "Ana \"Bell\" O'Neil")
+            .await?;
+        create_in(&mut ana, &site.acme, site.new_issue("By Ana")).await?;
+        let found = every_group_selects_its_issues(&mut ada, "reportedBy", "").await?;
+        assert_eq!(found, 1);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_04_a_renamed_project_and_a_renamed_type_give_their_new_names() -> TestResult {
+    each_database("search_group_renames", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let made = ok(&ada
+            .send(
+                "POST",
+                "/api/v1/issue-types",
+                Some(json!({"name": "Query", "icon": "star", "project": site.acme})),
+            )
+            .await?)?
+        .clone();
+        let body = json!({"issue_type": id_in(&made)?, "title": "Asked"});
+        create_in(&mut ada, &site.acme, body).await?;
+        ok(&ada
+            .send(
+                "PATCH",
+                &format!("/api/v1/issue-types/{}", id_in(&made)?),
+                Some(json!({"version": made["version"], "name": "Ask"})),
+            )
+            .await?)?;
+        ok(&ada
+            .send(
+                "PATCH",
+                &format!("{PROJECTS}/{}", site.acme),
+                Some(json!({"version": 1, "short_name": "ASKME", "name": "Ask me"})),
+            )
+            .await?)?;
+        for (by, name) in [("type", "Ask"), ("project", "ASKME")] {
+            let groups = groups_of(&mut ada, by).await?;
+            let found = named(&groups, name);
+            assert_eq!(found.len(), 1, "{by}: {groups:?}");
+            assert!(found[0]["filter"].is_string(), "{by}: {groups:?}");
+        }
+        every_group_selects_its_issues(&mut ada, "type", "").await?;
+        Ok(())
+    })
+    .await
+}
