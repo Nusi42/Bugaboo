@@ -121,3 +121,15 @@ export async function holdBackSearches(page: Page): Promise<() => void> {
   });
   return release;
 }
+
+/** The box names the result that has the focus of the list: it is the first option, with its id. */
+export async function expectBoxPointsAtFirst(page: Page): Promise<void> {
+  const first = list(page).getByRole("option").first();
+  await expect
+    .poll(
+      async () =>
+        (await box(page).getAttribute("aria-activedescendant")) ===
+        (await first.getAttribute("id")),
+    )
+    .toBe(true);
+}

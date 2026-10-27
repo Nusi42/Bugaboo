@@ -1,5 +1,4 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
 
 import { issueAddress } from "../src/shared/paths.ts";
 import { ada, bob } from "./support/accounts.ts";
@@ -174,84 +173,6 @@ test("cfg_08_typing_counts_one_search_per_pause", async ({ page }) => {
   await expect(result(page, titles.login)).toBeVisible();
   await page.waitForTimeout(1000);
   expect(searches()).toBe(2);
-});
-
-/** The box names the result that has the focus of the list: it is the first option, with its id. */
-async function expectBoxPointsAtFirst(page: Page): Promise<void> {
-  const first = list(page).getByRole("option").first();
-  await expect
-    .poll(
-      async () =>
-        (await box(page).getAttribute("aria-activedescendant")) ===
-        (await first.getAttribute("id")),
-    )
-    .toBe(true);
-}
-
-test("cfg_08 the box points at the first result, and Enter opens the top one", async ({ page }) => {
-  await signIn(page, ada);
-  await ask(page, "login");
-  // Several results in several groups: the saved search is on top, then the two issues.
-  await expect(list(page).getByRole("option")).toHaveCount(3);
-  await expect(result(page, titles.secret)).toBeVisible();
-  await expect(list(page).getByRole("option").first()).toContainText(savedSearchName);
-  await expectBoxPointsAtFirst(page);
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/s\/[^/]+$/u);
-  await expect(dialog(page)).toHaveCount(0);
-});
-
-test("cfg_08 the box keeps pointing at the first result when a later group lands on top", async ({
-  page,
-}) => {
-  await signIn(page, ada);
-  const answer = await holdBackSearches(page);
-  // The pages answer at once; the issues, for a text that looks like an ID, come first when they land.
-  await ask(page, "sign-in");
-  await expect(list(page).getByRole("option").first()).toContainText(/sign-in/iu);
-  await expectBoxPointsAtFirst(page);
-  answer();
-  await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
-  await expectBoxPointsAtFirst(page);
-});
-
-test("cfg_08 End goes to the last result and Enter opens it", async ({ page }) => {
-  await signIn(page, ada);
-  await ask(page, "login");
-  await expect(list(page).getByRole("option")).toHaveCount(3);
-  await expectBoxPointsAtFirst(page);
-  await page.keyboard.press("End");
-  await expect(list(page).locator("[data-focused='true']")).toContainText("WEB-1");
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(addressEndingAt(issueAddress("WEB-1")));
-});
-
-test("cfg_08 an arrow key goes on from the first result and the focus stays where it is put", async ({
-  page,
-}) => {
-  await signIn(page, ada);
-  await ask(page, "login");
-  await expect(list(page).getByRole("option")).toHaveCount(3);
-  await expectBoxPointsAtFirst(page);
-  const focused = list(page).locator("[data-focused='true']");
-  await page.keyboard.press("ArrowDown");
-  await expect(focused).toContainText("SECRET-1");
-  await page.keyboard.press("ArrowDown");
-  await expect(focused).toContainText("WEB-1");
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(addressEndingAt(issueAddress("WEB-1")));
-});
-
-test("cfg_08 Enter on the Close button closes the dialog and opens nothing", async ({ page }) => {
-  await signIn(page, ada);
-  await ask(page, "login");
-  await expect(list(page).getByRole("option")).toHaveCount(3);
-  await dialog(page)
-    .getByRole("button", { name: t("common.close") })
-    .focus();
-  await page.keyboard.press("Enter");
-  await expect(dialog(page)).toHaveCount(0);
-  await expect(page).toHaveURL(addressEndingAt("/"));
 });
 
 test("cfg_08 pictures of quick search in the four themes", async ({ page }) => {
