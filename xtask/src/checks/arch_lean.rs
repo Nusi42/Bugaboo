@@ -630,29 +630,16 @@ mod tests {
         assert!(found.contains("matches no list"), "{found}");
     }
 
+    /// The names that make a schema a reference besides `Ref`: the label of a project that may be
+    /// hidden, and a label as a list item shows it.
     #[test]
-    fn good_example_a_label_of_a_project_is_a_reference_too() {
-        let text = std::fs::read_to_string(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../tools/checks/fixtures/ARCH-LEAN/good/references-by-id.json"),
-        )
-        .unwrap();
-        let spec: Value =
-            serde_json::from_str(&text.replace("PersonRef", "ProjectLabelBody")).unwrap();
-        let found = messages(&spec, &[]);
-        assert!(found.is_empty(), "{found:?}");
-    }
-
-    #[test]
-    fn good_example_a_ref_body_is_a_reference() {
-        let text = std::fs::read_to_string(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../tools/checks/fixtures/ARCH-LEAN/good/references-by-id.json"),
-        )
-        .unwrap();
-        let spec: Value = serde_json::from_str(&text.replace("PersonRef", "LabelRefBody")).unwrap();
-        let found = messages(&spec, &[]);
-        assert!(found.is_empty(), "{found:?}");
+    fn good_example_a_label_reference_is_a_reference_too() {
+        let fixture = fixture("good", "references-by-id.json").to_string();
+        for name in ["ProjectLabelBody", "LabelRefBody"] {
+            let spec: Value = serde_json::from_str(&fixture.replace("PersonRef", name)).unwrap();
+            let found = messages(&spec, &[]);
+            assert!(found.is_empty(), "{name}: {found:?}");
+        }
     }
 
     #[test]
