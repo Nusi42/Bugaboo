@@ -5,16 +5,16 @@ import { startSearchLanguage } from "@bugaboo/wasm-search/testing";
 import { describe, expect, it } from "vitest";
 
 import type { ReadableFields } from "@bugaboo/wasm-search";
-import { titleSearchText } from "../app/src/shared/title-search.ts";
+import { titleSearchText, titleWord } from "../app/src/shared/title-search.ts";
 
 const language = startSearchLanguage(() => readFileSync(moduleLocation));
 
 /** What every person may read: the title, as a text. */
 const readable: ReadableFields = {
-  fields: [{ word: "title", kind: "text", operators: ["contains"], choices: [] }],
+  fields: [{ word: titleWord, kind: "text", operators: ["contains"], choices: [] }],
 };
 
-describe("cfg_08 the search of quick search for words of a title", () => {
+describe("cfg_08 the search of Quick search and of the Issue finder for words of a title", () => {
   it("is written by the search language, as a title search that reads back without mistakes", () => {
     const text = titleSearchText(language, "login page");
     expect(text).toBe('title contains "login page*"');
