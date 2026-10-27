@@ -12,14 +12,17 @@ use serde_json::{Value, json};
 use super::exit_masks::{issue_of_type, person_with_levels};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in, version_of};
-use super::perf_queries::{Counter, assert_as_many_statements, five_and_forty};
+use super::perf_queries::{Counter, LIST_AT_MOST, assert_as_many_statements, five_and_forty};
 
 const LABELS: &str = "/api/v1/labels";
 const SEARCH: &str = "/api/v1/search/issues";
 
-/// The most statements a page of a list or a search with labels may run: the 58 of a page without
-/// them, and the two reads of the labels (the links of the page and the catalogue).
-const AT_MOST: usize = 60;
+/// The reads the labels cost a page: the links of the page and the catalogue.
+const LABEL_READS: usize = 2;
+
+/// The most statements a page of a list or a search with labels may run: those of a page without
+/// them, and the reads of the labels.
+const AT_MOST: usize = LIST_AT_MOST + LABEL_READS;
 
 /// Makes a label and returns its ID.
 async fn label(browser: &mut Browser, name: &str) -> Result<String, Failure> {
@@ -72,7 +75,10 @@ async fn cfg_02_the_list_and_the_search_carry_the_labels_when_asked_for() -> Tes
         );
         let urgent = label(&mut ada, "urgent").await?;
         let crash = label(&mut ada, "crash").await?;
+        // In this order, a moment apart; the order of the answer is the order they were put on, not
+        // that of the names or of the IDs.
         put(&mut ada, &first, &urgent).await?;
+        rig.clock.advance(1);
         put(&mut ada, &first, &crash).await?;
         for path in [
             format!("{PROJECTS}/{}/issues?fields=readable_id,labels", site.acme),
@@ -86,11 +92,13 @@ async fn cfg_02_the_list_and_the_search_carry_the_labels_when_asked_for() -> Tes
                     .find(|item| item["readable_id"] == key)
                     .map(label_names)
             };
-            // Both labels, in a fixed order (labels put on in the same moment come in the order
-            // of their IDs); an issue without labels has an empty list.
-            let mut both = of(&first).ok_or("no first issue")?;
-            both.sort();
-            assert_eq!(both, ["crash", "urgent"], "{path}");
+            // Both labels, in the order they were put on; an issue without labels has an empty
+            // list.
+            assert_eq!(
+                of(&first),
+                Some(vec!["urgent".to_owned(), "crash".to_owned()]),
+                "{path}"
+            );
             assert_eq!(of(&second), Some(Vec::new()), "{path}");
         }
         // Not asked for, not in the answer.
@@ -190,7 +198,7 @@ async fn perf_05_a_page_of_forty_issues_with_labels_runs_as_many_statements_as_a
         let search = |limit: u32| format!("{SEARCH}?limit={limit}&fields=readable_id,labels");
         let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, search).await?;
         assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page of a search");
-        // The labels cost the page two statements, and nothing when they are not asked for.
+        // The labels cost the page their reads, and nothing when they are not asked for.
         let mut counter = Counter::on(&rig.database);
         let with = format!("{SEARCH}?limit=5&fields=readable_id,labels");
         let without = format!("{SEARCH}?limit=5&fields=readable_id");
@@ -202,7 +210,7 @@ async fn perf_05_a_page_of_forty_issues_with_labels_runs_as_many_statements_as_a
         let not_asked = counter.take();
         assert_eq!(
             asked,
-            not_asked + 2,
+            not_asked + LABEL_READS,
             "the labels are read once for the page"
         );
         Ok(())
