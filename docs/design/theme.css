@@ -40,8 +40,8 @@
   --size-control: 36px;
   --size-control-small: 28px;
   --size-row: 44px;
-  --pad-nothing: var(--pad-box);
   --size-row-compact: 28px;
+  --pad-nothing: var(--pad-box);
   --size-list-scroll: 70dvh;
   --size-edge: 4px;
   --size-name: 112px;
@@ -87,6 +87,7 @@
   --size-icon: 20px;
   --size-icon-small: 16px;
   --size-list: 300px;
+  --size-list-main: 560px;
   --size-details: 340px;
   --gap-details: var(--space-5);
   --size-details-room: calc(var(--size-details) + var(--gap-details));

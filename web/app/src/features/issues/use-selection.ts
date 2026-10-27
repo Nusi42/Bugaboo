@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 /** The issues ticked in a list, by their IDs: what the bar for changing many at once (WP-08) acts on. */
 export interface IssueSelection {
@@ -14,19 +14,23 @@ export interface IssueSelection {
 /** The selection of a list. */
 export function useSelection(): IssueSelection {
   const [ids, setIds] = useState<readonly string[]>([]);
-  return {
-    ids,
-    has: (id) => ids.includes(id),
-    set: (id, selected) => {
-      setIds(
-        selected
-          ? [...ids.filter((known) => known !== id), id]
-          : ids.filter((known) => known !== id),
-      );
-    },
-    replace: setIds,
-    clear: () => {
-      setIds([]);
-    },
-  };
+  // The same object while the ticked issues are the same, so what is given it does not change on every draw.
+  return useMemo(
+    () => ({
+      ids,
+      has: (id: string) => ids.includes(id),
+      set: (id: string, selected: boolean) => {
+        setIds(
+          selected
+            ? [...ids.filter((known) => known !== id), id]
+            : ids.filter((known) => known !== id),
+        );
+      },
+      replace: setIds,
+      clear: () => {
+        setIds([]);
+      },
+    }),
+    [ids],
+  );
 }

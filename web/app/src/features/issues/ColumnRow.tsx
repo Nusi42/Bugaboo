@@ -24,7 +24,7 @@ export function ColumnRow({ word, name, place, onTick, onMove }: ColumnRowProps)
         onChange={onTick}
       />
       {place === undefined ? null : (
-        <span>
+        <span {...partOf(part.row)}>
           <IconButton
             icon={iconName.up}
             label={t("issues.column-up", { column: name })}

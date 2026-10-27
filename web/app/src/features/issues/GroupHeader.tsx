@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Icon, iconName, iconSize, part, partOf, StatusIcon } from "@bugaboo/ui";
+import { Icon, iconName, iconSize, part, partOf, Priority, StatusIcon } from "@bugaboo/ui";
 import { GridListItem } from "react-aria-components";
 
+import { formatNumber } from "../../shared/format.ts";
 import type { GroupOfKey } from "./group-keys.ts";
 
 /** What a group is called in its header. */
@@ -50,8 +51,15 @@ export function GroupHeader({ group, count, open, onToggle, note }: GroupHeaderP
         {group.statusGroup === undefined ? null : (
           <StatusIcon group={group.statusGroup} size={iconSize.small} />
         )}
+        {group.priority === undefined ? null : (
+          <Priority
+            priority={group.priority}
+            label={t(`priority.${group.priority}`)}
+            showWord={false}
+          />
+        )}
         <span {...partOf(part.listGroupName)}>{name}</span>
-        <span {...partOf(part.listGroupCount)}>{count}</span>
+        <span {...partOf(part.listGroupCount)}>{formatNumber(count)}</span>
         {note === undefined ? null : <span {...partOf(part.listGroupNote)}>{note}</span>}
       </span>
     </GridListItem>

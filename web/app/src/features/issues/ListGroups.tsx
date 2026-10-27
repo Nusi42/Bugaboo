@@ -26,7 +26,7 @@ export function GroupedList({ spacing }: GroupedListProps) {
   }
   return (
     <>
-      <ListScroll spacing={spacing}>
+      <ListScroll spacing={spacing} busy={groups.isFetching}>
         {(groups.data?.groups ?? []).map((each, at) => {
           const group = groupOfKey(each, at, groupBy === null ? undefined : own[groupBy]);
           return <GroupSection key={group.id} group={group} count={each.issues} />;

@@ -7,6 +7,8 @@ import type { SearchSpacing } from "../../shared/search-address.ts";
 
 export interface ListScrollProps {
   readonly spacing: SearchSpacing;
+  /** The list is being read again: a screen reader is told it is busy. */
+  readonly busy: boolean;
   readonly children: ReactNode;
 }
 
@@ -18,12 +20,13 @@ const keepsHeadersOutOfTheSelection = { disabledBehavior: "selection" } as const
  * real rows as they appear, so the height asked for here only makes the first guess of the scroll
  * bar a little off.
  */
-export function ListScroll({ spacing, children }: ListScrollProps) {
+export function ListScroll({ spacing, busy, children }: ListScrollProps) {
   const guess = pixelsOf(spacing === "compact" ? "size-row-compact" : "size-row");
   return (
     <Virtualizer layout={ListLayout} layoutOptions={{ estimatedRowSize: guess }}>
       <GridList
         aria-label={t("issues.list")}
+        aria-busy={busy}
         {...keepsHeadersOutOfTheSelection}
         {...partOf(part.listScroll)}
       >

@@ -1239,7 +1239,7 @@ body {
 
 [data-part="list-main"] {
   display: flex;
-  flex: 1 1 var(--size-main);
+  flex: 1 1 var(--size-list-main);
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
@@ -1294,10 +1294,6 @@ body {
   max-height: var(--size-list-scroll);
   overflow: auto;
   border-bottom: var(--border-width) solid var(--border-subtle);
-}
-
-[data-part="list-scroll"][data-state~="hidden"] {
-  display: none;
 }
 
 [data-part="list-head"] {

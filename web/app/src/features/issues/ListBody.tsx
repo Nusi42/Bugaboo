@@ -30,7 +30,7 @@ export function PlainList({ spacing }: PlainListProps) {
     return <ListEmpty />;
   }
   return (
-    <ListScroll spacing={spacing}>
+    <ListScroll spacing={spacing} busy={found.isFetching && !found.isFetchingNextPage}>
       <RowsOf
         group={noGroup}
         lines={lines}

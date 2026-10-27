@@ -1,5 +1,6 @@
 import { ApiError, dataOf, type Schema } from "@bugaboo/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
 
 import { api } from "../../shared/api.ts";
 import { listWord } from "../../shared/list-columns.ts";
@@ -142,6 +143,9 @@ function queryOf({ text, within }: FoundSearch) {
 /** The issues a search finds, a page at a time, with what the columns show. */
 export function useFoundIssues(search: FoundSearch, columns: readonly string[], enabled = true) {
   const fields = fieldsFor(columns);
+  // Once the server refused the fields of the columns for this search, its next pages ask for the fallback at once.
+  const refused = useRef<string | null>(null);
+  const searchKey = `${search.text}|${search.within ?? ""}|${fields}`;
   const page = (asked: string) => (after: { readonly cursor?: string }) =>
     api.client.GET("/api/v1/search/issues", {
       params: {
@@ -152,10 +156,14 @@ export function useFoundIssues(search: FoundSearch, columns: readonly string[], 
     {
       queryKey: queryKeys.search.found(search.text, search.within, fields),
       read: async (after) => {
+        if (refused.current === searchKey) {
+          return page(FALLBACK_FIELDS)(after);
+        }
         try {
           return await page(fields)(after);
         } catch (error) {
           if (error instanceof ApiError && error.problem?.code === "request.unknown-field") {
+            refused.current = searchKey;
             return page(FALLBACK_FIELDS)(after);
           }
           throw error;

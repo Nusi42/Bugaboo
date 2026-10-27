@@ -102,7 +102,8 @@ describe("qry_01 a filter is added through the parser and printer", () => {
     );
   });
 
-  it("returns a text that does not parse as it was", () => {
-    expect(withGroupFilter(language, "status is", "status is Open")).toBe("status is");
+  it("gives no search where the text does not parse, never the whole list in place of the group", () => {
+    expect(withGroupFilter(language, "status is", "status is Open")).toBeUndefined();
+    expect(withGroupFilter(language, "", "status is")).toBeUndefined();
   });
 });

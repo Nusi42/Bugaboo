@@ -5,13 +5,17 @@ import { addFilter, fieldFilter, filtersOf, nowhere, withFilters } from "./searc
 /**
  * The search text with the filter of a group added: the group says it as text (`priority is high`,
  * written by the server with the printer of the language), and the module joins it to the search with
- * `and`, so the browser never builds a filter from an ID. A text that does not parse is returned as it
- * was.
+ * `and`, so the browser never builds a filter from an ID. Where the text or the filter does not parse
+ * there is no such search (and never the whole list in place of the group).
  */
-export function withGroupFilter(language: SearchLanguage, text: string, filter: string): string {
+export function withGroupFilter(
+  language: SearchLanguage,
+  text: string,
+  filter: string,
+): string | undefined {
   const [search, group] = [language.parse(text).search, language.parse(filter).search];
   if (search === null || group === null || group.filter === null) {
-    return text;
+    return undefined;
   }
   return language.print(withFilters(search, [...filtersOf(search), group.filter]));
 }

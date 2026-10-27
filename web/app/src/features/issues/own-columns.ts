@@ -1,10 +1,9 @@
-import { dataOf, type Schema } from "@bugaboo/api-client";
+import { type Schema } from "@bugaboo/api-client";
 import type { SearchLanguage } from "@bugaboo/wasm-search";
-import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 import { ownValueText } from "../../shared/own-value-text.ts";
-import { linesFrom, pageSize } from "../../shared/paged.ts";
+import { linesFrom, pageSize, useAllPages, usePaged } from "../../shared/paged.ts";
 import { known } from "../../shared/present.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
@@ -47,19 +46,20 @@ function ownColumnOf(language: SearchLanguage | undefined) {
  * by the ID of the field, and a column is named by the word of the search language.
  */
 export function useOwnColumns(language: SearchLanguage | undefined, needed: boolean) {
-  const fields = useQuery({
-    queryKey: queryKeys.fields.list({ limit: pageSize.largest }),
-    enabled: needed,
-    queryFn: async () =>
-      dataOf(
-        await api.client.GET("/api/v1/fields", { params: { query: { limit: pageSize.largest } } }),
-      ),
-  });
+  // Every page of the fields is read, so a column of a field past the first page is drawn too.
+  const fields = usePaged(
+    {
+      queryKey: queryKeys.fields.list({ limit: pageSize.largest }),
+      read: (after) =>
+        api.client.GET("/api/v1/fields", {
+          params: { query: { limit: pageSize.largest, ...after } },
+        }),
+    },
+    { enabled: needed },
+  );
+  useAllPages(fields);
   return Object.fromEntries(
-    linesFrom([fields.data ?? { items: [] }], ownColumnOf(language)).map(({ word, column }) => [
-      word,
-      column,
-    ]),
+    linesFrom(fields.data?.pages, ownColumnOf(language)).map(({ word, column }) => [word, column]),
   );
 }
 

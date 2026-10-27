@@ -18,9 +18,12 @@ const SavedSearchScreen = lazyRouteComponent(
   () => import("../features/search/index.ts"),
   "SavedSearchPage",
 );
-/** Loads the issue list under the search bar before the page is drawn, so it does not wait for the page. */
-const loadsResults = async (): Promise<void> => {
-  await import("../features/issues/index.ts");
+/**
+ * Starts loading the issue list under the search bar while the page itself is loaded (its loader),
+ * and does not wait for it: the page is not held back by the list, and the list does not wait for the page.
+ */
+const startsLoadingResults = (): void => {
+  void import("../features/issues/index.ts");
 };
 
 /** The issue list under the search bar of a page that has no project. */
@@ -34,7 +37,7 @@ export const searchRoute = createRoute({
   path: paths.search,
   validateSearch,
   loader: loadsScreen(SearchScreen),
-  beforeLoad: loadsResults,
+  beforeLoad: startsLoadingResults,
   component: function Search() {
     const state = useSearchState();
     const navigateTo = useSearchNavigation();
@@ -48,7 +51,7 @@ export const savedSearchRoute = createRoute({
   path: paths.savedSearch,
   validateSearch,
   loader: loadsScreen(SavedSearchScreen),
-  beforeLoad: loadsResults,
+  beforeLoad: startsLoadingResults,
   component: function SavedSearch() {
     const id = useAddressPart(routeParam.search);
     const state = useSearchState();

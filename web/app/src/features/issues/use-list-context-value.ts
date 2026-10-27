@@ -1,14 +1,12 @@
 import { useLayout } from "@bugaboo/ui";
-import type { SearchLanguage } from "@bugaboo/wasm-search";
+import { useMemo } from "react";
 
 import { isOwnField, phoneColumns } from "../../shared/list-columns.ts";
 import type { SearchState } from "../../shared/search-address.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import { useNow } from "../../shared/use-now.ts";
-import type { IssueShow } from "./issue-show.ts";
 import type { ListContextValue } from "./list-context.ts";
 import { useOwnColumns } from "./own-columns.ts";
-import type { IssueSelection } from "./use-selection.ts";
 
 /** What the context of a list is made of. */
 export interface ContextInput {
@@ -16,11 +14,11 @@ export interface ContextInput {
   readonly within: string | undefined;
   readonly project: string | undefined;
   readonly view: ListView;
-  readonly language: SearchLanguage;
-  readonly openIn: IssueShow;
+  readonly language: ListContextValue["language"];
+  readonly openIn: ListContextValue["openIn"];
   readonly state: SearchState | undefined;
   readonly open: string | undefined;
-  readonly selection: IssueSelection;
+  readonly selection: ListContextValue["selection"];
   readonly onClear: () => void;
   readonly report: ListContextValue["report"];
 }
@@ -33,21 +31,46 @@ export function useListContextValue(input: ContextInput): ListContextValue {
     input.language,
     view.columns.some(isOwnField) || (view.groupBy !== null && isOwnField(view.groupBy)),
   );
-  return {
-    words: phone ? phoneColumns : view.columns,
-    phone,
-    ticks: input.project !== undefined,
-    openIn: input.openIn,
-    state: input.state,
-    open: input.open,
-    selection: input.selection,
-    project: input.project,
-    now: useNow(),
-    own,
-    search: { text: input.text, within: input.within },
-    language: input.language,
-    groupBy: view.groupBy,
-    onClear: input.onClear,
-    report: input.report,
-  };
+  const now = useNow();
+  const { text, within, project, language, openIn, state, open, selection, onClear, report } =
+    input;
+  const columns = view.columns.join(",");
+  const { groupBy } = view;
+  // The same value while nothing it holds changed: every row and group reads it.
+  return useMemo(
+    () => ({
+      words: phone ? phoneColumns : columns.split(","),
+      phone,
+      ticks: project !== undefined,
+      openIn,
+      state,
+      open,
+      selection,
+      project,
+      now,
+      own,
+      search: { text, within },
+      language,
+      groupBy,
+      onClear,
+      report,
+    }),
+    [
+      phone,
+      columns,
+      groupBy,
+      project,
+      openIn,
+      state,
+      open,
+      selection,
+      now,
+      own,
+      text,
+      within,
+      language,
+      onClear,
+      report,
+    ],
+  );
 }

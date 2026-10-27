@@ -1,5 +1,5 @@
 import { useLayout, part, partOf } from "@bugaboo/ui";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { historyStep } from "../../shared/search-address.ts";
 import { ListContext } from "./list-context.ts";
@@ -16,13 +16,15 @@ export function LoadedResults(props: LoadedProps) {
   const [customizing, setCustomizing] = useState(false);
   const [dragged, setDragged] = useState<Readonly<Record<string, number>>>({});
   const shown = useListShown();
-  const context = useListContextValue({
-    ...props,
-    onClear: () => {
-      props.onText("", historyStep.push);
-    },
-    report: shown.report,
+  // The latest `onText`, so the function that clears the filters is the same on every draw.
+  const onText = useRef(props.onText);
+  useEffect(() => {
+    onText.current = props.onText;
   });
+  const onClear = useCallback(() => {
+    onText.current("", historyStep.push);
+  }, []);
+  const context = useListContextValue({ ...props, onClear, report: shown.report });
   return (
     <ListContext value={context}>
       <div {...partOf(part.listEditor)}>
