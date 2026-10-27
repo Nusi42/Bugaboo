@@ -8,6 +8,7 @@ import { ListInfo } from "./ListInfo.tsx";
 import { ListOptions } from "./ListOptions.tsx";
 import { ListResults } from "./ListResults.tsx";
 import type { LoadedProps } from "./results-props.ts";
+import { useRowKeys } from "./use-row-keys.ts";
 
 export interface ListMainProps {
   readonly props: LoadedProps;
@@ -33,13 +34,14 @@ export function ListMain({
 }: ListMainProps) {
   const { view, fields, onView, onText } = props;
   const { words, ticks, phone } = useListContext();
+  const rows = useRowKeys();
   const compact = view.spacing === "compact";
   const specs: readonly ListColumnSpec[] = [
     ...(ticks && !phone ? [selectSpec] : []),
     ...words.map((word) => ({ column: cellOf(word), width: dragged[word] ?? view.widths[word] })),
   ];
   return (
-    <div {...partOf(part.listEditorList)}>
+    <div ref={rows} {...partOf(part.listEditorList)}>
       <ListOptions
         view={view}
         fields={fields}
