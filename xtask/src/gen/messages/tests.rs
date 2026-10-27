@@ -132,6 +132,25 @@ fn a_key_that_no_code_names_is_on_the_first_page() {
 }
 
 #[test]
+fn the_mistakes_of_a_search_belong_to_the_search_and_not_to_the_first_page() {
+    let sources = [code(
+        "web/app/src/features/fields/A.tsx",
+        r#"t("fields.a")"#,
+    )];
+    let keys = [
+        "fields.a",
+        "search.mistake.expected-value",
+        "error.resource.not-found",
+    ];
+    let parts = parts_of(keys, &sources, &[]);
+    assert_eq!(parts["search.mistake.expected-value"], "search");
+    assert_eq!(parts["error.resource.not-found"], "shared");
+    // A word of an enum that makes the key puts it on the first page, as for every key.
+    let made = parts_of(keys, &sources, &["search.mistake.expected-value"]);
+    assert_eq!(made["search.mistake.expected-value"], "shared");
+}
+
+#[test]
 fn tests_and_the_generated_catalog_do_not_decide_where_a_key_goes() {
     let sources = [
         code("web/app/src/features/fields/A.tsx", r#"t("fields.a")"#),
