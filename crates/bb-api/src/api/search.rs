@@ -118,6 +118,11 @@ pub(crate) struct SearchGroupBody {
     /// null when the group has no name the person may use. Add it to the search with `and`.
     #[schema(required = true)]
     filter: Option<String>,
+    /// The name the group is shown by (the name its filter uses: a person, a tag, a label, a
+    /// project, an issue type, a status, a choice, a group of people or an Issue ID); null when the
+    /// group has none the person may use.
+    #[schema(required = true)]
+    name: Option<String>,
 }
 
 /// How many issues a search finds in each group of a field.
@@ -407,6 +412,7 @@ async fn group_searched_issues(
                     key: group_key(each.key),
                     issues: each.issues,
                     filter: each.filter,
+                    name: each.name,
                 })
                 .collect(),
         }

@@ -79,6 +79,7 @@ pub(crate) mod rig;
 mod roles_http;
 mod saved_searches_http;
 mod search_groups_http;
+mod search_groups_names;
 mod search_http;
 mod search_names_http;
 mod second_step;

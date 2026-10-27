@@ -450,6 +450,39 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
+    /// The name of a group of people, when the person may name groups: read from the same list
+    /// of groups as the names of a search are (the cache holds it once for the request).
+    pub(crate) async fn group_name_of(
+        &self,
+        viewer: &bb_policy::Evaluation,
+        id: GroupId,
+        cache: &mut NameCache,
+    ) -> Result<Option<String>, AppError> {
+        if !viewer.sees_names_in(FieldType::Group) {
+            return Ok(None);
+        }
+        self.load_groups(cache).await?;
+        Ok(cache
+            .groups
+            .iter()
+            .flatten()
+            .find(|group| group.id == id)
+            .map(|group| group.name.clone()))
+    }
+
+    /// Reads the groups of people into the cache, once.
+    async fn load_groups(&self, cache: &mut NameCache) -> Result<(), AppError> {
+        if cache.groups.is_none() {
+            cache.groups = Some(
+                self.store()
+                    .groups()
+                    .await
+                    .map_err(|error| internal::<S>(&error))?,
+            );
+        }
+        Ok(())
+    }
+
     /// The groups whose names match, among those the person may name (see `groups_named`): the one
     /// place that decides it, for a search and for the names a suggestion offers.
     async fn groups_matching(
@@ -464,14 +497,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !viewer.sees_names_in(FieldType::Group) {
             return Ok(Vec::new());
         }
-        if cache.groups.is_none() {
-            cache.groups = Some(
-                self.store()
-                    .groups()
-                    .await
-                    .map_err(|error| internal::<S>(&error))?,
-            );
-        }
+        self.load_groups(cache).await?;
         let everyone = !member_of || viewer.allows(Permission::ManageGroups);
         if !everyone && cache.mine.is_none() {
             cache.mine = Some(

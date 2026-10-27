@@ -9,11 +9,11 @@ use serde_json::{Value, json};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{PROJECTS, Site, id_in, ok};
 
-const GROUPS: &str = "/api/v1/search/issues/groups";
+pub(super) const GROUPS: &str = "/api/v1/search/issues/groups";
 const COUNT: &str = "/api/v1/search/issues/count";
 const ISSUES: &str = "/api/v1/search/issues";
 
-fn encoded(text: &str) -> String {
+pub(super) fn encoded(text: &str) -> String {
     text.bytes()
         .map(|byte| match byte {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' => {
@@ -45,7 +45,7 @@ async fn ids_of(who: &mut Browser, text: &str) -> Result<Vec<String>, Failure> {
 
 /// Every group of the field `by` has a filter, and the filter run as a search (with `base` before
 /// it) finds as many issues as the group says, the same ones that the count says.
-async fn every_group_selects_its_issues(
+pub(super) async fn every_group_selects_its_issues(
     who: &mut Browser,
     by: &str,
     base: &str,
@@ -87,12 +87,11 @@ async fn every_group_selects_its_issues(
     Ok(groups.len())
 }
 
-async fn create_in(who: &mut Browser, site: &Site<'_>, project: &str, body: Value) -> TestResult {
+pub(super) async fn create_in(who: &mut Browser, project: &str, body: Value) -> TestResult {
     let reply = who
         .send("POST", &format!("{PROJECTS}/{project}/issues"), Some(body))
         .await?;
     ok(&reply)?;
-    let _ = site;
     Ok(())
 }
 
@@ -119,7 +118,7 @@ async fn qry_04_the_filter_of_every_group_selects_exactly_its_issues() -> TestRe
         ] {
             let mut body = site.new_issue(title);
             body["priority"] = json!(priority);
-            create_in(&mut bob, &site, project, body).await?;
+            create_in(&mut bob, project, body).await?;
         }
         for by in [
             "priority",
@@ -154,8 +153,8 @@ async fn sec_05_a_group_of_a_project_or_a_person_the_reader_may_not_see_is_not_t
             .await?
             .body,
         )?;
-        create_in(&mut ada, &site, &secret, site.new_issue("Hidden work")).await?;
-        create_in(&mut ada, &site, &site.acme, site.new_issue("Open work")).await?;
+        create_in(&mut ada, &secret, site.new_issue("Hidden work")).await?;
+        create_in(&mut ada, &site.acme, site.new_issue("Open work")).await?;
         // A person who is a member of ACME only sees ACME: no group of theirs names SECRET.
         let (mut bob, _) = site.person_in_acme(StartingRole::TeamMember, "bob").await?;
         for by in ["project", "reportedBy"] {
@@ -180,7 +179,7 @@ async fn sec_05_a_person_shown_only_by_role_is_never_named_in_the_groups() -> Te
         let (mut bob, _) = site
             .person_called(StartingRole::TeamMember, "bob", "Bob Builder")
             .await?;
-        create_in(&mut bob, &site, &site.acme, site.new_issue("By Bob")).await?;
+        create_in(&mut bob, &site.acme, site.new_issue("By Bob")).await?;
         let (mut cora, _) = site
             .person_called(StartingRole::TeamMember, "cora", "Cora Hidden")
             .await?;

@@ -725,10 +725,20 @@ fn qry_04_the_filter_of_a_group_is_written_by_the_printer_and_reads_back() {
         text: text.to_owned(),
         span: Span::default(),
     };
-    assert_eq!(is_filter_text("priority", name("high")), "priority is high");
+    assert_eq!(
+        is_filter_text("priority", name("high")).as_deref(),
+        Some("priority is high")
+    );
     // A name that is not one plain word is quoted, and the text reads back to the same filter.
-    let quoted = is_filter_text("assignedTo", name("Ana Bell"));
+    let quoted = is_filter_text("assignedTo", name("Ana Bell")).unwrap();
     assert_eq!(quoted, "assignedTo is \"Ana Bell\"");
     assert_eq!(print(&parse(&quoted).unwrap()), quoted);
-    assert_eq!(empty_filter_text("project"), "project is empty");
+    assert_eq!(
+        empty_filter_text("project").as_deref(),
+        Some("project is empty")
+    );
+    // A text too long for the language is no filter: the server would refuse it.
+    if bb_searchlang::ROUND_TRIP_GUARD {
+        assert_eq!(is_filter_text("title", name(&"a".repeat(5000))), None);
+    }
 }

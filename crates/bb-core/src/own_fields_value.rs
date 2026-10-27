@@ -235,7 +235,9 @@ fn day_of(date: Date) -> Option<i64> {
     Some(moment.timestamp().as_second().div_euclid(SECONDS_PER_DAY))
 }
 
-fn date_of(days: i64) -> Option<Date> {
+/// The day that is this many days after 1970-01-01.
+#[must_use]
+pub fn date_of(days: i64) -> Option<Date> {
     let moment = Timestamp::from_second(days.checked_mul(SECONDS_PER_DAY)?).ok()?;
     Some(moment.to_zoned(TimeZone::UTC).date())
 }

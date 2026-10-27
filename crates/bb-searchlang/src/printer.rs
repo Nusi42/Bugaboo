@@ -53,10 +53,11 @@ pub fn print(search: &Search) -> String {
 
 /// The canonical text of the one filter `<field> is <value>`: how a group of a list says which issues
 /// it holds. The value is written as the language needs it (quoted where it is not one plain word),
-/// the one rule of the printer.
+/// the one rule of the printer. None when the text would not read back as the same search (a text
+/// too long, a number with too many digits): such a filter is never given out.
 #[must_use]
-pub fn is_filter_text(word: &str, value: Operand) -> String {
-    print(&only(
+pub fn is_filter_text(word: &str, value: Operand) -> Option<String> {
+    canonical_text(&only(
         word,
         Test::Is {
             value,
@@ -65,10 +66,10 @@ pub fn is_filter_text(word: &str, value: Operand) -> String {
     ))
 }
 
-/// The canonical text of the one filter `<field> is empty`.
+/// The canonical text of the one filter `<field> is empty`, as [`is_filter_text`].
 #[must_use]
-pub fn empty_filter_text(word: &str) -> String {
-    print(&only(
+pub fn empty_filter_text(word: &str) -> Option<String> {
+    canonical_text(&only(
         word,
         Test::IsEmpty {
             span: Span::default(),

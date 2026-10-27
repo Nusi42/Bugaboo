@@ -115,8 +115,11 @@ pub struct GroupShown {
     /// How many issues the search finds in it.
     pub issues: u64,
     /// The filter that selects exactly its issues, as search text, written by the printer of the
-    /// language with the name the person may know; none when the group has no such name.
+    /// language with the name the person may know and checked by the one resolution of names; none
+    /// when the group has no such name or the name stands for more than the group.
     pub filter: Option<String>,
+    /// The name the group is shown by (the name of its filter), when it has one the person may use.
+    pub name: Option<String>,
 }
 
 /// The key of a group, as it is shown.
@@ -386,7 +389,15 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     } else {
         Vec::new()
     };
-    ctx.preload_group_people(&found).await?;
+    // The people of the groups are read in one go, as the people of a page are.
+    let people: Vec<_> = found
+        .iter()
+        .filter_map(|group| match group.key {
+            GroupKey::Person(person) => Some(person),
+            _ => None,
+        })
+        .collect();
+    ctx.preload_people(&people).await?;
     let mut shown = Vec::with_capacity(found.len());
     for group in found {
         let key = match (group.key, kind) {
