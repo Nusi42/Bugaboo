@@ -10,6 +10,7 @@
 
 use serde::Serialize;
 
+#[cfg(feature = "round-trip-guard")]
 use serde_json::Value as Json;
 
 use crate::span::Span;
@@ -367,6 +368,7 @@ pub enum Direction {
     ZToA,
 }
 
+#[cfg(feature = "round-trip-guard")]
 impl Search {
     /// Whether the two searches say the same, whatever the places of their words: the words, the
     /// order and the brackets decide, the bytes of the text they were read from do not. `==` also
@@ -380,6 +382,7 @@ impl Search {
     }
 }
 
+#[cfg(feature = "round-trip-guard")]
 /// The search as JSON with every place (a `Span`) taken out. A place is found by its shape, the
 /// members of a `Span`, so no type of the tree needs to say which of its members is one.
 fn without_places(search: &Search) -> Option<Json> {

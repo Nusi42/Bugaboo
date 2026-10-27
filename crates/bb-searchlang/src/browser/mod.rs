@@ -47,19 +47,18 @@ pub fn search_from_json(json: &str) -> Result<Search, Problem> {
     Ok(search)
 }
 
-/// The canonical text of a tree in JSON. The tree must keep the rules, and the language must read
-/// the text back as the same tree (`parse(print(tree))` has the words of `tree`), or the text would
-/// not be the search that Simple search shows.
+/// The canonical text of a tree in JSON. The tree must keep the rules. With the feature
+/// `round-trip-guard` (the server, the tests) the language must also read the text back as the same
+/// tree, or the text would not be the search that Simple search shows; the module of the browser is
+/// built without it and gives the text `print` writes (see [`crate::canonical_text`]).
 ///
 /// # Errors
 /// The tree cannot be read, breaks a rule, or has no text of the language.
 pub fn print_from_json(json: &str) -> Result<String, Problem> {
     let search = search_from_json(json)?;
-    let text = crate::print(&search);
-    match crate::parse(&text) {
-        Ok(back) if back.same_words(&search) => Ok(text),
-        _ => Err("the tree has no text that the language reads back as the same tree".to_owned()),
-    }
+    crate::canonical_text(&search).ok_or_else(|| {
+        "the tree has no text that the language reads back as the same tree".to_owned()
+    })
 }
 
 fn expression(node: &Expr) -> Result<(), Problem> {
