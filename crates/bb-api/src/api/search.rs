@@ -17,8 +17,9 @@ use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_app::auth::RequestInfo;
 use bb_app::issues::IssueView;
 use bb_app::search::{
-    GroupKey, NameChoiceKind, NameChoicesQuery, ReadableFieldsQuery, SearchCountQuery,
-    SearchGroupsQuery, SearchPage, SearchQuery, SearchScope, SearcherQuery, ShownKey,
+    GroupKey, NAME_CHOICES_MAX, NameChoiceKind, NameChoicesQuery, ReadableFieldsQuery,
+    SearchCountQuery, SearchGroupsQuery, SearchPage, SearchQuery, SearchScope, SearcherQuery,
+    ShownKey,
 };
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::{Priority, StatusGroup};
@@ -470,6 +471,8 @@ pub(crate) struct NamesParams {
 pub(crate) struct SearchNamesBody {
     /// The names.
     names: Vec<String>,
+    /// Whether the list was cut off at the number asked for.
+    truncated: bool,
 }
 
 /// The most characters of the start of a name that are looked for.
@@ -500,6 +503,10 @@ async fn list_search_names(
     ApiQuery(params): ApiQuery<NamesParams>,
 ) -> Result<Response, ApiError> {
     counted(&auth, &limits, &info, &session_token).await?;
+    let wanted = params
+        .limit
+        .unwrap_or(NAMES_DEFAULT)
+        .clamp(1, NAME_CHOICES_MAX);
     let starting_with = params.starting_with.unwrap_or_default();
     if starting_with.chars().count() > MAX_NAME_START {
         return Err(ApiError::new(bb_core::ErrorCode::InvalidRequest));
@@ -515,11 +522,14 @@ async fn list_search_names(
                     NamesKind::Groups => NameChoiceKind::Groups,
                 },
                 starting_with,
-                limit: params.limit.unwrap_or(NAMES_DEFAULT),
+                limit: wanted + 1,
             },
         )
         .await?;
-    super::auth::answer_authorized(&found.map(|choices| SearchNamesBody { names: choices.0 }))
+    super::auth::answer_authorized(&found.map(|choices| SearchNamesBody {
+        truncated: choices.0.len() > wanted,
+        names: choices.0.into_iter().take(wanted).collect(),
+    }))
 }
 
 impl Masked for SearchNamesBody {}

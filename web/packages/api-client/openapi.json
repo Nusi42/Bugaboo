@@ -21471,7 +21471,7 @@
       "SearchNamesBody": {
         "type": "object",
         "description": "The names the person may use in a search, in the order of the names.",
-        "required": ["names"],
+        "required": ["names", "truncated"],
         "properties": {
           "names": {
             "type": "array",
@@ -21479,6 +21479,10 @@
               "type": "string"
             },
             "description": "The names."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the list was cut off at the number asked for."
           }
         }
       },

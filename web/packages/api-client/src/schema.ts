@@ -7523,6 +7523,8 @@ export interface components {
     SearchNamesBody: {
       /** @description The names. */
       names: string[];
+      /** @description Whether the list was cut off at the number asked for. */
+      truncated: boolean;
     };
     /**
      * @description Which set of saved searches a list shows: the person's own, or the ones shared with them.

@@ -28,7 +28,7 @@ pub struct NameChoicesQuery {
     pub kind: NameChoiceKind,
     /// The start of the names; empty for the first ones.
     pub starting_with: String,
-    /// How many names at most, up to [`NAME_CHOICES_MAX`].
+    /// How many names at most, up to one more than [`NAME_CHOICES_MAX`].
     pub limit: usize,
 }
 
@@ -47,7 +47,8 @@ pub async fn name_choices<S: AuthStore>(
     query: NameChoicesQuery,
 ) -> Result<Authorized<NameChoices>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
-    let limit = query.limit.clamp(1, NAME_CHOICES_MAX);
+    // One more than the most an answer holds, so the caller can tell that the list was cut off.
+    let limit = query.limit.clamp(1, NAME_CHOICES_MAX + 1);
     let names = match query.kind {
         NameChoiceKind::People => {
             ctx.people_name_choices(&actor, &query.starting_with, limit)
