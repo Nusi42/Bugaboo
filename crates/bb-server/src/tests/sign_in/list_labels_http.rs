@@ -61,6 +61,31 @@ fn label_names(item: &Value) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// An order of the labels (name, ID) that is neither the order of the IDs nor that of the names.
+fn order_unlike_ids_and_names(labels: &[(String, String)]) -> Vec<(String, String)> {
+    let sorted_by = |key: fn(&(String, String)) -> &String| {
+        let mut sorted = labels.to_vec();
+        sorted.sort_by(|a, b| key(a).cmp(key(b)));
+        sorted
+    };
+    let (by_id, by_name) = (sorted_by(|l| &l.1), sorted_by(|l| &l.0));
+    let mut order = labels.to_vec();
+    // Every order of three, until one is unlike both.
+    for rotation in 0..labels.len() {
+        for reversed in [false, true] {
+            order = labels.to_vec();
+            order.rotate_left(rotation);
+            if reversed {
+                order.reverse();
+            }
+            if order != by_id && order != by_name {
+                return order;
+            }
+        }
+    }
+    order
+}
+
 #[tokio::test]
 async fn cfg_02_the_list_and_the_search_carry_the_labels_when_asked_for() -> TestResult {
     each_database("cfg_02_list_labels", async |db| {
@@ -73,13 +98,18 @@ async fn cfg_02_the_list_and_the_search_carry_the_labels_when_asked_for() -> Tes
                 "readable_id",
             )?,
         );
-        let urgent = label(&mut ada, "urgent").await?;
-        let crash = label(&mut ada, "crash").await?;
-        // In this order, a moment apart; the order of the answer is the order they were put on, not
-        // that of the names or of the IDs.
-        put(&mut ada, &first, &urgent).await?;
-        rig.clock.advance(1);
-        put(&mut ada, &first, &crash).await?;
+        // Three labels, put on in an order that is neither the order of their IDs nor that of
+        // their names, a moment apart: the answer comes in the order they were put on.
+        let mut made = Vec::new();
+        for name in ["mid", "zed", "alpha"] {
+            made.push((name.to_owned(), label(&mut ada, name).await?));
+        }
+        let put_order = order_unlike_ids_and_names(&made);
+        for (_, id) in &put_order {
+            put(&mut ada, &first, id).await?;
+            rig.clock.advance(1);
+        }
+        let wanted: Vec<String> = put_order.iter().map(|(name, _)| name.clone()).collect();
         for path in [
             format!("{PROJECTS}/{}/issues?fields=readable_id,labels", site.acme),
             format!("{SEARCH}?fields=readable_id,labels"),
@@ -94,11 +124,7 @@ async fn cfg_02_the_list_and_the_search_carry_the_labels_when_asked_for() -> Tes
             };
             // Both labels, in the order they were put on; an issue without labels has an empty
             // list.
-            assert_eq!(
-                of(&first),
-                Some(vec!["urgent".to_owned(), "crash".to_owned()]),
-                "{path}"
-            );
+            assert_eq!(of(&first), Some(wanted.clone()), "{path}");
             assert_eq!(of(&second), Some(Vec::new()), "{path}");
         }
         // Not asked for, not in the answer.
