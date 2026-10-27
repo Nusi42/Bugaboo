@@ -28,7 +28,7 @@ export function QuickResults({ found, listKey, onOpen }: QuickResultsProps) {
     <div aria-busy={waiting}>
       <ListBox
         key={listKey}
-        // oxlint-disable-next-line jsx-a11y/no-autofocus -- coding-standards §4 and UX §6.2: the rule guards against taking the focus of the page when it loads; this gives only the virtual focus inside the list box of a dialog that is open already, the focus of the page stays in the box, and it is the first result that Enter opens
+        // oxlint-disable-next-line jsx-a11y/no-autofocus -- UX §8 (keyboard and screen reader) and the WP-09 acceptance line (the results are a list box, the arrow keys move, Enter opens): the rule guards against taking the focus of the page when it loads; this gives only the virtual focus inside the list box of a dialog that is open already, the focus of the page stays in the box, and it is the first result that Enter opens
         autoFocus={focusFirst}
         disabledKeys={busyKeys(groups)}
         aria-label={t("search.results")}
