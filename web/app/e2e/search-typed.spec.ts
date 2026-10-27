@@ -174,3 +174,38 @@ test("qry_03 words that are an Issue ID and more are not offered as an Issue ID"
   await page.getByRole("button", { name: t("search.bar.issue-take", { issue: "WEB-1" }) }).click();
   await expect(page.getByText(t("search.bar.issue-chosen", { id: "WEB-1" }))).toBeVisible();
 });
+
+test("qry_02 typing onto a text that is there makes one step, and Back goes to that text", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await box(page).press("End");
+  // The first letters give the same search as the address holds: no step is made for them.
+  await box(page).pressSequentially(" and assignedTo is me");
+  await expect.poll(() => addressText(page)).toBe("priority is high and assignedTo is me");
+  await page.goBack();
+  await expect.poll(() => addressText(page)).toBe("priority is high");
+});
+
+test("qry_02 typing again after leaving the box makes a new step", async ({ page }) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await box(page).press("End");
+  await box(page).pressSequentially(" and assignedTo is me");
+  await expect.poll(() => addressText(page)).toBe("priority is high and assignedTo is me");
+  // Leaving the box ends the stretch; the next text is a step of its own.
+  await box(page).blur();
+  await box(page).focus();
+  await box(page).press("End");
+  await box(page).pressSequentially(" and title contains crash");
+  await expect
+    .poll(() => addressText(page))
+    .toBe('priority is high and assignedTo is me and title contains "crash"');
+  await page.goBack();
+  await expect.poll(() => addressText(page)).toBe("priority is high and assignedTo is me");
+  await page.goBack();
+  await expect.poll(() => addressText(page)).toBe("priority is high");
+});

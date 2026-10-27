@@ -50,13 +50,27 @@ function useTypedText(text: string, onText: SearchBarInput["onText"]) {
       setDraft(null);
     }
   }, [text]);
-  const write = (canonical: string, step: HistoryStep): void => {
-    if (canonical !== written.current) {
-      written.current = canonical;
-      onText(canonical, step);
+  /** Writes the text unless the address holds it already; whether a step was really made. */
+  const write = (canonical: string, step: HistoryStep): boolean => {
+    if (canonical === written.current) {
+      return false;
     }
+    written.current = canonical;
+    onText(canonical, step);
+    return true;
   };
-  return { shown: draft ?? text, draft, setDraft, write };
+  // The first text of a stretch of typing is a step of its own; the rest of it replaces that step.
+  const typing = useRef(false);
+  /** Writes a text that was typed: a step, or the step the stretch began with. */
+  const writeTyped = (canonical: string): void => {
+    // A stretch of typing begins with the first step that was really written.
+    const made = write(canonical, typing.current ? historyStep.replace : historyStep.push);
+    typing.current = typing.current || made;
+  };
+  const endTyping = (): void => {
+    typing.current = false;
+  };
+  return { shown: draft ?? text, draft, setDraft, write, writeTyped, endTyping };
 }
 
 /**
@@ -66,9 +80,7 @@ function useTypedText(text: string, onText: SearchBarInput["onText"]) {
  */
 export function useSearchBar({ language, fields, text, onText }: SearchBarInput): SearchBarState {
   const [mode, setMode] = useState<BarMode>(barMode.simple);
-  const { shown, draft, setDraft, write } = useTypedText(text, onText);
-  // The first text of a stretch of typing is a step of its own; the rest of it replaces that step.
-  const typing = useRef(false);
+  const { shown, draft, setDraft, write, writeTyped, endTyping } = useTypedText(text, onText);
   const answer = useMemo(() => language.check(shown, fields), [language, fields, shown]);
   const clean = answer.mistakes.length === 0;
   // An address that holds a text in another spelling (a link, an old address) is written again
@@ -90,25 +102,22 @@ export function useSearchBar({ language, fields, text, onText }: SearchBarInput)
       setDraft(next);
       const checked = language.check(next, fields);
       if (checked.mistakes.length === 0 && checked.canonical !== null) {
-        write(checked.canonical, typing.current ? historyStep.replace : historyStep.push);
-        typing.current = true;
+        writeTyped(checked.canonical);
       }
     },
     change: (search) => {
       setDraft(null);
-      typing.current = false;
+      endTyping();
       write(language.print(search), historyStep.push);
     },
-    endTyping: () => {
-      typing.current = false;
-    },
+    endTyping,
     switchTo: (next) => {
       if (next === barMode.simple && !clean) {
         return false;
       }
       setMode(next);
       setDraft(null);
-      typing.current = false;
+      endTyping();
       return true;
     },
   };
