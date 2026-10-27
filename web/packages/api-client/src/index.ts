@@ -76,6 +76,7 @@ export {
 } from "./fields.generated.ts";
 export { megabyte, partBytes } from "./files.generated.ts";
 export { manyChangesIssuesMax } from "./many-changes.generated.ts";
+export { searchWords, type SearchWord } from "./search-words.generated.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
 export { minutesPerHour, msPerDay, msPerSecond, secondsPerHour, secondsPerMinute } from "./time.ts";
 export {

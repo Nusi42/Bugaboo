@@ -1,3 +1,4 @@
+import type { SearchWord } from "@bugaboo/api-client";
 import { listColumns, type ListColumn } from "@bugaboo/ui";
 
 /** The cells of the list that are not a choice: the tick box and the buttons of the row. */
@@ -5,8 +6,9 @@ type FixedCell = "select" | "action";
 
 /**
  * The search word of the field each cell shows. A saved search stores its columns by search word
- * (ADR-0034), so this is the one place that says which cell a word is drawn in. `id` is the Issue
- * ID, the one word that is no field. A new cell in the theme file is a type error until it is here.
+ * (ADR-0034), so this is the one place that says which cell a word is drawn in. The words are the
+ * generated ones, so a word that does not exist is a type error; so is a new cell in the theme file
+ * until it is here. `id` is the Issue ID, the one word that is no field.
  */
 const wordOfCell = {
   status: "status",
@@ -17,7 +19,7 @@ const wordOfCell = {
   priority: "priority",
   person: "assignedTo",
   changed: "changed",
-} as const satisfies Readonly<Record<Exclude<ListColumn, FixedCell>, string>>;
+} as const satisfies Readonly<Record<Exclude<ListColumn, FixedCell>, SearchWord>>;
 
 /** The cell a column is drawn in: one the list has a cell for, or a plain value (an own field). */
 export type ColumnCell = Exclude<ListColumn, FixedCell> | "value";

@@ -711,6 +711,39 @@ export const manyChangesIssuesMax = {most};
     ))
 }
 
+/// The words a search names its fields by, as constants for the browser client: the Issue ID
+/// column's `id`, the built-in fields of the issue, and the fields every issue has. A saved search
+/// keeps its columns by these words, so the list names them through this type and does not write
+/// them a second time. The words come from the code itself (`Field::search_word`,
+/// `IssueField::word`), which xtask links.
+pub(super) fn search_words() -> String {
+    let words: Vec<String> = std::iter::once(bb_core::fields::ID_WORD.to_owned())
+        .chain(
+            bb_core::fields::Field::ALL
+                .iter()
+                .map(|field| field.search_word()),
+        )
+        .chain(
+            bb_searchlang::IssueField::ALL
+                .iter()
+                .map(|field| field.word().to_owned()),
+        )
+        .collect();
+    let list = words
+        .iter()
+        .map(|word| format!("{word:?}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "{TS_HEADER}/** The words a search names a field of an issue by, `id` (the Issue ID) first. */
+export const searchWords = [{list}] as const;
+
+/** One of the words a search names a field of an issue by. */
+export type SearchWord = (typeof searchWords)[number];
+"
+    )
+}
+
 /// The addresses of the app pages that the server links to as constants for the browser app, so
 /// `paths.ts` does not write them a second time.
 pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
