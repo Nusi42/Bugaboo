@@ -120,3 +120,20 @@ test("cfg_08 Enter on the Close button closes the dialog and opens nothing", asy
   await expect(dialog(page)).toHaveCount(0);
   await expect(page).toHaveURL(addressEndingAt("/"));
 });
+
+test("cfg_08 the live region says the count and that a source failed, one sentence each", async ({
+  page,
+  tolerate,
+}) => {
+  await signIn(page, bob);
+  // The browser writes a line for the 500 it is given on purpose.
+  const refused = tolerate(page.context(), /status of 500/u, { network: "stays-up" });
+  await refused.begin();
+  // The server turns the search of issues away: that source fails, the others answer.
+  await page.route("**/api/v1/search/issues*", (route) => route.fulfill({ status: 500 }));
+  await ask(page, "passkey");
+  const said = dialog(page).getByRole("status");
+  await expect(said).toContainText(t("search.partial"));
+  await expect(said.getByRole("paragraph")).toHaveText([t("search.nothing"), t("search.partial")]);
+  await refused.end();
+});

@@ -43,7 +43,7 @@ export function QuickSearchBox() {
         <QuickResults found={found} listKey={fresh} onOpen={open} />
         <Announce>
           {announcement(found).map((sentence) => (
-            <span key={sentence}>{sentence}</span>
+            <p key={sentence}>{sentence}</p>
           ))}
         </Announce>
         {found.failed ? <p {...partOf(part.quickSearchQuiet)}>{t("search.partial")}</p> : null}
