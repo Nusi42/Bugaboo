@@ -159,7 +159,10 @@ mod tests {
                 "nothing is left to read"
             );
 
-            assert_eq!(database.migrate(at(3)).await?, [RULE_MIGRATION]);
+            assert_eq!(
+                database.migrate_until(RULE_MIGRATION, at(3)).await?,
+                [RULE_MIGRATION]
+            );
             // The migration itself prepares nothing: the index is empty, and the reader reads no
             // event until the index has been made again.
             assert!(found(&storage, "muller", everywhere).await?.is_empty());

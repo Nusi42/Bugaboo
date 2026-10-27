@@ -54,6 +54,7 @@ mod m0022_text_index;
 mod m0023_search_indexes;
 mod m0024_saved_searches;
 mod m0025_text_in_nfc;
+mod m0026_name_key;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -275,6 +276,11 @@ const ALL: &[Definition] = &[
         name: "text_in_nfc",
         steps: || Ok(m0025_text_in_nfc::steps()),
     },
+    Definition {
+        version: 26,
+        name: "name_key",
+        steps: || Ok(m0026_name_key::steps()),
+    },
 ];
 
 /// The number of the newest migration this program knows.
@@ -372,14 +378,18 @@ impl Database {
     }
 
     /// Brings the schema up to date (`now` is what gets recorded) and returns the numbers of the
-    /// migrations it applied.
+    /// migrations it applied. Afterwards it gives the people with an empty name key their key
+    /// ([`Database::fill_name_keys`], migration 26).
     ///
     /// # Errors
     /// Fails with [`StoreError::SchemaTooNew`] when the database was changed by a newer program,
     /// with [`StoreError::MigrationMismatch`] when a recorded migration is not the one this
     /// program has, and when the database fails.
     pub async fn migrate(&self, now: Timestamp) -> Result<Vec<i64>, StoreError> {
-        self.migrate_until(i64::MAX, now).await
+        let done = self.migrate_until(i64::MAX, now).await?;
+        // Data that the migrations only mark, made with the code that runs (migration 26).
+        self.fill_name_keys().await?;
+        Ok(done)
     }
 
     /// Brings the schema up to migration `last` and no further: the database of an older

@@ -185,23 +185,33 @@ async fn qry_05_names_are_those_that_start_so_cut_at_the_limit_and_offered_once(
 }
 
 #[tokio::test]
-async fn qry_05_a_capital_outside_ascii_finds_the_name_it_starts() -> TestResult {
+async fn qry_05_a_letter_outside_ascii_finds_the_name_it_starts() -> TestResult {
     each_database("qry_05_search_names_capital", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         site.person_called(StartingRole::TeamMember, "ozil", "\u{d6}zil Cem")
             .await?;
-        // The same capital finds it on both databases (the folding of `lower` is the same on both
-        // sides of the comparison); the spaces of the start are squeezed.
+        // Capitals and the spaces of the start do not count; the accent does.
         assert_eq!(
             offered(&mut ada, "kind=people&starting_with=%C3%96").await?,
             ["\u{d6}zil Cem"]
         );
-        assert_eq!(
-            offered(&mut ada, "kind=people&starting_with=%C3%96zil%20%20Ce").await?,
-            ["\u{d6}zil Cem"]
+        for start in [
+            "%C3%B6",
+            "%C3%96ZIL",
+            "%C3%96zil%20%20Ce",
+            "%C3%B6zil%20%20ce",
+        ] {
+            assert_eq!(
+                offered(&mut ada, &format!("kind=people&starting_with={start}")).await?,
+                ["\u{d6}zil Cem"]
+            );
+        }
+        assert!(
+            offered(&mut ada, "kind=people&starting_with=oz")
+                .await?
+                .is_empty()
         );
-        // A lower-case start outside ASCII is a known gap (M5-F94): the database does not fold it.
         Ok(())
     })
     .await

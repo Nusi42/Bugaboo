@@ -100,7 +100,7 @@ fn names_of(domain: Domain) -> Option<(DynIden, DynIden, DynIden)> {
         Domain::Person(_) => of(
             PersonRow::Table.into_iden(),
             PersonRow::Id.into_iden(),
-            PersonRow::DisplayName.into_iden(),
+            PersonRow::NameKey.into_iden(),
         ),
         Domain::Group => of(
             GroupRow::Table.into_iden(),

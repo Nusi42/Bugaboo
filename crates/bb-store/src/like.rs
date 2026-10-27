@@ -32,8 +32,9 @@ pub(crate) fn starting_with(text: &str) -> LikeExpr {
 /// `column` matches `pattern`, with capitals not counting the way the database folds them: both
 /// sides go through the database's own `lower`, so the rule is one rule on both sides of the
 /// comparison. `lower` folds only the letters of ASCII on SQLite (and on PostgreSQL without a
-/// locale), so a capital outside ASCII is found by the same capital (`Ö` finds `Özil`) and a
-/// lower-case start outside ASCII is a known gap, until a stored name key is there (M5-F94).
+/// locale), so it is only for texts that are ASCII anyway (an address). A name is looked for in
+/// its stored key (`bb_core::names::name_key`, made in Rust), with [`starting_with`] and
+/// [`containing`].
 fn any_case(column: impl Into<Expr>, pattern: String) -> Expr {
     let like = Expr::Binary(
         Box::new(Func::lower(Expr::val(pattern)).into()),
@@ -41,11 +42,6 @@ fn any_case(column: impl Into<Expr>, pattern: String) -> Expr {
         Box::new(Expr::Constant(ESCAPE.into())),
     );
     Expr::expr(Func::lower(column.into())).binary(BinOper::Like, like)
-}
-
-/// `column` begins with `text`, capitals not counting (see [`any_case`]).
-pub(crate) fn starting_with_any_case(column: impl Into<Expr>, text: &str) -> Expr {
-    any_case(column, format!("{}%", plain(text)))
 }
 
 /// `column` holds `text` anywhere, capitals not counting (see [`any_case`]).

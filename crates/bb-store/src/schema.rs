@@ -138,6 +138,7 @@ stored_tables! {
     PersonRow => bb_core::person::Person {
         Id => id,
         DisplayName => display_name,
+        NameKey => display_name,
         Email => email,
         CreatedAt => created_at,
     },

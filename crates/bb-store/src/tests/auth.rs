@@ -361,3 +361,60 @@ async fn auth_03_the_code_app_secret_is_stored_encrypted_and_goes_away_with_the_
     })
     .await
 }
+
+/// The names of the people `search` finds by the start of the name, in the order of the list.
+async fn starting_with(storage: &AuthStorage, search: &str) -> Result<Vec<String>, StoreError> {
+    let found = storage
+        .people_page(Some(search), bb_app::auth::SearchIn::NameStarts, None, 50)
+        .await?;
+    Ok(found
+        .into_iter()
+        .map(|person| person.display_name)
+        .collect())
+}
+
+#[tokio::test]
+async fn m5_f94_a_name_is_found_by_its_start_with_the_letters_it_has() -> TestResult {
+    each_database("m5_f94_name_key", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = fixture.storage.clone();
+        let mut source = ids();
+        for (email, name) in [
+            ("oz@example.test", "\u{d6}zil Cem"),
+            ("sam@example.test", "Sam Same"),
+            ("ana@example.test", "Ana"),
+        ] {
+            let mut who = person(&mut source, email);
+            name.clone_into(&mut who.display_name);
+            change(&storage, &mut source, move |tx| {
+                Box::pin(async move { AuthStorage::insert_person(tx, &who, "hash", at(1)).await })
+            })
+            .await?;
+        }
+        // A lower-case or a capital letter outside ASCII finds the name.
+        assert_eq!(starting_with(&storage, "\u{f6}").await?, ["\u{d6}zil Cem"]);
+        assert_eq!(
+            starting_with(&storage, "\u{d6}ZIL").await?,
+            ["\u{d6}zil Cem"]
+        );
+        assert_eq!(
+            starting_with(&storage, "\u{f6}zil  ce").await?,
+            ["\u{d6}zil Cem"]
+        );
+        // A word of the name, as typed, is found the same way.
+        let words = storage
+            .people_page(Some("\u{f6}ZIL"), bb_app::auth::SearchIn::Names, None, 50)
+            .await?;
+        assert_eq!(words.len(), 1);
+        let none = storage
+            .people_page(Some("ozil"), bb_app::auth::SearchIn::Names, None, 50)
+            .await?;
+        assert!(none.is_empty());
+        // Accents count: the letter without its accent is another letter.
+        assert!(starting_with(&storage, "oz").await?.is_empty());
+        // Spaces inside the text do not count.
+        assert_eq!(starting_with(&storage, "sam  s").await?, ["Sam Same"]);
+        Ok(())
+    })
+    .await
+}
