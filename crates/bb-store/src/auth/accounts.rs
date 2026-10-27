@@ -153,13 +153,7 @@ impl AccountStore for AuthStorage {
         let mut insert = Query::insert();
         insert
             .into_table(PersonRow::Table)
-            .columns([
-                PersonRow::Id,
-                PersonRow::DisplayName,
-                PersonRow::Email,
-                PersonRow::CreatedAt,
-                PersonRow::NameKey,
-            ])
+            .columns(person_columns().into_iter().chain([PersonRow::NameKey]))
             .values([
                 Expr::val(person.id.stored()),
                 Expr::val(person.display_name.as_str()),

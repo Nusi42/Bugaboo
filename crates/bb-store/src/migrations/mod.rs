@@ -378,7 +378,8 @@ impl Database {
     }
 
     /// Brings the schema up to date (`now` is what gets recorded) and returns the numbers of the
-    /// migrations it applied.
+    /// migrations it applied. Afterwards it gives the people with an empty name key their key
+    /// ([`Database::fill_name_keys`], migration 26).
     ///
     /// # Errors
     /// Fails with [`StoreError::SchemaTooNew`] when the database was changed by a newer program,

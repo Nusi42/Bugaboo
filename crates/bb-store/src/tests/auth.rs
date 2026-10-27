@@ -401,6 +401,15 @@ async fn m5_f94_a_name_is_found_by_its_start_with_the_letters_it_has() -> TestRe
             starting_with(&storage, "\u{f6}zil  ce").await?,
             ["\u{d6}zil Cem"]
         );
+        // A word of the name, as typed, is found the same way.
+        let words = storage
+            .people_page(Some("\u{f6}ZIL"), bb_app::auth::SearchIn::Names, None, 50)
+            .await?;
+        assert_eq!(words.len(), 1);
+        let none = storage
+            .people_page(Some("ozil"), bb_app::auth::SearchIn::Names, None, 50)
+            .await?;
+        assert!(none.is_empty());
         // Accents count: the letter without its accent is another letter.
         assert!(starting_with(&storage, "oz").await?.is_empty());
         // Spaces inside the text do not count.

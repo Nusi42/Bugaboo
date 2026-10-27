@@ -1,4 +1,4 @@
-//! Migration 26: a person is found by the key of the name (M5-F94, ADR-0016).
+//! Migration 26: a person is found by the key of the name (M5-F94, ADR-0005 decision 9).
 //!
 //! `person.name_key` holds the name as names are told apart (`bb_core::names::name_key`: lower
 //! case, repeated spaces squeezed, accents kept), as tags, labels and groups keep theirs. The
@@ -9,7 +9,9 @@
 //! make a key itself, so it does not depend on the code of today. Every start fills the keys that
 //! are still empty with the code of the program that runs, a page at a time
 //! (`Database::fill_name_keys`, called by `Database::migrate` right after the migrations). A
-//! person is written with the key from then on.
+//! person is written with the key from then on. A later change of the rule of `name_key` must
+//! empty the keys first (a migration that sets them to the empty text), so the start fills them
+//! again with the new rule.
 
 use sea_query::{ColumnDef, Index, Table};
 
@@ -29,7 +31,8 @@ pub(super) fn steps() -> Vec<Step> {
                 )
                 .to_owned(),
         ),
-        // The people in the order of their names, and the start of a name.
+        // The people in the order of their names, and the pages of that order. A `LIKE` with an
+        // escape does not use it (SQLite skips it; PostgreSQL would need `text_pattern_ops`).
         Step::Index(
             Index::create()
                 .name("person_by_name_key")
@@ -91,6 +94,40 @@ mod tests {
                 0,
                 "nothing is left to fill"
             );
+            Ok(())
+        })
+        .await
+    }
+
+    /// More people than one page hold are all given a key, each by the rule.
+    #[tokio::test]
+    async fn m5_f94_migration_26_fills_the_keys_of_more_people_than_one_page_holds() -> TestResult {
+        each_database("migration_26_many_keys", async |db| {
+            let database = Database::connect(db.url()).await?;
+            database.migrate_until(25, at(0)).await?;
+            let mut source = ids();
+            let wanted = 1_100_u32;
+            for number in 0..wanted {
+                let mut insert = Query::insert();
+                insert
+                    .into_table(PersonRow::Table)
+                    .columns([
+                        PersonRow::Id,
+                        PersonRow::DisplayName,
+                        PersonRow::Email,
+                        PersonRow::CreatedAt,
+                    ])
+                    .values([
+                        Expr::val(UserId::generate(&mut source).stored()),
+                        Expr::val(format!("\u{d6}ZIL  No {number}")),
+                        Expr::val(format!("{number}@example.test")),
+                        Expr::val(1_i64),
+                    ])?;
+                database.execute(&insert).await?;
+            }
+            database.migrate_until(26, at(1)).await?;
+            assert_eq!(database.fill_name_keys().await?, u64::from(wanted));
+            assert_eq!(database.fill_name_keys().await?, 0);
             Ok(())
         })
         .await

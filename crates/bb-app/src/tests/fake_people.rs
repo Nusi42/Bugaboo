@@ -16,9 +16,12 @@ pub(super) fn holds(person: &Person, search: Option<&str>, look_at: SearchIn) ->
         return name.starts_with(&name_key(text));
     }
     text.split_whitespace().all(|word| {
-        let word = name_key(word);
-        name.contains(&word)
+        // The name by its key; the address the way the database folds it (ASCII only).
+        name.contains(&name_key(word))
             || (look_at == SearchIn::NamesAndAddresses
-                && person.email.to_ascii_lowercase().contains(&word))
+                && person
+                    .email
+                    .to_ascii_lowercase()
+                    .contains(&word.to_ascii_lowercase()))
     })
 }
