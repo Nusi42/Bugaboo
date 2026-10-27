@@ -3930,6 +3930,10 @@ body {
   color: var(--fg-muted);
 }
 
+[data-part="quick-search.said"] {
+  display: block;
+}
+
 [data-part="quick-search.quiet"] {
   margin: 0;
   padding: 0 var(--space-3);
