@@ -64,6 +64,8 @@ function useCollected(
 /** What quick search found, and whether the sources that ask the server have yet to answer for these words. */
 export interface QuickFound extends Collected {
   readonly waiting: boolean;
+  /** The person has stopped typing for [`typingPauseMs`]: the words are the ones the server is asked for. */
+  readonly quiet: boolean;
 }
 
 /**
@@ -103,6 +105,10 @@ export function useQuickResults(query: string): QuickFound {
     // What the server found for older words keeps its place while it is asked again, so no group
     // goes and comes back, but it is marked busy and its rows cannot be chosen.
     const waiting = later.to !== query;
-    return { ...arrange(sources, query, now.found, markStale(later.found, waiting)), waiting };
-  }, [sources, query, now, later]);
+    return {
+      ...arrange(sources, query, now.found, markStale(later.found, waiting)),
+      waiting,
+      quiet: settled === query,
+    };
+  }, [sources, query, settled, now, later]);
 }

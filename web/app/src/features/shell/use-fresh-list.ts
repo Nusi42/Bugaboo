@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 /**
- * A number that goes up when the answer of the server lands, unless the person has moved the focus
+ * A number that goes up when the typing pause ends and when the answer of the server lands, unless the person has moved the focus
  * of the list: the list is made new with it, and a new list gives its first result the virtual
  * focus (the box names it with `aria-activedescendant`, and Enter opens it). Whether the person
  * moved the focus is read from where it is: the box points at nothing, or at the result that is
@@ -12,12 +12,14 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 export function useFreshList(
   root: Readonly<RefObject<HTMLElement | null>>,
   waiting: boolean,
+  quiet: boolean,
 ): number {
   const [fresh, setFresh] = useState(0);
-  const was = useRef(waiting);
+  const was = useRef({ waiting, quiet });
   useEffect(() => {
-    const landed = was.current && !waiting;
-    was.current = waiting;
+    // The pause ended (the rows of the app are there, whatever the server does), or the answer landed.
+    const landed = (was.current.waiting && !waiting) || (!was.current.quiet && quiet);
+    was.current = { waiting, quiet };
     // After the answer is drawn, so the list as it is now is what is looked at.
     const timer = landed
       ? setTimeout(() => {
@@ -34,6 +36,6 @@ export function useFreshList(
         clearTimeout(timer);
       }
     };
-  }, [root, waiting]);
+  }, [root, waiting, quiet]);
   return fresh;
 }

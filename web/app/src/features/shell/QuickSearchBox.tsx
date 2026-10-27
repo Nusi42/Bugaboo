@@ -20,7 +20,7 @@ export function QuickSearchBox() {
   // The list is made new when the answer lands, so its first result has the focus Enter opens. The
   // box's own focus of the first result when a letter is typed (`disableAutoFocusFirst`) waits half a
   // second and then names the row it saw at the time, which may be gone by then.
-  const fresh = useFreshList(root, found.waiting);
+  const fresh = useFreshList(root, found.waiting, found.quiet);
   // The dialog is made for typing: the box has the focus as soon as it appears.
   useEffect(() => {
     field.current?.querySelector("input")?.focus();

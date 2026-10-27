@@ -14,6 +14,7 @@ function found(count: number, rest: Partial<QuickFound> = {}): QuickFound {
     groups: count === 0 ? [] : [{ id: "g", heading: "G", results }],
     failed: false,
     waiting: false,
+    quiet: true,
     ...rest,
   };
 }
