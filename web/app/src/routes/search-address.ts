@@ -14,10 +14,23 @@ export function useSearchState(): SearchState {
   return readSearch({ pathname: location.pathname, search: location.search });
 }
 
-/** Writes a search into the address (the one writer, `searchLocation`), as a new step or in place of one. */
-export function useSearchNavigation(): (state: SearchState, step: HistoryStep) => void {
+/** The part of the address that is not the search: the issue open in the side panel of a project's list. */
+const openParam = "open";
+
+/**
+ * Writes a search into the address (the one writer, `searchLocation`), as a new step or in place of
+ * one. The issue that is open in the side panel stays open when the search changes.
+ */
+export function useSearchNavigation(
+  open?: string,
+): (state: SearchState, step: HistoryStep) => void {
   const navigate = useNavigate();
   return (state, step) => {
-    void navigate({ href: searchHref(state), replace: step === historyStep.replace });
+    const href = searchHref(state);
+    const kept =
+      open === undefined
+        ? ""
+        : `${href.includes("?") ? "&" : "?"}${openParam}=${encodeURIComponent(open)}`;
+    void navigate({ href: `${href}${kept}`, replace: step === historyStep.replace });
   };
 }

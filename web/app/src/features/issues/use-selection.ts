@@ -6,6 +6,8 @@ export interface IssueSelection {
   readonly ids: readonly string[];
   readonly has: (id: string) => boolean;
   readonly set: (id: string, selected: boolean) => void;
+  /** Ticks exactly these issues (*Tick all results*). */
+  readonly replace: (ids: readonly string[]) => void;
   readonly clear: () => void;
 }
 
@@ -22,6 +24,7 @@ export function useSelection(): IssueSelection {
           : ids.filter((known) => known !== id),
       );
     },
+    replace: setIds,
     clear: () => {
       setIds([]);
     },

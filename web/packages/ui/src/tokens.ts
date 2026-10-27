@@ -32,7 +32,7 @@ export const variants = {
 } as const;
 
 /** The variables the code may set while the person drags (`run-time="true"` in the theme file). */
-export const runTimeVariables = ["window-width", "window-height"] as const;
+export const runTimeVariables = ["window-width", "window-height", "list-columns"] as const;
 export type RunTimeVariable = (typeof runTimeVariables)[number];
 
 export const colorTokens = [
@@ -135,6 +135,8 @@ export const tokenNames = [
   "size-control",
   "size-control-small",
   "size-row",
+  "size-row-compact",
+  "size-list-scroll",
   "size-edge",
   "size-name",
   "size-col-icon",
@@ -147,6 +149,9 @@ export const tokenNames = [
   "size-col-person",
   "size-col-labels",
   "size-col-project",
+  "size-col-title",
+  "size-col-least",
+  "size-col-step",
   "size-col-value",
   "size-col-changed",
   "size-window",
@@ -156,6 +161,7 @@ export const tokenNames = [
   "size-window-handle",
   "window-width",
   "window-height",
+  "list-columns",
   "bp-window-side",
   "bp-window-wide",
   "size-day-week",
@@ -330,6 +336,21 @@ export const part = {
   listRowCell: "list-row.cell",
   listGroup: "list-group",
   listGroupCount: "list-group.count",
+  listFrame: "list-frame",
+  listScroll: "list-scroll",
+  listHead: "list-head",
+  listSort: "list-sort",
+  listSortLabel: "list-sort.label",
+  listHandle: "list-handle",
+  listGroupToggle: "list-group.toggle",
+  listGroupName: "list-group.name",
+  listGroupNote: "list-group.note",
+  listPanel: "list-panel",
+  listPanelHead: "list-panel.head",
+  listPanelTitle: "list-panel.title",
+  listPanelItem: "list-panel.item",
+  listPanelItems: "list-panel.items",
+  listOptions: "list-options",
   nameValues: "name-values",
   nameValue: "name-value",
   nameValueName: "name-value.name",
@@ -762,7 +783,7 @@ export const partWords = {
     state: ["selected", "group-in-progress", "group-done", "priority-critical", "priority-high"],
   },
   "list-row": {
-    variant: ["head", "phone", "slim"],
+    variant: ["head", "phone", "slim", "grid"],
     state: [
       "group-in-progress",
       "selected",
@@ -792,6 +813,21 @@ export const partWords = {
   },
   "list-group": { variant: [], state: [] },
   "list-group.count": { variant: [], state: [] },
+  "list-frame": { variant: ["compact"], state: [] },
+  "list-scroll": { variant: [], state: ["hidden"] },
+  "list-head": { variant: [], state: [] },
+  "list-sort": { variant: [], state: [] },
+  "list-sort.label": { variant: [], state: [] },
+  "list-handle": { variant: [], state: [] },
+  "list-group.toggle": { variant: [], state: [] },
+  "list-group.name": { variant: [], state: [] },
+  "list-group.note": { variant: [], state: [] },
+  "list-panel": { variant: [], state: [] },
+  "list-panel.head": { variant: [], state: [] },
+  "list-panel.title": { variant: [], state: [] },
+  "list-panel.item": { variant: [], state: [] },
+  "list-panel.items": { variant: [], state: [] },
+  "list-options": { variant: [], state: [] },
   "name-values": { variant: [], state: [] },
   "name-value": { variant: [], state: [] },
   "name-value.name": { variant: [], state: [] },

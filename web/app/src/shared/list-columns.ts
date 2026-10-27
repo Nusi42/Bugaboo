@@ -2,7 +2,7 @@ import type { SearchWord } from "@bugaboo/api-client";
 import { listColumns, type ListColumn } from "@bugaboo/ui";
 
 /** The cells of the list that are not a choice: the tick box and the buttons of the row. */
-type FixedCell = "select" | "action";
+type FixedCell = "select" | "action" | "value";
 
 /**
  * The search word of the field each cell shows. A saved search stores its columns by search word
@@ -26,7 +26,7 @@ const wordOfCell = {
 export type ColumnCell = Exclude<ListColumn, FixedCell> | "value";
 
 /** The search words of the columns that cannot be taken away in *Customize → Columns* (UX §4.2). */
-const keptWords: readonly string[] = [wordOfCell.key, wordOfCell.title];
+export const keptWords: readonly string[] = [wordOfCell.key, wordOfCell.title];
 
 /** The cells a person can choose from, in the order the project's list has them (ADR-0034 decision 6). */
 const choiceCells = listColumns.filter(

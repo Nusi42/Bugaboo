@@ -10,11 +10,13 @@ import {
   routeParam,
   targetParam,
 } from "../shared/paths.ts";
+import { validateSearch, type SearchParts } from "../shared/search-address.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
 import { placeEditorRoutes } from "./place-editor-routes.tsx";
 import { loadsScreen } from "./preload.ts";
+import { useSearchNavigation, useSearchState } from "./search-address.ts";
 
 export { projectIssueTypesRoute, projectLabelsRoute } from "./project-offer-pages.tsx";
 export { projectWorkflowsRoute, workflowsRoute } from "./workflow-pages.tsx";
@@ -192,16 +194,23 @@ export const projectIssuesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectIssues,
   loader: loadsScreen(ProjectIssuesScreen),
-  validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
+  validateSearch: (
+    search: Readonly<Record<string, unknown>>,
+  ): SearchParts & { open?: string | undefined } => ({
+    ...validateSearch(search),
     open: typeof search["open"] === "string" ? search["open"] : undefined,
   }),
   component: function ProjectIssues() {
     const project = useAddressPart(routeParam.project);
     const { open } = useSearch({ strict: false });
+    const state = useSearchState();
+    const onState = useSearchNavigation(open);
     const navigate = useNavigate();
     return project === undefined ? null : (
       <ProjectIssuesScreen
         address={project}
+        state={state}
+        onState={onState}
         open={open}
         onFocus={(key: string) => {
           void navigate({ href: issueAddress(key) });

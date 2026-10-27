@@ -1993,17 +1993,11 @@ pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed
 /// The message `issues.clear-selection`.
 pub const ISSUES_CLEAR_SELECTION: MessageKey = MessageKey::new("issues.clear-selection");
 
-/// The message `issues.column-action`.
-pub const ISSUES_COLUMN_ACTION: MessageKey = MessageKey::new("issues.column-action");
+/// The message `issues.columns`.
+pub const ISSUES_COLUMNS: MessageKey = MessageKey::new("issues.columns");
 
-/// The message `issues.column-key`.
-pub const ISSUES_COLUMN_KEY: MessageKey = MessageKey::new("issues.column-key");
-
-/// The message `issues.column-select`.
-pub const ISSUES_COLUMN_SELECT: MessageKey = MessageKey::new("issues.column-select");
-
-/// The message `issues.column-value`.
-pub const ISSUES_COLUMN_VALUE: MessageKey = MessageKey::new("issues.column-value");
+/// The message `issues.columns-reset`.
+pub const ISSUES_COLUMNS_RESET: MessageKey = MessageKey::new("issues.columns-reset");
 
 /// The message `issues.comment`.
 pub const ISSUES_COMMENT: MessageKey = MessageKey::new("issues.comment");
@@ -2041,6 +2035,12 @@ pub const ISSUES_CREATE_FIRST: MessageKey = MessageKey::new("issues.create-first
 /// The message `issues.created-on`.
 pub const ISSUES_CREATED_ON: MessageKey = MessageKey::new("issues.created-on");
 
+/// The message `issues.customize`.
+pub const ISSUES_CUSTOMIZE: MessageKey = MessageKey::new("issues.customize");
+
+/// The message `issues.customize-columns`.
+pub const ISSUES_CUSTOMIZE_COLUMNS: MessageKey = MessageKey::new("issues.customize-columns");
+
 /// The message `issues.delete`.
 pub const ISSUES_DELETE: MessageKey = MessageKey::new("issues.delete");
 
@@ -2055,6 +2055,27 @@ pub const ISSUES_DETAILS: MessageKey = MessageKey::new("issues.details");
 
 /// The message `issues.draft-kept`.
 pub const ISSUES_DRAFT_KEPT: MessageKey = MessageKey::new("issues.draft-kept");
+
+/// The message `issues.everywhere`.
+pub const ISSUES_EVERYWHERE: MessageKey = MessageKey::new("issues.everywhere");
+
+/// The message `issues.group-by`.
+pub const ISSUES_GROUP_BY: MessageKey = MessageKey::new("issues.group-by");
+
+/// The message `issues.group-by-none`.
+pub const ISSUES_GROUP_BY_NONE: MessageKey = MessageKey::new("issues.group-by-none");
+
+/// The message `issues.group-empty`.
+pub const ISSUES_GROUP_EMPTY: MessageKey = MessageKey::new("issues.group-empty");
+
+/// The message `issues.group-unlisted`.
+pub const ISSUES_GROUP_UNLISTED: MessageKey = MessageKey::new("issues.group-unlisted");
+
+/// The message `issues.group-unnamed`.
+pub const ISSUES_GROUP_UNNAMED: MessageKey = MessageKey::new("issues.group-unnamed");
+
+/// The message `issues.groups-cut`.
+pub const ISSUES_GROUPS_CUT: MessageKey = MessageKey::new("issues.groups-cut");
 
 /// The message `issues.hide-details`.
 pub const ISSUES_HIDE_DETAILS: MessageKey = MessageKey::new("issues.hide-details");
@@ -2083,9 +2104,6 @@ pub const ISSUES_MISSING_TYPE: MessageKey = MessageKey::new("issues.missing-type
 /// The message `issues.more`.
 pub const ISSUES_MORE: MessageKey = MessageKey::new("issues.more");
 
-/// The message `issues.more-issues`.
-pub const ISSUES_MORE_ISSUES: MessageKey = MessageKey::new("issues.more-issues");
-
 /// The message `issues.new`.
 pub const ISSUES_NEW: MessageKey = MessageKey::new("issues.new");
 
@@ -2109,6 +2127,12 @@ pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
 
 /// The message `issues.ready-to-create`.
 pub const ISSUES_READY_TO_CREATE: MessageKey = MessageKey::new("issues.ready-to-create");
+
+/// The message `issues.remove-filters`.
+pub const ISSUES_REMOVE_FILTERS: MessageKey = MessageKey::new("issues.remove-filters");
+
+/// The message `issues.select-shown`.
+pub const ISSUES_SELECT_SHOWN: MessageKey = MessageKey::new("issues.select-shown");
 
 /// The message `issues.sheet`.
 pub const ISSUES_SHEET: MessageKey = MessageKey::new("issues.sheet");
@@ -4077,9 +4101,6 @@ pub const SEARCH_BAR_WHEN: MessageKey = MessageKey::new("search.bar.when");
 
 /// The message `search.clear`.
 pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
-
-/// The message `search.found-list`.
-pub const SEARCH_FOUND_LIST: MessageKey = MessageKey::new("search.found-list");
 
 /// The message `search.found-none`.
 pub const SEARCH_FOUND_NONE: MessageKey = MessageKey::new("search.found-none");
@@ -7266,6 +7287,33 @@ pub fn issues_changed_people(
     )
 }
 
+/// The message `issues.column-down`.
+#[must_use]
+pub fn issues_column_down(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.column-down"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
+/// The message `issues.column-up`.
+#[must_use]
+pub fn issues_column_up(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.column-up"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
+/// The message `issues.column-width`.
+#[must_use]
+pub fn issues_column_width(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.column-width"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
 /// The message `issues.compare-keep`.
 #[must_use]
 pub fn issues_compare_keep(number: impl std::fmt::Display) -> Message {
@@ -7290,6 +7338,28 @@ pub fn issues_copy_link_of(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.copy-link-of"),
         vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `issues.count`.
+#[must_use]
+pub fn issues_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.count"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `issues.count-line`.
+#[must_use]
+pub fn issues_count_line(scope: impl std::fmt::Display, shown: i64, total: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.count-line"),
+        vec![
+            ("scope", Value::Text(scope.to_string())),
+            ("shown", Value::Number(shown)),
+            ("total", Value::Number(total)),
+        ],
     )
 }
 
@@ -7377,6 +7447,51 @@ pub fn issues_selected(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.selected"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `issues.sort-by`.
+#[must_use]
+pub fn issues_sort_by(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.sort-by"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
+/// The message `issues.sorted-down`.
+#[must_use]
+pub fn issues_sorted_down(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.sorted-down"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
+/// The message `issues.sorted-up`.
+#[must_use]
+pub fn issues_sorted_up(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.sorted-up"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
+/// The message `issues.tick-all`.
+#[must_use]
+pub fn issues_tick_all(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.tick-all"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `issues.tick-narrow`.
+#[must_use]
+pub fn issues_tick_narrow(limit: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.tick-narrow"),
+        vec![("limit", Value::Number(limit))],
     )
 }
 
@@ -12473,10 +12588,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
     ),
     ("issues.clear-selection", "Clear the ticks"),
-    ("issues.column-action", "Actions"),
-    ("issues.column-key", "Issue ID"),
-    ("issues.column-select", "Select"),
-    ("issues.column-value", "Value"),
+    ("issues.column-down", "Move {column} down"),
+    ("issues.column-up", "Move {column} up"),
+    ("issues.column-width", "Width of {column}"),
+    ("issues.columns", "Columns"),
+    ("issues.columns-reset", "Back to the project's columns"),
     ("issues.comment", "Comment"),
     ("issues.compare-and-save", "Compare and save"),
     (
@@ -12494,11 +12610,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.compare-theirs", "The newer version"),
     ("issues.copy-link", "Copy the address"),
     ("issues.copy-link-of", "{key}, copy the address"),
+    (
+        "issues.count",
+        "{count, plural, one {# issue found} other {# issues found}}",
+    ),
+    (
+        "issues.count-line",
+        "{total, number} in {scope} · {shown, number} shown",
+    ),
     ("issues.create", "Create"),
     ("issues.create-another", "Create and start another"),
     ("issues.create-first", "Create an issue"),
     ("issues.created", "{key} was created."),
     ("issues.created-on", "Created"),
+    ("issues.customize", "Customize"),
+    ("issues.customize-columns", "Columns"),
     ("issues.delete", "Delete the issue"),
     ("issues.deleted", "{key} was moved to the trash."),
     ("issues.description.edit", "Edit the description"),
@@ -12511,6 +12637,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "issues.draft-kept",
         "Your draft is kept if you close this form.",
+    ),
+    ("issues.everywhere", "all projects"),
+    ("issues.group-by", "Group by"),
+    ("issues.group-by-none", "No grouping"),
+    ("issues.group-empty", "None"),
+    (
+        "issues.group-unlisted",
+        "The issues of this group cannot be listed here yet.",
+    ),
+    ("issues.group-unnamed", "Other"),
+    (
+        "issues.groups-cut",
+        "There are more groups than can be shown. Narrow the search to see the others.",
     ),
     ("issues.hide-details", "Hide details"),
     ("issues.keep-theirs", "Keep {name}'s change"),
@@ -12531,7 +12670,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Choose an issue type first, then you can create and start another.",
     ),
     ("issues.more", "More"),
-    ("issues.more-issues", "Show more issues"),
     ("issues.new", "New issue"),
     ("issues.new-title", "New issue"),
     (
@@ -12552,7 +12690,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Nothing is missing: you can create the issue.",
     ),
     ("issues.refused-at-field", "{field}: {reason}"),
+    ("issues.remove-filters", "Remove all filters"),
     ("issues.select-issue", "Select {key}"),
+    ("issues.select-shown", "Tick the issues shown"),
     (
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
@@ -12560,8 +12700,25 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Open in the side panel"),
+    ("issues.sort-by", "Sort by {column}"),
+    (
+        "issues.sorted-down",
+        "Sorted by {column}, largest first. Press to turn the order around.",
+    ),
+    (
+        "issues.sorted-up",
+        "Sorted by {column}, smallest first. Press to turn the order around.",
+    ),
     ("issues.summary-separator", " · "),
     ("issues.summary-unassigned", "Not assigned"),
+    (
+        "issues.tick-all",
+        "Tick all {count, plural, one {# result} other {# results}}",
+    ),
+    (
+        "issues.tick-narrow",
+        "Narrow the search to {limit, number} issues or fewer to change them together",
+    ),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
     ("issues.type", "Type"),
@@ -14171,7 +14328,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.clear", "Clear the search"),
     ("search.copy-name", "Copy of {name}"),
     ("search.found-issue", "{id} · {title}"),
-    ("search.found-list", "Issues found"),
     ("search.found-none", "No issues match this search."),
     ("search.found-project", "{short} · {name}"),
     (

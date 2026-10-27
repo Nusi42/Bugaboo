@@ -104,6 +104,10 @@ tokens {
     size "size-control-small" "28px" touch="44px"
     // A row of a list: 44 with a mouse and 64 for a finger.
     size "size-row" "44px" touch="64px"
+    // The same row with *Spacing: Compact*.
+    size "size-row-compact" "32px" touch="44px"
+    // How tall the rows of a long list may be before the list scrolls inside the page.
+    size "size-list-scroll" "70dvh"
     // The coloured edge of a row for its priority.
     size "size-edge" "4px"
     // The name of a value in the details: 112 on a computer, 120 on a phone.
@@ -120,6 +124,11 @@ tokens {
     size "size-col-person" "144px"
     size "size-col-labels" "160px"
     size "size-col-project" "128px"
+    // The title takes the room that is left, and no less than this; a column a person drags is no
+    // narrower than the least and moves by the step with the arrow keys.
+    size "size-col-title" "160px"
+    size "size-col-least" "48px"
+    size "size-col-step" "16px"
     size "size-col-value" "144px"
     size "size-col-changed" "120px"
     // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 480 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
@@ -133,6 +142,8 @@ tokens {
     // and nothing else sets a style at run time.
     size "window-width" "$size-window" run-time="true"
     size "window-height" "auto" run-time="true"
+    // The columns of the issue list while it is drawn: one width for each, the same in the head and in every row.
+    size "list-columns" "auto" run-time="true"
     size "bp-window-side" "880px"
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at the week zoom.
@@ -1826,6 +1837,187 @@ part "list-group" {
 part "list-group.count" {
     color "$fg-muted"
     font-weight "$weight-regular"
+}
+
+
+// ───────────── The issue list with columns a person chose (UX §4.2) ─────────────
+//
+// The head and every row are a grid with the same columns: the code writes their widths into the
+// variable `list-columns` of the list, once for the list. A row that scrolls out of sight is not
+// drawn at all (ADR-0009, amendment M5), so the rows are positioned by the list and not by flow.
+
+part "list-frame" {
+    display flex
+    flex-direction column
+    min-width 0
+}
+
+part "list-row[variant=grid]" {
+    display grid
+    grid-template-columns "$list-columns"
+}
+
+part "list-row[variant=grid] list-row.cell" {
+    width auto
+}
+
+// The cells of a column keep their alignment; a text column starts at the start edge.
+part "list-row[variant=grid] list-row.cell[variant=status]" "list-row[variant=grid] list-row.cell[variant=type]" "list-row[variant=grid] list-row.cell[variant=select]" {
+    justify-content center
+}
+
+part "list-frame[variant=compact] list-row" {
+    min-height "$size-row-compact"
+}
+
+part "list-frame[variant=compact] list-row[variant=head]" {
+    min-height "$size-row-compact"
+}
+
+// The rows scroll inside this box; the head stays above them.
+part "list-scroll" {
+    box-sizing border-box
+    max-height "$size-list-scroll"
+    overflow auto
+    scrollbar-gutter stable
+    border-bottom "$border-width solid $border-subtle"
+}
+
+part "list-scroll[state=hidden]" {
+    display none
+}
+
+part "list-head" {
+    scrollbar-gutter stable
+    overflow hidden
+}
+
+// The name of a column is a button that sorts by it.
+part "list-sort" {
+    use "bare-button"
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    min-width 0
+    padding 0
+    color inherit
+    font-size inherit
+    font-weight inherit
+    text-align start
+}
+
+part "list-sort[focus-visible]" {
+    use "ring"
+}
+
+part "list-sort.label" {
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+// The edge of a head cell: dragging it, or moving it with the arrow keys, sets the width.
+part "list-handle" {
+    border 0
+    padding 0
+    background transparent
+    position absolute
+    inset-block 0
+    inset-inline-end 0
+    width "$space-2"
+    cursor col-resize
+    touch-action none
+}
+
+part "list-handle:hover" {
+    background "$border"
+}
+
+part "list-handle[focus-visible]" {
+    use "ring-inside"
+}
+
+part "list-row[variant=head] list-row.cell" {
+    position relative
+}
+
+// A group of rows can be folded: the whole header is the button.
+part "list-group.toggle" {
+    use "bare-button"
+    display flex
+    flex 1
+    align-items center
+    gap "$space-2"
+    min-height "$size-control"
+    padding 0
+    color inherit
+    font-size inherit
+    font-weight inherit
+    text-align start
+}
+
+part "list-group.toggle[focus-visible]" {
+    use "ring-inside"
+}
+
+part "list-group.name" {
+    min-width 0
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+// The words that say why a group shows no rows.
+part "list-group.note" {
+    color "$fg-muted"
+    font-weight "$weight-regular"
+}
+
+// Customize → Columns: a panel beside the list.
+part "list-panel" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-3"
+    box-sizing border-box
+    width "$size-list"
+    padding "$pad-box"
+}
+
+part "list-panel.head" {
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+}
+
+part "list-panel.title" {
+    margin 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+}
+
+part "list-panel.item" {
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-2"
+    min-height "$size-control"
+}
+
+part "list-panel.items" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+// The controls above the list: Group by, Spacing, Customize.
+part "list-options" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3" "$space-5"
 }
 
 // A bar of the timeline (UX §4.7): the same tint and edge as the row of the list.

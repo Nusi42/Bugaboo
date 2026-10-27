@@ -11,7 +11,8 @@ export interface CellSource {
   readonly group: Schema<"StatusGroup"> | null | undefined;
   /** The words of its status, where the reader may see it: the icon is named by them. */
   readonly statusWord: string | undefined;
-  readonly type: Pick<Schema<"IssueTypeRef">, "icon" | "name">;
+  /** Its issue type; none where the list does not ask for it. */
+  readonly type: Pick<Schema<"IssueTypeRef">, "icon" | "name"> | undefined;
 }
 
 /** What a row adds to its cells. */
@@ -39,7 +40,7 @@ export function issueCells(
         <StatusIcon group={group} size={iconSize.small} label={statusWord} />
       ),
     key,
-    type: <IssueTypeIcon name={type.icon} label={type.name} />,
+    type: type === undefined ? undefined : <IssueTypeIcon name={type.icon} label={type.name} />,
     title: (
       <>
         {before}

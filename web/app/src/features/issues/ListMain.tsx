@@ -1,0 +1,66 @@
+import { ListFrame, part, partOf, type ListColumnSpec } from "@bugaboo/ui";
+import type { Dispatch, SetStateAction } from "react";
+
+import { cellOf } from "../../shared/list-columns.ts";
+import { useListContext } from "./list-context.ts";
+import { ListHeader } from "./ListHeader.tsx";
+import { ListInfo } from "./ListInfo.tsx";
+import { ListOptions } from "./ListOptions.tsx";
+import { ListResults } from "./ListResults.tsx";
+import type { LoadedProps } from "./results-props.ts";
+
+export interface ListMainProps {
+  readonly props: LoadedProps;
+  readonly customizing: boolean;
+  readonly dragged: Readonly<Record<string, number>>;
+  /** The ids of the issues drawn now. */
+  readonly shown: readonly string[];
+  readonly onCustomize: () => void;
+  readonly onDragged: Dispatch<SetStateAction<Readonly<Record<string, number>>>>;
+}
+
+/** The box to tick the rows of the head is the first column, where rows can be ticked. */
+const selectSpec: ListColumnSpec = { column: "select" };
+
+/** The options, the count line and the list with its head, in one column beside the panel. */
+export function ListMain({
+  props,
+  customizing,
+  dragged,
+  shown,
+  onCustomize,
+  onDragged,
+}: ListMainProps) {
+  const { view, fields, onView, onText } = props;
+  const { words, ticks, phone } = useListContext();
+  const compact = view.spacing === "compact";
+  const specs: readonly ListColumnSpec[] = [
+    ...(ticks && !phone ? [selectSpec] : []),
+    ...words.map((word) => ({ column: cellOf(word), width: dragged[word] ?? view.widths[word] })),
+  ];
+  return (
+    <div {...partOf(part.listEditorList)}>
+      <ListOptions
+        view={view}
+        fields={fields}
+        customizing={customizing}
+        onView={onView}
+        onCustomize={onCustomize}
+      />
+      <ListInfo scopeName={props.scopeName} shown={shown} />
+      <ListFrame columns={specs} compact={compact}>
+        {phone ? null : (
+          <ListHeader
+            view={view}
+            fields={fields}
+            shown={shown}
+            onView={onView}
+            onText={onText}
+            onDragged={onDragged}
+          />
+        )}
+        <ListResults view={view} stale={props.stale} />
+      </ListFrame>
+    </div>
+  );
+}

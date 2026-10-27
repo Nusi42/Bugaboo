@@ -28,10 +28,6 @@ export const messages = {
   "search.bar.member-of": "in the group {group}",
   "search.found-issue": "{id} · {title}",
   "search.found-project": "{short} · {name}",
-  "search.found-stale":
-    "These are the issues of the last search without a mistake. Fix the mistake to update them.",
-  "search.found-none": "No issues match this search.",
-  "search.found-list": "Issues found",
   "search.bar.advanced-label": "Advanced search",
   "search.bar.advanced-placeholder":
     "Write a search, for example: status is Open and assignedTo is me",

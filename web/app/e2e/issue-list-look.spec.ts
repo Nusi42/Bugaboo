@@ -34,7 +34,7 @@ test("iss_01 the issues are a grid in groups by status group, each with its name
   page,
 }) => {
   await openList(page);
-  await expect(grid(page).getByRole("rowheader")).toHaveText([
+  await expect(partIn(grid(page), "list-group.name")).toHaveText([
     groups.running,
     groups.waiting,
     groups.finished,

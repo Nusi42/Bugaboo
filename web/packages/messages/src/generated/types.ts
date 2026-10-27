@@ -241,9 +241,14 @@ export interface MessageArguments {
   "issues.changed-after-you-by": { name: string | number };
   "issues.changed-own": { count: number };
   "issues.changed-people": { count: number; field: string | number; names: string | number };
+  "issues.column-down": { column: string | number };
+  "issues.column-up": { column: string | number };
+  "issues.column-width": { column: string | number };
   "issues.compare-keep": { number: string | number };
   "issues.compare-paragraph": { number: string | number };
   "issues.copy-link-of": { key: string | number };
+  "issues.count": { count: number };
+  "issues.count-line": { scope: string | number; shown: number; total: number };
   "issues.created": { key: string | number };
   "issues.deleted": { key: string | number };
   "issues.draft-found-form": { when: string | number };
@@ -253,6 +258,11 @@ export interface MessageArguments {
   "issues.refused-at-field": { field: string | number; reason: string | number };
   "issues.select-issue": { key: string | number };
   "issues.selected": { count: number };
+  "issues.sort-by": { column: string | number };
+  "issues.sorted-down": { column: string | number };
+  "issues.sorted-up": { column: string | number };
+  "issues.tick-all": { count: number };
+  "issues.tick-narrow": { limit: number };
   "issues.title-of": { key: string | number; title: string | number };
   "issues.unassign-name": { name: string | number };
   "labels.combine-dialog-text": { name: string | number; other: string | number };
