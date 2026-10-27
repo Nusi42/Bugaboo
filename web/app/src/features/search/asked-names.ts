@@ -1,8 +1,8 @@
 /**
  * The names that only the server knows (UX design section 4.3, WP-02 task 5): people, groups,
  * projects and issues. The module says what to ask for and what the names start with; this asks
- * the routes that exist and gives each name as the language writes it. A person who may not list
- * something (people, groups) is simply not offered those names: the checker of the server still
+ * the routes that exist and gives each name as the language writes it. The names of people and
+ * groups come from the server, which lists only those this person may use: the checker of the server still
  * decides when the search runs.
  */
 import { dataOf, type Schema } from "@bugaboo/api-client";
@@ -10,7 +10,6 @@ import type { AskKind, SearchLanguage } from "@bugaboo/wasm-search";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { pageSize } from "../../shared/paged.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { issueSource, nameSource } from "../../shared/apply-suggestion.ts";
 
@@ -25,38 +24,18 @@ export interface AskedName {
 /** How many names are offered at once. */
 const offered = 8;
 
-async function peopleStarting(
+/** The names of people or groups that the server says this person may use in a search. */
+async function serverNamesStarting(
   language: SearchLanguage,
+  kind: "people" | "groups",
   words: string,
 ): Promise<readonly AskedName[]> {
-  const page: Schema<"Page_PersonItem"> = dataOf(
-    await api.client.GET("/api/v1/people", {
-      params: { query: { search: words, limit: offered, fields: "person" } },
+  const found: Schema<"SearchNamesBody"> = dataOf(
+    await api.client.GET("/api/v1/search/names", {
+      params: { query: { kind, starting_with: words, limit: offered } },
     }),
   );
-  return page.items.flatMap((item) => {
-    const person = item.person;
-    return person?.shown === "name"
-      ? [{ source: nameSource(language, person.name), label: person.name }]
-      : [];
-  });
-}
-
-async function groupsStarting(
-  language: SearchLanguage,
-  words: string,
-): Promise<readonly AskedName[]> {
-  const page: Schema<"Page_NamedVersionItem"> = dataOf(
-    await api.client.GET("/api/v1/groups", {
-      params: { query: { limit: pageSize.largest, fields: "name" } },
-    }),
-  );
-  const start = words.toLowerCase();
-  return page.items
-    .flatMap((item) => (item.name === undefined || item.name === null ? [] : [item.name]))
-    .filter((name) => name.toLowerCase().startsWith(start))
-    .slice(0, offered)
-    .map((name) => ({ source: nameSource(language, name), label: name }));
+  return found.names.map((name) => ({ source: nameSource(language, name), label: name }));
 }
 
 async function projectsStarting(words: string): Promise<readonly AskedName[]> {
@@ -108,11 +87,8 @@ function namesStarting(
   what: AskKind,
   words: string,
 ): Promise<readonly AskedName[]> {
-  if (what === "people") {
-    return peopleStarting(language, words);
-  }
-  if (what === "groups") {
-    return groupsStarting(language, words);
+  if (what === "people" || what === "groups") {
+    return serverNamesStarting(language, what, words);
   }
   return what === "projects" ? projectsStarting(words) : issuesStarting(language, words);
 }

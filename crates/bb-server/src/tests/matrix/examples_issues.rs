@@ -243,6 +243,11 @@ fn search_request(operation: &str) -> Option<Request> {
             None,
         ),
         "listSearchFields" => ("GET", "/api/v1/search/fields".into(), None),
+        "listSearchNames" => (
+            "GET",
+            "/api/v1/search/names?kind=people&starting_with=a".into(),
+            None,
+        ),
         _ => return None,
     })
 }

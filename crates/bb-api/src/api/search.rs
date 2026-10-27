@@ -17,8 +17,8 @@ use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_app::auth::RequestInfo;
 use bb_app::issues::IssueView;
 use bb_app::search::{
-    GroupKey, ReadableFieldsQuery, SearchCountQuery, SearchGroupsQuery, SearchPage, SearchQuery,
-    SearchScope, SearcherQuery, ShownKey,
+    GroupKey, NameChoiceKind, NameChoicesQuery, ReadableFieldsQuery, SearchCountQuery,
+    SearchGroupsQuery, SearchPage, SearchQuery, SearchScope, SearcherQuery, ShownKey,
 };
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::{Priority, StatusGroup};
@@ -442,6 +442,88 @@ async fn list_search_fields(
     }))
 }
 
+/// Which names are asked for.
+#[derive(Clone, Copy, Deserialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum NamesKind {
+    /// People, for the fields that hold a person.
+    People,
+    /// Groups, for `member of`.
+    Groups,
+}
+
+/// What the names route takes.
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct NamesParams {
+    /// People or groups.
+    #[param(inline)]
+    kind: NamesKind,
+    /// The start of the names; left out, the first ones.
+    starting_with: Option<String>,
+    /// How many names at most (default 8, at most 20).
+    limit: Option<usize>,
+}
+
+/// The names the person may use in a search, in the order of the names.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct SearchNamesBody {
+    /// The names.
+    names: Vec<String>,
+}
+
+/// The most characters of the start of a name that are looked for.
+const MAX_NAME_START: usize = 100;
+
+/// The number of names when the request does not say.
+const NAMES_DEFAULT: usize = 8;
+
+/// The names of people or groups that the person may use in a search and that start with some
+/// words: what a suggestion offers. A person the searcher may not name is not in the list, as one
+/// who does not exist; the rule is the one that accepts or refuses a search that names them.
+#[utoipa::path(
+    get,
+    path = "/api/v1/search/names",
+    operation_id = "listSearchNames",
+    tag = "search",
+    params(NamesParams),
+    responses(
+        (status = 200, description = "The names.", body = SearchNamesBody),
+        InvalidAnswer, NotSignedInAnswer
+    )
+)]
+async fn list_search_names(
+    State(auth): State<AuthHandle>,
+    Extension(limits): Extension<Arc<Limits>>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiQuery(params): ApiQuery<NamesParams>,
+) -> Result<Response, ApiError> {
+    counted(&auth, &limits, &info, &session_token).await?;
+    let starting_with = params.starting_with.unwrap_or_default();
+    if starting_with.chars().count() > MAX_NAME_START {
+        return Err(ApiError::new(bb_core::ErrorCode::InvalidRequest));
+    }
+    let found = auth
+        .api()?
+        .name_choices(
+            info,
+            NameChoicesQuery {
+                session_token,
+                kind: match params.kind {
+                    NamesKind::People => NameChoiceKind::People,
+                    NamesKind::Groups => NameChoiceKind::Groups,
+                },
+                starting_with,
+                limit: params.limit.unwrap_or(NAMES_DEFAULT),
+            },
+        )
+        .await?;
+    super::auth::answer_authorized(&found.map(|choices| SearchNamesBody { names: choices.0 }))
+}
+
+impl Masked for SearchNamesBody {}
+
 impl Masked for SearchCountBody {}
 impl Masked for SearchGroupsBody {}
 impl Masked for SearchFieldsBody {}
@@ -457,5 +539,6 @@ where
         .routes(routes!(count_searched_issues))
         .routes(routes!(group_searched_issues))
         .routes(routes!(list_search_fields))
+        .routes(routes!(list_search_names))
         .layer(Extension(Arc::clone(limits)))
 }

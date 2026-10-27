@@ -48,6 +48,24 @@ pub(crate) const NAME_RESOLUTIONS_MAX: usize = 200;
 // A search that a person runs (at most `MAX_FILTERS` names) is never out of budget.
 const _: () = assert!(NAME_RESOLUTIONS_MAX > bb_searchlang::MAX_FILTERS);
 
+/// How the name typed is compared with the name of a person or a group: the whole name (a search
+/// that is run or checked), or the start of it (the names a suggestion offers).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Matching {
+    Whole,
+    Start,
+}
+
+impl Matching {
+    /// Whether `name` is what `typed` stands for, by the one rule of the same name.
+    fn holds(self, name: &str, typed: &str) -> bool {
+        match self {
+            Self::Whole => same_name(name, typed),
+            Self::Start => name_key(name).starts_with(&name_key(typed)),
+        }
+    }
+}
+
 /// What a name in a search is the name of.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum What {
@@ -424,6 +442,25 @@ impl<S: AuthStore> Ctx<'_, S> {
         member_of: bool,
         cache: &mut NameCache,
     ) -> Result<Vec<GroupId>, AppError> {
+        Ok(self
+            .groups_matching(actor, viewer, text, member_of, Matching::Whole, cache)
+            .await?
+            .into_iter()
+            .map(|group| group.id)
+            .collect())
+    }
+
+    /// The groups whose names match, among those the person may name (see `groups_named`): the one
+    /// place that decides it, for a search and for the names a suggestion offers.
+    async fn groups_matching(
+        &self,
+        actor: &Actor,
+        viewer: &bb_policy::Evaluation,
+        text: &str,
+        member_of: bool,
+        matching: Matching,
+        cache: &mut NameCache,
+    ) -> Result<Vec<bb_core::access::Group>, AppError> {
         if !viewer.sees_names_in(FieldType::Group) {
             return Ok(Vec::new());
         }
@@ -452,8 +489,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .groups
             .iter()
             .flatten()
-            .filter(|group| same_name(&group.name, text) && (everyone || mine.contains(&group.id)))
-            .map(|group| group.id)
+            .filter(|group| {
+                matching.holds(&group.name, text) && (everyone || mine.contains(&group.id))
+            })
+            .cloned()
             .collect())
     }
 
@@ -526,6 +565,25 @@ impl<S: AuthStore> Ctx<'_, S> {
         kind: PeopleKind,
         text: &str,
     ) -> Result<Vec<UserId>, AppError> {
+        Ok(self
+            .people_matching(actor, viewer, kind, text, Matching::Whole)
+            .await?
+            .into_iter()
+            .map(|person| person.id)
+            .collect())
+    }
+
+    /// The people whose names match, among those the viewer may name for the kind of the field.
+    /// The one place that decides which people a search may name, for running and checking it
+    /// (`Matching::Whole`) and for the names a suggestion offers (`Matching::Start`).
+    async fn people_matching(
+        &self,
+        actor: &Actor,
+        viewer: &bb_policy::Evaluation,
+        kind: PeopleKind,
+        text: &str,
+        matching: Matching,
+    ) -> Result<Vec<bb_core::person::Person>, AppError> {
         if !names_other_people(viewer, kind) {
             let own = self
                 .store()
@@ -533,8 +591,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?;
             return Ok(own
-                .filter(|person| is_named(person, text))
-                .map(|person| person.id)
+                .filter(|person| matching.holds(&person.display_name, text))
                 .into_iter()
                 .collect());
         }
@@ -550,8 +607,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(|error| internal::<S>(&error))?;
             found.extend(
                 page.iter()
-                    .filter(|person| is_named(person, text))
-                    .map(|person| person.id),
+                    .filter(|person| matching.holds(&person.display_name, text))
+                    .cloned(),
             );
             match page.last() {
                 Some(last) if page.len() as u64 == PEOPLE_PER_NAME => {
@@ -562,12 +619,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(found)
     }
-}
-
-/// Whether the person has this name by the one rule of the same name: the only place a search reads
-/// the name of a person, to compare it with the name typed in the search (no name is shown).
-fn is_named(person: &bb_core::person::Person, text: &str) -> bool {
-    same_name(&person.display_name, text)
 }
 
 /// The groups of status keys by status group, in the order of the groups.
@@ -608,5 +659,76 @@ mod tests {
         // Lifted, the page that has no search yet goes on.
         cache.lift();
         assert!(cache.may_resolve());
+    }
+}
+
+/// The kinds of people a name offered for a suggestion has to be nameable for: a suggestion does
+/// not know the field it stands in, so it offers only names that every person field takes.
+const OFFERED_KINDS: [PeopleKind; 2] = [PeopleKind::AssignedTo, PeopleKind::ReportedBy];
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The names of people that this person may use in a search and that start with the words
+    /// typed, at most `limit`, in the order of the names.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn people_name_choices(
+        &self,
+        actor: &Actor,
+        starting_with: &str,
+        limit: usize,
+    ) -> Result<Vec<String>, AppError> {
+        let viewer = self.evaluation_of(actor, Where::Organization).await?;
+        let mut names: Option<Vec<(UserId, String)>> = None;
+        for kind in OFFERED_KINDS {
+            let found: Vec<(UserId, String)> = self
+                .people_matching(actor, &viewer, kind, starting_with, Matching::Start)
+                .await?
+                .into_iter()
+                .map(|person| (person.id, person.display_name))
+                .collect();
+            names = Some(match names {
+                None => found,
+                Some(before) => before
+                    .into_iter()
+                    .filter(|(id, _)| found.iter().any(|(other, _)| other == id))
+                    .collect(),
+            });
+        }
+        Ok(names
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(_, name)| name)
+            .take(limit)
+            .collect())
+    }
+
+    /// The names of groups that this person may name after `member of` and that start with the
+    /// words typed, at most `limit`.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn group_name_choices(
+        &self,
+        actor: &Actor,
+        starting_with: &str,
+        limit: usize,
+    ) -> Result<Vec<String>, AppError> {
+        let viewer = self.evaluation_of(actor, Where::Organization).await?;
+        let mut cache = NameCache::default();
+        Ok(self
+            .groups_matching(
+                actor,
+                &viewer,
+                starting_with,
+                true,
+                Matching::Start,
+                &mut cache,
+            )
+            .await?
+            .into_iter()
+            .map(|group| group.name)
+            .take(limit)
+            .collect())
     }
 }

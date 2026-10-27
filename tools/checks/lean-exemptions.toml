@@ -310,3 +310,8 @@ reason = "The groups are the values of one field and the answer holds at most 20
 route = "GET /api/v1/search/fields"
 property = "fields"
 reason = "The fields a person may search by are the fields of the organization, a few dozen; the answer is a menu of the editor and holds at most 500 and says when it cut the list off (`truncated`) (M5-F44)."
+
+[[exempt]]
+route = "GET /api/v1/search/names"
+property = "names"
+reason = "The names a suggestion offers are a short list of plain names (at most 20, the request names the number): a menu of the editor, which has no fields to leave out."

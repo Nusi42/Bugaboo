@@ -3188,6 +3188,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/search/names": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The names of people or groups that the person may use in a search and that start with some
+     *     words: what a suggestion offers. A person the searcher may not name is not in the list, as one
+     *     who does not exist; the rule is the one that accepts or refuses a search that names them.
+     */
+    get: operations["listSearchNames"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/settings": {
     parameters: {
       query?: never;
@@ -7498,6 +7519,11 @@ export interface components {
       /** @description Its name; left out where the person may not know it. */
       name?: string | null;
     };
+    /** @description The names the person may use in a search, in the order of the names. */
+    SearchNamesBody: {
+      /** @description The names. */
+      names: string[];
+    };
     /**
      * @description Which set of saved searches a list shows: the person's own, or the ones shared with them.
      * @enum {string}
@@ -8261,8 +8287,6 @@ export interface components {
     Fields: string;
     /** @description Where the page starts: the `next_cursor` of the page before. */
     Cursor: string;
-    /** @description How many items a page holds at most (default 50, at most 100). */
-    Limit: number;
   };
   requestBodies: never;
   headers: {
@@ -8283,7 +8307,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -8350,7 +8374,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -8466,7 +8490,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description What to list: people (when left out), groups or roles. */
         kind?: "person" | "group" | "role";
         /** @description Words that every found name holds, without regard to capitals. */
@@ -8505,7 +8529,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -8657,7 +8681,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -9556,7 +9580,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /**
          * @description The ID of the project. Without it the answer is about the whole organization: the level
          *     each role has of its own.
@@ -9733,7 +9757,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -10232,7 +10256,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -10574,7 +10598,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -10736,7 +10760,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description Words that every found name holds, without regard to capitals. */
         search?: string;
       };
@@ -10777,7 +10801,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -10875,7 +10899,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description The ID or short name of a project. */
         project?: string;
       };
@@ -10980,7 +11004,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -11286,7 +11310,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -11406,7 +11430,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -11444,7 +11468,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description Everything (the default), only the comments, or only the changes. */
         tab?: components["schemas"]["HistoryTab"];
       };
@@ -11581,7 +11605,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description The start of a name; every choice when left out. */
         search?: string;
       };
@@ -11694,7 +11718,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -11862,7 +11886,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -12004,7 +12028,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description The ID or short name of a project. */
         project?: string;
       };
@@ -12109,7 +12133,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -12183,7 +12207,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description The ID or short name of a project. */
         project?: string;
       };
@@ -12935,7 +12959,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description All of them (the default), the unread ones, or the ones that mention the person. */
         tab?: components["schemas"]["NotificationTab"];
       };
@@ -13080,7 +13104,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /**
          * @description Words that every found person holds in their name or e-mail address, without regard to
          *     capitals.
@@ -13253,7 +13277,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /**
          * @description The projects directly inside this one. Without it (and without `search`) the list is the top
          *     of the tree.
@@ -13404,7 +13428,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description Words that every found name holds, in any order; left out or empty, everybody is listed. */
         search?: string;
         /**
@@ -13458,7 +13482,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description What to list: people (when left out), groups or roles. */
         kind?: "person" | "group" | "role";
         /** @description Words that every found name holds, without regard to capitals. */
@@ -13501,7 +13525,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -13576,7 +13600,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path: {
@@ -14040,7 +14064,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -14169,7 +14193,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description Only the roles the person who asks may give: those whose permissions they all hold. */
         giveable?: boolean;
       };
@@ -14443,7 +14467,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description The ones the person made (`mine`, the default) or the ones shared with them (`shared`). */
         scope?: components["schemas"]["SearchSet"];
       };
@@ -14509,7 +14533,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
         /** @description Groups or projects. */
         kind: components["schemas"]["ShareKind"];
       };
@@ -14817,7 +14841,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -14919,6 +14943,40 @@ export interface operations {
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listSearchNames: {
+    parameters: {
+      query: {
+        /** @description People or groups. */
+        kind: "people" | "groups";
+        /** @description The start of the names; left out, the first ones. */
+        starting_with?: string;
+        /** @description How many names at most (default 8, at most 20). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The names. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchNamesBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -15117,7 +15175,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;
@@ -15431,7 +15489,7 @@ export interface operations {
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
         /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: components["parameters"]["Limit"];
+        limit?: number;
       };
       header?: never;
       path?: never;

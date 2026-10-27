@@ -1,6 +1,7 @@
 //! Searching (QRY-04, QRY-05, SEC-17): what a person may ask a search about, and the port the
 //! compiler of the store implements. The routes of the search build on this module.
 
+mod name_choices;
 mod names;
 mod readable;
 mod request;
@@ -8,6 +9,9 @@ mod run;
 mod target;
 
 pub use bb_searchlang::Mistake;
+pub use name_choices::{
+    NAME_CHOICES_MAX, NameChoiceKind, NameChoices, NameChoicesQuery, name_choices,
+};
 #[cfg(test)]
 pub(crate) use names::NAME_RESOLUTIONS_MAX;
 pub(crate) use names::NameCache;
