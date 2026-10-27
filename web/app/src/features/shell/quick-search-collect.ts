@@ -22,6 +22,16 @@ export function firstReady(groups: readonly ResultGroup[]): string | undefined {
     : resultKey(group, first);
 }
 
+/**
+ * What the server found for older words while it is asked again: every group keeps its place and is
+ * marked busy, so its rows cannot be chosen; once the answer is in, nothing is marked.
+ */
+export function markStale(found: Collected, waiting: boolean): Collected {
+  return waiting
+    ? { ...found, groups: found.groups.map((group) => ({ ...group, busy: true })) }
+    : found;
+}
+
 /** The names of the results that cannot be chosen: the rows of a group that is still busy. */
 export function busyKeys(groups: readonly ResultGroup[]): readonly string[] {
   return groups

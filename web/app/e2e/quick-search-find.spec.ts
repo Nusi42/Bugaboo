@@ -10,6 +10,7 @@ import {
   box,
   dialog,
   FAST_TYPING_MS,
+  holdBackSearches,
   list,
   nothingFound,
   prepareScene,
@@ -141,6 +142,20 @@ test("cfg_08 the letters of shortcuts can be typed into the box", async ({ page 
   await box(page).pressSequentially("gcsa login", { delay: FAST_TYPING_MS });
   await expect(box(page)).toHaveValue("gcsa login");
   await expect(dialog(page)).toBeVisible();
+});
+
+test("cfg_08 the list is busy while the server has yet to answer, and not after", async ({
+  page,
+}) => {
+  await signIn(page, bob);
+  const answer = await holdBackSearches(page);
+  await ask(page, "passkey");
+  const busy = dialog(page).locator("[aria-busy='true']");
+  await expect(busy).toHaveCount(1);
+  await expect(result(page, titles.passkey)).toHaveCount(0);
+  answer();
+  await expect(result(page, titles.passkey)).toBeVisible();
+  await expect(busy).toHaveCount(0);
 });
 
 test("cfg_08_typing_counts_one_search_per_pause", async ({ page }) => {

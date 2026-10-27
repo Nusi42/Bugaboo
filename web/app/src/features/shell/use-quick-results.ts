@@ -4,7 +4,7 @@ import { useLater } from "../../shared/use-later.ts";
 import { usePermissions } from "../../shared/use-me.ts";
 import { useSignOut } from "../../shared/use-sign-out.ts";
 import { actionsSource } from "./quick-search-actions.ts";
-import { arrange, collectResults, type Collected } from "./quick-search-collect.ts";
+import { arrange, collectResults, markStale, type Collected } from "./quick-search-collect.ts";
 import { pagesSource } from "./quick-search-pages.ts";
 import { savedSearchesSource } from "./quick-search-saved.ts";
 import {
@@ -103,9 +103,6 @@ export function useQuickResults(query: string): QuickFound {
     // What the server found for older words keeps its place while it is asked again, so no group
     // goes and comes back, but it is marked busy and its rows cannot be chosen.
     const waiting = later.to !== query;
-    const asked = waiting
-      ? { ...later.found, groups: later.found.groups.map((group) => ({ ...group, busy: true })) }
-      : later.found;
-    return { ...arrange(sources, query, now.found, asked), waiting };
+    return { ...arrange(sources, query, now.found, markStale(later.found, waiting)), waiting };
   }, [sources, query, now, later]);
 }

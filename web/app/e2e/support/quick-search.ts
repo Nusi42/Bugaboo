@@ -2,6 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
+import { doNothing } from "../../src/shared/do-nothing.ts";
 import { createPeopleWithRoles, giveRole, roleName } from "./access.ts";
 import { bob, createAdmin, ownId, signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
@@ -103,4 +104,20 @@ export function result(page: Page, text: string) {
 export async function statusOfIssue(page: Page, key: string): Promise<number> {
   const answer = await page.request.get(new URL(`/api/v1/issues/${key}`, page.url()).href);
   return answer.status();
+}
+
+/**
+ * Holds back the answers to the searches of issues until the returned function is called, so a test
+ * can look at the dialog while the server has yet to answer.
+ */
+export async function holdBackSearches(page: Page): Promise<() => void> {
+  let release = doNothing;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/v1/search/issues*", async (route) => {
+    await gate;
+    await route.continue();
+  });
+  return release;
 }

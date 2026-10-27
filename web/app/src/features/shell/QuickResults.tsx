@@ -21,37 +21,40 @@ export function QuickResults({ found, firstIsReady, onOpen }: QuickResultsProps)
   const { groups, waiting } = found;
   const ready = firstIsReady ? firstReady(groups) : undefined;
   return (
-    <ListBox
-      disabledKeys={busyKeys(groups)}
-      aria-label={t("search.results")}
-      {...partOf(part.quickSearchResults)}
-      renderEmptyState={() =>
-        // Not "nothing found" while the server has yet to answer.
-        waiting ? null : <p {...partOf(part.quickSearchEmpty)}>{t("search.nothing")}</p>
-      }
-      onAction={onOpen}
-    >
-      {groups.map((group) => (
-        <ListBoxSection key={group.id} aria-busy={group.busy} {...partOf(part.column)}>
-          <Header {...partOf(part.quickSearchHeading)}>{group.heading}</Header>
-          {group.results.map((result) => (
-            <ListBoxItem
-              key={resultKey(group, result)}
-              id={resultKey(group, result)}
-              textValue={result.title}
-              data-ready={resultKey(group, result) === ready ? true : undefined}
-              {...partOf(part.quickSearchItem)}
-            >
-              <span {...partOf(part.quickSearchTitle)}>{result.title}</span>
-              {result.hint === undefined ? null : (
-                <Text slot={descriptionSlot} {...partOf(part.hint)}>
-                  {result.hint}
-                </Text>
-              )}
-            </ListBoxItem>
-          ))}
-        </ListBoxSection>
-      ))}
-    </ListBox>
+    // The list is busy while the server has yet to answer for the words now typed.
+    <div aria-busy={waiting}>
+      <ListBox
+        disabledKeys={busyKeys(groups)}
+        aria-label={t("search.results")}
+        {...partOf(part.quickSearchResults)}
+        renderEmptyState={() =>
+          // Not "nothing found" while the server has yet to answer.
+          waiting ? null : <p {...partOf(part.quickSearchEmpty)}>{t("search.nothing")}</p>
+        }
+        onAction={onOpen}
+      >
+        {groups.map((group) => (
+          <ListBoxSection key={group.id} {...partOf(part.column)}>
+            <Header {...partOf(part.quickSearchHeading)}>{group.heading}</Header>
+            {group.results.map((result) => (
+              <ListBoxItem
+                key={resultKey(group, result)}
+                id={resultKey(group, result)}
+                textValue={result.title}
+                data-ready={resultKey(group, result) === ready ? true : undefined}
+                {...partOf(part.quickSearchItem)}
+              >
+                <span {...partOf(part.quickSearchTitle)}>{result.title}</span>
+                {result.hint === undefined ? null : (
+                  <Text slot={descriptionSlot} {...partOf(part.hint)}>
+                    {result.hint}
+                  </Text>
+                )}
+              </ListBoxItem>
+            ))}
+          </ListBoxSection>
+        ))}
+      </ListBox>
+    </div>
   );
 }

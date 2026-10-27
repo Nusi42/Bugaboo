@@ -4,6 +4,7 @@ import {
   arrange,
   busyKeys,
   firstReady,
+  markStale,
   collectResults,
   resultByKey,
   resultKey,
@@ -105,6 +106,13 @@ describe("cfg_08 the order of the groups", () => {
 });
 
 describe("cfg_08 the rows of older words", () => {
+  it("are marked busy while the server is asked again, and not once it has answered", async () => {
+    const found = await collectResults([source("issues", ["Login"])], "log", asker);
+    expect(markStale(found, true).groups.map((group) => group.busy)).toEqual([true]);
+    expect(markStale(found, false)).toBe(found);
+    expect(markStale({ groups: [], failed: false }, true).groups).toEqual([]);
+  });
+
   it("cannot be chosen: the keys of a busy group are the ones to disable", async () => {
     const pages = await collectResults([source("pages", ["Home"])], "log", asker);
     const issues = await collectResults([source("issues", ["Login", "Logout"])], "log", asker);
