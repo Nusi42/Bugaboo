@@ -30,7 +30,7 @@ bb-macros = { path = "../bb-macros" }
 jiff = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-unicode-normalization = { version = "0.1.25", default-features = false, optional = true }
+unicode-normalization = { workspace = true, optional = true }
 unicode-properties = { version = "0.1.4", default-features = false, features = [
   "general-category",
 ] }
@@ -38,7 +38,7 @@ utoipa = { workspace = true, optional = true }
 uuid = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
-unicode-normalization = { version = "0.1.25", default-features = false }
+unicode-normalization = { workspace = true }
 # The zones that the wording tests name (the server turns the same data on in bb-app).
 jiff = { workspace = true, features = ["tzdb-bundle-always"] }
 proptest = { workspace = true }

@@ -105,7 +105,7 @@ const APPLIED: [(i64, &str); 25] = [
     ),
     (
         25,
-        "49c5ef684f12261c32a15bf25618f876ca8cddb285771c2046ed95260078fdb0",
+        "e7985426fb794ae01fd901b46f6c5ff45538d55ffcd80234b6d03ce325791d30",
     ),
 ];
 
@@ -348,4 +348,14 @@ async fn sqlite_runs_in_wal_mode_with_foreign_keys_and_full_sync() -> TestResult
         Ok(())
     })
     .await
+}
+
+/// The number that tools compare their index marker with is the migration that changed the rule.
+#[test]
+fn the_rule_migration_of_the_text_index_is_a_migration_that_exists() {
+    let definition = ALL
+        .iter()
+        .find(|definition| definition.version == bb_core::text_index::RULE_MIGRATION)
+        .unwrap();
+    assert_eq!(definition.name, "text_in_nfc");
 }

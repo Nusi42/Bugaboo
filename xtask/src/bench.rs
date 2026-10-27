@@ -47,12 +47,19 @@ pub(crate) fn today() -> String {
 
 /// The marker that the index of the text search was built for a dataset: the dataset writes its
 /// issues without the outbox, so the index is built once from the stored texts before the first run.
+/// It holds the number of the migration that last changed the rule that prepares a text
+/// (`RULE_MIGRATION`); an index built under an older rule is built again.
 const INDEX_BUILT: &str = "text-index.built";
 
 /// Builds the index of the text search of the dataset once (`bugaboo search-index rebuild`).
 fn ensure_text_index(server: &Path, folder: &Path, url: Option<&str>) -> anyhow::Result<bool> {
     let marker = folder.join(INDEX_BUILT);
-    if marker.is_file() {
+    let current = bb_core::text_index::RULE_MIGRATION;
+    let built_under = fs::read_to_string(&marker)
+        .ok()
+        .and_then(|text| text.trim().parse::<i64>().ok())
+        .unwrap_or(0);
+    if built_under >= current {
         return Ok(true);
     }
     let mut command = Command::new(server);
@@ -68,7 +75,7 @@ fn ensure_text_index(server: &Path, folder: &Path, url: Option<&str>) -> anyhow:
         .context("could not start the server program to build the text index")?
         .success();
     if built {
-        fs::write(&marker, "")?;
+        fs::write(&marker, current.to_string())?;
     }
     Ok(built)
 }

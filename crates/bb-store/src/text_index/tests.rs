@@ -20,7 +20,7 @@ fn hit(number: i64) -> String {
 
 /// The issues that a search finds, the newest first (the order of the title hits is the
 /// compiler's, tested with it in `search`).
-async fn found(
+pub(crate) async fn found(
     storage: &crate::AuthStorage,
     input: &str,
     scope: TextScope,
@@ -261,7 +261,7 @@ async fn iss_13_letters_that_nfc_joins_or_leaves_marked_are_found_alike_on_both_
             issue[0],
             TextSource::Title,
             issue[0].into(),
-            "\u{130}stanbul \u{304b}\u{3099}x \u{958}y",
+            "\u{130}stanbul \u{304b}\u{3099}x \u{958}y \u{939}\u{93f}\u{928}\u{94d}\u{926}\u{940}",
         )
         .await?;
         tx.commit().await?;
@@ -274,6 +274,7 @@ async fn iss_13_letters_that_nfc_joins_or_leaves_marked_are_found_alike_on_both_
             "\u{304b}\u{3099}x",
             "\u{915}\u{93c}y",
             "\u{958}y",
+            "\u{939}\u{93f}\u{928}",
         ] {
             assert_eq!(
                 found(&fixture.storage, words, everywhere).await?,
@@ -282,7 +283,18 @@ async fn iss_13_letters_that_nfc_joins_or_leaves_marked_are_found_alike_on_both_
             );
         }
         // The letters are kept: an I without the dot is another letter.
-        for words in ["istanbul", "istan*", "\u{304b}x", "\u{915}y"] {
+        for words in [
+            "istanbul",
+            "istan*",
+            "\u{304b}x",
+            "\u{915}y",
+            // What the tokenizer of SQLite cut inside a word before migration 25: the part
+            // after a mark that is not an accent is not a word of its own.
+            "y",
+            "stanbul",
+            "\u{915}",
+            "\u{939}\u{928}\u{94d}\u{926}",
+        ] {
             assert_eq!(
                 found(&fixture.storage, words, everywhere).await?,
                 Vec::<String>::new(),

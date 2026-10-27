@@ -152,7 +152,7 @@ fn split(text: &str) -> Vec<SearchWord> {
 
 /// Whether the character is a combining mark: the blocks that hold the accents written after
 /// their letter (U+0300 to U+036F and the extensions), and the marks that NFC leaves on a letter
-/// of another script (the dot of Devanagari, the signs of Japanese and Korean). A table of the
+/// of another script (the nukta of Devanagari, Bengali, Gurmukhi and Oriya, and the signs of Japanese). A table of the
 /// general categories would add 14 KB to the search module of the browser (PERF-04).
 fn is_mark(c: char) -> bool {
     matches!(
@@ -163,6 +163,9 @@ fn is_mark(c: char) -> bool {
             | '\u{20d0}'..='\u{20ff}'
             | '\u{fe20}'..='\u{fe2f}'
             | '\u{93c}'
+            | '\u{9bc}'
+            | '\u{a3c}'
+            | '\u{b3c}'
             | '\u{3099}'..='\u{309a}'
     )
 }
@@ -310,5 +313,26 @@ mod tests {
         assert_eq!(words("\u{915}\u{93c}x"), ["\u{915}\u{93c}x"]);
         // A capital I with a dot above keeps its mark and stays in its word.
         assert_eq!(words("\u{130}stanbul"), ["i\u{307}stanbul"]);
+    }
+
+    /// A letter that NFC takes apart or puts together stays one word with the letter after it,
+    /// whatever its script: the list is every letter there is, not a list written by hand.
+    #[test]
+    fn every_letter_stays_one_word_in_every_form() {
+        use unicode_normalization::UnicodeNormalization as _;
+        let mut broken = Vec::new();
+        for letter in ('\0'..=char::MAX).filter(|c| c.is_alphanumeric()) {
+            let forms = [
+                letter.to_string(),
+                letter.to_string().nfd().collect::<String>(),
+            ];
+            for form in forms {
+                if words(&format!("{form}x")).len() != 1 {
+                    broken.push(format!("{:04X}", u32::from(letter)));
+                    break;
+                }
+            }
+        }
+        assert!(broken.is_empty(), "these letters split a word: {broken:?}");
     }
 }

@@ -3,34 +3,73 @@
 //! `muller`, `ß` as `ss`); now it is lower case and Unicode NFC and nothing else (*Müller* is
 //! stored as `müller`).
 //!
-//! The migration only empties the index and sends the reader of the outbox back to the start; it
-//! does not prepare a text itself. The reader (`text_index::catch_up`, the first round of the jobs
-//! after a start) then makes the rows of every issue again from the stored texts, a batch and a
-//! transaction at a time, with the code of the program that runs, and without holding the
-//! migration lock. Until it has come to the end, a search finds less, as it does during any
-//! rebuild. The names of the table and of the reader are written out here, not read from the
-//! program, so the migration says what a database of migration 24 holds.
+//! The migration only empties the index and puts a mark on the place of the reader of the outbox
+//! (the largest place there is); it does not prepare a text itself. At a start the server takes
+//! the head of the outbox, makes the rows of every issue again from the stored texts, a page and a
+//! transaction at a time, with the code of the program that runs and without the migration lock,
+//! and puts the place of the reader at that head (`TextIndexStore::rebuild_text_index_if_wanted`).
+//! Until it has come to the end the index is empty or partial, so a search finds less; the jobs
+//! do not wait for it, and the reader of the outbox reads nothing until it has finished, then
+//! reads what came after the head. The names of the table and of the reader and the mark are
+//! written out here, not read from the program, so the migration says what a database of
+//! migration 24 holds and what the program asks for from now on.
 //!
-//! The table and its FTS5 or `tsvector` index stay as they are: SQLite's `unicode61` tokenizer is
-//! set to `remove_diacritics 0`, and PostgreSQL's `simple` configuration only lower-cases, so
-//! both keep a word as it was stored. The triggers of SQLite and the generated column of
-//! PostgreSQL follow the rows.
+//! The databases only store and compare the words Rust prepared: the FTS5 table is made again with
+//! a tokenizer that keeps every letter, number and mark of a word, and the `tsvector` of PostgreSQL
+//! is made from the words split at spaces, not by the parser of the text search, which depends on
+//! the locale of the database.
 
 use sea_query::{Expr, ExprTrait as _, Query};
 
 use super::Step;
+use crate::db::FixedSql;
 use crate::schema::{OutboxPosition, TextIndexRow};
 
 /// The name the reader of the index has in the positions of the outbox.
 const READER: &str = "text-index";
 
+/// The mark: a place no event is after (`bb_core::text_index::REBUILD_WANTED`).
+const REBUILD_WANTED: i64 = i64::MAX;
+
+/// The FTS5 table made again, and the triggers that keep it in step (SQLite). The tokenizer takes
+/// letters, numbers, private-use characters and marks as the characters of a word and splits at
+/// everything else, so a stored word is never cut inside (`unicode61` alone keeps only the marks
+/// U+0300 to U+0331). No accent is removed: the words are what Rust prepared. The text of the
+/// statements is the one of migration 22, apart from the tokenizer.
+const SQLITE: [&str; 8] = [
+    "DROP TRIGGER text_index_after_insert",
+    "DROP TRIGGER text_index_after_delete",
+    "DROP TRIGGER text_index_after_update",
+    "DROP TABLE text_index_fts",
+    "CREATE VIRTUAL TABLE text_index_fts USING fts5(words, content='text_index',      content_rowid='id', prefix='2 3',      tokenize=\"unicode61 remove_diacritics 0 categories 'L* N* Co M*'\")",
+    "CREATE TRIGGER text_index_after_insert AFTER INSERT ON text_index BEGIN      INSERT INTO text_index_fts(rowid, words) VALUES (new.id, new.words); END",
+    "CREATE TRIGGER text_index_after_delete AFTER DELETE ON text_index BEGIN      INSERT INTO text_index_fts(text_index_fts, rowid, words) VALUES ('delete', old.id, old.words); END",
+    "CREATE TRIGGER text_index_after_update AFTER UPDATE ON text_index BEGIN \
+     INSERT INTO text_index_fts(text_index_fts, rowid, words) VALUES ('delete', old.id, old.words); \
+     INSERT INTO text_index_fts(rowid, words) VALUES (new.id, new.words); END",
+];
+
+/// The vector made again from the stored words split at spaces, with no parser of the locale
+/// (PostgreSQL). Its lexemes are the words as they are stored.
+const POSTGRES: [&str; 4] = [
+    "DROP INDEX text_index_words",
+    "ALTER TABLE text_index DROP COLUMN words_tsv",
+    "ALTER TABLE text_index ADD COLUMN words_tsv tsvector GENERATED ALWAYS AS      (array_to_tsvector(array_remove(string_to_array(words, ' '), ''))) STORED",
+    "CREATE INDEX text_index_words ON text_index USING GIN (words_tsv)",
+];
+
 pub(super) fn steps() -> Vec<Step> {
     vec![
+        // The rows go while the triggers of the old table still follow them.
         Step::Delete(Query::delete().from_table(TextIndexRow::Table).to_owned()),
+        Step::Sql(FixedSql {
+            sqlite: SQLITE.to_vec(),
+            postgres: POSTGRES.to_vec(),
+        }),
         Step::Update(
             Query::update()
                 .table(OutboxPosition::Table)
-                .value(OutboxPosition::Position, 0_i64)
+                .value(OutboxPosition::Position, REBUILD_WANTED)
                 .and_where(Expr::col(OutboxPosition::Consumer).eq(READER))
                 .to_owned(),
         ),
@@ -40,11 +79,10 @@ pub(super) fn steps() -> Vec<Step> {
 #[cfg(test)]
 mod tests {
     use bb_app::ports::ChangeStore;
-    use bb_app::text_index::catch_up;
+    use bb_app::text_index::{TextIndexStore as _, catch_up};
     use bb_core::event::{EntityKind, RecordKind};
     use bb_core::id::EntityId;
     use bb_core::text_index::TextSource;
-    use bb_core::text_words::search_words;
     use bb_testing::{TestResult, each_database};
     use sea_query::{Expr, ExprTrait as _, Query};
 
@@ -54,31 +92,8 @@ mod tests {
     use crate::db::StoredId as _;
     use crate::schema::{IssueRow, TextIndexRow};
     use crate::test_support::{at, event, ids, world};
-    use crate::text_index::{TextScope, TextSearch, text_issues};
-
-    /// The codes of the issues that a search for `input` finds.
-    async fn found(storage: &AuthStorage, input: &str) -> Result<Vec<String>, crate::StoreError> {
-        let database = storage.database();
-        let words = search_words(input);
-        let matched = text_issues(
-            database.dialect(),
-            &TextSearch {
-                words: &words,
-                scope: TextScope::Everywhere,
-            },
-        );
-        let mut select = Query::select();
-        select
-            .column(IssueRow::Code)
-            .from(IssueRow::Table)
-            .and_where(Expr::col(IssueRow::Id).in_subquery(matched));
-        database
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(|row| row.get::<String>(IssueRow::Code))
-            .collect()
-    }
+    use crate::text_index::TextScope;
+    use crate::text_index::tests::found;
 
     /// An issue written before the migration has its title in the index with the accent removed
     /// (`muller`). After the migration the index is empty, and after the first round of the
@@ -120,8 +135,12 @@ mod tests {
                 })
                 .await?;
             }
-            // The index as the program before this migration wrote it (the reader had come to the
-            // end of the events, which is the same as its position now being the end).
+            // The reader has come to the end of the events, as a running server's has, and the
+            // index is the one the program before this migration wrote: accents removed.
+            catch_up(&storage, at(1)).await?;
+            database
+                .execute(&Query::delete().from_table(TextIndexRow::Table).to_owned())
+                .await?;
             for (issue, words) in [
                 (first, "frau muller meldet eine grosse"),
                 (second, "issue 2"),
@@ -142,21 +161,38 @@ mod tests {
                     ])?;
                 database.execute(&row).await?;
             }
-            assert_eq!(found(&storage, "muller").await?, ["1"]);
-            assert!(found(&storage, "müller").await?.is_empty());
+            let everywhere = TextScope::Everywhere;
+            assert_eq!(found(&storage, "muller", everywhere).await?, ["1"]);
+            assert!(found(&storage, "müller", everywhere).await?.is_empty());
+            assert_eq!(
+                catch_up(&storage, at(2)).await?,
+                0,
+                "nothing is left to read"
+            );
 
-            assert_eq!(database.migrate(at(2)).await?, [25]);
-            // The migration itself prepares nothing: the index is empty until the reader has run.
-            assert!(found(&storage, "muller").await?.is_empty());
-
-            assert!(catch_up(&storage, at(3)).await? > 0);
-            assert_eq!(found(&storage, "müller").await?, ["1"]);
-            assert_eq!(found(&storage, "Mu\u{308}ller größe").await?, ["1"]);
-            assert!(found(&storage, "muller").await?.is_empty());
-            assert!(found(&storage, "grosse").await?.is_empty());
-            assert_eq!(found(&storage, "issue").await?, ["2"]);
-            // A second round has nothing left to do.
+            assert_eq!(database.migrate(at(3)).await?, [25]);
+            // The migration itself prepares nothing: the index is empty, and the reader reads no
+            // event until the index has been made again.
+            assert!(found(&storage, "muller", everywhere).await?.is_empty());
             assert_eq!(catch_up(&storage, at(4)).await?, 0);
+            assert!(found(&storage, "müller", everywhere).await?.is_empty());
+
+            // A start makes the index again, once, and the reader is at the head afterwards.
+            assert_eq!(storage.rebuild_text_index_if_wanted(at(5)).await?, Some(2));
+            assert_eq!(found(&storage, "müller", everywhere).await?, ["1"]);
+            assert_eq!(
+                found(&storage, "Mu\u{308}ller größe", everywhere).await?,
+                ["1"]
+            );
+            assert!(found(&storage, "muller", everywhere).await?.is_empty());
+            assert!(found(&storage, "grosse", everywhere).await?.is_empty());
+            assert_eq!(found(&storage, "issue", everywhere).await?, ["2"]);
+            assert_eq!(storage.rebuild_text_index_if_wanted(at(6)).await?, None);
+            assert_eq!(
+                catch_up(&storage, at(7)).await?,
+                0,
+                "the reader is at the head"
+            );
             Ok(())
         })
         .await
