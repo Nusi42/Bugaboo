@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import { Icon } from "./Icon.tsx";
-import type { ListColumn } from "./list-columns.ts";
+import { iconColumns, type ListColumn } from "./list-columns.ts";
 import { listTemplate, type ListColumnSpec } from "./list-template.ts";
 import { partOf } from "./parts.ts";
 import { buttonType, iconSize } from "./props.ts";
@@ -71,12 +71,14 @@ export function ListColumnHead({
         aria-label={sortLabel}
         onClick={onSort}
       >
-        <span {...partOf(part.listSortLabel)} aria-hidden>
-          {label}
-        </span>
+        {iconColumns.includes(column) ? null : (
+          <span {...partOf(part.listSortLabel)} aria-hidden>
+            {label}
+          </span>
+        )}
         {arrow === null ? null : <Icon name={arrow} size={iconSize.small} />}
       </button>
-      {resize === null ? null : (
+      {resize === null || iconColumns.includes(column) ? null : (
         <button
           type={buttonType.button}
           {...partOf(part.listHandle)}

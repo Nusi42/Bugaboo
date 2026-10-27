@@ -16,7 +16,7 @@ export function ListEmpty() {
   }
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.muted)}>{t("search.found-none")}</p>
+      <p {...partOf(part.text)}>{t("search.found-none")}</p>
       {search.text === "" ? null : <Button onPress={onClear}>{t("issues.remove-filters")}</Button>}
     </div>
   );

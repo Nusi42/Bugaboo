@@ -14,8 +14,8 @@ export interface GroupChoice {
   readonly name: string;
 }
 
-/** The word of a field that cannot be grouped by: a long text has no groups. */
-const notGroupable = "description";
+/** The words that cannot be grouped by: a long text and the Issue ID have no groups. */
+const notGroupable: ReadonlySet<string> = new Set(["description", "id"]);
 
 export interface ListOptionsProps {
   readonly view: ListView;
@@ -28,7 +28,7 @@ export interface ListOptionsProps {
 /** The fields a list can be grouped by: every one the person may read. */
 function groupChoicesOf(fields: SearchFieldsAnswer) {
   return Object.keys(fields.names)
-    .filter((word) => word !== notGroupable)
+    .filter((word) => !notGroupable.has(word))
     .map((word) => ({ value: word, label: fields.names[word] ?? word }));
 }
 

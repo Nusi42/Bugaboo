@@ -1993,9 +1993,6 @@ pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed
 /// The message `issues.clear-selection`.
 pub const ISSUES_CLEAR_SELECTION: MessageKey = MessageKey::new("issues.clear-selection");
 
-/// The message `issues.columns`.
-pub const ISSUES_COLUMNS: MessageKey = MessageKey::new("issues.columns");
-
 /// The message `issues.columns-reset`.
 pub const ISSUES_COLUMNS_RESET: MessageKey = MessageKey::new("issues.columns-reset");
 
@@ -12591,7 +12588,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.column-down", "Move {column} down"),
     ("issues.column-up", "Move {column} up"),
     ("issues.column-width", "Width of {column}"),
-    ("issues.columns", "Columns"),
     ("issues.columns-reset", "Back to the project's columns"),
     ("issues.comment", "Comment"),
     ("issues.compare-and-save", "Compare and save"),

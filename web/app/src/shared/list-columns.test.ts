@@ -54,17 +54,22 @@ describe("the columns a person chooses in Customize", () => {
   });
 });
 
+const field = (kind: string, choices: readonly string[] = []) => ({ kind, choices });
+
 describe("the columns that can be drawn", () => {
   it("leaves out a field of the organization that holds an ID, and one that is not readable", () => {
-    expect(isDrawnColumn("reviewer", "person")).toBe(false);
-    expect(isDrawnColumn("relatedIssue", "issue")).toBe(false);
+    expect(isDrawnColumn("reviewer", field("person"))).toBe(false);
+    expect(isDrawnColumn("relatedIssue", field("issue"))).toBe(false);
+    expect(isDrawnColumn("owner", field("project"))).toBe(false);
+    // A group of people reaches the search as a choice field that lists no choices.
+    expect(isDrawnColumn("team", field("choice"))).toBe(false);
     expect(isDrawnColumn("secret")).toBe(false);
   });
 
   it("keeps the fields that have a cell of their own and the plain values", () => {
-    expect(isDrawnColumn("assignedTo", "person")).toBe(true);
-    expect(isDrawnColumn("project", "project")).toBe(true);
-    expect(isDrawnColumn("plannedFor", "choice")).toBe(true);
-    expect(isDrawnColumn("estimate", "duration")).toBe(true);
+    expect(isDrawnColumn("assignedTo", field("person"))).toBe(true);
+    expect(isDrawnColumn("project", field("project"))).toBe(true);
+    expect(isDrawnColumn("plannedFor", field("choice", ["2.4"]))).toBe(true);
+    expect(isDrawnColumn("estimate", field("duration"))).toBe(true);
   });
 });

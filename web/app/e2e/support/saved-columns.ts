@@ -7,10 +7,20 @@ export async function savedColumns(admin: ApiSession, name: string): Promise<rea
   const saved = dataOf(
     await admin.client.GET("/api/v1/saved-searches", { params: { query: { scope: "mine" } } }),
   );
+  let id: string | undefined;
   for (const item of saved.items) {
     if (item.name === name) {
-      return item.presentation.columns.map((each) => each.field);
+      id = item.id;
+      break;
     }
   }
-  return [];
+  if (id === undefined) {
+    return [];
+  }
+  const one = dataOf(
+    await admin.client.GET("/api/v1/saved-searches/{search}", {
+      params: { path: { search: id } },
+    }),
+  );
+  return one.presentation.columns.map((each) => each.field);
 }

@@ -14,7 +14,8 @@ export const SEARCH_PAGE_REQUESTS = requests.length;
 
 /** Times each of those requests while the page makes them, from the browser's own measure. */
 export function timeSearchPage(page: Page, times: Readonly<Times>): void {
-  page.on("response", (response) => {
+  page.on("response", async (response) => {
+    await response.finished();
     const { pathname } = new URL(response.url());
     const kind = requests.find(([path]) => pathname === path)?.[1];
     const timing = response.request().timing();

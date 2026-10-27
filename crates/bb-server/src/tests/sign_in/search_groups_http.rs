@@ -133,7 +133,7 @@ async fn qry_04_the_filter_of_every_group_selects_exactly_its_issues() -> TestRe
             every_group_selects_its_issues(&mut ada, by, "").await?;
         }
         // Inside a search the filter joins with `and`, and the groups still add up.
-        every_group_selects_its_issues(&mut ada, "priority", "title contains one").await?;
+        every_group_selects_its_issues(&mut ada, "priority", "type is Task").await?;
         Ok(())
     })
     .await
@@ -173,8 +173,7 @@ async fn sec_05_a_group_of_a_project_or_a_person_the_reader_may_not_see_is_not_t
 }
 
 #[tokio::test]
-async fn sec_05_a_person_shown_only_by_role_gets_a_group_without_a_filter_and_is_never_named()
--> TestResult {
+async fn sec_05_a_person_shown_only_by_role_is_never_named_in_the_groups() -> TestResult {
     each_database("search_group_role_only", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
@@ -196,13 +195,25 @@ async fn sec_05_a_person_shown_only_by_role_gets_a_group_without_a_filter_and_is
         let groups = cora
             .send("GET", &format!("{GROUPS}?by=reportedBy"), None)
             .await?;
-        let body = ok(&groups)?;
-        assert!(!body.to_string().contains("Bob Builder"), "{body}");
-        let listed = body["groups"].as_array().ok_or("no groups")?;
-        assert!(!listed.is_empty());
+        // A kind whose names are not shown cannot be searched (ADR-0022): the groups by it are
+        // refused like a field that does not exist, so the person is never named.
+        assert_eq!(groups.status, axum::http::StatusCode::BAD_REQUEST);
         assert!(
-            listed.iter().all(|group| group["filter"].is_null()),
-            "{body}"
+            !groups.body.to_string().contains("Bob Builder"),
+            "{}",
+            groups.body
+        );
+        // Where names are shown, the same group has its filter.
+        site.show_people(&mut ada, StartingRole::TeamMember, "reported-by", "names")
+            .await?;
+        let named = cora
+            .send("GET", &format!("{GROUPS}?by=reportedBy"), None)
+            .await?;
+        let listed = ok(&named)?["groups"].as_array().ok_or("no groups")?.clone();
+        assert!(
+            listed.iter().all(|group| group["filter"].is_string()),
+            "{}",
+            named.body
         );
         Ok(())
     })

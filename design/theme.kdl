@@ -121,16 +121,16 @@ tokens {
     size "size-col-short" "64px"
     size "size-col-place" "112px"
     size "size-col-priority" "96px"
-    size "size-col-person" "144px"
-    size "size-col-labels" "160px"
+    size "size-col-person" "128px"
+    size "size-col-labels" "128px"
     size "size-col-project" "128px"
     // The title takes the room that is left, and no less than this; a column a person drags is no
     // narrower than the least and moves by the step with the arrow keys.
-    size "size-col-title" "160px"
+    size "size-col-title" "96px"
     size "size-col-least" "48px"
     size "size-col-step" "16px"
     size "size-col-value" "144px"
-    size "size-col-changed" "120px"
+    size "size-col-changed" "96px"
     // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 480 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
     size "size-window" "760px"
     size "size-window-width-min" "480px"
@@ -1857,6 +1857,15 @@ part "list-group.count" {
 // variable `list-columns` of the list, once for the list. A row that scrolls out of sight is not
 // drawn at all (ADR-0009, amendment M5), so the rows are positioned by the list and not by flow.
 
+// The list and its options in one column: beside Customize where there is room for both, above it where there is not.
+part "list-main" {
+    display flex
+    flex 1 1 "$size-main"
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
 part "list-frame" {
     display flex
     flex-direction column
@@ -1909,7 +1918,8 @@ part "list-sort" {
     display inline-flex
     align-items center
     gap "$space-1"
-    min-width 0
+    min-width "$size-target-least"
+    min-height "$size-target-least"
     padding 0
     color inherit
     font-size inherit
@@ -1935,7 +1945,7 @@ part "list-handle" {
     position absolute
     inset-block 0
     inset-inline-end 0
-    width "$space-2"
+    width "$size-target-least"
     cursor col-resize
     touch-action none
 }
@@ -1950,6 +1960,11 @@ part "list-handle[focus-visible]" {
 
 part "list-row[variant=head] list-row.cell" {
     position relative
+}
+
+// The room at the end of a name for the handle that sets its width, so the two never overlap.
+part "list-row[variant=head] list-row.cell:has(list-handle)" {
+    padding-inline-end "$size-target-least"
 }
 
 // A group of rows can be folded: the whole header is the button.

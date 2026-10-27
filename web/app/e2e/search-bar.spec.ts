@@ -102,7 +102,8 @@ test("qry_03 a mistake shows before the server is asked and matches the server",
   const requested = await page.evaluate(() =>
     JSON.stringify(performance.getEntriesByType("resource")),
   );
-  expect(requested).not.toContain("prio");
+  // (The list asks for the field `priority` among its columns, so the text is what is looked for.)
+  expect(requested).not.toContain(encodeURIComponent("prio is"));
 });
 
 test("qry_03 the words of a mistake are drawn as text, never as HTML", async ({ page }) => {

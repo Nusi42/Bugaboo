@@ -41,7 +41,7 @@ export function ListMain({
     ...words.map((word) => ({ column: cellOf(word), width: dragged[word] ?? view.widths[word] })),
   ];
   return (
-    <div ref={rows} {...partOf(part.listEditorList)}>
+    <div ref={rows} {...partOf(part.listMain)}>
       <ListOptions
         view={view}
         fields={fields}

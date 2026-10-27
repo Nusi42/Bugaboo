@@ -7,6 +7,7 @@ import type { ResultsInput } from "../shared/use-list-view.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute } from "./layouts.tsx";
 import { loadsScreen } from "./preload.ts";
+import { SearchResultsList } from "./search-results.tsx";
 import { useSearchNavigation, useSearchState } from "./search-address.ts";
 
 // The search is loaded when it is first opened, so the first page stays small
@@ -17,20 +18,14 @@ const SavedSearchScreen = lazyRouteComponent(
   () => import("../features/search/index.ts"),
   "SavedSearchPage",
 );
-// The list under the search bar is the issue list, which is its own area and its own chunk.
-const ResultsScreen = lazyRouteComponent(
-  () => import("../features/issues/index.ts"),
-  "SearchResults",
-);
+/** Loads the issue list under the search bar before the page is drawn, so it does not wait for the page. */
+const loadsResults = async (): Promise<void> => {
+  await import("../features/issues/index.ts");
+};
 
 /** The issue list under the search bar of a page that has no project. */
 function results(input: ResultsInput) {
-  return <ResultsScreen {...input} />;
-}
-
-/** Loads the page and its list together, so the list does not wait for the page. */
-async function loadsPage(page: Parameters<typeof loadsScreen>[0]): Promise<void> {
-  await Promise.all([loadsScreen(page)(), loadsScreen(ResultsScreen)()]);
+  return <SearchResultsList {...input} />;
 }
 
 /** The *Search* page, `/search`: the search over every project the person sees, in `?s=`. */
@@ -38,7 +33,8 @@ export const searchRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.search,
   validateSearch,
-  loader: () => loadsPage(SearchScreen),
+  loader: loadsScreen(SearchScreen),
+  beforeLoad: loadsResults,
   component: function Search() {
     const state = useSearchState();
     const navigateTo = useSearchNavigation();
@@ -51,7 +47,8 @@ export const savedSearchRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.savedSearch,
   validateSearch,
-  loader: () => loadsPage(SavedSearchScreen),
+  loader: loadsScreen(SavedSearchScreen),
+  beforeLoad: loadsResults,
   component: function SavedSearch() {
     const id = useAddressPart(routeParam.search);
     const state = useSearchState();

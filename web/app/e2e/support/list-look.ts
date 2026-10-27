@@ -34,7 +34,8 @@ export function grid(page: Page): Locator {
 
 /** The button with the name of a column in the head of the list: pressing it sorts by the column. */
 export function columnButton(page: Page, column: string): Locator {
-  return page.getByRole("button", { name: new RegExp(`^${t("issues.sort-by", { column })}`, "u") });
+  // The name for a screen reader changes with the order, so the button is found by the name it shows.
+  return page.locator("[data-part='list-sort']").filter({ hasText: column });
 }
 
 /** The header of a group of rows, found by the name of the group. */

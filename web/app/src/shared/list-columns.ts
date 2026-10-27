@@ -89,13 +89,27 @@ export function moveColumn(
 /** The kinds of field whose value an issue carries only as an ID: no cell shows them yet (M5-F84). */
 const kindsOfIds: ReadonlySet<string> = new Set(["person", "project", "issue"]);
 
+/** What the list needs to know of a field the person may read. */
+export interface ColumnField {
+  readonly kind: string;
+  /** The words of its choices; none for a field that has no list of them. */
+  readonly choices: readonly string[];
+}
+
 /**
  * Whether a column can be drawn: the field is one the person may read, and it is not a field of the
- * organization whose value is an ID (person, people, issue, group, project), which the list cannot
- * name yet. The fields with a cell of their own (*Assigned to*, *Project*) are fine. A column
- * that cannot be drawn is left out quietly, wherever it was named: the address, a saved search or
- * *Customize*.
+ * organization whose value is an ID, which the list cannot name yet (person, people, issue, project,
+ * and a group of people, which the search language lists as a choice field without choices). The fields
+ * with a cell of their own (*Assigned to*, *Project*) are fine. A column that cannot be drawn is left
+ * out quietly, wherever it was named: the address, a saved search or *Customize*.
  */
-export function isDrawnColumn(word: string, kind?: string): boolean {
-  return kind !== undefined && (cellOf(word) !== "value" || !kindsOfIds.has(kind));
+export function isDrawnColumn(word: string, field?: ColumnField): boolean {
+  // A word with a cell of its own is a field every issue has (the Issue ID is no field at all).
+  if (cellOf(word) !== "value") {
+    return true;
+  }
+  if (field === undefined) {
+    return false;
+  }
+  return !kindsOfIds.has(field.kind) && !(field.kind === "choice" && field.choices.length === 0);
 }

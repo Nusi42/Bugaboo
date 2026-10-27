@@ -6,9 +6,6 @@ import type { ListSort } from "./list-sort.ts";
 
 const selectColumn = "select" satisfies ListColumn;
 
-/** A word of the ARIA standard, not text for people. */
-const role = "group";
-
 /** The box in the head that ticks the rows shown. */
 export interface HeadTick {
   readonly isSelected: boolean;
@@ -45,11 +42,7 @@ function sortLabelOf(name: string, arrow: "up" | "down" | null): string {
 export function ListHeadRow({ words, names, sort, tick, onSort, onResize }: ListHeadRowProps) {
   return (
     <div {...partOf(part.listHead)}>
-      <div
-        {...partOf(part.listRow, { variants: ["head", "grid"] })}
-        role={role}
-        aria-label={t("issues.columns")}
-      >
+      <div {...partOf(part.listRow, { variants: ["head", "grid"] })}>
         {tick === null ? null : (
           <ListCell column={selectColumn}>
             <Checkbox

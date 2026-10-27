@@ -34,9 +34,10 @@ test("iss_01 the issues are a grid in groups by status group, each with its name
   page,
 }) => {
   await openList(page);
+  // The groups stand in the order the server gives them (not started, in progress, done).
   await expect(partIn(grid(page), "list-group.name")).toHaveText([
-    groups.running,
     groups.waiting,
+    groups.running,
     groups.finished,
   ]);
   // The number of issues of a group stands next to its name.
@@ -50,8 +51,9 @@ test("iss_01 the issues are a grid in groups by status group, each with its name
   const login = await placeInGrid(page, webIssues.login);
   const passkey = await placeInGrid(page, webIssues.passkey);
   expect(login).toBeGreaterThan(running);
-  expect(login).toBeLessThan(waiting);
+  expect(login).toBeLessThan(finished);
   expect(passkey).toBeGreaterThan(finished);
+  expect(waiting).toBeLessThan(running);
 });
 
 test("ux_08 a row says its status and its priority by icon and name, not by color alone (R5)", async ({
