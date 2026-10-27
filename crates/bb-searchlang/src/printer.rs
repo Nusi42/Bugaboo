@@ -6,6 +6,31 @@ use crate::literal::{quoted, value_or_quoted, word_or_quoted};
 use crate::syntax::{Expr, Operand, Search, SortKey, Test, Text};
 use crate::words::{Keyword, steps_word, unit_word};
 
+/// Whether this build checks that a canonical text reads back as the same search.
+pub const ROUND_TRIP_GUARD: bool = cfg!(feature = "round-trip-guard");
+
+/// The canonical text of a search, given only when the language reads it back as the same search
+/// (ADR-0005 amendment M5, decision 8). The check is the feature `round-trip-guard`: the server and
+/// the tests build with it, so a defect of the printer can never be saved or run. The module of the
+/// browser builds without it: there the text is the one `print`
+/// writes, and nothing in the browser refuses a text because of the check. Whatever the browser
+/// prints is sent to the server, which parses and checks it again and makes its own canonical text.
+#[must_use]
+pub fn canonical_text(search: &Search) -> Option<String> {
+    let text = print(search);
+    #[cfg(feature = "round-trip-guard")]
+    {
+        match crate::parse(&text) {
+            Ok(back) if back.same_words(search) => Some(text),
+            _ => None,
+        }
+    }
+    #[cfg(not(feature = "round-trip-guard"))]
+    {
+        Some(text)
+    }
+}
+
 /// The canonical text of a search.
 #[must_use]
 pub fn print(search: &Search) -> String {
@@ -102,18 +127,18 @@ fn joined(items: &[Expr], keyword: Keyword, needed: Level) -> String {
 
 fn test_text(test: &Test) -> String {
     match test {
-        Test::Is { value, .. } => format!("{} {}", Keyword::Is.text(), value_text(value)),
+        Test::Is { value, .. } => format!("{} {}", Keyword::Is.text(), operand_source(value)),
         Test::IsNot { value, .. } => format!(
             "{} {} {}",
             Keyword::Is.text(),
             Keyword::Not.text(),
-            value_text(value)
+            operand_source(value)
         ),
         Test::Compare {
             operator, value, ..
-        } => format!("{} {}", operator.sign(), value_text(value)),
+        } => format!("{} {}", operator.sign(), operand_source(value)),
         Test::In { values, .. } => {
-            let values: Vec<String> = values.iter().map(value_text).collect();
+            let values: Vec<String> = values.iter().map(operand_source).collect();
             format!("{} ({})", Keyword::In.text(), values.join(", "))
         }
         Test::Contains { text, .. } => format!("{} {}", Keyword::Contains.text(), text_of(text)),
@@ -148,14 +173,11 @@ fn text_of(text: &Text) -> String {
     quoted(&text.text)
 }
 
-fn value_text(value: &Operand) -> String {
+/// How a value stands in the text of a search, quoted where the language needs it.
+pub(crate) fn operand_source(value: &Operand) -> String {
     match value {
         Operand::Text { text, .. } => value_or_quoted(text),
-        Operand::Number { number, .. } => number.text(),
-        Operand::Date { date, .. } => date.text(),
-        Operand::Issue { id, .. } => id.text.clone(),
-        Operand::Me { .. } => Keyword::Me.text().to_owned(),
-        Operand::Time { word, .. } => word.text(),
+        other => other.spelling(),
     }
 }
 

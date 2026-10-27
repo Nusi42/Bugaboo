@@ -3,9 +3,18 @@
  * the places are turned into places in the string (`offsets.ts`), and an input the module refuses
  * is a defect of the build, which throws: the browser and the Rust types differ.
  */
-import { check, own_field_word, parse, print, suggest } from "../generated/bb_wasm_search.js";
+import {
+  check,
+  duration_minutes_of,
+  issue_id_of,
+  operand_source,
+  own_field_word,
+  parse,
+  print,
+  suggest,
+} from "../generated/bb_wasm_search.js";
 import { inStringUnits, offsetsOf } from "./offsets.ts";
-import type { Answer, ReadableFields, Search, Suggestions } from "./types.generated.ts";
+import type { Answer, Operand, ReadableFields, Search, Suggestions } from "./types.generated.ts";
 
 /** The search language, as the server has it. Places are in units of the string. */
 export interface SearchLanguage {
@@ -17,6 +26,12 @@ export interface SearchLanguage {
   readonly print: (search: Search) => string;
   /** What may come next at the cursor, a place in the string. */
   readonly suggest: (text: string, cursor: number, fields: ReadableFields) => Suggestions;
+  /** How a value stands in the text of a search, quoted where the language needs it. */
+  readonly operandSource: (operand: Operand) => string;
+  /** The Issue ID that the words are, in capitals; none when they are not exactly one. */
+  readonly issueIdOf: (words: string) => string | undefined;
+  /** The minutes of a text that is a length of time and nothing else; none otherwise. */
+  readonly durationMinutesOf: (text: string) => number | undefined;
   /** The word of an own field, made from its name by the one rule of the language. */
   readonly ownFieldWord: (name: string) => string;
 }
@@ -53,5 +68,8 @@ export const language: SearchLanguage = {
     }
     return found;
   },
+  operandSource: (operand) => operand_source(JSON.stringify(operand)),
+  issueIdOf: (words) => issue_id_of(words) ?? undefined,
+  durationMinutesOf: (text) => duration_minutes_of(text) ?? undefined,
   ownFieldWord: own_field_word,
 };

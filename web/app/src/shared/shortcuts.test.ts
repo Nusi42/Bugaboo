@@ -102,10 +102,10 @@ describe("ux_05 pressing a shortcut", () => {
     expect(log).toEqual(["go-home"]);
   });
 
-  it("leaves the slash for the search bar of a later version (UX 6.2)", () => {
+  it("sends the slash to the search bar (UX 6.2)", () => {
     const { log, handle } = engineWith();
-    expect(handle(press("/"))).toBe(false);
-    expect(log).toEqual([]);
+    expect(handle(press("/"))).toBe(true);
+    expect(log).toEqual(["focus-search-bar"]);
   });
 
   it("does nothing for a key that is not a shortcut, and for a modifier alone", () => {

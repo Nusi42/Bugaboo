@@ -18,7 +18,7 @@ use crate::parser::value_span;
 use crate::similar::closest;
 use crate::span::Span;
 use crate::syntax::{Expr, FieldRef, Operand, Search, Test, Text};
-use crate::words::Keyword;
+use crate::words::{Keyword, duration_words};
 
 /// A search that the checker has accepted, for readable fields. The compiler of the server takes this
 /// type, so a search that was not checked cannot be compiled.
@@ -256,18 +256,6 @@ fn operator_of(test: &Test) -> (Operator, Span) {
     }
 }
 
-/// The words of a value as the choices of a field spell them.
-fn spelled(value: &Operand) -> String {
-    match value {
-        Operand::Text { text, .. } => text.clone(),
-        Operand::Number { number, .. } => number.text(),
-        Operand::Date { date, .. } => date.text(),
-        Operand::Issue { id, .. } => id.text.clone(),
-        Operand::Me { .. } => Keyword::Me.text().to_owned(),
-        Operand::Time { word, .. } => word.text(),
-    }
-}
-
 /// What is wrong with a value for a field, if anything.
 fn value_mistake(field: &Field, value: &Operand) -> Option<Mistake> {
     let span = value_span(value);
@@ -275,12 +263,21 @@ fn value_mistake(field: &Field, value: &Operand) -> Option<Mistake> {
     match (field.kind, value) {
         (FieldKind::Text | FieldKind::Project, Operand::Text { .. })
         | (FieldKind::Number, Operand::Number { .. })
+        | (FieldKind::Duration, Operand::Duration { .. })
         | (FieldKind::Date, Operand::Date { .. } | Operand::Time { .. })
         | (FieldKind::Person, Operand::Text { .. } | Operand::Me { .. })
         | (FieldKind::Issue, Operand::Issue { .. }) => None,
         (FieldKind::Choice, _) => unknown_choice(field, value, span),
         (FieldKind::Text | FieldKind::Project, _) => wrong(key::WRONG_TEXT),
         (FieldKind::Number, _) => wrong(key::WRONG_NUMBER),
+        (FieldKind::Duration, _) => Some(Mistake::new(
+            span,
+            key::WRONG_DURATION,
+            &[("field", field.word.as_str())]
+                .into_iter()
+                .chain(duration_words())
+                .collect::<Vec<_>>(),
+        )),
         (FieldKind::Date, _) => wrong(key::WRONG_DATE),
         (FieldKind::Person, _) => Some(Mistake::new(
             span,
@@ -293,12 +290,15 @@ fn value_mistake(field: &Field, value: &Operand) -> Option<Mistake> {
 
 /// The mistake of a value that is not among the choices of a field with a fixed list.
 fn unknown_choice(field: &Field, value: &Operand, span: Span) -> Option<Mistake> {
-    let wanted = spelled(value);
-    if field.choices.is_empty()
-        || field
-            .choices
-            .iter()
-            .any(|choice| same_name(choice, &wanted))
+    let wanted = value.spelling();
+    // A length of time is no choice, even when a choice is spelled like it.
+    let is_duration = matches!(value, Operand::Duration { .. });
+    if !is_duration
+        && (field.choices.is_empty()
+            || field
+                .choices
+                .iter()
+                .any(|choice| same_name(choice, &wanted)))
     {
         return None;
     }

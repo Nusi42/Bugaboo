@@ -13,6 +13,11 @@ workspace = true
 # Reading a tree and the readable fields from JSON. Only the WebAssembly module of the browser turns
 # it on: the server never reads a tree from outside. The tests of this crate switch it on too.
 browser = []
+# The canonical text is given only when the language reads it back as the same tree
+# (`canonical_text`). The server and the tests turn it on; the WebAssembly module of the browser
+# builds without it, because the check (a tree turned into JSON values and compared) costs 7 KB of
+# its 91 KB budget (PERF-BUNDLE) and everything the browser prints is checked by the server again.
+round-trip-guard = []
 
 [dependencies]
 bb-core = { path = "../bb-core" }
@@ -20,5 +25,5 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
-bb-searchlang = { path = ".", features = ["browser"] }
+bb-searchlang = { path = ".", features = ["browser", "round-trip-guard"] }
 proptest = { workspace = true }

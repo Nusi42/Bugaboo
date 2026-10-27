@@ -7,7 +7,7 @@
 //! has judged stood for, so a list reads each group, tag, label and name once for the request.
 
 use bb_core::saved_search::Presentation;
-use bb_searchlang::{ReadableFields, check, parse_with, print};
+use bb_searchlang::{ReadableFields, canonical_text, check, parse_with};
 
 use super::reach::Reaching;
 use crate::access::Actor;
@@ -92,6 +92,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         if judge.names.spent() || judge.names.names.names_unknown() {
             return Ok(None);
         }
-        Ok(Some(print(checked.search())))
+        // Only a text that the language reads back as the same search is saved or run.
+        Ok(canonical_text(checked.search()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn qry_01_the_server_makes_canonical_texts_with_the_round_trip_guard_on() {
+        // The module of the browser is built without it; the server never is (ADR-0005, decision 8).
+        const { assert!(bb_searchlang::ROUND_TRIP_GUARD) };
     }
 }

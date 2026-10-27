@@ -59,31 +59,13 @@ impl AccountStore for FakeStore {
         after: Option<&PeoplePosition>,
         limit: u64,
     ) -> Result<Vec<Person>, FakeError> {
-        let words: Vec<String> = search
-            .map(|words| {
-                words
-                    .chars()
-                    .filter(|character| !matches!(character, '%' | '_' | '\\'))
-                    .collect::<String>()
-                    .to_lowercase()
-                    .split_whitespace()
-                    .map(str::to_owned)
-                    .collect()
-            })
-            .unwrap_or_default();
         let key = |name: &str, id: UserId| (name.to_lowercase(), id);
         Ok(self.read(|state| {
             let mut people: Vec<Person> = state
                 .people
                 .iter()
                 .map(|(person, _)| person.clone())
-                .filter(|person| {
-                    words.iter().all(|word| {
-                        person.display_name.to_lowercase().contains(word)
-                            || (look_at == SearchIn::NamesAndAddresses
-                                && person.email.to_lowercase().contains(word))
-                    })
-                })
+                .filter(|person| super::fake_people::holds(person, search, look_at))
                 .collect();
             people.sort_by_key(|person| key(&person.display_name, person.id));
             people

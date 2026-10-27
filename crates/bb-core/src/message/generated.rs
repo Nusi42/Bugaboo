@@ -1298,9 +1298,6 @@ pub const FIELDS_PICK_CHOSEN: MessageKey = MessageKey::new("fields.pick-chosen")
 /// The message `fields.pick-groups-list`.
 pub const FIELDS_PICK_GROUPS_LIST: MessageKey = MessageKey::new("fields.pick-groups-list");
 
-/// The message `fields.pick-issue-find`.
-pub const FIELDS_PICK_ISSUE_FIND: MessageKey = MessageKey::new("fields.pick-issue-find");
-
 /// The message `fields.pick-more`.
 pub const FIELDS_PICK_MORE: MessageKey = MessageKey::new("fields.pick-more");
 
@@ -1755,8 +1752,17 @@ pub const ISSUE_FIELD_ACTIVITY: MessageKey = MessageKey::new("issue-field.activi
 /// The message `issue-field.assigned-to`.
 pub const ISSUE_FIELD_ASSIGNED_TO: MessageKey = MessageKey::new("issue-field.assigned-to");
 
+/// The message `issue-field.changed`.
+pub const ISSUE_FIELD_CHANGED: MessageKey = MessageKey::new("issue-field.changed");
+
+/// The message `issue-field.closed`.
+pub const ISSUE_FIELD_CLOSED: MessageKey = MessageKey::new("issue-field.closed");
+
 /// The message `issue-field.cost-center`.
 pub const ISSUE_FIELD_COST_CENTER: MessageKey = MessageKey::new("issue-field.cost-center");
+
+/// The message `issue-field.created`.
+pub const ISSUE_FIELD_CREATED: MessageKey = MessageKey::new("issue-field.created");
 
 /// The message `issue-field.description`.
 pub const ISSUE_FIELD_DESCRIPTION: MessageKey = MessageKey::new("issue-field.description");
@@ -1798,6 +1804,9 @@ pub const ISSUE_FIELD_REPORTED_BY: MessageKey = MessageKey::new("issue-field.rep
 
 /// The message `issue-field.status`.
 pub const ISSUE_FIELD_STATUS: MessageKey = MessageKey::new("issue-field.status");
+
+/// The message `issue-field.status-group`.
+pub const ISSUE_FIELD_STATUS_GROUP: MessageKey = MessageKey::new("issue-field.status-group");
 
 /// The message `issue-field.sub-issue`.
 pub const ISSUE_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("issue-field.sub-issue");
@@ -3796,8 +3805,336 @@ pub const SEARCH_INDEX_DATA_OLDER: MessageKey = MessageKey::new("search-index.da
 /// The message `search-index.opened-address`.
 pub const SEARCH_INDEX_OPENED_ADDRESS: MessageKey = MessageKey::new("search-index.opened-address");
 
+/// The message `search.bar.a-day`.
+pub const SEARCH_BAR_A_DAY: MessageKey = MessageKey::new("search.bar.a-day");
+
+/// The message `search.bar.above`.
+pub const SEARCH_BAR_ABOVE: MessageKey = MessageKey::new("search.bar.above");
+
+/// The message `search.bar.add-filter`.
+pub const SEARCH_BAR_ADD_FILTER: MessageKey = MessageKey::new("search.bar.add-filter");
+
+/// The message `search.bar.add-filter-confirm`.
+pub const SEARCH_BAR_ADD_FILTER_CONFIRM: MessageKey =
+    MessageKey::new("search.bar.add-filter-confirm");
+
+/// The message `search.bar.add-filter-which`.
+pub const SEARCH_BAR_ADD_FILTER_WHICH: MessageKey = MessageKey::new("search.bar.add-filter-which");
+
+/// The message `search.bar.advanced-label`.
+pub const SEARCH_BAR_ADVANCED_LABEL: MessageKey = MessageKey::new("search.bar.advanced-label");
+
+/// The message `search.bar.advanced-placeholder`.
+pub const SEARCH_BAR_ADVANCED_PLACEHOLDER: MessageKey =
+    MessageKey::new("search.bar.advanced-placeholder");
+
+/// The message `search.bar.after`.
+pub const SEARCH_BAR_AFTER: MessageKey = MessageKey::new("search.bar.after");
+
+/// The message `search.bar.any-of`.
+pub const SEARCH_BAR_ANY_OF: MessageKey = MessageKey::new("search.bar.any-of");
+
+/// The message `search.bar.any-of-text`.
+pub const SEARCH_BAR_ANY_OF_TEXT: MessageKey = MessageKey::new("search.bar.any-of-text");
+
+/// The message `search.bar.at-least`.
+pub const SEARCH_BAR_AT_LEAST: MessageKey = MessageKey::new("search.bar.at-least");
+
+/// The message `search.bar.at-most`.
+pub const SEARCH_BAR_AT_MOST: MessageKey = MessageKey::new("search.bar.at-most");
+
+/// The message `search.bar.before`.
+pub const SEARCH_BAR_BEFORE: MessageKey = MessageKey::new("search.bar.before");
+
+/// The message `search.bar.below`.
+pub const SEARCH_BAR_BELOW: MessageKey = MessageKey::new("search.bar.below");
+
+/// The message `search.bar.change-filter-confirm`.
+pub const SEARCH_BAR_CHANGE_FILTER_CONFIRM: MessageKey =
+    MessageKey::new("search.bar.change-filter-confirm");
+
+/// The message `search.bar.count`.
+pub const SEARCH_BAR_COUNT: MessageKey = MessageKey::new("search.bar.count");
+
+/// The message `search.bar.day`.
+pub const SEARCH_BAR_DAY: MessageKey = MessageKey::new("search.bar.day");
+
+/// The message `search.bar.fields-clear`.
+pub const SEARCH_BAR_FIELDS_CLEAR: MessageKey = MessageKey::new("search.bar.fields-clear");
+
+/// The message `search.bar.fields-legend`.
+pub const SEARCH_BAR_FIELDS_LEGEND: MessageKey = MessageKey::new("search.bar.fields-legend");
+
+/// The message `search.bar.fields-list`.
+pub const SEARCH_BAR_FIELDS_LIST: MessageKey = MessageKey::new("search.bar.fields-list");
+
+/// The message `search.bar.fields-none`.
+pub const SEARCH_BAR_FIELDS_NONE: MessageKey = MessageKey::new("search.bar.fields-none");
+
+/// The message `search.bar.fields-search`.
+pub const SEARCH_BAR_FIELDS_SEARCH: MessageKey = MessageKey::new("search.bar.fields-search");
+
+/// The message `search.bar.filter-as-text`.
+pub const SEARCH_BAR_FILTER_AS_TEXT: MessageKey = MessageKey::new("search.bar.filter-as-text");
+
+/// The message `search.bar.filter-by-short`.
+pub const SEARCH_BAR_FILTER_BY_SHORT: MessageKey = MessageKey::new("search.bar.filter-by-short");
+
+/// The message `search.bar.filters`.
+pub const SEARCH_BAR_FILTERS: MessageKey = MessageKey::new("search.bar.filters");
+
+/// The message `search.bar.from`.
+pub const SEARCH_BAR_FROM: MessageKey = MessageKey::new("search.bar.from");
+
+/// The message `search.bar.is-empty`.
+pub const SEARCH_BAR_IS_EMPTY: MessageKey = MessageKey::new("search.bar.is-empty");
+
+/// The message `search.bar.is-not-empty`.
+pub const SEARCH_BAR_IS_NOT_EMPTY: MessageKey = MessageKey::new("search.bar.is-not-empty");
+
+/// The message `search.bar.issue-choose`.
+pub const SEARCH_BAR_ISSUE_CHOOSE: MessageKey = MessageKey::new("search.bar.issue-choose");
+
+/// The message `search.bar.issue-clear`.
+pub const SEARCH_BAR_ISSUE_CLEAR: MessageKey = MessageKey::new("search.bar.issue-clear");
+
+/// The message `search.bar.issue-legend`.
+pub const SEARCH_BAR_ISSUE_LEGEND: MessageKey = MessageKey::new("search.bar.issue-legend");
+
+/// The message `search.bar.issue-list`.
+pub const SEARCH_BAR_ISSUE_LIST: MessageKey = MessageKey::new("search.bar.issue-list");
+
+/// The message `search.bar.issue-none`.
+pub const SEARCH_BAR_ISSUE_NONE: MessageKey = MessageKey::new("search.bar.issue-none");
+
+/// The message `search.bar.issue-search`.
+pub const SEARCH_BAR_ISSUE_SEARCH: MessageKey = MessageKey::new("search.bar.issue-search");
+
+/// The message `search.bar.kind-direction`.
+pub const SEARCH_BAR_KIND_DIRECTION: MessageKey = MessageKey::new("search.bar.kind-direction");
+
+/// The message `search.bar.kind-field`.
+pub const SEARCH_BAR_KIND_FIELD: MessageKey = MessageKey::new("search.bar.kind-field");
+
+/// The message `search.bar.kind-helper`.
+pub const SEARCH_BAR_KIND_HELPER: MessageKey = MessageKey::new("search.bar.kind-helper");
+
+/// The message `search.bar.kind-keyword`.
+pub const SEARCH_BAR_KIND_KEYWORD: MessageKey = MessageKey::new("search.bar.kind-keyword");
+
+/// The message `search.bar.kind-name`.
+pub const SEARCH_BAR_KIND_NAME: MessageKey = MessageKey::new("search.bar.kind-name");
+
+/// The message `search.bar.kind-operator`.
+pub const SEARCH_BAR_KIND_OPERATOR: MessageKey = MessageKey::new("search.bar.kind-operator");
+
+/// The message `search.bar.kind-sign`.
+pub const SEARCH_BAR_KIND_SIGN: MessageKey = MessageKey::new("search.bar.kind-sign");
+
+/// The message `search.bar.kind-value`.
+pub const SEARCH_BAR_KIND_VALUE: MessageKey = MessageKey::new("search.bar.kind-value");
+
+/// The message `search.bar.me`.
+pub const SEARCH_BAR_ME: MessageKey = MessageKey::new("search.bar.me");
+
+/// The message `search.bar.not-a-number`.
+pub const SEARCH_BAR_NOT_A_NUMBER: MessageKey = MessageKey::new("search.bar.not-a-number");
+
+/// The message `search.bar.offers`.
+pub const SEARCH_BAR_OFFERS: MessageKey = MessageKey::new("search.bar.offers");
+
+/// The message `search.bar.op-above`.
+pub const SEARCH_BAR_OP_ABOVE: MessageKey = MessageKey::new("search.bar.op-above");
+
+/// The message `search.bar.op-after`.
+pub const SEARCH_BAR_OP_AFTER: MessageKey = MessageKey::new("search.bar.op-after");
+
+/// The message `search.bar.op-at-least`.
+pub const SEARCH_BAR_OP_AT_LEAST: MessageKey = MessageKey::new("search.bar.op-at-least");
+
+/// The message `search.bar.op-at-most`.
+pub const SEARCH_BAR_OP_AT_MOST: MessageKey = MessageKey::new("search.bar.op-at-most");
+
+/// The message `search.bar.op-before`.
+pub const SEARCH_BAR_OP_BEFORE: MessageKey = MessageKey::new("search.bar.op-before");
+
+/// The message `search.bar.op-below`.
+pub const SEARCH_BAR_OP_BELOW: MessageKey = MessageKey::new("search.bar.op-below");
+
+/// The message `search.bar.op-contains`.
+pub const SEARCH_BAR_OP_CONTAINS: MessageKey = MessageKey::new("search.bar.op-contains");
+
+/// The message `search.bar.op-from`.
+pub const SEARCH_BAR_OP_FROM: MessageKey = MessageKey::new("search.bar.op-from");
+
+/// The message `search.bar.op-in`.
+pub const SEARCH_BAR_OP_IN: MessageKey = MessageKey::new("search.bar.op-in");
+
+/// The message `search.bar.op-in-last`.
+pub const SEARCH_BAR_OP_IN_LAST: MessageKey = MessageKey::new("search.bar.op-in-last");
+
+/// The message `search.bar.op-is`.
+pub const SEARCH_BAR_OP_IS: MessageKey = MessageKey::new("search.bar.op-is");
+
+/// The message `search.bar.op-is-empty`.
+pub const SEARCH_BAR_OP_IS_EMPTY: MessageKey = MessageKey::new("search.bar.op-is-empty");
+
+/// The message `search.bar.op-is-not`.
+pub const SEARCH_BAR_OP_IS_NOT: MessageKey = MessageKey::new("search.bar.op-is-not");
+
+/// The message `search.bar.op-is-not-empty`.
+pub const SEARCH_BAR_OP_IS_NOT_EMPTY: MessageKey = MessageKey::new("search.bar.op-is-not-empty");
+
+/// The message `search.bar.op-member-of`.
+pub const SEARCH_BAR_OP_MEMBER_OF: MessageKey = MessageKey::new("search.bar.op-member-of");
+
+/// The message `search.bar.op-until`.
+pub const SEARCH_BAR_OP_UNTIL: MessageKey = MessageKey::new("search.bar.op-until");
+
+/// The message `search.bar.op-within`.
+pub const SEARCH_BAR_OP_WITHIN: MessageKey = MessageKey::new("search.bar.op-within");
+
+/// The message `search.bar.operator`.
+pub const SEARCH_BAR_OPERATOR: MessageKey = MessageKey::new("search.bar.operator");
+
+/// The message `search.bar.pick`.
+pub const SEARCH_BAR_PICK: MessageKey = MessageKey::new("search.bar.pick");
+
+/// The message `search.bar.pick-choose`.
+pub const SEARCH_BAR_PICK_CHOOSE: MessageKey = MessageKey::new("search.bar.pick-choose");
+
+/// The message `search.bar.pick-clear`.
+pub const SEARCH_BAR_PICK_CLEAR: MessageKey = MessageKey::new("search.bar.pick-clear");
+
+/// The message `search.bar.pick-groups`.
+pub const SEARCH_BAR_PICK_GROUPS: MessageKey = MessageKey::new("search.bar.pick-groups");
+
+/// The message `search.bar.pick-list`.
+pub const SEARCH_BAR_PICK_LIST: MessageKey = MessageKey::new("search.bar.pick-list");
+
+/// The message `search.bar.pick-none`.
+pub const SEARCH_BAR_PICK_NONE: MessageKey = MessageKey::new("search.bar.pick-none");
+
+/// The message `search.bar.pick-people`.
+pub const SEARCH_BAR_PICK_PEOPLE: MessageKey = MessageKey::new("search.bar.pick-people");
+
+/// The message `search.bar.pick-projects`.
+pub const SEARCH_BAR_PICK_PROJECTS: MessageKey = MessageKey::new("search.bar.pick-projects");
+
+/// The message `search.bar.pick-search`.
+pub const SEARCH_BAR_PICK_SEARCH: MessageKey = MessageKey::new("search.bar.pick-search");
+
+/// The message `search.bar.text-filter`.
+pub const SEARCH_BAR_TEXT_FILTER: MessageKey = MessageKey::new("search.bar.text-filter");
+
+/// The message `search.bar.text-filter-text`.
+pub const SEARCH_BAR_TEXT_FILTER_TEXT: MessageKey = MessageKey::new("search.bar.text-filter-text");
+
+/// The message `search.bar.time-last-week`.
+pub const SEARCH_BAR_TIME_LAST_WEEK: MessageKey = MessageKey::new("search.bar.time-last-week");
+
+/// The message `search.bar.time-this-month`.
+pub const SEARCH_BAR_TIME_THIS_MONTH: MessageKey = MessageKey::new("search.bar.time-this-month");
+
+/// The message `search.bar.time-this-week`.
+pub const SEARCH_BAR_TIME_THIS_WEEK: MessageKey = MessageKey::new("search.bar.time-this-week");
+
+/// The message `search.bar.time-today`.
+pub const SEARCH_BAR_TIME_TODAY: MessageKey = MessageKey::new("search.bar.time-today");
+
+/// The message `search.bar.time-yesterday`.
+pub const SEARCH_BAR_TIME_YESTERDAY: MessageKey = MessageKey::new("search.bar.time-yesterday");
+
+/// The message `search.bar.to-advanced`.
+pub const SEARCH_BAR_TO_ADVANCED: MessageKey = MessageKey::new("search.bar.to-advanced");
+
+/// The message `search.bar.to-simple`.
+pub const SEARCH_BAR_TO_SIMPLE: MessageKey = MessageKey::new("search.bar.to-simple");
+
+/// The message `search.bar.unit`.
+pub const SEARCH_BAR_UNIT: MessageKey = MessageKey::new("search.bar.unit");
+
+/// The message `search.bar.unit-days`.
+pub const SEARCH_BAR_UNIT_DAYS: MessageKey = MessageKey::new("search.bar.unit-days");
+
+/// The message `search.bar.unit-months`.
+pub const SEARCH_BAR_UNIT_MONTHS: MessageKey = MessageKey::new("search.bar.unit-months");
+
+/// The message `search.bar.unit-weeks`.
+pub const SEARCH_BAR_UNIT_WEEKS: MessageKey = MessageKey::new("search.bar.unit-weeks");
+
+/// The message `search.bar.until`.
+pub const SEARCH_BAR_UNTIL: MessageKey = MessageKey::new("search.bar.until");
+
+/// The message `search.bar.value`.
+pub const SEARCH_BAR_VALUE: MessageKey = MessageKey::new("search.bar.value");
+
+/// The message `search.bar.when`.
+pub const SEARCH_BAR_WHEN: MessageKey = MessageKey::new("search.bar.when");
+
 /// The message `search.clear`.
 pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
+
+/// The message `search.found-list`.
+pub const SEARCH_FOUND_LIST: MessageKey = MessageKey::new("search.found-list");
+
+/// The message `search.found-none`.
+pub const SEARCH_FOUND_NONE: MessageKey = MessageKey::new("search.found-none");
+
+/// The message `search.found-stale`.
+pub const SEARCH_FOUND_STALE: MessageKey = MessageKey::new("search.found-stale");
+
+/// The message `search.help`.
+pub const SEARCH_HELP: MessageKey = MessageKey::new("search.help");
+
+/// The message `search.help-comparing`.
+pub const SEARCH_HELP_COMPARING: MessageKey = MessageKey::new("search.help-comparing");
+
+/// The message `search.help-comparing-text`.
+pub const SEARCH_HELP_COMPARING_TEXT: MessageKey = MessageKey::new("search.help-comparing-text");
+
+/// The message `search.help-fields`.
+pub const SEARCH_HELP_FIELDS: MessageKey = MessageKey::new("search.help-fields");
+
+/// The message `search.help-fields-text`.
+pub const SEARCH_HELP_FIELDS_TEXT: MessageKey = MessageKey::new("search.help-fields-text");
+
+/// The message `search.help-order`.
+pub const SEARCH_HELP_ORDER: MessageKey = MessageKey::new("search.help-order");
+
+/// The message `search.help-order-text`.
+pub const SEARCH_HELP_ORDER_TEXT: MessageKey = MessageKey::new("search.help-order-text");
+
+/// The message `search.help-relations`.
+pub const SEARCH_HELP_RELATIONS: MessageKey = MessageKey::new("search.help-relations");
+
+/// The message `search.help-relations-text`.
+pub const SEARCH_HELP_RELATIONS_TEXT: MessageKey = MessageKey::new("search.help-relations-text");
+
+/// The message `search.help-text`.
+pub const SEARCH_HELP_TEXT: MessageKey = MessageKey::new("search.help-text");
+
+/// The message `search.help-text-text`.
+pub const SEARCH_HELP_TEXT_TEXT: MessageKey = MessageKey::new("search.help-text-text");
+
+/// The message `search.help-time`.
+pub const SEARCH_HELP_TIME: MessageKey = MessageKey::new("search.help-time");
+
+/// The message `search.help-time-text`.
+pub const SEARCH_HELP_TIME_TEXT: MessageKey = MessageKey::new("search.help-time-text");
+
+/// The message `search.help-title`.
+pub const SEARCH_HELP_TITLE: MessageKey = MessageKey::new("search.help-title");
+
+/// The message `search.help-use-short`.
+pub const SEARCH_HELP_USE_SHORT: MessageKey = MessageKey::new("search.help-use-short");
+
+/// The message `search.help-your-fields`.
+pub const SEARCH_HELP_YOUR_FIELDS: MessageKey = MessageKey::new("search.help-your-fields");
+
+/// The message `search.help-your-fields-text`.
+pub const SEARCH_HELP_YOUR_FIELDS_TEXT: MessageKey =
+    MessageKey::new("search.help-your-fields-text");
 
 /// The message `search.label`.
 pub const SEARCH_LABEL: MessageKey = MessageKey::new("search.label");
@@ -3847,6 +4184,9 @@ pub const SEARCH_MISTAKE_WORD_TOO_LONG: MessageKey =
 /// The message `search.nothing`.
 pub const SEARCH_NOTHING: MessageKey = MessageKey::new("search.nothing");
 
+/// The message `search.page.title`.
+pub const SEARCH_PAGE_TITLE: MessageKey = MessageKey::new("search.page.title");
+
 /// The message `search.pages`.
 pub const SEARCH_PAGES: MessageKey = MessageKey::new("search.pages");
 
@@ -3861,6 +4201,57 @@ pub const SEARCH_PROJECTS: MessageKey = MessageKey::new("search.projects");
 
 /// The message `search.results`.
 pub const SEARCH_RESULTS: MessageKey = MessageKey::new("search.results");
+
+/// The message `search.save`.
+pub const SEARCH_SAVE: MessageKey = MessageKey::new("search.save");
+
+/// The message `search.save-changes`.
+pub const SEARCH_SAVE_CHANGES: MessageKey = MessageKey::new("search.save-changes");
+
+/// The message `search.save-confirm`.
+pub const SEARCH_SAVE_CONFIRM: MessageKey = MessageKey::new("search.save-confirm");
+
+/// The message `search.save-copy`.
+pub const SEARCH_SAVE_COPY: MessageKey = MessageKey::new("search.save-copy");
+
+/// The message `search.save-copy-confirm`.
+pub const SEARCH_SAVE_COPY_CONFIRM: MessageKey = MessageKey::new("search.save-copy-confirm");
+
+/// The message `search.save-name`.
+pub const SEARCH_SAVE_NAME: MessageKey = MessageKey::new("search.save-name");
+
+/// The message `search.save-text`.
+pub const SEARCH_SAVE_TEXT: MessageKey = MessageKey::new("search.save-text");
+
+/// The message `search.saved-heading`.
+pub const SEARCH_SAVED_HEADING: MessageKey = MessageKey::new("search.saved-heading");
+
+/// The message `search.saved-mine`.
+pub const SEARCH_SAVED_MINE: MessageKey = MessageKey::new("search.saved-mine");
+
+/// The message `search.saved-shared`.
+pub const SEARCH_SAVED_SHARED: MessageKey = MessageKey::new("search.saved-shared");
+
+/// The message `search.share`.
+pub const SEARCH_SHARE: MessageKey = MessageKey::new("search.share");
+
+/// The message `search.share-done`.
+pub const SEARCH_SHARE_DONE: MessageKey = MessageKey::new("search.share-done");
+
+/// The message `search.share-groups`.
+pub const SEARCH_SHARE_GROUPS: MessageKey = MessageKey::new("search.share-groups");
+
+/// The message `search.share-more`.
+pub const SEARCH_SHARE_MORE: MessageKey = MessageKey::new("search.share-more");
+
+/// The message `search.share-none`.
+pub const SEARCH_SHARE_NONE: MessageKey = MessageKey::new("search.share-none");
+
+/// The message `search.share-note`.
+pub const SEARCH_SHARE_NOTE: MessageKey = MessageKey::new("search.share-note");
+
+/// The message `search.share-projects`.
+pub const SEARCH_SHARE_PROJECTS: MessageKey = MessageKey::new("search.share-projects");
 
 /// The message `search.title`.
 pub const SEARCH_TITLE: MessageKey = MessageKey::new("search.title");
@@ -4624,6 +5015,9 @@ pub const SHORTCUT_EDIT_DESCRIPTION: MessageKey = MessageKey::new("shortcut.edit
 
 /// The message `shortcut.everywhere`.
 pub const SHORTCUT_EVERYWHERE: MessageKey = MessageKey::new("shortcut.everywhere");
+
+/// The message `shortcut.focus-search-bar`.
+pub const SHORTCUT_FOCUS_SEARCH_BAR: MessageKey = MessageKey::new("shortcut.focus-search-bar");
 
 /// The message `shortcut.go-home`.
 pub const SHORTCUT_GO_HOME: MessageKey = MessageKey::new("shortcut.go-home");
@@ -8735,6 +9129,275 @@ pub fn search_index_rebuilt(issues: i64) -> Message {
     )
 }
 
+/// The message `search.bar.add-filter-text`.
+#[must_use]
+pub fn search_bar_add_filter_text(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.add-filter-text"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.bar.change-filter`.
+#[must_use]
+pub fn search_bar_change_filter(filter: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.change-filter"),
+        vec![("filter", Value::Text(filter.to_string()))],
+    )
+}
+
+/// The message `search.bar.change-filter-text`.
+#[must_use]
+pub fn search_bar_change_filter_text(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.change-filter-text"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.bar.compared`.
+#[must_use]
+pub fn search_bar_compared(
+    comparison: impl std::fmt::Display,
+    value: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.compared"),
+        vec![
+            ("comparison", Value::Text(comparison.to_string())),
+            ("value", Value::Text(value.to_string())),
+        ],
+    )
+}
+
+/// The message `search.bar.contains`.
+#[must_use]
+pub fn search_bar_contains(text: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.contains"),
+        vec![("text", Value::Text(text.to_string()))],
+    )
+}
+
+/// The message `search.bar.duration-help`.
+#[must_use]
+pub fn search_bar_duration_help(
+    both: impl std::fmt::Display,
+    hours: impl std::fmt::Display,
+    minutes: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.duration-help"),
+        vec![
+            ("both", Value::Text(both.to_string())),
+            ("hours", Value::Text(hours.to_string())),
+            ("minutes", Value::Text(minutes.to_string())),
+        ],
+    )
+}
+
+/// The message `search.bar.filter-by`.
+#[must_use]
+pub fn search_bar_filter_by(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.filter-by"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.bar.filters-count`.
+#[must_use]
+pub fn search_bar_filters_count(count: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.filters-count"),
+        vec![("count", Value::Text(count.to_string()))],
+    )
+}
+
+/// The message `search.bar.issue-chosen`.
+#[must_use]
+pub fn search_bar_issue_chosen(id: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.issue-chosen"),
+        vec![("id", Value::Text(id.to_string()))],
+    )
+}
+
+/// The message `search.bar.issue-take`.
+#[must_use]
+pub fn search_bar_issue_take(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.issue-take"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `search.bar.last-days`.
+#[must_use]
+pub fn search_bar_last_days(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.last-days"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `search.bar.last-months`.
+#[must_use]
+pub fn search_bar_last_months(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.last-months"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `search.bar.last-weeks`.
+#[must_use]
+pub fn search_bar_last_weeks(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.last-weeks"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `search.bar.member-of`.
+#[must_use]
+pub fn search_bar_member_of(group: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.member-of"),
+        vec![("group", Value::Text(group.to_string()))],
+    )
+}
+
+/// The message `search.bar.name-colon`.
+#[must_use]
+pub fn search_bar_name_colon(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.name-colon"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `search.bar.name-value`.
+#[must_use]
+pub fn search_bar_name_value(
+    name: impl std::fmt::Display,
+    value: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.name-value"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("value", Value::Text(value.to_string())),
+        ],
+    )
+}
+
+/// The message `search.bar.not`.
+#[must_use]
+pub fn search_bar_not(value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.not"),
+        vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `search.bar.not-a-duration`.
+#[must_use]
+pub fn search_bar_not_a_duration(
+    both: impl std::fmt::Display,
+    hours: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.not-a-duration"),
+        vec![
+            ("both", Value::Text(both.to_string())),
+            ("hours", Value::Text(hours.to_string())),
+        ],
+    )
+}
+
+/// The message `search.bar.pick-chosen`.
+#[must_use]
+pub fn search_bar_pick_chosen(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.pick-chosen"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `search.bar.pick-take`.
+#[must_use]
+pub fn search_bar_pick_take(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.pick-take"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `search.bar.remove-filter`.
+#[must_use]
+pub fn search_bar_remove_filter(filter: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.remove-filter"),
+        vec![("filter", Value::Text(filter.to_string()))],
+    )
+}
+
+/// The message `search.copy-name`.
+#[must_use]
+pub fn search_copy_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.copy-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `search.found-issue`.
+#[must_use]
+pub fn search_found_issue(id: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.found-issue"),
+        vec![
+            ("id", Value::Text(id.to_string())),
+            ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `search.found-project`.
+#[must_use]
+pub fn search_found_project(
+    name: impl std::fmt::Display,
+    short: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.found-project"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("short", Value::Text(short.to_string())),
+        ],
+    )
+}
+
+/// The message `search.help-use`.
+#[must_use]
+pub fn search_help_use(example: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.help-use"),
+        vec![("example", Value::Text(example.to_string()))],
+    )
+}
+
+/// The message `search.made-by`.
+#[must_use]
+pub fn search_made_by(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.made-by"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
 /// The message `search.mistake.expected-blocked-by`.
 #[must_use]
 pub fn search_mistake_expected_blocked_by(
@@ -8805,6 +9468,23 @@ pub fn search_mistake_expected_direction(directions: impl std::fmt::Display) -> 
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-direction"),
         vec![("directions", Value::Text(directions.to_string()))],
+    )
+}
+
+/// The message `search.mistake.expected-duration`.
+#[must_use]
+pub fn search_mistake_expected_duration(
+    hour: impl std::fmt::Display,
+    hours: impl std::fmt::Display,
+    minutes: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-duration"),
+        vec![
+            ("hour", Value::Text(hour.to_string())),
+            ("hours", Value::Text(hours.to_string())),
+            ("minutes", Value::Text(minutes.to_string())),
+        ],
     )
 }
 
@@ -9057,6 +9737,25 @@ pub fn search_mistake_wrong_date(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search.mistake.wrong-duration`.
+#[must_use]
+pub fn search_mistake_wrong_duration(
+    field: impl std::fmt::Display,
+    hour: impl std::fmt::Display,
+    hours: impl std::fmt::Display,
+    minutes: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.wrong-duration"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("hour", Value::Text(hour.to_string())),
+            ("hours", Value::Text(hours.to_string())),
+            ("minutes", Value::Text(minutes.to_string())),
+        ],
+    )
+}
+
 /// The message `search.mistake.wrong-issue`.
 #[must_use]
 pub fn search_mistake_wrong_issue(field: impl std::fmt::Display) -> Message {
@@ -9096,6 +9795,45 @@ pub fn search_mistake_wrong_text(field: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.wrong-text"),
         vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `search.project-list-stop`.
+#[must_use]
+pub fn search_project_list_stop(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.project-list-stop"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `search.project-list-use`.
+#[must_use]
+pub fn search_project_list_use(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.project-list-use"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `search.saved-by`.
+#[must_use]
+pub fn search_saved_by(name: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.saved-by"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `search.share-title`.
+#[must_use]
+pub fn search_share_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.share-title"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -11241,7 +11979,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.pick-choose-name", "Choose {name}"),
     ("fields.pick-chosen", "Chosen"),
     ("fields.pick-groups-list", "Groups you can choose"),
-    ("fields.pick-issue-find", "Find the issue"),
     ("fields.pick-more", "Show more"),
     (
         "fields.pick-no-groups",
@@ -11278,7 +12015,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.rules", "Rules"),
     (
         "fields.rules-not-a-number",
-        "One of the rules is not a number in the form this field uses.",
+        "One of the rules is not in the form this field uses: a number, a length of time or a day like 2026-10-25.",
     ),
     ("fields.scope-everywhere", "Everywhere"),
     ("fields.scope-everywhere-switch", "Use it in every project"),
@@ -11597,7 +12334,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("invitations.title", "Invitations"),
     ("issue-field.activity", "Activity"),
     ("issue-field.assigned-to", "Assigned to"),
+    ("issue-field.changed", "Changed"),
+    ("issue-field.closed", "Closed"),
     ("issue-field.cost-center", "Cost center"),
+    ("issue-field.created", "Created"),
     ("issue-field.description", "Description"),
     ("issue-field.due-date", "Due date"),
     ("issue-field.estimated-time", "Estimated time"),
@@ -11611,6 +12351,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.readable-id", "Issue ID"),
     ("issue-field.reported-by", "Reported by"),
     ("issue-field.status", "Status"),
+    ("issue-field.status-group", "Status group"),
     ("issue-field.sub-issue", "Sub-issue"),
     ("issue-field.tags", "Tags"),
     ("issue-field.time-left", "Time left"),
@@ -13284,8 +14025,196 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search-index.rebuilt",
         "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
     ),
+    ("search.bar.a-day", "A day"),
+    ("search.bar.above", "above"),
+    ("search.bar.add-filter", "Add filter"),
+    ("search.bar.add-filter-confirm", "Add filter"),
+    ("search.bar.add-filter-text", "What should {field} be?"),
+    (
+        "search.bar.add-filter-which",
+        "Which field should the filter look at?",
+    ),
+    ("search.bar.advanced-label", "Advanced search"),
+    (
+        "search.bar.advanced-placeholder",
+        "Write a search, for example: status is Open and assignedTo is me",
+    ),
+    ("search.bar.after", "after"),
+    ("search.bar.any-of", "Any of"),
+    (
+        "search.bar.any-of-text",
+        "Write the conditions with “or” between them. A result needs to fit at least one.",
+    ),
+    ("search.bar.at-least", "at least"),
+    ("search.bar.at-most", "at most"),
+    ("search.bar.before", "before"),
+    ("search.bar.below", "below"),
+    ("search.bar.change-filter", "Change the filter {filter}"),
+    ("search.bar.change-filter-confirm", "Change filter"),
+    (
+        "search.bar.change-filter-text",
+        "Change what {field} should be.",
+    ),
+    ("search.bar.compared", "{comparison} {value}"),
+    ("search.bar.contains", "contains {text}"),
+    ("search.bar.count", "How many"),
+    ("search.bar.day", "The day"),
+    (
+        "search.bar.duration-help",
+        "Write a length of time, for example {hours}, {minutes} or {both}.",
+    ),
+    ("search.bar.fields-clear", "Clear the words"),
+    ("search.bar.fields-legend", "Fields"),
+    ("search.bar.fields-list", "Fields you can filter by"),
+    ("search.bar.fields-none", "No field has these words."),
+    ("search.bar.fields-search", "Find a field"),
+    ("search.bar.filter-as-text", "The filter as text"),
+    ("search.bar.filter-by", "Choose {field} to filter by"),
+    ("search.bar.filter-by-short", "Choose"),
+    ("search.bar.filters", "Filters"),
+    ("search.bar.filters-count", "Filters ({count})"),
+    ("search.bar.from", "from"),
+    ("search.bar.is-empty", "empty"),
+    ("search.bar.is-not-empty", "not empty"),
+    ("search.bar.issue-choose", "Choose"),
+    ("search.bar.issue-chosen", "Chosen: {id}"),
+    ("search.bar.issue-clear", "Clear the words"),
+    ("search.bar.issue-legend", "Issue"),
+    ("search.bar.issue-list", "Issues found"),
+    ("search.bar.issue-none", "No issue found."),
+    ("search.bar.issue-search", "Issue ID or words of the title"),
+    ("search.bar.issue-take", "Choose {issue}"),
+    ("search.bar.kind-direction", "order"),
+    ("search.bar.kind-field", "field"),
+    ("search.bar.kind-helper", "helper"),
+    ("search.bar.kind-keyword", "word"),
+    ("search.bar.kind-name", "name"),
+    ("search.bar.kind-operator", "word"),
+    ("search.bar.kind-sign", "sign"),
+    ("search.bar.kind-value", "value"),
+    (
+        "search.bar.last-days",
+        "in the last {count, plural, one {day} other {# days}}",
+    ),
+    (
+        "search.bar.last-months",
+        "in the last {count, plural, one {month} other {# months}}",
+    ),
+    (
+        "search.bar.last-weeks",
+        "in the last {count, plural, one {week} other {# weeks}}",
+    ),
+    ("search.bar.me", "me"),
+    ("search.bar.member-of", "in the group {group}"),
+    ("search.bar.name-colon", "{name}:"),
+    ("search.bar.name-value", "{name}: {value}"),
+    ("search.bar.not", "not {value}"),
+    (
+        "search.bar.not-a-duration",
+        "Write a length of time like {hours} or {both}.",
+    ),
+    ("search.bar.not-a-number", "Write a number, like 5 or 2.5."),
+    ("search.bar.offers", "Words that can come next"),
+    ("search.bar.op-above", "is above"),
+    ("search.bar.op-after", "is after"),
+    ("search.bar.op-at-least", "is at least"),
+    ("search.bar.op-at-most", "is at most"),
+    ("search.bar.op-before", "is before"),
+    ("search.bar.op-below", "is below"),
+    ("search.bar.op-contains", "contains"),
+    ("search.bar.op-from", "is from"),
+    ("search.bar.op-in", "is one of"),
+    ("search.bar.op-in-last", "is in the last"),
+    ("search.bar.op-is", "is"),
+    ("search.bar.op-is-empty", "is empty"),
+    ("search.bar.op-is-not", "is not"),
+    ("search.bar.op-is-not-empty", "is not empty"),
+    ("search.bar.op-member-of", "is in the group"),
+    ("search.bar.op-until", "is until"),
+    ("search.bar.op-within", "is inside the project"),
+    ("search.bar.operator", "Compare"),
+    ("search.bar.pick", "Choose …"),
+    ("search.bar.pick-choose", "Choose"),
+    ("search.bar.pick-chosen", "Chosen: {name}"),
+    ("search.bar.pick-clear", "Clear the name"),
+    ("search.bar.pick-groups", "Group"),
+    ("search.bar.pick-list", "Names found"),
+    ("search.bar.pick-none", "Nothing found."),
+    ("search.bar.pick-people", "Person"),
+    ("search.bar.pick-projects", "Project"),
+    ("search.bar.pick-search", "Type the start of a name"),
+    ("search.bar.pick-take", "Choose {name}"),
+    ("search.bar.remove-filter", "Remove the filter {filter}"),
+    ("search.bar.text-filter", "Filter written as text"),
+    (
+        "search.bar.text-filter-text",
+        "Simple search has no picker for this filter. Change it as text.",
+    ),
+    ("search.bar.time-last-week", "last week"),
+    ("search.bar.time-this-month", "this month"),
+    ("search.bar.time-this-week", "this week"),
+    ("search.bar.time-today", "today"),
+    ("search.bar.time-yesterday", "yesterday"),
+    ("search.bar.to-advanced", "Advanced search"),
+    ("search.bar.to-simple", "Simple search"),
+    ("search.bar.unit", "Unit"),
+    ("search.bar.unit-days", "days"),
+    ("search.bar.unit-months", "months"),
+    ("search.bar.unit-weeks", "weeks"),
+    ("search.bar.until", "until"),
+    ("search.bar.value", "Value"),
+    ("search.bar.when", "Day"),
     ("search.clear", "Clear the search"),
+    ("search.copy-name", "Copy of {name}"),
+    ("search.found-issue", "{id} · {title}"),
+    ("search.found-list", "Issues found"),
+    ("search.found-none", "No issues match this search."),
+    ("search.found-project", "{short} · {name}"),
+    (
+        "search.found-stale",
+        "These are the issues of the last search without a mistake. Fix the mistake to update them.",
+    ),
+    ("search.help", "Help"),
+    ("search.help-comparing", "Comparing"),
+    (
+        "search.help-comparing-text",
+        "Compare with is, is not, in a list, or with bigger and smaller.",
+    ),
+    ("search.help-fields", "Fields"),
+    (
+        "search.help-fields-text",
+        "Write the name of a field, then what it should be.",
+    ),
+    ("search.help-order", "Order"),
+    (
+        "search.help-order-text",
+        "End the search with sort by and the field.",
+    ),
+    ("search.help-relations", "Projects and relations"),
+    (
+        "search.help-relations-text",
+        "Look inside a project, or at the issues around one issue.",
+    ),
+    ("search.help-text", "Text"),
+    (
+        "search.help-text-text",
+        "Find words in titles and texts. Put more than one word in quotes.",
+    ),
+    ("search.help-time", "Time"),
+    (
+        "search.help-time-text",
+        "Days are written like 2026-12-31. Words like today and this week also work.",
+    ),
+    ("search.help-title", "The words of the search"),
+    ("search.help-use", "Use {example} in the search"),
+    ("search.help-use-short", "Use"),
+    ("search.help-your-fields", "Your fields"),
+    (
+        "search.help-your-fields-text",
+        "The fields you may search by, each with the word that stands for it in the search.",
+    ),
     ("search.label", "Search"),
+    ("search.made-by", "Created by {person}"),
     (
         "search.mistake.expected-blocked-by",
         "Write “{by}” after “{blocked}”.",
@@ -13309,6 +14238,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "search.mistake.expected-direction",
         "Write how to sort here: {directions}.",
+    ),
+    (
+        "search.mistake.expected-duration",
+        "Write a whole number before “{hours}” or “{minutes}”, like 2 {hours}, 45 {minutes} or 1 {hour} 30 {minutes}.",
     ),
     (
         "search.mistake.expected-filter",
@@ -13435,6 +14368,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "“{field}” needs a day like 2026-10-25, or a word like today.",
     ),
     (
+        "search.mistake.wrong-duration",
+        "“{field}” needs a length of time here, like 2 {hours}, 45 {minutes} or 1 {hour} 30 {minutes}.",
+    ),
+    (
         "search.mistake.wrong-issue",
         "“{field}” needs an Issue ID here, like WEB-142.",
     ),
@@ -13451,11 +14388,42 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "“{field}” needs a text here. Put it in quotes.",
     ),
     ("search.nothing", "Nothing found. Try another word."),
+    ("search.page.title", "Search"),
     ("search.pages", "Pages"),
     ("search.partial", "Some results could not be loaded."),
     ("search.placeholder", "Search pages, settings and projects"),
+    (
+        "search.project-list-stop",
+        "Stop using as the list of {project}",
+    ),
+    ("search.project-list-use", "Use as the list of {project}"),
     ("search.projects", "Projects"),
     ("search.results", "Results"),
+    ("search.save", "Save search"),
+    ("search.save-changes", "Save"),
+    ("search.save-confirm", "Save search"),
+    ("search.save-copy", "Save a copy"),
+    ("search.save-copy-confirm", "Save a copy"),
+    ("search.save-name", "Name"),
+    (
+        "search.save-text",
+        "Give the search a name. It keeps the filters and how the results are shown. At first only you can see it.",
+    ),
+    ("search.saved-by", "{name} · {person}"),
+    ("search.saved-heading", "Saved searches"),
+    ("search.saved-mine", "Mine"),
+    ("search.saved-shared", "Shared with me"),
+    ("search.share", "Share"),
+    ("search.share-done", "Done"),
+    ("search.share-groups", "Groups"),
+    ("search.share-more", "Show more"),
+    ("search.share-none", "There is nothing you may share with."),
+    (
+        "search.share-note",
+        "Everyone sees only the issues and fields they are allowed to see.",
+    ),
+    ("search.share-projects", "Projects"),
+    ("search.share-title", "Share {name}"),
     ("search.title", "Quick search"),
     ("second-step.back", "Back to sign in"),
     ("second-step.code", "Code"),
@@ -14221,6 +15189,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Edit the description of the open issue",
     ),
     ("shortcut.everywhere", "Everywhere"),
+    ("shortcut.focus-search-bar", "Go to the search bar"),
     ("shortcut.go-home", "Go to the start page"),
     ("shortcut.go-notifications", "Go to Notifications"),
     ("shortcut.in-lists", "Where a list is shown"),

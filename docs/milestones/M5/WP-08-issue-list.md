@@ -30,6 +30,7 @@ The list files of `web/app/src/features/issues/` (`IssueList.tsx`, `IssueGrid.ts
 - `perf_04_a_list_of_ten_thousand_draws_only_the_rows_on_screen` (the number of row elements stays small while scrolling).
 - `cfg_02_tick_all_results_ticks_up_to_five_thousand` (the many-issues bar, M5-Q9).
 - The speed project: the first page of the *Search* page on the sample within PERF-01.
+- `qry_06_a_saved_search_opens_at_its_address_with_its_columns` (moved here from WP-07, which has no columns).
 
 ## Depends on
 

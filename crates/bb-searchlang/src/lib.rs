@@ -13,6 +13,7 @@
 
 #[macro_use]
 mod every;
+mod duration;
 
 mod answer;
 #[cfg(feature = "browser")]
@@ -36,7 +37,10 @@ mod words;
 
 pub use answer::{Answer, read};
 #[cfg(feature = "browser")]
-pub use browser::{Problem, print_from_json, readable_fields_from_json, search_from_json};
+pub use browser::{
+    Problem, duration_minutes_of, issue_id_of, operand_source_from_json, print_from_json,
+    readable_fields_from_json, search_from_json,
+};
 pub use checker::{CheckedSearch, check};
 pub use fields::{Field, FieldKind, IssueField, NO, Operator, ReadableFields, YES, own_field_word};
 pub use limits::{
@@ -44,7 +48,7 @@ pub use limits::{
     MAX_WORD_BYTES, MIN_PREFIX_CHARS,
 };
 pub use mistake::Mistake;
-pub use printer::print;
+pub use printer::{ROUND_TRIP_GUARD, canonical_text, print};
 pub use span::Span;
 pub use suggest::{AskKind, Suggestion, Suggestions, WordKind, suggest};
 pub use syntax::{

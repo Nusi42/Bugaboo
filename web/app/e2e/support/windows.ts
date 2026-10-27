@@ -158,3 +158,42 @@ export function lineLengths(element: Locator): Promise<readonly number[]> {
 export async function linesOf(element: Locator): Promise<number> {
   return (await lineLengths(element)).length;
 }
+
+/** Holds back the first request that keeps the sizes, so a second one is sent before it is done. */
+export async function holdFirstSizeSave(page: Page, ms: number): Promise<void> {
+  const held = { already: false };
+  await page.route("**/api/v1/me/settings/window.sizes", async (route) => {
+    const hold = route.request().method() === "PUT" && !held.already;
+    held.already = held.already || hold;
+    await Promise.all(
+      hold
+        ? [
+            new Promise((resolve) => {
+              setTimeout(resolve, ms);
+            }),
+          ]
+        : [],
+    );
+    await route.continue();
+  });
+}
+
+/**
+ * Waits until the server has answered the requests that keep the sizes, as many as `count`: a
+ * reload before that would ask for a size that is not saved yet.
+ */
+export async function sizesSaved(page: Page, count: number, act: () => Promise<void>) {
+  let answered = 0;
+  const done = new Promise<void>((resolve) => {
+    page.on("response", (response) => {
+      if (response.request().method() === "PUT" && response.url().includes("window.sizes")) {
+        answered += 1;
+        if (answered === count) {
+          resolve();
+        }
+      }
+    });
+  });
+  await act();
+  await done;
+}

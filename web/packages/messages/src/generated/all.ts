@@ -21,6 +21,7 @@ export { messages as projects } from "./projects.ts";
 export { messages as relationKinds } from "./relation-kinds.ts";
 export { messages as relations } from "./relations.ts";
 export { messages as roles } from "./roles.ts";
+export { messages as search } from "./search.ts";
 export { messages as settings } from "./settings.ts";
 export { messages as setup } from "./setup.ts";
 export { messages as shared } from "./shared.ts";

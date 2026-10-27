@@ -103,12 +103,12 @@ async fn sec_02_the_people_list_names_people_and_gives_addresses_to_people_who_m
             .send("GET", "/api/v1/people?search=cleo@", None)
             .await?;
         assert_eq!(by_address.body["items"][0]["person"]["name"], "Cleo Coder");
-        // A wildcard is taken out of the words; with nothing left to look for, everybody is listed.
+        // A wildcard is a character like any other: no name has a `%`, so nobody is found.
         let wildcard = org
             .ada
             .send("GET", "/api/v1/people?search=%25", None)
             .await?;
-        assert_eq!(wildcard.body["items"].as_array().map(Vec::len), Some(3));
+        assert_eq!(wildcard.body["items"].as_array().map(Vec::len), Some(0));
         let first = org.ada.send("GET", "/api/v1/people?limit=2", None).await?;
         let cursor = first.body["next_cursor"].as_str().ok_or("no next page")?;
         let second = org

@@ -20,7 +20,7 @@ On a page that is part of another one, "Back" at the top takes you one step back
 
 ## Quick search
 
-Press `Ctrl+K` (or `/`, or the search button) to open quick search. Type a few letters of a page, such as "appearance", use the arrow keys to pick one and press Enter. "Esc" closes quick search and puts you back where you were. Quick search shows only pages you may open.
+Press `Ctrl+K` (or the search button) to open quick search. Type a few letters of a page, such as "appearance", use the arrow keys to pick one and press Enter. "Esc" closes quick search and puts you back where you were. Quick search shows only pages you may open.
 
 ## Settings
 

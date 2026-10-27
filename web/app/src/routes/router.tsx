@@ -29,6 +29,8 @@ import {
   projectLayoutsRoute,
   projectWorkflowsRoute,
   relationKindsRoute,
+  savedSearchRoute,
+  searchRoute,
   workflowsRoute,
 } from "./work-pages.tsx";
 import {
@@ -71,6 +73,8 @@ const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     homeRoute,
     notificationsRoute,
+    searchRoute,
+    savedSearchRoute,
     projectRoute,
     projectIssuesRoute,
     issueRoute,

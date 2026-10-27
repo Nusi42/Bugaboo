@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 
 import {
   type Answer,
@@ -8,34 +7,12 @@ import {
   moduleLocation,
   offsetsOf,
   type Search,
-  type VectorFile,
 } from "@bugaboo/wasm-search";
 import { textByKey } from "@bugaboo/messages";
 import { startSearchLanguage } from "@bugaboo/wasm-search/testing";
+
+import { readVectors } from "./search-vectors.ts";
 import { describe, expect, it } from "vitest";
-
-const vectorsLocation = new URL("../../tools/testdata/search-vectors.json", import.meta.url);
-
-function isVectorFile(value: unknown): value is VectorFile {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "readable_fields" in value &&
-    "cases" in value &&
-    Array.isArray(value.cases) &&
-    "places" in value &&
-    Array.isArray(value.places)
-  );
-}
-
-/** The vectors that `cargo xtask gen search-vectors` writes from the Rust code of the server. */
-function readVectors(): VectorFile {
-  const vectors: unknown = JSON.parse(readFileSync(fileURLToPath(vectorsLocation), "utf8"));
-  if (!isVectorFile(vectors)) {
-    throw new Error("The search vectors are not what the generator writes.");
-  }
-  return vectors;
-}
 
 /** The tree of an answer to a text that parses. */
 function treeOf(answer: Answer): Search {

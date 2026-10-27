@@ -210,6 +210,9 @@ export const messages = {
   "nav.projects": "Projects",
   "nav.group.work": "Work",
   "search.clear": "Clear the search",
+  "search.page.title": "Search",
+  "search.bar.filters": "Filters",
+  "search.saved-heading": "Saved searches",
   "search.mistake.expected-filter":
     "A filter is missing here. Start it with the name of a field, like “priority”.",
   "search.mistake.expected-operator":
@@ -219,6 +222,8 @@ export const messages = {
     "After “{in}” write “{last}” and a number, or a list of values in brackets.",
   "search.mistake.expected-list-next":
     "Write a comma and the next value, or close the list with a bracket.",
+  "search.mistake.expected-duration":
+    "Write a whole number before “{hours}” or “{minutes}”, like 2 {hours}, 45 {minutes} or 1 {hour} 30 {minutes}.",
   "search.mistake.expected-count": "Write a whole number of 1 or more here.",
   "search.mistake.expected-unit": "Write a unit of time here: {units}.",
   "search.mistake.expected-steps-word": "Write “{step}” or “{steps}” after the number.",
@@ -255,6 +260,8 @@ export const messages = {
   "search.mistake.unknown-choice-did-you-mean":
     "“{field}” has no choice called “{value}”. Did you mean “{suggestion}”?",
   "search.mistake.wrong-number": "“{field}” needs a number here.",
+  "search.mistake.wrong-duration":
+    "“{field}” needs a length of time here, like 2 {hours}, 45 {minutes} or 1 {hour} 30 {minutes}.",
   "search.mistake.wrong-date": "“{field}” needs a day like 2026-10-25, or a word like today.",
   "search.mistake.wrong-text": "“{field}” needs a text here. Put it in quotes.",
   "search.mistake.wrong-person": "“{field}” needs the name of a person here, or “{me}”.",
@@ -266,6 +273,7 @@ export const messages = {
   "search.mistake.too-many-steps": "A search can look at most {limit} steps away.",
   "search.mistake.too-many-words": "A text to find can have at most {limit} different words.",
   "shortcut.quick-search": "Open quick search",
+  "shortcut.focus-search-bar": "Go to the search bar",
   "shortcut.show-shortcuts": "Show all keyboard shortcuts",
   "shortcut.go-home": "Go to the start page",
   "shortcut.list-next": "Open the next item in the list",
@@ -403,6 +411,10 @@ export const messages = {
   "issue-field.parent": "Part of",
   "issue-field.sub-issue": "Sub-issue",
   "issue-field.project": "Project",
+  "issue-field.status-group": "Status group",
+  "issue-field.created": "Created",
+  "issue-field.changed": "Changed",
+  "issue-field.closed": "Closed",
   "field.unknown-name": "{field}",
   "people-kind.assigned-to": "Assigned to",
   "people-kind.reported-by": "Reported by",

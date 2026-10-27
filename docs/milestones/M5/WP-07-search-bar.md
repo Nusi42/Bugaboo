@@ -31,6 +31,10 @@ One search bar above every list. Simple search and Advanced search show the same
 - `qry_06_a_saved_search_opens_at_its_address_with_its_columns`, `qry_06_share_lists_only_what_the_person_may_share_with`.
 - Keyboard: `/` focuses the bar; every control works with the keyboard and a screen reader (TEST-A11Y).
 
+## Added by the lead
+
+The lengths of time of the search language (M5-F41, ADR-0005 decision 10), the route `GET /api/v1/search/names` with its own allowance, and the round-trip check of the printer on the server only (ADR-0005 item 8). The test of a saved search opening with its columns moved to WP-08.
+
 ## Depends on
 
 WP-04 and WP-06 merged. Runs beside WP-08 and WP-09; WP-08 reads the address through this package's one function.
