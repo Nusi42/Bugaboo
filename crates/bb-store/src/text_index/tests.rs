@@ -5,7 +5,7 @@ mod reader;
 
 use bb_core::id::{EntityId, FieldId, IssueId};
 use bb_core::text_index::TextSource;
-use bb_core::text_words::search_words;
+use bb_core::text_words::{prepare, search_words};
 use bb_testing::{TestResult, each_database};
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
@@ -243,8 +243,7 @@ async fn iss_13_case_and_the_way_a_letter_is_written_do_not_matter_but_the_lette
 }
 
 /// Letters that NFC joins, takes apart or leaves with a mark on them stay one word in the index
-/// and are found by the same words on both databases: the tokenizer of SQLite (`unicode61`, no
-/// accents removed) and `simple` of PostgreSQL keep the stored word as it is (M5-F53).
+/// and are found by the same words on both databases: the tokenizer of SQLite (`ascii`) and `simple` of PostgreSQL keep the stored word as it is (M5-F53).
 #[tokio::test]
 async fn iss_13_letters_that_nfc_joins_or_leaves_marked_are_found_alike_on_both_databases()
 -> TestResult {
@@ -301,6 +300,121 @@ async fn iss_13_letters_that_nfc_joins_or_leaves_marked_are_found_alike_on_both_
                 "{words:?}"
             );
         }
+        Ok(())
+    })
+    .await
+}
+
+/// The characters a test of the tokenizers goes over: the ones the review named (a final sigma, the
+/// combining iota, letters of the category "other symbol" such as a circled letter), the cases of
+/// the tests above, whole blocks that fold or take apart (Latin, Greek, the extended Greek with the
+/// iota below, Cyrillic, the circled letters, the combining marks), and every 211th letter and
+/// number there is, so a script no block names is in too.
+fn tokenizer_characters() -> Vec<char> {
+    let blocks = [
+        0x20..0x250,
+        0x300..0x370,
+        0x370..0x400,
+        0x400..0x500,
+        0x1f00..0x2000,
+        0x2460..0x2500,
+        0xff00..0xfff0,
+    ];
+    let named =
+        "ςσΣ\u{345}\u{3b9}\u{399}ⓐⒶ\u{130}ıİßẞﬁǅ\u{1e9e}\u{a8}\u{3d1}\u{2126}\u{212a}\u{1c5}";
+    let mut all: Vec<char> = named.chars().collect();
+    all.extend(blocks.into_iter().flatten().filter_map(char::from_u32));
+    all.extend(
+        ('\0'..=char::MAX)
+            .filter(|c| c.is_alphanumeric())
+            .step_by(211),
+    );
+    all.sort_unstable();
+    all.dedup();
+    all
+}
+
+/// The two databases keep a stored word as it is (M5-F53, ADR-0016): the tokenizer of SQLite
+/// (`ascii`) splits at the spaces and nowhere else and folds nothing, and PostgreSQL compares the
+/// words split at spaces. For each character: every word that Rust prepares from a text with it is
+/// found, no piece cut out of a word is found as a word, and the character written in lower case
+/// as its upper case lower-cases it (a final sigma becomes the middle one, the combining iota
+/// becomes the letter) is another word and is not found.
+#[tokio::test]
+async fn iss_13_the_databases_keep_a_stored_word_as_rust_prepared_it() -> TestResult {
+    each_database("iss_13_tokenizers", async |db| {
+        let fixture = fixture(db).await?;
+        let mut ids = ids();
+        let world = world(&fixture.storage, &mut ids, 1).await;
+        let issue = world.issues[0].id;
+        let characters = tokenizer_characters();
+        let mut fields = Vec::new();
+        let mut tx = fixture.storage.database().begin().await?;
+        for letter in &characters {
+            let field = FieldId::generate(&mut ids)?;
+            let text = format!("x{letter}x {letter}y {letter}");
+            index_text(&mut tx, issue, TextSource::Field, field.into(), &text).await?;
+            fields.push((field, text));
+        }
+        tx.commit().await?;
+        let mut wrong = Vec::new();
+        for (letter, (field, text)) in characters.iter().zip(&fields) {
+            let scope = TextScope::Field(*field);
+            let stored = prepare(text);
+            let asked = |words: &str, must_be_found: bool| {
+                let words = words.to_owned();
+                let storage = &fixture.storage;
+                async move {
+                    let found = !found(storage, &words, scope).await?.is_empty();
+                    Ok::<_, Box<dyn std::error::Error + Send + Sync>>(
+                        (found == must_be_found).then_some(()),
+                    )
+                }
+            };
+            for word in &stored {
+                if asked(word, true).await?.is_none() {
+                    wrong.push(format!("{:04X} {word:?} is not found", u32::from(*letter)));
+                }
+                // The start of a word is found by its start, and a piece is not a word.
+                let chars: Vec<char> = word.chars().collect();
+                let n = chars.len();
+                let pieces = [
+                    chars[..n - 1].iter().collect::<String>(),
+                    chars[1..].iter().collect::<String>(),
+                ];
+                for piece in pieces {
+                    let is_a_word = stored.contains(&piece);
+                    if n > 1
+                        && !piece.is_empty()
+                        && prepare(&piece) == [piece.clone()]
+                        && !is_a_word
+                        && asked(&piece, false).await?.is_none()
+                    {
+                        wrong.push(format!(
+                            "{:04X} {piece:?} of {word:?} is found",
+                            u32::from(*letter)
+                        ));
+                    }
+                }
+                // Another word that a fold of the tokenizer would make the same.
+                let folded: String = word
+                    .chars()
+                    .flat_map(char::to_uppercase)
+                    .flat_map(char::to_lowercase)
+                    .collect();
+                if folded != *word
+                    && prepare(&folded) == [folded.clone()]
+                    && !stored.contains(&folded)
+                    && asked(&folded, false).await?.is_none()
+                {
+                    wrong.push(format!(
+                        "{:04X} {folded:?} finds {word:?}",
+                        u32::from(*letter)
+                    ));
+                }
+            }
+        }
+        assert!(wrong.is_empty(), "{} mistakes: {wrong:?}", wrong.len());
         Ok(())
     })
     .await

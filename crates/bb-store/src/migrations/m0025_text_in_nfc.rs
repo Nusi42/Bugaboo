@@ -10,67 +10,56 @@
 //! and puts the place of the reader at that head (`TextIndexStore::rebuild_text_index_if_wanted`).
 //! Until it has come to the end the index is empty or partial, so a search finds less; the jobs
 //! do not wait for it, and the reader of the outbox reads nothing until it has finished, then
-//! reads what came after the head. The names of the table and of the reader and the mark are
-//! written out here, not read from the program, so the migration says what a database of
-//! migration 24 holds and what the program asks for from now on.
+//! reads what came after the head. The name of the reader and the mark are the ones of `bb_core`,
+//! and so is the number of this migration (`RULE_MIGRATION`, which the list of migrations takes as
+//! its number), so a tool that keeps an index of its own can compare its marker with it.
 //!
 //! The databases only store and compare the words Rust prepared: the FTS5 table is made again with
-//! a tokenizer that keeps every letter, number and mark of a word, and the `tsvector` of PostgreSQL
+//! the `ascii` tokenizer, which splits at the spaces between the words and nowhere else (a word
+//! holds only letters, numbers and marks, and no byte of a letter that is not ASCII is a
+//! separator or is folded: no accent is removed, `ς` stays `ς`), and the `tsvector` of PostgreSQL
 //! is made from the words split at spaces, not by the parser of the text search, which depends on
 //! the locale of the database.
+//!
+//! The triggers and the FTS5 table (SQLite), the index and the column (PostgreSQL) are dropped
+//! before the rows are deleted and made again after, so the delete does not follow each of the
+//! rows into the search structure while it holds the lock of the migration (7 seconds for 300 000
+//! rows through the triggers, 0.2 seconds without). The statements of the triggers and of the
+//! index are the ones of migration 22.
 
+use bb_core::text_index::{CONSUMER, REBUILD_WANTED};
 use sea_query::{Expr, ExprTrait as _, Query};
 
 use super::Step;
+use super::m0022_text_index::{DROP_FTS, DROP_TSVECTOR, FTS_TRIGGERS, TSVECTOR_INDEX};
 use crate::db::FixedSql;
 use crate::schema::{OutboxPosition, TextIndexRow};
 
-/// The name the reader of the index has in the positions of the outbox.
-const READER: &str = "text-index";
+/// The FTS5 table made again (SQLite): external content, the tokenizer that splits at spaces.
+const FTS_TABLE: &str = "CREATE VIRTUAL TABLE text_index_fts USING fts5(words, content='text_index', \
+     content_rowid='id', prefix='2 3', tokenize='ascii')";
 
-/// The mark: a place no event is after (`bb_core::text_index::REBUILD_WANTED`).
-const REBUILD_WANTED: i64 = i64::MAX;
-
-/// The FTS5 table made again, and the triggers that keep it in step (SQLite). The tokenizer takes
-/// letters, numbers, private-use characters and marks as the characters of a word and splits at
-/// everything else, so a stored word is never cut inside (`unicode61` alone keeps only the marks
-/// U+0300 to U+0331). No accent is removed: the words are what Rust prepared. The text of the
-/// statements is the one of migration 22, apart from the tokenizer.
-const SQLITE: [&str; 8] = [
-    "DROP TRIGGER text_index_after_insert",
-    "DROP TRIGGER text_index_after_delete",
-    "DROP TRIGGER text_index_after_update",
-    "DROP TABLE text_index_fts",
-    "CREATE VIRTUAL TABLE text_index_fts USING fts5(words, content='text_index',      content_rowid='id', prefix='2 3',      tokenize=\"unicode61 remove_diacritics 0 categories 'L* N* Co M*'\")",
-    "CREATE TRIGGER text_index_after_insert AFTER INSERT ON text_index BEGIN      INSERT INTO text_index_fts(rowid, words) VALUES (new.id, new.words); END",
-    "CREATE TRIGGER text_index_after_delete AFTER DELETE ON text_index BEGIN      INSERT INTO text_index_fts(text_index_fts, rowid, words) VALUES ('delete', old.id, old.words); END",
-    "CREATE TRIGGER text_index_after_update AFTER UPDATE ON text_index BEGIN \
-     INSERT INTO text_index_fts(text_index_fts, rowid, words) VALUES ('delete', old.id, old.words); \
-     INSERT INTO text_index_fts(rowid, words) VALUES (new.id, new.words); END",
-];
-
-/// The vector made again from the stored words split at spaces, with no parser of the locale
+/// The vector made from the stored words split at spaces, with no parser of the locale
 /// (PostgreSQL). Its lexemes are the words as they are stored.
-const POSTGRES: [&str; 4] = [
-    "DROP INDEX text_index_words",
-    "ALTER TABLE text_index DROP COLUMN words_tsv",
-    "ALTER TABLE text_index ADD COLUMN words_tsv tsvector GENERATED ALWAYS AS      (array_to_tsvector(array_remove(string_to_array(words, ' '), ''))) STORED",
-    "CREATE INDEX text_index_words ON text_index USING GIN (words_tsv)",
-];
+const TSVECTOR_COLUMN: &str = "ALTER TABLE text_index ADD COLUMN words_tsv tsvector GENERATED ALWAYS AS \
+     (array_to_tsvector(array_remove(string_to_array(words, ' '), ''))) STORED";
 
 pub(super) fn steps() -> Vec<Step> {
     vec![
-        // The rows go while the triggers of the old table still follow them.
+        Step::Sql(FixedSql {
+            sqlite: DROP_FTS.to_vec(),
+            postgres: DROP_TSVECTOR.to_vec(),
+        }),
         Step::Delete(Query::delete().from_table(TextIndexRow::Table).to_owned()),
         Step::Sql(FixedSql {
-            sqlite: SQLITE.to_vec(),
-            postgres: POSTGRES.to_vec(),
+            sqlite: [FTS_TABLE].into_iter().chain(FTS_TRIGGERS).collect(),
+            postgres: vec![TSVECTOR_COLUMN, TSVECTOR_INDEX],
         }),
         Step::Update(
             Query::update()
                 .table(OutboxPosition::Table)
                 .value(OutboxPosition::Position, REBUILD_WANTED)
-                .and_where(Expr::col(OutboxPosition::Consumer).eq(READER))
+                .and_where(Expr::col(OutboxPosition::Consumer).eq(CONSUMER))
                 .to_owned(),
         ),
     ]
@@ -82,7 +71,7 @@ mod tests {
     use bb_app::text_index::{TextIndexStore as _, catch_up};
     use bb_core::event::{EntityKind, RecordKind};
     use bb_core::id::EntityId;
-    use bb_core::text_index::TextSource;
+    use bb_core::text_index::{RULE_MIGRATION, TextSource};
     use bb_testing::{TestResult, each_database};
     use sea_query::{Expr, ExprTrait as _, Query};
 
@@ -105,7 +94,7 @@ mod tests {
     -> TestResult {
         each_database("migration_25_text_in_nfc", async |db| {
             let database = Database::connect(db.url()).await?;
-            database.migrate_until(24, at(0)).await?;
+            database.migrate_until(RULE_MIGRATION - 1, at(0)).await?;
             let folder = tempfile::tempdir()?;
             let keys = std::sync::Arc::new(database.open_keys(&folder.path().join("keys")).await?);
             let seal = LogSeal::new(&keys, folder.path().join("head.log"));
@@ -170,7 +159,7 @@ mod tests {
                 "nothing is left to read"
             );
 
-            assert_eq!(database.migrate(at(3)).await?, [25]);
+            assert_eq!(database.migrate(at(3)).await?, [RULE_MIGRATION]);
             // The migration itself prepares nothing: the index is empty, and the reader reads no
             // event until the index has been made again.
             assert!(found(&storage, "muller", everywhere).await?.is_empty());

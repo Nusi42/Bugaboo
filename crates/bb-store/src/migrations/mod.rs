@@ -271,7 +271,7 @@ const ALL: &[Definition] = &[
         steps: || Ok(m0024_saved_searches::steps()),
     },
     Definition {
-        version: 25,
+        version: bb_core::text_index::RULE_MIGRATION,
         name: "text_in_nfc",
         steps: || Ok(m0025_text_in_nfc::steps()),
     },
