@@ -252,6 +252,8 @@ export interface MessageArguments {
   "issues.created": { key: string | number };
   "issues.deleted": { key: string | number };
   "issues.draft-found-form": { when: string | number };
+  "issues.group-folded": { count: number; group: string | number };
+  "issues.group-open": { count: number; group: string | number };
   "issues.keep-theirs": { name: string | number };
   "issues.page-title": { project: string | number };
   "issues.read-only": { field: string | number };

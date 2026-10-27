@@ -59,7 +59,7 @@ test("cfg_02 group by a field shows each group with its count", async ({ page })
     ),
   );
   // Folding a group takes its rows away and loads nothing.
-  await groupOf(page, t("priority.critical")).getByRole("button").click();
+  await groupOf(page, t("priority.critical")).click();
   await expect(grid(page).getByRole("link", { name: webIssues.login })).toHaveCount(0);
   await expect(groupOf(page, t("priority.high"))).toContainText("1");
 });

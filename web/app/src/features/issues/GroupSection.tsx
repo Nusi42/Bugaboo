@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
-import { GridListSection } from "react-aria-components";
-
+import type { FoundLine } from "./found-issues.ts";
 import type { GroupOfKey } from "./group-keys.ts";
 import { GroupHeader } from "./GroupHeader.tsx";
 import { RowsOf } from "./ListRows.tsx";
@@ -18,13 +17,16 @@ function prefixOf(group: GroupOfKey): string {
   return `${group.id}/`;
 }
 
+const none: readonly FoundLine[] = [];
+
 /** A group and its rows, which can be folded (UX section 4.2). */
 export function GroupSection({ group, count }: GroupSectionProps) {
   const [open, setOpen] = useState(true);
   const rows = useGroupRows(group, open);
-  useReportShown(group.id, rows.lines);
+  // A folded group draws no rows, so none of them is shown, counted or ticked with the others.
+  useReportShown(group.id, open ? rows.lines : none);
   return (
-    <GridListSection id={group.id}>
+    <>
       <GroupHeader
         group={group}
         count={count}
@@ -43,6 +45,6 @@ export function GroupSection({ group, count }: GroupSectionProps) {
           onMore={rows.onMore}
         />
       ) : null}
-    </GridListSection>
+    </>
   );
 }

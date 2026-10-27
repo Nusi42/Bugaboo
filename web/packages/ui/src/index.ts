@@ -57,7 +57,7 @@ export {
   type LegendProps,
 } from "./Legend.tsx";
 export { Link, type LinkProps } from "./Link.tsx";
-export { listColumns, type ListColumn } from "./list-columns.ts";
+export { headId, listColumns, type ListColumn } from "./list-columns.ts";
 export {
   ListCell,
   ListColumnHead,

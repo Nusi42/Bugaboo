@@ -7,6 +7,9 @@ import type { IssueShow } from "./issue-show.ts";
 import type { OwnColumns } from "./own-columns.ts";
 import type { IssueSelection } from "./use-selection.ts";
 
+/** What the head cells of the list and the cells under them name each other by. */
+export const listId = "issue-list";
+
 /** What every row and every group of one list shares. */
 export interface ListContextValue {
   /** The search words of the columns, in order. */

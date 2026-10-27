@@ -100,6 +100,8 @@ tokens {
     // How big a control is (UX §7.4): 36 with a mouse and 44 for a finger. WCAG 2.2 AA asks for 24 at
     // least, so no control is smaller (a test holds the tokens to it).
     size "size-target-least" "24px"
+    // What a small target of a list is at the least: 24 for a pointer (WCAG 2.5.8), a finger's 44 on touch (UX §7.4).
+    size "size-target-compact" "24px" touch="44px"
     size "size-control" "36px" touch="44px"
     size "size-control-small" "28px" touch="44px"
     // A row of a list: 44 with a mouse and 64 for a finger.
@@ -130,6 +132,7 @@ tokens {
     // narrower than the least and moves by the step with the arrow keys.
     size "size-col-title" "160px"
     size "size-col-least" "48px"
+    size "size-col-most" "800px"
     size "size-col-step" "16px"
     size "size-col-value" "96px"
     size "size-col-changed" "80px"
@@ -146,6 +149,8 @@ tokens {
     size "window-height" "auto" run-time="true"
     // The columns of the issue list while it is drawn: one width for each, the same in the head and in every row.
     size "list-columns" "auto" run-time="true"
+    // The width of the scroll bar the rows of the list have now (none while they fit): the head keeps the same room at its end, so the columns stand over each other and the list meets the edge of its card.
+    size "list-gutter" "0px" run-time="true"
     size "bp-window-side" "880px"
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at the week zoom.
@@ -1909,9 +1914,15 @@ part "list-frame[variant=compact] list-row[variant=head]" {
     min-height "$size-row-compact"
 }
 
-// Compact: the tick box draws at its least size (a target of 24, WCAG 2.5.8) and the group headers are as low as the rows.
+// Compact: the tick box draws at its least size and keeps its target (24 for a pointer, WCAG 2.5.8; 44 on touch), and the group headers are as low as the rows.
 part "list-frame[variant=compact] checkbox" {
-    min-height "$size-target-least"
+    min-height "$size-target-compact"
+}
+
+// Compact on a phone: the card keeps its two lines with less air around them.
+part "list-frame[variant=compact] list-row[variant=phone]" {
+    padding "$space-1 $pad-box"
+    min-height "$size-row-compact"
 }
 
 part "list-frame[variant=compact] checkbox.box" {
@@ -1925,7 +1936,6 @@ part "list-scroll" {
     box-sizing border-box
     max-height "$size-list-scroll"
     overflow auto
-    scrollbar-gutter stable
     border-bottom "$border-width solid $border-subtle"
 }
 
@@ -1933,8 +1943,10 @@ part "list-scroll[state=hidden]" {
     display none
 }
 
+// The head scrolls sideways with the rows (the code keeps the two in step) and has no bar of its own.
 part "list-head" {
-    scrollbar-gutter stable
+    box-sizing border-box
+    padding-inline-end "$list-gutter"
     overflow hidden
 }
 
@@ -1944,8 +1956,8 @@ part "list-sort" {
     display inline-flex
     align-items center
     gap "$space-1"
-    min-width "$size-target-least"
-    min-height "$size-target-least"
+    min-width "$size-target-compact"
+    min-height "$size-target-compact"
     padding 0
     color inherit
     font-size inherit
@@ -1971,7 +1983,7 @@ part "list-handle" {
     position absolute
     inset-block 0
     inset-inline-end 0
-    width "$size-target-least"
+    width "$size-target-compact"
     cursor col-resize
     touch-action none
 }
@@ -1990,7 +2002,7 @@ part "list-row[variant=head] list-row.cell" {
 
 // The room at the end of a name for the handle that sets its width, so the two never overlap.
 part "list-row[variant=head] list-row.cell:has(list-handle)" {
-    padding-inline-end "$size-target-least"
+    padding-inline-end "$size-target-compact"
 }
 
 // A group of rows can be folded: the whole header is the button.

@@ -2,19 +2,22 @@ import { useRef, type RefObject } from "react";
 
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 
+/** The rows of the grid, group headers included: what the arrow keys move over. */
+const rowsOfGrid = '[data-rac][role="row"]';
+
 /**
- * `j` and `k` move the focus to the title of the next or the previous row of a list (UX §6.2). The
- * ref goes on the list; the titles are the links inside it.
+ * `j` and `k` move the focus to the next or the previous row of a list, as the arrow keys do (UX
+ * §6.2). The ref goes on the list.
  */
 export function useRowKeys(): RefObject<HTMLDivElement | null> {
   const list = useRef<HTMLDivElement>(null);
   const step = (direction: 1 | -1): void => {
-    const titles = list.current?.querySelectorAll<HTMLElement>("a") ?? [];
+    const rows = list.current?.querySelectorAll<HTMLElement>(rowsOfGrid) ?? [];
     let at = -1;
-    for (const [index, title] of titles.entries()) {
-      at = title === document.activeElement ? index : at;
+    for (const [index, row] of rows.entries()) {
+      at = row.contains(document.activeElement) ? index : at;
     }
-    titles[Math.min(Math.max(at + direction, 0), titles.length - 1)]?.focus();
+    rows[Math.min(Math.max(at + direction, 0), rows.length - 1)]?.focus();
   };
   useShortcuts({
     "list-next": () => {

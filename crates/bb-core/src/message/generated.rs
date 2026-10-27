@@ -1993,6 +1993,9 @@ pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed
 /// The message `issues.clear-selection`.
 pub const ISSUES_CLEAR_SELECTION: MessageKey = MessageKey::new("issues.clear-selection");
 
+/// The message `issues.columns-head`.
+pub const ISSUES_COLUMNS_HEAD: MessageKey = MessageKey::new("issues.columns-head");
+
 /// The message `issues.columns-reset`.
 pub const ISSUES_COLUMNS_RESET: MessageKey = MessageKey::new("issues.columns-reset");
 
@@ -7396,6 +7399,30 @@ pub fn issues_draft_found_form(when: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.group-folded`.
+#[must_use]
+pub fn issues_group_folded(count: i64, group: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.group-folded"),
+        vec![
+            ("count", Value::Number(count)),
+            ("group", Value::Text(group.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.group-open`.
+#[must_use]
+pub fn issues_group_open(count: i64, group: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.group-open"),
+        vec![
+            ("count", Value::Number(count)),
+            ("group", Value::Text(group.to_string())),
+        ],
+    )
+}
+
 /// The message `issues.keep-theirs`.
 #[must_use]
 pub fn issues_keep_theirs(name: impl std::fmt::Display) -> Message {
@@ -12606,6 +12633,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.column-down", "Move {column} down"),
     ("issues.column-up", "Move {column} up"),
     ("issues.column-width", "Width of {column}"),
+    ("issues.columns-head", "Columns of the list"),
     ("issues.columns-reset", "Back to the project's columns"),
     ("issues.comment", "Comment"),
     ("issues.compare-and-save", "Compare and save"),
@@ -12656,6 +12684,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.group-by", "Group by"),
     ("issues.group-by-none", "No grouping"),
     ("issues.group-empty", "None"),
+    (
+        "issues.group-folded",
+        "{group}, {count, plural, one {# issue} other {# issues}}, folded. Press to unfold the group.",
+    ),
+    (
+        "issues.group-open",
+        "{group}, {count, plural, one {# issue} other {# issues}}. Press to fold the group.",
+    ),
     (
         "issues.group-unlisted",
         "The issues of this group cannot be listed here yet.",

@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { buttonType, Icon, iconName, iconSize, part, partOf, StatusIcon } from "@bugaboo/ui";
-import { GridListHeader } from "react-aria-components";
+import { Icon, iconName, iconSize, part, partOf, StatusIcon } from "@bugaboo/ui";
+import { GridListItem } from "react-aria-components";
 
 import type { GroupOfKey } from "./group-keys.ts";
 
@@ -27,24 +27,33 @@ export interface GroupHeaderProps {
   readonly note: string | undefined;
 }
 
-/** The header of a group (UX section 4.2): its icon and color, its name and how many issues it holds; it folds the group. */
+/**
+ * The header of a group (UX section 4.2): its icon and color, its name and how many issues it holds.
+ * It is a row of the list that is reached with the arrow keys like every other row, and pressing it
+ * (Enter, Space or a click) folds the group. It cannot be ticked.
+ */
 export function GroupHeader({ group, count, open, onToggle, note }: GroupHeaderProps) {
+  const name = nameOf(group);
+  const itemId = `${group.id}/header`;
+  const words = t(open ? "issues.group-open" : "issues.group-folded", { group: name, count });
   return (
-    <GridListHeader {...partOf(part.listGroup)}>
-      <button
-        type={buttonType.button}
-        {...partOf(part.listGroupToggle)}
-        aria-expanded={open}
-        onClick={onToggle}
-      >
+    <GridListItem
+      id={itemId}
+      textValue={words}
+      aria-label={words}
+      isDisabled
+      onAction={onToggle}
+      {...partOf(part.listGroup)}
+    >
+      <span {...partOf(part.listGroupToggle)}>
         <Icon name={open ? iconName.down : iconName.next} size={iconSize.small} />
         {group.statusGroup === undefined ? null : (
           <StatusIcon group={group.statusGroup} size={iconSize.small} />
         )}
-        <span {...partOf(part.listGroupName)}>{nameOf(group)}</span>
+        <span {...partOf(part.listGroupName)}>{name}</span>
         <span {...partOf(part.listGroupCount)}>{count}</span>
         {note === undefined ? null : <span {...partOf(part.listGroupNote)}>{note}</span>}
-      </button>
-    </GridListHeader>
+      </span>
+    </GridListItem>
   );
 }

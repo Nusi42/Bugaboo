@@ -32,7 +32,12 @@ export const variants = {
 } as const;
 
 /** The variables the code may set while the person drags (`run-time="true"` in the theme file). */
-export const runTimeVariables = ["window-width", "window-height", "list-columns"] as const;
+export const runTimeVariables = [
+  "window-width",
+  "window-height",
+  "list-columns",
+  "list-gutter",
+] as const;
 export type RunTimeVariable = (typeof runTimeVariables)[number];
 
 export const colorTokens = [
@@ -132,6 +137,7 @@ export const tokenNames = [
   "size-file-tile",
   "size-phone-hang",
   "size-target-least",
+  "size-target-compact",
   "size-control",
   "size-control-small",
   "size-row",
@@ -152,6 +158,7 @@ export const tokenNames = [
   "size-col-project",
   "size-col-title",
   "size-col-least",
+  "size-col-most",
   "size-col-step",
   "size-col-value",
   "size-col-changed",
@@ -163,6 +170,7 @@ export const tokenNames = [
   "window-width",
   "window-height",
   "list-columns",
+  "list-gutter",
   "bp-window-side",
   "bp-window-wide",
   "size-day-week",

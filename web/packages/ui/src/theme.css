@@ -36,6 +36,7 @@
   --size-file-tile: 64px;
   --size-phone-hang: 0px;
   --size-target-least: 24px;
+  --size-target-compact: 24px;
   --size-control: 36px;
   --size-control-small: 28px;
   --size-row: 44px;
@@ -56,6 +57,7 @@
   --size-col-project: 96px;
   --size-col-title: 160px;
   --size-col-least: 48px;
+  --size-col-most: 800px;
   --size-col-step: 16px;
   --size-col-value: 96px;
   --size-col-changed: 80px;
@@ -67,6 +69,7 @@
   --window-width: var(--size-window);
   --window-height: auto;
   --list-columns: auto;
+  --list-gutter: 0px;
   --bp-window-side: 880px;
   --bp-window-wide: 1200px;
   --size-day-week: 16px;
@@ -597,6 +600,7 @@
 
 @media (pointer: coarse), (width < 768px) {
   :root {
+    --size-target-compact: 44px;
     --size-control: 44px;
     --size-control-small: 44px;
     --size-row: 64px;
@@ -2041,7 +2045,12 @@ body {
 }
 
 [data-part="list-frame"][data-variant~="compact"] [data-part="checkbox"] {
-  min-height: var(--size-target-least);
+  min-height: var(--size-target-compact);
+}
+
+[data-part="list-frame"][data-variant~="compact"] [data-part="list-row"][data-variant~="phone"] {
+  padding: var(--space-1) var(--pad-box);
+  min-height: var(--size-row-compact);
 }
 
 [data-part="list-frame"][data-variant~="compact"] [data-part="checkbox.box"] {
@@ -2053,7 +2062,6 @@ body {
   box-sizing: border-box;
   max-height: var(--size-list-scroll);
   overflow: auto;
-  scrollbar-gutter: stable;
   border-bottom: var(--border-width) solid var(--border-subtle);
 }
 
@@ -2062,7 +2070,8 @@ body {
 }
 
 [data-part="list-head"] {
-  scrollbar-gutter: stable;
+  box-sizing: border-box;
+  padding-inline-end: var(--list-gutter);
   overflow: hidden;
 }
 
@@ -2074,8 +2083,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  min-width: var(--size-target-least);
-  min-height: var(--size-target-least);
+  min-width: var(--size-target-compact);
+  min-height: var(--size-target-compact);
   padding: 0;
   color: inherit;
   font-size: inherit;
@@ -2101,7 +2110,7 @@ body {
   position: absolute;
   inset-block: 0;
   inset-inline-end: 0;
-  width: var(--size-target-least);
+  width: var(--size-target-compact);
   cursor: col-resize;
   touch-action: none;
 }
@@ -2121,7 +2130,7 @@ body {
 
 [data-part="list-row"][data-variant~="head"]
   [data-part="list-row.cell"]:has([data-part="list-handle"]) {
-  padding-inline-end: var(--size-target-least);
+  padding-inline-end: var(--size-target-compact);
 }
 
 [data-part="list-group.toggle"] {

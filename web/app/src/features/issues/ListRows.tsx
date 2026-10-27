@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Checkbox, ListCell, part, partOf, rowStates, type ListColumn } from "@bugaboo/ui";
+import { Checkbox, headId, ListCell, part, partOf, rowStates, type ListColumn } from "@bugaboo/ui";
 import { Collection, GridListItem, GridListLoadMoreItem } from "react-aria-components";
 
 import type { FoundLine } from "./found-issues.ts";
 import { hrefOf } from "./issue-show.ts";
 import { rowCells } from "./list-cells.tsx";
-import { useListContext } from "./list-context.ts";
+import { listId, useListContext } from "./list-context.ts";
 
 const selectColumn = "select" satisfies ListColumn;
 
@@ -21,8 +21,9 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
   const selected = context.selection.has(line.id);
   const current = line.key === context.open;
   const project = line.project?.short_name ?? context.project ?? "";
+  const href = hrefOf(context.openIn, context.state, project, line.key);
   const cells = rowCells(context.words, line, {
-    href: hrefOf(context.openIn, context.state, project, line.key),
+    href,
     now: context.now,
     own: context.own,
     current,
@@ -30,6 +31,7 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
   return (
     <GridListItem
       id={id}
+      href={href}
       textValue={line.title}
       {...partOf(part.listRow, {
         variants: [context.phone ? "phone" : "grid", context.phone && !context.ticks && "plain"],
@@ -49,7 +51,11 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
         </ListCell>
       ) : null}
       {cells.map(({ word, cell, content }) => (
-        <ListCell key={word} column={cell}>
+        <ListCell
+          key={word}
+          column={cell}
+          headedBy={context.phone ? undefined : headId(listId, word)}
+        >
           {content}
         </ListCell>
       ))}
