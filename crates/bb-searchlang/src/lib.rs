@@ -48,7 +48,7 @@ pub use limits::{
     MAX_WORD_BYTES, MIN_PREFIX_CHARS,
 };
 pub use mistake::Mistake;
-pub use printer::{ROUND_TRIP_GUARD, canonical_text, print};
+pub use printer::{ROUND_TRIP_GUARD, canonical_text, empty_filter_text, is_filter_text, print};
 pub use span::Span;
 pub use suggest::{AskKind, Suggestion, Suggestions, WordKind, suggest};
 pub use syntax::{

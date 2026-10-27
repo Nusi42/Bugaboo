@@ -18,7 +18,6 @@ export function LoadedResults(props: LoadedProps) {
   const shown = useListShown();
   const context = useListContextValue({
     ...props,
-    choices: fields.fields.fields.find((field) => field.word === view.groupBy)?.choices ?? [],
     onClear: () => {
       props.onText("", historyStep.push);
     },

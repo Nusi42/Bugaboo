@@ -19,7 +19,9 @@ export function ListPanel({ view, fields, defaults, onView, onClose }: ListPanel
         word,
         name: fields.names[word] ?? word,
       }))}
-      defaults={defaults.columns}
+      onReset={() => {
+        onView({ ...view, columns: defaults.columns, widths: defaults.widths });
+      }}
       onChange={(columns) => {
         onView({ ...view, columns });
       }}

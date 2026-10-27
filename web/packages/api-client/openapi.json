@@ -21239,8 +21239,12 @@
       "SearchGroupBody": {
         "type": "object",
         "description": "One group of a search.",
-        "required": ["key", "issues"],
+        "required": ["key", "issues", "filter"],
         "properties": {
+          "filter": {
+            "type": ["string", "null"],
+            "description": "The filter that selects the issues of the group, as search text written by the server with\nthe name the person may use (`priority is high`, `project is WEB`, `assignedTo is empty`);\nnull when the group has no name the person may use. Add it to the search with `and`."
+          },
           "issues": {
             "type": "integer",
             "format": "int64",

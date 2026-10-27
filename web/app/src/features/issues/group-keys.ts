@@ -1,16 +1,16 @@
 import type { Schema } from "@bugaboo/api-client";
 
-import type { FilterValue } from "../../shared/with-filter.ts";
+import { personName } from "../../shared/person.ts";
 
-/** The key of a group as the server sends it. */
-type GroupKey = Schema<"SearchGroupKeyBody">;
+/** A group of a search as the server sends it. */
+type FoundGroup = Schema<"SearchGroupBody">;
 
 /** A group of a list: what it is called, and the filter that gives its rows. */
 export interface GroupOfKey {
   /** A name that tells it from every other group of the list. */
   readonly id: string;
-  /** What the filter asks of the field; none when the key cannot be written as a filter. */
-  readonly filter: FilterValue | undefined;
+  /** The filter the server wrote for the group, as search text; none where the group has no name the person may use. */
+  readonly filter: string | undefined;
   /** The status group it is, for the icon and the color of its header. */
   readonly statusGroup: Schema<"StatusGroup"> | undefined;
   /** The priority it is. */
@@ -19,74 +19,53 @@ export interface GroupOfKey {
   readonly name: string | undefined;
 }
 
-const letters = (word: string): string => word.replaceAll("-", "").toLowerCase();
-
-/**
- * The word of the language for a status group or a priority: the choice of the field that is the
- * same word without its dashes and capitals. The server wrote the words once, next to the choice
- * (ADR-0005 item 9); the screen finds them in the choices the field lists.
- */
-function choiceFor(code: string, choices: readonly string[]): string | undefined {
-  return choices.find((choice) => letters(choice) === letters(code));
-}
-
-function personName(person: Extract<GroupKey, { type: "person" }>["value"]): string | undefined {
-  return person.shown === "name" ? person.name : undefined;
-}
-
-const none: Omit<GroupOfKey, "id" | "filter"> = {
-  statusGroup: undefined,
-  priority: undefined,
-  name: undefined,
-};
-
-/** A group the server names by a bare ID: the screen does not know its name. */
-function unnamed(type: string, value: string): GroupOfKey {
-  return { ...none, id: `${type}:${value}`, filter: undefined };
-}
-
-/** A group by the name of a person, a label or a tag, as the viewer sees it. */
-function named(id: string, name: string | undefined): GroupOfKey {
-  return { ...none, id, filter: name, name };
-}
-
-/**
- * The group a key stands for and how its rows are asked for (`<field> is <value>`, or
- * `<field> is empty`). `choices` are those of the field the list is grouped by. A key that the
- * server gives as an ID or a stored key has no name the language knows, so it has no filter.
- */
-export function groupOfKey(key: GroupKey, choices: readonly string[]): GroupOfKey {
-  if (key.type === "empty") {
-    return { ...none, id: "empty", filter: { empty: true } };
+/** The name in a filter `<field> is <name>`, without the quotes the language puts around some names. */
+function nameIn(filter: string | null | undefined, by: string): string | undefined {
+  const start = `${by} is `;
+  if (filter === null || filter === undefined || !filter.startsWith(start)) {
+    return undefined;
   }
-  if (key.type === "priority") {
-    return {
-      ...none,
-      id: `priority:${key.value}`,
-      filter: choiceFor(key.value, choices),
-      priority: key.value,
-    };
-  }
-  if (key.type === "status-group") {
-    return {
-      ...none,
-      id: `status-group:${key.value}`,
-      filter: choiceFor(key.value, choices),
-      statusGroup: key.value,
-    };
+  return filter.slice(start.length).replace(/^"(.*)"$/u, "$1");
+}
+
+/** The ID of a group of things the server names by an ID: the kind and the ID are its place. */
+function placed(group: FoundGroup, by: string): Pick<GroupOfKey, "id" | "name"> {
+  const { key } = group;
+  if (key.type === "tag" || key.type === "label") {
+    return { id: `${key.type}:${key.value.id}`, name: key.value.name ?? undefined };
   }
   if (key.type === "person") {
-    const name = personName(key.value);
-    return named(`person:${name ?? "-"}`, name);
+    return { id: `person:${group.filter ?? "-"}`, name: personName(key.value) };
   }
-  if (key.type === "tag" || key.type === "label") {
-    return named(`${key.type}:${key.value.id}`, key.value.name ?? undefined);
-  }
-  if (key.type === "text") {
-    return { ...unnamed(key.type, key.value), name: key.value };
+  if (key.type === "empty") {
+    return { id: "empty", name: undefined };
   }
   if (key.type === "whole") {
-    return { ...unnamed(key.type, String(key.value)), name: String(key.value) };
+    return { id: `whole:${String(key.value)}`, name: String(key.value) };
   }
-  return unnamed(key.type, key.value);
+  if (key.type === "text") {
+    return { id: `text:${key.value}`, name: key.value };
+  }
+  if (key.type === "priority" || key.type === "status-group") {
+    return { id: `${key.type}:${key.value}`, name: undefined };
+  }
+  return { id: `${key.type}:${key.value}`, name: nameIn(group.filter, by) };
+}
+
+/** What the header says of a group: its words, the status group or priority it is, and its place. */
+function shown(
+  group: FoundGroup,
+  by: string,
+): Pick<GroupOfKey, "id" | "statusGroup" | "priority" | "name"> {
+  const { key } = group;
+  return {
+    ...placed(group, by),
+    statusGroup: key.type === "status-group" ? key.value : undefined,
+    priority: key.type === "priority" ? key.value : undefined,
+  };
+}
+
+/** The group the server sends for the field `by`: its header, and the filter that selects its issues. */
+export function groupOfKey(group: FoundGroup, by: string): GroupOfKey {
+  return { ...shown(group, by), filter: group.filter ?? undefined };
 }

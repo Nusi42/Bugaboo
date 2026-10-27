@@ -19,6 +19,7 @@ use bb_searchlang::{Mistake, check, parse_with};
 use jiff::tz::TimeZone;
 use serde::Serialize;
 
+use super::group_filter::GroupNames;
 use super::names::status_groups;
 use super::readable::{Looked, SearchScope, readable_of};
 use super::request::{GroupKey, SearchFailure, SearchRequest, SearchStore};
@@ -114,6 +115,9 @@ pub struct GroupShown {
     pub key: ShownKey,
     /// How many issues the search finds in it.
     pub issues: u64,
+    /// The filter that selects exactly its issues, as search text, written by the printer of the
+    /// language with the name the person may know; none when the group has no such name.
+    pub filter: Option<String>,
 }
 
 /// The key of a group, as it is shown.
@@ -393,6 +397,7 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
         .collect();
     ctx.preload_people(&people).await?;
     let mut groups = Vec::with_capacity(found.len());
+    let mut group_names = GroupNames::default();
     for group in found {
         let key = match (group.key, kind) {
             (GroupKey::Person(person), Some(kind)) => ShownKey::Person(
@@ -421,9 +426,20 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
             },
             (other, _) => ShownKey::Other(other),
         };
+        let filter = ctx
+            .group_filter(
+                &actor,
+                &organization,
+                &prepared.looked,
+                (&query.by, target),
+                &key,
+                &mut group_names,
+            )
+            .await?;
         groups.push(GroupShown {
             key,
             issues: group.issues,
+            filter,
         });
     }
     Ok(organization.authorize(SearchGroups { groups, truncated }))

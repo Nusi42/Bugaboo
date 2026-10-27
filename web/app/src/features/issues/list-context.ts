@@ -24,8 +24,6 @@ export interface ListContextValue {
   readonly own: OwnColumns;
   readonly search: FoundSearch;
   readonly language: SearchLanguage;
-  /** The words of the choices of the field the list is grouped by. */
-  readonly choices: readonly string[];
   /** The field the list is grouped by. */
   readonly groupBy: string | null;
   /** Takes every filter out of the search (*Remove all filters*). */

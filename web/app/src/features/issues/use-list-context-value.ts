@@ -26,8 +26,6 @@ export interface ContextInput {
   readonly project: string | undefined;
   readonly view: ListView;
   readonly language: SearchLanguage;
-  /** The words of the choices of the field the list is grouped by. */
-  readonly choices: readonly string[];
   readonly openIn: IssueShow;
   readonly open: string | undefined;
   readonly selection: IssueSelection;
@@ -55,7 +53,6 @@ export function useListContextValue(input: ContextInput): ListContextValue {
     own,
     search: { text: input.text, within: input.within },
     language: input.language,
-    choices: input.choices,
     groupBy: view.groupBy,
     onClear: input.onClear,
     report: input.report,

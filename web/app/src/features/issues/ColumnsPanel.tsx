@@ -9,9 +9,9 @@ export interface ColumnsPanelProps {
   readonly columns: readonly string[];
   /** The fields the person may read. */
   readonly readable: readonly ColumnChoice[];
-  /** The columns the project's list, or the saved search, has. */
-  readonly defaults: readonly string[];
   readonly onChange: (columns: readonly string[]) => void;
+  /** Back to the columns, and the widths, the project's list or the saved search has. */
+  readonly onReset: () => void;
   readonly onClose: () => void;
 }
 
@@ -20,13 +20,7 @@ export interface ColumnsPanelProps {
  * ticked ones come first in the order of the columns, moved with *Up* and *Down*. *Back to the
  * project's columns* undoes the changes.
  */
-export function ColumnsPanel({
-  columns,
-  readable,
-  defaults,
-  onChange,
-  onClose,
-}: ColumnsPanelProps) {
+export function ColumnsPanel({ columns, readable, onChange, onReset, onClose }: ColumnsPanelProps) {
   return (
     <aside {...partOf(part.listPanel)} aria-label={t("issues.customize")}>
       <div {...partOf(part.listPanelHead)}>
@@ -38,13 +32,7 @@ export function ColumnsPanel({
       <ul {...partOf(part.listPanelItems)}>
         <ColumnList columns={columns} readable={readable} onChange={onChange} />
       </ul>
-      <Button
-        onPress={() => {
-          onChange(defaults);
-        }}
-      >
-        {t("issues.columns-reset")}
-      </Button>
+      <Button onPress={onReset}>{t("issues.columns-reset")}</Button>
     </aside>
   );
 }

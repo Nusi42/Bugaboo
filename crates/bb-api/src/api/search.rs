@@ -113,6 +113,11 @@ pub(crate) struct SearchGroupBody {
     key: SearchGroupKeyBody,
     /// How many issues the search finds in it. An issue with several values is in each group.
     issues: u64,
+    /// The filter that selects the issues of the group, as search text written by the server with
+    /// the name the person may use (`priority is high`, `project is WEB`, `assignedTo is empty`);
+    /// null when the group has no name the person may use. Add it to the search with `and`.
+    #[schema(required = true)]
+    filter: Option<String>,
 }
 
 /// How many issues a search finds in each group of a field.
@@ -401,6 +406,7 @@ async fn group_searched_issues(
                 .map(|each| SearchGroupBody {
                     key: group_key(each.key),
                     issues: each.issues,
+                    filter: each.filter,
                 })
                 .collect(),
         }

@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import { testSearchLanguage } from "./search-language-testing.ts";
-import { withFilter, withProject } from "./with-filter.ts";
+import { withGroupFilter, withProject } from "./with-filter.ts";
 
 const language = testSearchLanguage;
 
 describe("the filters a list adds to a search", () => {
-  it("adds the filter of a group, quoted where the language needs it", () => {
-    expect(withFilter(language, "status is Open", "assignedTo", "Ana Bell")).toBe(
+  it("joins the filter a group carries to the search with and", () => {
+    expect(withGroupFilter(language, "status is Open", 'assignedTo is "Ana Bell"')).toBe(
       'status is Open and assignedTo is "Ana Bell"',
     );
-    expect(withFilter(language, "", "assignedTo", { empty: true })).toBe("assignedTo is empty");
+    expect(withGroupFilter(language, "", "assignedTo is empty")).toBe("assignedTo is empty");
   });
 
   it("keeps the order of the search", () => {
-    expect(withFilter(language, "sort by title, A to Z", "priority", "high")).toBe(
+    expect(withGroupFilter(language, "sort by title, A to Z", "priority is high")).toBe(
       "priority is high sort by title, A to Z",
     );
   });

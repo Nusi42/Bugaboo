@@ -22,4 +22,4 @@ export {
   type SearchSpacing,
   type SearchState,
 } from "../../shared/search-address.ts";
-export { withFilter, type FilterValue } from "../../shared/with-filter.ts";
+export { withGroupFilter } from "../../shared/with-filter.ts";

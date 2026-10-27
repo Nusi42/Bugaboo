@@ -7423,6 +7423,12 @@ export interface components {
     /** @description One group of a search. */
     SearchGroupBody: {
       /**
+       * @description The filter that selects the issues of the group, as search text written by the server with
+       *     the name the person may use (`priority is high`, `project is WEB`, `assignedTo is empty`);
+       *     null when the group has no name the person may use. Add it to the search with `and`.
+       */
+      filter: string | null;
+      /**
        * Format: int64
        * @description How many issues the search finds in it. An issue with several values is in each group.
        */
