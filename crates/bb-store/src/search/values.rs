@@ -354,9 +354,8 @@ fn seconds_of(operand: &Operand) -> Option<i64> {
 /// The operand as a count of parts (millionths for a decimal), rounded as asked when it does not
 /// fall on a part; `None` when it has to be exact and does not, or is no number.
 fn parts_of(operand: &Operand, parts: i64, rounding: Rounding) -> Option<i64> {
-    let number = match operand {
-        Operand::Number { number, .. } => number,
-        _ => return None,
+    let Operand::Number { number, .. } = operand else {
+        return None;
     };
     let scaled = i128::from(number.value) * i128::from(parts);
     let divisor = 10_i128.pow(u32::from(number.scale));

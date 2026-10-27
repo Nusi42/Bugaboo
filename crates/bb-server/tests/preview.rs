@@ -17,7 +17,6 @@ use bb_dev_words as _;
 use bb_jobs as _;
 use bb_load_check as _;
 use bb_notify as _;
-use bb_searchlang as _;
 use bb_store as _;
 use bb_testing as _;
 use clap as _;

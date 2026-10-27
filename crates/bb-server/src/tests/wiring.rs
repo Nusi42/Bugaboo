@@ -251,5 +251,6 @@ async fn ops_08_a_database_that_cannot_be_opened_stops_the_start_with_a_plain_ex
 fn qry_01_the_server_builds_the_search_language_with_the_round_trip_guard() {
     // A canonical text that does not read back as the same search can never be saved or run; only
     // the module of the browser builds without the guard (ADR-0005, amendment M5, decision 8).
-    assert!(bb_searchlang::ROUND_TRIP_GUARD);
+    let on = std::hint::black_box(bb_app::search::ROUND_TRIP_GUARD);
+    assert!(on);
 }

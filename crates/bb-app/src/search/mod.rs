@@ -8,7 +8,7 @@ mod request;
 mod run;
 mod target;
 
-pub use bb_searchlang::Mistake;
+pub use bb_searchlang::{Mistake, ROUND_TRIP_GUARD};
 pub use name_choices::{
     NAME_CHOICES_MAX, NameChoiceKind, NameChoices, NameChoicesQuery, name_choices,
 };
