@@ -2,30 +2,62 @@
 //! `web/packages/ui/src/ListRoles.tsx` and nowhere else (coding-standards §4, ADR-0026).
 //!
 //! A virtualized grid of divs cannot use `table`, `tr`, `th` or `hr`, so these roles are given by
-//! attribute, once, in the small components of that file; every use goes through them. The words
-//! `columnheader`, `rowheader` and `separator`, and the roles `row`, `cell` and `table` given to an
-//! element, are a finding anywhere else in the browser app and its packages (tests excluded), so the
-//! next place that wants one asks for the component and does not write a second definition.
+//! attribute, once, in the small components of that file; every use goes through them. In the
+//! browser app and its packages (tests excluded) a finding is
+//!
+//! * a string literal of a grid role word (`row`, `cell`, `table`, `grid`, `gridcell`, `rowgroup`,
+//!   `columnheader`, `rowheader`, `separator`) outside `ListRoles.tsx`, however it is used (an
+//!   attribute, a constant, an object): the word is written once. A CSS selector string, one that
+//!   starts with `[`, only looks for an element and is not a role given to one;
+//! * `role=` followed by an expression on a plain element (`<div role={x}>`) in a file that is not
+//!   one of the few homes of role constants: `ListRoles.tsx` and the files listed in `ROLE_HOMES`,
+//!   each with the reason.
 
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
 use crate::source::{Kind, Source};
 
-/// The one file that writes these roles.
+/// The one file that writes the roles of the list.
 const ROLES_HOME: &str = "web/packages/ui/src/ListRoles.tsx";
 const SOURCE: [&str; 2] = ["web/app/src/", "web/packages/ui/src/"];
 
-/// Words that are roles of a grid and nothing else.
-const ROLE_WORDS: [&str; 3] = ["\"columnheader\"", "\"rowheader\"", "\"separator\""];
+/// Words that are roles of a grid and nothing else: a literal of one is a finding wherever it stands.
+const GRID_ONLY: [&str; 5] = [
+    "gridcell",
+    "rowgroup",
+    "columnheader",
+    "rowheader",
+    "separator",
+];
 
-/// Roles that are given to an element with `role=` or `role:`.
-const GIVEN: [&str; 6] = [
-    "role=\"row\"",
-    "role=\"cell\"",
-    "role=\"table\"",
-    "role:\"row\"",
-    "role:\"cell\"",
-    "role:\"table\"",
+/// Words that are roles of a grid and also ordinary words (a variant `grid`, a key `row`): a literal
+/// of one is a finding where it is given as a role (a line with `role` before an `=` or `:`) or
+/// stands in an object whose name has `role` in it.
+const GRID_AND_PLAIN: [&str; 4] = ["row", "cell", "table", "grid"];
+
+/// The files that hold the role constants of other parts, with the reason: each gives a role to
+/// one element by a named constant of its own (an alert, a status line, a dialog, a list box).
+const ROLE_HOMES: [(&str, &str); 5] = [
+    (
+        "web/packages/ui/src/Alert.tsx",
+        "the role of a message: alert or status",
+    ),
+    (
+        "web/app/src/features/shell/UndoHost.tsx",
+        "the polite status line of the undo offer",
+    ),
+    (
+        "web/packages/ui/src/SaveStatus.tsx",
+        "the polite status of a save",
+    ),
+    (
+        "web/packages/ui/src/ConfirmDialog.tsx",
+        "the role of a question: alertdialog",
+    ),
+    (
+        "web/app/src/features/search/OfferList.tsx",
+        "the list box of the offers and its options",
+    ),
 ];
 
 pub(crate) struct ArchWebRoles;
@@ -40,6 +72,62 @@ impl Check for ArchWebRoles {
     }
 }
 
+fn message() -> &'static str {
+    "A role of the list's head, rows or cells is written here. They live in web/packages/ui/src/ListRoles.tsx only: use its components or add one there."
+}
+
+/// The texts between quotes of a line: the odd parts between `"`, `'` or a backtick. A CSS selector
+/// (a text that starts with `[`) only looks for an element, so the words inside it are not a role
+/// given to one.
+fn literals(line: &str) -> Vec<&str> {
+    let mut found = Vec::new();
+    if ["\"[", "'[", "`["].iter().any(|start| line.contains(start)) {
+        return found;
+    }
+    for quote in ['"', '\'', '`'] {
+        for text in line.split(quote).skip(1).step_by(2) {
+            if !text.starts_with('[') {
+                found.push(text);
+            }
+        }
+    }
+    found
+}
+
+/// Whether the line names a role and then gives it something: `role=…`, `role: …`, `tableRole = …`.
+fn names_a_role(line: &str) -> bool {
+    let lower = line.to_ascii_lowercase();
+    lower
+        .find("role")
+        .is_some_and(|at| lower[at..].contains(['=', ':']))
+}
+
+/// Whether a plain element is given a role by an expression: `<div … role={…}`.
+fn gives_a_role_by_expression(text: &str) -> Vec<usize> {
+    let mut lines = Vec::new();
+    let mut from = 0;
+    while let Some(found) = text[from..].find("role=") {
+        let at = from + found;
+        from = at + 5;
+        let after = text[from..].trim_start();
+        if !after.starts_with('{') {
+            continue;
+        }
+        // The element it belongs to: the last tag opened before it. A lower-case name is an element of
+        // the page, a capital one is a component with a prop that is called `role`.
+        let tag = text[..at].rfind('<').map(|open| &text[open + 1..]);
+        let plain = tag.is_some_and(|name| {
+            name.chars()
+                .next()
+                .is_some_and(|first| first.is_ascii_lowercase())
+        });
+        if plain {
+            lines.push(text[..at].matches('\n').count() + 1);
+        }
+    }
+    lines
+}
+
 fn evaluate(sources: &[Source]) -> Vec<Finding> {
     let mut findings = Vec::new();
     for (path, text) in sources {
@@ -47,20 +135,35 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
         if !in_source || path == ROLES_HOME || path.contains(".test.") {
             continue;
         }
+        let mut flagged: Vec<usize> = Vec::new();
+        let mut in_role_object = false;
         for (index, line) in text.lines().enumerate() {
-            let code: String = code_of(line)
-                .chars()
-                .filter(|c| !c.is_whitespace())
-                .collect();
-            if ROLE_WORDS.iter().any(|word| code.contains(word))
-                || GIVEN.iter().any(|given| code.contains(given))
-            {
-                findings.push(Finding::at(
-                    format!("{path}:{}", index + 1),
-                    "A role of the list's head, rows or cells is written here. They live in web/packages/ui/src/ListRoles.tsx only: use its components or add one there.",
-                ));
+            let code = code_of(line);
+            let words = literals(code);
+            let named = names_a_role(code);
+            let mut bad = words.iter().any(|word| GRID_ONLY.contains(word))
+                || ((named || in_role_object)
+                    && words.iter().any(|word| GRID_AND_PLAIN.contains(word)));
+            if in_role_object && code.trim_start().starts_with('}') {
+                in_role_object = false;
+            } else if named && code.trim_end().ends_with('{') {
+                in_role_object = true;
+            }
+            bad = bad && !code.trim_start().starts_with("//");
+            if bad {
+                flagged.push(index + 1);
             }
         }
+        if ROLE_HOMES.iter().all(|(home, _)| home != path) {
+            flagged.extend(gives_a_role_by_expression(text));
+        }
+        flagged.sort_unstable();
+        flagged.dedup();
+        findings.extend(
+            flagged
+                .into_iter()
+                .map(|line| Finding::at(format!("{path}:{line}"), message())),
+        );
     }
     findings
 }
@@ -74,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn good_example_the_roles_in_their_home_and_in_tests() {
+    fn good_example_the_roles_in_their_home_the_selectors_and_the_tests() {
         assert_eq!(found(ROLES_HOME, "<div role=\"row\" />"), 0);
         assert_eq!(
             found(
@@ -83,33 +186,56 @@ mod tests {
             ),
             0
         );
+        // The ordinary words are fine where they are no role; a role constant in a listed home, a
+        // selector, and a component prop called role.
         assert_eq!(
             found(
-                "web/app/src/features/search/OfferList.tsx",
-                "<ul role={ariaWords.listbox}>"
+                "web/app/src/features/issues/ListRows.tsx",
+                "variants: [phone ? \"phone\" : \"grid\"], row: \"row\""
             ),
+            0
+        );
+        assert_eq!(
+            found("web/packages/ui/src/Alert.tsx", "<div role={roles.alert}>")
+                + found(
+                    "web/app/src/features/issues/use-row-keys.ts",
+                    "const rows = '[data-rac][role=\"row\"]';"
+                )
+                + found(
+                    "web/app/src/features/roles/RolePage.tsx",
+                    "<RoleSections role={page.role} />"
+                ),
             0
         );
     }
 
     #[test]
-    fn bad_example_a_role_of_the_grid_written_elsewhere() {
+    fn bad_example_a_role_written_elsewhere_in_any_shape() {
+        let in_ui = "web/packages/ui/src/Y.tsx";
+        assert_eq!(found(in_ui, "<p role=\"row\">"), 1);
+        assert_eq!(found(in_ui, "<p role={\"row\"}>"), 1);
+        assert_eq!(found(in_ui, "const roles = { head: \"columnheader\" };"), 1);
         assert_eq!(
             found(
-                "web/app/src/features/issues/X.tsx",
-                "<div role=\"columnheader\">"
+                in_ui,
+                "const role = {
+  table: \"table\",
+  row: \"row\",
+} as const;"
             ),
+            2
+        );
+        assert_eq!(found(in_ui, "const tableRole = \"table\";"), 1);
+        assert_eq!(found(in_ui, "const w = 'gridcell';"), 1);
+        assert_eq!(
+            found(in_ui, "<div\n  className=\"a\"\n  role={headRole}\n>"),
             1
         );
         assert_eq!(
             found(
-                "web/packages/ui/src/Y.tsx",
-                "const r = { row: \"row\" }; <p role=\"row\">"
+                "web/app/src/features/x/X.tsx",
+                "<div {...x} role={rowRole}>"
             ),
-            1
-        );
-        assert_eq!(
-            found("web/packages/ui/src/Z.tsx", "const w = \"separator\";"),
             1
         );
     }

@@ -63,6 +63,10 @@ test("ux_6_2 j and k move over the rows, as the arrow keys do", async ({ page })
   await expect(rowOf(page, webIssues.login)).toBeFocused();
   await page.keyboard.press("k");
   await expect(groupOf(page, t("status-group.in-progress"))).toBeFocused();
+  // On the first row k stays there: it does not go up to the box of the grid.
+  await page.keyboard.press("k");
+  await expect(groupOf(page, t("status-group.in-progress"))).toBeFocused();
+  await expect(grid(page)).not.toBeFocused();
 });
 
 test("ux_6_2 a folded group takes its rows out of the count of the issues shown", async ({
