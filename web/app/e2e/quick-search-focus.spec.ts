@@ -9,6 +9,7 @@ import {
   box,
   dialog,
   expectBoxPointsAtFirst,
+  focusedTitle,
   pointsAtFirst,
   FAST_TYPING_MS,
   holdBackSearches,
@@ -88,11 +89,11 @@ test("cfg_08 a later answer that lands on top does not take the focus from the r
   // The pages answer at once; the issues, for a text that looks like an ID, come first when they land.
   await ask(page, "sign-in");
   await expect.poll(() => pointsAtFirst(page), { timeout: 1500 }).toBe(true);
-  const row = await list(page).locator("[data-focused='true']").innerText();
+  const row = await focusedTitle(page).innerText();
   answer();
   await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
   // The box still points at the same row, and that is what Enter opens.
-  await expect(list(page).locator("[data-focused='true']")).toHaveText(row);
+  await expect(focusedTitle(page)).toHaveText(row);
   await page.keyboard.press("Enter");
   await expect(dialog(page)).toHaveCount(0);
   await expect(page).not.toHaveURL(/\/issues\//u);
@@ -108,11 +109,11 @@ test("cfg_08 an arrow key before the answer keeps the person's row when the answ
   await page.keyboard.press("ArrowDown");
   const focused = list(page).locator("[data-focused='true']");
   await expect(focused).toHaveCount(1);
-  await expect(list(page).getByRole("option").first()).not.toHaveText(await focused.innerText());
-  const row = await focused.innerText();
+  const row = await focusedTitle(page).innerText();
+  await expect(list(page).getByRole("option").first()).not.toContainText(row);
   answer();
   await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
-  await expect(focused).toHaveText(row);
+  await expect(focusedTitle(page)).toHaveText(row);
   await page.keyboard.press("Enter");
   await expect(dialog(page)).toHaveCount(0);
   await expect(page).not.toHaveURL(/\/issues\//u);
@@ -128,10 +129,10 @@ test("cfg_08 an arrow key at once after the words keeps the first row when the a
   await page.keyboard.press("ArrowDown");
   const focused = list(page).locator("[data-focused='true']");
   await expect(focused).toHaveCount(1);
-  const row = await focused.innerText();
+  const row = await focusedTitle(page).innerText();
   answer();
   await expect(list(page).getByRole("option").first()).toContainText(titles.passkey);
-  await expect(focused).toHaveText(row);
+  await expect(focusedTitle(page)).toHaveText(row);
   await page.keyboard.press("Enter");
   await expect(dialog(page)).toHaveCount(0);
   await expect(page).not.toHaveURL(/\/issues\//u);

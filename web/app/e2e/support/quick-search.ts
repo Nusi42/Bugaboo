@@ -133,3 +133,8 @@ export async function pointsAtFirst(page: Page): Promise<boolean> {
   const pointed = await box(page).getAttribute("aria-activedescendant");
   return pointed !== null && pointed === (await first.getAttribute("id"));
 }
+
+/** The title of the result that has the focus of the list. */
+export function focusedTitle(page: Page) {
+  return list(page).locator("[data-focused='true'] [data-part='quick-search.title']");
+}
