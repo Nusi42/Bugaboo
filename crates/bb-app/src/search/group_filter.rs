@@ -13,7 +13,7 @@ use bb_searchlang::{
 
 use super::readable::Looked;
 use super::request::GroupKey;
-use super::run::ShownKey;
+use super::run::{GroupShown, ShownKey};
 use super::target::FieldTarget;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -99,6 +99,45 @@ fn named<'a, T>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The people of the groups are read in one go, as the people of a page are.
+    pub(crate) async fn preload_group_people(
+        &self,
+        found: &[super::request::GroupCount],
+    ) -> Result<(), AppError> {
+        let people: Vec<_> = found
+            .iter()
+            .filter_map(|group| match group.key {
+                GroupKey::Person(person) => Some(person),
+                _ => None,
+            })
+            .collect();
+        self.preload_people(&people).await
+    }
+
+    /// The groups of a search, each with the filter that selects its issues.
+    pub(crate) async fn groups_with_filters(
+        &self,
+        actor: &Actor,
+        viewer: &Evaluation,
+        looked: &Looked,
+        by: (&str, Option<FieldTarget>),
+        keyed: Vec<(ShownKey, u64)>,
+    ) -> Result<Vec<GroupShown>, AppError> {
+        let mut cache = GroupNames::default();
+        let mut groups = Vec::with_capacity(keyed.len());
+        for (key, issues) in keyed {
+            let filter = self
+                .group_filter(actor, viewer, looked, by, &key, &mut cache)
+                .await?;
+            groups.push(GroupShown {
+                key,
+                issues,
+                filter,
+            });
+        }
+        Ok(groups)
+    }
+
     /// The text of the filter of one group of the field `by`, or nothing when the group cannot be
     /// asked for by a name this person may use.
     pub(crate) async fn group_filter(

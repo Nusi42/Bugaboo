@@ -19,7 +19,6 @@ use bb_searchlang::{Mistake, check, parse_with};
 use jiff::tz::TimeZone;
 use serde::Serialize;
 
-use super::group_filter::GroupNames;
 use super::names::status_groups;
 use super::readable::{Looked, SearchScope, readable_of};
 use super::request::{GroupKey, SearchFailure, SearchRequest, SearchStore};
@@ -387,17 +386,8 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     } else {
         Vec::new()
     };
-    // The people of the groups are read in one go, as the people of a page are.
-    let people: Vec<_> = found
-        .iter()
-        .filter_map(|group| match group.key {
-            GroupKey::Person(person) => Some(person),
-            _ => None,
-        })
-        .collect();
-    ctx.preload_people(&people).await?;
-    let mut groups = Vec::with_capacity(found.len());
-    let mut group_names = GroupNames::default();
+    ctx.preload_group_people(&found).await?;
+    let mut shown = Vec::with_capacity(found.len());
     for group in found {
         let key = match (group.key, kind) {
             (GroupKey::Person(person), Some(kind)) => ShownKey::Person(
@@ -426,22 +416,17 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
             },
             (other, _) => ShownKey::Other(other),
         };
-        let filter = ctx
-            .group_filter(
-                &actor,
-                &organization,
-                &prepared.looked,
-                (&query.by, target),
-                &key,
-                &mut group_names,
-            )
-            .await?;
-        groups.push(GroupShown {
-            key,
-            issues: group.issues,
-            filter,
-        });
+        shown.push((key, group.issues));
     }
+    let groups = ctx
+        .groups_with_filters(
+            &actor,
+            &organization,
+            &prepared.looked,
+            (&query.by, target),
+            shown,
+        )
+        .await?;
     Ok(organization.authorize(SearchGroups { groups, truncated }))
 }
 
