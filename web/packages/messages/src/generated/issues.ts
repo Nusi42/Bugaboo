@@ -3,6 +3,8 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "search.issues": "Issues",
+  "search.create-issue": "Create issue",
   "search.found-stale":
     "These are the issues of the last search without a mistake. Fix the mistake to update them.",
   "search.found-none": "No issues match this search.",

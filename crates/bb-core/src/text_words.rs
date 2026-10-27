@@ -142,6 +142,28 @@ fn once_each(all: Vec<SearchWord>) -> Vec<SearchWord> {
     words
 }
 
+/// The text of a person who is still typing, ready to be searched: when the last word is not
+/// finished and the checker would take it as a start (`logi` finds `login`), it gets a `*`. A
+/// word that is finished (a space after it), a start that is too short, and a text that already
+/// ends in `*` stay as they are. Whether the word may be a start is decided by
+/// [`SearchWord::matches_by_start`], the one place that counts letters, so the star and the
+/// checker of the search language never disagree.
+#[must_use]
+pub fn open_last_word(text: &str) -> String {
+    if text.ends_with('*') {
+        return text.to_owned();
+    }
+    let open = format!("{text}*");
+    if split(&lowered(&open))
+        .last()
+        .is_some_and(SearchWord::matches_by_start)
+    {
+        open
+    } else {
+        text.to_owned()
+    }
+}
+
 /// Every word of a lower-cased text in order, repeated ones too: a run of letters and digits with
 /// the combining marks that belong to them. Everything else (spaces, hyphens, dots, `@`,
 /// punctuation) separates words.
@@ -197,6 +219,50 @@ mod tests {
 
     fn words(text: &str) -> Vec<String> {
         prepare(text)
+    }
+
+    #[test]
+    fn a_last_word_of_one_letter_gets_no_star() {
+        assert_eq!(open_last_word("login l"), "login l");
+        assert_eq!(open_last_word("l"), "l");
+    }
+
+    #[test]
+    fn a_last_word_of_two_letters_gets_a_star() {
+        assert_eq!(open_last_word("lo"), "lo*");
+        assert_eq!(open_last_word("fix logi"), "fix logi*");
+    }
+
+    #[test]
+    fn a_finished_word_or_an_empty_text_gets_no_star() {
+        assert_eq!(open_last_word("login "), "login ");
+        assert_eq!(open_last_word(""), "");
+    }
+
+    #[test]
+    fn the_letters_are_counted_as_the_checker_counts_them() {
+        // `ß` and `æ` are one letter each: letters are not changed into other letters.
+        assert_eq!(open_last_word("ß"), "ß");
+        assert_eq!(open_last_word("æ"), "æ");
+        assert_eq!(open_last_word("ße"), "ße*");
+        // An accent written as a character of its own belongs to the letter before it: `e` and
+        // its accent are one letter, `e`, its accent and `t` are two, and a text that ends in the
+        // accent of the second letter is a start as well.
+        assert_eq!(open_last_word("e\u{301}"), "e\u{301}");
+        assert_eq!(open_last_word("e\u{301}t"), "e\u{301}t*");
+        assert_eq!(open_last_word("me\u{301}"), "me\u{301}*");
+    }
+
+    #[test]
+    fn a_text_that_ends_in_a_star_keeps_one_star() {
+        assert_eq!(open_last_word("login*"), "login*");
+    }
+
+    #[test]
+    fn a_word_with_an_umlaut_counts_its_letters() {
+        assert_eq!(open_last_word("ü"), "ü");
+        assert_eq!(open_last_word("mü"), "mü*");
+        assert_eq!(open_last_word("Müll"), "Müll*");
     }
 
     #[test]

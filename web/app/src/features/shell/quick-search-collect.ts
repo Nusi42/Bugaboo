@@ -6,6 +6,25 @@ export interface ResultGroup {
   readonly id: string;
   readonly heading: string;
   readonly results: readonly QuickResult[];
+  /** The server has yet to answer for the words now typed: these rows are of older words. */
+  readonly busy?: boolean;
+}
+
+/**
+ * What the server found for older words while it is asked again: every group keeps its place and is
+ * marked busy, so its rows cannot be chosen; once the answer is in, nothing is marked.
+ */
+export function markStale(found: Collected, waiting: boolean): Collected {
+  return waiting
+    ? { ...found, groups: found.groups.map((group) => ({ ...group, busy: true })) }
+    : found;
+}
+
+/** The names of the results that cannot be chosen: the rows of a group that is still busy. */
+export function busyKeys(groups: readonly ResultGroup[]): readonly string[] {
+  return groups
+    .filter((group) => group.busy === true)
+    .flatMap((group) => group.results.map((result) => resultKey(group, result)));
 }
 
 /** What the sources found, and whether one of them could not answer. */
@@ -18,6 +37,49 @@ export interface Collected {
 /** The name of a result among the results of every source: two sources may use the same ID. */
 export function resultKey(group: ResultGroup, result: QuickResult): string {
   return `${group.id}:${result.id}`;
+}
+
+/** The result with this name among the results of every group, if there is one. */
+export function resultByKey(
+  groups: readonly ResultGroup[],
+  key: string | number,
+): QuickResult | undefined {
+  for (const group of groups) {
+    for (const result of group.results) {
+      if (resultKey(group, result) === key) {
+        return result;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * How long a source may take before it counts as failed. The server gives up on a search after 2
+ * seconds (M5-Q10, `search.too-slow`); four times that also covers the first load of the search
+ * language module, and a request that has not been answered after it has lost its connection. The
+ * list must not stay busy for good because of it.
+ */
+export const sourceTimeoutMs = 8000;
+
+/** What a source says when it took longer than [`sourceTimeoutMs`]. */
+class TookTooLong extends Error {}
+
+/** The answer of a source, or a failure when it takes longer than [`sourceTimeoutMs`]. */
+async function withinTime(
+  ask: () => readonly QuickResult[] | Promise<readonly QuickResult[]>,
+): Promise<readonly QuickResult[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new TookTooLong());
+    }, sourceTimeoutMs);
+  });
+  try {
+    return await Promise.race([Promise.resolve(ask()), late]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -33,7 +95,7 @@ export async function collectResults(
     sources.map(async (source): Promise<ResultGroup> => ({
       id: source.id,
       heading: source.heading,
-      results: await source.search(query, asker),
+      results: await withinTime(() => source.search(query, asker)),
     })),
   );
   const groups: ResultGroup[] = [];
@@ -46,4 +108,25 @@ export async function collectResults(
     }
   }
   return { groups, failed };
+}
+
+/**
+ * The results of several rounds of asking as one list, in the order of the sources, except that a
+ * source that asks to come first for this text (issues, for a text that looks like an issue ID)
+ * does. A source that answered in none of the rounds has no group.
+ */
+export function arrange(
+  sources: readonly QuickSearchSource[],
+  query: string,
+  ...rounds: readonly Collected[]
+): Collected {
+  const rank = (id: string): number => {
+    const index = sources.findIndex((source) => source.id === id);
+    return sources[index]?.firstFor?.(query) === true ? index - sources.length : index;
+  };
+  const groups = rounds.flatMap((round) => round.groups);
+  return {
+    groups: groups.toSorted((a, b) => rank(a.id) - rank(b.id)),
+    failed: rounds.some((round) => round.failed),
+  };
 }

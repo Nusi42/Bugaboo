@@ -5,6 +5,7 @@ import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, signIn } from "./support/flows.ts";
+import { nothingFound } from "./support/quick-search.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({
@@ -75,7 +76,7 @@ test("cfg_08 the search button opens it too, and a word with no match says so", 
     dialog(page).getByRole("option", { name: new RegExp(t("nav.home"), "u") }),
   ).toBeVisible();
   await box(page).fill("zzzzzz");
-  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await expect(nothingFound(page)).toBeVisible();
   await dialog(page)
     .getByRole("button", { name: t("common.close") })
     .click();
@@ -86,7 +87,7 @@ test("cfg_08 quick search lists only the pages the person may open", async ({ pa
   await signIn(page, cleo);
   await page.keyboard.press("Control+k");
   await box(page).fill(t("nav.people"));
-  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await expect(nothingFound(page)).toBeVisible();
   await box(page).fill(t("nav.appearance"));
   await expect(
     dialog(page).getByRole("option", { name: new RegExp(t("nav.appearance"), "u") }),

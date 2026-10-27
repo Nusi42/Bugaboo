@@ -4,6 +4,9 @@ import { paths } from "../../shared/paths.ts";
 import type { Permissions } from "../../shared/permissions.ts";
 import { mayOpen, placeAt, places, placesFor, topicGroups, trailTo } from "../../shared/places.ts";
 import { pagesSource } from "./quick-search-pages.ts";
+import { askerFor } from "../../shared/quick-search-testing.ts";
+
+const asker = askerFor();
 
 /**
  * The addresses of the pages before sign-in, and the one page of a person who may only set up a
@@ -20,7 +23,9 @@ const guestPaths: ReadonlySet<string> = new Set([
 
 /** The addresses quick search finds for these words. */
 async function found(query: string, permissions: Permissions): Promise<readonly string[]> {
-  return (await pagesSource.search(query, { permissions })).map((result) => result.path);
+  return (await pagesSource.search(query, { ...asker, permissions })).flatMap(
+    (result) => result.path ?? [],
+  );
 }
 
 /** What an administrator holds for the whole organization, as far as the screens ask for it. */

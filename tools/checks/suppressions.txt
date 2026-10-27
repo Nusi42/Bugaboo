@@ -5,5 +5,6 @@ crates/bb-markdown/tests/render.rs 1
 crates/bb-server/src/output.rs 1
 docs/coding-standards.md 1
 web/app/e2e/support/accounts.ts 1
+web/app/src/features/shell/QuickResults.tsx 1
 xtask/src/output.rs 1
-total 6
+total 7

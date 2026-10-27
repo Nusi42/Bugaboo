@@ -11,9 +11,10 @@ import type { AskKind, SearchLanguage } from "@bugaboo/wasm-search";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import { fieldList } from "../../shared/paged.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { issueSource, nameSource } from "../../shared/apply-suggestion.ts";
-import { fieldFilter, nowhere } from "../../shared/search-tree.ts";
+import { titleSearchText } from "../../shared/title-search.ts";
 
 /** A name that can be taken into the text. */
 export interface AskedName {
@@ -65,27 +66,25 @@ async function projectsStarting(words: string): Promise<readonly AskedName[]> {
   );
 }
 
-async function issuesStarting(
+export async function issuesStarting(
   language: SearchLanguage,
   words: string,
 ): Promise<readonly AskedName[]> {
   // Words that are exactly an Issue ID are offered as that ID; the words are looked for in the titles.
   const id = language.issueIdOf(words);
+  // The word being typed is a start, so *log* finds *login*.
+  const q = titleSearchText(language, words);
+  if (q === undefined) {
+    // Nothing but blanks: nothing to look for, and no ID.
+    return [];
+  }
   const titles: Schema<"Page_IssueItem"> = dataOf(
     await api.client.GET("/api/v1/search/issues", {
       params: {
         query: {
-          q: language.print({
-            filter: fieldFilter("title", {
-              type: "contains",
-              text: { text: words, span: nowhere },
-              span: nowhere,
-            }),
-            sort: [],
-            span: nowhere,
-          }),
+          q,
           limit: offered,
-          fields: "readable_id,title",
+          fields: fieldList<Schema<"IssueItem">>(["readable_id", "title"]),
         },
       },
     }),

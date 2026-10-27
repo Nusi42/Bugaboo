@@ -36,6 +36,7 @@ pub mod vectors;
 mod words;
 
 pub use answer::{Answer, read};
+pub use bb_core::text_words::open_last_word;
 #[cfg(feature = "browser")]
 pub use browser::{
     Problem, duration_minutes_of, issue_id_of, operand_source_from_json, print_from_json,

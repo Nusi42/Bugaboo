@@ -3985,6 +3985,10 @@ part "quick-search.item[hovered]" {
     background "$bg-hover"
 }
 
+part "quick-search.item[disabled]" {
+    opacity "$opacity-disabled"
+}
+
 part "quick-search.item[focused]" {
     background "$bg-selected"
     use "ring-inside"
@@ -3999,6 +4003,11 @@ part "quick-search.empty" {
     margin 0
     padding "$space-3"
     color "$fg-muted"
+}
+
+// One sentence of what a screen reader says about the results: each stands on a line of its own.
+part "quick-search.said" {
+    display block
 }
 
 part "quick-search.quiet" {

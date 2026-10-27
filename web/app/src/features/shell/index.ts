@@ -11,6 +11,7 @@ export {
   type QuickSearchAsker,
   type QuickSearchSource,
 } from "./quick-search-sources.ts";
+export { addQuickAction, type QuickAction } from "./quick-search-actions.ts";
 export { mayOpen } from "../../shared/places.ts";
 export { useQuickResults } from "./use-quick-results.ts";
 export { SettingsFrame, TopicList, type TopicListProps } from "./SettingsFrame.tsx";

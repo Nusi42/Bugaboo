@@ -213,6 +213,7 @@ export const messages = {
   "search.page.title": "Search",
   "search.bar.filters": "Filters",
   "search.saved-heading": "Saved searches",
+  "search.saved-shared": "Shared with me",
   "shortcut.quick-search": "Open quick search",
   "shortcut.focus-search-bar": "Go to the search bar",
   "shortcut.show-shortcuts": "Show all keyboard shortcuts",

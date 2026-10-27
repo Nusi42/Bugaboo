@@ -1,9 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { collectResults, resultKey } from "./quick-search-collect.ts";
+import {
+  arrange,
+  busyKeys,
+  markStale,
+  collectResults,
+  resultByKey,
+  resultKey,
+  sourceTimeoutMs,
+} from "./quick-search-collect.ts";
+import { doNothing } from "../../shared/do-nothing.ts";
+import { askerFor } from "../../shared/quick-search-testing.ts";
 import type { QuickSearchSource } from "./quick-search-sources.ts";
 
-const asker = { permissions: [] };
+const asker = askerFor();
 
 /** A source that answers with these titles, as a list or after a moment. */
 function source(id: string, titles: readonly string[]): QuickSearchSource {
@@ -53,5 +63,94 @@ describe("cfg_08 quick search with sources that may fail", () => {
     );
     const keys = found.groups.flatMap((group) => group.results.map((one) => resultKey(group, one)));
     expect(keys).toEqual(["pages:Web", "projects:Web"]);
+  });
+});
+
+describe("cfg_08 the order of the groups", () => {
+  const pages = source("pages", ["Home"]);
+  const projects = source("projects", ["Web"]);
+  const issues: QuickSearchSource = {
+    ...source("issues", ["Login"]),
+    firstFor: (query) => query.includes("-"),
+  };
+  const all = [pages, projects, issues];
+
+  it("follows the order of the sources, whatever round a group came in", async () => {
+    const near = await collectResults([pages], "log", asker);
+    const far = await collectResults([issues, projects], "log", asker);
+    expect(arrange(all, "log", near, far).groups.map((group) => group.id)).toEqual([
+      "pages",
+      "projects",
+      "issues",
+    ]);
+  });
+
+  it("puts issues first when the text looks like an ID", async () => {
+    const near = await collectResults([pages], "web-1", asker);
+    const far = await collectResults([projects, issues], "web-1", asker);
+    expect(arrange(all, "web-1", near, far).groups.map((group) => group.id)).toEqual([
+      "issues",
+      "pages",
+      "projects",
+    ]);
+  });
+
+  it("says a source failed when it failed in any round", async () => {
+    const near = await collectResults([throwing], "x", asker);
+    const far = await collectResults([pages], "x", asker);
+    expect(arrange(all, "x", near, far).failed).toBe(true);
+  });
+
+  it("finds a result by its name among all the groups", async () => {
+    const found = await collectResults(all, "", asker);
+    expect(resultByKey(found.groups, "projects:Web")?.title).toBe("Web");
+    expect(resultByKey(found.groups, "projects:Nope")).toBeUndefined();
+  });
+});
+
+describe("cfg_08 the rows of older words", () => {
+  it("are marked busy while the server is asked again, and not once it has answered", async () => {
+    const found = await collectResults([source("issues", ["Login"])], "log", asker);
+    expect(markStale(found, true).groups.map((group) => group.busy)).toEqual([true]);
+    expect(markStale(found, false)).toBe(found);
+    expect(markStale({ groups: [], failed: false }, true).groups).toEqual([]);
+  });
+
+  it("cannot be chosen: the keys of a busy group are the ones to disable", async () => {
+    const pages = await collectResults([source("pages", ["Home"])], "log", asker);
+    const issues = await collectResults([source("issues", ["Login", "Logout"])], "log", asker);
+    const waiting = issues.groups.map((group) => ({ ...group, busy: true }));
+    expect(busyKeys([...pages.groups, ...waiting])).toEqual(["issues:Login", "issues:Logout"]);
+    expect(busyKeys([...pages.groups, ...issues.groups])).toEqual([]);
+  });
+});
+
+describe("cfg_08 a source that never answers", () => {
+  it("is a failed source after a while, and the others are shown", async () => {
+    vi.useFakeTimers();
+    try {
+      const never: QuickSearchSource = {
+        id: "never",
+        heading: "Never",
+        search: () => new Promise<never>(doNothing),
+      };
+      let settled = false;
+      const asking = collectResults([never, source("pages", ["Home"])], "x", asker).then(
+        (answer) => {
+          settled = true;
+          return answer;
+        },
+      );
+      // Not yet one millisecond before the bound, failed at the bound.
+      await vi.advanceTimersByTimeAsync(sourceTimeoutMs - 1);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      const found = await asking;
+      expect(settled).toBe(true);
+      expect(found.failed).toBe(true);
+      expect(found.groups.map((group) => group.id)).toEqual(["pages"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
