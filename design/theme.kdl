@@ -419,6 +419,23 @@ mixin "ring-line" {
     outline "$ring-width solid $accent"
 }
 
+// The soft fill and the text color of a status group: the one block that the status pill, the big
+// status button, the box of the workflow drawing and the docs' pills all use (M4-F70).
+mixin "status-soft-not-started" {
+    background "$st-ns-soft"
+    color "$st-ns"
+}
+
+mixin "status-soft-in-progress" {
+    background "$st-ip-soft"
+    color "$st-ip"
+}
+
+mixin "status-soft-done" {
+    background "$st-done-soft"
+    color "$st-done"
+}
+
 // The ring around what has the focus: the one definition of how the focus looks.
 mixin "ring" {
     use "ring-line"
@@ -1458,18 +1475,15 @@ part "status-pill" {
 }
 
 part "status-pill[variant=not-started]" {
-    background "$st-ns-soft"
-    color "$st-ns"
+    use "status-soft-not-started"
 }
 
 part "status-pill[variant=in-progress]" {
-    background "$st-ip-soft"
-    color "$st-ip"
+    use "status-soft-in-progress"
 }
 
 part "status-pill[variant=done]" {
-    background "$st-done-soft"
-    color "$st-done"
+    use "status-soft-done"
 }
 
 // The big button of the issue page: the status with its group's icon and color, and an arrow that
@@ -1489,18 +1503,15 @@ part "status-button" {
 }
 
 part "status-button[variant=not-started]" {
-    background "$st-ns-soft"
-    color "$st-ns"
+    use "status-soft-not-started"
 }
 
 part "status-button[variant=in-progress]" {
-    background "$st-ip-soft"
-    color "$st-ip"
+    use "status-soft-in-progress"
 }
 
 part "status-button[variant=done]" {
-    background "$st-done-soft"
-    color "$st-done"
+    use "status-soft-done"
 }
 
 part "status-button[hovered]" {
@@ -5385,18 +5396,15 @@ docs "components" description="Bugaboo shared components: base elements, buttons
     }
 
     rule ".st-ns" {
-        background "$st-ns-soft"
-        color "$st-ns"
+        use "status-soft-not-started"
     }
 
     rule ".st-ip" {
-        background "$st-ip-soft"
-        color "$st-ip"
+        use "status-soft-in-progress"
     }
 
     rule ".st-done" {
-        background "$st-done-soft"
-        color "$st-done"
+        use "status-soft-done"
     }
 
     rule "button.pill:hover" {
@@ -12172,18 +12180,15 @@ part "drawing-box.changes" {
 }
 
 part "drawing-box[variant=not-started]" {
-    background "$st-ns-soft"
-    color "$st-ns"
+    use "status-soft-not-started"
 }
 
 part "drawing-box[variant=in-progress]" {
-    background "$st-ip-soft"
-    color "$st-ip"
+    use "status-soft-in-progress"
 }
 
 part "drawing-box[variant=done]" {
-    background "$st-done-soft"
-    color "$st-done"
+    use "status-soft-done"
 }
 
 part "drawing-arrows" {
