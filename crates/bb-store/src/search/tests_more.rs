@@ -2,6 +2,7 @@
 //! of an own field count, a day that is 23 hours long, a search that is dropped half way.
 
 use bb_app::access::PolicyStore as _;
+use bb_app::auth::AccountStore as _;
 use bb_app::fields::{Definition, FieldStore as _};
 use bb_app::issues::IssueStore as _;
 use bb_app::ports::ChangeStore;
@@ -18,7 +19,7 @@ use bb_testing::{TestResult, each_database};
 
 use super::tests::{request, request_with, seed, titles};
 use crate::AuthStorage;
-use crate::test_support::{event, fixture, issue};
+use crate::test_support::{at, event, fixture, issue};
 
 #[tokio::test]
 async fn qry_05_an_issue_with_a_hidden_parent_has_no_parent_for_a_search() -> TestResult {
@@ -524,6 +525,55 @@ async fn qry_05_contains_finds_the_words_of_a_title_and_of_a_field_where_it_is_r
         limited.own_reach[0].issue_types =
             Some(vec![bb_core::id::IssueTypeId::generate(&mut data.source)?]);
         assert!(titles_of(storage, &limited).await?.is_empty());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn m5_f94_issues_sorted_by_a_person_field_follow_the_name_key() -> TestResult {
+    each_database("search_sort_by_person_key", async |db| {
+        let fixture = fixture(db).await?;
+        let mut data = seed(&fixture.storage).await;
+        let storage = &fixture.storage;
+        // A capital in the second name must not put it before a lower-case first name.
+        let mut rows = Vec::new();
+        for (number, name) in [(30, "Zoe"), (31, "anna")] {
+            let mut person =
+                crate::test_support::person(&mut data.source, &format!("{number}@example.test"));
+            name.clone_into(&mut person.display_name);
+            let mut made = issue(&mut data.source, data.project, data.issue_type, number);
+            made.title = format!("keyed by {name}");
+            made.reported_by = person.id;
+            rows.push((person, made));
+        }
+        let ev = event(&mut data.source, 9);
+        ChangeStore::record_change(storage, &ev, move |tx| {
+            Box::pin(async move {
+                for (person, made) in &rows {
+                    AuthStorage::insert_person(tx, person, "hash", at(0)).await?;
+                    AuthStorage::insert_issue(tx, made, &[]).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
+        let reporter = Searchable {
+            field: Field::new("reportedBy", FieldKind::Person),
+            target: FieldTarget::ReportedBy,
+        };
+        let ask = request_with(
+            &data,
+            "title is \"keyed by anna\" or title is \"keyed by Zoe\" sort by reportedBy",
+            None,
+            10,
+            vec![reporter],
+            Vec::new(),
+        );
+        assert_eq!(
+            titles_of(storage, &ask).await?,
+            ["keyed by anna", "keyed by Zoe"]
+        );
         Ok(())
     })
     .await
