@@ -189,6 +189,7 @@ export const tokenNames = [
   "size-icon-small",
   "size-list",
   "size-list-main",
+  "legend-start",
   "size-details",
   "gap-details",
   "size-details-room",

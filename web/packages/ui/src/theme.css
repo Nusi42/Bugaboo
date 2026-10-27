@@ -55,7 +55,7 @@
   --size-col-person: 96px;
   --size-col-labels: 96px;
   --size-col-project: 96px;
-  --size-col-title: 160px;
+  --size-col-title: 140px;
   --size-col-least: 48px;
   --size-col-most: 800px;
   --size-col-step: 16px;
@@ -88,6 +88,7 @@
   --size-icon-small: 16px;
   --size-list: 300px;
   --size-list-main: 560px;
+  --legend-start: auto;
   --size-details: 340px;
   --gap-details: var(--space-5);
   --size-details-room: calc(var(--size-details) + var(--gap-details));
@@ -616,6 +617,7 @@
     --size-phone-hang: calc(-1 * var(--pad-control));
     --pad-nothing: 0px;
     --size-name: 120px;
+    --legend-start: 0px;
   }
 }
 
@@ -2388,7 +2390,7 @@ body {
 }
 
 [data-part="list-toolbar"] [data-part="legend"] {
-  margin-inline-start: auto;
+  margin-inline-start: var(--legend-start);
 }
 
 [data-part="overlay"][data-variant~="window"] {

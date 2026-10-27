@@ -7,8 +7,8 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { grid, openList, prepareLook, rowOf } from "./support/list-look.ts";
-import { listInFourThemes } from "./support/list-pictures.ts";
-import { tickBox, webIssues } from "./support/issues.ts";
+import { listInFourThemes, tickIssues } from "./support/list-pictures.ts";
+import { webIssues } from "./support/issues.ts";
 
 // The pictures of the issue list (M5 WP-08, task 8): the list in the four themes on a computer and
 // on a phone, grouped and not, compact and comfortable, ticked, with the columns panel, empty, and
@@ -43,8 +43,7 @@ test("cfg_02 pictures: two issues ticked, and the head of the list ticked", asyn
     "the tick box of a phone is shown in the cards, with the others",
   );
   await openList(page);
-  await tickBox(page, "WEB-1").check({ force: true });
-  await tickBox(page, "WEB-2").check({ force: true });
+  await tickIssues(page, ["WEB-1", "WEB-2"]);
   await expect(rowOf(page, webIssues.login)).toHaveAttribute("data-state", /selected/u);
   await listInFourThemes(page, "ticked");
 });

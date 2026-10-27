@@ -1618,7 +1618,7 @@ body {
 }
 
 [data-part="list-toolbar"] [data-part="legend"] {
-  margin-inline-start: auto;
+  margin-inline-start: var(--legend-start);
 }
 
 [data-part="overlay"][data-variant~="window"] {

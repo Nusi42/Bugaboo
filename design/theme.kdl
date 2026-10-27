@@ -130,7 +130,7 @@ tokens {
     size "size-col-project" "96px"
     // The title takes the room that is left, and no less than this; a column a person drags is no
     // narrower than the least and moves by the step with the arrow keys.
-    size "size-col-title" "160px"
+    size "size-col-title" "140px"
     size "size-col-least" "48px"
     size "size-col-most" "800px"
     size "size-col-step" "16px"
@@ -176,6 +176,8 @@ tokens {
     size "size-list" "300px"
     // The room the list asks for beside Customize: with this much left over, the panel stands beside the list (UX §4.2); with less it stands under it.
     size "size-list-main" "560px"
+    // Where the key of colors stands at the end of the row above a list: at the far end of a computer, at the start edge on a phone, where it has a line of its own.
+    size "legend-start" "auto" phone="0px"
     size "size-details" "340px"
     // The gap between the text of an issue and its Details, and the room both take at the end of the
     // column: the offers to undo keep out of it (one rule for the page and for the offers).
@@ -2287,7 +2289,7 @@ part "list-toolbar" {
 }
 
 part "list-toolbar legend" {
-    margin-inline-start auto
+    margin-inline-start "$legend-start"
 }
 
 // ───────────── Window (UX §6.3, R10) ─────────────
