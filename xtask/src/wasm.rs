@@ -53,9 +53,13 @@ const PROFILE: &str = "wasm";
 pub(crate) const TARGET: &str = "wasm32-unknown-unknown";
 /// Remembers which module cargo made last (its SHA-256), inside the folder of the module.
 const STAMP: &str = ".stamp";
-/// What `wasm-opt` is asked to do: optimize for size, with the features the compiler uses.
-const OPTIMIZE: [&str; 5] = [
+/// What `wasm-opt` is asked to do: optimize for size until nothing gets smaller, leave out the
+/// notes of the toolchain that nothing reads, with the features the compiler uses.
+const OPTIMIZE: [&str; 8] = [
     "-Oz",
+    "--converge",
+    "--strip-producers",
+    "--strip-target-features",
     "--enable-bulk-memory",
     "--enable-nontrapping-float-to-int",
     "--enable-sign-ext",
