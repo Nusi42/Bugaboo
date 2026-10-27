@@ -14,6 +14,7 @@ import {
   prepareScene,
   result,
   savedSearchName,
+  statusOfIssue,
   titles,
 } from "./support/quick-search.ts";
 import { inFourThemes } from "./support/quick-search-shots.ts";
@@ -67,9 +68,40 @@ test("cfg_08_quick_search_never_shows_what_the_person_may_not_see", async ({ pag
   await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
   await box(page).fill("secret-1");
   await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
-  // An issue that is hidden and one that does not exist look the same.
+  // An issue that is hidden and one that does not exist look the same: no result, no sign that a
+  // source failed, and the server answers the two in the same way.
   await box(page).fill("web-999");
   await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await expect(dialog(page).getByText(t("search.partial"))).toHaveCount(0);
+  const hidden = await statusOfIssue(page, "SECRET-1");
+  const missing = await statusOfIssue(page, "WEB-999");
+  expect(hidden).toEqual(missing);
+});
+
+test("cfg_08 a word with a hyphen still finds its issue, and nothing says a source failed", async ({
+  page,
+}) => {
+  await signIn(page, bob);
+  await ask(page, "e-mail");
+  await expect(result(page, titles.mail)).toBeVisible();
+  await expect(dialog(page).getByText(t("search.partial"))).toHaveCount(0);
+});
+
+test("cfg_08 an ID of the other kind, with random letters, opens its issue too", async ({
+  page,
+}) => {
+  await signIn(page, bob);
+  await ask(page, "random kind");
+  const found = result(page, titles.random);
+  await expect(found).toBeVisible();
+  const hint = found.locator("[data-part='hint']");
+  await expect(hint).toHaveText(/^RND-/u);
+  const key = await hint.innerText();
+  await box(page).fill(key.toLowerCase());
+  await expect(result(page, titles.random)).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(addressEndingAt(issueAddress(key)));
 });
 
 test("cfg_08 the administrator finds all of it, with its kind above each group", async ({
@@ -128,11 +160,12 @@ test("cfg_08 the results are a list box that the arrow keys move through", async
   await signIn(page, ada);
   await ask(page, "login");
   await expect(result(page, titles.login)).toBeVisible();
+  const focused = list(page).locator("[data-focused='true']");
   await page.keyboard.press("ArrowDown");
-  const first = list(page).getByRole("option").first();
-  await expect(first).toHaveAttribute("data-focused", "true");
+  await expect(focused).toHaveCount(1);
+  const before = await focused.evaluate((element) => element.id);
   await page.keyboard.press("ArrowDown");
-  await expect(first).not.toHaveAttribute("data-focused", "true");
+  await expect.poll(() => focused.evaluate((element) => element.id)).not.toBe(before);
 });
 
 test("cfg_08 pictures of quick search in the four themes", async ({ page }) => {
@@ -144,4 +177,7 @@ test("cfg_08 pictures of quick search in the four themes", async ({ page }) => {
   await box(page).fill("web-1");
   await expect(result(page, titles.login)).toBeVisible();
   await inFourThemes(page, "id");
+  await box(page).fill("zzzzzz");
+  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await inFourThemes(page, "nothing");
 });

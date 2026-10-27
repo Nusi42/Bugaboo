@@ -2,8 +2,8 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
-import { createPeopleWithRoles, roleName } from "./access.ts";
-import { bob, createAdmin } from "./accounts.ts";
+import { createPeopleWithRoles, giveRole, roleName } from "./access.ts";
+import { bob, createAdmin, ownId, signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { countIssueIds, createIssue } from "./issues.ts";
 import { createProject } from "./projects.ts";
@@ -17,6 +17,8 @@ export const titles = {
   login: "Login fails after password reset",
   passkey: "Sign in with a passkey",
   secret: "Secret login plans",
+  mail: "E-mail bounces",
+  random: "Random kind issue",
 } as const;
 
 /** The name of the saved search of the administrator, which nobody else may open. */
@@ -38,20 +40,29 @@ async function titleIsFound(admin: ApiSession, word: string): Promise<boolean> {
 /** Makes the scene, and waits until the index of titles holds the issues. */
 export async function prepareScene(server: Instance): Promise<void> {
   const admin = await createAdmin(server);
+  // The organization starts with random IDs (`RND-K7Q2X`); the project made now keeps them.
+  await createProject(admin, "RND", "Random kinds");
+  await createIssue(admin, "RND", titles.random);
   await countIssueIds(admin);
   await createProject(admin, "WEB", "Website");
   await createProject(admin, "SECRET", "Secret plans");
   await createIssue(admin, "WEB", titles.login);
   await createIssue(admin, "WEB", titles.passkey);
+  await createIssue(admin, "WEB", titles.mail);
   await createIssue(admin, "SECRET", titles.secret);
   await createPeopleWithRoles(server, admin, [
     { person: bob, role: roleName.teamMember, project: "WEB" },
   ]);
+  // The same person in a second project.
+  const bobSession = await signInThroughApi(server, bob);
+  await giveRole(admin, await ownId(bobSession), roleName.teamMember, "RND");
+  await bobSession.dispose();
   await admin.client.POST("/api/v1/saved-searches", {
     body: { name: savedSearchName, search_text: 'priority is "high"' },
   });
   await expect.poll(() => titleIsFound(admin, "secret")).toBe(true);
   await expect.poll(() => titleIsFound(admin, "passkey")).toBe(true);
+  await expect.poll(() => titleIsFound(admin, "random")).toBe(true);
   await admin.dispose();
 }
 
@@ -80,4 +91,10 @@ export function list(page: Page) {
 /** The results of the list that say this text. */
 export function result(page: Page, text: string) {
   return list(page).getByRole("option").filter({ hasText: text });
+}
+
+/** The status with which the server answers a request for an issue, as the signed-in person. */
+export async function statusOfIssue(page: Page, key: string): Promise<number> {
+  const answer = await page.request.get(new URL(`/api/v1/issues/${key}`, page.url()).href);
+  return answer.status();
 }
