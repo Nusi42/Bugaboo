@@ -67,19 +67,22 @@ pub fn search_words(text: &str) -> Vec<SearchWord> {
 }
 
 /// The text of a person who is still typing, ready to be searched: when the last word is not
-/// finished (the text ends in a letter or a digit) and has at least [`MIN_PREFIX_CHARS`] letters,
-/// it gets a `*`, so it finds every word that starts with it (`logi` finds `login`). A word that
-/// is finished (a space after it), a start that is too short, and a text that already ends in
-/// `*` stay as they are. The letters are counted on the prepared word, as the checker of the
-/// search language counts them.
+/// finished and the checker would take it as a start (`logi` finds `login`), it gets a `*`. A
+/// word that is finished (a space after it), a start that is too short, and a text that already
+/// ends in `*` stay as they are. Whether the word may be a start is decided by
+/// [`SearchWord::matches_by_start`], the one place that counts letters, so the star and the
+/// checker of the search language never disagree.
 #[must_use]
 pub fn open_last_word(text: &str) -> String {
-    let unfinished = text.chars().next_back().is_some_and(char::is_alphanumeric);
-    let long_enough = prepare(text)
+    if text.ends_with('*') {
+        return text.to_owned();
+    }
+    let open = format!("{text}*");
+    if words_of(&open)
         .last()
-        .is_some_and(|word| word.chars().count() >= MIN_PREFIX_CHARS);
-    if unfinished && long_enough {
-        format!("{text}*")
+        .is_some_and(SearchWord::matches_by_start)
+    {
+        open
     } else {
         text.to_owned()
     }
@@ -175,6 +178,22 @@ mod tests {
         assert_eq!(open_last_word("login "), "login ");
         assert_eq!(open_last_word("login*"), "login*");
         assert_eq!(open_last_word(""), "");
+    }
+
+    #[test]
+    fn the_letters_are_counted_as_the_checker_counts_them() {
+        // `ß` is `ss` and `æ` is `ae` in the index: two letters each.
+        assert_eq!(open_last_word("ß"), "ß*");
+        assert_eq!(open_last_word("æ"), "æ*");
+        // A letter and its accent as two characters is one letter.
+        assert_eq!(open_last_word("e\u{301}"), "e\u{301}");
+        assert_eq!(open_last_word("e\u{301}t"), "e\u{301}t");
+        assert_eq!(open_last_word("me\u{301}"), "me\u{301}");
+    }
+
+    #[test]
+    fn a_text_that_ends_in_a_star_keeps_one_star() {
+        assert_eq!(open_last_word("login*"), "login*");
     }
 
     #[test]
