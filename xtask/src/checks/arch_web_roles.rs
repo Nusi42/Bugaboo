@@ -76,18 +76,30 @@ fn message() -> &'static str {
     "A role of the list's head, rows or cells is written here. They live in web/packages/ui/src/ListRoles.tsx only: use its components or add one there."
 }
 
-/// The texts between quotes of a line: the odd parts between `"`, `'` or a backtick. A CSS selector
-/// (a text that starts with `[`) only looks for an element, so the words inside it are not a role
-/// given to one.
+/// The string literals of a line, read as a language does: a text runs from a quote to the same
+/// quote, so another quote inside it is part of it. A CSS selector (a text that starts with `[`)
+/// only looks for an element, so it is left out with everything inside it, and the rest of the line
+/// is still read.
 fn literals(line: &str) -> Vec<&str> {
     let mut found = Vec::new();
-    if ["\"[", "'[", "`["].iter().any(|start| line.contains(start)) {
-        return found;
-    }
-    for quote in ['"', '\'', '`'] {
-        for text in line.split(quote).skip(1).step_by(2) {
-            if !text.starts_with('[') {
-                found.push(text);
+    let mut chars = line.char_indices().peekable();
+    while let Some((start, quote)) = chars.next() {
+        if !matches!(quote, '"' | '\'' | '`') {
+            continue;
+        }
+        let from = start + quote.len_utf8();
+        let mut escaped = false;
+        for (at, each) in chars.by_ref() {
+            if escaped {
+                escaped = false;
+            } else if each == '\\' {
+                escaped = true;
+            } else if each == quote {
+                let text = &line[from..at];
+                if !text.starts_with('[') {
+                    found.push(text);
+                }
+                break;
             }
         }
     }
@@ -146,7 +158,9 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                     && words.iter().any(|word| GRID_AND_PLAIN.contains(word)));
             if in_role_object && code.trim_start().starts_with('}') {
                 in_role_object = false;
-            } else if named && code.trim_end().ends_with('{') {
+            } else if named
+                && (code.trim_end().ends_with("= {") || code.trim_end().ends_with(": {"))
+            {
                 in_role_object = true;
             }
             bad = bad && !code.trim_start().starts_with("//");
@@ -204,6 +218,12 @@ mod tests {
                 + found(
                     "web/app/src/features/roles/RolePage.tsx",
                     "<RoleSections role={page.role} />"
+                )
+                + found(
+                    "web/app/src/features/roles/RolePage.tsx",
+                    "function RolePage({ role }) {
+  const kind = \"row\";
+}"
                 ),
             0
         );
@@ -226,6 +246,11 @@ mod tests {
             2
         );
         assert_eq!(found(in_ui, "const tableRole = \"table\";"), 1);
+        // A selector on the line does not hide a role beside it.
+        assert_eq!(
+            found(in_ui, "const a = '[role=\"row\"]', roleRow = \"row\";"),
+            1
+        );
         assert_eq!(found(in_ui, "const w = 'gridcell';"), 1);
         assert_eq!(
             found(in_ui, "<div\n  className=\"a\"\n  role={headRole}\n>"),
