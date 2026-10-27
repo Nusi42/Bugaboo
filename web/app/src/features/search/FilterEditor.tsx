@@ -1,10 +1,11 @@
-import { t, textByKey } from "@bugaboo/messages";
+import { t } from "@bugaboo/messages";
 import { Alert, alertTone, AskDialog, SelectField } from "@bugaboo/ui";
 import type { Expr, Field, ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
 import { draftOf, filterOf, type Draft } from "./filter-draft.ts";
 import { useFieldName } from "./field-name-context.ts";
+import { mistakeText } from "./mistake-text.ts";
 import { operatorLabel } from "./operator-words.ts";
 import { nowhere, type FieldFilter } from "../../shared/search-tree.ts";
 import { OperatorInputs } from "./OperatorInputs.tsx";
@@ -36,7 +37,7 @@ function problemOf(
   }
   const text = language.print({ filter, sort: [], span: nowhere });
   const [mistake] = language.check(text, fields).mistakes;
-  return mistake === undefined ? undefined : textByKey(mistake.key, mistake.args);
+  return mistake === undefined ? undefined : mistakeText(mistake);
 }
 
 /** The list of the operators the field allows. */

@@ -1,7 +1,9 @@
-import { t, textByKey } from "@bugaboo/messages";
+import { t } from "@bugaboo/messages";
 import { Alert, alertTone, AskDialog, fieldKind, TextField } from "@bugaboo/ui";
 import type { Expr, ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 import { useState } from "react";
+
+import { mistakeText } from "./mistake-text.ts";
 
 export interface TextFilterEditorProps {
   readonly language: SearchLanguage;
@@ -59,9 +61,7 @@ export function TextFilterEditor({
         value={typed}
         onChange={setTyped}
       />
-      {mistake === undefined ? null : (
-        <Alert tone={alertTone.danger}>{textByKey(mistake.key, mistake.args)}</Alert>
-      )}
+      {mistake === undefined ? null : <Alert tone={alertTone.danger}>{mistakeText(mistake)}</Alert>}
     </AskDialog>
   );
 }
