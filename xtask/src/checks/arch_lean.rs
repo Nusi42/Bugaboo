@@ -644,6 +644,18 @@ mod tests {
     }
 
     #[test]
+    fn good_example_a_ref_body_is_a_reference() {
+        let text = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../tools/checks/fixtures/ARCH-LEAN/good/references-by-id.json"),
+        )
+        .unwrap();
+        let spec: Value = serde_json::from_str(&text.replace("PersonRef", "LabelRefBody")).unwrap();
+        let found = messages(&spec, &[]);
+        assert!(found.is_empty(), "{found:?}");
+    }
+
+    #[test]
     fn good_example_a_read_that_is_never_stored_has_no_tag_to_document() {
         let found = messages(&fixture("good", "never-stored.json"), &[]);
         assert!(found.is_empty(), "{found:?}");
