@@ -40,8 +40,8 @@ export interface QuickSearchSource {
    * so a fast typist costs one request, not one for every key (M5-Q10); the others answer at once.
    */
   readonly paused?: boolean;
-  /** Whether this source comes before the others (UX §6.2: issues first). */
-  readonly first?: boolean;
+  /** Whether this text asks for this source first: issues, when the text looks like an issue ID (UX §6.2). */
+  readonly firstFor?: (query: string) => boolean;
   readonly search: (
     query: string,
     asker: QuickSearchAsker,

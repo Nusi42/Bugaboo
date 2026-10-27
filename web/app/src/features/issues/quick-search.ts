@@ -101,7 +101,7 @@ export const issuesSource: QuickSearchSource = {
   id: "issues",
   heading: t("search.issues"),
   paused: true,
-  first: true,
+  firstFor: looksLikeIssueId,
   search: async (query): Promise<readonly QuickResult[]> => {
     const [byId, byWords] = await Promise.all([
       looksLikeIssueId(query) ? issueWithId(query) : [],
