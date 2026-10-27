@@ -314,4 +314,4 @@ reason = "The fields a person may search by are the fields of the organization, 
 [[exempt]]
 route = "GET /api/v1/search/names"
 property = "names"
-reason = "The names a suggestion offers are a short list of plain names (at most 20, the request names the number): a menu of the editor, which has no fields to leave out."
+reason = "The names a suggestion offers are a short list of plain names (at most 20, the request names the number): a menu of the editor, which has no fields to leave out (M5-F67)."

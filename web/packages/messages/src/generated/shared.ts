@@ -210,7 +210,9 @@ export const messages = {
   "nav.projects": "Projects",
   "nav.group.work": "Work",
   "search.clear": "Clear the search",
+  "search.page.title": "Search",
   "search.bar.filters": "Filters",
+  "search.saved-heading": "Saved searches",
   "search.mistake.expected-filter":
     "A filter is missing here. Start it with the name of a field, like “priority”.",
   "search.mistake.expected-operator":
