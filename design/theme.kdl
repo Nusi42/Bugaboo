@@ -119,6 +119,8 @@ tokens {
     size "size-col-priority" "96px"
     size "size-col-person" "144px"
     size "size-col-labels" "160px"
+    size "size-col-project" "128px"
+    size "size-col-value" "144px"
     size "size-col-changed" "120px"
     // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 480 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
     size "size-window" "760px"
@@ -1688,6 +1690,17 @@ part "list-row.cell[variant=person]" {
     width "$size-col-person"
 }
 
+part "list-row.cell[variant=project]" {
+    flex none
+    width "$size-col-project"
+}
+
+// The value of a field that has no cell of its own (a field of the organization's, the day it was made).
+part "list-row.cell[variant=value]" {
+    flex none
+    width "$size-col-value"
+}
+
 part "list-row.cell[variant=changed]" {
     flex none
     width "$size-col-changed"
@@ -1745,7 +1758,7 @@ part "list-row[variant=phone]" "list-row[variant=slim]" {
     min-height "$size-row"
 }
 
-part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
+part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" "list-row[variant=phone] list-row.cell[variant=project]" "list-row[variant=phone] list-row.cell[variant=value]" {
     display none
 }
 

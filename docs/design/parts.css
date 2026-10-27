@@ -1089,6 +1089,16 @@ body {
   width: var(--size-col-person);
 }
 
+[data-part="list-row.cell"][data-variant~="project"] {
+  flex: none;
+  width: var(--size-col-project);
+}
+
+[data-part="list-row.cell"][data-variant~="value"] {
+  flex: none;
+  width: var(--size-col-value);
+}
+
 [data-part="list-row.cell"][data-variant~="changed"] {
   flex: none;
   width: var(--size-col-changed);
@@ -1143,7 +1153,9 @@ body {
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="type"],
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="labels"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="labels"],
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="project"],
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="value"] {
   display: none;
 }
 

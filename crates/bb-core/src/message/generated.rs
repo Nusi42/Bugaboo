@@ -2002,6 +2002,9 @@ pub const ISSUES_COLUMN_KEY: MessageKey = MessageKey::new("issues.column-key");
 /// The message `issues.column-select`.
 pub const ISSUES_COLUMN_SELECT: MessageKey = MessageKey::new("issues.column-select");
 
+/// The message `issues.column-value`.
+pub const ISSUES_COLUMN_VALUE: MessageKey = MessageKey::new("issues.column-value");
+
 /// The message `issues.comment`.
 pub const ISSUES_COMMENT: MessageKey = MessageKey::new("issues.comment");
 
@@ -12473,6 +12476,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.column-action", "Actions"),
     ("issues.column-key", "Issue ID"),
     ("issues.column-select", "Select"),
+    ("issues.column-value", "Value"),
     ("issues.comment", "Comment"),
     ("issues.compare-and-save", "Compare and save"),
     (

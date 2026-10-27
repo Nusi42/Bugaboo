@@ -6,7 +6,7 @@ import { listColumns, type ListColumn } from "@bugaboo/ui";
  * list comes without its labels, M3-F171), so the title gets the room instead of an empty column.
  */
 export const issueColumns: readonly ListColumn[] = listColumns.filter(
-  (column) => column !== "labels",
+  (column) => column !== "labels" && column !== "project" && column !== "value",
 );
 
 /** The columns of the slim list beside an open issue: the status, the ID, the priority and the title (UX §3.4). */
@@ -23,7 +23,9 @@ export function listColumnLabels(): Readonly<Record<ListColumn, string>> {
     key: t("issues.column-key"),
     type: t("issue-field.issue-type"),
     title: t("issue-field.title"),
+    project: t("issue-field.project"),
     labels: t("issue-field.labels"),
+    value: t("issues.column-value"),
     priority: t("issue-field.priority"),
     person: t("issue-field.assigned-to"),
     changed: t("issues.updated"),

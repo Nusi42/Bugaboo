@@ -30,6 +30,7 @@ export const messages = {
   "issues.column-key": "Issue ID",
   "issues.select-issue": "Select {key}",
   "issues.column-action": "Actions",
+  "issues.column-value": "Value",
   "issues.more-issues": "Show more issues",
   "issues.description.empty": "There is no description yet.",
   "issues.read-only": "Only people whose role allows it can change {field}.",

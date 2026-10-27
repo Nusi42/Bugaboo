@@ -13,6 +13,7 @@ type FixedCell = "select" | "action";
 const wordOfCell = {
   status: "status",
   key: "id",
+  project: "project",
   type: "type",
   title: "title",
   labels: "labels",
@@ -32,8 +33,15 @@ const choiceCells = listColumns.filter(
   (cell): cell is Exclude<ColumnCell, "value"> => cell in wordOfCell,
 );
 
-/** The columns a project's list has by default, as search words, in the order of UX §4.2. */
-export const projectColumns: readonly string[] = choiceCells.map((cell) => wordOfCell[cell]);
+/** The columns a project's list has by default, as search words, in the order of UX §4.2: a project's list has no *Project* column. */
+export const projectColumns: readonly string[] = choiceCells
+  .filter((cell) => cell !== "project")
+  .map((cell) => wordOfCell[cell]);
+
+/** The columns of the *Search* page by default: those of a project's list, and *Project* after the ID (UX §4.2). */
+export const searchColumns: readonly string[] = projectColumns.flatMap((word) =>
+  word === wordOfCell.key ? [word, wordOfCell.project] : [word],
+);
 
 const cellOfWord: ReadonlyMap<string, ColumnCell> = new Map(
   choiceCells.map((cell) => [wordOfCell[cell], cell]),
