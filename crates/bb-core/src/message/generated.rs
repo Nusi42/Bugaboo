@@ -9375,6 +9375,23 @@ pub fn search_mistake_expected_direction(directions: impl std::fmt::Display) -> 
     )
 }
 
+/// The message `search.mistake.expected-duration`.
+#[must_use]
+pub fn search_mistake_expected_duration(
+    hour: impl std::fmt::Display,
+    hours: impl std::fmt::Display,
+    minutes: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mistake.expected-duration"),
+        vec![
+            ("hour", Value::Text(hour.to_string())),
+            ("hours", Value::Text(hours.to_string())),
+            ("minutes", Value::Text(minutes.to_string())),
+        ],
+    )
+}
+
 /// The message `search.mistake.expected-in`.
 #[must_use]
 pub fn search_mistake_expected_in(
@@ -9628,6 +9645,7 @@ pub fn search_mistake_wrong_date(field: impl std::fmt::Display) -> Message {
 #[must_use]
 pub fn search_mistake_wrong_duration(
     field: impl std::fmt::Display,
+    hour: impl std::fmt::Display,
     hours: impl std::fmt::Display,
     minutes: impl std::fmt::Display,
 ) -> Message {
@@ -9635,6 +9653,7 @@ pub fn search_mistake_wrong_duration(
         MessageKey::new("search.mistake.wrong-duration"),
         vec![
             ("field", Value::Text(field.to_string())),
+            ("hour", Value::Text(hour.to_string())),
             ("hours", Value::Text(hours.to_string())),
             ("minutes", Value::Text(minutes.to_string())),
         ],
@@ -14109,6 +14128,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Write how to sort here: {directions}.",
     ),
     (
+        "search.mistake.expected-duration",
+        "Write a whole number before “{hours}” or “{minutes}”, like 2 {hours}, 45 {minutes} or 1 {hour} 30 {minutes}.",
+    ),
+    (
         "search.mistake.expected-filter",
         "A filter is missing here. Start it with the name of a field, like “priority”.",
     ),
@@ -14230,7 +14253,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "search.mistake.wrong-duration",
-        "“{field}” needs a length of time here, like 2 {hours}, 45 {minutes} or 1 hour 30 {minutes}.",
+        "“{field}” needs a length of time here, like 2 {hours}, 45 {minutes} or 1 {hour} 30 {minutes}.",
     ),
     (
         "search.mistake.wrong-issue",

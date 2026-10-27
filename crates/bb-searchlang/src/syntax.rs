@@ -14,6 +14,7 @@ use serde::Serialize;
 use serde_json::Value as Json;
 
 use crate::span::Span;
+use crate::words::Keyword;
 
 /// A whole search: the filters and the order of the results.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -243,6 +244,23 @@ pub enum Operand {
         /// Where it stands.
         span: Span,
     },
+}
+
+impl Operand {
+    /// The words of the value as a person reads them, without quotes: the one text that the
+    /// checker compares with the choices of a field, the printer writes and the store compares.
+    #[must_use]
+    pub fn spelling(&self) -> String {
+        match self {
+            Self::Text { text, .. } => text.clone(),
+            Self::Number { number, .. } => number.text(),
+            Self::Duration { minutes, .. } => crate::duration::duration_text(*minutes),
+            Self::Date { date, .. } => date.text(),
+            Self::Issue { id, .. } => id.text.clone(),
+            Self::Me { .. } => Keyword::Me.text().to_owned(),
+            Self::Time { word, .. } => word.text(),
+        }
+    }
 }
 
 /// A text in a filter that always asks for words (`contains`, `member of`).

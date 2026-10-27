@@ -20,33 +20,6 @@ use super::{CompileError, Compiler, nothing};
 use crate::db::StoredId as _;
 use crate::schema::IssueRow;
 
-/// The text of a value, for a field that holds text.
-fn operand_text(operand: &Operand) -> String {
-    match operand {
-        Operand::Text { text, .. } => text.clone(),
-        Operand::Number { number, .. } => decimal_text(number.value, number.scale),
-        Operand::Duration { minutes, .. } => minutes.to_string(),
-        Operand::Date { date, .. } => {
-            format!("{:04}-{:02}-{:02}", date.year, date.month, date.day)
-        }
-        Operand::Issue { id, .. } => id.text.clone(),
-        Operand::Me { .. } => "me".to_owned(),
-        Operand::Time { .. } => String::new(),
-    }
-}
-
-fn decimal_text(value: i64, scale: u8) -> String {
-    if scale == 0 {
-        return value.to_string();
-    }
-    let digits = value.unsigned_abs().to_string();
-    let scale = usize::from(scale);
-    let padded = format!("{digits:0>width$}", width = scale + 1);
-    let (whole, parts) = padded.split_at(padded.len() - scale);
-    let sign = if value < 0 { "-" } else { "" };
-    format!("{sign}{whole}.{parts}")
-}
-
 fn values<T: Into<Value>>(found: impl IntoIterator<Item = T>) -> Vec<Value> {
     found.into_iter().map(Into::into).collect()
 }
@@ -90,7 +63,7 @@ impl Compiler<'_> {
 
     /// The place of the named thing among the levels, `None` when there is no such name.
     fn level_of(&self, domain: Domain, operand: &Operand) -> Option<usize> {
-        let wanted = name_key(&operand_text(operand));
+        let wanted = name_key(&operand.spelling());
         match domain {
             Domain::Priority => Priority::ALL
                 .iter()
@@ -114,7 +87,7 @@ impl Compiler<'_> {
     /// `subject` is the thing of the name the operand writes: a status, a type, a project, an
     /// issue, a person, a group, a tag or a label, as the request resolved it for this person.
     fn equals_named(&self, domain: Domain, subject: Expr, operand: &Operand) -> Cond {
-        let text = operand_text(operand);
+        let text = operand.spelling();
         let key = name_key(&text);
         match domain {
             Domain::Status => Self::among(
@@ -205,7 +178,7 @@ impl Compiler<'_> {
         subject: Expr,
         operand: &Operand,
     ) -> Result<Cond, CompileError> {
-        let text = operand_text(operand);
+        let text = operand.spelling();
         let key = name_key(&text);
         Ok(match domain {
             Domain::Text => Cond::all().add(subject.eq(text)),
@@ -236,6 +209,10 @@ impl Compiler<'_> {
             },
             Domain::Number(parts) => match parts_of(operand, parts, Rounding::Exact) {
                 Some(number) => Cond::all().add(subject.eq(number)),
+                None => nothing(),
+            },
+            Domain::Duration => match seconds_of(operand) {
+                Some(seconds) => Cond::all().add(subject.eq(seconds)),
                 None => nothing(),
             },
             Domain::Time(clock) => {
@@ -289,6 +266,17 @@ impl Compiler<'_> {
                     Comparison::LessOrEqual => subject.lte(number),
                     Comparison::Greater => subject.gt(number),
                     Comparison::GreaterOrEqual => subject.gte(number),
+                }))
+            }
+            Domain::Duration => {
+                let Some(seconds) = seconds_of(operand) else {
+                    return Ok(nothing());
+                };
+                Ok(Cond::all().add(match operator {
+                    Comparison::Less => subject.lt(seconds),
+                    Comparison::LessOrEqual => subject.lte(seconds),
+                    Comparison::Greater => subject.gt(seconds),
+                    Comparison::GreaterOrEqual => subject.gte(seconds),
                 }))
             }
             Domain::Time(clock) => {
@@ -352,15 +340,22 @@ impl Compiler<'_> {
     }
 }
 
+/// The operand as seconds: a length of time is held in seconds. `None` when it is no length of
+/// time.
+fn seconds_of(operand: &Operand) -> Option<i64> {
+    match operand {
+        Operand::Duration { minutes, .. } => {
+            i64::from(*minutes).checked_mul(i64::from(SECONDS_PER_MINUTE))
+        }
+        _ => None,
+    }
+}
+
 /// The operand as a count of parts (millionths for a decimal), rounded as asked when it does not
 /// fall on a part; `None` when it has to be exact and does not, or is no number.
 fn parts_of(operand: &Operand, parts: i64, rounding: Rounding) -> Option<i64> {
     let number = match operand {
         Operand::Number { number, .. } => number,
-        // A length of time is held in seconds; its fields count whole units (parts of 1).
-        Operand::Duration { minutes, .. } => {
-            return i64::from(*minutes).checked_mul(i64::from(SECONDS_PER_MINUTE) * parts);
-        }
         _ => return None,
     };
     let scaled = i128::from(number.value) * i128::from(parts);

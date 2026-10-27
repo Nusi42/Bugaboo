@@ -609,3 +609,37 @@ fn qry_05_a_contains_on_its_own_is_offered_and_allowed_only_with_title_and_descr
         assert_eq!(found[0].key, messages::UNKNOWN_FIELD, "{hidden}");
     }
 }
+
+#[test]
+fn qry_02_a_length_of_time_prints_in_the_largest_units_and_reads_back() {
+    for (text, canonical) in [
+        ("timeSpent is 90 minutes", "timeSpent is 1 hour 30 minutes"),
+        ("timeSpent >= 120 minutes", "timeSpent >= 2 hours"),
+        ("timeSpent < 1 hour 1 minute", "timeSpent < 1 hour 1 minute"),
+        ("timeSpent is 0 minutes", "timeSpent is 0 minutes"),
+    ] {
+        assert_eq!(checked(text).as_deref(), Ok(canonical), "{text}");
+    }
+}
+
+#[test]
+fn qry_02_a_length_that_is_not_whole_or_too_large_says_what_to_write() {
+    for text in ["timeSpent is 1.5 hours", "timeSpent is 4294967295 hours"] {
+        let mistakes = mistakes_of(text);
+        assert_eq!(mistakes[0].key, messages::EXPECTED_DURATION, "{text}");
+        assert_eq!(mistakes[0].args["hour"], "hour", "{text}");
+    }
+}
+
+#[test]
+fn qry_02_a_length_of_time_is_no_choice_even_when_a_choice_is_spelled_like_it() {
+    let mut fields = sample_fields();
+    fields
+        .fields
+        .push(Field::new("size", FieldKind::Choice).with_choices(&["120", "2 hours", "Large"]));
+    let search = parse_with("size is 2 hours", &fields).expect("parses");
+    let mistakes = check(search, &fields).expect_err("a duration is no choice");
+    assert_eq!(mistakes[0].key, messages::UNKNOWN_CHOICE);
+    let search = parse_with("size is Large", &fields).expect("parses");
+    assert!(check(search, &fields).is_ok());
+}

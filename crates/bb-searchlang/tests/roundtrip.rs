@@ -91,7 +91,7 @@ fn value() -> impl Strategy<Value = Operand> {
             number,
             span: span()
         }),
-        (0..100_000_u32).prop_map(|minutes| Operand::Duration {
+        (0..=u32::MAX).prop_map(|minutes| Operand::Duration {
             minutes,
             span: span()
         }),

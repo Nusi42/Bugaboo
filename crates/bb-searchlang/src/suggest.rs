@@ -240,7 +240,7 @@ fn items(
             .collect(),
         Situation::SortAfterKey => vec![sign(",")],
         Situation::Direction { typed: words } => next_direction_words(&words),
-        Situation::Count | Situation::Text => Vec::new(),
+        Situation::Count | Situation::Duration | Situation::Text => Vec::new(),
     };
     offered
         .into_iter()

@@ -2,12 +2,14 @@
 //! `1 hour 30 minutes` (ADR-0005, decision 10). The units have one fixed length.
 
 use crate::lexer::{Token, TokenKind};
-use crate::words::{Keyword, minutes_of};
+use crate::words::{Keyword, TimeUnit};
 
 /// The minutes that the token at `at` stands for, if it is a word that names a unit of time.
 fn unit_at(tokens: &[Token], at: usize) -> Option<u32> {
     match tokens.get(at).map(|token| &token.kind) {
-        Some(TokenKind::Word(word)) => Keyword::of(word).and_then(minutes_of),
+        Some(TokenKind::Word(word)) => Keyword::of(word)
+            .and_then(TimeUnit::of)
+            .map(TimeUnit::minutes),
         _ => None,
     }
 }
@@ -37,4 +39,21 @@ pub(crate) fn read_duration(tokens: &[Token], at: usize) -> Option<(u32, usize)>
         used += 2;
     }
     Some((minutes, used))
+}
+
+/// A length of time in words: `2 hours`, `1 hour 30 minutes`, `45 minutes`.
+pub(crate) fn duration_text(minutes: u32) -> String {
+    let mut left = minutes;
+    let mut parts = Vec::new();
+    for unit in TimeUnit::LONGEST_FIRST {
+        let count = left / unit.minutes();
+        left %= unit.minutes();
+        if count > 0 {
+            parts.push(format!("{count} {}", unit.word(count).text()));
+        }
+    }
+    if parts.is_empty() {
+        parts.push(format!("0 {}", TimeUnit::Minute.word(0).text()));
+    }
+    parts.join(" ")
 }

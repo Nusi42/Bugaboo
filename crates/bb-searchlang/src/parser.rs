@@ -603,7 +603,7 @@ impl Parser<'_> {
             .peek()
             .map_or(self.text.len(), |token| token.span.start);
         let Some((minutes, used)) = read_duration(&self.tokens, self.at) else {
-            return self.fail(Situation::Count);
+            return self.fail(Situation::Duration);
         };
         self.at += used;
         Ok(Operand::Duration {

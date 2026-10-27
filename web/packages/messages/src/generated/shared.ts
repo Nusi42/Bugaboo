@@ -222,6 +222,8 @@ export const messages = {
     "After “{in}” write “{last}” and a number, or a list of values in brackets.",
   "search.mistake.expected-list-next":
     "Write a comma and the next value, or close the list with a bracket.",
+  "search.mistake.expected-duration":
+    "Write a whole number before “{hours}” or “{minutes}”, like 2 {hours}, 45 {minutes} or 1 {hour} 30 {minutes}.",
   "search.mistake.expected-count": "Write a whole number of 1 or more here.",
   "search.mistake.expected-unit": "Write a unit of time here: {units}.",
   "search.mistake.expected-steps-word": "Write “{step}” or “{steps}” after the number.",
@@ -257,7 +259,7 @@ export const messages = {
     "“{field}” has no choice called “{value}”. Did you mean “{suggestion}”?",
   "search.mistake.wrong-number": "“{field}” needs a number here.",
   "search.mistake.wrong-duration":
-    "“{field}” needs a length of time here, like 2 {hours}, 45 {minutes} or 1 hour 30 {minutes}.",
+    "“{field}” needs a length of time here, like 2 {hours}, 45 {minutes} or 1 {hour} 30 {minutes}.",
   "search.mistake.wrong-date": "“{field}” needs a day like 2026-10-25, or a word like today.",
   "search.mistake.wrong-text": "“{field}” needs a text here. Put it in quotes.",
   "search.mistake.wrong-person": "“{field}” needs the name of a person here, or “{me}”.",

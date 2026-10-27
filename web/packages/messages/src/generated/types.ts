@@ -442,6 +442,11 @@ export interface MessageArguments {
   };
   "search.mistake.expected-continue-closing": { and: string | number; or: string | number };
   "search.mistake.expected-direction": { directions: string | number };
+  "search.mistake.expected-duration": {
+    hour: string | number;
+    hours: string | number;
+    minutes: string | number;
+  };
   "search.mistake.expected-in": { in: string | number; last: string | number };
   "search.mistake.expected-member-of": { member: string | number; of: string | number };
   "search.mistake.expected-operator": {
@@ -477,6 +482,7 @@ export interface MessageArguments {
   "search.mistake.wrong-date": { field: string | number };
   "search.mistake.wrong-duration": {
     field: string | number;
+    hour: string | number;
     hours: string | number;
     minutes: string | number;
   };

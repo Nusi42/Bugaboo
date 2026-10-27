@@ -10,7 +10,7 @@ use crate::messages as key;
 use crate::situation::{ParseError, Reason, Situation};
 use crate::span::Span;
 use crate::syntax::{Direction, Unit};
-use crate::words::Keyword;
+use crate::words::{Keyword, duration_words};
 
 /// Something wrong in the text of a search.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -108,6 +108,7 @@ fn expected(span: Span, situation: &Situation) -> Mistake {
         ),
         Situation::ListNext => with(key::EXPECTED_LIST_NEXT, &[]),
         Situation::Count => with(key::EXPECTED_COUNT, &[]),
+        Situation::Duration => with(key::EXPECTED_DURATION, &duration_words()),
         Situation::Unit => {
             let units = listed(&[Unit::Day, Unit::Week, Unit::Month].map(unit_text));
             with(key::EXPECTED_UNIT, &[("units", &units)])
