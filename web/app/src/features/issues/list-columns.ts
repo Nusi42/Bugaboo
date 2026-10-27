@@ -1,33 +1,70 @@
 import { listColumns, type ListColumn } from "@bugaboo/ui";
 
-/** The columns of the list that are not a choice: the tick box and the buttons of the row. */
-const fixedColumns: ReadonlySet<ListColumn> = new Set<ListColumn>(["select", "action"]);
-
-/** The columns that cannot be taken away in *Customize → Columns* (UX §4.2). */
-const keptColumns: readonly ListColumn[] = ["key", "title"];
-
-/** The columns a person can choose from, in the order the project's list has them (ADR-0034 decision 6). */
-export const projectColumns: readonly ListColumn[] = listColumns.filter(
-  (column) => !fixedColumns.has(column),
-);
+/** The cells of the list that are not a choice: the tick box and the buttons of the row. */
+type FixedCell = "select" | "action";
 
 /**
- * The columns after *Customize → Columns*: the ticked ones, in the order given, and the ID and the
- * title whatever was ticked (they come first when they were not ticked). A column that is not a
- * choice is left out.
+ * The search word of the field each cell shows. A saved search stores its columns by search word
+ * (ADR-0034), so this is the one place that says which cell a word is drawn in. `id` is the Issue
+ * ID, the one word that is no field. A new cell in the theme file is a type error until it is here.
  */
-export function chooseColumns(ticked: readonly ListColumn[]): readonly ListColumn[] {
-  const chosen = ticked.filter((column) => projectColumns.includes(column));
-  const missing = keptColumns.filter((column) => !chosen.includes(column));
+const wordOfCell = {
+  status: "status",
+  key: "id",
+  type: "type",
+  title: "title",
+  labels: "labels",
+  priority: "priority",
+  person: "assignedTo",
+  changed: "changed",
+} as const satisfies Readonly<Record<Exclude<ListColumn, FixedCell>, string>>;
+
+/** The cell a column is drawn in: one the list has a cell for, or a plain value (an own field). */
+export type ColumnCell = Exclude<ListColumn, FixedCell> | "value";
+
+/** The search words of the columns that cannot be taken away in *Customize → Columns* (UX §4.2). */
+const keptWords: readonly string[] = [wordOfCell.key, wordOfCell.title];
+
+/** The cells a person can choose from, in the order the project's list has them (ADR-0034 decision 6). */
+const choiceCells = listColumns.filter(
+  (cell): cell is Exclude<ColumnCell, "value"> => cell in wordOfCell,
+);
+
+/** The columns a project's list has by default, as search words, in the order of UX §4.2. */
+export const projectColumns: readonly string[] = choiceCells.map((cell) => wordOfCell[cell]);
+
+const cellOfWord: ReadonlyMap<string, ColumnCell> = new Map(
+  choiceCells.map((cell) => [wordOfCell[cell], cell]),
+);
+
+/** The cell a column with this search word is drawn in; a field without a cell of its own is a plain value. */
+export function cellOf(word: string): ColumnCell {
+  return cellOfWord.get(word) ?? "value";
+}
+
+/**
+ * The columns after *Customize → Columns*, as search words: the ticked ones that the person can
+ * read (a field of their own included, once each), in the order given, and the ID and the title
+ * whatever was ticked (they come first when they were not ticked). A word that is no readable field
+ * is left out.
+ */
+export function chooseColumns(
+  ticked: readonly string[],
+  readable: readonly string[],
+): readonly string[] {
+  const chosen = [...new Set(ticked)].filter(
+    (word) => keptWords.includes(word) || readable.includes(word),
+  );
+  const missing = keptWords.filter((word) => !chosen.includes(word));
   return [...missing, ...chosen];
 }
 
 /** One column one place up or down; at an end it stays. */
 export function moveColumn(
-  columns: readonly ListColumn[],
-  column: ListColumn,
+  columns: readonly string[],
+  column: string,
   direction: "up" | "down",
-): readonly ListColumn[] {
+): readonly string[] {
   const at = columns.indexOf(column);
   const to = direction === "up" ? at - 1 : at + 1;
   if (at < 0 || to < 0 || to >= columns.length) {
