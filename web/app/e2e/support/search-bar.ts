@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada } from "./accounts.ts";
+import { ada, type Person } from "./accounts.ts";
 import { chooseTheme, themes } from "./checks.ts";
 import { expect } from "./fixtures.ts";
 import { signIn } from "./flows.ts";
@@ -22,8 +22,8 @@ export async function inFourThemes(page: Page, name: string): Promise<void> {
   );
 }
 
-export async function openSearch(page: Page, text: string): Promise<void> {
-  await signIn(page, ada);
+export async function openSearch(page: Page, text: string, person: Person = ada): Promise<void> {
+  await signIn(page, person);
   await page.goto(`/search?s=${encodeURIComponent(text)}`);
   await expect(page.getByRole("heading", { level: 1, name: t("search.page.title") })).toBeVisible();
 }
