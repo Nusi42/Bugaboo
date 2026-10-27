@@ -642,26 +642,6 @@ pub(crate) fn status_groups(looked: &Looked) -> Vec<(StatusGroup, Vec<String>)> 
         .collect()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{NAME_RESOLUTIONS_MAX, NameCache};
-
-    #[test]
-    fn perf_05_a_request_resolves_no_more_than_a_bounded_number_of_names_with_reads() {
-        let mut cache = NameCache::default();
-        for _ in 0..NAME_RESOLUTIONS_MAX {
-            assert!(cache.may_resolve());
-        }
-        assert!(!cache.spent());
-        // Past the bound the text is out of budget, whatever comes.
-        assert!(!cache.may_resolve());
-        assert!(cache.spent());
-        // Lifted, the page that has no search yet goes on.
-        cache.lift();
-        assert!(cache.may_resolve());
-    }
-}
-
 /// The kinds of people a name offered for a suggestion has to be nameable for: a suggestion does
 /// not know the field it stands in, so it offers only names that every person field takes.
 const OFFERED_KINDS: [PeopleKind; 2] = [PeopleKind::AssignedTo, PeopleKind::ReportedBy];
@@ -730,5 +710,25 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|group| group.name)
             .take(limit)
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{NAME_RESOLUTIONS_MAX, NameCache};
+
+    #[test]
+    fn perf_05_a_request_resolves_no_more_than_a_bounded_number_of_names_with_reads() {
+        let mut cache = NameCache::default();
+        for _ in 0..NAME_RESOLUTIONS_MAX {
+            assert!(cache.may_resolve());
+        }
+        assert!(!cache.spent());
+        // Past the bound the text is out of budget, whatever comes.
+        assert!(!cache.may_resolve());
+        assert!(cache.spent());
+        // Lifted, the page that has no search yet goes on.
+        cache.lift();
+        assert!(cache.may_resolve());
     }
 }

@@ -117,7 +117,6 @@ fn check_test(test: &Test) -> Result<(), Problem> {
 fn operand(value: &Operand) -> Result<(), Problem> {
     match value {
         Operand::Number { number, .. } => decimal(*number),
-        Operand::Duration { .. } => Ok(()),
         Operand::Date { date, .. } => {
             if Date::new(date.year, date.month, date.day) == Some(*date) {
                 Ok(())
@@ -126,7 +125,10 @@ fn operand(value: &Operand) -> Result<(), Problem> {
             }
         }
         Operand::Issue { id, .. } => issue(id),
-        Operand::Text { .. } | Operand::Me { .. } | Operand::Time { .. } => Ok(()),
+        Operand::Text { .. }
+        | Operand::Duration { .. }
+        | Operand::Me { .. }
+        | Operand::Time { .. } => Ok(()),
     }
 }
 
