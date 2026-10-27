@@ -412,10 +412,8 @@ export interface MessageArguments {
   "search.bar.add-filter-text": { field: string | number };
   "search.bar.change-filter": { filter: string | number };
   "search.bar.change-filter-text": { field: string | number };
+  "search.bar.compared": { comparison: string | number; value: string | number };
   "search.bar.contains": { text: string | number };
-  "search.bar.duration-both": { hours: number; minutes: number };
-  "search.bar.duration-hours": { count: number };
-  "search.bar.duration-minutes": { count: number };
   "search.bar.filter-by": { field: string | number };
   "search.bar.filters-count": { count: string | number };
   "search.bar.issue-chosen": { id: string | number };
@@ -430,6 +428,7 @@ export interface MessageArguments {
   "search.bar.remove-filter": { filter: string | number };
   "search.copy-name": { name: string | number };
   "search.found-issue": { id: string | number; title: string | number };
+  "search.found-project": { name: string | number; short: string | number };
   "search.help-use": { example: string | number };
   "search.made-by": { person: string | number };
   "search.mistake.expected-blocked-by": { blocked: string | number; by: string | number };

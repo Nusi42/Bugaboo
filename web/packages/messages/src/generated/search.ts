@@ -21,11 +21,13 @@ export const messages = {
   "search.bar.last-days": "in the last {count, plural, one {day} other {# days}}",
   "search.bar.last-weeks": "in the last {count, plural, one {week} other {# weeks}}",
   "search.bar.last-months": "in the last {count, plural, one {month} other {# months}}",
+  "search.bar.compared": "{comparison} {value}",
   "search.bar.contains": "contains {text}",
   "search.bar.is-empty": "empty",
   "search.bar.is-not-empty": "not empty",
   "search.bar.member-of": "in the group {group}",
   "search.found-issue": "{id} · {title}",
+  "search.found-project": "{short} · {name}",
   "search.found-none": "No issues match this search.",
   "search.found-list": "Issues found",
   "search.bar.advanced-label": "Advanced search",
@@ -145,10 +147,6 @@ export const messages = {
   "search.help-your-fields": "Your fields",
   "search.help-your-fields-text":
     "The fields you may search by, each with the word that stands for it in the search.",
-  "search.bar.duration-minutes": "{count, plural, one {# minute} other {# minutes}}",
-  "search.bar.duration-hours": "{count, plural, one {# hour} other {# hours}}",
-  "search.bar.duration-both":
-    "{hours, plural, one {# hour} other {# hours}} {minutes, plural, one {# minute} other {# minutes}}",
   "search.bar.duration-help":
     "Write hours and minutes, for example 2 hours, 45 minutes or 1 hour 30 minutes.",
   "search.bar.not-a-duration": "Write a length of time like 2 hours or 1 hour 30 minutes.",

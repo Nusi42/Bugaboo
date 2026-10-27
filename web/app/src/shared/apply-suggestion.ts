@@ -1,6 +1,6 @@
-import type { Operand, SearchLanguage, Span, Suggestion } from "@bugaboo/wasm-search";
+import type { SearchLanguage, Span, Suggestion } from "@bugaboo/wasm-search";
 
-import { fieldFilter, nowhere } from "./search-tree.ts";
+import { nowhere } from "./search-tree.ts";
 
 /** The text and the place of the cursor after a suggestion was taken. */
 export interface Edited {
@@ -25,23 +25,12 @@ export function applyWord(text: string, replace: Span, word: string): Edited {
   return { text: `${before}${spaced}${after}`, cursor: before.length + spaced.length };
 }
 
-/** The word that stands for a name in the text, written as the language writes it. */
-export function operandSource(language: SearchLanguage, operand: Operand): string {
-  const start = "x is ";
-  const written = language.print({
-    filter: fieldFilter("x", { type: "is", value: operand, span: nowhere }),
-    sort: [],
-    span: nowhere,
-  });
-  return written.startsWith(start) ? written.slice(start.length) : written;
-}
-
 /** A name of a person or a group as it is written in a search: quoted where the language needs it. */
 export function nameSource(language: SearchLanguage, name: string): string {
-  return operandSource(language, { type: "text", text: name, span: nowhere });
+  return language.operandSource({ type: "text", text: name, span: nowhere });
 }
 
 /** An Issue ID as it is written in a search. */
 export function issueSource(language: SearchLanguage, id: string): string {
-  return operandSource(language, { type: "issue", id: { text: id, span: nowhere }, span: nowhere });
+  return language.operandSource({ type: "issue", id: { text: id, span: nowhere }, span: nowhere });
 }

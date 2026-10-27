@@ -4,7 +4,7 @@ import type { Expr, Field, ReadableFields, SearchLanguage } from "@bugaboo/wasm-
 import { useState } from "react";
 
 import { draftOf, filterOf, type Draft } from "./filter-draft.ts";
-import { fieldLabel } from "./filter-text.ts";
+import { useFieldName } from "./field-names.ts";
 import { operatorLabel } from "./operator-words.ts";
 import { nowhere, type FieldFilter } from "../../shared/search-tree.ts";
 import { OperatorInputs } from "./OperatorInputs.tsx";
@@ -80,7 +80,7 @@ export function FilterEditor({
   const [draft, setDraft] = useState<Draft>(() => draftOf(field, filter));
   const made = filterOf(field, draft);
   const problem = problemOf(language, fields, made);
-  const name = fieldLabel(field.word);
+  const name = useFieldName()(field.word);
   const isNew = filter === undefined;
   return (
     <AskDialog

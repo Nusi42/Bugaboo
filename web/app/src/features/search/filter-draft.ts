@@ -6,6 +6,7 @@
  */
 import type { Comparison, Decimal, Field, Operand, Operator, Unit } from "@bugaboo/wasm-search";
 
+import { isCalendarDay } from "../../shared/format.ts";
 import { decimalText } from "./filter-text.ts";
 import {
   fieldFilter,
@@ -136,15 +137,12 @@ export function numberTyped(operand: Operand | undefined): string {
   return operand?.type === "number" ? decimalText(operand.number) : "";
 }
 
-const dayShape = /^(\d{4})-(\d{2})-(\d{2})$/u;
-
-/** A day typed as `2026-10-25`, or `null` when it is no such text. */
+/** A day typed as `2026-10-25`, or `null` when it is no such text or no day of the calendar. */
 export function dayOf(typed: string): Operand | null {
-  const match = dayShape.exec(typed);
-  if (match === null) {
+  if (!isCalendarDay(typed)) {
     return null;
   }
-  const [, year = "", month = "", day = ""] = match;
+  const [year = "", month = "", day = ""] = typed.split("-");
   return {
     type: "date",
     date: { year: Number(year), month: Number(month), day: Number(day) },

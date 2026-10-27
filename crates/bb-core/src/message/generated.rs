@@ -1752,8 +1752,17 @@ pub const ISSUE_FIELD_ACTIVITY: MessageKey = MessageKey::new("issue-field.activi
 /// The message `issue-field.assigned-to`.
 pub const ISSUE_FIELD_ASSIGNED_TO: MessageKey = MessageKey::new("issue-field.assigned-to");
 
+/// The message `issue-field.changed`.
+pub const ISSUE_FIELD_CHANGED: MessageKey = MessageKey::new("issue-field.changed");
+
+/// The message `issue-field.closed`.
+pub const ISSUE_FIELD_CLOSED: MessageKey = MessageKey::new("issue-field.closed");
+
 /// The message `issue-field.cost-center`.
 pub const ISSUE_FIELD_COST_CENTER: MessageKey = MessageKey::new("issue-field.cost-center");
+
+/// The message `issue-field.created`.
+pub const ISSUE_FIELD_CREATED: MessageKey = MessageKey::new("issue-field.created");
 
 /// The message `issue-field.description`.
 pub const ISSUE_FIELD_DESCRIPTION: MessageKey = MessageKey::new("issue-field.description");
@@ -1795,6 +1804,9 @@ pub const ISSUE_FIELD_REPORTED_BY: MessageKey = MessageKey::new("issue-field.rep
 
 /// The message `issue-field.status`.
 pub const ISSUE_FIELD_STATUS: MessageKey = MessageKey::new("issue-field.status");
+
+/// The message `issue-field.status-group`.
+pub const ISSUE_FIELD_STATUS_GROUP: MessageKey = MessageKey::new("issue-field.status-group");
 
 /// The message `issue-field.sub-issue`.
 pub const ISSUE_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("issue-field.sub-issue");
@@ -9110,42 +9122,27 @@ pub fn search_bar_change_filter_text(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search.bar.compared`.
+#[must_use]
+pub fn search_bar_compared(
+    comparison: impl std::fmt::Display,
+    value: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.compared"),
+        vec![
+            ("comparison", Value::Text(comparison.to_string())),
+            ("value", Value::Text(value.to_string())),
+        ],
+    )
+}
+
 /// The message `search.bar.contains`.
 #[must_use]
 pub fn search_bar_contains(text: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.bar.contains"),
         vec![("text", Value::Text(text.to_string()))],
-    )
-}
-
-/// The message `search.bar.duration-both`.
-#[must_use]
-pub fn search_bar_duration_both(hours: i64, minutes: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("search.bar.duration-both"),
-        vec![
-            ("hours", Value::Number(hours)),
-            ("minutes", Value::Number(minutes)),
-        ],
-    )
-}
-
-/// The message `search.bar.duration-hours`.
-#[must_use]
-pub fn search_bar_duration_hours(count: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("search.bar.duration-hours"),
-        vec![("count", Value::Number(count))],
-    )
-}
-
-/// The message `search.bar.duration-minutes`.
-#[must_use]
-pub fn search_bar_duration_minutes(count: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("search.bar.duration-minutes"),
-        vec![("count", Value::Number(count))],
     )
 }
 
@@ -9280,6 +9277,21 @@ pub fn search_found_issue(id: impl std::fmt::Display, title: impl std::fmt::Disp
         vec![
             ("id", Value::Text(id.to_string())),
             ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `search.found-project`.
+#[must_use]
+pub fn search_found_project(
+    name: impl std::fmt::Display,
+    short: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.found-project"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("short", Value::Text(short.to_string())),
         ],
     )
 }
@@ -12238,7 +12250,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("invitations.title", "Invitations"),
     ("issue-field.activity", "Activity"),
     ("issue-field.assigned-to", "Assigned to"),
+    ("issue-field.changed", "Changed"),
+    ("issue-field.closed", "Closed"),
     ("issue-field.cost-center", "Cost center"),
+    ("issue-field.created", "Created"),
     ("issue-field.description", "Description"),
     ("issue-field.due-date", "Due date"),
     ("issue-field.estimated-time", "Estimated time"),
@@ -12252,6 +12267,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.readable-id", "Issue ID"),
     ("issue-field.reported-by", "Reported by"),
     ("issue-field.status", "Status"),
+    ("issue-field.status-group", "Status group"),
     ("issue-field.sub-issue", "Sub-issue"),
     ("issue-field.tags", "Tags"),
     ("issue-field.time-left", "Time left"),
@@ -13947,24 +13963,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.bar.change-filter-text",
         "Change what {field} should be.",
     ),
+    ("search.bar.compared", "{comparison} {value}"),
     ("search.bar.contains", "contains {text}"),
     ("search.bar.count", "How many"),
     ("search.bar.day", "The day"),
     (
-        "search.bar.duration-both",
-        "{hours, plural, one {# hour} other {# hours}} {minutes, plural, one {# minute} other {# minutes}}",
-    ),
-    (
         "search.bar.duration-help",
         "Write hours and minutes, for example 2 hours, 45 minutes or 1 hour 30 minutes.",
-    ),
-    (
-        "search.bar.duration-hours",
-        "{count, plural, one {# hour} other {# hours}}",
-    ),
-    (
-        "search.bar.duration-minutes",
-        "{count, plural, one {# minute} other {# minutes}}",
     ),
     ("search.bar.fields-clear", "Clear the words"),
     ("search.bar.fields-legend", "Fields"),
@@ -14062,6 +14067,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.found-issue", "{id} · {title}"),
     ("search.found-list", "Issues found"),
     ("search.found-none", "No issues match this search."),
+    ("search.found-project", "{short} · {name}"),
     ("search.help", "Help"),
     ("search.help-comparing", "Comparing"),
     (

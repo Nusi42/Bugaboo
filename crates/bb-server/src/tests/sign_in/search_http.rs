@@ -455,3 +455,31 @@ async fn sec_17_suggestions_have_an_allowance_apart_from_searches() -> TestResul
     })
     .await
 }
+
+#[tokio::test]
+async fn qry_05_a_readable_field_says_how_it_is_called() -> TestResult {
+    each_database("search_http_field_names", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        create_field(
+            &mut ada,
+            json!({"name": "Time to fix", "kind": "duration", "applies_to": "issues"}),
+        )
+        .await?;
+        let reply = ada.send("GET", "/api/v1/search/fields", None).await?;
+        assert_eq!(reply.status, StatusCode::OK);
+        let fields = reply.body["fields"].as_array().ok_or("fields")?;
+        let called = |word: &str| fields.iter().find(|field| field["word"] == word);
+        // A field every issue has is called by a message, an own field by the name it was given.
+        let built_in = called("assignedTo").ok_or("assignedTo")?;
+        assert_eq!(built_in["message_key"], "issue-field.assigned-to");
+        assert!(built_in["name"].is_null());
+        let status_group = called("statusGroup").ok_or("statusGroup")?;
+        assert_eq!(status_group["message_key"], "issue-field.status-group");
+        let own = called("timeToFix").ok_or("timeToFix")?;
+        assert_eq!(own["name"], "Time to fix");
+        assert!(own["message_key"].is_null());
+        Ok(())
+    })
+    .await
+}

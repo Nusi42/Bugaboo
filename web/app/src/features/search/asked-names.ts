@@ -6,12 +6,14 @@
  * decides when the search runs.
  */
 import { dataOf, type Schema } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 import type { AskKind, SearchLanguage } from "@bugaboo/wasm-search";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { issueSource, nameSource } from "../../shared/apply-suggestion.ts";
+import { fieldFilter, nowhere } from "../../shared/search-tree.ts";
 
 /** A name that can be taken into the text. */
 export interface AskedName {
@@ -47,7 +49,12 @@ async function projectsStarting(words: string): Promise<readonly AskedName[]> {
   return page.items.flatMap((item) =>
     item.short_name === undefined || item.short_name === null
       ? []
-      : [{ source: item.short_name, label: `${item.short_name} · ${item.name ?? ""}` }],
+      : [
+          {
+            source: item.short_name,
+            label: t("search.found-project", { short: item.short_name, name: item.name ?? "" }),
+          },
+        ],
   );
 }
 
@@ -55,14 +62,21 @@ async function issuesStarting(
   language: SearchLanguage,
   words: string,
 ): Promise<readonly AskedName[]> {
-  // What looks like an Issue ID is offered as the ID; the words are looked for in the titles.
-  const asId = language.parse(`under ${words}`);
-  const found = asId.mistakes.length === 0 && words !== "";
+  // Words that are exactly an Issue ID are offered as that ID; the words are looked for in the titles.
+  const id = language.issueIdOf(words);
   const titles: Schema<"Page_IssueItem"> = dataOf(
     await api.client.GET("/api/v1/search/issues", {
       params: {
         query: {
-          q: `title contains ${nameSource(language, words)}`,
+          q: language.print({
+            filter: fieldFilter("title", {
+              type: "contains",
+              text: { text: words, span: nowhere },
+              span: nowhere,
+            }),
+            sort: [],
+            span: nowhere,
+          }),
           limit: offered,
           fields: "readable_id,title",
         },
@@ -75,11 +89,11 @@ async function issuesStarting(
       : [
           {
             source: issueSource(language, item.readable_id),
-            label: `${item.readable_id} · ${item.title ?? ""}`,
+            label: t("search.found-issue", { id: item.readable_id, title: item.title ?? "" }),
           },
         ],
   );
-  return found ? [{ source: words, label: words }, ...named] : named;
+  return id === undefined ? named : [{ source: id, label: id }, ...named];
 }
 
 function namesStarting(

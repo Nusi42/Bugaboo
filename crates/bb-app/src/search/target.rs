@@ -1,6 +1,7 @@
 //! What a word of a search stands for: the one list the checker and the compiler both start from.
 
 use bb_core::id::FieldId;
+use bb_core::message::{self, MessageKey};
 use bb_core::own_fields::FieldType;
 use bb_searchlang::Field as SearchField;
 
@@ -97,6 +98,31 @@ pub struct Searchable {
     pub field: SearchField,
     /// What it reads.
     pub target: FieldTarget,
+}
+
+impl FieldTarget {
+    /// The message that names the field on screen; none for an own field, which has its own name.
+    #[must_use]
+    pub const fn message(self) -> Option<MessageKey> {
+        Some(match self {
+            Self::Title => message::ISSUE_FIELD_TITLE,
+            Self::Description => message::ISSUE_FIELD_DESCRIPTION,
+            Self::Status => message::ISSUE_FIELD_STATUS,
+            Self::Priority => message::ISSUE_FIELD_PRIORITY,
+            Self::AssignedTo => message::ISSUE_FIELD_ASSIGNED_TO,
+            Self::ReportedBy => message::ISSUE_FIELD_REPORTED_BY,
+            Self::Labels => message::ISSUE_FIELD_LABELS,
+            Self::Tags => message::ISSUE_FIELD_TAGS,
+            Self::Project => message::ISSUE_FIELD_PROJECT,
+            Self::Type => message::ISSUE_FIELD_ISSUE_TYPE,
+            Self::StatusGroup => message::ISSUE_FIELD_STATUS_GROUP,
+            Self::Parent => message::ISSUE_FIELD_PARENT,
+            Self::Created => message::ISSUE_FIELD_CREATED,
+            Self::Changed => message::ISSUE_FIELD_CHANGED,
+            Self::Closed => message::ISSUE_FIELD_CLOSED,
+            Self::Own { .. } => return None,
+        })
+    }
 }
 
 /// The target of the field with this word.

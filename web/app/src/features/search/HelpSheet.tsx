@@ -3,7 +3,7 @@ import { Button, buttonLook, part, partOf, Window } from "@bugaboo/ui";
 import type { ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 
 import { windowLabels } from "../../shared/window-labels.ts";
-import { fieldLabel } from "./filter-text.ts";
+import { useFieldName } from "./field-names.ts";
 import { helpGroups, type HelpGroup } from "./help-examples.ts";
 
 export interface HelpSheetProps {
@@ -54,6 +54,7 @@ function HelpGroupView({
  * not read) is not shown.
  */
 export function HelpSheet({ language, fields, isOpen, onClose, onExample }: HelpSheetProps) {
+  const nameOf = useFieldName();
   return (
     <Window
       isOpen={isOpen}
@@ -88,7 +89,7 @@ export function HelpSheet({ language, fields, isOpen, onClose, onExample }: Help
           <ul {...partOf(part.searchList)}>
             {fields.fields.map((field) => (
               <li key={field.word} {...partOf(part.searchListItem)}>
-                <span>{fieldLabel(field.word)}</span>
+                <span>{nameOf(field.word)}</span>
                 <code>{field.word}</code>
               </li>
             ))}

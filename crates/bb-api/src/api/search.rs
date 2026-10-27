@@ -137,6 +137,12 @@ pub(crate) struct SearchFieldBody {
     operators: Vec<String>,
     /// The values of a fixed list; empty when anything goes.
     choices: Vec<String>,
+    /// The message that names a field every issue has; left out for an own field.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message_key: Option<String>,
+    /// The name of an own field; left out for a field every issue has.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
 }
 
 /// The fields the person may search by.
@@ -442,12 +448,15 @@ async fn list_search_fields(
                 .0
                 .fields
                 .into_iter()
+                .zip(fields.1)
                 .take(MAX_FIELDS)
-                .map(|field| SearchFieldBody {
+                .map(|(field, called)| SearchFieldBody {
                     kind: word_of(&field.kind),
                     operators: field.operators.iter().map(word_of).collect(),
                     word: field.word,
                     choices: field.choices,
+                    message_key: called.message_key,
+                    name: called.name,
                 })
                 .collect(),
         }

@@ -4,7 +4,7 @@ import type { Field, Operand, SearchLanguage, TimeWord } from "@bugaboo/wasm-sea
 import { useState } from "react";
 
 import { dayOf, decimalOf, numberTyped, textOperand } from "./filter-draft.ts";
-import { dayText, durationText, operandText, timeWordText } from "./filter-text.ts";
+import { dayText, operandText, timeWordText } from "./filter-text.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
 import { nowhere } from "../../shared/search-tree.ts";
 
@@ -117,12 +117,13 @@ function TypedValue({ field, values, onValues }: ValueInputProps) {
 /** A length of time typed (`2 hours`, `1 hour 30 minutes`): the search language reads it. */
 function DurationValue({ language, values, onValues }: ValueInputProps) {
   const [first] = values;
-  const [typed, setTyped] = useState(first?.type === "duration" ? durationText(first.minutes) : "");
+  // The language writes and reads the length of time, in its own words.
+  const [typed, setTyped] = useState(
+    first?.type === "duration" ? language.operandSource(first) : "",
+  );
   const read = (text: string): Operand | null => {
-    const test = language.parse(`x is ${text}`).search?.filter;
-    return test?.type === "field" && test.test.type === "is" && test.test.value.type === "duration"
-      ? test.test.value
-      : null;
+    const minutes = language.durationMinutesOf(text);
+    return minutes === undefined ? null : { type: "duration", minutes, span: nowhere };
   };
   const operand = read(typed);
   return (

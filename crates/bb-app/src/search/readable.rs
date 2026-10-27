@@ -61,10 +61,20 @@ pub struct ReadableFieldsQuery {
     pub scope: SearchScope,
 }
 
-/// The readable fields as an answer: what the checker takes and the browser gets.
+/// What a field is called on screen: a message of the catalogue for a field every issue has, the
+/// name the organization gave for an own field.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(transparent)]
-pub struct SearchFields(pub ReadableFields);
+pub struct FieldName {
+    /// The message that names a field of the catalogue.
+    pub message_key: Option<String>,
+    /// The name of an own field.
+    pub name: Option<String>,
+}
+
+/// The readable fields as an answer: what the checker takes and the browser gets, and how each
+/// field is called (in the order of the fields).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct SearchFields(pub ReadableFields, pub Vec<FieldName>);
 
 impl Masked for SearchFields {}
 
@@ -78,9 +88,31 @@ pub async fn readable_fields<S: AuthStore>(
     query: ReadableFieldsQuery,
 ) -> Result<Authorized<SearchFields>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
-    let fields = ctx.readable_fields_of(&actor, query.scope).await?;
+    let looked = ctx.looked_at(&actor, query.scope).await?;
+    let names = looked
+        .fields
+        .iter()
+        .map(|searchable| field_name(searchable, &looked.own))
+        .collect();
     let held = ctx.evaluation_of(&actor, Where::Organization).await?;
-    Ok(held.authorize(SearchFields(fields)))
+    Ok(held.authorize(SearchFields(readable_of(&looked.fields), names)))
+}
+
+/// How a field is called on screen.
+fn field_name(searchable: &Searchable, own: &[Definition]) -> FieldName {
+    match searchable.target {
+        FieldTarget::Own { field, .. } => FieldName {
+            message_key: None,
+            name: own
+                .iter()
+                .find(|definition| definition.field.id == field)
+                .map(|definition| definition.field.name.clone()),
+        },
+        built_in => FieldName {
+            message_key: built_in.message().map(|key| key.as_str().to_owned()),
+            name: None,
+        },
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -90,6 +122,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// `resource.not-found` for a project that the actor does not see; an internal error when the
     /// store fails.
+    #[cfg(test)]
     pub(crate) async fn readable_fields_of(
         &self,
         actor: &Actor,
@@ -104,6 +137,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// `resource.not-found` for a project that the actor does not see; an internal error when the
     /// store fails.
+    #[cfg(test)]
     pub(crate) async fn searchables_of(
         &self,
         actor: &Actor,

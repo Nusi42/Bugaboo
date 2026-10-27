@@ -3,6 +3,7 @@
  * (UX design section 4.3). The words come from the message catalog; the values are the person's own
  * text and stay as they are.
  */
+import { secondsPerMinute } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type {
   Comparison,
@@ -17,13 +18,9 @@ import type {
 
 import { formatCalendarDay } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
+import { durationText } from "../../shared/own-value-text.ts";
 import type { FieldTest } from "../../shared/search-tree.ts";
-
-/** The word of a field as the person reads it: `assignedTo` is *Assigned to*. */
-export function fieldLabel(word: string): string {
-  const spaced = word.replaceAll(/([a-z0-9])([A-Z])/gu, "$1 $2").toLowerCase();
-  return spaced === "" ? spaced : spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
+import type { FieldNameOf } from "./field-names.ts";
 
 /** The number a decimal stands for, with its digits after the point. */
 export function decimalText({ value, scale }: Decimal): string {
@@ -51,18 +48,6 @@ export function timeWordText(word: TimeWord): string {
   return timeWords[word]();
 }
 
-/** A length of time in words: `2 hours`, `1 hour 30 minutes`, `45 minutes`. */
-export function durationText(total: number): string {
-  const hours = Math.floor(total / 60);
-  const minutes = total % 60;
-  if (hours === 0) {
-    return t("search.bar.duration-minutes", { count: minutes });
-  }
-  return minutes === 0
-    ? t("search.bar.duration-hours", { count: hours })
-    : t("search.bar.duration-both", { hours, minutes });
-}
-
 /** A value as the button shows it. */
 export function operandText(operand: Operand): string {
   if (operand.type === "text") {
@@ -72,7 +57,7 @@ export function operandText(operand: Operand): string {
     return decimalText(operand.number);
   }
   if (operand.type === "duration") {
-    return durationText(operand.minutes);
+    return durationText(operand.minutes * secondsPerMinute);
   }
   if (operand.type === "date") {
     return formatCalendarDay(dayText(operand.date));
@@ -114,8 +99,10 @@ export function testText(test: FieldTest): string {
     return t("search.bar.not", { value: operandText(test.value) });
   }
   if (test.type === "compare") {
-    const words = comparisonText(test.operator, test.value.type === "date");
-    return `${words} ${operandText(test.value)}`;
+    return t("search.bar.compared", {
+      comparison: comparisonText(test.operator, test.value.type === "date"),
+      value: operandText(test.value),
+    });
   }
   if (test.type === "in") {
     return listText(test.values.map(operandText));
@@ -152,24 +139,28 @@ export function sourceOf(language: SearchLanguage, filter: Expr): string {
 }
 
 /** A member of an *Any of*, in a short form: `Status: Open`. */
-function memberText(language: SearchLanguage, member: Expr): string {
+function memberText(language: SearchLanguage, member: Expr, nameOf: FieldNameOf): string {
   return member.type === "field"
     ? t("search.bar.name-value", {
-        name: fieldLabel(member.field.word),
+        name: nameOf(member.field.word),
         value: testText(member.test),
       })
     : sourceOf(language, member);
 }
 
 /** The label of the button of a filter. */
-export function filterLabel(language: SearchLanguage, filter: Expr): FilterLabel {
+export function filterLabel(
+  language: SearchLanguage,
+  filter: Expr,
+  nameOf: FieldNameOf,
+): FilterLabel {
   if (filter.type === "field") {
-    return { name: fieldLabel(filter.field.word), value: testText(filter.test), asText: false };
+    return { name: nameOf(filter.field.word), value: testText(filter.test), asText: false };
   }
   if (filter.type === "or") {
     return {
       name: t("search.bar.any-of"),
-      value: filter.items.map((member) => memberText(language, member)).join(", "),
+      value: listText(filter.items.map((member) => memberText(language, member, nameOf))),
       asText: true,
     };
   }

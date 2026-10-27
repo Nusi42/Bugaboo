@@ -3,6 +3,7 @@ import type { Field, FieldKind, Operator, ReadableFields } from "@bugaboo/wasm-s
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /**
@@ -65,6 +66,22 @@ export function readableFieldsOf(body: Schema<"SearchFieldsBody">): ReadableFiel
   return { fields };
 }
 
+/** The names of the fields as the server gives them, by the word of the field. */
+export function fieldNamesOf(body: Schema<"SearchFieldsBody">): Readonly<Record<string, string>> {
+  return Object.fromEntries(
+    body.fields.map((field) => [
+      field.word,
+      fieldNameOf({ code: field.word, message_key: field.message_key, name: field.name }),
+    ]),
+  );
+}
+
+/** What a request for the readable fields gives: the fields for the checker and their names. */
+export interface SearchFieldsAnswer {
+  readonly fields: ReadableFields;
+  readonly names: Readonly<Record<string, string>>;
+}
+
 /**
  * The fields the person may search by, the same the checker of the server gets (QRY-05), for a
  * search that looks in a project (`within`) or everywhere.
@@ -73,14 +90,14 @@ export function useSearchFields(within?: string) {
   return useQuery({
     queryKey: queryKeys.search.fields(within),
     placeholderData: keepPreviousData,
-    queryFn: async () =>
-      readableFieldsOf(
-        dataOf(
-          await api.client.GET("/api/v1/search/fields", {
-            params: { query: within === undefined ? {} : { within } },
-          }),
-        ),
-      ),
+    queryFn: async (): Promise<SearchFieldsAnswer> => {
+      const body = dataOf(
+        await api.client.GET("/api/v1/search/fields", {
+          params: { query: within === undefined ? {} : { within } },
+        }),
+      );
+      return { fields: readableFieldsOf(body), names: fieldNamesOf(body) };
+    },
   });
 }
 

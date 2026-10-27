@@ -51,7 +51,8 @@ export function SearchBar({ text, onText, within, onStale, actions }: SearchBarP
   return (
     <LoadedBar
       language={language}
-      fields={fields.data}
+      fields={fields.data.fields}
+      names={fields.data.names}
       text={text}
       onText={onText}
       onStale={onStale}
@@ -62,9 +63,10 @@ export function SearchBar({ text, onText, within, onStale, actions }: SearchBarP
 
 type LoadedProps = Omit<SearchBarProps, "within" | "onStale"> & {
   readonly onStale: ((stale: boolean) => void) | undefined;
+  readonly names: Readonly<Record<string, string>>;
 } & Required<Pick<Parameters<typeof useSearchBar>[0], "language" | "fields">>;
 
-function LoadedBar({ language, fields, text, onText, onStale, actions }: LoadedProps) {
+function LoadedBar({ language, fields, names, text, onText, onStale, actions }: LoadedProps) {
   const bar = useSearchBar({ language, fields, text, onText });
   const stale = bar.answer.mistakes.length > 0;
   useEffect(() => {
@@ -75,7 +77,9 @@ function LoadedBar({ language, fields, text, onText, onStale, actions }: LoadedP
   const container = useSearchKey(() => {
     setOpen(true);
   });
-  const body = <SearchBarBody language={language} fields={fields} bar={bar} actions={actions} />;
+  const body = (
+    <SearchBarBody language={language} fields={fields} names={names} bar={bar} actions={actions} />
+  );
   if (layout !== "phone") {
     return (
       <div {...partOf(part.searchBar)} ref={container}>

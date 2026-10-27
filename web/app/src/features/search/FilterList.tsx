@@ -4,6 +4,7 @@ import type { Expr, Field, ReadableFields, SearchLanguage } from "@bugaboo/wasm-
 
 import { AddFilter } from "./AddFilter.tsx";
 import { FilterButton } from "./FilterButton.tsx";
+import { useFieldName } from "./field-names.ts";
 import { filterLabel, sourceOf } from "./filter-text.ts";
 
 export interface FilterListProps {
@@ -31,12 +32,13 @@ export function FilterList({
   onAdd,
   onAnyOf,
 }: FilterListProps) {
+  const nameOf = useFieldName();
   return (
     <ul {...partOf(part.searchFilters)} aria-label={t("search.bar.filters")}>
       {filters.map((filter, index) => (
         <FilterButton
           key={keyOf(language, filter, index)}
-          label={filterLabel(language, filter)}
+          label={filterLabel(language, filter, nameOf)}
           onChange={() => {
             onChange(filter, index);
           }}

@@ -3,7 +3,7 @@ import { Button, buttonLook, PickerRow, SearchPicker } from "@bugaboo/ui";
 import type { Field, ReadableFields } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
-import { fieldLabel } from "./filter-text.ts";
+import { useFieldName, type FieldNameOf } from "./field-names.ts";
 
 export interface FieldPickerProps {
   readonly fields: ReadableFields;
@@ -11,12 +11,12 @@ export interface FieldPickerProps {
 }
 
 /** The fields whose name or word has the words typed in it. */
-function matching(fields: ReadableFields, words: string): readonly Field[] {
+function matching(fields: ReadableFields, words: string, nameOf: FieldNameOf): readonly Field[] {
   const wanted = words.trim().toLowerCase();
   return fields.fields.filter(
     (field) =>
       wanted === "" ||
-      fieldLabel(field.word).toLowerCase().includes(wanted) ||
+      nameOf(field.word).toLowerCase().includes(wanted) ||
       field.word.toLowerCase().includes(wanted),
   );
 }
@@ -24,7 +24,8 @@ function matching(fields: ReadableFields, words: string): readonly Field[] {
 /** The fields the person may read, the ones used most first (the order the server gives), with a box to find the rest. */
 export function FieldPicker({ fields, onPick }: FieldPickerProps) {
   const [words, setWords] = useState("");
-  const found = matching(fields, words);
+  const nameOf = useFieldName();
+  const found = matching(fields, words, nameOf);
   return (
     <SearchPicker
       legend={t("search.bar.fields-legend")}
@@ -38,10 +39,10 @@ export function FieldPicker({ fields, onPick }: FieldPickerProps) {
       more={undefined}
     >
       {found.map((field) => (
-        <PickerRow key={field.word} label={fieldLabel(field.word)}>
+        <PickerRow key={field.word} label={nameOf(field.word)}>
           <Button
             look={buttonLook.quiet}
-            aria-label={t("search.bar.filter-by", { field: fieldLabel(field.word) })}
+            aria-label={t("search.bar.filter-by", { field: nameOf(field.word) })}
             onPress={() => {
               onPick(field);
             }}

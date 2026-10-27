@@ -7399,6 +7399,10 @@ export interface components {
       choices: string[];
       /** @description What kind of values it holds. */
       kind: string;
+      /** @description The message that names a field every issue has; left out for an own field. */
+      message_key?: string | null;
+      /** @description The name of an own field; left out for a field every issue has. */
+      name?: string | null;
       /** @description What may be asked of it. */
       operators: string[];
       /** @description The word of the field. */
