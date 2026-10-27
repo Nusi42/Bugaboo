@@ -7,6 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareManyWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
+import { setBox } from "./support/list-keys.ts";
 import { rowOf } from "./support/list-look.ts";
 
 // Long lists (M5 WP-08): "Tick all results" ticks the issues of a search that the page does not
@@ -25,9 +26,7 @@ test.describe("a list a few pages long", () => {
     await page.goto(projectIssuesAddress("WEB"));
     await expect(rowOf(page, "Another issue 129")).toBeVisible();
     // The box in the head ticks the rows shown; the bar then offers every result.
-    await page
-      .getByRole("checkbox", { name: t("issues.select-shown"), exact: true })
-      .check({ force: true });
+    await setBox(page.getByRole("checkbox", { name: t("issues.select-shown"), exact: true }), true);
     const total = MANY + 3;
     expect(total).toBeLessThanOrEqual(manyChangesIssuesMax);
     await page.getByRole("button", { name: t("issues.tick-all", { count: total }) }).click();

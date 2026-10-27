@@ -6,6 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { layoutOf } from "./support/layout.ts";
 import { columnButton, grid, openList, prepareLook } from "./support/list-look.ts";
+import { setBox } from "./support/list-keys.ts";
 import { savedColumns } from "./support/saved-columns.ts";
 import { boxOf } from "./support/windows.ts";
 
@@ -25,7 +26,7 @@ test("cfg_02 columns chosen in customize are kept in the saved search", async ({
   await openList(page);
   await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
   const panel = page.getByRole("complementary", { name: t("issues.customize") });
-  await panel.getByRole("checkbox", { name: column.type, exact: true }).uncheck({ force: true });
+  await setBox(panel.getByRole("checkbox", { name: column.type, exact: true }), false);
   await expect(page).toHaveURL(/cols=/u);
   await expect(columnButton(page, column.type)).toHaveCount(0);
   await page.getByRole("button", { name: t("search.save"), exact: true }).click();

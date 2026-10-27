@@ -5,6 +5,7 @@ import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { recordRequests } from "./support/list-keys.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import {
@@ -62,4 +63,21 @@ test("cfg_02 group by a field shows each group with its count", async ({ page })
   await groupOf(page, t("priority.critical")).click();
   await expect(grid(page).getByRole("link", { name: webIssues.login })).toHaveCount(0);
   await expect(groupOf(page, t("priority.high"))).toContainText("1");
+});
+
+test("cfg_02 a folded group loads nothing when the search changes", async ({ page }) => {
+  test.skip(layoutOf(page) === "phone", "a phone has no column names to sort by");
+  await openList(page);
+  await page
+    .getByLabel(t("issues.group-by"), { exact: true })
+    .selectOption({ label: t("issue-field.priority") });
+  await expect(groupOf(page, t("priority.high"))).toContainText("1");
+  await groupOf(page, t("priority.high")).click();
+  await expect(grid(page).getByRole("link", { name: webIssues.passkey })).toHaveCount(0);
+  const asked = recordRequests(page);
+  // A new sort changes the search of every open group, and the folded one is not asked for.
+  await columnButton(page, title).click();
+  await expect(grid(page).getByRole("link", { name: webIssues.login })).toBeVisible();
+  expect(asked.filter((text) => text.includes("priority is critical"))).not.toEqual([]);
+  expect(asked.filter((text) => text.includes("priority is high"))).toEqual([]);
 });
