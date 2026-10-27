@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { collectResults, resultKey } from "./quick-search-collect.ts";
+import { arrange, collectResults, resultByKey, resultKey } from "./quick-search-collect.ts";
+import { asker } from "./quick-search-testing.ts";
 import type { QuickSearchSource } from "./quick-search-sources.ts";
-
-const asker = { permissions: [] };
 
 /** A source that answers with these titles, as a list or after a moment. */
 function source(id: string, titles: readonly string[]): QuickSearchSource {
@@ -53,5 +52,47 @@ describe("cfg_08 quick search with sources that may fail", () => {
     );
     const keys = found.groups.flatMap((group) => group.results.map((one) => resultKey(group, one)));
     expect(keys).toEqual(["pages:Web", "projects:Web"]);
+  });
+});
+
+describe("cfg_08 the order of the groups", () => {
+  const pages = source("pages", ["Home"]);
+  const projects = source("projects", ["Web"]);
+  const issues: QuickSearchSource = {
+    ...source("issues", ["Login"]),
+    firstFor: (query) => query.includes("-"),
+  };
+  const all = [pages, projects, issues];
+
+  it("follows the order of the sources, whatever round a group came in", async () => {
+    const near = await collectResults([pages], "log", asker);
+    const far = await collectResults([issues, projects], "log", asker);
+    expect(arrange(all, "log", near, far).groups.map((group) => group.id)).toEqual([
+      "pages",
+      "projects",
+      "issues",
+    ]);
+  });
+
+  it("puts issues first when the text looks like an ID", async () => {
+    const near = await collectResults([pages], "web-1", asker);
+    const far = await collectResults([projects, issues], "web-1", asker);
+    expect(arrange(all, "web-1", near, far).groups.map((group) => group.id)).toEqual([
+      "issues",
+      "pages",
+      "projects",
+    ]);
+  });
+
+  it("says a source failed when it failed in any round", async () => {
+    const near = await collectResults([throwing], "x", asker);
+    const far = await collectResults([pages], "x", asker);
+    expect(arrange(all, "x", near, far).failed).toBe(true);
+  });
+
+  it("finds a result by its name among all the groups", async () => {
+    const found = await collectResults(all, "", asker);
+    expect(resultByKey(found.groups, "projects:Web")?.title).toBe("Web");
+    expect(resultByKey(found.groups, "projects:Nope")).toBeUndefined();
   });
 });

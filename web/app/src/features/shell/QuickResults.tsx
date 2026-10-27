@@ -4,26 +4,31 @@ import { useRouter } from "@tanstack/react-router";
 import { Header, ListBox, ListBoxItem, ListBoxSection, Text } from "react-aria-components";
 
 import { closeOverlay } from "./overlay-state.ts";
-import { resultKey, type Collected } from "./quick-search-collect.ts";
+import { resultByKey, resultKey } from "./quick-search-collect.ts";
+import type { QuickFound } from "./use-quick-results.ts";
 
 /** The words of React Aria Components for the slots of an item, not text for people. */
 const descriptionSlot = "description";
 
 export interface QuickResultsProps {
-  readonly found: Collected;
+  readonly found: QuickFound;
 }
 
 /** What quick search found, grouped by where it was found. */
 export function QuickResults({ found }: QuickResultsProps) {
-  const { groups } = found;
+  const { groups, waiting } = found;
   const router = useRouter();
-  // Going to a result closes the dialog, also when the result is the page that is open already.
+  // Opening a result closes the dialog, also when the result is the page that is open already. An
+  // action closes it first, so an action that opens a dialog of its own is not closed with it.
   const open = (id: string | number): void => {
-    for (const group of groups) {
-      const hit = group.results.find((result) => resultKey(group, result) === id);
-      if (hit !== undefined) {
-        router.history.push(hit.path);
-      }
+    const hit = resultByKey(groups, id);
+    if (hit?.run !== undefined) {
+      closeOverlay();
+      hit.run();
+      return;
+    }
+    if (hit !== undefined) {
+      router.history.push(hit.path);
     }
     closeOverlay();
   };
@@ -31,7 +36,10 @@ export function QuickResults({ found }: QuickResultsProps) {
     <ListBox
       aria-label={t("search.results")}
       {...partOf(part.quickSearchResults)}
-      renderEmptyState={() => <p {...partOf(part.quickSearchEmpty)}>{t("search.nothing")}</p>}
+      renderEmptyState={() =>
+        // Not "nothing found" while the server has yet to answer.
+        waiting ? null : <p {...partOf(part.quickSearchEmpty)}>{t("search.nothing")}</p>
+      }
       onAction={open}
     >
       {groups.map((group) => (

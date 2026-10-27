@@ -207,3 +207,11 @@ export function projectIssuesAddress(shortName: string): string {
 export function issuePanelAddress(shortName: string, key: string): string {
   return `${projectIssuesAddress(shortName)}?open=${encodeURIComponent(key)}`;
 }
+
+/** The first part of the address of a saved search, `/s/<ID>` (ADR-0034). */
+const savedSearchRoot = "/s";
+
+/** The address of a saved search, `/s/<ID>`: its text is run when the page opens. */
+export function savedSearchAddress(id: string): string {
+  return `${savedSearchRoot}/${encodeURIComponent(id)}`;
+}

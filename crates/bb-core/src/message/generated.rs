@@ -3790,8 +3790,17 @@ pub const SAVE_SAVING: MessageKey = MessageKey::new("save.saving");
 /// The message `search-index.opened-address`.
 pub const SEARCH_INDEX_OPENED_ADDRESS: MessageKey = MessageKey::new("search-index.opened-address");
 
+/// The message `search.actions`.
+pub const SEARCH_ACTIONS: MessageKey = MessageKey::new("search.actions");
+
 /// The message `search.clear`.
 pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
+
+/// The message `search.create-issue`.
+pub const SEARCH_CREATE_ISSUE: MessageKey = MessageKey::new("search.create-issue");
+
+/// The message `search.issues`.
+pub const SEARCH_ISSUES: MessageKey = MessageKey::new("search.issues");
 
 /// The message `search.label`.
 pub const SEARCH_LABEL: MessageKey = MessageKey::new("search.label");
@@ -3851,6 +3860,12 @@ pub const SEARCH_PROJECTS: MessageKey = MessageKey::new("search.projects");
 
 /// The message `search.results`.
 pub const SEARCH_RESULTS: MessageKey = MessageKey::new("search.results");
+
+/// The message `search.saved-searches`.
+pub const SEARCH_SAVED_SEARCHES: MessageKey = MessageKey::new("search.saved-searches");
+
+/// The message `search.shared-with-me`.
+pub const SEARCH_SHARED_WITH_ME: MessageKey = MessageKey::new("search.shared-with-me");
 
 /// The message `search.title`.
 pub const SEARCH_TITLE: MessageKey = MessageKey::new("search.title");
@@ -13266,7 +13281,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search-index.rebuilt",
         "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
     ),
+    ("search.actions", "Actions"),
     ("search.clear", "Clear the search"),
+    ("search.create-issue", "Create issue"),
+    ("search.issues", "Issues"),
     ("search.label", "Search"),
     (
         "search.mistake.expected-blocked-by",
@@ -13431,9 +13449,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.nothing", "Nothing found. Try another word."),
     ("search.pages", "Pages"),
     ("search.partial", "Some results could not be loaded."),
-    ("search.placeholder", "Search pages, settings and projects"),
+    (
+        "search.placeholder",
+        "Search issues, saved searches, projects, pages and actions",
+    ),
     ("search.projects", "Projects"),
     ("search.results", "Results"),
+    ("search.saved-searches", "Saved searches"),
+    ("search.shared-with-me", "Shared with me"),
     ("search.title", "Quick search"),
     ("second-step.back", "Back to sign in"),
     ("second-step.code", "Code"),

@@ -20,6 +20,21 @@ export function resultKey(group: ResultGroup, result: QuickResult): string {
   return `${group.id}:${result.id}`;
 }
 
+/** The result with this name among the results of every group, if there is one. */
+export function resultByKey(
+  groups: readonly ResultGroup[],
+  key: string | number,
+): QuickResult | undefined {
+  for (const group of groups) {
+    for (const result of group.results) {
+      if (resultKey(group, result) === key) {
+        return result;
+      }
+    }
+  }
+  return undefined;
+}
+
 /**
  * Asks every source. A source that fails (or answers with something that is not a list) leaves its
  * own results out and nothing else: one broken source must not take quick search down.
@@ -46,4 +61,26 @@ export async function collectResults(
     }
   }
   return { groups, failed };
+}
+
+/**
+ * The results of several rounds of asking as one list, in the order of the sources, except that a
+ * source that asks to come first for this text (issues, for a text that looks like an issue ID)
+ * does. A source that answered in none of the rounds has no group.
+ */
+export function arrange(
+  sources: readonly QuickSearchSource[],
+  query: string,
+  ...rounds: readonly Collected[]
+): Collected {
+  const rank = (id: string): number => {
+    const index = sources.findIndex((source) => source.id === id);
+    const first = sources[index]?.firstFor?.(query) === true;
+    return first ? index - sources.length : index;
+  };
+  const groups = rounds.flatMap((round) => round.groups);
+  return {
+    groups: groups.toSorted((a, b) => rank(a.id) - rank(b.id)),
+    failed: rounds.some((round) => round.failed),
+  };
 }
