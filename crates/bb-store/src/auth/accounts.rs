@@ -2,6 +2,7 @@
 
 use bb_app::auth::{Account, AccountStore, PeoplePosition, SearchIn};
 use bb_core::id::UserId;
+use bb_core::names::name_key;
 use bb_core::person::Person;
 use jiff::Timestamp;
 use sea_query::{BinOper, Cond, Expr, ExprTrait as _, Func, Order, Query};
@@ -116,20 +117,26 @@ impl AccountStore for AuthStorage {
             .order_by_expr(name().into(), Order::Asc)
             .order_by(PersonRow::Id, Order::Asc)
             .limit(limit);
-        // Every word of the search is held by the name (or, if asked for, by the address).
-        let words = search.map(wildcards_removed).unwrap_or_default();
-        for word in words.split_whitespace() {
-            let pattern = format!("%{word}%");
-            let mut any = Cond::any().add(
-                Expr::expr(name()).binary(BinOper::Like, Func::lower(Expr::val(pattern.clone()))),
-            );
-            if look_at == SearchIn::NamesAndAddresses {
-                any = any.add(
-                    Expr::expr(Func::lower(Expr::col(PersonRow::Email)))
-                        .binary(BinOper::Like, Func::lower(Expr::val(pattern))),
+        if look_at == SearchIn::NameStarts {
+            let start = name_key(search.unwrap_or_default());
+            select.and_where(Expr::expr(name()).like(crate::like::starting_with(&start)));
+        } else {
+            // Every word of the search is held by the name (or, if asked for, by the address).
+            let words = search.map(wildcards_removed).unwrap_or_default();
+            for word in words.split_whitespace() {
+                let pattern = format!("%{word}%");
+                let mut any = Cond::any().add(
+                    Expr::expr(name())
+                        .binary(BinOper::Like, Func::lower(Expr::val(pattern.clone()))),
                 );
+                if look_at == SearchIn::NamesAndAddresses {
+                    any = any.add(
+                        Expr::expr(Func::lower(Expr::col(PersonRow::Email)))
+                            .binary(BinOper::Like, Func::lower(Expr::val(pattern))),
+                    );
+                }
+                select.cond_where(any);
             }
-            select.cond_where(any);
         }
         if let Some(position) = after {
             select.cond_where(after_last(

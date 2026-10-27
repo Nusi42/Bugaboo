@@ -32,9 +32,15 @@ pub struct NameChoicesQuery {
     pub limit: usize,
 }
 
-/// The names, in the order of the names.
+/// The names, in the order of the names, and whether the list was cut off at a bound of the read
+/// (which asking for one name more than shown does not tell).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct NameChoices(pub Vec<String>);
+pub struct NameChoices {
+    /// The names.
+    pub names: Vec<String>,
+    /// Whether people past the bound of the read are left out.
+    pub cut: bool,
+}
 
 impl Masked for NameChoices {}
 
@@ -49,16 +55,17 @@ pub async fn name_choices<S: AuthStore>(
     let actor = ctx.actor(&query.session_token).await?;
     // One more than the most an answer holds, so the caller can tell that the list was cut off.
     let limit = query.limit.clamp(1, NAME_CHOICES_MAX + 1);
-    let names = match query.kind {
+    let (names, cut) = match query.kind {
         NameChoiceKind::People => {
             ctx.people_name_choices(&actor, &query.starting_with, limit)
                 .await?
         }
-        NameChoiceKind::Groups => {
+        NameChoiceKind::Groups => (
             ctx.group_name_choices(&actor, &query.starting_with, limit)
-                .await?
-        }
+                .await?,
+            false,
+        ),
     };
     let held = ctx.evaluation_of(&actor, Where::Organization).await?;
-    Ok(held.authorize(NameChoices(names)))
+    Ok(held.authorize(NameChoices { names, cut }))
 }

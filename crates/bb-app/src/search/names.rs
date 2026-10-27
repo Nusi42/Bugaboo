@@ -566,8 +566,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         text: &str,
     ) -> Result<Vec<UserId>, AppError> {
         Ok(self
-            .people_matching(actor, viewer, kind, text, Matching::Whole)
+            .people_matching(actor, viewer, kind, text, Matching::Whole, usize::MAX)
             .await?
+            .people
             .into_iter()
             .map(|person| person.id)
             .collect())
@@ -583,26 +584,37 @@ impl<S: AuthStore> Ctx<'_, S> {
         kind: PeopleKind,
         text: &str,
         matching: Matching,
-    ) -> Result<Vec<bb_core::person::Person>, AppError> {
+        want: usize,
+    ) -> Result<Matched, AppError> {
         if !names_other_people(viewer, kind) {
             let own = self
                 .store()
                 .person(actor.person.id)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
-            return Ok(own
-                .filter(|person| matching.holds(&person.display_name, text))
-                .into_iter()
-                .collect());
+            return Ok(Matched {
+                people: own
+                    .filter(|person| matching.holds(&person.display_name, text))
+                    .into_iter()
+                    .collect(),
+                cut: false,
+            });
         }
-        let mut found = Vec::new();
+        let mut found: Vec<bb_core::person::Person> = Vec::new();
+        let mut cut = false;
         let mut after = None;
         // A short name may fit very many people; the pages read for one name are bounded, as
-        // the length of a search is.
-        for _ in 0..PEOPLE_PAGES_PER_NAME {
+        // the length of a search is. The names a suggestion offers are the first `want` different
+        // names that start with the words: the store gives them in the order of the names, and the
+        // pages go on only while people of one name keep the list short.
+        let (look_at, per_page) = match matching {
+            Matching::Whole => (SearchIn::Names, PEOPLE_PER_NAME),
+            Matching::Start => (SearchIn::NameStarts, want as u64),
+        };
+        for read in 0..PEOPLE_PAGES_PER_NAME {
             let page = self
                 .store()
-                .people_page(Some(text), SearchIn::Names, after.as_ref(), PEOPLE_PER_NAME)
+                .people_page(Some(text), look_at, after.as_ref(), per_page)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
             found.extend(
@@ -611,14 +623,32 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .cloned(),
             );
             match page.last() {
-                Some(last) if page.len() as u64 == PEOPLE_PER_NAME => {
+                Some(last) if page.len() as u64 == per_page => {
+                    let mut keys: Vec<String> = found
+                        .iter()
+                        .map(|person| name_key(&person.display_name))
+                        .collect();
+                    keys.sort();
+                    keys.dedup();
+                    if matching == Matching::Start && keys.len() >= want {
+                        break;
+                    }
+                    // The last page that may be read was full: there are people past it.
+                    cut = read + 1 == PEOPLE_PAGES_PER_NAME;
                     after = Some(crate::access::position_of(last));
                 }
                 _ => break,
             }
         }
-        Ok(found)
+        Ok(Matched { people: found, cut })
     }
+}
+
+/// The people whose names match, and whether the pages that may be read for one name ended before
+/// the people did.
+struct Matched {
+    people: Vec<bb_core::person::Person>,
+    cut: bool,
 }
 
 /// The groups of status keys by status group, in the order of the groups.
@@ -657,30 +687,30 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         starting_with: &str,
         limit: usize,
-    ) -> Result<Vec<String>, AppError> {
+    ) -> Result<(Vec<String>, bool), AppError> {
         let viewer = self.evaluation_of(actor, Where::Organization).await?;
-        let mut names: Option<Vec<(UserId, String)>> = None;
-        for kind in OFFERED_KINDS {
-            let found: Vec<(UserId, String)> = self
-                .people_matching(actor, &viewer, kind, starting_with, Matching::Start)
-                .await?
-                .into_iter()
-                .map(|person| (person.id, person.display_name))
-                .collect();
-            names = Some(match names {
-                None => found,
-                Some(before) => before
-                    .into_iter()
-                    .filter(|(id, _)| found.iter().any(|(other, _)| other == id))
-                    .collect(),
-            });
-        }
-        Ok(names
-            .unwrap_or_default()
+        // The names every person field takes: one read answers for all the kinds when they agree;
+        // when one of them names only the person themselves, that one decides (it is the narrowest).
+        let kind = OFFERED_KINDS
             .into_iter()
-            .map(|(_, name)| name)
-            .take(limit)
-            .collect())
+            .find(|kind| !names_other_people(&viewer, *kind))
+            .unwrap_or(OFFERED_KINDS[0]);
+        let matched = self
+            .people_matching(actor, &viewer, kind, starting_with, Matching::Start, limit)
+            .await?;
+        let mut names: Vec<String> = Vec::new();
+        for person in matched.people {
+            // Two people of one name are one name in a search: it is offered once.
+            if !names
+                .iter()
+                .any(|name| same_name(name, &person.display_name))
+            {
+                names.push(person.display_name);
+            }
+        }
+        let cut = matched.cut || names.len() > limit;
+        names.truncate(limit);
+        Ok((names, cut))
     }
 
     /// The names of groups that this person may name after `member of` and that start with the
@@ -696,6 +726,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Vec<String>, AppError> {
         let viewer = self.evaluation_of(actor, Where::Organization).await?;
         let mut cache = NameCache::default();
+        // All the groups are read once, so the list is never cut by a bound: the caller asks for
+        // one more than it shows.
         Ok(self
             .groups_matching(
                 actor,

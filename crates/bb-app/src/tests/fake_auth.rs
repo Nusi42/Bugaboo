@@ -78,6 +78,10 @@ impl AccountStore for FakeStore {
                 .iter()
                 .map(|(person, _)| person.clone())
                 .filter(|person| {
+                    if look_at == SearchIn::NameStarts {
+                        let start = bb_core::names::name_key(search.unwrap_or_default());
+                        return person.display_name.to_lowercase().starts_with(&start);
+                    }
                     words.iter().all(|word| {
                         person.display_name.to_lowercase().contains(word)
                             || (look_at == SearchIn::NamesAndAddresses

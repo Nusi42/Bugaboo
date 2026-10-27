@@ -196,6 +196,17 @@ async fn counted(
     info: &RequestInfo,
     session_token: &str,
 ) -> Result<UserId, ApiError> {
+    counted_by(auth, limits, info, session_token, Limits::check_search).await
+}
+
+/// Who asks, counted against the allowance that `check` names (searches or suggestions).
+async fn counted_by(
+    auth: &AuthHandle,
+    limits: &Limits,
+    info: &RequestInfo,
+    session_token: &str,
+    check: fn(&Limits, UserId) -> Result<(), ApiError>,
+) -> Result<UserId, ApiError> {
     // A session or an access key: the person is the one the use cases resolve for the request.
     let person = auth
         .api()?
@@ -206,7 +217,7 @@ async fn counted(
             },
         )
         .await?;
-    limits.check_search(person)?;
+    check(limits, person)?;
     Ok(person)
 }
 
@@ -475,9 +486,6 @@ pub(crate) struct SearchNamesBody {
     truncated: bool,
 }
 
-/// The most characters of the start of a name that are looked for.
-const MAX_NAME_START: usize = 100;
-
 /// The number of names when the request does not say.
 const NAMES_DEFAULT: usize = 8;
 
@@ -502,13 +510,20 @@ async fn list_search_names(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<NamesParams>,
 ) -> Result<Response, ApiError> {
-    counted(&auth, &limits, &info, &session_token).await?;
+    counted_by(
+        &auth,
+        &limits,
+        &info,
+        &session_token,
+        Limits::check_suggestion,
+    )
+    .await?;
     let wanted = params
         .limit
         .unwrap_or(NAMES_DEFAULT)
         .clamp(1, NAME_CHOICES_MAX);
     let starting_with = params.starting_with.unwrap_or_default();
-    if starting_with.chars().count() > MAX_NAME_START {
+    if starting_with.chars().count() > bb_core::text::NAME_MAX {
         return Err(ApiError::new(bb_core::ErrorCode::InvalidRequest));
     }
     let found = auth
@@ -527,8 +542,8 @@ async fn list_search_names(
         )
         .await?;
     super::auth::answer_authorized(&found.map(|choices| SearchNamesBody {
-        truncated: choices.0.len() > wanted,
-        names: choices.0.into_iter().take(wanted).collect(),
+        truncated: choices.cut || choices.names.len() > wanted,
+        names: choices.names.into_iter().take(wanted).collect(),
     }))
 }
 

@@ -110,3 +110,76 @@ async fn qry_05_a_start_that_is_too_long_or_a_kind_that_is_unknown_is_refused() 
     })
     .await
 }
+
+#[tokio::test]
+async fn qry_05_names_are_those_that_start_so_cut_at_the_limit_and_offered_once() -> TestResult {
+    each_database("qry_05_search_names_start", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        for (user, name) in [
+            ("sam1", "Sam Same"),
+            ("sam2", "Sam Same"),
+            ("sara", "Sara Stone"),
+            ("sven", "Sven Stahl"),
+            ("tom", "Tom Sam"),
+            ("pct", "50% Percent"),
+        ] {
+            site.person_called(StartingRole::TeamMember, user, name)
+                .await?;
+        }
+        // Only the start counts, not a word inside the name; capitals do not count.
+        assert_eq!(
+            offered(&mut ada, "kind=people&starting_with=SA").await?,
+            ["Sam Same", "Sara Stone"]
+        );
+        assert!(
+            !offered(&mut ada, "kind=people&starting_with=sam")
+                .await?
+                .contains(&"Tom Sam".to_owned())
+        );
+        // Two people of one name are one name.
+        let sam = ada
+            .send(
+                "GET",
+                &format!("{NAMES}?kind=people&starting_with=sam"),
+                None,
+            )
+            .await?;
+        assert_eq!(sam.body["names"], json!(["Sam Same"]));
+        // The answer says when it was cut off: three names start with "s" past a limit of two.
+        let cut = ada
+            .send(
+                "GET",
+                &format!("{NAMES}?kind=people&starting_with=s&limit=2"),
+                None,
+            )
+            .await?;
+        assert_eq!(cut.body["names"].as_array().map(Vec::len), Some(2));
+        assert_eq!(cut.body["truncated"], true, "{}", cut.body);
+        let whole = ada
+            .send(
+                "GET",
+                &format!("{NAMES}?kind=people&starting_with=sv&limit=2"),
+                None,
+            )
+            .await?;
+        assert_eq!(whole.body["truncated"], false, "{}", whole.body);
+        // The characters of a pattern mean themselves.
+        assert_eq!(
+            offered(&mut ada, "kind=people&starting_with=50%25").await?,
+            ["50% Percent"]
+        );
+        assert!(
+            offered(&mut ada, "kind=people&starting_with=%25")
+                .await?
+                .is_empty()
+        );
+        assert!(
+            offered(&mut ada, "kind=people&starting_with=_a")
+                .await?
+                .is_empty()
+        );
+        Ok(())
+    })
+    .await
+}

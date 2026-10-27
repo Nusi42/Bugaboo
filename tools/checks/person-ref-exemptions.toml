@@ -51,13 +51,13 @@ reason = "The payload of the job that answers a sign-up holds the address the pe
 [[read]]
 file = "crates/bb-app/src/search/names.rs"
 function = "people_matching"
-reads = 2
+reads = 3
 reason = "A search compares the name typed in it with the name of a candidate by the one rule of the same name, to turn the name into an ID before the statement is made; no name is shown or kept. Who may be named is decided before (names_other_people)."
 
 [[read]]
 file = "crates/bb-app/src/search/names.rs"
 function = "people_name_choices"
-reads = 1
+reads = 2
 reason = "The names a suggestion offers are only those people_matching found for the person, by the same rule that accepts a search naming them (names_other_people for every person field); the name is what the person is allowed to write into a search."
 
 [[read]]
