@@ -128,11 +128,12 @@ tokens {
     size "size-col-person" "96px"
     size "size-col-labels" "96px"
     size "size-col-project" "96px"
-    // The title takes the room that is left, and no less than this; the columns of fields (priority, assigned to,
-    // changed, project, labels, an own field) are as wide as their token where there is room and give it up, down to
-    // the least, before the title or a column that is only its icon or its ID does; a column a person drags is no
-    // narrower than the least and moves by the step with the arrow keys. Only columns added beyond the defaults make a list
-    // wider than its box (it scrolls sideways).
+    // How a row gives out its width (the browser gives the fixed columns their token before the
+    // title grows): where the box is narrower than the tokens, the title gives up room first, down to
+    // this least; then the columns of fields (assigned to, changed, project, labels, an own field) give
+    // up theirs, down to the least width; then the list scrolls sideways, head and rows together. A
+    // column that is only an icon, the ID and the priority keep their width. A column a person drags
+    // is no narrower than the least and moves by the step with the arrow keys.
     size "size-col-title" "140px"
     size "size-col-least" "48px"
     size "size-col-most" "800px"
@@ -154,7 +155,7 @@ tokens {
     size "list-columns" "auto" run-time="true"
     // The width of the scroll bar the rows of the list have now (none while they fit): the head keeps the same room at its end, so the columns stand over each other and the list meets the edge of its card.
     size "list-gutter" "0px" run-time="true"
-    // The width the columns of the list need together (and no less): a list with more columns than fit is wider than its box and scrolls sideways, head and rows together.
+    // The width of the head of the list as the browser measured it (its columns at their least, at least the frame): the code gives it to the virtualized rows, which have no width of their own, so a list wider than its box scrolls sideways, head and rows together; none where there is no head.
     size "list-width" "0px" run-time="true"
     size "bp-window-side" "880px"
     size "bp-window-wide" "1200px"
@@ -1950,10 +1951,10 @@ part "list-scroll" {
     border-bottom "$border-width solid $border-subtle"
 }
 
-// The head is as wide as its columns need (their least) and at least the frame (the code gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
+// The head is as wide as its columns at their least need and at least the frame (the code measures it and gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
 part "list-head" {
     box-sizing border-box
-    width "min-content"
+    width min-content
     min-width "100%"
     padding-inline-end "$list-gutter"
     overflow hidden
@@ -1965,6 +1966,7 @@ part "list-sort" {
     display inline-flex
     align-items center
     gap "$space-1"
+    max-width "100%"
     min-width "$size-target-compact"
     min-height "$size-target-compact"
     padding 0
@@ -1979,6 +1981,7 @@ part "list-sort[focus-visible]" {
 }
 
 part "list-sort.label" {
+    min-width 0
     overflow hidden
     text-overflow ellipsis
     white-space nowrap
@@ -6790,7 +6793,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         flex-wrap wrap
         align-items center
         margin "$doc-space-10 auto"
-        width "max-content"
+        width max-content
         max-width "calc(100% - $space-5)"
         background "$bg-raised"
         border "$border-width solid $border"
@@ -7200,7 +7203,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         border-radius "$r-ctl"
         padding "$doc-space-3"
         background "$bg-surface"
-        width "max-content"
+        width max-content
         max-width "100%"
         font-size "$doc-font-11-5"
     }
@@ -9087,7 +9090,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         position sticky
         bottom "$space-3"
         margin "$space-3 auto 0"
-        width "max-content"
+        width max-content
         max-width "100%"
         display flex
         flex-wrap wrap
@@ -9831,7 +9834,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         border-radius "$r-ctl"
         padding "$space-1"
         margin "$space-3 0 $doc-space-20"
-        width "max-content"
+        width max-content
         max-width "100%"
         background "$bg-surface"
     }
@@ -12157,7 +12160,7 @@ part "workflow-add field.error" "workflow-status.head field.error" {
     position absolute
     top "100%"
     inset-inline-start 0
-    width "max-content"
+    width max-content
 }
 
 part "app-layout[variant=phone] workflow-add[variant=error]" "app-layout[variant=phone] workflow-status.head[variant=error]" {

@@ -2087,6 +2087,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  max-width: 100%;
   min-width: var(--size-target-compact);
   min-height: var(--size-target-compact);
   padding: 0;
@@ -2102,6 +2103,7 @@ body {
 }
 
 [data-part="list-sort.label"] {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

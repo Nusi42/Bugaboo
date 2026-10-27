@@ -27,7 +27,7 @@ test("ux_4_2 Customize sits beside the list on a computer window of 1280", async
   // Every default column stays in view beside Customize: the list does not scroll sideways, and
   // the head of each column is inside the box of the list (UX §4.2, R5, R9).
   const frame = page.locator("[data-part='list-frame']");
-  expect(await frame.evaluate((box) => box.scrollWidth - box.clientWidth)).toBeLessThanOrEqual(1);
+  expect(await frame.evaluate((box) => box.scrollWidth - box.clientWidth)).toBe(0);
   const main = await boxOf(page.locator("[data-part='list-main']"));
   const heads = await Promise.all(
     [t("issue-field.priority"), t("issue-field.assigned-to"), t("issue-field.changed")].map(
@@ -35,6 +35,6 @@ test("ux_4_2 Customize sits beside the list on a computer window of 1280", async
     ),
   );
   for (const head of heads) {
-    expect(head.x + head.width).toBeLessThanOrEqual(main.x + main.width + 1);
+    expect(head.x + head.width).toBeLessThanOrEqual(main.x + main.width + 0.5);
   }
 });

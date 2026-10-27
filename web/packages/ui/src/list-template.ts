@@ -23,11 +23,10 @@ const widthToken = {
   action: "size-col-icon",
 } as const satisfies Readonly<Record<ListColumn, TokenName | undefined>>;
 
-/** The columns whose width is a most: they are narrower where the list has no room for it. */
+/** The columns whose width is a most: they are narrower, down to the least, where the list has no room for it. Not the priority: its word (*Critical*) does not shrink. */
 const shrinks: ReadonlySet<ListColumn> = new Set([
   "project",
   "labels",
-  "priority",
   "person",
   "value",
   "changed",

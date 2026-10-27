@@ -19,10 +19,10 @@ export interface ListFrameProps {
 
 /**
  * Gives the rows what only the head knows. The rows are virtualized and have no width of their
- * own, so the head, which is not and is as wide as its columns need (`max-content`, at least the
- * frame), is measured and its width is given to them (`list-width`); and the room of the bar the
- * rows have is kept at the end of the head (`list-gutter`), so the columns stand over each other.
- * Only the head, the box of the rows and the first thing in it are measured, not what is drawn in it.
+ * own, so the head, which is not, is measured and its width is given to them (`list-width`, none
+ * where there is no head: a phone has cards); and the room of the bar the rows have is kept at the
+ * end of the head (`list-gutter`), so the columns stand over each other. Only the head, the box of
+ * the rows and the first thing in it are measured, not what is drawn in it.
  */
 function keepHeadAndRows(frame: HTMLElement): () => void {
   let box: HTMLElement | null = null;
@@ -42,9 +42,12 @@ function keepHeadAndRows(frame: HTMLElement): () => void {
     if (box !== null) {
       give("list-gutter", `${String(box.offsetWidth - box.clientWidth)}px`, "gutter");
     }
-    if (head !== null) {
-      give("list-width", `${String(head.offsetWidth)}px`, "width");
-    }
+    // The width as drawn, not rounded to a whole pixel; none where there is no head.
+    give(
+      "list-width",
+      head === null ? "0px" : `${String(head.getBoundingClientRect().width)}px`,
+      "width",
+    );
   };
   const watching = new ResizeObserver(sync);
   const attach = (): void => {
