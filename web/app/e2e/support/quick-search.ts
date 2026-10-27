@@ -1,0 +1,83 @@
+import { dataOf } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
+import { expect, type Page } from "@playwright/test";
+
+import { createPeopleWithRoles, roleName } from "./access.ts";
+import { bob, createAdmin } from "./accounts.ts";
+import { type ApiSession } from "./api.ts";
+import { countIssueIds, createIssue } from "./issues.ts";
+import { createProject } from "./projects.ts";
+import { type Instance } from "./server.ts";
+
+// The scenes of the tests of quick search (CFG-08, M5-Q3): an organization with a project that
+// Bob sees and one that only the administrator sees, each with issues, and a saved search of Ada's.
+
+/** The titles of the issues of the scene. */
+export const titles = {
+  login: "Login fails after password reset",
+  passkey: "Sign in with a passkey",
+  secret: "Secret login plans",
+} as const;
+
+/** The name of the saved search of the administrator, which nobody else may open. */
+export const savedSearchName = "Login bugs";
+
+/** The time between two keys of a fast typist: well under the pause the app waits for. */
+export const FAST_TYPING_MS = 30;
+
+/** Whether the search by words finds a title for the administrator: the index of titles is made from the outbox. */
+async function titleIsFound(admin: ApiSession, word: string): Promise<boolean> {
+  const found = dataOf(
+    await admin.client.GET("/api/v1/search/issues", {
+      params: { query: { q: `title contains "${word}"`, limit: 1 } },
+    }),
+  );
+  return found.items.length > 0;
+}
+
+/** Makes the scene, and waits until the index of titles holds the issues. */
+export async function prepareScene(server: Instance): Promise<void> {
+  const admin = await createAdmin(server);
+  await countIssueIds(admin);
+  await createProject(admin, "WEB", "Website");
+  await createProject(admin, "SECRET", "Secret plans");
+  await createIssue(admin, "WEB", titles.login);
+  await createIssue(admin, "WEB", titles.passkey);
+  await createIssue(admin, "SECRET", titles.secret);
+  await createPeopleWithRoles(server, admin, [
+    { person: bob, role: roleName.teamMember, project: "WEB" },
+  ]);
+  await admin.client.POST("/api/v1/saved-searches", {
+    body: { name: savedSearchName, search_text: 'priority is "high"' },
+  });
+  await expect.poll(() => titleIsFound(admin, "secret")).toBe(true);
+  await expect.poll(() => titleIsFound(admin, "passkey")).toBe(true);
+  await admin.dispose();
+}
+
+/** The dialog of quick search. */
+export function dialog(page: Page) {
+  return page.getByRole("dialog", { name: t("search.title"), exact: true });
+}
+
+/** The box of quick search. */
+export function box(page: Page) {
+  return dialog(page).getByRole("searchbox", { name: t("search.label"), exact: true });
+}
+
+/** Opens quick search and types into its box. */
+export async function ask(page: Page, text: string): Promise<void> {
+  await page.keyboard.press("Control+k");
+  await expect(dialog(page)).toBeVisible();
+  await box(page).fill(text);
+}
+
+/** The list of results. */
+export function list(page: Page) {
+  return dialog(page).getByRole("listbox", { name: t("search.results") });
+}
+
+/** The results of the list that say this text. */
+export function result(page: Page, text: string) {
+  return list(page).getByRole("option").filter({ hasText: text });
+}
