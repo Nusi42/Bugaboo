@@ -10,6 +10,8 @@ pub(crate) enum PersonRow {
     Table,
     Id,
     DisplayName,
+    /// The name as names are told apart (`bb_core::names::name_key`), made in Rust (migration 26).
+    NameKey,
     Email,
     CreatedAt,
 }

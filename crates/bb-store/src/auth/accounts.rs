@@ -2,10 +2,10 @@
 
 use bb_app::auth::{Account, AccountStore, PeoplePosition, SearchIn};
 use bb_core::id::UserId;
-use bb_core::names::squeezed;
+use bb_core::names::name_key;
 use bb_core::person::Person;
 use jiff::Timestamp;
-use sea_query::{Cond, Expr, ExprTrait as _, Func, Order, Query};
+use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
 
 use crate::db::{StoredId, Transaction, to_micros};
 use crate::error::StoreError;
@@ -97,30 +97,27 @@ impl AccountStore for AuthStorage {
         after: Option<&PeoplePosition>,
         limit: u64,
     ) -> Result<Vec<Person>, StoreError> {
-        // Without regard to capitals, in the database itself, so the order and the position agree
-        // with each other whatever the database does with capitals and accents.
-        let name = || Func::lower(Expr::col(PersonRow::DisplayName));
+        // By the stored name key (capitals and repeated spaces do not count, accents do), so the
+        // search, the order and the position agree with each other on both databases.
+        let name = || Expr::col(PersonRow::NameKey);
         let mut select = Query::select();
         select
             .columns(person_columns())
             .from(PersonRow::Table)
-            .order_by_expr(name().into(), Order::Asc)
+            .order_by(PersonRow::NameKey, Order::Asc)
             .order_by(PersonRow::Id, Order::Asc)
             .limit(limit);
         if look_at == SearchIn::NameStarts {
-            // The start as typed, its spaces squeezed; the database folds the capitals.
-            let start = squeezed(search.unwrap_or_default());
-            select.and_where(crate::like::starting_with_any_case(
-                Expr::col(PersonRow::DisplayName),
-                &start,
-            ));
+            // The start as typed, by the one rule that made the keys.
+            let start = name_key(search.unwrap_or_default());
+            select
+                .and_where(Expr::col(PersonRow::NameKey).like(crate::like::starting_with(&start)));
         } else {
             // Every word of the search is held by the name (or, if asked for, by the address).
             for word in search.unwrap_or_default().split_whitespace() {
-                let mut any = Cond::any().add(crate::like::containing_any_case(
-                    Expr::col(PersonRow::DisplayName),
-                    word,
-                ));
+                let mut any = Cond::any().add(
+                    Expr::col(PersonRow::NameKey).like(crate::like::containing(&name_key(word))),
+                );
                 if look_at == SearchIn::NamesAndAddresses {
                     any = any.add(crate::like::containing_any_case(
                         Expr::col(PersonRow::Email),
@@ -132,8 +129,8 @@ impl AccountStore for AuthStorage {
         }
         if let Some(position) = after {
             select.cond_where(after_last(
-                || Expr::expr(name()),
-                || Expr::expr(Func::lower(Expr::val(position.name.clone()))),
+                name,
+                || Expr::val(name_key(&position.name)),
                 &Order::Asc,
                 PersonRow::Id,
                 position.id.stored(),
@@ -156,12 +153,19 @@ impl AccountStore for AuthStorage {
         let mut insert = Query::insert();
         insert
             .into_table(PersonRow::Table)
-            .columns(person_columns())
+            .columns([
+                PersonRow::Id,
+                PersonRow::DisplayName,
+                PersonRow::Email,
+                PersonRow::CreatedAt,
+                PersonRow::NameKey,
+            ])
             .values([
                 Expr::val(person.id.stored()),
                 Expr::val(person.display_name.as_str()),
                 Expr::val(person.email.as_str()),
                 Expr::val(to_micros(person.created_at)),
+                Expr::val(name_key(&person.display_name)),
             ])
             .map_err(|_| StoreError::Corrupt("a person"))?;
         transaction.execute(&insert).await?;
@@ -213,5 +217,51 @@ impl AccountStore for AuthStorage {
             ])
             .map_err(|_| StoreError::Corrupt("a password"))?;
         transaction.execute(&login).await.map(|_| ())
+    }
+}
+
+/// People per transaction when the name keys are filled.
+const KEYS_PER_STEP: u64 = 500;
+
+impl crate::db::Database {
+    /// Gives the people whose name key is still empty (written before migration 26) the key of
+    /// their name, a page and a transaction at a time. Returns how many it filled. It changes
+    /// nothing once every person has a key, and two processes that fill at once write the same.
+    ///
+    /// # Errors
+    /// When the database fails.
+    pub(crate) async fn fill_name_keys(&self) -> Result<u64, StoreError> {
+        let mut filled = 0_u64;
+        let mut after: Option<Vec<u8>> = None;
+        loop {
+            let mut transaction = self.begin().await?;
+            let mut select = Query::select();
+            select
+                .columns([PersonRow::Id, PersonRow::DisplayName])
+                .from(PersonRow::Table)
+                .and_where(Expr::col(PersonRow::NameKey).eq(""))
+                .order_by(PersonRow::Id, Order::Asc)
+                .limit(KEYS_PER_STEP);
+            if let Some(after) = &after {
+                select.and_where(Expr::col(PersonRow::Id).gt(after.clone()));
+            }
+            let rows = transaction.fetch_all(&select).await?;
+            for row in &rows {
+                let id: Vec<u8> = row.get(PersonRow::Id)?;
+                let name: String = row.get(PersonRow::DisplayName)?;
+                let mut update = Query::update();
+                update
+                    .table(PersonRow::Table)
+                    .value(PersonRow::NameKey, name_key(&name))
+                    .and_where(Expr::col(PersonRow::Id).eq(id.clone()));
+                transaction.execute(&update).await?;
+                after = Some(id);
+            }
+            transaction.commit().await?;
+            filled = filled.saturating_add(u64::try_from(rows.len()).unwrap_or(u64::MAX));
+            if rows.len() < usize::try_from(KEYS_PER_STEP).unwrap_or(usize::MAX) {
+                return Ok(filled);
+            }
+        }
     }
 }

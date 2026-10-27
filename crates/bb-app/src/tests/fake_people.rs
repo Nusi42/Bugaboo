@@ -1,8 +1,8 @@
 //! Which people a search of the fake store finds: the same rule as the real store's `people_page`
-//! (capitals folded the way the database folds them, the characters of ASCII only; the characters
-//! of a pattern mean themselves).
+//! (the name key: capitals and repeated spaces do not count, accents do; the characters of a
+//! pattern mean themselves).
 
-use bb_core::names::squeezed;
+use bb_core::names::name_key;
 use bb_core::person::Person;
 
 use crate::auth::SearchIn;
@@ -11,12 +11,12 @@ use crate::auth::SearchIn;
 /// starts with the whole text.
 pub(super) fn holds(person: &Person, search: Option<&str>, look_at: SearchIn) -> bool {
     let text = search.unwrap_or_default();
-    let name = person.display_name.to_ascii_lowercase();
+    let name = name_key(&person.display_name);
     if look_at == SearchIn::NameStarts {
-        return name.starts_with(&squeezed(text).to_ascii_lowercase());
+        return name.starts_with(&name_key(text));
     }
     text.split_whitespace().all(|word| {
-        let word = word.to_ascii_lowercase();
+        let word = name_key(word);
         name.contains(&word)
             || (look_at == SearchIn::NamesAndAddresses
                 && person.email.to_ascii_lowercase().contains(&word))
