@@ -18,6 +18,7 @@ import { useSearchFields } from "./search-fields.ts";
 import { useSearchLanguage } from "./search-language.ts";
 import { filtersOf } from "../../shared/search-tree.ts";
 import { SearchBarBody } from "./SearchBarBody.tsx";
+import { useSearchKey } from "./use-search-key.ts";
 import { useSearchBar } from "./use-search-bar.ts";
 
 export interface SearchBarProps {
@@ -71,9 +72,16 @@ function LoadedBar({ language, fields, text, onText, onStale, actions }: LoadedP
   }, [onStale, stale]);
   const layout = useLayout();
   const [open, setOpen] = useState(false);
+  const container = useSearchKey(() => {
+    setOpen(true);
+  });
   const body = <SearchBarBody language={language} fields={fields} bar={bar} actions={actions} />;
   if (layout !== "phone") {
-    return <div {...partOf(part.searchBar)}>{body}</div>;
+    return (
+      <div {...partOf(part.searchBar)} ref={container}>
+        {body}
+      </div>
+    );
   }
   const count = bar.search === null ? 0 : filtersOf(bar.search).length;
   return (
@@ -84,7 +92,7 @@ function LoadedBar({ language, fields, text, onText, onStale, actions }: LoadedP
             setOpen(true);
           }}
         >
-          {t("search.bar.filters-count", { count })}
+          {bar.search === null ? t("search.bar.filters") : t("search.bar.filters-count", { count })}
         </Button>
       </div>
       <Overlay
@@ -93,7 +101,9 @@ function LoadedBar({ language, fields, text, onText, onStale, actions }: LoadedP
         label={t("search.bar.filters")}
         from={overlayEdge.bottom}
       >
-        <div {...partOf(part.searchBar)}>{body}</div>
+        <div {...partOf(part.searchPanel)}>
+          <div {...partOf(part.searchBar)}>{body}</div>
+        </div>
       </Overlay>
     </div>
   );

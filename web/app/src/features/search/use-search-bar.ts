@@ -52,7 +52,7 @@ function useTypedText(text: string, onText: (canonical: string) => void) {
       onText(canonical);
     }
   };
-  return { shown: draft ?? text, setDraft, write };
+  return { shown: draft ?? text, draft, setDraft, write };
 }
 
 /**
@@ -62,9 +62,17 @@ function useTypedText(text: string, onText: (canonical: string) => void) {
  */
 export function useSearchBar({ language, fields, text, onText }: SearchBarInput): SearchBarState {
   const [mode, setMode] = useState<BarMode>(barMode.simple);
-  const { shown, setDraft, write } = useTypedText(text, onText);
+  const { shown, draft, setDraft, write } = useTypedText(text, onText);
   const answer = useMemo(() => language.check(shown, fields), [language, fields, shown]);
   const clean = answer.mistakes.length === 0;
+  // An address that holds a text in another spelling (a link, an old address) is written again
+  // in the canonical one, so the address is the canonical text (ADR-0005, decision 4).
+  const canonical = clean && draft === null ? answer.canonical : null;
+  useEffect(() => {
+    if (canonical !== null && canonical !== text) {
+      write(canonical);
+    }
+  });
   return {
     // A text that cannot be shown as buttons is shown as text, whatever was chosen.
     mode: clean ? mode : barMode.advanced,

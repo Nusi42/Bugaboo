@@ -1,5 +1,15 @@
 import { t } from "@bugaboo/messages";
-import { AskDialog, Button, Icon, iconName } from "@bugaboo/ui";
+import {
+  Button,
+  buttonLook,
+  Icon,
+  iconName,
+  Overlay,
+  overlayEdge,
+  part,
+  partOf,
+  useLayout,
+} from "@bugaboo/ui";
 import type { Field, ReadableFields } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
@@ -13,13 +23,12 @@ export interface AddFilterProps {
 
 /**
  * *+ Add filter* (UX design section 4.3): the fields the person may read, the ones used most
- * first (the order the server gives), with a box to find the rest.
+ * first (the order the server gives), with a box to find the rest. A window on a computer, a
+ * sheet from the bottom on a phone.
  */
 export function AddFilter({ fields, onPick }: AddFilterProps) {
   const [open, setOpen] = useState(false);
-  const close = (): void => {
-    setOpen(false);
-  };
+  const phone = useLayout() === "phone";
   return (
     <>
       <Button
@@ -30,23 +39,34 @@ export function AddFilter({ fields, onPick }: AddFilterProps) {
         <Icon name={iconName.plus} />
         {t("search.bar.add-filter")}
       </Button>
-      <AskDialog
+      <Overlay
         isOpen={open}
         onOpenChange={setOpen}
-        title={t("search.bar.add-filter")}
-        text={t("search.bar.add-filter-which")}
-        confirmLabel={t("common.close")}
-        cancelLabel={t("common.cancel")}
-        onConfirm={close}
+        label={t("search.bar.add-filter")}
+        from={phone ? overlayEdge.bottom : overlayEdge.center}
       >
-        <FieldPicker
-          fields={fields}
-          onPick={(field) => {
-            close();
-            onPick(field);
-          }}
-        />
-      </AskDialog>
+        <div {...partOf(part.searchPanel)}>
+          <h2 {...partOf(part.searchHelpTitle)}>{t("search.bar.add-filter")}</h2>
+          <p {...partOf(part.muted)}>{t("search.bar.add-filter-which")}</p>
+          <FieldPicker
+            fields={fields}
+            onPick={(field) => {
+              setOpen(false);
+              onPick(field);
+            }}
+          />
+          <div {...partOf(part.searchPanelActions)}>
+            <Button
+              look={buttonLook.quiet}
+              onPress={() => {
+                setOpen(false);
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </div>
+      </Overlay>
     </>
   );
 }

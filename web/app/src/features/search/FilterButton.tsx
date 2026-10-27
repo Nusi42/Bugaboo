@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, IconButton, iconName, part, partOf } from "@bugaboo/ui";
+import { Button, IconButton, iconName, part, partOf } from "@bugaboo/ui";
 
 import type { FilterLabel } from "./filter-text.ts";
 
@@ -26,7 +26,6 @@ export function FilterButton({ label, onChange, onRemove }: FilterButtonProps) {
   return (
     <li {...partOf(part.searchFilter, { variants: [label.asText && "text"] })}>
       <Button
-        look={buttonLook.quiet}
         aria-label={t("search.bar.change-filter", { filter: spoken(label) })}
         onPress={onChange}
       >
@@ -35,6 +34,7 @@ export function FilterButton({ label, onChange, onRemove }: FilterButtonProps) {
             {t("search.bar.name-colon", { name: label.name })}
           </span>
         )}
+        {label.name === undefined ? null : " "}
         <span {...partOf(part.searchFilterValue)}>{label.value}</span>
       </Button>
       <IconButton

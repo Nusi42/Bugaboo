@@ -52,7 +52,7 @@ export function FoundIssues({ text, within, stale }: FoundIssuesProps) {
       aria-busy={query.isFetching}
     >
       {query.data === undefined ? null : items.length === 0 ? (
-        <p {...partOf(part.muted)}>{t("search.found-none")}</p>
+        <p {...partOf(part.text)}>{t("search.found-none")}</p>
       ) : (
         <ul {...partOf(part.searchList)} aria-label={t("search.found-list")}>
           {items.map((issue) => (

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { FoundIssues } from "./FoundIssues.tsx";
+import { SaveSearchButton } from "./SaveSearchButton.tsx";
 import { SearchBar } from "./SearchBar.tsx";
 import { searchTextOf, withSearchText, type SearchAddress } from "../../shared/search-address.ts";
 
@@ -31,6 +32,7 @@ export function SearchPage({ address, onAddress }: SearchPageProps) {
           onAddress(withSearchText(address, canonical));
         }}
         onStale={setStale}
+        actions={<SaveSearchButton text={text} />}
       />
       <FoundIssues text={text} stale={stale} />
     </Card>

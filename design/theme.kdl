@@ -12015,6 +12015,47 @@ part "search-filter" {
     max-width "100%"
 }
 
+// The text of the button of a filter starts a little in from the edge of its outline (R3).
+part "search-filter > button" {
+    padding-inline-start "$space-3"
+    border-color transparent
+}
+
+// What opens over the page for the search: a window of the bar on a phone, the list of fields.
+part "search-panel" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    box-sizing border-box
+    padding "$space-5"
+    overflow-y auto
+}
+
+part "search-panel.actions" {
+    display flex
+    justify-content flex-end
+    gap "$space-2"
+}
+
+// In the sheet of a phone the filters stand under each other, as wide as the sheet.
+part "search-panel search-bar.head" {
+    flex-direction column
+    align-items stretch
+}
+
+part "search-panel search-filters" {
+    flex-direction column
+    align-items stretch
+}
+
+part "search-panel search-filter" {
+    justify-content space-between
+}
+
+part "search-panel search-bar.actions" {
+    margin-inline-start 0
+}
+
 part "search-filter[variant=text]" {
     border-style dashed
 }
@@ -12155,7 +12196,7 @@ part "search-mistake" {
 
 // The results of the search that was fixed last stay while the text has a mistake, dimmed.
 part "search-results[state=stale]" {
-    opacity "$opacity-disabled"
+    opacity "$opacity-busy"
 }
 
 // The lists of the Share window and of Saved searches.
@@ -12236,3 +12277,15 @@ part "name-value.value > row > field" {
     flex "1 1 auto"
     min-width 0
 }
+
+// At the end of the file, after the parts they reach into.
+
+// A quiet button hangs back by its padding at the start of a row; a filter is a box of its own, so
+// its words stay inside it.
+
+
+part "search-panel search-suggestions" {
+    position static
+    margin-block-start "$space-1"
+}
+

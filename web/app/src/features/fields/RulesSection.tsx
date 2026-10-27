@@ -8,12 +8,26 @@ import { durationText } from "../../shared/own-value-text.ts";
 import { QueryGate } from "../shell/index.ts";
 import { useFieldTypes, type OwnField } from "./fields.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
-import { decimalToMillionths, durationSeconds, millionthsToDecimal } from "./value-text.ts";
+import {
+  boundDay,
+  dayBound,
+  decimalToMillionths,
+  durationSeconds,
+  millionthsToDecimal,
+} from "./value-text.ts";
+
+/** Whether the bounds of the field are days (a *Date* or a *Date and time*). */
+function isDated(field: OwnField): boolean {
+  return field.kind === "date" || field.kind === "date-time";
+}
 
 /** The lowest or highest value in a box, as people write it for this kind. */
 function boxOf(field: OwnField, stored: number | null | undefined): string {
   if (stored === undefined || stored === null) {
     return "";
+  }
+  if (isDated(field)) {
+    return boundDay(field.kind, stored);
   }
   if (field.kind === "decimal") {
     return millionthsToDecimal(stored);
@@ -26,6 +40,9 @@ function storedOf(field: OwnField, text: string): number | null | undefined {
   const trimmed = text.trim();
   if (trimmed === "") {
     return null;
+  }
+  if (isDated(field)) {
+    return dayBound(field.kind, trimmed);
   }
   if (field.kind === "decimal") {
     return decimalToMillionths(trimmed);
@@ -52,6 +69,8 @@ interface Shape {
   readonly counted: boolean;
   /** The kind has a pattern. */
   readonly pattern: boolean;
+  /** The bounds are days. */
+  readonly dated: boolean;
 }
 
 /** *Rules* of the field page (CF-03): the allowed range, length and pattern, for the kinds that have them. */
@@ -61,11 +80,14 @@ export function RulesSection({ field }: { readonly field: OwnField }) {
     <QueryGate error={types.error} data={types.data}>
       {(known) => {
         const traits = known.kinds.find((each) => each.kind === field.kind)?.traits ?? [];
-        const ranged = traits.includes("range") && !traits.includes("dated");
+        const ranged = traits.includes("range");
         const pattern = traits.includes("text");
         const counted = pattern || traits.includes("many");
         return ranged || counted ? (
-          <RulesForm field={field} shape={{ ranged, counted, pattern }} />
+          <RulesForm
+            field={field}
+            shape={{ ranged, counted, pattern, dated: traits.includes("dated") }}
+          />
         ) : null;
       }}
     </QueryGate>
@@ -119,10 +141,12 @@ interface BoxesProps {
 }
 
 /** The lowest and highest value. */
-function RangeBoxes({ boxes, onChange }: BoxesProps) {
+function RangeBoxes({ boxes, onChange, dated }: BoxesProps & { readonly dated: boolean }) {
+  const day = dated ? { date: { min: "0001-01-01", max: "9999-12-31" } } : {};
   return (
     <>
       <TextField
+        {...day}
         label={t("fields.rule-min")}
         value={boxes.min}
         onChange={(min) => {
@@ -130,6 +154,7 @@ function RangeBoxes({ boxes, onChange }: BoxesProps) {
         }}
       />
       <TextField
+        {...day}
         label={t("fields.rule-max")}
         value={boxes.max}
         onChange={(max) => {
@@ -166,7 +191,7 @@ function CountBoxes({ boxes, onChange }: BoxesProps) {
 function RuleBoxes({ shape, ...rest }: BoxesProps & { readonly shape: Shape }) {
   return (
     <>
-      {shape.ranged ? <RangeBoxes {...rest} /> : null}
+      {shape.ranged ? <RangeBoxes {...rest} dated={shape.dated} /> : null}
       {shape.counted ? <CountBoxes {...rest} /> : null}
       {shape.pattern ? (
         <TextField

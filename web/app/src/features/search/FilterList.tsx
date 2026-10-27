@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, part, partOf } from "@bugaboo/ui";
+import { Button, part, partOf } from "@bugaboo/ui";
 import type { Expr, Field, ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 
 import { AddFilter } from "./AddFilter.tsx";
@@ -49,9 +49,7 @@ export function FilterList({
         <AddFilter fields={fields} onPick={onAdd} />
       </li>
       <li>
-        <Button look={buttonLook.quiet} onPress={onAnyOf}>
-          {t("search.bar.any-of")}
-        </Button>
+        <Button onPress={onAnyOf}>{t("search.bar.any-of")}</Button>
       </li>
     </ul>
   );

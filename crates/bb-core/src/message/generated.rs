@@ -1298,9 +1298,6 @@ pub const FIELDS_PICK_CHOSEN: MessageKey = MessageKey::new("fields.pick-chosen")
 /// The message `fields.pick-groups-list`.
 pub const FIELDS_PICK_GROUPS_LIST: MessageKey = MessageKey::new("fields.pick-groups-list");
 
-/// The message `fields.pick-issue-find`.
-pub const FIELDS_PICK_ISSUE_FIND: MessageKey = MessageKey::new("fields.pick-issue-find");
-
 /// The message `fields.pick-more`.
 pub const FIELDS_PICK_MORE: MessageKey = MessageKey::new("fields.pick-more");
 
@@ -4972,6 +4969,9 @@ pub const SHORTCUT_EDIT_DESCRIPTION: MessageKey = MessageKey::new("shortcut.edit
 
 /// The message `shortcut.everywhere`.
 pub const SHORTCUT_EVERYWHERE: MessageKey = MessageKey::new("shortcut.everywhere");
+
+/// The message `shortcut.focus-search-bar`.
+pub const SHORTCUT_FOCUS_SEARCH_BAR: MessageKey = MessageKey::new("shortcut.focus-search-bar");
 
 /// The message `shortcut.go-home`.
 pub const SHORTCUT_GO_HOME: MessageKey = MessageKey::new("shortcut.go-home");
@@ -11864,7 +11864,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.pick-choose-name", "Choose {name}"),
     ("fields.pick-chosen", "Chosen"),
     ("fields.pick-groups-list", "Groups you can choose"),
-    ("fields.pick-issue-find", "Find the issue"),
     ("fields.pick-more", "Show more"),
     (
         "fields.pick-no-groups",
@@ -11901,7 +11900,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.rules", "Rules"),
     (
         "fields.rules-not-a-number",
-        "One of the rules is not a number in the form this field uses.",
+        "One of the rules is not in the form this field uses: a number, a length of time or a day like 2026-10-25.",
     ),
     ("fields.scope-everywhere", "Everywhere"),
     ("fields.scope-everywhere-switch", "Use it in every project"),
@@ -13974,7 +13973,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.kind-helper", "helper"),
     ("search.bar.kind-keyword", "word"),
     ("search.bar.kind-name", "name"),
-    ("search.bar.kind-operator", "comparison"),
+    ("search.bar.kind-operator", "word"),
     ("search.bar.kind-sign", "sign"),
     ("search.bar.kind-value", "value"),
     (
@@ -15050,6 +15049,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Edit the description of the open issue",
     ),
     ("shortcut.everywhere", "Everywhere"),
+    ("shortcut.focus-search-bar", "Go to the search bar"),
     ("shortcut.go-home", "Go to the start page"),
     ("shortcut.go-notifications", "Go to Notifications"),
     ("shortcut.in-lists", "Where a list is shown"),

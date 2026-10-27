@@ -7,11 +7,13 @@ import {
   decimalDigits,
   decimalParts,
   decimalWholeDigits,
+  msPerDay,
   secondsPerHour,
   secondsPerMinute,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
+import { dayNumbersOf, isCalendarDay } from "../../shared/format.ts";
 import { wholeNumberIn } from "../../shared/number.ts";
 import { durationText } from "../../shared/own-value-text.ts";
 import type { OwnField, Sent } from "./fields.ts";
@@ -155,4 +157,23 @@ export function savedText(shown: string, kept?: Kept): string {
 /** Whether leaving the box sends nothing: it has what is saved already. */
 export function isUnchanged(typed: string, shown: string, kept?: Kept): boolean {
   return typed === savedText(shown, kept);
+}
+
+/** How many of the stored unit make a day: a *Date* is stored in days, a *Date and time* in microseconds. */
+function partsPerDay(kind: OwnField["kind"]): number {
+  return kind === "date" ? 1 : msPerDay * 1000;
+}
+
+/** The bound of a range in the unit the API stores (the start of that day, UTC), for a day typed as `2026-10-25`; `undefined` for text that is no day. */
+export function dayBound(kind: OwnField["kind"], day: string): number | undefined {
+  if (!isCalendarDay(day)) {
+    return undefined;
+  }
+  const [year, month, date] = dayNumbersOf(day);
+  return (Date.UTC(year, month - 1, date) / msPerDay) * partsPerDay(kind);
+}
+
+/** The day of a stored bound, as `2026-10-25`. */
+export function boundDay(kind: OwnField["kind"], stored: number): string {
+  return new Date((stored / partsPerDay(kind)) * msPerDay).toISOString().slice(0, 10);
 }

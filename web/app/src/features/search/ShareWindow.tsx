@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Checkbox, part, partOf, Window } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Checkbox, part, partOf, Window } from "@bugaboo/ui";
 import type { Schema } from "@bugaboo/api-client";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -78,7 +78,13 @@ export function ShareWindow({ search, isOpen, onClose }: ShareWindowProps) {
       }}
       title={t("search.share-title", { name: search.name })}
       labels={windowLabels()}
-      footer={<Button onPress={onClose}>{t("search.share-done")}</Button>}
+      footer={
+        <div {...partOf(part.windowFooterActions)}>
+          <Button look={buttonLook.primary} onPress={onClose}>
+            {t("search.share-done")}
+          </Button>
+        </div>
+      }
     >
       <div {...partOf(part.searchHelp)}>
         <Choices search={search} kind={shareKind.group} legend={t("search.share-groups")} />

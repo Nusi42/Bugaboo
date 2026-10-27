@@ -210,6 +210,7 @@ export const messages = {
   "nav.projects": "Projects",
   "nav.group.work": "Work",
   "search.clear": "Clear the search",
+  "search.bar.filters": "Filters",
   "search.mistake.expected-filter":
     "A filter is missing here. Start it with the name of a field, like “priority”.",
   "search.mistake.expected-operator":
@@ -266,6 +267,7 @@ export const messages = {
   "search.mistake.too-many-steps": "A search can look at most {limit} steps away.",
   "search.mistake.too-many-words": "A text to find can have at most {limit} different words.",
   "shortcut.quick-search": "Open quick search",
+  "shortcut.focus-search-bar": "Go to the search bar",
   "shortcut.show-shortcuts": "Show all keyboard shortcuts",
   "shortcut.go-home": "Go to the start page",
   "shortcut.list-next": "Open the next item in the list",

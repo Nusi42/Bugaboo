@@ -64,7 +64,13 @@ export function HelpSheet({ language, fields, isOpen, onClose, onExample }: Help
       }}
       title={t("search.help-title")}
       labels={windowLabels()}
-      footer={<Button onPress={onClose}>{t("common.close")}</Button>}
+      footer={
+        <div {...partOf(part.windowFooterActions)}>
+          <Button look={buttonLook.primary} onPress={onClose}>
+            {t("common.close")}
+          </Button>
+        </div>
+      }
     >
       <div {...partOf(part.searchHelp)}>
         {helpGroups.map((group) => (

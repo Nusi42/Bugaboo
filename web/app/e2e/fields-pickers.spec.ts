@@ -82,7 +82,7 @@ test("cf_01 a person without Manage groups is not offered a list of groups to ch
   await admin.dispose();
 });
 
-test("cf_01 an issue is chosen for Duplicate of by its readable ID, and a wrong ID is told", async ({
+test("cf_01 an issue is chosen for Duplicate of by its readable ID or its title, and a wrong ID is told", async ({
   page,
   server,
 }) => {
@@ -92,12 +92,19 @@ test("cf_01 an issue is chosen for Duplicate of by its readable ID, and a wrong 
   await signIn(page, ada);
   await openIssueWithDetails(page, second.key);
   const dialog = await openChooser(page, "Duplicate of");
-  const key = dialog.getByLabel(t("common.issue-id"), { exact: true });
-  await key.fill("WEB-9999");
-  await dialog.getByRole("button", { name: t("fields.pick-issue-find"), exact: true }).click();
+  const words = dialog.getByRole("searchbox", { name: t("search.bar.issue-search") });
+  await words.fill("WEB-9999");
+  await dialog
+    .getByRole("button", { name: t("search.bar.issue-take", { issue: "WEB-9999" }) })
+    .click();
   await expect(dialog.getByRole("alert")).toBeVisible();
-  await key.fill(first.key);
-  await dialog.getByRole("button", { name: t("fields.pick-issue-find"), exact: true }).click();
+  // An issue is also found by words of its title (M3-F62).
+  await words.fill("first");
+  await dialog
+    .getByRole("button", {
+      name: t("search.bar.issue-take", { issue: `${first.key} · The first` }),
+    })
+    .click();
   await expect(dialog).toBeHidden();
   await expect(
     page

@@ -3,6 +3,7 @@ import "@bugaboo/messages/parts/search";
 
 export { SavedSearchPage, type SavedSearchPageProps } from "./SavedSearchPage.tsx";
 export { SearchPage, type SearchPageProps } from "./SearchPage.tsx";
+export { IssuePicker } from "./IssueChoice.tsx";
 export { registerSearch } from "./register.tsx";
 export { withSortBy } from "../../shared/sort-by.ts";
 export {
