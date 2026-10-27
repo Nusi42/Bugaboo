@@ -2,8 +2,8 @@ import { t } from "@bugaboo/messages";
 import {
   Checkbox,
   headId,
-  HeadRow,
-  HeadTable,
+  RowBox,
+  TableBox,
   ListCell,
   ListColumnHead,
   part,
@@ -52,8 +52,8 @@ function sortLabelOf(name: string, arrow: "up" | "down" | null): string {
  */
 export function ListHeadRow({ words, names, sort, tick, onSort, onResize }: ListHeadRowProps) {
   return (
-    <HeadTable look={partOf(part.listHead)} label={t("issues.columns-head")}>
-      <HeadRow look={partOf(part.listRow, { variants: ["head", "grid"] })}>
+    <TableBox look={partOf(part.listHead)} label={t("issues.columns-head")}>
+      <RowBox look={partOf(part.listRow, { variants: ["head", "grid"] })}>
         {tick === null ? null : (
           <ListCell column={selectColumn} head>
             <Checkbox
@@ -90,7 +90,7 @@ export function ListHeadRow({ words, names, sort, tick, onSort, onResize }: List
             />
           );
         })}
-      </HeadRow>
-    </HeadTable>
+      </RowBox>
+    </TableBox>
   );
 }

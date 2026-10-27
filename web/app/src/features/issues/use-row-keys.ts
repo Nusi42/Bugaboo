@@ -3,7 +3,7 @@ import { useRef, type RefObject } from "react";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 
 /** The rows of the grid, group headers included: what the arrow keys move over. */
-const rowsOfGrid = '[data-rac][role="row"]';
+const rowsOfGrid = '[data-rac][data-part^="list-"]';
 
 /**
  * `j` and `k` move the focus to the next or the previous row of a list, as the arrow keys do (UX

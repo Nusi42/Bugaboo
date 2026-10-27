@@ -19,16 +19,18 @@ const tableRole = "table";
 const rowRole = "row";
 const headerRole = "columnheader";
 const groupRole = "group";
+const cellRole = "cell";
+const rowHeaderRole = "rowheader";
 const separatorRole = "separator";
 
-/** The head of the list: a table of one row of column headers. */
-export function HeadTable({
+/** A table: the head of the list (one row of column headers), or the grid of the rows. */
+export function TableBox({
   look,
   label,
   children,
 }: {
   readonly look: PartAttributes;
-  readonly label: string;
+  readonly label?: string | undefined;
   readonly children: ReactNode;
 }) {
   return (
@@ -39,17 +41,19 @@ export function HeadTable({
   );
 }
 
-/** The one row of the head. */
-export function HeadRow({
+/** A row: the one row of the head, a row of rows, a header of a group. */
+export function RowBox({
   look,
+  selected,
   children,
 }: {
   readonly look: PartAttributes;
+  readonly selected?: boolean | undefined;
   readonly children: ReactNode;
 }) {
   return (
     // Role by attribute, not table/tr/th/hr: UX §4.2 and TEST-A11Y: a virtualized grid of divs cannot use tr; the head row shares the grid columns of the rows of the GridList
-    <div {...look} role={rowRole}>
+    <div {...look} role={rowRole} aria-selected={selected}>
       {children}
     </div>
   );
@@ -88,6 +92,27 @@ export function ColumnHeaderCell({
       )}
     </div>
   );
+}
+
+/** A cell of a row of the plain grid (no GridList around it). */
+export function GridCell({
+  look,
+  children,
+}: {
+  readonly look: PartAttributes;
+  readonly children: ReactNode;
+}) {
+  return (
+    // Role by attribute, not td: UX §4.2 and TEST-A11Y: the cells stand in the grid columns of the row.
+    <div {...look} role={cellRole}>
+      {children}
+    </div>
+  );
+}
+
+/** The words of a group header that name it: a row header. */
+export function RowHeaderText({ children }: { readonly children: ReactNode }) {
+  return <span role={rowHeaderRole}>{children}</span>;
 }
 
 /** A cell of a row, named by the header of its column. */

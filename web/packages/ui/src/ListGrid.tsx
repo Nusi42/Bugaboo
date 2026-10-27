@@ -6,16 +6,8 @@ import { iconSize, type ListRowLook } from "./props.ts";
 import { rowStates, type RowStateInput } from "./row-state.ts";
 import type { StatusGroup } from "./status.ts";
 import { StatusIcon } from "./StatusIcon.tsx";
+import { ColumnHeaderCell, GridCell, RowBox, RowHeaderText, TableBox } from "./ListRoles.tsx";
 import { part } from "./tokens.ts";
-
-/** Words of the ARIA standard, not text for people. */
-const role = {
-  table: "table",
-  row: "row",
-  cell: "cell",
-  columnHeader: "columnheader",
-  rowHeader: "rowheader",
-} as const;
 
 export interface ListGridProps {
   /** The name of the list, for screen readers. */
@@ -26,9 +18,9 @@ export interface ListGridProps {
 /** The table that holds the header, the groups and the rows of an issue list. */
 export function ListGrid({ label, children }: ListGridProps) {
   return (
-    <div {...partOf(part.listGrid)} role={role.table} aria-label={label}>
+    <TableBox look={partOf(part.listGrid)} label={label}>
       {children}
-    </div>
+    </TableBox>
   );
 }
 
@@ -42,21 +34,17 @@ export interface ListHeadProps {
 /** The names of the columns above the rows: the same cells, so they line up. */
 export function ListHead({ labels, columns = listColumns }: ListHeadProps) {
   return (
-    <div {...partOf(part.listRow, { variants: ["head"] })} role={role.row}>
+    <RowBox look={partOf(part.listRow, { variants: ["head"] })}>
       {columns.map((column) => (
-        <div
-          key={column}
-          {...partOf(part.listRowCell, { variants: [column] })}
-          role={role.columnHeader}
-        >
+        <ColumnHeaderCell key={column} look={partOf(part.listRowCell, { variants: [column] })}>
           {iconColumns.includes(column) ? (
             <span {...partOf(part.visuallyHidden)}>{labels[column]}</span>
           ) : (
             labels[column]
           )}
-        </div>
+        </ColumnHeaderCell>
       ))}
-    </div>
+    </RowBox>
   );
 }
 
@@ -84,20 +72,19 @@ export function ListRow({
   variant,
 }: ListRowProps) {
   return (
-    <div
-      {...partOf(part.listRow, {
+    <RowBox
+      look={partOf(part.listRow, {
         variants: [variant],
         states: [...rowStates({ group, priority }), selected && "selected", current && "current"],
       })}
-      role={role.row}
-      aria-selected={selected}
+      selected={selected}
     >
       {columns.map((column) => (
-        <div key={column} {...partOf(part.listRowCell, { variants: [column] })} role={role.cell}>
+        <GridCell key={column} look={partOf(part.listRowCell, { variants: [column] })}>
           {cells[column]}
-        </div>
+        </GridCell>
       ))}
-    </div>
+    </RowBox>
   );
 }
 
@@ -112,10 +99,10 @@ export interface ListGroupProps {
 /** The header of a group of rows (*Group by status*): the group's icon and color, its name and its count. */
 export function ListGroup({ group, label, count }: ListGroupProps) {
   return (
-    <div {...partOf(part.listGroup)} role={role.row}>
+    <RowBox look={partOf(part.listGroup)}>
       <StatusIcon group={group} size={iconSize.small} />
-      <span role={role.rowHeader}>{label}</span>
+      <RowHeaderText>{label}</RowHeaderText>
       <span {...partOf(part.listGroupCount)}>{count}</span>
-    </div>
+    </RowBox>
   );
 }

@@ -66,7 +66,7 @@ export {
   type ListColumnHeadProps,
   type ListFrameProps,
 } from "./ListColumns.tsx";
-export { HeadRow, HeadTable } from "./ListRoles.tsx";
+export { RowBox, TableBox } from "./ListRoles.tsx";
 export { pixelsOf, type ListColumnSpec } from "./list-template.ts";
 export type { ColumnResize } from "./use-column-resize.ts";
 export {
