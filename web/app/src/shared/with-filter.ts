@@ -30,3 +30,20 @@ export function withFilter(
       : { type: "is_empty" as const, span: nowhere };
   return language.print(addFilter(search, fieldFilter(field, test)));
 }
+
+/**
+ * The search text with `project within <short name>` added: a project's list is the search with its
+ * project filled in (ADR-0034 decision 6), so a search saved from it keeps the project in its text.
+ */
+export function withProject(language: SearchLanguage, text: string, shortName: string): string {
+  const { search } = language.parse(text);
+  if (search === null) {
+    return text;
+  }
+  const test = {
+    type: "within" as const,
+    project: { text: shortName, span: nowhere },
+    span: nowhere,
+  };
+  return language.print(addFilter(search, fieldFilter("project", test)));
+}
