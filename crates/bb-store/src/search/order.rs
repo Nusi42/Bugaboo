@@ -15,7 +15,7 @@ use sea_query::{
     SelectStatement, SimpleExpr,
 };
 
-use super::source::{Domain, Subject};
+use super::source::{Domain, Rows, Subject};
 use super::{CompileError, Compiler, nothing};
 use crate::db::{Dialect, StoredId as _};
 use crate::schema::{
@@ -76,10 +76,9 @@ pub(super) enum Grouping {
     /// Any number of values: the rows of the values of the issue, the value as the group is named,
     /// and the condition of an issue that has none.
     Many {
-        rows: Box<SelectStatement>,
+        rows: Rows,
         value: Expr,
         what: GroupValue,
-        without: Cond,
     },
 }
 
@@ -170,7 +169,7 @@ impl Compiler<'_> {
         let first = |value: Expr| match &subject {
             Subject::Column(_) => value,
             Subject::Linked(rows, _) => {
-                let mut rows = (**rows).clone();
+                let mut rows = rows.select();
                 rows.clear_selects().expr(pick(value));
                 super::scalar(rows)
             }
@@ -230,7 +229,7 @@ impl Compiler<'_> {
                 super::scalar(one)
             }
             Subject::Linked(rows, value) => {
-                let mut rows = (**rows).clone();
+                let mut rows = rows.select();
                 rows.clear_selects().expr(pick(name_of)).join_as(
                     JoinType::InnerJoin,
                     table,
@@ -284,19 +283,12 @@ impl Compiler<'_> {
                 Ok(Grouping::One(value, what))
             }
             Subject::Linked(rows, value) => {
-                let mut rows = *rows;
-                rows.clear_selects();
                 let value = match (domain, what) {
                     (_, GroupValue::Text) => self.bytes(value),
                     (_, GroupValue::Whole) => bigint(value),
                     _ => value,
                 };
-                Ok(Grouping::Many {
-                    rows: Box::new(rows),
-                    value,
-                    what,
-                    without: subject.empty(),
-                })
+                Ok(Grouping::Many { rows, value, what })
             }
         }
     }

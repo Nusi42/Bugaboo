@@ -18,6 +18,11 @@ use super::{CompileError, Compiler, Form};
 use crate::schema::IssueRow;
 use crate::text_index::{TextScope, TextSearch, text_issues, text_of_issue};
 
+/// What to find: the words, in the texts of the scope.
+fn asking(words: &[SearchWord], scope: TextScope) -> TextSearch<'_> {
+    TextSearch { words, scope }
+}
+
 impl Compiler<'_> {
     /// The issues whose text, in the part the field stands for, has every word of `text`.
     pub(super) fn contains(&self, target: FieldTarget, text: &Text) -> Result<Cond, CompileError> {
@@ -56,9 +61,6 @@ impl Compiler<'_> {
         }
         let words = search_words(text);
         let issue = Expr::col((IssueRow::Table, IssueRow::Id));
-        fn asking(words: &[SearchWord], scope: TextScope) -> TextSearch<'_> {
-            TextSearch { words, scope }
-        }
         match self.form_of(text) {
             Form::Set => Cond::all()
                 .add(issue.in_subquery(text_issues(self.dialect, &asking(&words, scope)))),

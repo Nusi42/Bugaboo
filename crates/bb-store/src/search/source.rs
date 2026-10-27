@@ -12,7 +12,10 @@ use bb_core::id::FieldId;
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::tags::IssueSight;
-use sea_query::{Alias, Cond, Expr, ExprTrait as _, Query, SelectStatement};
+use sea_query::{
+    Alias, Cond, DynIden, Expr, ExprTrait as _, Iden, IntoIden as _, JoinType, Query,
+    SelectStatement,
+};
 
 use super::time::Clock;
 use crate::db::StoredId as _;
@@ -22,14 +25,54 @@ use crate::schema::{
 };
 use crate::sight::sight_condition_as;
 
+/// The rows of a table that belong to the issue being judged: the table, and the condition that
+/// ties a row to the issue and to what counts as a value. It is asked as a select
+/// (`SELECT 1 FROM table WHERE table.issue = issue.id AND …`, for "some value is" and "no value
+/// is") or joined to the issue (`LEFT JOIN table ON …`, for the groups), which is one way to say it.
+#[derive(Clone)]
+pub(super) struct Rows {
+    table: DynIden,
+    on: Cond,
+}
+
+impl Rows {
+    /// The rows of `table` whose column `issue` is the issue of the statement.
+    fn of(table: impl Iden + Copy + 'static, issue: impl Iden + Copy + 'static) -> Self {
+        Self {
+            table: table.into_iden(),
+            on: Cond::all().add(Expr::col((table, issue)).equals((IssueRow::Table, IssueRow::Id))),
+        }
+    }
+
+    /// The rows only when `condition` holds too.
+    fn and(mut self, condition: impl Into<Cond>) -> Self {
+        self.on = self.on.add(condition);
+        self
+    }
+
+    /// The select of the rows of the issue (`SELECT 1 FROM table WHERE …`).
+    pub(super) fn select(&self) -> SelectStatement {
+        let mut rows = Query::select();
+        rows.expr(Expr::val(1))
+            .from(self.table.clone())
+            .cond_where(self.on.clone());
+        rows
+    }
+
+    /// The statement with the rows of each of its issues joined to it, an issue without any once,
+    /// with empty values.
+    pub(super) fn join_to(&self, select: &mut SelectStatement) {
+        select.join(JoinType::LeftJoin, self.table.clone(), self.on.clone());
+    }
+}
+
 /// Where the values of a field are.
 #[derive(Clone)]
 pub(super) enum Subject {
     /// One value in a column of the issue; none when the column is `NULL`.
     Column(Expr),
-    /// Any number of values in the rows of a table: the select asks for the rows of the issue
-    /// (`SELECT 1 FROM table WHERE table.issue = issue.id`), and the expression is the value.
-    Linked(Box<SelectStatement>, Expr),
+    /// Any number of values in the rows of a table, and the expression that is the value.
+    Linked(Rows, Expr),
 }
 
 impl Subject {
@@ -38,7 +81,7 @@ impl Subject {
         match self {
             Self::Column(value) => condition(value.clone()),
             Self::Linked(rows, value) => {
-                let mut rows = (**rows).clone();
+                let mut rows = rows.select();
                 rows.cond_where(condition(value.clone()));
                 Cond::all().add(Expr::exists(rows))
             }
@@ -49,7 +92,7 @@ impl Subject {
     pub(super) fn empty(&self) -> Cond {
         match self {
             Self::Column(value) => Cond::all().add(value.clone().is_null()),
-            Self::Linked(rows, _) => Cond::all().add(Expr::exists((**rows).clone()).not()),
+            Self::Linked(rows, _) => Cond::all().add(Expr::exists(rows.select()).not()),
         }
     }
 }
@@ -92,18 +135,6 @@ pub(super) enum Domain {
     Choice(FieldId),
 }
 
-/// The rows of a table that belong to the issue being judged.
-fn rows_of(
-    table: impl sea_query::Iden + Copy + 'static,
-    issue: impl sea_query::Iden + Copy + 'static,
-) -> SelectStatement {
-    let mut rows = Query::select();
-    rows.expr(Expr::val(1))
-        .from(table)
-        .and_where(Expr::col((table, issue)).equals((IssueRow::Table, IssueRow::Id)));
-    rows
-}
-
 fn issue_column(column: IssueRow) -> Expr {
     Expr::col((IssueRow::Table, column))
 }
@@ -112,21 +143,15 @@ fn issue_column(column: IssueRow) -> Expr {
 /// projects the field reaches and for the issue types it is used for (a row that stays on an issue
 /// that moved elsewhere is no value).
 fn own_values(field: FieldId, column: FieldValueRow, reach: &[OwnReach]) -> Subject {
-    let mut rows = Query::select();
-    rows.expr(Expr::val(1))
-        .from(FieldValueRow::Table)
-        .and_where(
+    let rows = Rows::of(FieldValueRow::Table, FieldValueRow::EntityId)
+        .and(
             Expr::col((FieldValueRow::Table, FieldValueRow::EntityKind))
                 .eq(kind_text(&EntityKind::from(RecordKind::Issue))),
         )
-        .and_where(
-            Expr::col((FieldValueRow::Table, FieldValueRow::EntityId))
-                .equals((IssueRow::Table, IssueRow::Id)),
-        )
-        .and_where(Expr::col((FieldValueRow::Table, FieldValueRow::Field)).eq(field.stored()))
-        .and_where(Expr::col((FieldValueRow::Table, column)).is_not_null());
-    rows.cond_where(reach_condition(field, reach));
-    Subject::Linked(Box::new(rows), Expr::col((FieldValueRow::Table, column)))
+        .and(Expr::col((FieldValueRow::Table, FieldValueRow::Field)).eq(field.stored()))
+        .and(Expr::col((FieldValueRow::Table, column)).is_not_null())
+        .and(reach_condition(field, reach));
+    Subject::Linked(rows, Expr::col((FieldValueRow::Table, column)))
 }
 
 /// Where the values of an own field count, on the issue of the statement: in a project the field
@@ -154,7 +179,7 @@ const OTHER_END: &str = "other_end";
 /// an issue they do not read is no value, so nothing about that issue (that it exists, its code, how
 /// many sit under it) can be found out by filtering, sorting or grouping (ADR-0004, PRIV-13).
 fn reading_the_other_end(subject: Subject, sight: &IssueSight) -> Subject {
-    let Subject::Linked(mut rows, value) = subject else {
+    let Subject::Linked(rows, value) = subject else {
         return subject;
     };
     let mut reads = Query::select();
@@ -163,8 +188,7 @@ fn reading_the_other_end(subject: Subject, sight: &IssueSight) -> Subject {
         .from_as(IssueRow::Table, Alias::new(OTHER_END))
         .and_where(Expr::col((Alias::new(OTHER_END), IssueRow::Id)).eq(value.clone()))
         .cond_where(sight_condition_as(sight, OTHER_END));
-    rows.and_where(Expr::exists(reads));
-    Subject::Linked(rows, value)
+    Subject::Linked(rows.and(Expr::exists(reads)), value)
 }
 
 /// What the target reads.
@@ -174,7 +198,7 @@ pub(super) fn subject_of(
     reach: &[OwnReach],
 ) -> (Subject, Domain) {
     use FieldTarget as T;
-    let linked = |rows, value| Subject::Linked(Box::new(rows), value);
+    let linked = Subject::Linked;
     match target {
         T::Title => (Subject::Column(issue_column(IssueRow::Title)), Domain::Text),
         T::Description => (
@@ -207,21 +231,21 @@ pub(super) fn subject_of(
         ),
         T::AssignedTo => (
             linked(
-                rows_of(AssignedPersonRow::Table, AssignedPersonRow::Issue),
+                Rows::of(AssignedPersonRow::Table, AssignedPersonRow::Issue),
                 Expr::col((AssignedPersonRow::Table, AssignedPersonRow::Person)),
             ),
             Domain::Person(target.people_kind()),
         ),
         T::Tags => (
             linked(
-                rows_of(IssueTagRow::Table, IssueTagRow::Issue),
+                Rows::of(IssueTagRow::Table, IssueTagRow::Issue),
                 Expr::col((IssueTagRow::Table, IssueTagRow::Tag)),
             ),
             Domain::Tag,
         ),
         T::Labels => (
             linked(
-                rows_of(IssueLabelRow::Table, IssueLabelRow::Issue),
+                Rows::of(IssueLabelRow::Table, IssueLabelRow::Issue),
                 Expr::col((IssueLabelRow::Table, IssueLabelRow::Label)),
             ),
             Domain::Label,
@@ -229,7 +253,7 @@ pub(super) fn subject_of(
         T::Parent => (
             reading_the_other_end(
                 linked(
-                    rows_of(IssueParentRow::Table, IssueParentRow::Child),
+                    Rows::of(IssueParentRow::Table, IssueParentRow::Child),
                     Expr::col((IssueParentRow::Table, IssueParentRow::Parent)),
                 ),
                 sight,

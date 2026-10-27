@@ -376,31 +376,17 @@ pub(crate) fn groups_statement(
             select.order_by_expr_with_nulls(Expr::col(Sorted(0)), Order::Asc, NullOrdering::Last);
             Ok((finish(&compiler, select), what))
         }
-        Grouping::Many {
-            mut rows,
-            value,
-            what,
-            without,
-        } => {
-            // The rows of the values of an issue, joined to the issue by their own condition.
-            rows.expr_as(value, Sorted(0))
+        Grouping::Many { rows, value, what } => {
+            // The rows of the values of an issue, joined to it: an issue with none is one row with
+            // no value, the group without a value, so the issues are read once.
+            let mut select = Query::select();
+            select
+                .expr_as(value, Sorted(0))
                 .expr_as(Func::count_distinct(issue()), Counted)
-                .from(IssueRow::Table)
-                .cond_where(cond.clone())
-                .group_by_col(Sorted(0));
-            let empty = match (what, dialect) {
-                (GroupValue::Text, _) => "TEXT",
-                (GroupValue::Id(_), Dialect::Sqlite) => "BLOB",
-                (GroupValue::Id(_), Dialect::Postgres) => "BYTEA",
-                (GroupValue::Whole | GroupValue::Priority | GroupValue::StatusGroup, _) => "BIGINT",
-            };
-            let mut none = Query::select();
-            none.expr_as(Func::cast_as(Expr::null(), Alias::new(empty)), Sorted(0))
-                .expr_as(Func::count(issue()), Counted)
-                .from(IssueRow::Table)
-                .cond_where(cond.add(without));
-            rows.union(UnionType::All, none);
-            Ok((finish(&compiler, *rows), what))
+                .from(IssueRow::Table);
+            rows.join_to(&mut select);
+            select.cond_where(cond).group_by_col(Sorted(0));
+            Ok((finish(&compiler, select), what))
         }
     }
 }
