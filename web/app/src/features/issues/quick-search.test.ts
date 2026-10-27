@@ -2,6 +2,9 @@ import { ApiError, type ErrorCode, type Problem } from "@bugaboo/api-client";
 import type { Search } from "@bugaboo/wasm-search";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { doNothing } from "../../shared/do-nothing.ts";
+import type { QuickSearchAsker } from "../shell/index.ts";
+
 /**
  * The search language is the module of Rust, whose tests start it (`web/tooling`); here the
  * printer only says what it was given, so this source is tested without the module.
@@ -16,14 +19,10 @@ vi.mock("../../shared/api.ts", () => ({
   api: { client: { GET: (path: string, options: unknown) => get(path, options) } },
 }));
 
-// The shell reads a stored choice when it is loaded; there is no browser here.
-vi.stubGlobal("localStorage", {
-  getItem: vi.fn<(key: string) => string | null>(),
-  setItem: vi.fn<(key: string, value: string) => void>(),
-});
-
 const { issuesSource, looksLikeIssueId } = await import("./quick-search.ts");
-const { testAsker: asker } = await import("../shell/index.ts");
+
+/** Somebody who asks quick search: no permissions, and signing out does nothing. */
+const asker: QuickSearchAsker = { permissions: [], signOut: doNothing };
 
 /** What the server sends with a refusal that has this code. */
 function refusal(code: ErrorCode, status: number): ApiError {
