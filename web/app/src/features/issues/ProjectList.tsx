@@ -21,8 +21,6 @@ export interface ProjectListProps {
   readonly state: SearchState;
   readonly onState: (state: SearchState, step: HistoryStep) => void;
   readonly openIn: IssueShow;
-  /** The issue that is open next to the list, by its issue ID. */
-  readonly open: string | undefined;
   readonly selection: IssueSelection;
 }
 
@@ -31,14 +29,7 @@ export interface ProjectListProps {
  * in, and under it the list. The project's own list, the saved search that a project lead chose
  * (ADR-0034 decision 6), gives the text and the columns where the address says none.
  */
-export function ProjectList({
-  project,
-  state,
-  onState,
-  openIn,
-  open,
-  selection,
-}: ProjectListProps) {
+export function ProjectList({ project, state, onState, openIn, selection }: ProjectListProps) {
   const [stale, setStale] = useState(false);
   const chosen = useProjectListChoice(project.shortName).data?.search ?? undefined;
   const list = useListView(state, onState, {
@@ -71,7 +62,8 @@ export function ProjectList({
         scopeName={project.name}
         project={project.shortName}
         openIn={openIn}
-        open={open}
+        state={state}
+        open={state.open}
         selection={selection}
       />
     </>

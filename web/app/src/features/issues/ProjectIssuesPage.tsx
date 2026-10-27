@@ -9,8 +9,6 @@ export interface ProjectIssuesPageProps {
   /** What the address says about the search and how its results are shown. */
   readonly state: SearchState;
   readonly onState: (state: SearchState, step: HistoryStep) => void;
-  /** The issue open in the side panel, from the address. */
-  readonly open: string | undefined;
   /** Opens an issue in the focus view. */
   readonly onFocus: (key: string) => void;
   /** Closes the side panel. */
@@ -26,7 +24,6 @@ export function ProjectIssuesPage({
   address,
   state,
   onState,
-  open,
   onFocus,
   onClose,
 }: ProjectIssuesPageProps) {
@@ -41,7 +38,6 @@ export function ProjectIssuesPage({
           }}
           state={state}
           onState={onState}
-          open={open}
           onFocus={onFocus}
           onClose={onClose}
         />

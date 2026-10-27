@@ -40,6 +40,8 @@ export interface SearchState {
   readonly groupBy?: string;
   /** How it is shown (`list`, `board` …). */
   readonly view?: string;
+  /** The issue open in the side panel of a project's list, by its issue ID. */
+  readonly open?: string | undefined;
 }
 
 /** The parts of the address after the question mark that belong to a search, as written. */
@@ -50,6 +52,7 @@ export interface SearchParts {
   readonly widths?: string;
   readonly spacing?: string;
   readonly group?: string;
+  readonly open?: string;
 }
 
 /** Where a search state is written: the path and the parts after the question mark. */
@@ -102,6 +105,7 @@ export function readSearch(location: {
   const spacing = textOf(raw, "spacing");
   const groupBy = textOf(raw, "group");
   const view = textOf(raw, "show");
+  const open = textOf(raw, "open");
   return {
     text: written === undefined || written.trim() === "" ? "" : written,
     ...(project === undefined ? {} : { project }),
@@ -111,6 +115,7 @@ export function readSearch(location: {
     ...(spacing === "comfortable" || spacing === "compact" ? { spacing } : {}),
     ...(groupBy === undefined || groupBy === "" ? {} : { groupBy }),
     ...(view === undefined ? {} : { view }),
+    ...(open === undefined || open === "" ? {} : { open }),
   };
 }
 
@@ -139,6 +144,9 @@ export function searchLocation(state: SearchState): SearchLocation {
   if (state.groupBy !== undefined) {
     search.group = state.groupBy;
   }
+  if (state.open !== undefined) {
+    search.open = state.open;
+  }
   let pathname: string = paths.search;
   if (state.saved !== undefined) {
     pathname = savedSearchAddress(state.saved);
@@ -161,4 +169,24 @@ export function searchHref(state: SearchState): string {
   const { pathname, search } = searchLocation(state);
   const query = new URLSearchParams(Object.entries(search)).toString();
   return query === "" ? pathname : `${pathname}?${query}`;
+}
+
+/**
+ * The address of an issue shown in the side panel of the list of its project: the search and the
+ * view of the list stay as they are, and the issue is added (the one writer, {@link searchHref}).
+ * From anywhere else the list is the project's own.
+ */
+export function issuePanelAddress(
+  state: SearchState | undefined,
+  project: string,
+  key: string,
+): string {
+  return searchHref(
+    state?.project === project ? { ...state, open: key } : { text: "", project, open: key },
+  );
+}
+
+/** The address of the list without the issue that is open in the side panel: the rest of the search stays. */
+export function panelClosedAddress(state: SearchState): string {
+  return searchHref({ ...state, open: undefined });
 }

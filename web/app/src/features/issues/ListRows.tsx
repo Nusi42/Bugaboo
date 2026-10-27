@@ -22,7 +22,7 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
   const current = line.key === context.open;
   const project = line.project?.short_name ?? context.project ?? "";
   const cells = rowCells(context.words, line, {
-    href: hrefOf(context.openIn, project, line.key),
+    href: hrefOf(context.openIn, context.state, project, line.key),
     now: context.now,
     own: context.own,
     current,

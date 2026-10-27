@@ -2,7 +2,6 @@ import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tansta
 
 import {
   issueAddress,
-  issuePanelAddress,
   layoutsAddress,
   type LayoutsOpen,
   paths,
@@ -10,7 +9,7 @@ import {
   routeParam,
   targetParam,
 } from "../shared/paths.ts";
-import { validateSearch, type SearchParts } from "../shared/search-address.ts";
+import { issuePanelAddress, panelClosedAddress, validateSearch } from "../shared/search-address.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
@@ -194,29 +193,22 @@ export const projectIssuesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectIssues,
   loader: loadsScreen(ProjectIssuesScreen),
-  validateSearch: (
-    search: Readonly<Record<string, unknown>>,
-  ): SearchParts & { open?: string | undefined } => ({
-    ...validateSearch(search),
-    open: typeof search["open"] === "string" ? search["open"] : undefined,
-  }),
+  validateSearch,
   component: function ProjectIssues() {
     const project = useAddressPart(routeParam.project);
-    const { open } = useSearch({ strict: false });
     const state = useSearchState();
-    const onState = useSearchNavigation(open);
+    const onState = useSearchNavigation();
     const navigate = useNavigate();
     return project === undefined ? null : (
       <ProjectIssuesScreen
         address={project}
         state={state}
         onState={onState}
-        open={open}
         onFocus={(key: string) => {
           void navigate({ href: issueAddress(key) });
         }}
         onClose={() => {
-          void navigate({ href: projectIssuesAddress(project) });
+          void navigate({ href: panelClosedAddress(state) });
         }}
       />
     );
@@ -254,7 +246,7 @@ export const issueRoute = createRoute({
           });
         }}
         onPanel={(project: string, key: string) => {
-          void navigate({ href: issuePanelAddress(project, key) });
+          void navigate({ href: issuePanelAddress(undefined, project, key) });
         }}
       />
     );

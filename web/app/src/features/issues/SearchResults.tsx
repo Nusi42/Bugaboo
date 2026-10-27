@@ -16,6 +16,7 @@ export function SearchResults(input: ResultsInput) {
       scopeName={undefined}
       project={undefined}
       openIn={useOpenIssuesIn()}
+      state={undefined}
       open={undefined}
       selection={useSelection()}
     />

@@ -1,6 +1,7 @@
 import type { SearchLanguage } from "@bugaboo/wasm-search";
 import { createContext, useContext } from "react";
 
+import type { SearchState } from "../../shared/search-address.ts";
 import type { FoundSearch } from "./found-issues.ts";
 import type { IssueShow } from "./issue-show.ts";
 import type { OwnColumns } from "./own-columns.ts";
@@ -15,6 +16,8 @@ export interface ListContextValue {
   /** The rows have a box to tick (the list of a project; the changes of many issues are made in one project). */
   readonly ticks: boolean;
   readonly openIn: IssueShow;
+  /** What the address of the list says: the links to the side panel keep it. */
+  readonly state: SearchState | undefined;
   /** The issue open next to the list, by its issue ID. */
   readonly open: string | undefined;
   readonly selection: IssueSelection;

@@ -1,14 +1,13 @@
 import { t } from "@bugaboo/messages";
 import { type Locator } from "@playwright/test";
 
-import { issueAddress, issuePanelAddress } from "../src/shared/paths.ts";
+import { issueAddress, panelAddress } from "./support/addresses.ts";
 import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
+import { chooseStatus, prepareWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
-import { chooseStatus } from "./support/issues.ts";
 import { serverWord } from "./support/server-words.ts";
 
 // The frames an issue opens in (UX §3.2, §3.3, §4.4, M3 WP-13): the side panel, the focus view and
@@ -20,7 +19,7 @@ test.describe.configure({ mode: "serial" });
 test("ux_03 the side panel has one way to close and says the ID once", async ({ page }) => {
   test.skip(layoutOf(page) !== "computer", "the panel sits next to the list on a computer");
   await signIn(page, ada);
-  await page.goto(issuePanelAddress("WEB", "WEB-2"));
+  await page.goto(panelAddress("WEB", "WEB-2"));
   const panel = page.getByRole("complementary", { name: "WEB-2", exact: true });
   await expect(panel.getByRole("button", { name: t("panel.close"), exact: true })).toHaveCount(1);
   await expect(panel.getByRole("button", { name: t("common.close"), exact: true })).toHaveCount(0);
@@ -48,7 +47,7 @@ test("ux_04 on a phone the panel says Back to list, and the bar goes to the stat
 }) => {
   test.skip(layoutOf(page) !== "phone", "only a phone has the bar");
   await signIn(page, ada);
-  await page.goto(issuePanelAddress("WEB", "WEB-2"));
+  await page.goto(panelAddress("WEB", "WEB-2"));
   await expect(page.getByRole("button", { name: t("focus.back"), exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: t("panel.close"), exact: true })).toHaveCount(0);
   await page

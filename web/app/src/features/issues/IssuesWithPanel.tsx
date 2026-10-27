@@ -14,8 +14,6 @@ export interface IssuesWithPanelProps {
   /** What the address says about the search and how its results are shown. */
   readonly state: SearchState;
   readonly onState: (state: SearchState, step: HistoryStep) => void;
-  /** The issue open in the side panel, from the address. */
-  readonly open: string | undefined;
   /** Opens an issue in the focus view. */
   readonly onFocus: (key: string) => void;
   /** Closes the side panel. */
@@ -27,11 +25,11 @@ export function IssuesWithPanel({
   project,
   state,
   onState,
-  open,
   onFocus,
   onClose,
 }: IssuesWithPanelProps) {
   const openIn = useOpenIssuesIn();
+  const { open } = state;
   const selection = useSelection();
   // A phone shows one thing at a time: the open issue takes the screen and Back closes it.
   const layout = useLayout();
@@ -50,7 +48,6 @@ export function IssuesWithPanel({
             state={state}
             onState={onState}
             openIn={openIn}
-            open={open}
             selection={selection}
           />
         </div>

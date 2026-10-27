@@ -2,6 +2,7 @@ import { useLayout } from "@bugaboo/ui";
 import type { SearchLanguage } from "@bugaboo/wasm-search";
 
 import { cellOf } from "../../shared/list-columns.ts";
+import type { SearchState } from "../../shared/search-address.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import { useNow } from "../../shared/use-now.ts";
 import type { IssueShow } from "./issue-show.ts";
@@ -27,6 +28,7 @@ export interface ContextInput {
   readonly view: ListView;
   readonly language: SearchLanguage;
   readonly openIn: IssueShow;
+  readonly state: SearchState | undefined;
   readonly open: string | undefined;
   readonly selection: IssueSelection;
   readonly onClear: () => void;
@@ -46,6 +48,7 @@ export function useListContextValue(input: ContextInput): ListContextValue {
     phone,
     ticks: input.project !== undefined,
     openIn: input.openIn,
+    state: input.state,
     open: input.open,
     selection: input.selection,
     project: input.project,
