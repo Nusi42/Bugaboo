@@ -53,10 +53,10 @@ export function AdvancedSearch({ language, fields, bar }: AdvancedSearchProps) {
           {...(active === undefined ? {} : { "aria-activedescendant": offerId(listId, active) })}
         />
       </div>
+      <MistakeList id={mistakesId} mistakes={mistakes} />
       {showing ? (
         <OfferList id={listId} offers={offers.items} active={active} onTake={take} />
       ) : null}
-      <MistakeList id={mistakesId} mistakes={mistakes} />
     </div>
   );
 }

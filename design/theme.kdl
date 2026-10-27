@@ -12126,7 +12126,7 @@ part "search-mark[variant=field]" {
 
 part "search-mark[variant=value]" {
     border-radius "$r-ctl"
-    background "$bg-sunken"
+    background "$bg-hover"
 }
 
 part "search-mark[variant=mistake]" {
@@ -12220,6 +12220,7 @@ part "search-list.item" {
 
 part "search-help.title" {
     margin 0
+    margin-block-end "$space-2"
     padding 0
     font-size "$fs-md"
     font-weight "$weight-bold"

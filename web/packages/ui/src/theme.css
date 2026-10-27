@@ -5926,7 +5926,7 @@ body {
 
 [data-part="search-mark"][data-variant~="value"] {
   border-radius: var(--r-ctl);
-  background: var(--bg-sunken);
+  background: var(--bg-hover);
 }
 
 [data-part="search-mark"][data-variant~="mistake"] {
@@ -6026,6 +6026,7 @@ body {
 
 [data-part="search-help.title"] {
   margin: 0;
+  margin-block-end: var(--space-2);
   padding: 0;
   font-size: var(--fs-md);
   font-weight: var(--weight-bold);
