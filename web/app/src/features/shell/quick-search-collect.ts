@@ -55,6 +55,33 @@ export function resultByKey(
 }
 
 /**
+ * How long a source may take before it counts as failed. The server gives up on a search after 2
+ * seconds (M5-Q10, `search.too-slow`), and a request that has not been answered after four times
+ * that has lost its connection; the list must not stay busy for good because of it.
+ */
+export const sourceTimeoutMs = 8000;
+
+/** What a source says when it took longer than [`sourceTimeoutMs`]. */
+class TookTooLong extends Error {}
+
+/** The answer of a source, or a failure when it takes longer than [`sourceTimeoutMs`]. */
+async function withinTime(
+  ask: () => readonly QuickResult[] | Promise<readonly QuickResult[]>,
+): Promise<readonly QuickResult[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new TookTooLong());
+    }, sourceTimeoutMs);
+  });
+  try {
+    return await Promise.race([Promise.resolve(ask()), late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Asks every source. A source that fails (or answers with something that is not a list) leaves its
  * own results out and nothing else: one broken source must not take quick search down.
  */
@@ -67,7 +94,7 @@ export async function collectResults(
     sources.map(async (source): Promise<ResultGroup> => ({
       id: source.id,
       heading: source.heading,
-      results: await source.search(query, asker),
+      results: await withinTime(() => source.search(query, asker)),
     })),
   );
   const groups: ResultGroup[] = [];
