@@ -29,6 +29,7 @@ const TIME_SOURCE: &str = "crates/bb-core/src/time.rs";
 const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const FILES_SOURCE: &str = "crates/bb-core/src/files.rs";
+const MANY_CHANGES_SOURCE: &str = "crates/bb-core/src/many_changes.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -690,6 +691,22 @@ export const partBytes = {part};
 
 /** The size of one megabyte in the limits of files: the limit of a project is a whole number of them. */
 export const megabyte = {megabyte};
+"
+    ))
+}
+
+/// The most issues one change to many issues names, as a constant for the browser client: the rule
+/// of *Tick all results* is this number and is not written a second time.
+pub(super) fn many_changes(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == MANY_CHANGES_SOURCE) else {
+        bail!("{MANY_CHANGES_SOURCE} is missing");
+    };
+    let file =
+        syn::parse_file(text).with_context(|| format!("{MANY_CHANGES_SOURCE} is not Rust"))?;
+    let most = number_const(&file, MANY_CHANGES_SOURCE, "MANY_CHANGES_ISSUES_MAX")?;
+    Ok(format!(
+        "{TS_HEADER}/** The most issues one change to many issues names (`MANY_CHANGES_ISSUES_MAX` of the server). */
+export const manyChangesIssuesMax = {most};
 "
     ))
 }

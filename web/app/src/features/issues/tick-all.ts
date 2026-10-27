@@ -1,5 +1,7 @@
-/** The most issues that can be ticked at once with *Tick all results* (M5-Q9). */
-export const MAX_TICKED = 5000;
+import { manyChangesIssuesMax } from "@bugaboo/api-client";
+
+/** The most issues that can be ticked at once with *Tick all results* (M5-Q9): what one change may name. */
+export const MAX_TICKED = manyChangesIssuesMax;
 
 /** What the bar offers beside the rows that are ticked. */
 export type TickAllOffer =

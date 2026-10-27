@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { chooseColumns, moveColumn, projectColumns } from "./list-columns.ts";
 
-describe("cfg_02 the columns a person chooses in Customize", () => {
+describe("the columns a person chooses in Customize", () => {
   it("starts with the columns of UX 4.2 and no tick box or buttons among the choices", () => {
     expect(projectColumns).toEqual([
       "status",
