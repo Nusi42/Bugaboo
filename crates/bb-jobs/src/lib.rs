@@ -20,7 +20,7 @@ pub const POLL_EVERY: Duration = Duration::from_secs(2);
 
 /// The longest wait between two tries to make the text index again. The wait starts at the
 /// polling time of the worker and doubles after each failure up to this.
-pub const REBUILD_RETRY_AT_MOST: Duration = Duration::from_secs(60);
+pub const REBUILD_RETRY_AT_MOST: Duration = Duration::from_mins(1);
 
 /// Starts the worker; it looks for jobs when it starts and then every `every`. The caller stops it
 /// with [`JoinHandle::abort`] when the server stops.
