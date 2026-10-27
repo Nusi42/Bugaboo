@@ -101,7 +101,8 @@ export function useQuickResults(query: string): QuickFound {
   const later = useCollected(far, settled, asker);
   return useMemo(
     () => ({
-      ...arrange(sources, query, now.found, later.found),
+      // What the server found for older words is not shown under newer ones.
+      ...arrange(sources, now.found, later.to === query ? later.found : nothingYet),
       waiting: later.to !== query,
     }),
     [sources, query, now, later],

@@ -1,6 +1,5 @@
-import type { ReadonlyDeep } from "@bugaboo/api-client";
+import { ApiError, type ReadonlyDeep } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { loadSearchLanguage } from "@bugaboo/wasm-search";
 
 import { api } from "../../shared/api.ts";
 import { fieldList } from "../../shared/paged.ts";
@@ -32,30 +31,58 @@ function resultOf(item: Line): QuickResult[] {
     : [];
 }
 
-/** The issue with this ID, if it exists and the person may see it; a hidden one and a missing one are the same. */
+/**
+ * Whether the server turned a text away as no issue and no search (404, or 400 for a text it does
+ * not take): that is no result, not a broken source. Any other error is one.
+ */
+function isMissed(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 404 || error.status === 400);
+}
+
+/**
+ * The issue with this ID, if it exists and the person may see it; a hidden one and a missing one
+ * are the same: the client throws for both, and both are nothing here.
+ */
 async function issueWithId(text: string): Promise<readonly QuickResult[]> {
-  const { data } = await api.client.GET("/api/v1/issues/{issue}", {
-    params: { path: { issue: text.trim() } },
-  });
-  return data === undefined ? [] : resultOf(data.issue);
+  try {
+    const { data } = await api.client.GET("/api/v1/issues/{issue}", {
+      params: { path: { issue: text.trim() } },
+    });
+    return data === undefined ? [] : resultOf(data.issue);
+  } catch (error) {
+    if (isMissed(error)) {
+      return [];
+    }
+    throw error;
+  }
 }
 
 /** The first issues whose title holds the words, among those the person may see. */
 async function issuesWithWords(words: string): Promise<readonly QuickResult[]> {
+  // The module of the search language is loaded when words are first searched, not before.
+  const { loadSearchLanguage } = await import("@bugaboo/wasm-search");
   const q = titleSearchText(await loadSearchLanguage(), words);
   if (q === undefined) {
     return [];
   }
-  const { data } = await api.client.GET("/api/v1/search/issues", {
-    params: {
-      query: {
-        q,
-        fields: fieldList<ListedIssue>(["readable_id", "title"]),
-        limit: ISSUE_RESULTS,
+  try {
+    const { data } = await api.client.GET("/api/v1/search/issues", {
+      params: {
+        query: {
+          q,
+          fields: fieldList<ListedIssue>(["readable_id", "title"]),
+          limit: ISSUE_RESULTS,
+        },
       },
-    },
-  });
-  return (data?.items ?? []).flatMap((item: Line) => resultOf(item));
+    });
+    return (data?.items ?? []).flatMap((item: Line) => resultOf(item));
+  } catch (error) {
+    // A text the checker of the language refuses (too many words, too long) finds nothing.
+    if (isMissed(error)) {
+      return [];
+    }
+    throw error;
+  }
 }
 
 /**
@@ -67,7 +94,7 @@ export const issuesSource: QuickSearchSource = {
   id: "issues",
   heading: t("search.issues"),
   paused: true,
-  firstFor: looksLikeIssueId,
+  first: true,
   search: async (query): Promise<readonly QuickResult[]> => {
     const [byId, byWords] = await Promise.all([
       looksLikeIssueId(query) ? issueWithId(query) : [],

@@ -407,6 +407,7 @@ export interface MessageArguments {
   "roles.used-by-nobody": { places: string | number };
   "roles.used-projects": { count: number };
   "save.saved-at": { time: string | number };
+  "search.count": { count: number };
   "search.mistake.expected-blocked-by": { blocked: string | number; by: string | number };
   "search.mistake.expected-connected-to": { connected: string | number; to: string | number };
   "search.mistake.expected-continue": {

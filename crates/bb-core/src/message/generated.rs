@@ -8740,6 +8740,15 @@ pub fn search_index_rebuilt(issues: i64) -> Message {
     )
 }
 
+/// The message `search.count`.
+#[must_use]
+pub fn search_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.count"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `search.mistake.expected-blocked-by`.
 #[must_use]
 pub fn search_mistake_expected_blocked_by(
@@ -13283,6 +13292,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("search.actions", "Actions"),
     ("search.clear", "Clear the search"),
+    (
+        "search.count",
+        "{count, plural, =0 {No results} one {# result} other {# results}}",
+    ),
     ("search.create-issue", "Create issue"),
     ("search.issues", "Issues"),
     ("search.label", "Search"),

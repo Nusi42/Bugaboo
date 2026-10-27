@@ -1,7 +1,8 @@
+import { ApiError } from "@bugaboo/api-client";
 import type { Search } from "@bugaboo/wasm-search";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { doNothing } from "../../shared/do-nothing.ts";
+import { asker } from "../../shared/quick-search-testing.ts";
 
 /**
  * The search language is the module of Rust, whose tests start it (`web/tooling`); here the
@@ -19,13 +20,18 @@ vi.mock("../../shared/api.ts", () => ({
 
 const { issuesSource, looksLikeIssueId } = await import("./quick-search.ts");
 
-const asker = { permissions: [], signOut: doNothing };
 const ISSUE = "/api/v1/issues/{issue}";
 const SEARCH = "/api/v1/search/issues";
 
-/** The answers of the server by the route that was asked. */
+/**
+ * The answers of the server by the route that was asked. An answer that is an error is what the
+ * client does with a refusal: it throws, it does not return an empty answer.
+ */
 function answers(byRoute: Readonly<Record<string, unknown>>): void {
-  get.mockImplementation((path) => Promise.resolve({ data: byRoute[path] }));
+  get.mockImplementation((path) => {
+    const answer = byRoute[path];
+    return answer instanceof Error ? Promise.reject(answer) : Promise.resolve({ data: answer });
+  });
 }
 
 beforeEach(() => {
@@ -47,8 +53,21 @@ describe("cfg_08 an ID opens the issue", () => {
   });
 
   it("shows nothing for an ID of an issue that is hidden or missing: the two look the same", async () => {
-    answers({ [SEARCH]: { items: [] } });
+    answers({ [ISSUE]: new ApiError(404, undefined), [SEARCH]: { items: [] } });
     expect(await issuesSource.search("WEB-404", asker)).toEqual([]);
+  });
+
+  it("keeps the issues of the words when the text is no ID the server knows (e-mail)", async () => {
+    answers({
+      [ISSUE]: new ApiError(400, undefined),
+      [SEARCH]: { items: [{ readable_id: "WEB-3", title: "E-mail bounces" }] },
+    });
+    expect((await issuesSource.search("e-mail", asker)).map((one) => one.id)).toEqual(["WEB-3"]);
+  });
+
+  it("is a broken source when the server fails, not when it finds nothing", async () => {
+    answers({ [ISSUE]: new ApiError(500, undefined), [SEARCH]: { items: [] } });
+    await expect(issuesSource.search("web-1", asker)).rejects.toBeInstanceOf(ApiError);
   });
 
   it("does not repeat the issue of the ID among the issues of the words", async () => {
@@ -89,6 +108,11 @@ describe("cfg_08 words find issues by title", () => {
         test: { type: "contains", text: { text: "login" } },
       },
     });
+  });
+
+  it("finds nothing, and is not broken, for a text the checker of the language refuses", async () => {
+    answers({ [SEARCH]: new ApiError(400, undefined) });
+    expect(await issuesSource.search("many words", asker)).toEqual([]);
   });
 
   it("asks nothing for an empty box", async () => {

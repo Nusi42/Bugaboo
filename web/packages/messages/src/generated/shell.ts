@@ -22,6 +22,7 @@ export const messages = {
   "search.saved-searches": "Saved searches",
   "search.shared-with-me": "Shared with me",
   "search.actions": "Actions",
+  "search.count": "{count, plural, =0 {No results} one {# result} other {# results}}",
   "search.partial": "Some results could not be loaded.",
   "shortcut.key.mod": "Ctrl",
   "shortcut.key.mod-mac": "⌘",

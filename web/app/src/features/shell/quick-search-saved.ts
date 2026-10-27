@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { containsEveryWord } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
-import { fieldList } from "../../shared/paged.ts";
+import { fieldList, pageSize } from "../../shared/paged.ts";
 import { savedSearchAddress } from "../../shared/paths.ts";
 import type { QuickResult, QuickSearchSource } from "./quick-search-sources.ts";
 
@@ -28,7 +28,7 @@ async function namedLike(
       query: {
         scope,
         fields: fieldList<Item>(["id", "name"]),
-        limit: 100,
+        limit: pageSize.largest,
       },
     },
   });

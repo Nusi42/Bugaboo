@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { asker } from "./quick-search-testing.ts";
+import { pageSize } from "../../shared/paged.ts";
+import { asker } from "../../shared/quick-search-testing.ts";
 
 const get = vi.fn<(path: string, options: unknown) => Promise<{ data?: unknown }>>();
 vi.mock("../../shared/api.ts", () => ({
@@ -33,10 +34,10 @@ describe("cfg_08 saved searches in quick search", () => {
     expect(found.map((one) => one.hint)).toEqual([undefined, "Shared with me"]);
     const route = "/api/v1/saved-searches";
     expect(get).toHaveBeenNthCalledWith(1, route, {
-      params: { query: { scope: "mine", fields: "id,name", limit: 100 } },
+      params: { query: { scope: "mine", fields: "id,name", limit: pageSize.largest } },
     });
     expect(get).toHaveBeenNthCalledWith(2, route, {
-      params: { query: { scope: "shared", fields: "id,name", limit: 100 } },
+      params: { query: { scope: "shared", fields: "id,name", limit: pageSize.largest } },
     });
   });
 

@@ -70,13 +70,11 @@ export async function collectResults(
  */
 export function arrange(
   sources: readonly QuickSearchSource[],
-  query: string,
   ...rounds: readonly Collected[]
 ): Collected {
   const rank = (id: string): number => {
     const index = sources.findIndex((source) => source.id === id);
-    const first = sources[index]?.firstFor?.(query) === true;
-    return first ? index - sources.length : index;
+    return sources[index]?.first === true ? index - sources.length : index;
   };
   const groups = rounds.flatMap((round) => round.groups);
   return {
