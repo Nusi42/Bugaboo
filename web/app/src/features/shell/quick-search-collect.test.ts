@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { arrange, collectResults, resultByKey, resultKey } from "./quick-search-collect.ts";
+import {
+  arrange,
+  busyKeys,
+  firstReady,
+  collectResults,
+  resultByKey,
+  resultKey,
+} from "./quick-search-collect.ts";
 import { testAsker as asker } from "./quick-search-testing.ts";
 import type { QuickSearchSource } from "./quick-search-sources.ts";
 
@@ -94,5 +101,19 @@ describe("cfg_08 the order of the groups", () => {
     const found = await collectResults(all, "", asker);
     expect(resultByKey(found.groups, "projects:Web")?.title).toBe("Web");
     expect(resultByKey(found.groups, "projects:Nope")).toBeUndefined();
+  });
+});
+
+describe("cfg_08 the rows of older words", () => {
+  it("cannot be chosen: the keys of a busy group are the ones to disable", async () => {
+    const pages = await collectResults([source("pages", ["Home"])], "log", asker);
+    const issues = await collectResults([source("issues", ["Login", "Logout"])], "log", asker);
+    const waiting = issues.groups.map((group) => ({ ...group, busy: true }));
+    expect(busyKeys([...pages.groups, ...waiting])).toEqual(["issues:Login", "issues:Logout"]);
+    expect(busyKeys([...pages.groups, ...issues.groups])).toEqual([]);
+    // A busy group is never the ready one; a group that is not busy is.
+    expect(firstReady(waiting)).toBeUndefined();
+    expect(firstReady([...pages.groups, ...waiting])).toBe("pages:Home");
+    expect(firstReady([])).toBeUndefined();
   });
 });

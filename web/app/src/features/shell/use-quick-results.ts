@@ -99,12 +99,13 @@ export function useQuickResults(query: string): QuickFound {
   const settled = useSettled(query);
   const now = useCollected(nearby, query, asker);
   const later = useCollected(far, settled, asker);
-  return useMemo(
-    () => ({
-      // What the server found for older words is not shown under newer ones.
-      ...arrange(sources, query, now.found, later.to === query ? later.found : nothingYet),
-      waiting: later.to !== query,
-    }),
-    [sources, query, now, later],
-  );
+  return useMemo(() => {
+    // What the server found for older words keeps its place while it is asked again, so no group
+    // goes and comes back, but it is marked busy and its rows cannot be chosen.
+    const waiting = later.to !== query;
+    const asked = waiting
+      ? { ...later.found, groups: later.found.groups.map((group) => ({ ...group, busy: true })) }
+      : later.found;
+    return { ...arrange(sources, query, now.found, asked), waiting };
+  }, [sources, query, now, later]);
 }

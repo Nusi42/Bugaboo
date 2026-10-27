@@ -1,10 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
-import { useRouter } from "@tanstack/react-router";
 import { Header, ListBox, ListBoxItem, ListBoxSection, Text } from "react-aria-components";
 
-import { closeOverlay } from "./overlay-state.ts";
-import { resultByKey, resultKey } from "./quick-search-collect.ts";
+import { busyKeys, firstReady, resultKey } from "./quick-search-collect.ts";
 import type { QuickFound } from "./use-quick-results.ts";
 
 /** The words of React Aria Components for the slots of an item, not text for people. */
@@ -12,44 +10,36 @@ const descriptionSlot = "description";
 
 export interface QuickResultsProps {
   readonly found: QuickFound;
+  /** Whether the first result is the one that is ready to open: no arrow key was pressed yet. */
+  readonly firstIsReady: boolean;
+  /** Opens a result by its name. */
+  readonly onOpen: (key: string | number) => void;
 }
 
 /** What quick search found, grouped by where it was found. */
-export function QuickResults({ found }: QuickResultsProps) {
+export function QuickResults({ found, firstIsReady, onOpen }: QuickResultsProps) {
   const { groups, waiting } = found;
-  const router = useRouter();
-  // Opening a result closes the dialog, also when the result is the page that is open already. An
-  // action closes it first, so an action that opens a dialog of its own is not closed with it.
-  const open = (id: string | number): void => {
-    const hit = resultByKey(groups, id);
-    if (hit?.run !== undefined) {
-      closeOverlay();
-      hit.run();
-      return;
-    }
-    if (hit !== undefined) {
-      router.history.push(hit.path);
-    }
-    closeOverlay();
-  };
+  const ready = firstIsReady ? firstReady(groups) : undefined;
   return (
     <ListBox
+      disabledKeys={busyKeys(groups)}
       aria-label={t("search.results")}
       {...partOf(part.quickSearchResults)}
       renderEmptyState={() =>
         // Not "nothing found" while the server has yet to answer.
         waiting ? null : <p {...partOf(part.quickSearchEmpty)}>{t("search.nothing")}</p>
       }
-      onAction={open}
+      onAction={onOpen}
     >
       {groups.map((group) => (
-        <ListBoxSection key={group.id} {...partOf(part.column)}>
+        <ListBoxSection key={group.id} aria-busy={group.busy} {...partOf(part.column)}>
           <Header {...partOf(part.quickSearchHeading)}>{group.heading}</Header>
           {group.results.map((result) => (
             <ListBoxItem
               key={resultKey(group, result)}
               id={resultKey(group, result)}
               textValue={result.title}
+              data-ready={resultKey(group, result) === ready ? true : undefined}
               {...partOf(part.quickSearchItem)}
             >
               <span {...partOf(part.quickSearchTitle)}>{result.title}</span>

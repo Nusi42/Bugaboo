@@ -13294,7 +13294,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.clear", "Clear the search"),
     (
         "search.count",
-        "{count, plural, =0 {No results} one {# result} other {# results}}",
+        "{count, plural, one {# result} other {# results}}",
     ),
     ("search.create-issue", "Create issue"),
     ("search.issues", "Issues"),

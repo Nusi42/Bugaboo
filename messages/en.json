@@ -491,7 +491,7 @@
   "search.shared-with-me": "Shared with me",
   "search.actions": "Actions",
   "search.create-issue": "Create issue",
-  "search.count": "{count, plural, =0 {No results} one {# result} other {# results}}",
+  "search.count": "{count, plural, one {# result} other {# results}}",
   "search.partial": "Some results could not be loaded.",
   "search.mistake.expected-filter": "A filter is missing here. Start it with the name of a field, like “priority”.",
   "search.mistake.expected-operator": "What should be true of “{field}”? Write for example “{is}”, “{contains}” or “{in}”.",

@@ -6,6 +6,27 @@ export interface ResultGroup {
   readonly id: string;
   readonly heading: string;
   readonly results: readonly QuickResult[];
+  /** The server has yet to answer for the words now typed: these rows are of older words. */
+  readonly busy?: boolean;
+}
+
+/**
+ * The name of the result that is ready to open while no arrow key was pressed: the first one, unless
+ * it is of older words. Nothing when there is none.
+ */
+export function firstReady(groups: readonly ResultGroup[]): string | undefined {
+  const [group] = groups;
+  const first = group?.results[0];
+  return group === undefined || group.busy === true || first === undefined
+    ? undefined
+    : resultKey(group, first);
+}
+
+/** The names of the results that cannot be chosen: the rows of a group that is still busy. */
+export function busyKeys(groups: readonly ResultGroup[]): readonly string[] {
+  return groups
+    .filter((group) => group.busy === true)
+    .flatMap((group) => group.results.map((result) => resultKey(group, result)));
 }
 
 /** What the sources found, and whether one of them could not answer. */
