@@ -72,7 +72,7 @@ async function issuesStarting(
   // Words that are exactly an Issue ID are offered as that ID; the words are looked for in the titles.
   const id = language.issueIdOf(words);
   // The word being typed is a start, so *log* finds *login*.
-  const q = titleSearchText(language, words, { lastWordIsStart: true });
+  const q = titleSearchText(language, words);
   if (q === undefined) {
     return id === undefined ? [] : [{ source: id, value: id, label: id }];
   }

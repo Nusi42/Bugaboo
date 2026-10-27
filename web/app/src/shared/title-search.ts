@@ -8,22 +8,18 @@ export const titleWord = "title" satisfies SearchWord;
 
 /**
  * The search `title contains "<words>"` as the search language writes it, so a quote in the words
- * cannot become part of the language. With `lastWordIsStart` the last word is a start while it is
- * being typed (`logi` finds `login`), as far as the language lets a start be short. Nothing when
- * the text holds no word.
+ * cannot become part of the language. The last word is a start while it is being typed (`logi`
+ * finds `login`), as far as the language lets a start be short. Nothing when the text holds no word.
  */
 export function titleSearchText(
   language: Pick<SearchLanguage, "print" | "openLastWord">,
   words: string,
-  options: { readonly lastWordIsStart: boolean },
 ): string | undefined {
   if (words.trim() === "") {
     return undefined;
   }
   // The last word is still being typed unless a space follows it.
-  const text = options.lastWordIsStart
-    ? language.openLastWord(words.trimStart()).trimEnd()
-    : words.trim();
+  const text = language.openLastWord(words.trimStart()).trimEnd();
   return language.print({
     filter: fieldFilter(titleWord, {
       type: "contains",
