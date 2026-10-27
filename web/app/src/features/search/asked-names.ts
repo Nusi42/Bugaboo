@@ -13,7 +13,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "../../shared/api.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { issueSource, nameSource } from "../../shared/apply-suggestion.ts";
-import { fieldFilter, nowhere } from "../../shared/search-tree.ts";
+import { titleSearchText } from "../../shared/title-search.ts";
 
 /** A name that can be taken into the text. */
 export interface AskedName {
@@ -71,19 +71,16 @@ async function issuesStarting(
 ): Promise<readonly AskedName[]> {
   // Words that are exactly an Issue ID are offered as that ID; the words are looked for in the titles.
   const id = language.issueIdOf(words);
+  // The word being typed is a start, so *log* finds *login*.
+  const q = titleSearchText(language, words, { lastWordIsStart: true });
+  if (q === undefined) {
+    return id === undefined ? [] : [{ source: id, value: id, label: id }];
+  }
   const titles: Schema<"Page_IssueItem"> = dataOf(
     await api.client.GET("/api/v1/search/issues", {
       params: {
         query: {
-          q: language.print({
-            filter: fieldFilter("title", {
-              type: "contains",
-              text: { text: words, span: nowhere },
-              span: nowhere,
-            }),
-            sort: [],
-            span: nowhere,
-          }),
+          q,
           limit: offered,
           fields: "readable_id,title",
         },

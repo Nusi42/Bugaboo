@@ -118,7 +118,7 @@ test("cfg_08 the administrator finds all of it, with its kind above each group",
   await expect(result(page, titles.secret)).toBeVisible();
   await expect(result(page, savedSearchName)).toBeVisible();
   await expect(dialog(page).getByText(t("search.issues"), { exact: true })).toBeVisible();
-  await expect(dialog(page).getByText(t("search.saved-searches"), { exact: true })).toBeVisible();
+  await expect(dialog(page).getByText(t("search.saved-heading"), { exact: true })).toBeVisible();
   await box(page).fill("secret");
   await expect(result(page, "Secret plans")).toBeVisible();
 });

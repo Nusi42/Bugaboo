@@ -489,8 +489,6 @@
   "search.nothing": "Nothing found. Try another word.",
   "search.pages": "Pages",
   "search.issues": "Issues",
-  "search.saved-searches": "Saved searches",
-  "search.shared-with-me": "Shared with me",
   "search.actions": "Actions",
   "search.create-issue": "Create issue",
   "search.count": "{count, plural, one {# result} other {# results}}",

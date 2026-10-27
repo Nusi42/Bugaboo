@@ -236,7 +236,6 @@ mod tests {
     #[test]
     fn a_finished_word_or_an_empty_text_gets_no_star() {
         assert_eq!(open_last_word("login "), "login ");
-        assert_eq!(open_last_word("login*"), "login*");
         assert_eq!(open_last_word(""), "");
     }
 

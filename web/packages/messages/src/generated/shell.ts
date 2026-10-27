@@ -19,8 +19,6 @@ export const messages = {
   "search.results": "Results",
   "search.nothing": "Nothing found. Try another word.",
   "search.pages": "Pages",
-  "search.saved-searches": "Saved searches",
-  "search.shared-with-me": "Shared with me",
   "search.actions": "Actions",
   "search.count": "{count, plural, one {# result} other {# results}}",
   "search.partial": "Some results could not be loaded.",

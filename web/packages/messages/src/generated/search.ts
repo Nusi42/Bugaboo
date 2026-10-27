@@ -138,7 +138,6 @@ export const messages = {
   "search.project-list-use": "Use as the list of {project}",
   "search.project-list-stop": "Stop using as the list of {project}",
   "search.saved-mine": "Mine",
-  "search.saved-shared": "Shared with me",
   "search.saved-by": "{name} · {person}",
   "search.help": "Help",
   "search.help-title": "The words of the search",

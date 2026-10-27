@@ -4238,9 +4238,6 @@ pub const SEARCH_SAVED_HEADING: MessageKey = MessageKey::new("search.saved-headi
 /// The message `search.saved-mine`.
 pub const SEARCH_SAVED_MINE: MessageKey = MessageKey::new("search.saved-mine");
 
-/// The message `search.saved-searches`.
-pub const SEARCH_SAVED_SEARCHES: MessageKey = MessageKey::new("search.saved-searches");
-
 /// The message `search.saved-shared`.
 pub const SEARCH_SAVED_SHARED: MessageKey = MessageKey::new("search.saved-shared");
 
@@ -4264,9 +4261,6 @@ pub const SEARCH_SHARE_NOTE: MessageKey = MessageKey::new("search.share-note");
 
 /// The message `search.share-projects`.
 pub const SEARCH_SHARE_PROJECTS: MessageKey = MessageKey::new("search.share-projects");
-
-/// The message `search.shared-with-me`.
-pub const SEARCH_SHARED_WITH_ME: MessageKey = MessageKey::new("search.shared-with-me");
 
 /// The message `search.title`.
 pub const SEARCH_TITLE: MessageKey = MessageKey::new("search.title");
@@ -14446,7 +14440,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.saved-by", "{name} · {person}"),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
-    ("search.saved-searches", "Saved searches"),
     ("search.saved-shared", "Shared with me"),
     ("search.share", "Share"),
     ("search.share-done", "Done"),
@@ -14459,7 +14452,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("search.share-projects", "Projects"),
     ("search.share-title", "Share {name}"),
-    ("search.shared-with-me", "Shared with me"),
     ("search.title", "Quick search"),
     ("second-step.back", "Back to sign in"),
     ("second-step.code", "Code"),
