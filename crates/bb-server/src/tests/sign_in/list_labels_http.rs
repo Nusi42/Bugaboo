@@ -61,8 +61,9 @@ fn label_names(item: &Value) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// An order of the labels (name, ID) that is neither the order of the IDs nor that of the names.
-fn order_unlike_ids_and_names(labels: &[(String, String)]) -> Vec<(String, String)> {
+/// An order of the labels (name, ID) that is neither the order of the IDs, nor that of the names,
+/// nor the one they were made in.
+fn put_order_unlike_the_others(labels: &[(String, String)]) -> Vec<(String, String)> {
     let sorted_by = |key: fn(&(String, String)) -> &String| {
         let mut sorted = labels.to_vec();
         sorted.sort_by(|a, b| key(a).cmp(key(b)));
@@ -70,7 +71,7 @@ fn order_unlike_ids_and_names(labels: &[(String, String)]) -> Vec<(String, Strin
     };
     let (by_id, by_name) = (sorted_by(|l| &l.1), sorted_by(|l| &l.0));
     let mut order = labels.to_vec();
-    // Every order of three, until one is unlike both.
+    // Every order of three, until one is unlike the three.
     for rotation in 0..labels.len() {
         for reversed in [false, true] {
             order = labels.to_vec();
@@ -78,7 +79,7 @@ fn order_unlike_ids_and_names(labels: &[(String, String)]) -> Vec<(String, Strin
             if reversed {
                 order.reverse();
             }
-            if order != by_id && order != by_name {
+            if order != by_id && order != by_name && order != labels {
                 return order;
             }
         }
@@ -104,7 +105,7 @@ async fn cfg_02_the_list_and_the_search_carry_the_labels_when_asked_for() -> Tes
         for name in ["mid", "zed", "alpha"] {
             made.push((name.to_owned(), label(&mut ada, name).await?));
         }
-        let put_order = order_unlike_ids_and_names(&made);
+        let put_order = put_order_unlike_the_others(&made);
         for (_, id) in &put_order {
             put(&mut ada, &first, id).await?;
             rig.clock.advance(1);
@@ -122,7 +123,7 @@ async fn cfg_02_the_list_and_the_search_carry_the_labels_when_asked_for() -> Tes
                     .find(|item| item["readable_id"] == key)
                     .map(label_names)
             };
-            // Both labels, in the order they were put on; an issue without labels has an empty
+            // The three labels, in the order they were put on; an issue without labels has an empty
             // list.
             assert_eq!(of(&first), Some(wanted.clone()), "{path}");
             assert_eq!(of(&second), Some(Vec::new()), "{path}");

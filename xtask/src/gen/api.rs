@@ -1,7 +1,8 @@
 //! `cargo xtask gen api`: the API description, the browser client's types and the list of cookies
 //! (ADR-0008, COMP-13).
 //!
-//! The one source is the code of `bb-api`. xtask does not link the product crates, so:
+//! The one source is the code of `bb-api`. xtask does not link `bb-api` or the store (it links only
+//! the pure crates, `bb-core` and `bb-searchlang` among them), so:
 //!
 //! - the OpenAPI document comes from the program itself (`bugaboo openapi`, built and run with
 //!   cargo), and is written to `web/packages/api-client/openapi.json`;

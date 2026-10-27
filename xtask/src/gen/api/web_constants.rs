@@ -1,11 +1,13 @@
 //! What the browser app takes from the Rust code as constants, so it never writes them a second
 //! time: the keys, the choices and the defaults of the settings (ADR-0018), the page sizes of
 //! the lists (PERF-02), the times and sizes of editing (the lease, the heartbeat, how long a
-//! draft is kept, how many records one check of versions takes: ADR-0019), and the words of the
-//! fixed vocabularies the browser has to list (the icons of issue types).
+//! draft is kept, how many records one check of versions takes: ADR-0019), the most issues one
+//! change names, the words a search names the fields of an issue by, and the words of the fixed
+//! vocabularies the browser has to list (the icons of issue types).
 //!
-//! xtask does not link the product crates, so the first two are read as Rust source and the words
-//! from the API description, which holds every vocabulary of the server as a list of words.
+//! xtask links only the pure crates (`bb-core`, `bb-searchlang`, `bb-policy`), not `bb-api` or the
+//! store: a plain `const` is read as Rust source, the search words are asked of the code that owns
+//! them, and the vocabularies come from the API description.
 
 use std::fmt::Write as _;
 
