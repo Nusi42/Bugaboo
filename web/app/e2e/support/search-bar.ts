@@ -48,3 +48,40 @@ export async function expectBarKeyWorked(page: Page): Promise<void> {
     },
   });
 }
+
+/** One mistake of a search as the route tells it. */
+export interface RouteMistake {
+  readonly key: string;
+  readonly args: Readonly<Record<string, string>>;
+  readonly start: number;
+  readonly end: number;
+}
+
+export const noMistake: RouteMistake = { key: "", args: {}, start: -1, end: -1 };
+
+/** The mistakes in the body of an answer, whatever the body is. */
+export function mistakesOf(body: unknown): readonly RouteMistake[] {
+  const found: unknown =
+    typeof body === "object" && body !== null ? Reflect.get(body, "mistakes") : undefined;
+  return Array.isArray(found) ? (found as readonly RouteMistake[]) : [];
+}
+
+/** The box of Advanced search. */
+export function box(page: Page) {
+  return page.getByRole("textbox", { name: t("search.bar.advanced-label") });
+}
+
+/** The text the address holds as the search. */
+export function addressText(page: Page): string {
+  return new URL(page.url()).searchParams.get("s") ?? "";
+}
+
+/** On a phone the sheet of the bar is closed with its button, so the page behind it can be pressed. */
+export async function closeBar(page: Page): Promise<void> {
+  if (layoutOf(page) === "phone") {
+    await page
+      .getByRole("dialog", { name: t("search.bar.filters") })
+      .getByRole("button", { name: t("common.close") })
+      .click();
+  }
+}

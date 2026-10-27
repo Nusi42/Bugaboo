@@ -34,7 +34,7 @@ test.use({
 async function mistakeFor(page: Parameters<typeof openBar>[0], text: string): Promise<string> {
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  const box = page.getByRole("combobox", { name: t("search.bar.advanced-label") });
+  const box = page.getByRole("textbox", { name: t("search.bar.advanced-label") });
   await box.fill(text);
   const list = page.getByRole("list").filter({ has: page.locator("[data-part='search-mistake']") });
   return (await list.locator("[data-part='search-mistake']").first().innerText()).trim();
@@ -56,7 +56,7 @@ test("qry_05 the person who may read the field is not told it is unknown", async
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await page
-    .getByRole("combobox", { name: t("search.bar.advanced-label") })
+    .getByRole("textbox", { name: t("search.bar.advanced-label") })
     .fill('severity is "Major"');
   await expect(page.locator("[data-part='search-mistake']")).toHaveCount(0);
 });
