@@ -273,16 +273,24 @@ impl Database {
     /// PERF-05 (no N+1 queries). Statements that change the schema or take a lock are not counted.
     #[must_use]
     pub fn statements_run(&self) -> u64 {
-        self.statements.count.load(Ordering::Relaxed)
+        self.statements.count()
     }
 
-    /// The text of the statements this database has run after the first `after` of them, in the
-    /// order they were run (test builds only): a test that counts the statements of a window and
-    /// sees a different number says which ones differ.
+    /// Starts keeping the text of every statement this database runs, until the next `take_statements`
+    /// (test builds only): a test that counts the statements of a window and sees a different number
+    /// says which ones differ. Nothing is kept before it is asked for.
+    #[cfg(feature = "testing")]
+    pub fn capture_statements(&self) {
+        self.statements.start_capture();
+    }
+
+    /// How many statements this database has run, and the text of those since the capture started or
+    /// the last call, in the order they ran (test builds only); the text is emptied. The count and the
+    /// text are read together.
     #[cfg(feature = "testing")]
     #[must_use]
-    pub fn statements_after(&self, after: u64) -> Vec<String> {
-        self.statements.after(after)
+    pub fn take_statements(&self) -> (u64, Vec<String>) {
+        self.statements.take()
     }
 
     /// Closes all connections.

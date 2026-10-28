@@ -43,6 +43,7 @@ pub(super) struct Counter<'a> {
 
 impl<'a> Counter<'a> {
     pub(super) fn on(database: &'a Database) -> Self {
+        database.capture_statements();
         Self {
             database,
             before: database.statements_run(),
@@ -57,8 +58,7 @@ impl<'a> Counter<'a> {
     /// The statements run since the last time this was asked, and their text in the order they ran
     /// (M5-F65: when two windows that must be the same are not, the text says which statements differ).
     pub(super) fn take_logged(&mut self) -> (usize, Vec<String>) {
-        let log = self.database.statements_after(self.before);
-        let now = self.database.statements_run();
+        let (now, log) = self.database.take_statements();
         let ran = now - self.before;
         self.before = now;
         (usize::try_from(ran).unwrap_or(usize::MAX), log)
