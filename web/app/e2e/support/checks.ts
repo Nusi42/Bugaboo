@@ -84,7 +84,8 @@ export async function expectNoSidewaysScroll(page: Page): Promise<void> {
 }
 
 /** Places where the items of a list, a group of buttons or a group of choices stand side by side. */
-const ROWS_OF_ITEMS = "ul, ol, [role='radiogroup'], [role='group'], [role='tablist']";
+const ROWS_OF_ITEMS =
+  "ul, ol, [role='radiogroup'], [role='group'], [role='tablist'], [data-part='list-row']";
 
 /** Where an item draws: its own box, and its text, which can reach out of a box that is too narrow. */
 interface Drawn {
@@ -109,7 +110,9 @@ export async function expectNoOverlap(page: Page): Promise<void> {
         const box = item.getBoundingClientRect();
         const range = document.createRange();
         range.selectNodeContents(item);
-        const text = range.getBoundingClientRect();
+        // A cell that clips its text (with an ellipsis) draws no more than its box.
+        const text =
+          getComputedStyle(item).overflowX === "visible" ? range.getBoundingClientRect() : box;
         if (box.width > 0 && box.height > 0) {
           drawn.push({
             text: (item.textContent ?? "").trim(),
