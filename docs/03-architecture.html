@@ -243,7 +243,8 @@
   server -. tests only .-&gt; devwords
   sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth &amp; devwords &amp; files &amp; search
   loadcheck --&gt; app &amp; store &amp; core
-  server -. tests only .-&gt; loadcheck</pre>
+  server -. tests only .-&gt; loadcheck
+  server -. tests only .-&gt; policy</pre>
 <h4>Dependency rules (checked by <code>cargo xtask check only ARCH-DEPS</code>)</h4>
 <ol>
 <li><code>bb-core</code>, <code>bb-searchlang</code> and <code>bb-markdown</code> do no I/O and depend on no other Bugaboo crate except <code>bb-core</code> (markdown not even that; <code>bb-searchlang</code> does, for the rules of an Issue ID and of a short name, which are defined once in <code>bb-core</code> and which the server reads the same way; <code>bb-core</code> and <code>bb-policy</code> use <code>bb-macros</code> for derives at compile time only), so they compile to WebAssembly.</li>

@@ -101,6 +101,7 @@ flowchart TB
   sample --> app & store & core & policy & auth & devwords & files & search
   loadcheck --> app & store & core
   server -. tests only .-> loadcheck
+  server -. tests only .-> policy
 ```
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
