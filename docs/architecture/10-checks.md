@@ -52,7 +52,7 @@ Adding a rule should be easy, and forgetting part of it impossible. The **META**
 
 ## Lists of routes that a check allows
 
-Some checks keep a file of named exceptions, each with a reason, that shrinks as the routes are fixed and fails when an entry goes stale. `ARCH-VERSIONED` (`tools/checks/version-exemptions.toml`) has two lists. `[[exempt]]` names changes that take no `version` at all (signing in, making a new record). `[[optional]]` names changes whose `version` was added after the freeze of the API (ADR-0008): only `required` is waived, so the member must still be in the body, the `409` must still be the `ConflictProblem`, and an entry whose `version` is required now, or that has none, or whose route is gone, fails. The tests of the check have good and bad examples for both lists.
+Some checks keep a file of named exceptions, each with a reason, that shrinks as the routes are fixed and fails when an entry goes stale. `ARCH-VERSIONED` (`tools/checks/version-exemptions.toml`) has two lists. `[[exempt]]` names changes that take no `version` at all (signing in, making a new record). `[[optional]]` names changes whose `version` was added after the freeze of the API (ADR-0008): only `required` is waived, so the member must still be in the body, the `409` must still be the `ConflictProblem`, and an entry whose `version` is required now, or that has none, or whose route is gone, or whose request body already had `version` in the frozen copy of the API, fails. The tests of the check have good and bad examples for both lists.
 
 ## Adding a rule
 

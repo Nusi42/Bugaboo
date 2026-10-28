@@ -21,7 +21,9 @@
 //! took its `version` after the API was frozen (ADR-0008), so the member must stay optional for the
 //! clients that do not send it (the last change wins for them). It must still have `version` among
 //! its members and document `ConflictProblem` as its `409`; a route whose `version` is required
-//! already, or has none, or is not a change, fails, so the list cannot go stale.
+//! already, or has none, or is not a change, fails, so the list cannot go stale. A route whose
+//! request body already had `version` in the frozen copy (`tools/checks/api-frozen.json`) cannot be
+//! listed: a frozen request cannot be loosened (ARCH-API-FREEZE).
 
 use bb_api_words::marks::LONG_TEXT;
 use bb_api_words::versions::{CONFLICT_SCHEMA, LOCK_TOKEN, LONG_TEXT_PROPERTIES, VERSION};
@@ -29,8 +31,10 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::api_spec::{self, Operation, resolve};
+use super::arch_api_freeze::FROZEN_PATH;
 use super::exemptions;
 use super::{Check, Context, Finding};
+use crate::source::read_text;
 
 /// Where the exemptions are written down, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/version-exemptions.toml";
@@ -49,7 +53,17 @@ impl Check for ArchVersioned {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let spec = api_spec::load(context.repo)?;
         let file: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
-        Ok(evaluate(&spec, &file.exempt, &file.optional))
+        // The frozen copy tells which versions were there when the API was frozen. Without it
+        // (the freeze check says so) nothing is known to be frozen.
+        let frozen = read_text(context.repo, FROZEN_PATH)
+            .ok()
+            .and_then(|text| serde_json::from_str::<Value>(&text).ok());
+        Ok(evaluate(
+            &spec,
+            &file.exempt,
+            &file.optional,
+            frozen.as_ref(),
+        ))
     }
 }
 
@@ -220,7 +234,24 @@ fn route_findings(
     findings
 }
 
-fn evaluate(spec: &Value, exempt: &[Exemption], optional: &[Exemption]) -> Vec<Finding> {
+/// Whether the frozen description already had a `version` in the request body of `route`.
+fn frozen_with_version(frozen: Option<&Value>, route: &str) -> bool {
+    let Some(spec) = frozen else {
+        return false;
+    };
+    api_spec::operations(spec).is_some_and(|operations| {
+        operations.iter().any(|found| {
+            found.place() == route && body_properties(spec, found.body).contains(&VERSION)
+        })
+    })
+}
+
+fn evaluate(
+    spec: &Value,
+    exempt: &[Exemption],
+    optional: &[Exemption],
+    frozen: Option<&Value>,
+) -> Vec<Finding> {
     let Some(operations) = api_spec::operations(spec) else {
         return vec![api_spec::no_paths()];
     };
@@ -245,7 +276,12 @@ fn evaluate(spec: &Value, exempt: &[Exemption], optional: &[Exemption]) -> Vec<F
                 ));
                 continue;
             };
-            if !body_properties(spec, found.body).contains(&VERSION) {
+            if frozen_with_version(frozen, route) {
+                findings.push(Finding::at(
+                    EXEMPTIONS_PATH,
+                    format!("`{route}` already took a `{VERSION}` when the API was frozen (ADR-0008): a frozen request cannot be loosened. Remove it from `[[optional]]`; the member stays required."),
+                ));
+            } else if !body_properties(spec, found.body).contains(&VERSION) {
                 findings.push(Finding::at(
                     EXEMPTIONS_PATH,
                     format!("`{route}` is listed under `[[optional]]` but takes no `{VERSION}`: the category waives only `required`, so the member must be there."),
@@ -322,11 +358,16 @@ mod tests {
     }
 
     fn messages(spec: &Value, exempt: &[Exemption]) -> Vec<String> {
-        messages_with(spec, exempt, &[])
+        messages_with(spec, exempt, &[], None)
     }
 
-    fn messages_with(spec: &Value, exempt: &[Exemption], optional: &[Exemption]) -> Vec<String> {
-        evaluate(spec, exempt, optional)
+    fn messages_with(
+        spec: &Value,
+        exempt: &[Exemption],
+        optional: &[Exemption],
+        frozen: Option<&Value>,
+    ) -> Vec<String> {
+        evaluate(spec, exempt, optional, frozen)
             .into_iter()
             .map(|finding| finding.message)
             .collect()
@@ -343,7 +384,7 @@ mod tests {
     #[test]
     fn good_example_a_version_added_after_the_freeze_may_stay_optional() {
         let named = [exempt(&["PATCH /api/v1/things/{id}"], LONG)];
-        assert!(messages_with(&spec(&optional_version()), &[], &named).is_empty());
+        assert!(messages_with(&spec(&optional_version()), &[], &named, None).is_empty());
     }
 
     #[test]
@@ -351,17 +392,40 @@ mod tests {
         let named = [exempt(&["PATCH /api/v1/things/{id}"], LONG)];
         let mut no_answer = optional_version();
         no_answer["responses"] = json!({"200": {"description": "ok"}});
-        let found = messages_with(&spec(&no_answer), &[], &named).join(
+        let found = messages_with(&spec(&no_answer), &[], &named, None).join(
             "
 ",
         );
         assert!(found.contains("ConflictProblem"), "{found}");
         let renamed = spec(&change(&["name", "base_version"], true, false));
-        let found = messages_with(&renamed, &[], &named).join(
+        let found = messages_with(&renamed, &[], &named, None).join(
             "
 ",
         );
         assert!(found.contains("takes no `version`"), "{found}");
+    }
+
+    #[test]
+    fn bad_example_a_version_that_was_in_the_frozen_api_cannot_become_optional() {
+        let named = [exempt(&["PATCH /api/v1/things/{id}"], LONG)];
+        let frozen_with = spec(&change(&["name", "version"], true, false));
+        let found = messages_with(&spec(&optional_version()), &[], &named, Some(&frozen_with))
+            .join(
+                "
+",
+            );
+        assert!(found.contains("when the API was frozen"), "{found}");
+        // A route whose frozen body had no version may have it optional.
+        let frozen_without = spec(&change(&["name"], false, false));
+        assert!(
+            messages_with(
+                &spec(&optional_version()),
+                &[],
+                &named,
+                Some(&frozen_without)
+            )
+            .is_empty()
+        );
     }
 
     #[test]
@@ -374,13 +438,14 @@ mod tests {
         );
         assert!(found.contains("must be required"), "{found}");
         // Listed, but the version is required now, or the route is gone.
-        let found = messages_with(&spec(&change(&["version"], true, false)), &[], &named).join(
-            "
+        let found = messages_with(&spec(&change(&["version"], true, false)), &[], &named, None)
+            .join(
+                "
 ",
-        );
+            );
         assert!(found.contains("requires its `version` now"), "{found}");
         let gone = [exempt(&["POST /api/v1/gone"], LONG)];
-        let found = messages_with(&spec(&optional_version()), &[], &gone).join(
+        let found = messages_with(&spec(&optional_version()), &[], &gone, None).join(
             "
 ",
         );
@@ -509,7 +574,8 @@ mod tests {
         let repo = crate::repo::Repo::discover().unwrap();
         let spec = api_spec::load(&repo).unwrap();
         let file: Exemptions = exemptions::load(&repo, EXEMPTIONS_PATH).unwrap();
-        let found = messages_with(&spec, &file.exempt, &file.optional);
+        let frozen: Value = serde_json::from_str(&read_text(&repo, FROZEN_PATH).unwrap()).unwrap();
+        let found = messages_with(&spec, &file.exempt, &file.optional, Some(&frozen));
         assert!(found.is_empty(), "{found:?}");
     }
 }
