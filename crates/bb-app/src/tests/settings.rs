@@ -500,10 +500,17 @@ async fn m5_f97_a_persons_setting_changed_from_an_old_version_is_refused() -> Ou
     // A second tab read the setting before the first change: its change is refused, and the
     // value the first one wrote stays.
     let events = world.store.event_count();
-    assert_eq!(
-        refused(change_mine(&world, mode, "light", Some(0)).await),
-        ErrorCode::VersionChanged
-    );
+    match change_mine(&world, mode, "light", Some(0)).await {
+        Err(AppError::Conflict(conflict)) => {
+            assert_eq!(
+                conflict.version,
+                Some(1),
+                "the answer names the version now"
+            );
+            assert_eq!(conflict.fields, ["appearance_mode"]);
+        }
+        other => panic!("expected a conflict, got {other:?}"),
+    }
     assert_eq!(
         world.store.event_count(),
         events,

@@ -45,6 +45,7 @@ use crate::access::{Actor, ProjectLabel};
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, by, change_failed, changed, fixed_entity, internal,
 };
+use crate::editing::Conflict;
 use crate::issues::{ModeChange, plan_renewals_in, renew_or_queue_in};
 use crate::projects::Why;
 
@@ -371,6 +372,31 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
+    /// The answer to a change of a person's own setting made from an old version: the version it
+    /// has now and the value it holds, read again (nobody else's data is in it). When the read
+    /// fails the plain refusal is sent.
+    async fn version_conflict_of(
+        &self,
+        scope: Scope,
+        definition: &'static SettingDefinition,
+    ) -> AppError {
+        let Ok(layers) = self.layers_of(scope, None).await else {
+            return AppError::Refused(ErrorCode::VersionChanged);
+        };
+        let key = definition.key();
+        let field = field_of(key);
+        AppError::Conflict(Box::new(Conflict {
+            version: Some(layers.person_versions.get(key).copied().unwrap_or(0)),
+            changed_by: None,
+            changed_at: None,
+            current: own_value(&layers, scope, definition)
+                .map(|value| (field.clone(), value))
+                .into_iter()
+                .collect(),
+            fields: vec![field],
+        }))
+    }
+
     /// A change of a setting that touches security also goes into the security log (SEC-15).
     async fn note_security(
         &self,
@@ -511,7 +537,8 @@ pub async fn change_setting<S: AuthStore>(
     let stopped = why.clone();
     let mode_change = ModeChange::Set(value.clone());
     let (mut source, events) = (ctx.owned_ids(), ctx.event_maker(by(actor.person.id)));
-    ctx.store()
+    let written = ctx
+        .store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 let renewals =
@@ -532,12 +559,14 @@ pub async fn change_setting<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| {
-            why.said().map_or_else(
-                || change_failed::<S>(&error, Stops::both(ErrorCode::SettingLocked)),
-                AppError::Refused,
-            )
-        })?;
+        .map_err(|error| match why.said() {
+            Some(code) => AppError::Refused(code),
+            None => change_failed::<S>(&error, Stops::both(ErrorCode::SettingLocked)),
+        });
+    if let Err(AppError::Refused(ErrorCode::VersionChanged)) = written {
+        return Err(ctx.version_conflict_of(scope, definition).await);
+    }
+    written?;
     ctx.note_security(&actor, definition, SecurityAction::SettingChanged, entity)
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
