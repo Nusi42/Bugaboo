@@ -5,11 +5,11 @@ import { expectNoSidewaysScroll } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { tickBox, webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
+import { idsCut } from "./support/list-ids.ts";
 import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 import {
   grid,
-  idsCut,
   openList,
   placeInGrid,
   prepareLook,
@@ -125,26 +125,9 @@ test("ux_4_2 the list is left-aligned: it starts where the heading starts and fi
   expect(table.width).toBeGreaterThan(table.x * 2);
 });
 
-/** The longest form of an ID the lists have: a short name of 10 characters, the dash and a code of 7 digits. */
-const LONGEST_ID_CHARACTERS = 18;
-
-test("ux_4_2 an ID is never cut: the column holds the longest ID form, a phone card fits what it says", async ({
-  page,
-}) => {
+test("ux_4_2 an ID is never cut, in a row and on a phone card", async ({ page }) => {
   await openList(page);
-  const keys = partIn(grid(page), "list-row.cell", "key");
-  const cut = await idsCut(page);
-  expect(cut).toBe(0);
-  test.skip(layoutOf(page) === "phone", "a card sizes its ID from what it says");
-  const longest = await keys.first().evaluate((element, characters) => {
-    const probe = document.createElement("span");
-    probe.textContent = "M".repeat(characters);
-    element.append(probe);
-    const need = probe.getBoundingClientRect().width;
-    probe.remove();
-    return { need, room: element.getBoundingClientRect().width };
-  }, LONGEST_ID_CHARACTERS);
-  expect(longest.need).toBeLessThanOrEqual(longest.room);
+  expect(await idsCut(page)).toBe(0);
 });
 
 test("ux_4_2 a whole row opens its issue, and its title is not a link color (R8)", async ({

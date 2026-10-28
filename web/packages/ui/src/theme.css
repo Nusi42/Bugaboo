@@ -48,7 +48,8 @@
   --size-col-icon: 24px;
   --size-col-rules: 64px;
   --size-col-remove: 80px;
-  --size-col-key: calc(152px * var(--text-scale));
+  --size-col-key: calc(80px * var(--text-scale));
+  --size-code-char: calc(8.4px * var(--text-scale));
   --size-col-short: 64px;
   --size-col-place: 112px;
   --size-col-priority: 72px;
@@ -1834,7 +1835,6 @@ body {
 
 [data-part="list-row.cell"][data-variant~="key"] {
   flex: none;
-  width: var(--size-col-key);
   color: var(--fg-muted);
   font-family: var(--mono);
 }
@@ -1949,7 +1949,6 @@ body {
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="key"],
 [data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="key"] {
   grid-area: key;
-  width: auto;
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="priority"],
@@ -1968,7 +1967,6 @@ body {
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="person"] {
   grid-area: person;
   width: auto;
-  min-width: 0;
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="action"] {

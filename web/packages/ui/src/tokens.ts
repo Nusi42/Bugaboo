@@ -151,6 +151,7 @@ export const tokenNames = [
   "size-col-rules",
   "size-col-remove",
   "size-col-key",
+  "size-code-char",
   "size-col-short",
   "size-col-place",
   "size-col-priority",

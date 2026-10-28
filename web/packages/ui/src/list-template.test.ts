@@ -23,4 +23,12 @@ describe("ux_4_2 the columns of the list as one template", () => {
   it("takes the width a person gave a column, in pixels", () => {
     expect(listTemplate([{ column: "person", width: 150 }])).toBe("150px");
   });
+
+  it("makes the ID as wide as the longest one drawn, and no narrower than its head needs", () => {
+    expect(listTemplate([{ column: "key" }], 19)).toBe(
+      "max(var(--size-col-key), calc(var(--size-code-char) * 19))",
+    );
+    expect(listTemplate([{ column: "key" }], 0)).toBe("var(--size-col-key)");
+    expect(listTemplate([{ column: "key", width: 150 }], 19)).toBe("150px");
+  });
 });

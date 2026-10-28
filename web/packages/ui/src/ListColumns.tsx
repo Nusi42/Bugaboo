@@ -12,6 +12,8 @@ import { variableOf } from "./variables.ts";
 
 export interface ListFrameProps {
   readonly columns: readonly ListColumnSpec[];
+  /** The characters of the longest ID the list draws, so the ID column holds it whole; none: the least. */
+  readonly keyChars?: number;
   /** *Spacing: Compact*. */
   readonly compact: boolean;
   readonly children: ReactNode;
@@ -75,9 +77,9 @@ function keepHeadAndRows(frame: HTMLElement): () => void {
 }
 
 /** The box around the head and the rows of an issue list: it holds the columns they share. */
-export function ListFrame({ columns, compact, children }: ListFrameProps) {
+export function ListFrame({ columns, keyChars = 0, compact, children }: ListFrameProps) {
   const frame = useRef<HTMLDivElement>(null);
-  const template = listTemplate(columns);
+  const template = listTemplate(columns, keyChars);
   useLayoutEffect(() => {
     frame.current?.style.setProperty(variableOf("list-columns"), template);
   }, [template]);
