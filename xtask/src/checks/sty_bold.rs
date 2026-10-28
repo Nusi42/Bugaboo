@@ -47,8 +47,7 @@ fn word_is_bold(file: &ThemeFile, word: &str) -> bool {
     number.is_some_and(|number| number.parse::<u32>().is_ok_and(|weight| weight >= 600))
 }
 
-/// Whether a line sets a bold weight: `font-weight`, or the weight inside a `font` shorthand (the
-/// first words, before the size, which is the one word with a unit or a slash).
+/// Whether a line sets a bold weight: `font-weight`, or a bold word anywhere in a `font` shorthand.
 fn is_bold(file: &ThemeFile, declaration: &Declaration) -> bool {
     match declaration.property.as_str() {
         "font-weight" => word_is_bold(file, declaration.value.trim()),

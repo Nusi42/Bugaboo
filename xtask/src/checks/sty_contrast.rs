@@ -419,14 +419,12 @@ mod tests {
         for theme in file.themes.iter().map(|theme| theme.name.as_str()) {
             let pairs = file.contrast.pairs(theme);
             for group in ["ns", "ip", "done"] {
-                {
-                    let tint = format!("tint-{group}");
-                    for text in ["fg", "fg-muted", "fg-subtle", "accent-fg", "danger"] {
-                        assert!(
-                            pairs.contains(&(text, tint.as_str())),
-                            "{text} on {tint} is not checked in {theme}"
-                        );
-                    }
+                let tint = format!("tint-{group}");
+                for text in ["fg", "fg-muted", "fg-subtle", "accent-fg", "danger"] {
+                    assert!(
+                        pairs.contains(&(text, tint.as_str())),
+                        "{text} on {tint} is not checked in {theme}"
+                    );
                 }
             }
         }
