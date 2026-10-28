@@ -18,7 +18,7 @@ Every use case appends **domain events** (actor, channel, entity, field changes 
 
 ## Change (M3 WP-07)
 
-The first consumer of the outbox is the history of an issue (`history_entry`, ISS-06). It reads events after its stored position and writes one row per event and issue with `ON CONFLICT DO NOTHING`, so a repeat changes nothing. The rows commit first and the position moves after them in a second step, so a stop in between makes the next round read the same events again and the repeat is harmless; it resumes after a restart. The rows hold the facts; the reader's field mask is applied when the history is read, never when it is built, so a change of roles changes what is shown at once. The consumer runs when a history is read and as the daily job `history.catch-up` of the job runner (ADR-0017), which is also queued at every server start (M3-F71).
+The first consumer of the outbox is the history of an issue (`history_entry`, ISS-06). It reads events after its stored position and writes one row per event and issue with `ON CONFLICT DO NOTHING`, so a repeat changes nothing. The rows and the position commit together (M5-F101), so a reader that stops resumes from the position it had, and a repeat (two readers at the same moment, or a restart) is harmless through `ON CONFLICT DO NOTHING`. The rows hold the facts; the reader's field mask is applied when the history is read, never when it is built, so a change of roles changes what is shown at once. The consumer runs when a history is read and as the daily job `history.catch-up` of the job runner (ADR-0017), which is also queued at every server start (M3-F71).
 
 ## Alternatives considered
 
