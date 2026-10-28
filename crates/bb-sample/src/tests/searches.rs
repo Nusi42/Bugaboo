@@ -4,8 +4,6 @@
 //! project shows one as its list. They make the real thing on SQLite and PostgreSQL and read it
 //! back through the use cases, as each person would.
 
-use std::future::Future;
-
 use bb_app::auth::{SignIn, sign_in};
 use bb_app::saved_searches::{ProjectListQuery, SearchesQuery, project_list, saved_searches};
 use bb_core::saved_search::SearchSet;
@@ -46,76 +44,73 @@ impl Later for Reading {
         self.everything.left_behind()
     }
 
-    fn after_people(&mut self, world: &World<'_>) -> impl Future<Output = Result<(), SampleError>> {
-        async move {
-            self.everything.after_people(world).await?;
-            let step =
-                |error: &dyn std::fmt::Display| SampleError::step(Step::SavedSearches, &error);
-            for made in world.people.iter().filter(|made| !made.person.code_app) {
-                let ctx = world.services.ctx(world.request());
-                let started = sign_in(
+    async fn after_people(&mut self, world: &World<'_>) -> Result<(), SampleError> {
+        self.everything.after_people(world).await?;
+        let step = |error: &dyn std::fmt::Display| SampleError::step(Step::SavedSearches, &error);
+        for made in world.people.iter().filter(|made| !made.person.code_app) {
+            let ctx = world.services.ctx(world.request());
+            let started = sign_in(
+                &ctx,
+                SignIn {
+                    email: made.person.email.clone(),
+                    password: made.password.clone(),
+                    previous_session: None,
+                },
+            )
+            .await
+            .map_err(|error| SampleError::step(Step::SigningIn, &error))?;
+            let mut lists = Vec::new();
+            for scope in [SearchSet::Mine, SearchSet::Shared] {
+                let page = saved_searches(
                     &ctx,
-                    SignIn {
-                        email: made.person.email.clone(),
-                        password: made.password.clone(),
-                        previous_session: None,
+                    SearchesQuery {
+                        session_token: started.session_token.clone(),
+                        scope,
+                        cursor: None,
+                        limit: PAGE,
                     },
                 )
                 .await
-                .map_err(|error| SampleError::step(Step::SigningIn, &error))?;
-                let mut lists = Vec::new();
-                for scope in [SearchSet::Mine, SearchSet::Shared] {
-                    let page = saved_searches(
-                        &ctx,
-                        SearchesQuery {
-                            session_token: started.session_token.clone(),
-                            scope,
-                            cursor: None,
-                            limit: PAGE,
-                        },
-                    )
-                    .await
-                    .map_err(|error| step(&error))?
-                    .masked_value()
-                    .map_err(|error| step(&error))?;
-                    lists.push(page);
-                }
-                let names = |page: &Value| -> Vec<(String, String)> {
-                    page["items"].as_array().map_or(Vec::new(), |items| {
-                        items
-                            .iter()
-                            .map(|item| {
-                                (
-                                    item["name"].as_str().unwrap_or_default().to_owned(),
-                                    item["text"].as_str().unwrap_or_default().to_owned(),
-                                )
-                            })
-                            .collect()
-                    })
-                };
-                if self.web_list.is_none() && made.person.role.code() == "team-member" {
-                    let list = project_list(
-                        &ctx,
-                        ProjectListQuery {
-                            session_token: started.session_token.clone(),
-                            project: "WEB".to_owned(),
-                        },
-                    )
-                    .await;
-                    // A Team member of a project that is not WEB does not see its list.
-                    if let Ok(list) = list {
-                        let list = list.masked_value().map_err(|error| step(&error))?;
-                        self.web_list = list["search"]["name"].as_str().map(str::to_owned);
-                    }
-                }
-                self.seen.push(Seen {
-                    role: made.person.role.code().to_owned(),
-                    mine: names(&lists[0]).into_iter().map(|(name, _)| name).collect(),
-                    shared: names(&lists[1]),
-                });
+                .map_err(|error| step(&error))?
+                .masked_value()
+                .map_err(|error| step(&error))?;
+                lists.push(page);
             }
-            Ok(())
+            let names = |page: &Value| -> Vec<(String, String)> {
+                page["items"].as_array().map_or(Vec::new(), |items| {
+                    items
+                        .iter()
+                        .map(|item| {
+                            (
+                                item["name"].as_str().unwrap_or_default().to_owned(),
+                                item["text"].as_str().unwrap_or_default().to_owned(),
+                            )
+                        })
+                        .collect()
+                })
+            };
+            if self.web_list.is_none() && made.person.role.code() == "team-member" {
+                let list = project_list(
+                    &ctx,
+                    ProjectListQuery {
+                        session_token: started.session_token.clone(),
+                        project: "WEB".to_owned(),
+                    },
+                )
+                .await;
+                // A Team member of a project that is not WEB does not see its list.
+                if let Ok(list) = list {
+                    let list = list.masked_value().map_err(|error| step(&error))?;
+                    self.web_list = list["search"]["name"].as_str().map(str::to_owned);
+                }
+            }
+            self.seen.push(Seen {
+                role: made.person.role.code().to_owned(),
+                mine: names(&lists[0]).into_iter().map(|(name, _)| name).collect(),
+                shared: names(&lists[1]),
+            });
         }
+        Ok(())
     }
 }
 
@@ -139,7 +134,11 @@ async fn qry_06_every_role_saved_a_search_and_the_shared_ones_reach_only_who_rea
 -> TestResult {
     each_database("qry_06_the_sample_saved_searches", async |db| {
         let folder = tempfile::tempdir()?;
-        let reading = read_back(&Target::Address(db.url().to_owned()), folder.path()).await?;
+        let reading = Box::pin(read_back(
+            &Target::Address(db.url().to_owned()),
+            folder.path(),
+        ))
+        .await?;
         let plan = bb_dev_words::sample::Layout::bundled()?.issues.work;
         // Every search is in the list of the first person of its role who made one.
         for search in &plan.saved_searches {

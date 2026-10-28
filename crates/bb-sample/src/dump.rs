@@ -291,7 +291,7 @@ fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
                         .and_then(|rest| rest.strip_prefix('.'))
                         .and_then(FieldKey::from_code)
                         .and_then(FieldKey::own)
-                        .map(|field| field.to_bytes())
+                        .map(bb_core::id::FieldId::to_bytes)
                 });
                 let (field, kind) = match id {
                     Some(id) => (labels.label(OWN_FIELD, id), OWN_FIELD),
