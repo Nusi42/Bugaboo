@@ -1,9 +1,10 @@
 //! A page of a list that skips the rows a person may not see (any more), written once: the projects
 //! to choose from for an access key and the saved searches shared with a person walk by it.
 //!
-//! The walk reads [`PAGE_SIZE_MAX`] rows at a time, asks of each whether the person may see it, and
-//! stops when the page is full, the rows are used up or [`LOOKED_AT_MAX`] rows were looked at, so
-//! the work of a request does not depend on how many rows are hidden (PERF-05). A page that stops
+//! The walk reads [`PAGE_SIZE_MAX`] rows at a time (a list whose rows are costly to judge,
+//! [`Walk::costly_rows`], starts with the page and one more and doubles while rows are skipped),
+//! asks of each whether the person may see it, and stops when the page is full, the rows are used
+//! up or [`LOOKED_AT_MAX`] rows were looked at, so the work of a request does not depend on how many rows are hidden (PERF-05). A page that stops
 //! at the bound is short and has a cursor that goes on past the rows looked at; it never holds the
 //! key of a row that was skipped ([`SkipCursor`]). A list whose rows cost a read for each name they
 //! hold can also end a page before a row that is more than the request may spend, and goes on
@@ -320,7 +321,10 @@ mod tests {
         };
         let filled = fill_past_hidden(&mut walk, &SkipCursor::start(), 10).await?;
         assert_eq!((walk.asked.as_slice(), filled.rows.len()), (&[11][..], 10));
-        assert!(filled.next.is_some());
+        let next = filled
+            .next
+            .ok_or(AppError::Internal("no cursor".to_owned()))?;
+        assert_eq!((next.after, next.skip), (Some(9), 0));
         // Hidden rows make the batches grow, up to the largest, and the rows looked at stay
         // within the bound.
         let mut walk = Recording {
@@ -328,8 +332,25 @@ mod tests {
             hidden: 300,
             asked: Vec::new(),
         };
-        fill_past_hidden(&mut walk, &SkipCursor::start(), 10).await?;
+        let filled = fill_past_hidden(&mut walk, &SkipCursor::start(), 10).await?;
         assert_eq!(walk.asked, [11, 22, 44, 88, 100, 100]);
+        let next = filled
+            .next
+            .ok_or(AppError::Internal("no cursor".to_owned()))?;
+        assert_eq!((next.after, next.skip), (Some(309), 0));
+        // Everything hidden: the batches grow to the largest, the last is cut at the bound, and
+        // the cursor counts the stretch and names no row.
+        let mut walk = Recording {
+            costly: true,
+            hidden: u64::MAX,
+            asked: Vec::new(),
+        };
+        let filled = fill_past_hidden(&mut walk, &SkipCursor::start(), 10).await?;
+        assert_eq!(walk.asked, [11, 22, 44, 88, 100, 100, 100, 35]);
+        let next = filled
+            .next
+            .ok_or(AppError::Internal("no cursor".to_owned()))?;
+        assert_eq!((next.after, next.skip), (None, 500));
         // A list of cheap rows reads the largest batch at once.
         let mut walk = Recording {
             costly: false,
