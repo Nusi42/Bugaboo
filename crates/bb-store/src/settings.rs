@@ -27,7 +27,9 @@ use crate::auth::AuthStorage;
 use crate::db::{Database, Reader, Row, STATEMENT_ITEMS, Transaction, to_micros};
 use crate::error::{SettingProblem, StoreError};
 use crate::projects::chain_of;
-use crate::schema::{PersonSettingRow, PolicyVersionRow, SettingRow as Columns};
+use crate::schema::{
+    PersonSettingCounterRow, PersonSettingRow, PolicyVersionRow, SettingRow as Columns,
+};
 
 /// A value to store.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -139,8 +141,48 @@ async fn upsert(
     Ok(())
 }
 
-/// Writes a person's own value inside the transaction of a change, and counts its version up
-/// (a value that is not there has version `0`). With `expected` the value is written only when
+/// The next version of a person's own settings: their counter goes up by one, and the number is
+/// the version of the write that follows. A version never goes back, so it never names two
+/// different states of a value, whatever is taken away and set again in between.
+async fn next_person_version(
+    transaction: &mut Transaction,
+    person: UserId,
+) -> Result<i64, StoreError> {
+    let mut count = Query::insert();
+    count
+        .into_table(PersonSettingCounterRow::Table)
+        .columns([
+            PersonSettingCounterRow::Person,
+            PersonSettingCounterRow::Counter,
+        ])
+        .values([Expr::val(id_bytes(person)), Expr::val(FIRST_VERSION)])
+        .map_err(|_| StoreError::Corrupt("a counter"))?
+        .on_conflict(
+            OnConflict::column(PersonSettingCounterRow::Person)
+                .value(
+                    PersonSettingCounterRow::Counter,
+                    Expr::col((
+                        PersonSettingCounterRow::Table,
+                        PersonSettingCounterRow::Counter,
+                    ))
+                    .add(1),
+                )
+                .to_owned(),
+        );
+    transaction.execute(&count).await?;
+    let mut read = Query::select();
+    read.column(PersonSettingCounterRow::Counter)
+        .from(PersonSettingCounterRow::Table)
+        .and_where(Expr::col(PersonSettingCounterRow::Person).eq(id_bytes(person)));
+    transaction
+        .fetch_optional(&read)
+        .await?
+        .ok_or(StoreError::Corrupt("a counter"))?
+        .get(PersonSettingCounterRow::Counter)
+}
+
+/// Writes a person's own value inside the transaction of a change, with the next version of the
+/// person's counter (a value that is not there has version `0`). With `expected` the value is written only when
 /// it is at that version, and `false` says it was not: somebody else changed it since the caller
 /// read it. Without, the last write wins, as before the versions.
 async fn upsert_person(
@@ -152,13 +194,14 @@ async fn upsert_person(
     expected: Option<Version>,
 ) -> Result<bool, StoreError> {
     let value = serde_json::to_string(value)?;
+    let new_version = next_person_version(transaction, person).await?;
     if let Some(version) = expected.filter(|version| version.get() > 0) {
         let mut update = Query::update();
         update
             .table(PersonSettingRow::Table)
             .value(PersonSettingRow::Value, value)
             .value(PersonSettingRow::UpdatedAt, to_micros(at))
-            .value(PersonSettingRow::Version, next(version.get()))
+            .value(PersonSettingRow::Version, new_version)
             .and_where(Expr::col(PersonSettingRow::Person).eq(id_bytes(person)))
             .and_where(Expr::col(PersonSettingRow::Key).eq(key.as_str()))
             .and_where(Expr::col(PersonSettingRow::Version).eq(version.get()));
@@ -179,7 +222,7 @@ async fn upsert_person(
             Expr::val(key.as_str()),
             Expr::val(value),
             Expr::val(to_micros(at)),
-            Expr::val(FIRST_VERSION),
+            Expr::val(new_version),
         ])
         .map_err(|_| StoreError::Corrupt("a setting"))?;
     let mut conflict = OnConflict::columns([PersonSettingRow::Person, PersonSettingRow::Key]);
@@ -189,11 +232,11 @@ async fn upsert_person(
     } else {
         insert.on_conflict(
             conflict
-                .update_columns([PersonSettingRow::Value, PersonSettingRow::UpdatedAt])
-                .value(
+                .update_columns([
+                    PersonSettingRow::Value,
+                    PersonSettingRow::UpdatedAt,
                     PersonSettingRow::Version,
-                    Expr::col((PersonSettingRow::Table, PersonSettingRow::Version)).add(1),
-                )
+                ])
                 .to_owned(),
         );
     }

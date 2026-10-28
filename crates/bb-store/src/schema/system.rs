@@ -163,6 +163,16 @@ pub(crate) enum PersonSettingRow {
     Version,
 }
 
+/// The counter that gives the versions of a person's own settings, so a version never goes back
+/// when a value is taken away and set again (migration 28).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum PersonSettingCounterRow {
+    #[iden = "person_setting_counter"]
+    Table,
+    Person,
+    Counter,
+}
+
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum Migration {
     Table,

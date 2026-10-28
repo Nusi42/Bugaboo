@@ -367,8 +367,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             source,
             own,
             locked,
-            version: matches!(scope, Scope::Person(_))
-                .then(|| layers.person_versions.get(key).copied().unwrap_or(0)),
+            version: matches!(scope, Scope::Person(_)).then(|| layers.person_version(key)),
         })
     }
 
@@ -386,7 +385,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let key = definition.key();
         let field = field_of(key);
         AppError::Conflict(Box::new(Conflict {
-            version: Some(layers.person_versions.get(key).copied().unwrap_or(0)),
+            version: Some(layers.person_version(key)),
             changed_by: None,
             changed_at: None,
             current: own_value(&layers, scope, definition)
@@ -525,8 +524,8 @@ pub async fn change_setting<S: AuthStore>(
     }
     if let Scope::Person(_) = scope {
         // The log tells a change that counted the version up from one that did not.
-        let current = layers.person_versions.get(definition.key()).copied();
-        changes.push(counted_up(input.version.or(current).unwrap_or(0)));
+        let current = layers.person_version(definition.key());
+        changes.push(counted_up(input.version.unwrap_or(current)));
     }
     let event = ctx.event(by(actor.person.id), entity.clone(), changes)?;
     // The issues of a project get new IDs in the same change when its mode of issue IDs changes.

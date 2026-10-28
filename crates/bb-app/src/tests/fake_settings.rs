@@ -19,7 +19,7 @@ pub(crate) struct FakeSetting {
     pub(crate) key: String,
     pub(crate) value: SettingValue,
     pub(crate) locked: bool,
-    /// Counts up with every write of a person's own value; the other scopes stay at 1.
+    /// The version a person's own value was written at (their counter); the other scopes stay at 1.
     pub(crate) version: i64,
 }
 
@@ -76,11 +76,14 @@ pub(crate) fn put(state: &mut State, scope: Scope, key: &str, value: &SettingVal
             .settings
             .iter()
             .any(|row| row.scope == scope && row.key == key && row.locked);
-    let version = state
-        .settings
-        .iter()
-        .find(|row| row.scope == scope && row.key == key)
-        .map_or(1, |row| next(row.version));
+    let version = match scope {
+        Scope::Person(person) => {
+            let counter = state.person_counters.entry(person).or_insert(0);
+            *counter = next(*counter);
+            *counter
+        }
+        Scope::Organization | Scope::Project(_) => 1,
+    };
     state
         .settings
         .retain(|row| !(row.scope == scope && row.key == key));

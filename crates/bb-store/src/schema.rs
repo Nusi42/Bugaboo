@@ -653,6 +653,10 @@ stored_tables! {
         Policy => policy,
         Version => version,
     },
+    PersonSettingCounterRow => bb_core::settings::PersonSettingCounter {
+        Person => person,
+        Counter => counter,
+    },
     PersonSettingRow => bb_core::settings::StoredPersonSetting {
         Person => person,
         Key => key,

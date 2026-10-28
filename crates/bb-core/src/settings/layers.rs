@@ -82,6 +82,12 @@ pub struct Layers {
 }
 
 impl Layers {
+    /// The version of the person's own value of `key`; `0` while there is none.
+    #[must_use]
+    pub fn person_version(&self, key: &str) -> i64 {
+        self.person_versions.get(key).copied().unwrap_or(0)
+    }
+
     /// The value that counts for `definition`, and where it comes from.
     ///
     /// A layer a setting cannot be set on is never looked at, so a value that was stored before

@@ -72,7 +72,7 @@ mod tests {
                     Expr::val(2_i64),
                 ])?;
             database.execute(&old).await?;
-            assert_eq!(database.migrate(at(1)).await?, [27]);
+            assert_eq!(database.migrate(at(1)).await?, [27, 28]);
             let mut select = Query::select();
             select
                 .column(PersonSettingRow::Version)
