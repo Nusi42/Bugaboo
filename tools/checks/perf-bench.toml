@@ -24,7 +24,8 @@ p95_ms = 300
 p95_ms = 8000
 
 # A scenario that is over its budget on one database and is accepted for now (maintainer decision).
-# The nightly run tells it as a known gap and does not fail on it; the budget above stays as it is.
+# The nightly run tells it as a known gap and fails it only over its limit; the budget above stays as it is.
+# The limit must be above the budget of the scenario.
 # This is the one place for such an acceptance: each entry names the database, the follow-up that
 # closes it, the most it may take (over that the run fails) and the reason. An entry is removed when its follow-up is done.
 [known_gaps.search-groups-assigned-to]

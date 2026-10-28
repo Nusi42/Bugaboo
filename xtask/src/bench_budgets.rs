@@ -165,6 +165,16 @@ pub(crate) fn problems(budgets: &Budgets, listed: &[(Scenario, usize)]) -> Vec<(
                 format!("The known gap {name} must allow more than 0 milliseconds."),
             ));
         }
+        let budget = listed
+            .iter()
+            .find(|(each, _)| &each.name == name)
+            .and_then(|(each, _)| budgets.p95_ms(&each.budget));
+        if budget.is_some_and(|allowed| gap.p95_ms_at_most <= allowed) {
+            found.push((
+                BUDGETS_PATH.to_owned(),
+                format!("The known gap {name} must allow more than the budget of the scenario."),
+            ));
+        }
         if !listed.iter().any(|(each, _)| &each.name == name) {
             found.push((
                 BUDGETS_PATH.to_owned(),
@@ -197,7 +207,8 @@ pub(crate) struct Judged {
 }
 
 /// The scenarios of a run on `database` that are over their budget. A scenario that
-/// `known_gaps` names for this database is told as a known gap and does not fail the run.
+/// `known_gaps` names for this database is told as a known gap and fails the run only over the
+/// limit of its entry.
 pub(crate) fn over(budgets: &Budgets, database: &str, run: &BTreeMap<String, Measured>) -> Judged {
     let mut judged = Judged::default();
     for (name, measured) in run {
@@ -361,6 +372,17 @@ reason = \"x\"
         ))
         .unwrap();
         assert_eq!(problems(&nowhere, &scenarios(SOURCE)).len(), 1);
+        let low = Budgets::parse(&format!(
+            "{TOML}[known_gaps.search]
+database = \"sqlite\"
+p95_ms_at_most = 300
+follow_up = \"M5-F89\"
+reason = \"x\"
+"
+        ))
+        .unwrap();
+        let found = problems(&low, &scenarios(SOURCE));
+        assert!(found[0].1.contains("more than the budget"), "{found:?}");
         let on_sqlite = over(&gap, "sqlite", &run);
         assert!(on_sqlite.failures.is_empty());
         assert!(on_sqlite.known[0].contains("Known gap M5-F89: slow"));
