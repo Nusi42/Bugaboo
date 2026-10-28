@@ -338,9 +338,9 @@ export const part = {
   statusButton: "status-button",
   priority: "priority",
   priorityIcon: "priority-icon",
+  listRow: "list-row",
   issueRow: "issue-row",
   timelineBar: "timeline-bar",
-  listRow: "list-row",
   listGrid: "list-grid",
   listRowCell: "list-row.cell",
   listGroup: "list-group",
@@ -786,28 +786,6 @@ export const partWords = {
   "status-button": { variant: ["not-started", "in-progress", "done"], state: [] },
   priority: { variant: ["critical", "high", "normal", "low"], state: [] },
   "priority-icon": { variant: [], state: [] },
-  "issue-row": {
-    variant: ["current"],
-    state: [
-      "selected",
-      "group-not-started",
-      "group-in-progress",
-      "group-done",
-      "priority-critical",
-      "priority-high",
-    ],
-  },
-  "timeline-bar": {
-    variant: [],
-    state: [
-      "selected",
-      "group-not-started",
-      "group-in-progress",
-      "group-done",
-      "priority-critical",
-      "priority-high",
-    ],
-  },
   "list-row": {
     variant: ["head", "phone", "slim", "plain", "grid"],
     state: [
@@ -818,6 +796,28 @@ export const partWords = {
       "priority-high",
       "selected",
       "current",
+    ],
+  },
+  "issue-row": {
+    variant: ["current"],
+    state: [
+      "group-not-started",
+      "group-in-progress",
+      "group-done",
+      "priority-critical",
+      "priority-high",
+      "selected",
+    ],
+  },
+  "timeline-bar": {
+    variant: [],
+    state: [
+      "group-not-started",
+      "group-in-progress",
+      "group-done",
+      "priority-critical",
+      "priority-high",
+      "selected",
     ],
   },
   "list-grid": { variant: [], state: [] },

@@ -25,9 +25,9 @@ export async function listInFourThemes(page: Page, name: string): Promise<void> 
 }
 
 /**
- * Gives the Not started row the keyboard focus the way a person does: the list is one Tab stop that
- * lands on the row that was used last (the ticked first row), and two arrow keys go down by the head of
- * the next group to it. A phone has no keyboard, so there nothing is done.
+ * Gives the Not started row the keyboard focus the way a person does: the list is focused as the one
+ * stop of the grid (it lands on the row used last, the ticked first row), and two arrow keys go down by
+ * the head of the next group to the row. A phone has no keyboard, so there nothing is done.
  */
 export async function focusRowByKeys(page: Page, row: Locator): Promise<void> {
   if (layoutOf(page) === "phone") {

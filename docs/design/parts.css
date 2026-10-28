@@ -939,12 +939,6 @@ optgroup {
   height: var(--size-icon-small);
 }
 
-[data-part="issue-row"][data-state~="selected"],
-[data-part="timeline-bar"][data-state~="selected"] {
-  outline: var(--ring-width) solid var(--accent);
-  outline-offset: calc(var(--ring-width) * -1);
-}
-
 [data-part="list-row"][data-state~="group-not-started"],
 [data-part="issue-row"][data-state~="group-not-started"],
 [data-part="timeline-bar"][data-state~="group-not-started"] {
@@ -1000,14 +994,12 @@ optgroup {
   box-shadow: inset 0 0 0 var(--border-width) var(--border-control);
 }
 
-[data-part="list-row"][data-state~="selected"] {
-  outline: var(--ring-width) solid var(--accent);
-  outline-offset: calc(var(--ring-width) * -1);
-}
-
-[data-part="list-row"][data-state~="current"] {
-  outline: var(--ring-width) solid var(--accent);
-  outline-offset: calc(var(--ring-width) * -1);
+[data-part="list-row"][data-state~="selected"],
+[data-part="list-row"][data-state~="current"],
+[data-part="issue-row"][data-state~="selected"],
+[data-part="issue-row"][data-variant~="current"],
+[data-part="timeline-bar"][data-state~="selected"] {
+  box-shadow: inset 0 0 0 var(--ring-width) var(--accent);
 }
 
 [data-part="list-row"][data-variant~="head"] {
@@ -1122,9 +1114,9 @@ optgroup {
 }
 
 [data-part="list-row.cell"][data-variant~="title"] [data-part="link"][data-focus-visible]::after {
-  outline: var(--ring-width) solid var(--accent);
-  outline-offset: calc(var(--ring-width) * -1);
-  box-shadow: inset 0 0 0 calc(var(--ring-width) * 2) var(--fg);
+  box-shadow:
+    inset 0 0 0 var(--ring-width) var(--accent),
+    inset 0 0 0 calc(var(--ring-width) * 2) var(--fg);
 }
 
 [data-part="list-row.cell"][data-variant~="select"],
@@ -1397,9 +1389,9 @@ optgroup {
 
 [data-part="list-row"][data-focus-visible],
 [data-part="list-group"][data-focus-visible] {
-  outline: var(--ring-width) solid var(--accent);
-  outline-offset: calc(var(--ring-width) * -1);
-  box-shadow: inset 0 0 0 calc(var(--ring-width) * 2) var(--fg);
+  box-shadow:
+    inset 0 0 0 var(--ring-width) var(--accent),
+    inset 0 0 0 calc(var(--ring-width) * 2) var(--fg);
 }
 
 [data-part="list-group.name"] {
@@ -3905,11 +3897,6 @@ optgroup {
   align-items: center;
   gap: var(--space-2) var(--space-3);
   padding: var(--space-2) var(--space-3);
-}
-
-[data-part="issue-row"][data-variant~="current"] {
-  outline: var(--ring-width) solid var(--accent);
-  outline-offset: calc(var(--ring-width) * -1);
 }
 
 [data-part="layout-field.limited"] [data-part="link"] {
