@@ -307,7 +307,7 @@ impl Database {
     ///
     /// # Errors
     /// Fails when the table does not exist or the name is taken.
-    #[cfg(feature = "testing")]
+    #[cfg(any(test, feature = "testing"))]
     pub async fn rename_table_for_tests(&self, from: &str, to: &str) -> Result<(), StoreError> {
         let rename = sea_query::Table::rename()
             .table(sea_query::Alias::new(from), sea_query::Alias::new(to))
