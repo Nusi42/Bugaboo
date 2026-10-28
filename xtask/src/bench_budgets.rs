@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use anyhow::Context as _;
+use bb_dev_words::database::DatabaseKind;
 use serde::Deserialize;
 
 /// Where the budgets are, relative to the repository root.
@@ -32,6 +33,9 @@ pub(crate) struct Budgets {
 #[derive(Debug, Deserialize)]
 struct KnownGap {
     database: String,
+    /// The most the scenario may take at the 95th percentile while it is a known gap; over it the
+    /// run fails, so the gap cannot grow unseen.
+    p95_ms_at_most: f64,
     follow_up: String,
     reason: String,
 }
@@ -66,6 +70,12 @@ impl Budgets {
     /// The text is not TOML of this shape.
     pub(crate) fn parse(text: &str) -> anyhow::Result<Self> {
         toml::from_str(text).with_context(|| format!("{BUDGETS_PATH} is not valid"))
+    }
+
+    fn gap_of(&self, scenario: &str, database: &str) -> Option<&KnownGap> {
+        self.known_gaps
+            .get(scenario)
+            .filter(|gap| gap.database == database)
     }
 
     /// The most a budget allows at the 95th percentile.
@@ -136,7 +146,25 @@ pub(crate) fn problems(budgets: &Budgets, listed: &[(Scenario, usize)]) -> Vec<(
             ));
         }
     }
-    for name in budgets.known_gaps.keys() {
+    for (name, gap) in &budgets.known_gaps {
+        if !DatabaseKind::ALL
+            .iter()
+            .any(|kind| kind.code() == gap.database)
+        {
+            found.push((
+                BUDGETS_PATH.to_owned(),
+                format!(
+                    "The known gap {name} names the database {}, which does not exist.",
+                    gap.database
+                ),
+            ));
+        }
+        if gap.p95_ms_at_most.is_nan() || gap.p95_ms_at_most <= 0.0 {
+            found.push((
+                BUDGETS_PATH.to_owned(),
+                format!("The known gap {name} must allow more than 0 milliseconds."),
+            ));
+        }
         if !listed.iter().any(|(each, _)| &each.name == name) {
             found.push((
                 BUDGETS_PATH.to_owned(),
@@ -183,15 +211,26 @@ pub(crate) fn over(budgets: &Budgets, database: &str, run: &BTreeMap<String, Mea
                     "The scenario {name} took {:.1} ms at the 95th percentile, over its budget of {allowed} ms ({}).",
                     measured.p95, measured.budget
                 );
-                match budgets.known_gaps.get(name) {
-                    Some(gap) if gap.database == database => judged.known.push(format!(
+                match budgets.gap_of(name, database) {
+                    Some(gap) if measured.p95 <= gap.p95_ms_at_most => judged.known.push(format!(
                         "{sentence} Known gap {}: {}",
                         gap.follow_up, gap.reason
                     )),
-                    _ => judged.failures.push(sentence),
+                    Some(gap) => judged.failures.push(format!(
+                        "{sentence} It is over the {} ms that the known gap {} allows.",
+                        gap.p95_ms_at_most, gap.follow_up
+                    )),
+                    None => judged.failures.push(sentence),
                 }
             }
-            Some(_) => {}
+            Some(_) => {
+                if let Some(gap) = budgets.gap_of(name, database) {
+                    judged.known.push(format!(
+                        "The scenario {name} meets its budget again: remove the known gap {} from {BUDGETS_PATH}.",
+                        gap.follow_up
+                    ));
+                }
+            }
         }
     }
     judged
@@ -282,6 +321,7 @@ p95_ms = 1
         let gap = Budgets::parse(&format!(
             "{TOML}[known_gaps.search]
 database = \"sqlite\"
+p95_ms_at_most = 700
 follow_up = \"M5-F89\"
 reason = \"slow\"
 "
@@ -296,6 +336,31 @@ reason = \"slow\"
                 p99: 0.0,
             },
         )]);
+        let took = |p95: f64| {
+            BTreeMap::from([(
+                "search".to_owned(),
+                Measured {
+                    budget: "search".to_owned(),
+                    p50: 0.0,
+                    p95,
+                    p99: 0.0,
+                },
+            )])
+        };
+        let past = over(&gap, "sqlite", &took(701.0));
+        assert!(past.failures[0].contains("allows"), "{:?}", past.failures);
+        let again = over(&gap, "sqlite", &took(250.0));
+        assert!(again.failures.is_empty() && again.known[0].contains("meets its budget again"));
+        let nowhere = Budgets::parse(&format!(
+            "{TOML}[known_gaps.search]
+database = \"oracle\"
+p95_ms_at_most = 700
+follow_up = \"M5-F89\"
+reason = \"x\"
+"
+        ))
+        .unwrap();
+        assert_eq!(problems(&nowhere, &scenarios(SOURCE)).len(), 1);
         let on_sqlite = over(&gap, "sqlite", &run);
         assert!(on_sqlite.failures.is_empty());
         assert!(on_sqlite.known[0].contains("Known gap M5-F89: slow"));
@@ -304,6 +369,7 @@ reason = \"slow\"
         let stray = Budgets::parse(&format!(
             "{TOML}[known_gaps.nothing]
 database = \"sqlite\"
+p95_ms_at_most = 700
 follow_up = \"M5-F89\"
 reason = \"x\"
 "
