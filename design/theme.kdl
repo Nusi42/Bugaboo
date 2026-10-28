@@ -1787,10 +1787,11 @@ part "list-row.cell[variant=select]" "list-row.cell[variant=action]" {
 }
 
 // On a phone the row has two lines: status, ID and priority, then the title, then the person and
-// the day (R9: the same order). The other columns are left out.
+// the day (R9: the same order). The other columns are left out. The ID and the person have the room
+// that is left; the priority and the day take what they need at the end, so no text meets another.
 part "list-row[variant=phone]" "list-row[variant=slim]" {
     display grid
-    grid-template-columns "$size-control $size-col-icon auto minmax(0, 1fr)"
+    grid-template-columns "$size-control $size-col-icon minmax(0, 1fr) auto"
     grid-template-areas "\"select status key priority\" \"select title title title\" \"select person person changed\""
     align-items center
     gap "$space-1 $space-3"
@@ -1832,6 +1833,8 @@ part "list-row[variant=phone] list-row.cell[variant=title]" "list-row[variant=sl
 
 part "list-row[variant=phone] list-row.cell[variant=person]" {
     grid-area person
+    width auto
+    min-width 0
 }
 
 part "list-row[variant=phone] list-row.cell[variant=action]" {
@@ -1846,7 +1849,7 @@ part "list-row[variant=phone] list-row.cell[variant=changed]" {
 
 // A card without the box to tick (the Search page): the same lines without its column.
 part "list-row[variant=phone][variant=plain]" {
-    grid-template-columns "$size-col-icon auto minmax(0, 1fr)"
+    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
     grid-template-areas "\"status key priority\" \"title title title\" \"person person changed\""
 }
 
@@ -1857,7 +1860,7 @@ part "list-row[variant=phone] list-row.cell[variant=status]" {
 
 // The slim list beside the open issue (UX §3.4): the two lines of a phone, without the tick box.
 part "list-row[variant=slim]" {
-    grid-template-columns "$size-col-icon auto minmax(0, 1fr)"
+    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
     grid-template-areas "\"status key priority\" \"title title title\""
 }
 
