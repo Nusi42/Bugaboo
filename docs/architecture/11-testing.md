@@ -107,7 +107,7 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 
 ### The M5 exit demo on the sample
 
-`web/app/e2e/m5-exit-demo.spec.ts` (the steps are in `web/app/e2e/support/demo-m5.ts`) runs it in `cargo xtask ci`, on a phone and a computer, with axe in the four themes at every step; with `BB_SCREENSHOT_DIR` set the same run takes the pictures of the review page (`M5/demo/<step>-<phone|computer>-<theme>.png`, six steps, four themes). It starts from the saved searches of the sample (*Saved searches of the sample* below). By hand, with `cargo xtask dev --sample`:
+`web/app/e2e/m5-exit-demo.spec.ts` (the steps are in `web/app/e2e/support/demo-m5.ts`) runs it in `cargo xtask ci`, on a phone and a computer, with axe in the four themes at every step; with `BB_SCREENSHOT_DIR` set the same run takes the pictures of the review page (`M5/demo/<step>-<phone|computer>-<theme>.png`, seven pictures of six steps, four themes: step 3 also shows the last list behind the mistake). It starts from the saved searches of the sample (*Saved searches of the sample* below). By hand, with `cargo xtask dev --sample`:
 
 1. A Team member searches for `priority is high` in Simple search: the list has issues and the count line says how many.
 2. *Advanced search* shows the same text; back to Simple search and again to Advanced search loses nothing.

@@ -1414,7 +1414,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li>The e-mail has come to the Guest too, without the customer and without the names; its link opens the bug.</li>
 </ol>
 <h4>The M5 exit demo on the sample</h4>
-<p><code>web/app/e2e/m5-exit-demo.spec.ts</code> (the steps are in <code>web/app/e2e/support/demo-m5.ts</code>) runs it in <code>cargo xtask ci</code>, on a phone and a computer, with axe in the four themes at every step; with <code>BB_SCREENSHOT_DIR</code> set the same run takes the pictures of the review page (<code>M5/demo/&lt;step&gt;-&lt;phone|computer&gt;-&lt;theme&gt;.png</code>, six steps, four themes). It starts from the saved searches of the sample (<em>Saved searches of the sample</em> below). By hand, with <code>cargo xtask dev --sample</code>:</p>
+<p><code>web/app/e2e/m5-exit-demo.spec.ts</code> (the steps are in <code>web/app/e2e/support/demo-m5.ts</code>) runs it in <code>cargo xtask ci</code>, on a phone and a computer, with axe in the four themes at every step; with <code>BB_SCREENSHOT_DIR</code> set the same run takes the pictures of the review page (<code>M5/demo/&lt;step&gt;-&lt;phone|computer&gt;-&lt;theme&gt;.png</code>, seven pictures of six steps, four themes: step 3 also shows the last list behind the mistake). It starts from the saved searches of the sample (<em>Saved searches of the sample</em> below). By hand, with <code>cargo xtask dev --sample</code>:</p>
 <ol>
 <li>A Team member searches for <code>priority is high</code> in Simple search: the list has issues and the count line says how many.</li>
 <li><em>Advanced search</em> shows the same text; back to Simple search and again to Advanced search loses nothing.</li>
