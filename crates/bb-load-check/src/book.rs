@@ -208,7 +208,7 @@ mod tests {
                     "reads_hidden": true,
                     "found": [],
                     "more": false,
-                    "refused": "request.invalid"
+                    "refused": "search.invalid"
                 }
             ]
         });

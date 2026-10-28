@@ -22,6 +22,7 @@
 //!   lock once the leases are over, and after the purge no row is left.
 
 use bb_app::access::StartingRole;
+use bb_core::ErrorCode;
 
 use crate::book::{Book, DraftEnd, last_drafts};
 use crate::facts::{Facts, IssueFacts, LockRow, NotificationFacts};
@@ -205,11 +206,21 @@ fn searches_hold_the_rules(book: &Book) -> Vec<String> {
                 ));
             }
         }
-        if search.reads_hidden && guest != search.refused.is_some() {
+        // A search is refused only where it reads the field hidden from Guests, and then only for a
+        // Guest, with the answer for a field that is not there.
+        let expected = (search.reads_hidden && guest).then(|| ErrorCode::SearchInvalid.code());
+        if search.refused.as_deref() != expected {
             found.push(format!(
-                "the search `{}` of {who} was {}, a field a Guest may not read",
+                "the search `{}` of {who} was {}, expected {}",
                 search.query,
-                if guest { "answered" } else { "refused" }
+                search.refused.as_deref().map_or_else(
+                    || "answered".to_owned(),
+                    |code| format!("refused with {code}")
+                ),
+                expected.map_or_else(
+                    || "an answer".to_owned(),
+                    |code| format!("a refusal with {code}")
+                ),
             ));
         }
         if search.everything && search.refused.is_none() && !search.more {
@@ -671,16 +682,30 @@ mod tests {
         assert!(
             judged(&hidden)
                 .iter()
-                .any(|each| each.contains("a Guest may not read"))
+                .any(|each| each.contains("expected a refusal"))
         );
-        hidden.searched[2].refused = Some("request.invalid".to_owned());
+        hidden.searched[2].refused = Some(ErrorCode::SearchInvalid.code().to_owned());
         assert_eq!(judged(&hidden), Vec::<String>::new());
         hidden.searched.push(Searched {
             reads_hidden: true,
-            refused: Some("request.invalid".to_owned()),
+            refused: Some(ErrorCode::SearchInvalid.code().to_owned()),
             ..search("p1", false, &[], None)
         });
         assert!(judged(&hidden).iter().any(|each| each.contains("refused")));
+        // Another code for the Guest, or a refusal of a search that reads nothing hidden, counts too.
+        let mut other = good_run().0;
+        other.searched[0].refused = Some(ErrorCode::SearchTooSlow.code().to_owned());
+        assert!(
+            judged(&other)
+                .iter()
+                .any(|each| each.contains("expected an answer"))
+        );
+        hidden.searched[2].refused = Some(ErrorCode::Internal.code().to_owned());
+        assert!(
+            judged(&hidden)
+                .iter()
+                .any(|each| each.contains("expected a refusal"))
+        );
         assert_eq!(judged(&book), Vec::<String>::new());
     }
 
