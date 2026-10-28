@@ -88,8 +88,17 @@ test("ux_4_2 a row is tinted by its status group and edged by its priority (R4)"
   await expect(critical).toHaveAttribute("data-state", /priority-critical/u);
   await expect(high).toHaveAttribute("data-state", /group-done/u);
   await expect(high).toHaveAttribute("data-state", /priority-high/u);
-  // Not started and a normal priority stay plain: no tint, and no state at all.
-  await expect(plain).not.toHaveAttribute("data-state", /group-|priority-/u);
+  // Not started has its own tint; a normal priority has no edge.
+  await expect(plain).toHaveAttribute("data-state", /group-not-started/u);
+  await expect(plain).not.toHaveAttribute("data-state", /priority-/u);
+  // The three groups have three different fills, and none is the empty one.
+  const fills = await Promise.all(
+    [critical, high, plain].map((row) =>
+      row.evaluate((element) => getComputedStyle(element).backgroundColor),
+    ),
+  );
+  expect(new Set(fills).size).toBe(3);
+  expect(fills).not.toContain("rgba(0, 0, 0, 0)");
   // The edge is 4 wide on the rows that have a priority to show, and the plain row keeps its place
   // with an edge that is not drawn.
   await expect(critical).toHaveCSS("border-left-width", "4px");

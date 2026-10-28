@@ -77,6 +77,7 @@ export type PickerLook = (typeof pickerLook)[keyof typeof pickerLook];
 
 /** The swatches of the Legend of a list, by what they mean (UX §4.2). */
 export const legendLook = {
+  notStarted: "not-started",
   inProgress: "in-progress",
   done: "done",
   critical: "critical",

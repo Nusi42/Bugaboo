@@ -11,7 +11,7 @@ import { expectLook } from "./checks.ts";
 export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
 
 /** The folder of a milestone (or of a set of pictures) inside the screenshot folder, made if it is missing. */
-function folderOf(milestone: string): string {
+export function folderOf(milestone: string): string {
   // No fallback: a picture is never written into the folder the tests run in.
   if (screenshotFolder === undefined) {
     throw new TypeError("Set BB_SCREENSHOT_DIR to take the screenshots.");

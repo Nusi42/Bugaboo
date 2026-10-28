@@ -27,7 +27,7 @@ flowchart LR
 |-------|--------|
 | **FMT** | Formatting: rustfmt, oxfmt (TypeScript, JSON, CSS), taplo (TOML), rumdl (Markdown) |
 | **LINT** | Linting: clippy, oxlint with type-aware tsgolint (TypeScript 7), stylelint, tsc type check, typos, lychee, actionlint |
-| **TXT / STY** | Plain words and design: no literal UI text, message catalog complete, glossary "don't say" words, tokens only, theme contrast |
+| **TXT / STY** | Plain words and design: no literal UI text, message catalog complete, glossary "don't say" words, tokens only, theme contrast, bold only where UX §7.3 allows it |
 | **ARCH** | The structure in this document: allowed crate dependencies, pure crates, WebAssembly build, `Authorized<T>` only from the policy engine, only safe types leave the API, HTTP and SQL only at the edges, events for every change, versions and edit-lock tokens on change endpoints, lean list endpoints, permissions declared, settings via the registry, AI tools only from the registry, browser uses only the API client, module map matches the code, docs change with boundaries, no `unsafe`, both databases tested |
 | **SEC** | Secrets, private details of the maintainer, dangerous patterns, the permission matrix, security headers, known vulnerabilities |
 | **DATA** | Personal-data marks, no personal data in logs, one schema source |

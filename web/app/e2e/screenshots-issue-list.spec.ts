@@ -7,7 +7,13 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { grid, openList, prepareLook, rowOf } from "./support/list-look.ts";
-import { listInFourThemes, tickIssues, screenshotFolder } from "./support/list-pictures.ts";
+import {
+  focusRowByKeys,
+  listInFourThemes,
+  pointedRowInFourThemes,
+  tickIssues,
+  screenshotFolder,
+} from "./support/list-pictures.ts";
 import { webIssues } from "./support/issues.ts";
 
 // The pictures of the issue list (M5 WP-08, task 8): the list in the four themes on a computer and
@@ -48,6 +54,15 @@ test("cfg_02 pictures: two issues ticked, and the head of the list ticked", asyn
   await tickIssues(page, ["WEB-1", "WEB-2"]);
   await expect(rowOf(page, webIssues.login)).toHaveAttribute("data-state", /selected/u);
   await listInFourThemes(page, "ticked");
+});
+
+test("iss_01 pictures: a hovered, a ticked and a keyboard-focused row keep their group color", async ({
+  page,
+}) => {
+  await openList(page);
+  await tickIssues(page, ["WEB-1"]);
+  await focusRowByKeys(page, rowOf(page, webIssues.typo));
+  await pointedRowInFourThemes(page, rowOf(page, webIssues.passkey), "states");
 });
 
 test("cfg_02 pictures: Customize, then Columns", async ({ page }) => {
