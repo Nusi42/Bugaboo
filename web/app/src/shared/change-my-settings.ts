@@ -1,6 +1,16 @@
+import { ApiError, type SettingKey } from "@bugaboo/api-client";
+
 import { api } from "./api.ts";
 import { messageOf } from "./errors.ts";
-import { isMySettings, mySettingsKey, type MySettings } from "./my-settings.ts";
+import {
+  currentMySettings,
+  isMySettings,
+  mySettingsKey,
+  settingOf,
+  type MySettings,
+  type Setting,
+  type SettingValue,
+} from "./my-settings.ts";
 import { optimisticSend } from "./optimistic.ts";
 import { queryClient } from "./query-client.ts";
 import { withChange, type SettingChange } from "./setting-change.ts";
@@ -59,25 +69,103 @@ export function inOrderOfKey<Answer>(key: string, request: () => Promise<Answer>
   return run;
 }
 
+/**
+ * How often a change reads the setting again after the server said it was changed meanwhile. Two
+ * tabs that change it at the same moment can beat each other, so it is more than once; a change
+ * that still loses after that is not saved, and the person is told.
+ */
+export const rereadsMax = 3;
+
+/**
+ * The newest version of each setting that an answer of the server named. The page reads the
+ * setting again after a change, but not at once, so the next change is made from the version the
+ * one before made. A version that is too old or too new (another tab reset the setting, or
+ * another person signed in) is refused as stale and the setting is read again, so a wrong guess
+ * costs one request and never overwrites anything.
+ */
+const versionsSeen = new Map<string, number>();
+
+/** Forgets the versions seen: when the person leaves, the next person starts without them. */
+export function forgetSeenVersions(): void {
+  versionsSeen.clear();
+}
+
+/** The version a change is made from: the newest one this page knows of the setting. */
+function versionToSend(key: SettingKey): number | undefined {
+  const cached = settingOf(currentMySettings(), key)?.version;
+  const seen = versionsSeen.get(key);
+  return cached === undefined || cached === null ? seen : Math.max(cached, seen ?? cached);
+}
+
+function remember(key: SettingKey, version: number | null | undefined): void {
+  if (typeof version === "number") {
+    versionsSeen.set(key, version);
+  }
+}
+
+/** Whether the server refused because the setting was changed since the version that was sent. */
+function isStale(error: unknown): boolean {
+  return error instanceof ApiError && error.problem?.code === "edit.version-changed";
+}
+
+/** The setting as the server holds it now. */
+async function readNow(key: SettingKey): Promise<Setting | undefined> {
+  const { data } = await api.client.GET("/api/v1/me/settings", {
+    params: { query: { topic: key } },
+  });
+  return settingOf(data, key);
+}
+
+/**
+ * Asks the server for one change, made from `version` (the one the page knows; nothing when it
+ * knows none). When another tab or device changed the setting meanwhile, the setting is read again
+ * and only this change is made on what is found there (`rebase`; without it the value of the
+ * change), so a change of one part of a value never undoes another part set elsewhere (M5-F97).
+ * It reads again at most {@link rereadsMax} times.
+ */
+async function putChange(
+  change: SettingChange,
+  value: SettingValue,
+  version: number | undefined,
+  rereads: number,
+): Promise<void> {
+  try {
+    const { data } = await api.client.PUT("/api/v1/me/settings/{key}", {
+      params: { path: { key: change.key } },
+      body: { value, ...(version === undefined ? {} : { version }) },
+    });
+    remember(change.key, data?.version);
+  } catch (error) {
+    if (!isStale(error) || rereads >= rereadsMax) {
+      throw error;
+    }
+    const now = await readNow(change.key);
+    const again =
+      change.rebase === undefined || now === undefined ? value : change.rebase(now.value);
+    await putChange(change, again, now?.version ?? 0, rereads + 1);
+  }
+}
+
+/** Asks the server for one change of a setting: to a new value, or to take the value away. */
+async function sendChange(change: SettingChange): Promise<void> {
+  if (change.value === null) {
+    await api.client.DELETE("/api/v1/me/settings/{key}", {
+      params: { path: { key: change.key } },
+    });
+    versionsSeen.delete(change.key);
+    return;
+  }
+  await putChange(change, change.value, versionToSend(change.key), 0);
+}
+
 /** Sends one change: the value counts at once, and goes back when the server refuses. */
 function send(change: SettingChange): Promise<void> {
-  const path = { params: { path: { key: change.key } } };
   return optimisticSend(() => queryClient, {
     queryKey: mySettingsKey(),
     isCached: isMySettings,
     apply: (before: MySettings | undefined) =>
       before === undefined ? undefined : withChange(before, change),
-    send: (changed: SettingChange) =>
-      inOrderOfKey(changed.key, async () => {
-        if (changed.value === null) {
-          await api.client.DELETE("/api/v1/me/settings/{key}", path);
-          return;
-        }
-        await api.client.PUT("/api/v1/me/settings/{key}", {
-          ...path,
-          body: { value: changed.value },
-        });
-      }),
+    send: (changed: SettingChange) => inOrderOfKey(changed.key, () => sendChange(changed)),
   })(change);
 }
 
