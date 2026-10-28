@@ -1,14 +1,15 @@
-//! A page of a list that skips the rows a person may not see (any more), written once: the projects
-//! to choose from for an access key and the saved searches shared with a person walk by it.
+//! A page of a list that skips the rows a person may not see (any more), written once: the
+//! projects to choose from for an access key, the saved searches shared with a person and the
+//! history of an issue walk by it.
 //!
 //! The walk reads [`PAGE_SIZE_MAX`] rows at a time (a list whose rows are costly to judge,
 //! [`Walk::costly_rows`], starts with the page and one more and doubles while rows are skipped),
 //! asks of each whether the person may see it, and stops when the page is full, the rows are used
-//! up or [`LOOKED_AT_MAX`] rows were looked at, so the work of a request does not depend on how many rows are hidden (PERF-05). A page that stops
-//! at the bound is short and has a cursor that goes on past the rows looked at; it never holds the
-//! key of a row that was skipped ([`SkipCursor`]). A list whose rows cost a read for each name they
-//! hold can also end a page before a row that is more than the request may spend, and goes on
-//! after the last row shown.
+//! up or [`LOOKED_AT_MAX`] rows were looked at, so the work of a request does not depend on how
+//! many rows are hidden (PERF-05). A page that stops at the bound is short and has a cursor that
+//! goes on past the rows looked at; it never holds the key of a row that was skipped
+//! ([`SkipCursor`]). A list whose rows cost a read for each name they hold can also end a page
+//! before a row that is more than the request may spend, and goes on after the last row shown.
 
 use std::future::Future;
 use std::str::FromStr;

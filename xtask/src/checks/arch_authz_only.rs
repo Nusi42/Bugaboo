@@ -75,10 +75,31 @@ const UNNARROWED: [(&str, &str); 2] = [
     ),
 ];
 
-/// Whether `text` calls the method `name`: after a dot, or by a path (`Policy::name(`,
-/// `<Policy>::name(`).
+/// How a method is named after the value or the type it belongs to: `p.name`, `Policy::name`,
+/// `<Policy>::name`. A path of the type only: `use super::map::rows_of;` is another function.
+const FORMS: [&str; 3] = [".", "Policy::", ">::"];
+
+/// Where `text` uses the method `token` in any of the [`FORMS`]: a call, or the method taken as a
+/// value (`.map(Policy::evaluate_at)`). A token that ends in a name character (a bare name) is
+/// not followed by one, so `rows_of_all` is another method.
+fn uses_of(text: &str, token: &str) -> Vec<usize> {
+    let ends_in_name = token.ends_with(|c: char| c.is_alphanumeric() || c == '_');
+    let mut found = Vec::new();
+    for form in FORMS {
+        let pattern = format!("{form}{token}");
+        for (at, _) in text.match_indices(&pattern) {
+            let after = text[at + pattern.len()..].chars().next();
+            if !ends_in_name || !after.is_some_and(|c| c.is_alphanumeric() || c == '_') {
+                found.push(at);
+            }
+        }
+    }
+    found
+}
+
+/// Whether `text` uses the method `name` (see [`uses_of`]).
 fn calls_method(text: &str, name: &str) -> bool {
-    text.contains(&format!(".{name}(")) || text.contains(&format!("::{name}("))
+    !uses_of(text, name).is_empty()
 }
 
 /// The narrowed forms, which narrow to nothing when they are given no key: the second argument
@@ -183,9 +204,9 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                 ));
             }
             if !in_policy && !in_access {
-                let row_function = ROW_ENGINE_FUNCTIONS.iter().any(|function| {
-                    names_word(line, function) || line.contains(&format!(".{function}("))
-                });
+                let row_function = ROW_ENGINE_FUNCTIONS
+                    .iter()
+                    .any(|function| names_word(line, function) || calls_method(line, function));
                 // In `bb-app` the use cases are held to the engine methods with advice, below.
                 let method = !path.starts_with(USE_CASES_FOLDER)
                     && ENGINE_METHODS.iter().any(|name| calls_method(line, name));
@@ -245,19 +266,10 @@ fn unnarrowed_findings(path: &str, code: &str) -> Vec<Finding> {
                 .iter()
                 .map(|name| (*name, ENGINE_CALL_NOT_NARROWED)),
         );
-    for (name, advice) in patterns {
-        let name = name.split('(').next().unwrap_or(name);
-        let rest = if name == "evaluate" {
-            "(actor.person"
-        } else {
-            "("
-        };
-        for form in [".", "::"] {
-            let pattern = format!("{form}{name}{rest}");
-            for (at, _) in squeezed.match_indices(&pattern) {
-                let line = lines.get(at).copied().unwrap_or(1);
-                findings.push(Finding::at(format!("{path}:{line}"), advice));
-            }
+    for (token, advice) in patterns {
+        for at in uses_of(&squeezed, token) {
+            let line = lines.get(at).copied().unwrap_or(1);
+            findings.push(Finding::at(format!("{path}:{line}"), advice));
         }
     }
     // `evaluate_as(person, None, …)` and `visible_as(person, None, …)` judge the actor without
