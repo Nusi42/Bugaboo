@@ -18,9 +18,8 @@ p95_ms = 300
 
 # The preview of a change to the most issues one change names, 5,000 (M3-F133): it judges every issue
 # of the selection, so it takes seconds and has a budget of its own. Set from the measurement on the
-# large dataset (architecture section 11: 3.0 s on SQLite, 6.7 s on PostgreSQL after the definitions
-# of the fields were read once for a request), with a margin; it is held down by the count of the
-# statements for each issue (`perf_many_changes.rs`).
+# large dataset with a margin (the numbers are in architecture section 11); it is held down by the
+# count of the statements for each issue (`perf_many_changes.rs`).
 [budgets.preview]
 p95_ms = 8000
 
@@ -32,4 +31,4 @@ p95_ms = 8000
 database = "sqlite"
 p95_ms_at_most = 700
 follow_up = "M5-F89"
-reason = "the groups by Assigned to take about 560 ms on SQLite, as each of about 109,000 issues needs a lookup in the index of assigned people; kept counts or parallel slices come later"
+reason = "each of the about 109,000 issues that match needs a lookup in the index of the people assigned to it; kept counts or parallel slices come later (numbers: architecture section 11)"
