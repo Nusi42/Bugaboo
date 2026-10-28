@@ -31,7 +31,7 @@ export const variants = {
   "less-motion": { attribute: "data-motion", value: "less" },
 } as const;
 
-/** The variables the code may set while the person drags (`run-time="true"` in the theme file). */
+/** The variables the code may set while the person drags or the browser measures (`run-time="true"` in the theme file). */
 export const runTimeVariables = [
   "size-code-char",
   "window-width",

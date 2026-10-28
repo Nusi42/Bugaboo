@@ -2035,7 +2035,7 @@ body {
   visibility: hidden;
   white-space: pre;
   font-family: var(--mono);
-  font-size: var(--fs-base);
+  font-size: var(--fs-ui);
 }
 
 [data-part="list-row"][data-variant~="grid"] {

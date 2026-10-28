@@ -617,7 +617,7 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         );
     }
     out.push_str("} as const;\n");
-    out.push_str("\n/** The variables the code may set while the person drags (`run-time=\"true\"` in the theme file). */\nexport const runTimeVariables = [\n");
+    out.push_str("\n/** The variables the code may set while the person drags or the browser measures (`run-time=\"true\"` in the theme file). */\nexport const runTimeVariables = [\n");
     for token in file.tokens.iter().filter(|token| token.run_time) {
         let _ = writeln!(out, "  \"{}\",", token.name);
     }
