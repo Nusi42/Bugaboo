@@ -47,3 +47,21 @@ export function useLargerText(page: Page): Promise<void> {
   const { attribute, value } = variants["larger-text"];
   return page.evaluate(setPageAttribute, [attribute, value] as const);
 }
+
+/** Adds a style sheet to the page without an inline style, which the content security policy refuses. */
+function addSheet(rules: string): void {
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(rules);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+}
+
+/**
+ * A code font wider than any the theme file thought of: every character 4 px wider, in the IDs and
+ * in the probe the column is measured with.
+ */
+export function widerCodeFont(page: Page): Promise<void> {
+  return page.evaluate(
+    addSheet,
+    "[data-part='list-row.cell'][data-variant='key'], [data-part='list-char-probe'] { letter-spacing: 4px; }",
+  );
+}

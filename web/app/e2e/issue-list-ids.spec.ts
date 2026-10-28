@@ -5,7 +5,13 @@ import { createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { countIssueIds, createIssue } from "./support/issues.ts";
 import { createProject } from "./support/projects.ts";
-import { idsCut, keyWidth, openEveryList, useLargerText } from "./support/list-ids.ts";
+import {
+  idsCut,
+  keyWidth,
+  openEveryList,
+  useLargerText,
+  widerCodeFont,
+} from "./support/list-ids.ts";
 import { grid } from "./support/list-look.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
@@ -47,6 +53,19 @@ test("ux_4_2 the same at the larger text", async ({ page }) => {
   test.skip(layoutOf(page) === "phone", "a card sizes its ID from what it says");
   await openEveryList(page);
   await useLargerText(page);
+  expect(await idsCut(page)).toBe(0);
+});
+
+test("ux_4_2 a wider code font does not cut an ID: the character is measured, not assumed", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) === "phone", "a card sizes its ID from what it says");
+  await openEveryList(page);
+  const before = await keyWidth(grid(page));
+  // A code font wider than any the theme file thought of: every character 4 px wider, in the
+  // IDs and in the probe the column is measured with.
+  await widerCodeFont(page);
+  await expect.poll(() => keyWidth(grid(page))).toBeGreaterThan(before + 19 * 3);
   expect(await idsCut(page)).toBe(0);
 });
 

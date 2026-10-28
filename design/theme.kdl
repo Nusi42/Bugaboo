@@ -123,8 +123,8 @@ tokens {
     size "size-col-remove" "80px"
     // The ID column is as wide as the longest ID the list draws (its characters times the width of one character of the code font), and at least what its head needs: the name and the handle. Phone cards size their ID from what it says.
     size "size-col-key" "calc(80px * $text-scale)"
-    // The width of one character of the code font: 0.6 of the text size of a row (14px), the same in the head and in every row.
-    size "size-code-char" "calc(8.4px * $text-scale)"
+    // The width of one character of the code font, as the browser draws it: the code measures a probe in the code font once and sets it (run-time); the value here is only what stands until it has, 0.6 of the text size of a row (14px).
+    size "size-code-char" "calc(8.4px * $text-scale)" run-time="true"
     size "size-col-short" "64px"
     size "size-col-place" "112px"
     size "size-col-priority" "72px"
@@ -1903,6 +1903,19 @@ part "list-frame" {
     flex-direction column
     min-width 0
     overflow-x auto
+}
+
+// Ten characters of the code font that nobody sees: the code measures them, so the ID column is as wide as the font really draws its IDs, whichever font the computer has for it.
+part "list-char-probe" {
+    position absolute
+    inset-block-start 0
+    inset-inline-start 0
+    height 0
+    overflow hidden
+    visibility hidden
+    white-space pre
+    font-family "$mono"
+    font-size "$fs-base"
 }
 
 part "list-row[variant=grid]" {

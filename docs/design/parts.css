@@ -1252,6 +1252,18 @@ body {
   overflow-x: auto;
 }
 
+[data-part="list-char-probe"] {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  white-space: pre;
+  font-family: var(--mono);
+  font-size: var(--fs-base);
+}
+
 [data-part="list-row"][data-variant~="grid"] {
   display: grid;
   grid-template-columns: var(--list-columns);

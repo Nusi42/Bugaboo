@@ -33,6 +33,7 @@ export const variants = {
 
 /** The variables the code may set while the person drags (`run-time="true"` in the theme file). */
 export const runTimeVariables = [
+  "size-code-char",
   "window-width",
   "window-height",
   "list-columns",
@@ -352,6 +353,7 @@ export const part = {
   listGroupCount: "list-group.count",
   listMain: "list-main",
   listFrame: "list-frame",
+  listCharProbe: "list-char-probe",
   listScroll: "list-scroll",
   listHead: "list-head",
   listSort: "list-sort",
@@ -831,6 +833,7 @@ export const partWords = {
   "list-group.count": { variant: [], state: [] },
   "list-main": { variant: [], state: [] },
   "list-frame": { variant: ["compact"], state: [] },
+  "list-char-probe": { variant: [], state: [] },
   "list-scroll": { variant: [], state: [] },
   "list-head": { variant: [], state: [] },
   "list-sort": { variant: [], state: [] },

@@ -76,6 +76,33 @@ function keepHeadAndRows(frame: HTMLElement): () => void {
   };
 }
 
+/** How many characters the probe of the code font has: the measured width is divided by it. */
+const PROBE_CHARACTERS = 10;
+
+/**
+ * Measures one character of the code font as the browser draws it (a probe in the code font, which
+ * the code font of this computer may be any of) and gives it to the list as `size-code-char`, so
+ * the ID column is as wide as the IDs really are. It measures again when the probe changes size: the
+ * font arrives, or the text gets larger.
+ */
+function keepCharacterWidth(frame: HTMLElement): () => void {
+  const probe = frame.querySelector<HTMLElement>(`[data-part="${part.listCharProbe}"]`);
+  const measure = (): void => {
+    const width = (probe?.getBoundingClientRect().width ?? 0) / PROBE_CHARACTERS;
+    if (width > 0) {
+      frame.style.setProperty(variableOf("size-code-char"), `${String(width)}px`);
+    }
+  };
+  const watching = new ResizeObserver(measure);
+  if (probe !== null) {
+    watching.observe(probe);
+  }
+  measure();
+  return () => {
+    watching.disconnect();
+  };
+}
+
 /** The box around the head and the rows of an issue list: it holds the columns they share. */
 export function ListFrame({ columns, keyChars = 0, compact, children }: ListFrameProps) {
   const frame = useRef<HTMLDivElement>(null);
@@ -84,8 +111,15 @@ export function ListFrame({ columns, keyChars = 0, compact, children }: ListFram
     frame.current?.style.setProperty(variableOf("list-columns"), template);
   }, [template]);
   useEffect(() => (frame.current === null ? undefined : keepHeadAndRows(frame.current)), []);
+  useLayoutEffect(
+    () => (frame.current === null ? undefined : keepCharacterWidth(frame.current)),
+    [],
+  );
   return (
     <div ref={frame} {...partOf(part.listFrame, { variants: [compact && "compact"] })}>
+      <span {...partOf(part.listCharProbe)} aria-hidden>
+        {"0".repeat(PROBE_CHARACTERS)}
+      </span>
       {children}
     </div>
   );
