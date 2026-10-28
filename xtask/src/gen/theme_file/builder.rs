@@ -15,6 +15,7 @@ pub(super) struct Builder {
     pub(super) docs: Vec<DocSheet>,
     pub(super) contrast: Option<ContrastSpec>,
     pub(super) distinct: Vec<DistinctSpec>,
+    pub(super) bold: Option<BoldSpec>,
 }
 
 impl Builder {
@@ -54,6 +55,7 @@ impl Builder {
             }
             "contrast" => self.contrast = Some(ContrastSpec::parse(node)?),
             "distinct" => self.distinct.push(DistinctSpec::parse(node)?),
+            "bold" => self.bold = Some(BoldSpec::parse(node)?),
             "mixin" => {
                 let name = node.only_arg()?;
                 if self.mixins.iter().any(|mixin| mixin.name == name) {
@@ -303,6 +305,7 @@ impl Builder {
             rules: self.rules,
             docs: self.docs,
             contrast: self.contrast.context("`contrast` is missing")?,
+            bold: self.bold.context("`bold` is missing")?,
             distinct: if self.distinct.is_empty() {
                 bail!("`distinct` is missing")
             } else {

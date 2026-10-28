@@ -440,6 +440,39 @@ distinct min-against-surfaces=1.06 min-between-states=1.04 reason="On a row tint
 }
 
 
+// Bold (UX §7.3, STY-BOLD): only these rules may set `$weight-bold`, one line for each selector. A role is
+// what the bold says: `issue-title` (24), `title` (the title of a page, a window or a card, 20), `section`
+// (a heading of a part of a page, 16 or 20), `priority` (the word of a Critical or High priority), `own`
+// (what a person wrote in bold in a text). A new bold needs a role from this list, and a role needs UX §7.3.
+bold reason="Bold is kept for the titles, the headings of sections, the words of the two highest priorities and what a person wrote in bold (UX §7.3); everything else is regular, so bold still means something." {
+    selector "issue-title" role="issue-title"
+    selector "window.title" role="title"
+    selector "confirm.title" role="title"
+    selector "shell.title" role="title"
+    selector "side-panel.title" role="title"
+    selector "top-bar.title" role="title"
+    selector "card.heading" role="title"
+    selector "issue-details.heading" role="section"
+    selector "issue-section.title" role="section"
+    selector "form-section.title" role="section"
+    selector "list-panel.title" role="section"
+    selector "access.subheading" role="section"
+    selector "access.topic" role="section"
+    selector "card.topic" role="section"
+    selector "notification-group.head" role="section"
+    selector "search-help.title" role="section"
+    selector "priority[variant=critical]" role="priority"
+    selector "priority[variant=high]" role="priority"
+    selector "[data-part=markdown] h1" role="own"
+    selector "[data-part=markdown] h2" role="own"
+    selector "[data-part=markdown] h3" role="own"
+    selector "[data-part=markdown] h4" role="own"
+    selector "[data-part=markdown] h5" role="own"
+    selector "[data-part=markdown] h6" role="own"
+    selector "[data-part=markdown] strong" role="own"
+    selector "[data-part=markdown] b" role="own"
+}
+
 // ───────────── Mixins ─────────────
 //
 // Lines that several rules share. `use "name"` puts them in the place of the line.
@@ -546,7 +579,7 @@ mixin "pick-row" {
 mixin "menu-text" {
     color "$fg"
     font-size "$fs-ui"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration none
 }
 
@@ -629,7 +662,7 @@ mixin "tab-label" {
     box-sizing border-box
     color "$fg-muted"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     cursor pointer
     border-bottom "$space-1 solid transparent"
 }
@@ -745,6 +778,12 @@ base "body" {
     color "$fg"
     font-family "$font"
     font-size "$fs-md"
+}
+
+// Headings and table heads come from the browser in bold; here they are regular, and the parts the
+// `bold` list names (UX §7.3, STY-BOLD) turn bold on again.
+base "h1, h2, h3, h4, h5, h6, th" {
+    font-weight "$weight-regular"
 }
 
 // The rule React Aria would add itself: pressing a control does not wait for a double tap.
@@ -909,7 +948,7 @@ part "field" {
 
 part "field.label" {
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
 }
 
@@ -1000,7 +1039,7 @@ part "alert[variant=info]" {
 
 part "link" {
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration underline
     text-underline-offset "$space-1"
     cursor pointer
@@ -1028,7 +1067,7 @@ part "switch" {
     use "touch-row"
     color "$fg"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "switch.track" {
@@ -1131,7 +1170,7 @@ part "choice-group.legend" {
     padding 0
     margin-bottom "$space-2"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
 }
 
@@ -1384,13 +1423,13 @@ part "picker" {
 part "picker.legend[variant=list]" {
     margin-block-end "$space-3"
     padding 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "picker.legend[variant=boxed]" {
     padding 0
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
 }
 
@@ -1452,7 +1491,7 @@ part "picker.name[variant=list]" {
 }
 
 part "picker.name[variant=boxed]" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
     overflow-wrap anywhere
 }
@@ -1499,7 +1538,7 @@ part "status-pill" {
     padding "$space-1 $pad-control"
     border-radius "$r-pill"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-tight"
     white-space nowrap
 }
@@ -1527,7 +1566,7 @@ part "status-button" {
     border-color currentColor
     font-family "$font"
     font-size "$fs-ui"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-tight"
     cursor pointer
 }
@@ -1693,7 +1732,7 @@ part "list-row[variant=head]" {
     background "$bg-surface"
     color "$fg-muted"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "list-row[variant=head]:hover" {
@@ -1896,7 +1935,7 @@ part "list-group" {
     border-bottom "$border-width solid $border-subtle"
     background "$bg-surface"
     font-size "$fs-ui"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "list-group.count" {
@@ -2416,6 +2455,7 @@ part "window.title" {
     line-height "$size-control"
     text-overflow ellipsis
     white-space nowrap
+    font-weight "$weight-bold"
 }
 
 part "window.control" {
@@ -2641,7 +2681,7 @@ part "window-dock[focus-visible]" {
 
 part "window-dock.title" {
     overflow hidden
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-overflow ellipsis
     white-space nowrap
 }
@@ -2759,7 +2799,7 @@ part "item.actions" {
 }
 
 part "item.title" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "facts" {
@@ -2778,7 +2818,7 @@ part "fact" {
 part "term" {
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "definition" {
@@ -2812,7 +2852,7 @@ part "box" {
 }
 
 part "strong" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
 }
 
@@ -2890,6 +2930,7 @@ part "card.heading" {
     font-size "$fs-lg"
     line-height "$lh-snug"
     color "$fg"
+    font-weight "$weight-bold"
 }
 
 part "card.heading:focus" {
@@ -2930,7 +2971,7 @@ part "save-status" {
 // Red means something did not happen (R4); a change that is not saved yet only says so.
 part "save-status[state=not-saved]" {
     color "$fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).
@@ -3033,6 +3074,7 @@ part "confirm.title" {
     margin 0
     font-size "$fs-lg"
     line-height "$lh-snug"
+    font-weight "$weight-bold"
 }
 
 part "confirm.actions" {
@@ -3165,7 +3207,7 @@ part "access.matrix-cell[variant=head]" {
     top 0
     background "$bg-sunken"
     color "$fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     min-width "$size-matrix-cell"
 }
 
@@ -3174,7 +3216,7 @@ part "access.matrix-cell[variant=row]" {
     inset-inline-start 0
     background "$bg-surface"
     color "$fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     min-width "$size-matrix-cell"
 }
 
@@ -3267,7 +3309,7 @@ part "people.person[focus-visible]" {
 }
 
 part "people.person-name" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$accent-fg"
     text-decoration underline
     text-underline-offset "$space-1"
@@ -3286,7 +3328,7 @@ part "roles.no-access" {
     margin 0
     color "$danger"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-body"
 }
 
@@ -3300,7 +3342,7 @@ part "roles.topic" {
 part "roles.legend" {
     margin-block-end "$space-2"
     padding 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "roles.note" {
@@ -3320,7 +3362,7 @@ part "projects.details" {
     align-items center
     gap "$space-2 $space-3"
     min-width 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap break-word
 }
 
@@ -3359,7 +3401,7 @@ part "long-preview" {
 part "long-preview.summary" {
     display block
     margin 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "long-preview.groups" {
@@ -3580,7 +3622,7 @@ part "access-keys.prefix" {
 part "access-keys.expired" {
     color "$danger"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "access-keys.more" {
@@ -3592,7 +3634,7 @@ part "access-keys.more-title" {
     min-height "$size-control"
     display flex
     align-items center
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     cursor pointer
 }
 
@@ -3614,7 +3656,7 @@ part "access-keys.legend" {
     padding 0
     margin-bottom "$space-1"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // ───────────── Shell ─────────────
@@ -3634,7 +3676,7 @@ part "shell.section-heading" {
     padding "0 $space-3"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // In the sheet *More* the heading starts where the line *Signed in as* above it starts: the sheet has
@@ -3665,6 +3707,7 @@ part "shell.sheet-head" {
 part "shell.title" {
     margin 0
     font-size "$fs-lg"
+    font-weight "$weight-bold"
 }
 
 part "shell.page" {
@@ -3688,7 +3731,7 @@ part "shell.header" {
 
 part "shell.brand" {
     font-size "$fs-lg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$accent-fg"
 }
 
@@ -3765,7 +3808,7 @@ part "skip" {
     border-radius "$r-ctl"
     background "$bg-raised"
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     transform "translateY($skip-offset)"
 }
 
@@ -3822,7 +3865,7 @@ part "sidebar.brand" {
     padding "$space-2 $space-3"
     color "$accent-fg"
     font-size "$fs-lg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "sidebar.brand[variant=narrow]" {
@@ -3913,7 +3956,7 @@ part "nav-item.tooltip" {
     box-shadow "$shadow"
     color "$fg"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "bottom-bar" {
@@ -3946,7 +3989,7 @@ part "bottom-bar.item" {
     use "bare-button"
     color "$fg"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration none
 }
 
@@ -4002,7 +4045,7 @@ part "top-bar.crumb" {
 
 part "top-bar.up" {
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration underline
     text-underline-offset "$space-1"
 }
@@ -4045,6 +4088,7 @@ part "side-panel.title" {
     margin 0
     font-size "$fs-lg"
     overflow-wrap anywhere
+    font-weight "$weight-bold"
 }
 
 part "side-panel.title:focus" {
@@ -4085,7 +4129,7 @@ part "quick-search.heading" {
     padding "$space-1 $space-3"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "quick-search.item" {
@@ -4109,7 +4153,7 @@ part "quick-search.item[focused]" {
 
 part "quick-search.title" {
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "quick-search.empty" {
@@ -4159,7 +4203,7 @@ part "settings-frame.heading" {
     padding "0 $space-3"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // The offers stand over the page at the bottom of the column the page is drawn in, in the middle of
@@ -4303,7 +4347,7 @@ part "action-menu.title" {
     padding "$space-2 calc($pad-control + $border-width)"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "action-menu" {
@@ -4348,6 +4392,7 @@ part "issue-title" {
     margin 0
     font-size "$fs-xl"
     line-height "$lh-snug"
+    font-weight "$weight-bold"
 }
 
 // The big status button under the title, and what stands beside it.
@@ -4421,6 +4466,7 @@ part "issue-details[variant=stacked]" {
 part "issue-details.heading" {
     margin 0
     font-size "$fs-lg"
+    font-weight "$weight-bold"
 }
 
 part "issue-section" {
@@ -4441,6 +4487,7 @@ part "issue-section.head" {
 part "issue-section.title" {
     margin 0
     font-size "$fs-lg"
+    font-weight "$weight-bold"
 }
 
 part "issue-section.reading" {
@@ -4542,7 +4589,7 @@ part "issue-bar.item" {
 
 part "key-capture-field.label" {
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "key-capture-field.box" {
@@ -4632,7 +4679,7 @@ part "list-editor.open[variant=columns]" {
 
 part "list-editor.name" {
     min-width 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap break-word
 }
 
@@ -4700,7 +4747,7 @@ part "shortcut-editor.keys" {
 }
 
 part "shortcut-editor.label" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "shortcut-help.intro" {
@@ -4711,7 +4758,7 @@ part "shortcut-help.intro" {
 part "shortcut-help.change" {
     align-self flex-start
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration underline
     text-underline-offset "$space-1"
 }
@@ -4726,7 +4773,7 @@ part "shortcut-list.what" {
 }
 
 part "shortcut-list.name" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "shortcut-list.keys" {
@@ -4798,6 +4845,11 @@ base "[data-part=markdown] ul" "[data-part=markdown] ol" {
     padding-left "$space-5"
 }
 
+// What a person writes in bold in a description or a comment stays bold: it is their own emphasis.
+base "[data-part=markdown] strong" "[data-part=markdown] b" {
+    font-weight "$weight-bold"
+}
+
 base "[data-part=markdown] a" {
     color "$accent-fg"
     text-decoration underline
@@ -4858,7 +4910,7 @@ base "[data-part=markdown] [data-token]" {
     border-radius "$r-ctl"
     background "$accent-soft"
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     white-space nowrap
 }
 
@@ -4968,7 +5020,7 @@ part "files.tile" {
     padding 0
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-transform uppercase
     use "sunken-box"
 }
@@ -5011,7 +5063,7 @@ part "unbroken-word" {
 }
 
 part "files.name" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     font-size "$fs-md"
 }
 
@@ -5068,7 +5120,7 @@ part "field-badge" {
     background "$bg-sunken"
     color "$fg"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-snug"
     white-space nowrap
 }
@@ -5122,7 +5174,7 @@ part "field-avatar.face" {
     background "$accent-soft"
     color "$accent-fg"
     font-size "$fs-xs"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "field-swatch" {
@@ -5142,7 +5194,7 @@ part "field-swatch" {
 part "choice-group.input:checked + field-swatch" {
     border "$border-width solid $accent"
     box-shadow "0 0 0 $border-width $accent"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "choice-group.input:focus-visible + field-swatch" {
@@ -11750,7 +11802,7 @@ part "draggable" {
 part "layout-field.name" {
     flex 1
     min-width 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap anywhere
 }
 
@@ -11913,7 +11965,7 @@ part "notification.head" {
 part "notification.new" {
     color "$accent-fg"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "notification.sentences" {
@@ -11945,7 +11997,7 @@ part "nav-item.count" "bottom-bar.count" {
     background "$accent"
     color "$on-accent"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-snug"
     forced {
         border "$border-width solid"
@@ -11991,7 +12043,7 @@ part "customize-row.kind" {
     flex-grow 1
     flex-basis "$size-menu"
     min-width 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap anywhere
 }
 
@@ -12079,7 +12131,7 @@ part "workflow-status.name" {
     margin 0
     color "$fg"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap anywhere
 }
 
@@ -12223,7 +12275,7 @@ part "workflow-rules" {
 part "workflow-rules.legend" {
     padding 0
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "workflow-condition" {
@@ -12306,7 +12358,7 @@ part "drawing-box.name" {
     display flex
     align-items center
     gap "$space-2"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "drawing-box.changes" {
@@ -12481,7 +12533,7 @@ part "search-filter.name" {
 }
 
 part "search-filter.value" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap anywhere
 }
 
@@ -12664,7 +12716,7 @@ part "nav-subheading" {
     padding "$space-2 $space-3"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // An example of the help sheet that can be put into the search with one click.

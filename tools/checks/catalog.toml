@@ -248,6 +248,15 @@ files = ["web/**/*.{ts,tsx}", "design/theme.kdl"]
 status = "active"
 
 [[check]]
+id = "STY-BOLD"
+title = "Bold only where UX §7.3 allows it: a rule of the app sets the bold weight only if the `bold` list of the theme file names it"
+rule = "UX §7.3, ADR-0026"
+tool = "xtask (reads design/theme.kdl: every rule and mixin of the app that sets a bold weight, against the one `bold` list; a listed selector that no rule makes bold fails too)"
+when = ["edit", "commit", "ci"]
+files = ["design/theme.kdl"]
+status = "active"
+
+[[check]]
 id = "THEME-ONLY"
 title = "The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one (also in the pages of docs/)"
 rule = "ADR-0026, coding-standards §4"
