@@ -32,6 +32,7 @@ use bb_core::settings::{
     Source, changed_only_on_its_own_screen, find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
+use bb_core::version::{Version, counted_up};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::{Value, json};
 
@@ -44,7 +45,9 @@ use crate::access::{Actor, ProjectLabel};
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, by, change_failed, changed, fixed_entity, internal,
 };
+use crate::editing::Conflict;
 use crate::issues::{ModeChange, plan_renewals_in, renew_or_queue_in};
+use crate::projects::Why;
 
 /// Where the settings of a request are: the organization, a project, or the person who asks.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -84,6 +87,10 @@ pub struct ChangeSetting {
     pub key: String,
     /// The new value.
     pub value: SettingValue,
+    /// For a person's own setting: the version the person read (`0` for a value that was not
+    /// there). The change is refused when the value is at another version now. Without it the
+    /// last change wins, as for the other scopes, which have no version.
+    pub version: Option<i64>,
 }
 
 /// *Reset to default*: take the value of a setting on one scope away, so the layer above counts
@@ -136,6 +143,9 @@ pub struct SettingView {
     /// On the organization's scope: whether the value is locked, which administrators can change.
     /// On a lower scope: whether the organization's lock is in effect, so the value is read only.
     pub locked: bool,
+    /// For a person's own setting: the version of the value of their own (`0` while there is
+    /// none), which a change sends back (ADR-0018). `None` on the other scopes.
+    pub version: Option<i64>,
 }
 
 /// The settings of one scope, in the order of the registry.
@@ -357,7 +367,33 @@ impl<S: AuthStore> Ctx<'_, S> {
             source,
             own,
             locked,
+            version: matches!(scope, Scope::Person(_)).then(|| layers.person_version(key)),
         })
+    }
+
+    /// The answer to a change of a person's own setting made from an old version: the version it
+    /// has now and the value it holds, read again (nobody else's data is in it). When the read
+    /// fails the plain refusal is sent.
+    async fn version_conflict_of(
+        &self,
+        scope: Scope,
+        definition: &'static SettingDefinition,
+    ) -> AppError {
+        let Ok(layers) = self.layers_of(scope, None).await else {
+            return AppError::Refused(ErrorCode::VersionChanged);
+        };
+        let key = definition.key();
+        let field = field_of(key);
+        AppError::Conflict(Box::new(Conflict {
+            version: Some(layers.person_version(key)),
+            changed_by: None,
+            changed_at: None,
+            current: own_value(&layers, scope, definition)
+                .map(|value| (field.clone(), value))
+                .into_iter()
+                .collect(),
+            fields: vec![field],
+        }))
     }
 
     /// A change of a setting that touches security also goes into the security log (SEC-15).
@@ -447,7 +483,8 @@ pub async fn settings<S: AuthStore>(
 /// `resource.not-found` for a key that does not exist (or a project the person may not know
 /// about), `access.forbidden` without the right to change it there, `request.invalid` for a
 /// value the setting does not accept or a scope it cannot be set on, `setting.locked` while the
-/// organization's lock holds for a project or a person.
+/// organization's lock holds for a project or a person, `edit.version-changed` for a person's own
+/// setting that was changed since the version that came with the change.
 pub async fn change_setting<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangeSetting,
@@ -471,6 +508,10 @@ pub async fn change_setting<S: AuthStore>(
         }
         .into());
     }
+    // A version is a number the server gave out: it never counts below zero.
+    if input.version.is_some_and(|version| version < 0) {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
     let layers = ctx.layers_of(scope, None).await?;
     if scope != Scope::Organization && layers.resolve(definition).locked {
         return Err(ErrorCode::SettingLocked.into());
@@ -485,18 +526,31 @@ pub async fn change_setting<S: AuthStore>(
     if forgets {
         changes.push(changed(PASSWORD_FIELD));
     }
+    if let Scope::Person(_) = scope {
+        // The log tells a change that counted the version up from one that did not.
+        let current = layers.person_version(definition.key());
+        changes.push(counted_up(input.version.unwrap_or(current)));
+    }
     let event = ctx.event(by(actor.person.id), entity.clone(), changes)?;
     // The issues of a project get new IDs in the same change when its mode of issue IDs changes.
     let (store_key, value, now, person) =
         (definition.key(), input.value, ctx.now(), actor.person.id);
+    let expected = input.version.map(Version::new);
+    let why = Why::default();
+    let stopped = why.clone();
     let mode_change = ModeChange::Set(value.clone());
     let (mut source, events) = (ctx.owned_ids(), ctx.event_maker(by(actor.person.id)));
-    ctx.store()
+    let written = ctx
+        .store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 let renewals =
                     plan_renewals_in::<S>(transaction, scope, store_key, &mode_change).await?;
-                S::put_setting_value(transaction, scope, definition, &value, now).await?;
+                if !S::put_setting_value(transaction, scope, definition, &value, now, expected)
+                    .await?
+                {
+                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+                }
                 if forgets {
                     S::forget_mail_password(transaction).await?;
                 }
@@ -508,7 +562,14 @@ pub async fn change_setting<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::SettingLocked)))?;
+        .map_err(|error| match why.said() {
+            Some(code) => AppError::Refused(code),
+            None => change_failed::<S>(&error, Stops::both(ErrorCode::SettingLocked)),
+        });
+    if let Err(AppError::Refused(ErrorCode::VersionChanged)) = written {
+        return Err(ctx.version_conflict_of(scope, definition).await);
+    }
+    written?;
     ctx.note_security(&actor, definition, SecurityAction::SettingChanged, entity)
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
@@ -572,7 +633,8 @@ pub async fn reset_setting<S: AuthStore>(
                     plan_renewals_in::<S>(transaction, scope, store_key, &ModeChange::Reset)
                         .await?;
                 if keeps_the_lock {
-                    S::put_setting_value(transaction, scope, definition, &standard, now).await?;
+                    S::put_setting_value(transaction, scope, definition, &standard, now, None)
+                        .await?;
                 } else {
                     S::clear_setting_value(transaction, scope, definition).await?;
                 }

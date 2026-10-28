@@ -67,6 +67,7 @@ pub(crate) async fn enter_the_mail_server(world: &World) -> Result<(), String> {
         change_setting(
             &world.ctx(),
             ChangeSetting {
+                version: None,
                 session_token: token(world),
                 scope: SettingsScope::Organization,
                 key: key.to_owned(),
@@ -85,6 +86,7 @@ pub(crate) async fn switch_mail_on(world: &World) -> Result<(), String> {
     change_setting(
         &world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: token(world),
             scope: SettingsScope::Organization,
             key: "mail.enabled".to_owned(),

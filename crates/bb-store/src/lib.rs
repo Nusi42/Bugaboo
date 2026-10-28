@@ -136,6 +136,35 @@ mod test_support {
         database.execute(&insert).await.map(|_| ())
     }
 
+    /// A person written the way the first migrations knew them (id, name, e-mail, creation): what
+    /// a test of a migration that touches a person's own rows starts from.
+    #[cfg(test)]
+    pub(crate) async fn insert_old_person(
+        database: &Database,
+        id: Vec<u8>,
+    ) -> Result<(), crate::StoreError> {
+        use crate::schema::PersonRow;
+        use sea_query::{Expr, Query};
+
+        let mut insert = Query::insert();
+        insert
+            .into_table(PersonRow::Table)
+            .columns([
+                PersonRow::Id,
+                PersonRow::DisplayName,
+                PersonRow::Email,
+                PersonRow::CreatedAt,
+            ])
+            .values([
+                Expr::val(id),
+                Expr::val("Ada"),
+                Expr::val("ada@example.test"),
+                Expr::val(1_i64),
+            ])
+            .map_err(|_| crate::StoreError::Corrupt("a person"))?;
+        database.execute(&insert).await.map(|_| ())
+    }
+
     /// A predictable ID source for the test.
     pub(crate) fn ids() -> SequentialIds {
         SequentialIds::default()

@@ -99,9 +99,9 @@ interface Drawn {
 /**
  * Nothing on the screen is drawn over its neighbour: what the items of every list and group draw
  * (box and text) is apart. A grid whose columns are too narrow draws codes on top of each other
- * while their boxes stay side by side, so the text counts too.
+ * while their boxes stay side by side, so the text counts too. `rows` names other places to look in.
  */
-export async function expectNoOverlap(page: Page): Promise<void> {
+export async function expectNoOverlap(page: Page, rows: string = ROWS_OF_ITEMS): Promise<void> {
   const overlaps = await page.evaluate((selector) => {
     const found: string[] = [];
     for (const row of document.querySelectorAll(selector)) {
@@ -134,7 +134,7 @@ export async function expectNoOverlap(page: Page): Promise<void> {
       }
     }
     return found;
-  }, ROWS_OF_ITEMS);
+  }, rows);
   expect(overlaps).toEqual([]);
 }
 

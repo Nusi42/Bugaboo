@@ -44,6 +44,7 @@ pub(super) async fn set_setting(crew: &Crew, key: &str, value: SettingValue) -> 
     change_setting(
         &crew.world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: token(&crew.world),
             scope: SettingsScope::Organization,
             key: key.to_owned(),
@@ -355,6 +356,7 @@ async fn ntf_02_a_person_who_switched_the_e_mail_off_meanwhile_gets_none() -> Ou
     change_setting(
         &crew.world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: token(&crew.world),
             scope: SettingsScope::Person,
             key: NotificationKind::FollowedActivity

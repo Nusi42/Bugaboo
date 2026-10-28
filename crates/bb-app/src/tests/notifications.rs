@@ -223,6 +223,7 @@ impl Crew {
         change_setting(
             &self.world.ctx(),
             ChangeSetting {
+                version: None,
                 session_token: token(&self.world),
                 scope: SettingsScope::Organization,
                 key: kind.setting(via).definition().key().to_owned(),
@@ -235,7 +236,6 @@ impl Crew {
     }
 }
 
-/// What a test changes about the issue.
 /// The statuses of the workflow *Simple* that these tests change an issue to.
 #[derive(Clone, Copy)]
 pub(super) enum Status {

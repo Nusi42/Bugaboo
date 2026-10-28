@@ -8,6 +8,7 @@ use std::collections::BTreeSet;
 
 use anyhow::{Context as _, bail};
 
+use super::bold_spec::BoldSpec;
 use super::contrast_spec::{ContrastSpec, DistinctSpec};
 use super::kdl_reader::{Document, Node};
 use crate::repo::Repo;
@@ -240,6 +241,8 @@ pub(crate) struct ThemeFile {
     pub(crate) contrast: ContrastSpec,
     /// One rule for the plain surfaces, and one for each kind of tinted row.
     pub(crate) distinct: Vec<DistinctSpec>,
+    /// The one list of what may be bold.
+    pub(crate) bold: BoldSpec,
 }
 
 /// The names that are not CSS properties inside a rule.

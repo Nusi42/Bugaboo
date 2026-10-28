@@ -122,6 +122,7 @@ async fn m1_f21_a_longer_keep_period_of_the_security_log_keeps_more() -> Outcome
     change_setting(
         &world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: token(&world),
             scope: SettingsScope::Organization,
             key: "security.log-keep-days".to_owned(),
@@ -173,6 +174,7 @@ async fn m1_f61_the_job_asks_the_log_file_to_rotate_with_the_size_and_the_files_
         change_setting(
             &world.ctx(),
             ChangeSetting {
+                version: None,
                 session_token: token(&world),
                 scope: SettingsScope::Organization,
                 key: key.to_owned(),

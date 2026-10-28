@@ -477,6 +477,7 @@ async fn choose_region(
         change_setting(
             &services.ctx(request()),
             ChangeSetting {
+                version: None,
                 session_token: session.to_owned(),
                 scope: SettingsScope::Person,
                 key: key.to_owned(),

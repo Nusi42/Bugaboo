@@ -3,12 +3,28 @@ import createQueryClient from "openapi-react-query";
 
 import { ApiError, isProblem, PROBLEM_CONTENT_TYPE } from "./problem.ts";
 import { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
+import { serverTimeLimitMs } from "./request-time.generated.ts";
 import { markSafeHtml } from "./safe-html.ts";
 import { safeHtmlPaths } from "./safe-html.generated.ts";
 import type { paths } from "./schema.ts";
 
 /** The methods that only read; every other method carries the CSRF token. */
 const SAFE_METHODS: ReadonlySet<string> = new Set(["GET", "HEAD"]);
+
+/** How much longer than the server the client waits, so the server's own answer (408) arrives first. */
+export const requestMarginMs = 5000;
+
+/**
+ * How long a request of the client may wait for its answer before it counts as lost: the time the
+ * server gives a request ({@link serverTimeLimitMs}, `bb_api::TIME_LIMIT`, written once in Rust)
+ * and a small margin. A request that is not answered by then is refused like one that finds no
+ * server (`ApiError` with status `0`), so what waits for it (a later change of the same setting, a
+ * button that shows *Saving…*) goes on instead of waiting until the page is loaded again (M5-F96).
+ * It counts until the answer starts to arrive, and it covers every request of the client, also the
+ * parts of an upload (each part is one request with the same limit as the server gives it). A part
+ * that has its own, shorter limit keeps it (the sources of quick search, `sourceTimeoutMs`).
+ */
+export const requestTimeoutMs = serverTimeLimitMs + requestMarginMs;
 
 /** What the client needs from its surroundings. Tests replace these. */
 export interface ClientOptions {
@@ -18,6 +34,8 @@ export interface ClientOptions {
   readonly fetch?: (request: Request) => Promise<Response>;
   /** The current CSRF token, or `undefined` when there is none (not signed in). */
   readonly csrfToken?: () => string | undefined | Promise<string | undefined>;
+  /** How long a request may wait for its answer, in milliseconds; {@link requestTimeoutMs} by default. */
+  readonly timeoutMs?: number;
 }
 
 /** Reads a cookie from a cookie header text, for the CSRF token. */
@@ -34,6 +52,34 @@ export function readCookie(name: string, cookies: string): string | undefined {
 /** The CSRF token of the page: the cookie the server set for it. */
 function tokenFromPage(): string | undefined {
   return readCookie(CSRF_COOKIE, document.cookie);
+}
+
+/**
+ * Sends `request` with `send`, and gives up when no answer has come after `timeoutMs`: the request
+ * is called off and the call fails like one that found no server. The call does not wait for a
+ * `send` that ignores the call-off.
+ */
+async function sendWithinTime(
+  send: (request: Request) => Promise<Response>,
+  request: Request,
+  timeoutMs: number,
+): Promise<Response> {
+  const lost = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      lost.abort();
+      reject(new Error("no answer in time"));
+    }, timeoutMs);
+  });
+  const limited = new Request(request, {
+    signal: AbortSignal.any([request.signal, lost.signal]),
+  });
+  try {
+    return await Promise.race([send(limited), late]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** The seconds of a `Retry-After` header; nothing when there is none or it is not a whole number of seconds. */
@@ -146,7 +192,12 @@ export function createApi<Paths extends object = paths>(options: Readonly<Client
   const client = createFetchClient<Paths>({
     baseUrl: options.baseUrl ?? "",
     credentials: "same-origin",
-    ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
+    fetch: (request: Request) =>
+      sendWithinTime(
+        options.fetch ?? ((sent) => fetch(sent)),
+        request,
+        options.timeoutMs ?? requestTimeoutMs,
+      ),
   });
   client.use(rules(csrfToken));
   return { client, query: createQueryClient(client) };

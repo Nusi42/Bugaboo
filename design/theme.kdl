@@ -298,15 +298,13 @@ tokens {
     color "st-ip-soft" daylight="#e7effc" paper="#dfeef1" dusk="#24365a" midnight="#10244a"
     color "st-done" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
     color "st-done-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
-    // The tint of a row by its status group: the group's soft color mixed into the raised surface.
-    // The hovered and the selected row keep the hue and move away from the tint by the same step as
-    // the plain rows do, so the state stays visible on every tint (the `distinct` rules below).
-    color "tint-ip" daylight="#f5f9fe" paper="#f2f7f6" dusk="#293448" midnight="#131e34"
-    color "tint-ip-hover" daylight="#eef2f9" paper="#edf0ed" dusk="#2c384d" midnight="#18233a"
-    color "tint-ip-selected" daylight="#eaebfc" paper="#e2ebf0" dusk="#34385f" midnight="#1c234f" midnight-more="#1b224b"
-    color "tint-done" daylight="#f5fbf7" paper="#f5f7ef" dusk="#283638" midnight="#12231e"
-    color "tint-done-hover" daylight="#eef4f2" paper="#f0f0e6" dusk="#2c3a3d" midnight="#162824"
-    color "tint-done-selected" daylight="#eaedf5" paper="#e5ebe9" dusk="#333a50" midnight="#1c293a" midnight-more="#192734"
+    // The tint of a row by its status group, one for each of the three groups (Not started, In progress,
+    // Done): the group's hue at the lightness where every text color of a row still reaches 4.5:1
+    // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
+    // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
+    color "tint-ns" daylight="#e6eaf1" paper="#e6e1da" dusk="#343c4e" midnight="#1f2531"
+    color "tint-ip" daylight="#dbebff" paper="#d2e5ee" dusk="#153978" midnight="#052256"
+    color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
     color "cat1-bg" daylight="#fde7ef" paper="#f6e1e4" dusk="#4a2638" midnight="#3a1428"
     color "cat1-fg" daylight="#a3195b" paper="#97304a" dusk="#ff9cc8" midnight="#ff92c2"
     color "cat2-bg" daylight="#e3f1ff" paper="#e0eaf3" dusk="#213a5c" midnight="#10294a"
@@ -340,7 +338,7 @@ tokens {
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
     text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
-    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ip" "tint-ip-hover" "tint-ip-selected" "tint-done" "tint-done-hover" "tint-done-selected" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
     restricted "on-accent" on="accent danger" reason="On-accent text is only ever drawn on the accent fill, and on the red of the Close button of a window."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
@@ -399,6 +397,11 @@ contrast min=4.5 {
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
     }
 
+    lines min=3 reason="The ring of a selected or focused row and the line of a hovered row carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
+        colors "accent" "border-control"
+        on "tint-ns" "tint-ip" "tint-done"
+    }
+
     lines min=2 faded-by="opacity-disabled" reason="The edge of a button that cannot be pressed is drawn in the color of quiet words and faded by the opacity of a disabled control: as it is seen it stays 2:1 against every plain surface in every theme (a disabled control is exempt from WCAG 1.4.11, but its frame must not vanish; the final check of M4 found 1.24:1)." {
         colors "fg-muted"
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
@@ -418,17 +421,38 @@ distinct min-against-surfaces=1.08 min-between-states=1.04 reason="Hovered and s
     surfaces "bg-canvas" "bg-surface" "bg-raised"
 }
 
-distinct min-against-surfaces=1.06 min-between-states=1.04 reason="On a row tinted by its status group, the hovered and the selected row differ from the tint by at least 1.06:1, and from each other by at least 1.04:1, in every theme. A selected row also draws a ring inside its edge, so it never relies on the fill alone." {
-    group {
-        states "tint-ip-hover" "tint-ip-selected"
-        surfaces "tint-ip"
-    }
-    group {
-        states "tint-done-hover" "tint-done-selected"
-        surfaces "tint-done"
-    }
+// Bold (UX §7.3, STY-BOLD): only these rules may set `$weight-bold`, one line for each selector. A role is
+// what the bold says: `issue-title` (24), `title` (the title of a page, a window or a card, 20), `section`
+// (the heading of a part of a page, 16), `priority` (the word of a Critical or High priority), `own`
+// (what a person wrote in bold in a text). A new bold needs a role from this list, and a role needs UX §7.3.
+bold reason="Bold is kept for the titles, the headings of sections, the words of the two highest priorities and what a person wrote in bold (UX §7.3); everything else is regular, so bold still means something." {
+    selector "issue-title" role="issue-title"
+    selector "window.title" role="title"
+    selector "confirm.title" role="title"
+    selector "shell.title" role="title"
+    selector "side-panel.title" role="title"
+    selector "top-bar.title" role="title"
+    selector "card.heading" role="title"
+    selector "issue-details.heading" role="section"
+    selector "issue-section.title" role="section"
+    selector "form-section.title" role="section"
+    selector "list-panel.title" role="section"
+    selector "access.subheading" role="section"
+    selector "access.topic" role="section"
+    selector "card.topic" role="section"
+    selector "notification-group.head" role="section"
+    selector "search-help.title" role="section"
+    selector "priority[variant=critical]" role="priority"
+    selector "priority[variant=high]" role="priority"
+    selector "[data-part=markdown] h1" role="own"
+    selector "[data-part=markdown] h2" role="own"
+    selector "[data-part=markdown] h3" role="own"
+    selector "[data-part=markdown] h4" role="own"
+    selector "[data-part=markdown] h5" role="own"
+    selector "[data-part=markdown] h6" role="own"
+    selector "[data-part=markdown] strong" role="own"
+    selector "[data-part=markdown] b" role="own"
 }
-
 
 // ───────────── Mixins ─────────────
 //
@@ -454,6 +478,29 @@ mixin "status-soft-in-progress" {
 mixin "status-soft-done" {
     background "$st-done-soft"
     color "$st-done"
+}
+
+// The clear outline inside the edge that both ring mixins of a row share, written once.
+mixin "ring-clear" {
+    outline "$ring-width solid transparent"
+    outline-offset "calc($ring-width * -1)"
+}
+
+// The ring of a row that is selected or current: inside the edge, drawn by a shadow, so it is even on all
+// four sides and the colored edge of a priority stays whole. The clear outline is for forced colors, which
+// drop shadows and show an outline in a color of the system; it also stops the outline of the focus that
+// the whole page has from being drawn outside the row. A shadow list cannot be put together from two
+// mixins, so the accent ring is written here and again in `ring-keyboard`.
+mixin "ring-row" {
+    box-shadow "inset 0 0 0 $ring-width $accent"
+    use "ring-clear"
+}
+
+// The keyboard focus on a row: the accent ring and, inside it, a second ring in the text color, so the focus
+// is told from a selected or a current row on every tint. Both are shadows, even on all four sides.
+mixin "ring-keyboard" {
+    box-shadow "inset 0 0 0 $ring-width $accent, inset 0 0 0 calc($ring-width * 2) $fg"
+    use "ring-clear"
 }
 
 // The ring around what has the focus: the one definition of how the focus looks.
@@ -536,7 +583,7 @@ mixin "pick-row" {
 mixin "menu-text" {
     color "$fg"
     font-size "$fs-ui"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration none
 }
 
@@ -619,7 +666,7 @@ mixin "tab-label" {
     box-sizing border-box
     color "$fg-muted"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     cursor pointer
     border-bottom "$space-1 solid transparent"
 }
@@ -737,6 +784,12 @@ base "body" {
     font-size "$fs-md"
 }
 
+// Headings and table heads come from the browser in bold; here they are regular, and the parts the
+// `bold` list names (UX §7.3, STY-BOLD) turn bold on again.
+base "h1" "h2" "h3" "h4" "h5" "h6" "th" "strong" "b" "optgroup" {
+    font-weight "$weight-regular"
+}
+
 // The rule React Aria would add itself: pressing a control does not wait for a double tap.
 base "[data-react-aria-pressable]" {
     touch-action "pan-x pan-y pinch-zoom"
@@ -811,6 +864,12 @@ part "button[variant=primary]" {
     border-color "$accent"
     background "$accent"
     color "$on-accent"
+    // Forced colors keep the label readable: the face and the text of a button, and an edge in the text color.
+    forced {
+        border-color ButtonText
+        background ButtonFace
+        color ButtonText
+    }
 }
 
 part "button[variant=quiet]" {
@@ -818,6 +877,10 @@ part "button[variant=quiet]" {
     background transparent
     color "$accent-fg"
     use "hang-start"
+    // Forced colors draw the edge that is clear otherwise, so the button no longer hangs back into its neighbour.
+    forced {
+        margin-inline-start 0
+    }
 }
 
 // One start edge (R1) and one end edge: a text button hangs back by its own padding, so its words
@@ -828,6 +891,9 @@ part "button[variant=quiet]" {
 // by itself.
 part "button[variant=quiet]:last-child" {
     margin-inline-end "calc(-1 * $pad-control)"
+    forced {
+        margin-inline-end 0
+    }
 }
 
 // An icon has no padding to hang back by.
@@ -839,6 +905,9 @@ part "button[variant=quiet][variant=square]" {
 // a quiet one hangs back by its padding on a phone only.
 part "files.actions button[variant=quiet]" "item.actions button[variant=quiet]" {
     margin-inline-start "$size-phone-hang"
+    forced {
+        margin-inline-start 0
+    }
 }
 
 // An entry of a list of actions (the status list, *More*): its words start at the start edge, and it
@@ -899,8 +968,8 @@ part "field" {
 
 part "field.label" {
     font-size "$fs-md"
-    font-weight "$weight-bold"
-    color "$fg"
+    font-weight "$weight-regular"
+    color "$fg-muted"
 }
 
 part "field.description" {
@@ -990,7 +1059,7 @@ part "alert[variant=info]" {
 
 part "link" {
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration underline
     text-underline-offset "$space-1"
     cursor pointer
@@ -1018,7 +1087,7 @@ part "switch" {
     use "touch-row"
     color "$fg"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "switch.track" {
@@ -1121,7 +1190,7 @@ part "choice-group.legend" {
     padding 0
     margin-bottom "$space-2"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
 }
 
@@ -1374,13 +1443,13 @@ part "picker" {
 part "picker.legend[variant=list]" {
     margin-block-end "$space-3"
     padding 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "picker.legend[variant=boxed]" {
     padding 0
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
 }
 
@@ -1442,7 +1511,7 @@ part "picker.name[variant=list]" {
 }
 
 part "picker.name[variant=boxed]" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
     overflow-wrap anywhere
 }
@@ -1489,7 +1558,7 @@ part "status-pill" {
     padding "$space-1 $pad-control"
     border-radius "$r-pill"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-tight"
     white-space nowrap
 }
@@ -1517,7 +1586,7 @@ part "status-button" {
     border-color currentColor
     font-family "$font"
     font-size "$fs-ui"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-tight"
     cursor pointer
 }
@@ -1583,37 +1652,19 @@ part "priority-icon" {
 //
 // Any row can carry the state of its status group (a tint) and of its priority (an edge of 4 px at
 // its start), by the words of `rowStates`. A row of the list, an issue row and a bar of the
-// timeline are the rows that do. Hovered and selected rows keep the hue of their tint and stay
-// distinct from it (`distinct` above). The rules come after the rows' own, so they win.
+// timeline are the rows that do. A hovered, a selected or a current row keeps its tint, so the rows set no fill of their own for
+// those states: the hover line, the ring and the ticked box say the state. The rules come after the rows' own, so they win.
 
-// A selected row is also ringed inside its edge, so it never relies on the fill alone.
-part "issue-row[state=selected]" "timeline-bar[state=selected]" {
-    background "$bg-selected"
-    use "ring-inside"
+part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "timeline-bar[state=group-not-started]" {
+    background "$tint-ns"
 }
 
 part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "timeline-bar[state=group-in-progress]" {
     background "$tint-ip"
 }
 
-part "list-row[state=group-in-progress]:hover" "issue-row[state=group-in-progress]:hover" "timeline-bar[state=group-in-progress]:hover" {
-    background "$tint-ip-hover"
-}
-
-part "list-row[state=group-in-progress][state=selected]" "issue-row[state=group-in-progress][state=selected]" "timeline-bar[state=group-in-progress][state=selected]" {
-    background "$tint-ip-selected"
-}
-
 part "list-row[state=group-done]" "issue-row[state=group-done]" "timeline-bar[state=group-done]" {
     background "$tint-done"
-}
-
-part "list-row[state=group-done]:hover" "issue-row[state=group-done]:hover" "timeline-bar[state=group-done]:hover" {
-    background "$tint-done-hover"
-}
-
-part "list-row[state=group-done][state=selected]" "issue-row[state=group-done][state=selected]" "timeline-bar[state=group-done][state=selected]" {
-    background "$tint-done-selected"
 }
 
 part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "timeline-bar[state=priority-critical]" {
@@ -1651,18 +1702,16 @@ part "list-row" {
     font-size "$fs-ui"
 }
 
+// A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
+// nothing moves and the edge of its priority stays; it is thinner than the rings and another color.
 part "list-row:hover" {
-    background "$bg-hover"
+    box-shadow "inset 0 0 0 $border-width $border-control"
 }
 
-part "list-row[state=selected]" {
-    background "$bg-selected"
-    use "ring-inside"
-}
-
-// The issue that is open next to the list.
-part "list-row[state=current]" {
-    use "current-item"
+// A selected row, and the issue that is open next to the list, are ringed inside their edge, so they never
+// rely on the fill alone.
+part "list-row[state=selected]" "list-row[state=current]" "issue-row[state=selected]" "issue-row[variant=current]" "timeline-bar[state=selected]" {
+    use "ring-row"
 }
 
 // The column names above the rows.
@@ -1671,11 +1720,12 @@ part "list-row[variant=head]" {
     background "$bg-surface"
     color "$fg-muted"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "list-row[variant=head]:hover" {
     background "$bg-surface"
+    box-shadow none
 }
 
 part "list-row.cell" {
@@ -1776,8 +1826,13 @@ part "list-row.cell[variant=title] link::after" {
     inset 0
 }
 
+// The keyboard focus has the ring of its own (`ring-keyboard`). The row draws it (the link reaches over the row), so the link has no outline of its own.
+part "list-row.cell[variant=title] link[focus-visible]" {
+    outline none
+}
+
 part "list-row.cell[variant=title] link[focus-visible]::after" {
-    use "ring-inside"
+    use "ring-keyboard"
 }
 
 // The checkbox and the buttons of a row stay above the link that reaches over it; every other cell is
@@ -1870,11 +1925,13 @@ part "list-group" {
     align-items center
     gap "$space-2"
     min-height "$size-control"
+    margin-block-start "$space-2"
     padding 0 "$pad-box"
+    border-top "$border-width solid $border"
     border-bottom "$border-width solid $border-subtle"
     background "$bg-surface"
-    font-size "$fs-ui"
-    font-weight "$weight-bold"
+    font-size "$fs-md"
+    font-weight "$weight-regular"
 }
 
 part "list-group.count" {
@@ -2055,7 +2112,7 @@ part "list-group.toggle[focus-visible]" {
 
 // A row or a group header that has the focus of the keyboard shows it all round, inside its box.
 part "list-row[focus-visible]" "list-group[focus-visible]" {
-    use "ring-inside"
+    use "ring-keyboard"
 }
 
 part "list-group.name" {
@@ -2296,6 +2353,11 @@ part "legend.swatch" {
     background "$bg-raised"
 }
 
+part "legend.swatch[variant=not-started]" {
+    border-color "$st-ns"
+    background "$tint-ns"
+}
+
 part "legend.swatch[variant=in-progress]" {
     border-color "$st-ip"
     background "$tint-ip"
@@ -2306,12 +2368,25 @@ part "legend.swatch[variant=done]" {
     background "$tint-done"
 }
 
+part "legend.swatch[variant=critical]" "legend.swatch[variant=high]" {
+    width "$size-edge"
+    border 0
+    border-radius 0
+}
+
 part "legend.swatch[variant=critical]" {
-    border-inline-start "$size-edge solid $danger"
+    background "$danger"
 }
 
 part "legend.swatch[variant=high]" {
-    border-inline-start "$size-edge solid $warning"
+    background "$warning"
+}
+
+// Forced colors drop the fill of a bar, so both are drawn in the text color there.
+part "legend.swatch[variant=critical]" "legend.swatch[variant=high]" {
+    forced {
+        background CanvasText
+    }
 }
 
 // The row above a list: its main button, what is ticked, and the Legend at the end.
@@ -2394,6 +2469,7 @@ part "window.title" {
     line-height "$size-control"
     text-overflow ellipsis
     white-space nowrap
+    font-weight "$weight-bold"
 }
 
 part "window.control" {
@@ -2619,7 +2695,7 @@ part "window-dock[focus-visible]" {
 
 part "window-dock.title" {
     overflow hidden
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-overflow ellipsis
     white-space nowrap
 }
@@ -2737,7 +2813,7 @@ part "item.actions" {
 }
 
 part "item.title" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "facts" {
@@ -2756,7 +2832,7 @@ part "fact" {
 part "term" {
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "definition" {
@@ -2790,7 +2866,7 @@ part "box" {
 }
 
 part "strong" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$fg"
 }
 
@@ -2868,6 +2944,7 @@ part "card.heading" {
     font-size "$fs-lg"
     line-height "$lh-snug"
     color "$fg"
+    font-weight "$weight-bold"
 }
 
 part "card.heading:focus" {
@@ -2908,7 +2985,7 @@ part "save-status" {
 // Red means something did not happen (R4); a change that is not saved yet only says so.
 part "save-status[state=not-saved]" {
     color "$fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).
@@ -3011,6 +3088,7 @@ part "confirm.title" {
     margin 0
     font-size "$fs-lg"
     line-height "$lh-snug"
+    font-weight "$weight-bold"
 }
 
 part "confirm.actions" {
@@ -3143,7 +3221,7 @@ part "access.matrix-cell[variant=head]" {
     top 0
     background "$bg-sunken"
     color "$fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     min-width "$size-matrix-cell"
 }
 
@@ -3152,7 +3230,7 @@ part "access.matrix-cell[variant=row]" {
     inset-inline-start 0
     background "$bg-surface"
     color "$fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     min-width "$size-matrix-cell"
 }
 
@@ -3245,7 +3323,7 @@ part "people.person[focus-visible]" {
 }
 
 part "people.person-name" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$accent-fg"
     text-decoration underline
     text-underline-offset "$space-1"
@@ -3264,7 +3342,7 @@ part "roles.no-access" {
     margin 0
     color "$danger"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-body"
 }
 
@@ -3278,7 +3356,7 @@ part "roles.topic" {
 part "roles.legend" {
     margin-block-end "$space-2"
     padding 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "roles.note" {
@@ -3298,7 +3376,7 @@ part "projects.details" {
     align-items center
     gap "$space-2 $space-3"
     min-width 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap break-word
 }
 
@@ -3337,7 +3415,7 @@ part "long-preview" {
 part "long-preview.summary" {
     display block
     margin 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "long-preview.groups" {
@@ -3558,7 +3636,7 @@ part "access-keys.prefix" {
 part "access-keys.expired" {
     color "$danger"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "access-keys.more" {
@@ -3570,7 +3648,7 @@ part "access-keys.more-title" {
     min-height "$size-control"
     display flex
     align-items center
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     cursor pointer
 }
 
@@ -3592,7 +3670,7 @@ part "access-keys.legend" {
     padding 0
     margin-bottom "$space-1"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // ───────────── Shell ─────────────
@@ -3612,7 +3690,7 @@ part "shell.section-heading" {
     padding "0 $space-3"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // In the sheet *More* the heading starts where the line *Signed in as* above it starts: the sheet has
@@ -3643,6 +3721,7 @@ part "shell.sheet-head" {
 part "shell.title" {
     margin 0
     font-size "$fs-lg"
+    font-weight "$weight-bold"
 }
 
 part "shell.page" {
@@ -3666,7 +3745,7 @@ part "shell.header" {
 
 part "shell.brand" {
     font-size "$fs-lg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     color "$accent-fg"
 }
 
@@ -3743,7 +3822,7 @@ part "skip" {
     border-radius "$r-ctl"
     background "$bg-raised"
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     transform "translateY($skip-offset)"
 }
 
@@ -3800,7 +3879,7 @@ part "sidebar.brand" {
     padding "$space-2 $space-3"
     color "$accent-fg"
     font-size "$fs-lg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "sidebar.brand[variant=narrow]" {
@@ -3891,7 +3970,7 @@ part "nav-item.tooltip" {
     box-shadow "$shadow"
     color "$fg"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "bottom-bar" {
@@ -3924,7 +4003,7 @@ part "bottom-bar.item" {
     use "bare-button"
     color "$fg"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration none
 }
 
@@ -3980,7 +4059,7 @@ part "top-bar.crumb" {
 
 part "top-bar.up" {
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration underline
     text-underline-offset "$space-1"
 }
@@ -4023,6 +4102,7 @@ part "side-panel.title" {
     margin 0
     font-size "$fs-lg"
     overflow-wrap anywhere
+    font-weight "$weight-bold"
 }
 
 part "side-panel.title:focus" {
@@ -4063,7 +4143,7 @@ part "quick-search.heading" {
     padding "$space-1 $space-3"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "quick-search.item" {
@@ -4087,7 +4167,7 @@ part "quick-search.item[focused]" {
 
 part "quick-search.title" {
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "quick-search.empty" {
@@ -4137,7 +4217,7 @@ part "settings-frame.heading" {
     padding "0 $space-3"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // The offers stand over the page at the bottom of the column the page is drawn in, in the middle of
@@ -4245,6 +4325,7 @@ part "in-place.button" {
     border-radius "$r-ctl"
     color inherit
     font-size inherit
+    font-weight inherit
     text-align start
     overflow-wrap anywhere
 }
@@ -4281,7 +4362,7 @@ part "action-menu.title" {
     padding "$space-2 calc($pad-control + $border-width)"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "action-menu" {
@@ -4326,6 +4407,7 @@ part "issue-title" {
     margin 0
     font-size "$fs-xl"
     line-height "$lh-snug"
+    font-weight "$weight-bold"
 }
 
 // The big status button under the title, and what stands beside it.
@@ -4398,7 +4480,8 @@ part "issue-details[variant=stacked]" {
 
 part "issue-details.heading" {
     margin 0
-    font-size "$fs-lg"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
 }
 
 part "issue-section" {
@@ -4418,7 +4501,8 @@ part "issue-section.head" {
 
 part "issue-section.title" {
     margin 0
-    font-size "$fs-lg"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
 }
 
 part "issue-section.reading" {
@@ -4496,10 +4580,6 @@ part "issue-row" {
     padding "$space-2" "$space-3"
 }
 
-part "issue-row[variant=current]" {
-    use "current-item"
-}
-
 // The way to the field permissions next to the note is a target a finger can hit.
 part "layout-field.limited link" {
     use "touch-link"
@@ -4520,7 +4600,7 @@ part "issue-bar.item" {
 
 part "key-capture-field.label" {
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "key-capture-field.box" {
@@ -4610,7 +4690,7 @@ part "list-editor.open[variant=columns]" {
 
 part "list-editor.name" {
     min-width 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap break-word
 }
 
@@ -4678,7 +4758,7 @@ part "shortcut-editor.keys" {
 }
 
 part "shortcut-editor.label" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "shortcut-help.intro" {
@@ -4689,7 +4769,7 @@ part "shortcut-help.intro" {
 part "shortcut-help.change" {
     align-self flex-start
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-decoration underline
     text-underline-offset "$space-1"
 }
@@ -4704,7 +4784,7 @@ part "shortcut-list.what" {
 }
 
 part "shortcut-list.name" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "shortcut-list.keys" {
@@ -4776,6 +4856,11 @@ base "[data-part=markdown] ul" "[data-part=markdown] ol" {
     padding-left "$space-5"
 }
 
+// What a person writes in bold in a description or a comment stays bold: it is their own emphasis.
+base "[data-part=markdown] strong" "[data-part=markdown] b" {
+    font-weight "$weight-bold"
+}
+
 base "[data-part=markdown] a" {
     color "$accent-fg"
     text-decoration underline
@@ -4836,7 +4921,7 @@ base "[data-part=markdown] [data-token]" {
     border-radius "$r-ctl"
     background "$accent-soft"
     color "$accent-fg"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     white-space nowrap
 }
 
@@ -4946,7 +5031,7 @@ part "files.tile" {
     padding 0
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     text-transform uppercase
     use "sunken-box"
 }
@@ -4989,7 +5074,7 @@ part "unbroken-word" {
 }
 
 part "files.name" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     font-size "$fs-md"
 }
 
@@ -5046,7 +5131,7 @@ part "field-badge" {
     background "$bg-sunken"
     color "$fg"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-snug"
     white-space nowrap
 }
@@ -5100,7 +5185,7 @@ part "field-avatar.face" {
     background "$accent-soft"
     color "$accent-fg"
     font-size "$fs-xs"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "field-swatch" {
@@ -5120,7 +5205,7 @@ part "field-swatch" {
 part "choice-group.input:checked + field-swatch" {
     border "$border-width solid $accent"
     box-shadow "0 0 0 $border-width $accent"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "choice-group.input:focus-visible + field-swatch" {
@@ -11728,7 +11813,7 @@ part "draggable" {
 part "layout-field.name" {
     flex 1
     min-width 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap anywhere
 }
 
@@ -11891,7 +11976,7 @@ part "notification.head" {
 part "notification.new" {
     color "$accent-fg"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "notification.sentences" {
@@ -11923,7 +12008,7 @@ part "nav-item.count" "bottom-bar.count" {
     background "$accent"
     color "$on-accent"
     font-size "$fs-sm"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     line-height "$lh-snug"
     forced {
         border "$border-width solid"
@@ -11969,7 +12054,7 @@ part "customize-row.kind" {
     flex-grow 1
     flex-basis "$size-menu"
     min-width 0
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap anywhere
 }
 
@@ -12057,7 +12142,7 @@ part "workflow-status.name" {
     margin 0
     color "$fg"
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap anywhere
 }
 
@@ -12201,7 +12286,7 @@ part "workflow-rules" {
 part "workflow-rules.legend" {
     padding 0
     font-size "$fs-md"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "workflow-condition" {
@@ -12284,7 +12369,7 @@ part "drawing-box.name" {
     display flex
     align-items center
     gap "$space-2"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 part "drawing-box.changes" {
@@ -12459,7 +12544,7 @@ part "search-filter.name" {
 }
 
 part "search-filter.value" {
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
     overflow-wrap anywhere
 }
 
@@ -12642,7 +12727,7 @@ part "nav-subheading" {
     padding "$space-2 $space-3"
     color "$fg-muted"
     font-size "$fs-base"
-    font-weight "$weight-bold"
+    font-weight "$weight-regular"
 }
 
 // An example of the help sheet that can be put into the search with one click.

@@ -38,6 +38,7 @@ pub(super) async fn change(
         .change_setting(
             Rig::info(),
             ChangeSetting {
+                version: None,
                 session_token: who.session.clone(),
                 scope,
                 key: key.to_owned(),

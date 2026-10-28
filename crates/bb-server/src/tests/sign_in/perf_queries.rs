@@ -44,6 +44,7 @@ pub(super) struct Counter<'a> {
 
 impl<'a> Counter<'a> {
     pub(super) fn on(database: &'a Database) -> Self {
+        database.capture_statements();
         Self {
             database,
             before: database.statements_run(),
@@ -52,10 +53,16 @@ impl<'a> Counter<'a> {
 
     /// The statements run since the last time this was asked.
     pub(super) fn take(&mut self) -> usize {
-        let now = self.database.statements_run();
+        self.take_logged().0
+    }
+
+    /// The statements run since the last time this was asked, and their text in the order they ran
+    /// (M5-F65: when two windows that must be the same are not, the text says which statements differ).
+    pub(super) fn take_logged(&mut self) -> (usize, Vec<String>) {
+        let (now, log) = self.database.take_statements();
         let ran = now - self.before;
         self.before = now;
-        usize::try_from(ran).unwrap_or(usize::MAX)
+        (usize::try_from(ran).unwrap_or(usize::MAX), log)
     }
 }
 
@@ -79,10 +86,40 @@ pub(super) async fn five_and_forty(
     counter.take();
     let five = browser.send("GET", &path(5), None).await?;
     assert_eq!(ok(&five)?["items"].as_array().map(Vec::len), Some(5));
-    let on_five = counter.take();
+    let (on_five, five_log) = counter.take_logged();
     let forty = browser.send("GET", &path(40), None).await?;
     assert_eq!(ok(&forty)?["items"].as_array().map(Vec::len), Some(40));
-    Ok((on_five, counter.take()))
+    let (on_forty, forty_log) = counter.take_logged();
+    assert_same_statements(&five_log, &forty_log);
+    Ok((on_five, on_forty))
+}
+
+/// Fails with the statements of both windows when they are not as many, so a failure of the counts
+/// says which statements one window ran that the other did not (M5-F65). The texts of the two may
+/// differ in the length of a list of values, so only the counts are compared.
+pub(super) fn assert_same_statements(on_few: &[String], on_many: &[String]) {
+    if on_few.len() != on_many.len() {
+        let only_in = |these: &[String], others: &[String]| {
+            these
+                .iter()
+                .filter(|text| !others.contains(text))
+                .cloned()
+                .collect::<Vec<_>>()
+        };
+        panic!(
+            "the two windows ran {} and {} statements.
+only in the short one: {:#?}
+only in the long one: {:#?}
+the short one: {:#?}
+the long one: {:#?}",
+            on_few.len(),
+            on_many.len(),
+            only_in(on_few, on_many),
+            only_in(on_many, on_few),
+            on_few,
+            on_many,
+        );
+    }
 }
 
 /// The reads the issue page makes, by what they read.

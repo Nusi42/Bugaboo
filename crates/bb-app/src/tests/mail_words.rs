@@ -117,6 +117,7 @@ async fn ntf_02_a_moment_in_an_e_mail_is_written_in_the_time_zone_of_the_recipie
     change_setting(
         &crew.world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: token(&crew.world),
             scope: SettingsScope::Person,
             key: "region.time-zone".to_owned(),

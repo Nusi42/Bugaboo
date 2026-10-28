@@ -5,6 +5,7 @@
 
 pub(crate) mod api;
 pub(crate) mod bench_budgets;
+pub(crate) mod bold_spec;
 pub(crate) mod clippy;
 pub(crate) mod contrast_spec;
 pub(crate) mod icu;

@@ -236,6 +236,7 @@ async fn news_of_fields_everywhere(g: &Groups) -> Result<(), AppError> {
         crate::settings::change_setting(
             &g.world.ctx(),
             crate::settings::ChangeSetting {
+                version: None,
                 session_token: g.admin.clone(),
                 scope: crate::settings::SettingsScope::Organization,
                 key: bb_core::notification::NotificationKind::FollowedFields

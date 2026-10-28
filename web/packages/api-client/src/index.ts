@@ -1,5 +1,6 @@
 export { dataOf, type Answer } from "./answer.ts";
-export { createApi, readCookie } from "./client.ts";
+export { createApi, readCookie, requestTimeoutMs } from "./client.ts";
+export { fakeServer } from "./fake-server.ts";
 export type { Api, ClientOptions } from "./client.ts";
 export {
   ApiError,

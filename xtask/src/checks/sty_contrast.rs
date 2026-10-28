@@ -61,8 +61,8 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
 }
 
 /// The lines that people have to see (the edge of a box to tick, the edge of a button that cannot be
-/// pressed) reach their ratio on the plain surfaces in every theme, as they are without the device
-/// setting for more contrast. A line that is faded (`faded-by`) is checked as it is seen: its color
+/// pressed, the ring and the hover line of a row) reach their ratio on their surfaces in every theme,
+/// as they are and with the device setting for more contrast. A line that is faded (`faded-by`) is checked as it is seen: its color
 /// mixed with the surface behind it by the opacity.
 fn line_findings(file: &ThemeFile) -> Vec<Finding> {
     let mut findings = Vec::new();
@@ -88,21 +88,28 @@ fn line_findings(file: &ThemeFile) -> Vec<Finding> {
         for theme in &file.themes {
             for line in &lines.colors {
                 for surface in &lines.on {
-                    let (Some(a), Some(b)) = (
-                        color(file, line, &theme.name),
-                        color(file, surface, &theme.name),
-                    ) else {
-                        continue;
-                    };
-                    let ratio = ratio_of(luminance_of(fade(a, b, opacity)), luminance(b));
-                    if ratio < lines.min {
-                        findings.push(Finding::at(
-                            THEME_PATH,
-                            format!(
-                                "Theme {}: the line `{line}` on `{surface}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change its value.",
-                                theme.name, lines.min
-                            ),
-                        ));
+                    // As they are, and with the colors that more contrast puts in place.
+                    for (more, mode) in [(false, ""), (true, " with more contrast")] {
+                        let pick = |name: &str| {
+                            if more {
+                                color_with_more_contrast(file, name, &theme.name)
+                            } else {
+                                color(file, name, &theme.name)
+                            }
+                        };
+                        let (Some(a), Some(b)) = (pick(line), pick(surface)) else {
+                            continue;
+                        };
+                        let ratio = ratio_of(luminance_of(fade(a, b, opacity)), luminance(b));
+                        if ratio < lines.min {
+                            findings.push(Finding::at(
+                                THEME_PATH,
+                                format!(
+                                    "Theme {}{mode}: the line `{line}` on `{surface}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change its value.",
+                                    theme.name, lines.min
+                                ),
+                            ));
+                        }
                     }
                 }
             }
@@ -412,12 +419,70 @@ mod tests {
     }
 
     #[test]
-    fn a_hover_color_that_vanishes_into_a_tint_is_rejected() {
-        let findings = evaluate(&with_value("tint-ip-hover", "daylight", "#f4f8fe"));
+    fn every_status_group_has_a_tint_with_readable_text_in_every_theme() {
+        // The three groups, Not started included, each tint a row (UX §4.2): every text color of a
+        // row is checked on each tint, in every theme (a row keeps its tint when hovered or selected).
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        for theme in file.themes.iter().map(|theme| theme.name.as_str()) {
+            let pairs = file.contrast.pairs(theme);
+            for group in ["ns", "ip", "done"] {
+                let tint = format!("tint-{group}");
+                for text in ["fg", "fg-muted", "fg-subtle", "accent-fg", "danger"] {
+                    assert!(
+                        pairs.contains(&(text, tint.as_str())),
+                        "{text} on {tint} is not checked in {theme}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_ring_and_the_hover_line_are_seen_on_every_tint() {
+        // A selected row has a ring of the accent color and a hovered row a line of the control edge
+        // color, on the tint of its group: both are lines to see (3:1), as they are and with more contrast.
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        let rule = file
+            .contrast
+            .plain_lines
+            .iter()
+            .find(|lines| lines.colors.iter().any(|name| name == "accent"))
+            .expect("the ring has a rule");
+        for tint in ["tint-ns", "tint-ip", "tint-done"] {
+            assert!(rule.on.iter().any(|name| name == tint), "{tint}");
+        }
+        assert!(rule.colors.iter().any(|name| name == "border-control"));
+        assert!(rule.min >= 3.0);
+        let findings = evaluate(&with_value("accent", "dusk", "#5a5a8a"));
         assert!(
             findings
                 .iter()
-                .any(|f| f.message.contains("tint-ip-hover") && f.message.contains("`tint-ip`")),
+                .any(|f| f.message.contains("the line `accent`") && f.message.contains("tint-")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
+    fn a_line_that_vanishes_into_a_tint_only_with_more_contrast_is_rejected() {
+        // The control edge color of Dusk with more contrast, one step from the tint of Not started.
+        let findings = evaluate(&with_value("border-control", "dusk-more", "#343c4f"));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("with more contrast")
+                    && f.message.contains("`border-control`")
+                    && f.message.contains("tint-ns")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
+    fn a_tint_that_is_too_strong_for_the_text_on_it_is_rejected() {
+        let findings = evaluate(&with_value("tint-ns", "daylight", "#c9d0dc"));
+        assert!(
+            findings.iter().any(|f| f.message.contains("`tint-ns`")),
             "{:?}",
             messages(&findings)
         );

@@ -69,6 +69,7 @@ pub(super) async fn change_project_setting(
         SettingsScope::ProjectAt(path.project),
         path.key,
         body.value,
+        None,
     )
     .await
 }

@@ -10,6 +10,7 @@ use bb_core::settings::{
     Source, find,
     for_tests::{TEST_PROJECT_LIMIT, TEST_PROJECT_NOTE, TEST_SWITCH},
 };
+use bb_core::version::Version;
 use bb_testing::{TestResult, each_database};
 
 use super::*;
@@ -19,6 +20,8 @@ use crate::test_support::{at, fixture, ids, person};
 mod layers;
 #[path = "settings/levels.rs"]
 mod levels;
+#[path = "settings/person_versions.rs"]
+mod person_versions;
 #[path = "settings/refused.rs"]
 mod refused;
 #[path = "settings/stored.rs"]
@@ -122,11 +125,33 @@ async fn put(
     key: &'static str,
     value: SettingValue,
 ) -> Result<(), StoreError> {
+    put_at(storage, source, scope, key, value, None).await?;
+    Ok(())
+}
+
+/// Like [`put`], for a person's own value that must be at version `expected`; `false` when it was
+/// not and nothing was written.
+async fn put_at(
+    storage: &AuthStorage,
+    source: &mut impl IdSource,
+    scope: Scope,
+    key: &'static str,
+    value: SettingValue,
+    expected: Option<i64>,
+) -> Result<bool, StoreError> {
     let setting = known(key)?;
     changed(storage, source, move |tx| {
-        Box::pin(
-            async move { AuthStorage::put_setting_value(tx, scope, setting, &value, at(6)).await },
-        )
+        Box::pin(async move {
+            AuthStorage::put_setting_value(
+                tx,
+                scope,
+                setting,
+                &value,
+                at(6),
+                expected.map(Version::new),
+            )
+            .await
+        })
     })
     .await
 }

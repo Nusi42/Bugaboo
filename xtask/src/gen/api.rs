@@ -14,6 +14,8 @@
 //! - the settings registry (`crates/bb-core/src/settings/catalog.rs`) is read as Rust source and
 //!   written as the keys, the choices and the defaults of the settings
 //!   (`src/setting-keys.generated.ts`);
+//! - the time the server gives a request (`bb_api::TIME_LIMIT`) is read as Rust source and written
+//!   as the browser client's `src/request-time.generated.ts`;
 //! - the page sizes (`crates/bb-core/src/paging.rs`) are read as Rust source and written as the
 //!   browser client's `src/paging.generated.ts`;
 //! - the times and sizes of editing (`crates/bb-core/src/edit.rs`) are written as
@@ -55,6 +57,7 @@ use crate::repo::Repo;
 use crate::source::{Kind, Source, read_sources};
 use crate::tools;
 
+mod request_time;
 mod web_constants;
 
 /// The OpenAPI document, relative to the repository root.
@@ -69,6 +72,8 @@ pub(crate) const PROTOCOL_PATH: &str = "web/packages/api-client/src/protocol.ts"
 pub(crate) const SETTING_KEYS_PATH: &str = "web/packages/api-client/src/setting-keys.generated.ts";
 /// The page sizes of the lists, for the browser app.
 pub(crate) const PAGING_PATH: &str = "web/packages/api-client/src/paging.generated.ts";
+/// The time the server gives an API request, for the browser client's own limit.
+pub(crate) const REQUEST_TIME_PATH: &str = "web/packages/api-client/src/request-time.generated.ts";
 /// The times and sizes of editing, for the browser app.
 pub(crate) const EDITING_PATH: &str = "web/packages/api-client/src/editing.generated.ts";
 /// The scale of own-field numbers, for the browser app.
@@ -106,6 +111,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         PROTOCOL_PATH,
         SETTING_KEYS_PATH,
         PAGING_PATH,
+        REQUEST_TIME_PATH,
         EDITING_PATH,
         FILES_PATH,
         MANY_CHANGES_PATH,
@@ -149,6 +155,14 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         Generated::new(
             PAGING_PATH,
             format_with_oxfmt(repo, PAGING_PATH, &web_constants::paging(&sources)?)?,
+        ),
+        Generated::new(
+            REQUEST_TIME_PATH,
+            format_with_oxfmt(
+                repo,
+                REQUEST_TIME_PATH,
+                &request_time::request_time(&sources)?,
+            )?,
         ),
         Generated::new(
             EDITING_PATH,

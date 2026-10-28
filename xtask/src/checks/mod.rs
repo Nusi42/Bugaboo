@@ -81,6 +81,7 @@ mod sec_patterns;
 pub(crate) mod sec_private;
 mod sec_richtext;
 mod sec_secrets;
+mod sty_bold;
 mod sty_contrast;
 mod sty_parts;
 mod sty_tokens;
@@ -223,6 +224,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_web_keys::ArchWebKeys),
         Box::new(arch_web_roles::ArchWebRoles),
         Box::new(sty_parts::StyParts),
+        Box::new(sty_bold::StyBold),
         Box::new(data_marks::DataMarks),
         Box::new(arch_db_parity::ArchDbParity),
         Box::new(data_migrations::DataMigrations),
