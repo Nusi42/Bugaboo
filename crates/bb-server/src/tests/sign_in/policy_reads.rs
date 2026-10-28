@@ -8,6 +8,7 @@
 use bb_app::access::Place;
 use bb_app::access::{Permission, PolicyStore as _};
 use bb_app::fields::CreateField;
+use bb_app::projects::ProjectStore as _;
 use bb_app::roles::{Given, SetFieldLevel, Subject};
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
@@ -18,8 +19,7 @@ use bb_testing::{TestResult, each_database};
 use super::policy_rig::{Org, Run};
 use super::rig::Rig;
 
-/// An own field: a role anywhere makes every own field known to the decision, which the read for
-/// one place does only where a role reaches.
+/// An own field: every own field is known to a decision, with no level where no role says one.
 async fn customer_field(rig: &Rig, org: &Org<'_>) -> Run<()> {
     rig.api()
         .create_field(
@@ -116,6 +116,10 @@ async fn sec_03_the_rights_read_once_decide_every_place_as_the_rights_read_for_e
         ];
         for person in [&org.admin, &bob, &cy, &dee, &eve] {
             let policy = rig.storage.person_policy(person.id).await?;
+            // The read that fills the cache of a request over many projects holds the same levels
+            // (a person with no role holds no rule and every own field).
+            let (leveled, _) = rig.storage.leveled_policy_and_tree_of(person.id).await?;
+            assert_eq!(leveled.rules, policy.rules, "{:?}", person.id);
             for place in places {
                 let chain = match place {
                     Place::Organization => Vec::new(),

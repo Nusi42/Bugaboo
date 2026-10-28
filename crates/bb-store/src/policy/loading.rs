@@ -84,6 +84,7 @@ pub(crate) async fn load_policy(
             )
             .await?
         }
+        Wanted::PersonAt(..) => own_fields_only(reader).await?,
         _ => LevelRules::default(),
     };
     Ok(Policy {
@@ -162,7 +163,7 @@ pub(crate) async fn rules_of(
         fields: read_rules(reader, which).await?,
         people: read_rules(reader, which).await?,
         typed: read_typed_rules(reader, which).await?,
-        own_fields: crate::fields::field_ids_in(reader).await?,
+        own_fields: own_fields_only(reader).await?.own_fields,
     })
 }
 
@@ -177,6 +178,16 @@ pub(crate) async fn person_policy_in(
     let mut policy = load_policy(reader, Wanted::Person(person)).await?;
     policy.rules = level_rules_of_roles_in(reader, policy.role_ids()).await?;
     Ok(policy)
+}
+
+/// The levels of nobody: no rule, and the own fields there are, so that each has a level in an
+/// evaluation (closed when no role says otherwise). What every read of levels gives for no role
+/// (see `level_rules_of_roles_in`).
+pub(super) async fn own_fields_only(reader: &mut impl Reader) -> Result<LevelRules, StoreError> {
+    Ok(LevelRules {
+        own_fields: crate::fields::field_ids_in(reader).await?,
+        ..LevelRules::default()
+    })
 }
 
 /// Everything the engine needs for `person` at `place`, in one snapshot; `None` when the project

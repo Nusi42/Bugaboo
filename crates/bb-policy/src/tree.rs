@@ -278,13 +278,7 @@ impl Policy {
                 .filter(|role| role_ids.contains(&role.id))
                 .cloned()
                 .collect(),
-            // No role reaches the place: no level is read for it, not even the list of own fields
-            // (what the store reads for one place has none either).
-            rules: if role_ids.is_empty() {
-                LevelRules::default()
-            } else {
-                self.rules.at(&role_ids, &chain)
-            },
+            rules: self.rules.at(&role_ids, &chain),
             chain,
         }
     }
