@@ -679,6 +679,7 @@ dependencies = [
  "bb-jobs",
  "bb-load-check",
  "bb-notify",
+ "bb-policy",
  "bb-store",
  "bb-testing",
  "clap",
