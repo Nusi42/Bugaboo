@@ -1,8 +1,8 @@
 //! META-FIXTURES: every active check has a failing and a passing example (ADR-0020).
 //!
 //! A check's source file is the one whose `id()` returns the check's ID. An example is either a
-//! pair of tests named `bad_example…` and `good_example…` in that file, or the folders
-//! `tools/checks/fixtures/<ID>/bad` and `…/good`.
+//! pair of tests named `bad_example…` and `good_example…` in that file or in its test module
+//! `<file>/tests.rs`, or the folders `tools/checks/fixtures/<ID>/bad` and `…/good`.
 
 use std::collections::HashSet;
 use std::fs;
@@ -12,6 +12,7 @@ use super::{Check, Context, Finding};
 use crate::catalog::Entry;
 use crate::docs::source::sorted_files;
 use crate::docs::text::has_extension;
+use crate::repo::Repo;
 use crate::source::read_text;
 
 const CHECKS_FOLDER: &str = "xtask/src/checks";
@@ -26,11 +27,7 @@ impl Check for MetaFixtures {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let repo = context.repo;
-        let mut sources = Vec::new();
-        for name in sorted_files(repo, CHECKS_FOLDER, |name| has_extension(name, "rs"))? {
-            let path = format!("{CHECKS_FOLDER}/{name}");
-            sources.push((path.clone(), read_text(repo, &path)?));
-        }
+        let sources = check_sources(repo)?;
         let fixtures = fixture_folders(&repo.path(FIXTURES_FOLDER));
         let active: Vec<&Entry> = context
             .catalog
@@ -40,6 +37,22 @@ impl Check for MetaFixtures {
             .collect();
         Ok(evaluate(&active, &sources, &fixtures))
     }
+}
+
+/// Each check file with its text, followed by the text of its test module `<file>/tests.rs`
+/// when the file declares `mod tests;`.
+fn check_sources(repo: &Repo) -> anyhow::Result<Vec<(String, String)>> {
+    let mut sources = Vec::new();
+    for name in sorted_files(repo, CHECKS_FOLDER, |name| has_extension(name, "rs"))? {
+        let path = format!("{CHECKS_FOLDER}/{name}");
+        let mut text = read_text(repo, &path)?;
+        let tests = format!("{CHECKS_FOLDER}/{}/tests.rs", name.trim_end_matches(".rs"));
+        if text.contains("mod tests;") && repo.path(&tests).is_file() {
+            text.push_str(&read_text(repo, &tests)?);
+        }
+        sources.push((path, text));
+    }
+    Ok(sources)
 }
 
 /// The IDs that have both a non-empty `bad` and a non-empty `good` fixture folder.
@@ -162,5 +175,45 @@ mod tests {
         assert_eq!(findings.len(), 2);
         assert!(findings[0].message.contains("No bad and good example"));
         assert!(findings[1].message.contains("No file in"));
+    }
+
+    /// Check files in a throw-away repository: `a.rs` keeps its examples in `a/tests.rs`,
+    /// `b.rs` has none of its own and an undeclared `b/tests.rs`.
+    fn sources_of_a_and_b(name: &str) -> Vec<(String, String)> {
+        let temp = crate::testutil::TempDir::new(name);
+        let check = |id: &str| {
+            format!(
+                "impl Check for X {{ fn {}(&self) -> &'static str {{ \"{id}\" }} }}\n",
+                "id"
+            )
+        };
+        temp.write(
+            "xtask/src/checks/a.rs",
+            check("A-1") + "#[cfg(test)]\nmod tests;\n",
+        );
+        temp.write(
+            "xtask/src/checks/a/tests.rs",
+            "fn bad_example() {}\nfn good_example() {}\n",
+        );
+        temp.write("xtask/src/checks/b.rs", check("B-1"));
+        temp.write(
+            "xtask/src/checks/b/tests.rs",
+            "fn bad_example() {}\nfn good_example() {}\n",
+        );
+        check_sources(&Repo::at(temp.path().to_path_buf())).unwrap()
+    }
+
+    #[test]
+    fn good_example_the_examples_of_a_check_in_its_test_module() {
+        let sources = sources_of_a_and_b("meta-fixtures-good");
+        assert!(evaluate(&[&entry("A-1")], &sources, &HashSet::new()).is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_test_module_the_check_does_not_declare_and_another_checks_examples() {
+        let sources = sources_of_a_and_b("meta-fixtures-bad");
+        let findings = evaluate(&[&entry("B-1")], &sources, &HashSet::new());
+        assert_eq!(findings.len(), 1);
+        assert!(findings[0].message.contains("No bad and good example"));
     }
 }

@@ -42,7 +42,7 @@ The full list, generated from the catalogue, follows this chapter.
 Adding a rule should be easy, and forgetting part of it impossible. The **META** checks make sure that:
 
 1. **Catalogue and implementation match** (`META-CATALOG`): no check without an entry, no entry without a check.
-2. **Every check is tested** (`META-FIXTURES`): each has a "bad" example that must fail and a "good" example that must pass, in `tools/checks/fixtures/<ID>/`.
+2. **Every check is tested** (`META-FIXTURES`): each has a "bad" example that must fail and a "good" example that must pass: tests named `bad_example…` and `good_example…` in the check's file or in its test module `<file>/tests.rs`, or the folders `tools/checks/fixtures/<ID>/bad` and `/good`.
 3. **Nothing is unchecked** (`META-COVERAGE`): every file type in the repository is covered by a formatter or linter. Adding the first `.sql`, `.yaml` or `.py` file fails until a check covers it. This is the hook that asks for new hooks. Generated files need no check of their own; the few other exceptions are listed with a reason in `tools/checks/coverage-exemptions.toml`.
 4. **New modules are declared first** (`META-NEW-MODULE`): a new crate, package or top-level folder needs a module-map entry and dependency rules.
 5. **Every rule is traceable** (`META-RULE-TRACE`): each "must" in the coding standards, decision records and these chapters names its check ID or says *review* with a reason.

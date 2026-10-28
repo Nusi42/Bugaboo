@@ -50,13 +50,16 @@ async fn iss_06_the_rows_of_the_history_and_the_place_of_the_reader_are_stored_t
         assert!(refused.is_err(), "the move of the place was broken");
         assert!(
             storage
-                .history_page(issue, None, None, 10)
+                .history_page(issue, None, None, 0, 10)
                 .await?
                 .is_empty(),
             "the rows stay out when the place cannot move"
         );
         storage.store_history(&[entry], 1, at(3)).await?;
-        assert_eq!(storage.history_page(issue, None, None, 10).await?.len(), 1);
+        assert_eq!(
+            storage.history_page(issue, None, None, 0, 10).await?.len(),
+            1
+        );
         let consumer = TechnicalName::new(CONSUMER)?;
         assert_eq!(storage.database().outbox_position(&consumer).await?, 1);
         Ok(())
