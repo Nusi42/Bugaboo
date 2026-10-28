@@ -1,12 +1,13 @@
 import { t } from "@bugaboo/messages";
 import { join } from "node:path";
 
-import { type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { tickBox } from "./issues.ts";
 import { setBox } from "./list-keys.ts";
 import { chooseTheme, themes } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
+import { grid } from "./list-look.ts";
 import { folderOf, shootWindowAs, shotWholeAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 
@@ -21,6 +22,25 @@ export async function listInFourThemes(page: Page, name: string): Promise<void> 
       await shotWholeAs(page, `${name}-${layout}`, MILESTONE, theme.id);
     }),
   );
+}
+
+/**
+ * Gives a row the keyboard focus the way a person does: the list is one Tab stop and the arrow keys
+ * go down to the row (the head of the first group, its row, the head of the next group, then the
+ * row). A phone has no keyboard, so there nothing is done.
+ */
+export async function focusRowByKeys(page: Page, row: Locator): Promise<void> {
+  if (layoutOf(page) === "phone") {
+    return;
+  }
+  await grid(page).focus();
+  await inOrder(
+    ["ArrowDown", "ArrowDown", "ArrowDown", "ArrowDown"].map(
+      (key) => () => page.keyboard.press(key),
+    ),
+  );
+  await expect(row).toBeFocused();
+  await expect(row).toHaveAttribute("data-focus-visible", "true");
 }
 
 /**

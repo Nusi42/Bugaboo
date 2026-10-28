@@ -8,6 +8,7 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { grid, openList, prepareLook, rowOf } from "./support/list-look.ts";
 import {
+  focusRowByKeys,
   listInFourThemes,
   pointedRowInFourThemes,
   tickIssues,
@@ -60,8 +61,7 @@ test("iss_01 pictures: a hovered, a ticked and a keyboard-focused row keep their
 }) => {
   await openList(page);
   await tickIssues(page, ["WEB-1"]);
-  await page.keyboard.press("Shift");
-  await rowOf(page, webIssues.typo).getByRole("link").focus();
+  await focusRowByKeys(page, rowOf(page, webIssues.typo));
   await pointedRowInFourThemes(page, rowOf(page, webIssues.passkey), "states");
 });
 

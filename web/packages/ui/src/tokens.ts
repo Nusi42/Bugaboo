@@ -812,11 +812,11 @@ export const partWords = {
     variant: ["head", "phone", "slim", "plain", "grid"],
     state: [
       "group-not-started",
-      "selected",
       "group-in-progress",
       "group-done",
       "priority-critical",
       "priority-high",
+      "selected",
       "current",
     ],
   },

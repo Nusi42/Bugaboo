@@ -475,6 +475,13 @@ mixin "status-soft-done" {
     color "$st-done"
 }
 
+// The keyboard focus on a row: the accent ring inside the edge, like a selected row, and a second ring in
+// the text color inside it, so the focus is told from a selected or a current row on every tint.
+mixin "ring-keyboard" {
+    use "ring-inside"
+    box-shadow "inset 0 0 0 calc($ring-width * 2) $fg"
+}
+
 // The ring around what has the focus: the one definition of how the focus looks.
 mixin "ring" {
     use "ring-line"
@@ -1608,11 +1615,11 @@ part "priority-icon" {
 //
 // Any row can carry the state of its status group (a tint) and of its priority (an edge of 4 px at
 // its start), by the words of `rowStates`. A row of the list, an issue row and a bar of the
-// timeline are the rows that do. A hovered, a selected or a current row keeps its tint; the ring and the ticked box say the state. The rules come after the rows' own, so they win.
+// timeline are the rows that do. A hovered, a selected or a current row keeps its tint, so the rows set no fill of their own for
+// those states: the hover line, the ring and the ticked box say the state. The rules come after the rows' own, so they win.
 
 // A selected row is also ringed inside its edge, so it never relies on the fill alone.
 part "issue-row[state=selected]" "timeline-bar[state=selected]" {
-    background "$bg-selected"
     use "ring-inside"
 }
 
@@ -1620,35 +1627,11 @@ part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "t
     background "$tint-ns"
 }
 
-part "list-row[state=group-not-started]:hover" "issue-row[state=group-not-started]:hover" "timeline-bar[state=group-not-started]:hover" {
-    background "$tint-ns"
-}
-
-part "list-row[state=group-not-started][state=selected]" "issue-row[state=group-not-started][state=selected]" "timeline-bar[state=group-not-started][state=selected]" {
-    background "$tint-ns"
-}
-
 part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "timeline-bar[state=group-in-progress]" {
     background "$tint-ip"
 }
 
-part "list-row[state=group-in-progress]:hover" "issue-row[state=group-in-progress]:hover" "timeline-bar[state=group-in-progress]:hover" {
-    background "$tint-ip"
-}
-
-part "list-row[state=group-in-progress][state=selected]" "issue-row[state=group-in-progress][state=selected]" "timeline-bar[state=group-in-progress][state=selected]" {
-    background "$tint-ip"
-}
-
 part "list-row[state=group-done]" "issue-row[state=group-done]" "timeline-bar[state=group-done]" {
-    background "$tint-done"
-}
-
-part "list-row[state=group-done]:hover" "issue-row[state=group-done]:hover" "timeline-bar[state=group-done]:hover" {
-    background "$tint-done"
-}
-
-part "list-row[state=group-done][state=selected]" "issue-row[state=group-done][state=selected]" "timeline-bar[state=group-done][state=selected]" {
     background "$tint-done"
 }
 
@@ -1690,12 +1673,10 @@ part "list-row" {
 // A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
 // nothing moves and the edge of its priority stays; it is thinner than the rings and another color.
 part "list-row:hover" {
-    background "$bg-hover"
     box-shadow "inset 0 0 0 $border-width $border-control"
 }
 
 part "list-row[state=selected]" {
-    background "$bg-selected"
     use "ring-inside"
 }
 
@@ -1816,8 +1797,13 @@ part "list-row.cell[variant=title] link::after" {
     inset 0
 }
 
+// The keyboard focus has the ring of its own (`ring-keyboard`). The row draws it (the link reaches over the row), so the link has no outline of its own.
+part "list-row.cell[variant=title] link[focus-visible]" {
+    outline none
+}
+
 part "list-row.cell[variant=title] link[focus-visible]::after" {
-    use "ring-inside"
+    use "ring-keyboard"
 }
 
 // The checkbox and the buttons of a row stay above the link that reaches over it; every other cell is
@@ -2097,7 +2083,7 @@ part "list-group.toggle[focus-visible]" {
 
 // A row or a group header that has the focus of the keyboard shows it all round, inside its box.
 part "list-row[focus-visible]" "list-group[focus-visible]" {
-    use "ring-inside"
+    use "ring-keyboard"
 }
 
 part "list-group.name" {
@@ -4559,7 +4545,7 @@ part "issue-row" {
 }
 
 part "issue-row[variant=current]" {
-    use "current-item"
+    use "ring-inside"
 }
 
 // The way to the field permissions next to the note is a target a finger can hit.
