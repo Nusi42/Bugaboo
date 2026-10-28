@@ -9,7 +9,7 @@
 use std::future::Future;
 use std::str::FromStr as _;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use bb_core::event::DomainEvent;
@@ -25,9 +25,11 @@ use crate::locks::{Held, LockClass, Mode};
 
 mod fixed;
 mod statement;
+mod statements;
 
 pub(crate) use fixed::FixedSql;
 pub(crate) use statement::Statement;
+use statements::Statements;
 
 /// How many values one statement binds at most. SQLite allows 32,766 and PostgreSQL 65,535, so the
 /// smaller counts, less a little room for the values a statement binds besides its list. This is
@@ -193,7 +195,7 @@ pub struct Database {
     /// How many statements this database has run (all clones share it): the tests of PERF-05 read
     /// it before and after a request to see that a read runs as many statements for a busy
     /// issue as for a bare one.
-    statements: Arc<AtomicU64>,
+    statements: Arc<Statements>,
 }
 
 impl Database {
@@ -271,7 +273,24 @@ impl Database {
     /// PERF-05 (no N+1 queries). Statements that change the schema or take a lock are not counted.
     #[must_use]
     pub fn statements_run(&self) -> u64 {
-        self.statements.load(Ordering::Relaxed)
+        self.statements.count()
+    }
+
+    /// Starts keeping the text of every statement this database runs, until the next `take_statements`
+    /// (test builds only): a test that counts the statements of a window and sees a different number
+    /// says which ones differ. Nothing is kept before it is asked for.
+    #[cfg(feature = "testing")]
+    pub fn capture_statements(&self) {
+        self.statements.start_capture();
+    }
+
+    /// How many statements this database has run, and the text of those since the capture started or
+    /// the last call, in the order they ran (test builds only); the text is emptied. The count and the
+    /// text are read together.
+    #[cfg(feature = "testing")]
+    #[must_use]
+    pub fn take_statements(&self) -> (u64, Vec<String>) {
+        self.statements.take()
     }
 
     /// Closes all connections.
@@ -346,8 +365,9 @@ impl Database {
         &self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<u64, StoreError> {
-        self.statements.fetch_add(1, Ordering::Relaxed);
-        Connection::Pool(&self.pool).execute(statement.into()).await
+        let statement = statement.into();
+        self.statements.record(&statement, self.dialect());
+        Connection::Pool(&self.pool).execute(statement).await
     }
 
     /// Reads all rows of a query.
@@ -355,10 +375,9 @@ impl Database {
         &self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<Vec<Row>, StoreError> {
-        self.statements.fetch_add(1, Ordering::Relaxed);
-        Connection::Pool(&self.pool)
-            .fetch_all(statement.into())
-            .await
+        let statement = statement.into();
+        self.statements.record(&statement, self.dialect());
+        Connection::Pool(&self.pool).fetch_all(statement).await
     }
 
     /// Reads all rows of a query that may take `limit` at most (SEC-17): PostgreSQL stops it with
@@ -370,7 +389,7 @@ impl Database {
         limit: Duration,
     ) -> Result<Vec<Row>, StoreError> {
         let statement = statement.into();
-        self.statements.fetch_add(1, Ordering::Relaxed);
+        self.statements.record(&statement, self.dialect());
         let stopped = |error: sqlx::Error| match &error {
             sqlx::Error::Database(found)
                 if matches!(
@@ -539,7 +558,7 @@ enum TxInner {
 pub struct Transaction {
     inner: TxInner,
     /// The counter of the statements of the database this transaction belongs to.
-    statements: Arc<AtomicU64>,
+    statements: Arc<Statements>,
     /// Events the change adds besides its own; `record_change` appends them after the event of
     /// the change, so the lock on the outbox stays the last lock of the transaction.
     pub(crate) follow_ups: Vec<DomainEvent>,
@@ -556,6 +575,14 @@ impl std::fmt::Debug for Transaction {
 }
 
 impl Transaction {
+    /// Which database this transaction runs on.
+    const fn dialect(&self) -> Dialect {
+        match self.inner {
+            TxInner::Sqlite(_) => Dialect::Sqlite,
+            TxInner::Postgres(_) => Dialect::Postgres,
+        }
+    }
+
     pub(crate) async fn commit(self) -> Result<(), StoreError> {
         match self.inner {
             TxInner::Sqlite(transaction) => transaction.commit().await?,
@@ -569,9 +596,10 @@ impl Transaction {
         &mut self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<u64, StoreError> {
-        self.statements.fetch_add(1, Ordering::Relaxed);
+        let statement = statement.into();
+        self.statements.record(&statement, self.dialect());
         Connection::Transaction(&mut self.inner)
-            .execute(statement.into())
+            .execute(statement)
             .await
     }
 
@@ -580,9 +608,10 @@ impl Transaction {
         &mut self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<Vec<Row>, StoreError> {
-        self.statements.fetch_add(1, Ordering::Relaxed);
+        let statement = statement.into();
+        self.statements.record(&statement, self.dialect());
         Connection::Transaction(&mut self.inner)
-            .fetch_all(statement.into())
+            .fetch_all(statement)
             .await
     }
 

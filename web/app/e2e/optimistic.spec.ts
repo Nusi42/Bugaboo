@@ -7,6 +7,7 @@ import { type Instance } from "./support/server.ts";
 import { anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
 import { partOn } from "./support/styles.ts";
 import { part } from "../../packages/ui/src/tokens.ts";
+import { skeletonDelayMs } from "../src/shared/optimistic.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({
@@ -122,13 +123,21 @@ test("ux_06 grey shapes stand in for a slow list, and the list says it is busy",
     await slow.promise;
     await route.continue();
   });
+  // The clock of the page stands still until the test moves it, so "nothing grey in the first 0.3 s"
+  // is not a race against a busy computer (M5-F88: on one run the check began after 0.3 s).
+  const now = Date.now();
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(now + 1000);
   await page.goto(paths.sessions);
   const region = page.getByRole("list", { name: t("sessions.list") }).locator("..");
   await expect(region).toHaveAttribute("aria-busy", "true");
   // Nothing grey in the first 0.3 s, so a quick answer never flashes.
   const shapes = partOn(region, part.skeletonLine);
+  await page.clock.runFor(skeletonDelayMs - 1);
   await expect(shapes).toHaveCount(0);
+  await page.clock.runFor(1);
   await expect(shapes.first()).toBeVisible({ timeout: 3000 });
+  await page.clock.resume();
   slow.resolve();
   await expect(places(page)).toHaveCount(2);
   await expect(region).toHaveAttribute("aria-busy", "false");

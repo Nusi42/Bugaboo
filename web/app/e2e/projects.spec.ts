@@ -96,7 +96,7 @@ test("prj_01 an old short name opens the project and the address becomes the new
     .filter({ has: shortName })
     .getByRole("button", { name: t("common.save"), exact: true })
     .click();
-  await expect(page.getByText(t("save.saved"))).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await expect(page).toHaveURL(addressEndingAt(addressInProject(paths.projectSettings, "SITE")));
   // The old address still works and is replaced by the new one.
   await page.goto(projectAddress("WEB"));

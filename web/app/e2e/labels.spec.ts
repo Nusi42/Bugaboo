@@ -159,7 +159,7 @@ test("tag_03 renaming a label shows which issues change before it is saved", asy
   await expect(panel.getByText("WEB-1", { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
   await panel.getByRole("button", { name: t("common.save"), exact: true }).click();
-  await expect(page.getByText(t("save.saved"))).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await page.goto(paths.labels);
   await expect(
     listNamed(page, t("labels.labels-search")).getByRole("button", { name: "front end" }),
