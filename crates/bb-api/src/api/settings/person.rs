@@ -2,8 +2,8 @@
 
 use super::{
     ApiError, ApiJson, ApiPath, ApiQuery, AuthHandle, ForbiddenAnswer, Info, InvalidAnswer,
-    KeyPath, LockedAnswer, NewValueBody, NotFoundAnswer, NotSignedInAnswer, Response, Session,
-    SettingBody, SettingsBody, SettingsScope, State, change, list, query, reset,
+    KeyPath, LockedOrStaleAnswer, NewMyValueBody, NotFoundAnswer, NotSignedInAnswer, Response,
+    Session, SettingBody, SettingsBody, SettingsScope, State, change, list, query, reset,
 };
 
 /// The settings of the person who asks, as they count for them: *My settings*.
@@ -39,14 +39,14 @@ pub(super) async fn list_my_settings(
     operation_id = "changeMySetting",
     tag = "settings",
     params(("key" = String, Path, description = "The key of the setting.")),
-    request_body = NewValueBody,
+    request_body = NewMyValueBody,
     responses(
         (status = 200, description = "The setting with its new value.", body = SettingBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
         NotFoundAnswer,
-        LockedAnswer
+        LockedOrStaleAnswer
     )
 )]
 pub(super) async fn change_my_setting(
@@ -54,7 +54,7 @@ pub(super) async fn change_my_setting(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(path): ApiPath<KeyPath>,
-    ApiJson(body): ApiJson<NewValueBody>,
+    ApiJson(body): ApiJson<NewMyValueBody>,
 ) -> Result<Response, ApiError> {
     change(
         &auth,
@@ -63,6 +63,7 @@ pub(super) async fn change_my_setting(
         SettingsScope::Person,
         path.key,
         body.value,
+        body.version,
     )
     .await
 }

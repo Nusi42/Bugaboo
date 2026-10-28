@@ -329,3 +329,21 @@ fn the_page_sizes_come_from_the_paging_module() {
     assert!(text.contains("pageSizeDefault = 50;"), "{text}");
     assert!(paging(&[]).is_err());
 }
+
+#[test]
+fn the_time_the_server_gives_a_request_comes_from_the_api_module() {
+    use super::super::request_time::{API_SOURCE, request_time};
+    let source = (
+        API_SOURCE.to_owned(),
+        "pub const TIME_LIMIT: Duration = Duration::from_secs(30);\n".to_owned(),
+    );
+    let text = request_time(&[source]).unwrap();
+    assert!(text.contains("serverTimeLimitMs = 30000;"), "{text}");
+    assert!(request_time(&[]).is_err());
+    // A limit that is not a number of whole seconds is no limit this reads.
+    let other = (
+        API_SOURCE.to_owned(),
+        "pub const TIME_LIMIT: Duration = Duration::MAX;\n".to_owned(),
+    );
+    assert!(request_time(&[other]).is_err());
+}

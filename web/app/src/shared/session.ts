@@ -1,6 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "./api.ts";
+import { forgetConfirmedSettings } from "./change-my-settings.ts";
 import { forgetBrowserDrafts } from "./editing/browser-drafts.ts";
 import { codeOf } from "./errors.ts";
 import { mySettingsKey } from "./my-settings.ts";
@@ -103,6 +104,7 @@ async function answersOnTheirWay(): Promise<void> {
  */
 export async function leaveSession(go: () => Promise<void>): Promise<void> {
   forgetPersonalChoices();
+  forgetConfirmedSettings();
   queryClient.removeQueries({ queryKey: meOptions().queryKey });
   await go();
   // The page has changed, so nothing asks for the person's settings any more. They go now, not

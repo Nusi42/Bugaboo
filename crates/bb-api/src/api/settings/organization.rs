@@ -63,6 +63,7 @@ pub(super) async fn change_organization_setting(
         SettingsScope::Organization,
         path.key,
         body.value,
+        None,
     )
     .await
 }

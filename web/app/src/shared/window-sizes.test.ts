@@ -39,9 +39,28 @@ describe("ux_6_3 the size of a window is remembered per person and form", () => 
     expect(sizesOf(settings("not json"))).toEqual({});
   });
 
+  it("makes its change again on what another tab set meanwhile, and only its own form", () => {
+    const change = changeForSize(settings("{}"), form.newIssue, {
+      width: 900,
+      height: 640,
+    });
+    const fresh = JSON.stringify({ [form.other]: { width: 700, height: 500 } });
+    expect(JSON.parse(String(change.rebase?.(fresh)))).toEqual({
+      [form.other]: { width: 700, height: 500 },
+      [form.newIssue]: { width: 900, height: 640 },
+    });
+    // A value that is no sizes at all (the setting was reset) starts again with the one form.
+    expect(JSON.parse(String(change.rebase?.(true)))).toEqual({
+      [form.newIssue]: { width: 900, height: 640 },
+    });
+  });
+
   it("changes the one setting by the size of one form and keeps the others", () => {
     const own = settings(JSON.stringify({ [form.other]: { width: 700, height: 500 } }));
-    const change = changeForSize(own, form.newIssue, { width: 900.4, height: 640.6 });
+    const change = changeForSize(own, form.newIssue, {
+      width: 900.4,
+      height: 640.6,
+    });
     expect(change.key).toBe(settingKeys.windowSizes);
     expect(JSON.parse(String(change.value))).toEqual({
       [form.other]: { width: 700, height: 500 },

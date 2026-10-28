@@ -75,6 +75,8 @@ pub(crate) struct State {
     pub(crate) access_keys: Vec<AccessKeyRecord>,
     pub(crate) setup_code: Option<SetupCode>,
     pub(crate) settings: Vec<super::fake_settings::FakeSetting>,
+    /// The counter of the versions of each person's own settings: it never goes back.
+    pub(crate) person_counters: std::collections::BTreeMap<UserId, i64>,
     pub(crate) starting_roles_made: bool,
     pub(crate) legacy_administrators: Vec<UserId>,
     pub(crate) roles: Vec<RoleRecord>,

@@ -126,6 +126,63 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
 }
 
 #[tokio::test]
+async fn m5_f97_a_stale_change_of_my_setting_is_refused_over_http() -> TestResult {
+    each_database("m5_f97_http_stale", async |db| {
+        let rig = Rig::start(db).await?;
+        let app = app_with_probe(&rig, None);
+        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let path = "/api/v1/me/settings/appearance.mode";
+        let read = async |ada: &mut Browser| -> Result<Value, Failure> {
+            let list = ada
+                .send("GET", "/api/v1/me/settings?topic=appearance.", None)
+                .await?;
+            Ok(setting(&list.body, "appearance.mode")?.clone())
+        };
+        // Two tabs read the setting before it has a value of its own: version 0.
+        assert_eq!(read(&mut ada).await?["version"], 0);
+        let first = ada
+            .send("PUT", path, Some(json!({"value": "dark", "version": 0})))
+            .await?;
+        assert_eq!(first.status, StatusCode::OK);
+        assert_eq!(first.body["version"], 1);
+        // The second tab is stale: refused, and the first value stays.
+        let second = ada
+            .send("PUT", path, Some(json!({"value": "light", "version": 0})))
+            .await?;
+        assert_eq!(second.status, StatusCode::CONFLICT);
+        assert_eq!(second.code(), "edit.version-changed");
+        let now = read(&mut ada).await?;
+        assert_eq!(
+            (&now["value"], &now["version"]),
+            (&json!("dark"), &json!(1))
+        );
+        // From the version it has now, the change goes through; without a version it always does.
+        let third = ada
+            .send("PUT", path, Some(json!({"value": "light", "version": 1})))
+            .await?;
+        assert_eq!(third.body["version"], 2);
+        let fourth = ada
+            .send("PUT", path, Some(json!({"value": "dark"})))
+            .await?;
+        assert_eq!(
+            (fourth.status, &fourth.body["version"]),
+            (StatusCode::OK, &json!(3))
+        );
+        // The organization's settings have no version.
+        let organization = ada
+            .send("GET", "/api/v1/settings?topic=appearance.", None)
+            .await?;
+        assert!(
+            setting(&organization.body, "appearance.mode")?
+                .get("version")
+                .is_none()
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn cfg_06_an_administrator_locks_a_setting_and_a_person_is_told_why_over_http() -> TestResult
 {
     each_database("cfg_06_http_lock", async |db| {

@@ -70,6 +70,7 @@ crate::entities! {
     crate::secret::StoredSecret,
     crate::security_log::SecurityLogCheckpoint,
     crate::security_log::SecurityLogEntry,
+    crate::settings::PersonSettingCounter,
     crate::settings::StoredPersonSetting,
     crate::settings::StoredSetting,
     crate::settings::PolicyVersion,

@@ -25,6 +25,7 @@ async fn change(
     change_setting(
         &world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: world.admin.session_token.clone(),
             scope,
             key: key.to_owned(),
@@ -464,5 +465,79 @@ async fn m3_f72_the_image_hosts_are_read_once_for_a_request() -> Outcome {
         world.ctx().image_hosts().await?,
         ["images.example.com".to_owned()]
     );
+    Ok(())
+}
+
+/// Changes a person's own setting from the version `version` the person read.
+async fn change_mine(
+    world: &World,
+    key: &str,
+    value: &str,
+    version: Option<i64>,
+) -> Result<SettingView, AppError> {
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            version,
+            session_token: world.admin.session_token.clone(),
+            scope: SettingsScope::Person,
+            key: key.to_owned(),
+            value: text(value),
+        },
+    )
+    .await
+    .map(bb_policy::Authorized::into_value)
+}
+
+#[tokio::test]
+async fn m5_f97_a_persons_setting_changed_from_an_old_version_is_refused() -> Outcome {
+    let world = World::new().await?;
+    let mode = "appearance.mode";
+    let first = change_mine(&world, mode, "dark", Some(0))
+        .await
+        .map_err(|error| error.to_string())?;
+    assert_eq!(first.version, Some(1));
+    // A second tab read the setting before the first change: its change is refused, and the
+    // value the first one wrote stays.
+    let events = world.store.event_count();
+    match change_mine(&world, mode, "light", Some(0)).await {
+        Err(AppError::Conflict(conflict)) => {
+            assert_eq!(
+                conflict.version,
+                Some(1),
+                "the answer names the version now"
+            );
+            assert_eq!(conflict.fields, ["appearance_mode"]);
+        }
+        other => panic!("expected a conflict, got {other:?}"),
+    }
+    assert_eq!(
+        world.store.event_count(),
+        events,
+        "a refusal leaves no event"
+    );
+    let list = list(&world, SettingsScope::Person, mode)
+        .await
+        .map_err(|error| error.to_string())?;
+    assert_eq!(list.settings[0].value, text("dark"));
+    assert_eq!(list.settings[0].version, Some(1));
+    assert_eq!(
+        refused(change_mine(&world, mode, "light", Some(-1)).await),
+        ErrorCode::InvalidRequest
+    );
+    // From the version it has now, the change goes through and counts the version up. Without a
+    // version the last change wins, and a scope that has no version says none.
+    let third = change_mine(&world, mode, "light", Some(1))
+        .await
+        .map_err(|error| error.to_string())?;
+    assert_eq!(third.version, Some(2));
+    let fourth = change_mine(&world, mode, "dark", None)
+        .await
+        .map_err(|error| error.to_string())?;
+    assert_eq!(fourth.version, Some(3));
+    let organization = change(&world, SettingsScope::Organization, mode, text("dark"))
+        .await
+        .map_err(|error| error.to_string())?;
+    assert_eq!(organization.version, None);
     Ok(())
 }

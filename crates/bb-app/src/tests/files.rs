@@ -31,6 +31,7 @@ async fn set(world: &World, scope: SettingsScope, key: &str, value: SettingValue
     change_setting(
         &world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: token(world),
             scope,
             key: key.to_owned(),

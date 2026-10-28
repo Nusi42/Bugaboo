@@ -535,6 +535,19 @@ pub struct PolicyVersion {
     pub version: i64,
 }
 
+/// The counter that gives the versions of one person's own settings: every write of one of their
+/// values takes the next number, so a version never goes back, not even after a reset takes the
+/// value away and it is set again (M5-F97, ADR-0018). A person without a row has counted nothing.
+#[derive(Clone, Debug, PartialEq, Eq, crate::personal::Entity)]
+pub struct PersonSettingCounter {
+    /// The person the counter belongs to.
+    #[personal(category = "identity", basis = "contract")]
+    pub person: crate::id::UserId,
+    /// The version of the last write of any of the person's values.
+    #[not_personal]
+    pub counter: i64,
+}
+
 /// One value of a setting that a person chose for themselves in *My settings* (CFG-04). It is the
 /// person's own data: it goes with them when they download their data and is gone when they are
 /// removed. The key must be one of the registry ([`find`]); `bb-store` is the only place that reads
@@ -553,6 +566,9 @@ pub struct StoredPersonSetting {
     /// When the person last changed it.
     #[personal(category = "activity", basis = "contract")]
     pub updated_at: jiff::Timestamp,
+    /// Counts up with every change; a change made from an older version is refused (ADR-0018).
+    #[not_personal]
+    pub version: i64,
 }
 
 /// The items of a list written as text with commas between the items: spaces around an item are

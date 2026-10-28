@@ -159,7 +159,7 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 }
 
 /// The value of a whole number written as a literal or as a product of literals (`4 * 1024 * 1024`).
-fn number_of(expr: &syn::Expr) -> Option<u128> {
+pub(super) fn number_of(expr: &syn::Expr) -> Option<u128> {
     match expr {
         syn::Expr::Lit(syn::ExprLit {
             lit: syn::Lit::Int(number),

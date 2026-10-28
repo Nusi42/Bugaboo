@@ -158,6 +158,19 @@ pub(crate) enum PersonSettingRow {
     Key,
     Value,
     UpdatedAt,
+    /// Counts up with every change of the value; a person's own value is changed from several
+    /// browsers at a time, so a change made from an older version is refused (migration 27).
+    Version,
+}
+
+/// The counter that gives the versions of a person's own settings, so a version never goes back
+/// when a value is taken away and set again (migration 28).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum PersonSettingCounterRow {
+    #[iden = "person_setting_counter"]
+    Table,
+    Person,
+    Counter,
 }
 
 #[derive(Clone, Copy, Iden)]

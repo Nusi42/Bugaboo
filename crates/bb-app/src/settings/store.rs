@@ -10,6 +10,7 @@ use std::future::Future;
 
 use bb_core::id::{ProjectId, UserId};
 use bb_core::settings::{Layers, Scope, SettingDefinition, SettingValue};
+use bb_core::version::Version;
 use jiff::Timestamp;
 
 use crate::access::PolicyStore;
@@ -35,13 +36,18 @@ pub trait SettingsStore: PolicyStore + 'static {
         /// Stores the value of a setting on one scope. The change stops itself (the same as
         /// `AuthStore::aborted`) when the organization locked the setting and the scope is a
         /// project or a person: that is decided inside the change, so a lock made at the same
-        /// moment is never overtaken.
+        /// moment is never overtaken. A person's own value has a version (a value that is not
+        /// there is at version 0) that every write counts up: with `expected` the value is
+        /// written only when it is at that version, and `false` says it was not; without, the
+        /// last write wins. The other scopes have no version: they are always written and
+        /// answer `true`.
         fn put_setting_value(
             scope: Scope,
             setting: &'static SettingDefinition,
             value: &SettingValue,
-            at: Timestamp
-        ) -> ();
+            at: Timestamp,
+            expected: Option<Version>
+        ) -> bool;
         /// Takes the value of a setting on one scope away, so the layer below applies again.
         /// `false` when there was none.
         fn clear_setting_value(scope: Scope, setting: &'static SettingDefinition) -> bool;
