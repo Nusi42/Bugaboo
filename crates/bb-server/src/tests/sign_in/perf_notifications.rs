@@ -32,50 +32,87 @@ const CHANGE_AT_MOST: usize = 23;
 /// news: the issue and its followers are read, the rights of the follower on it are not read again.
 const PER_CHANGE_AT_MOST: usize = 3;
 
-/// Bob writes a comment under each of `count` new issues of Ada, so Ada, who follows what she
-/// reported, hears of `count` different issues, one notification each. Every notification is of one
-/// kind: the reader makes them all in one request, in one moment, and IDs sort only by the
-/// millisecond, so the order of the newest few is chance; a page of five that happened to hold no
-/// comment read one statement and one setting fewer than a page of forty (M5-F65, 42 against 40).
+/// What Bob does to each new issue of Ada, which is what Ada hears of.
+#[derive(Clone, Copy)]
+enum News {
+    /// A comment under the issue (a row that shows the comment).
+    Comment,
+    /// A change of the status (a row that shows what changed).
+    StatusChange,
+}
+
+/// Bob does one thing to each of `count` new issues of Ada, so Ada, who follows what she reported,
+/// hears of `count` different issues, one notification each. Every notification is of one kind: the
+/// reader makes them all in one request, in one moment, and IDs sort only by the millisecond, so the
+/// order of the newest few is chance; a page of five that happened to hold no comment read a
+/// statement and a setting fewer than a page of forty (M5-F65, 42 against 40). Both kinds are
+/// counted, each on its own.
 async fn news_for_ada(
     site: &Site<'_>,
     ada: &mut Browser,
     bob: &mut Browser,
+    news: News,
     count: usize,
     first: usize,
 ) -> Result<(), Failure> {
     for number in first..first + count {
         let issue = key_of(&site.create(ada, &format!("Issue {number}")).await?)?;
-        // The same words in every comment: a page names the same few things over and over and looks
-        // each of them up once; what is different in every row must cost nothing.
-        let written = bob
-            .send(
-                "POST",
-                &format!("{ISSUES}/{issue}/comments"),
-                Some(json!({"text": "A word about it."})),
-            )
-            .await?;
-        ok(&written)?;
+        match news {
+            News::StatusChange => {
+                let version = version_of(bob, &issue).await?;
+                let changed = bob
+                    .send(
+                        "PATCH",
+                        &format!("{ISSUES}/{issue}"),
+                        Some(json!({"version": version, "status": "done"})),
+                    )
+                    .await?;
+                assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+            }
+            News::Comment => {
+                // The same words in every comment: a page names the same few things over and over and
+                // looks each of them up once; what is different in every row must cost nothing.
+                let written = bob
+                    .send(
+                        "POST",
+                        &format!("{ISSUES}/{issue}/comments"),
+                        Some(json!({"text": "A word about it."})),
+                    )
+                    .await?;
+                ok(&written)?;
+            }
+        }
     }
     Ok(())
 }
 
-#[tokio::test]
-async fn perf_05_a_page_of_forty_notifications_runs_as_many_statements_as_a_page_of_five()
--> TestResult {
-    each_database("perf_05_notifications_page", async |db| {
+/// A page of forty rows of one kind runs as many statements as a page of five.
+async fn forty_run_as_many_as_five(name: &str, news: News) -> TestResult {
+    each_database(name, async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut bob, _) = site
             .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
             .await?;
-        news_for_ada(&site, &mut ada, &mut bob, 40, 0).await?;
+        news_for_ada(&site, &mut ada, &mut bob, news, 40, 0).await?;
         let path = |limit: u32| format!("{NOTIFICATIONS}?limit={limit}");
         let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, path).await?;
         assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page");
         Ok(())
     })
     .await
+}
+
+#[tokio::test]
+async fn perf_05_a_page_of_forty_notifications_runs_as_many_statements_as_a_page_of_five()
+-> TestResult {
+    forty_run_as_many_as_five("perf_05_notifications_page", News::Comment).await
+}
+
+#[tokio::test]
+async fn perf_05_a_page_of_forty_status_changes_runs_as_many_statements_as_a_page_of_five()
+-> TestResult {
+    forty_run_as_many_as_five("perf_05_notifications_page_changes", News::StatusChange).await
 }
 
 #[tokio::test]
@@ -89,13 +126,13 @@ async fn perf_05_the_number_on_the_menu_runs_as_many_statements_for_forty_unread
             .await?;
         let unread = format!("{NOTIFICATIONS}/unread");
         let mut counter = Counter::on(&rig.database);
-        news_for_ada(&site, &mut ada, &mut bob, 5, 0).await?;
+        news_for_ada(&site, &mut ada, &mut bob, News::Comment, 5, 0).await?;
         ok(&ada.send("GET", &unread, None).await?)?;
         counter.take();
         let few = ada.send("GET", &unread, None).await?;
         assert_eq!(ok(&few)?["unread"], 5);
         let (on_five, five_log) = counter.take_logged();
-        news_for_ada(&site, &mut ada, &mut bob, 35, 5).await?;
+        news_for_ada(&site, &mut ada, &mut bob, News::Comment, 35, 5).await?;
         ok(&ada.send("GET", &unread, None).await?)?;
         counter.take();
         let many = ada.send("GET", &unread, None).await?;
