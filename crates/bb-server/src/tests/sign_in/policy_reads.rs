@@ -6,12 +6,13 @@
 //! project must give the same decision both ways. Every flow runs on SQLite and PostgreSQL.
 
 use bb_app::access::Place;
-use bb_app::access::{Permission, PolicyStore as _, evaluate, evaluation_from_person_policy};
+use bb_app::access::{Permission, PolicyStore as _, evaluation_from_person_policy};
 use bb_app::fields::CreateField;
 use bb_app::roles::{Given, SetFieldLevel, Subject};
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
 use bb_core::own_fields::{FieldFor, FieldType, Rules, Scope};
+use bb_policy::evaluate;
 use bb_testing::{TestResult, each_database};
 
 use super::policy_rig::{Org, Run};

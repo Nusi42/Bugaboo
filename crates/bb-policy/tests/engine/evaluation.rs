@@ -340,3 +340,36 @@ fn sec_03_the_depth_of_a_no_access_counts_whoever_it_is_for() {
             if kept.assignment == row && by.assignment == no_access
     ));
 }
+
+#[test]
+fn sec_03_a_place_no_role_reaches_has_no_levels_not_even_the_list_of_own_fields() {
+    use bb_core::id::{FieldId, SequentialIds};
+    use bb_policy::{LevelRules, Place, Policy};
+
+    let mut ids = SequentialIds::default();
+    let mut world = World::new();
+    world
+        .rules
+        .own_fields
+        .push(FieldId::generate(&mut ids).unwrap());
+    // The role is given in OTHER only: it does not reach ACME.
+    let viewer = world.role("Viewer", &VIEW);
+    world.give_here_only(viewer, world.other);
+    let policy = Policy {
+        assignments: Vec::new(),
+        members: Vec::new(),
+        roles: world.roles.clone(),
+        rules: world.rules.clone(),
+    };
+    let chain = world.chain(world.acme);
+    let at_acme =
+        policy.inputs_from_rows(world.person, &world.rows, Place::Project(world.acme), chain);
+    assert_eq!(at_acme.rules, LevelRules::default());
+    let at_other = policy.inputs_from_rows(
+        world.person,
+        &world.rows,
+        Place::Project(world.other),
+        world.chain(world.other),
+    );
+    assert_eq!(at_other.rules.own_fields, world.rules.own_fields);
+}

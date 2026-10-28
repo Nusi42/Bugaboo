@@ -3,13 +3,13 @@
 //! the reader may not see.
 
 use bb_core::history::HistoryKind;
+use bb_core::issue::Issue;
 use bb_core::relation::RelationKind;
 
 use super::read::Reading;
 use super::types::HistoryItem;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::walk::Walk;
-use bb_core::issue::Issue;
 
 /// A row of the history: its place in the outbox and what is in it for the reader, if anything.
 pub(super) struct Shaped {

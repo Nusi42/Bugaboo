@@ -19,9 +19,9 @@ const PREVIEW: &str = "/api/v1/many-changes/preview";
 const PER_ISSUE_AT_MOST: usize = 6;
 
 /// The most statements a preview of one issue runs: the session and the rights, which every
-/// request pays (M4-F137: 34 measured, 42 before the rights of the person were read once), and the
+/// request pays (M4-F137: 31 measured, 42 before the rights of the person were read once), and the
 /// one issue.
-const ONE_AT_MOST: usize = 34;
+const ONE_AT_MOST: usize = 31;
 
 #[tokio::test]
 async fn perf_05_each_issue_of_a_preview_costs_the_same_few_statements() -> TestResult {

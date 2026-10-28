@@ -123,52 +123,55 @@ pub(crate) enum Which<'a> {
 }
 
 /// The levels of one kind that roles have set, their own and those set for projects, for all
-/// issue types.
+/// issue types: one statement for both tables.
 pub(crate) async fn read_rules<K: LevelSubject>(
     reader: &mut impl Reader,
     which: Which<'_>,
 ) -> Result<Vec<LevelRule<K>>, StoreError> {
-    let mut rules = Vec::new();
-    for in_project in [false, true] {
-        let table = table(K::KIND, in_project, false)?;
-        for row in read_rows(reader, table, which, in_project).await? {
-            rules.push(LevelRule {
+    let tables = [table(K::KIND, false, false)?, table(K::KIND, true, false)?];
+    read_rows(reader, tables, which)
+        .await?
+        .into_iter()
+        .map(|row| {
+            Ok(LevelRule {
                 project: row.project,
                 role: row.role,
                 subject: K::from_subject_code(&row.subject)
-                    .ok_or(StoreError::Corrupt(table.subject_is))?,
+                    .ok_or(StoreError::Corrupt(tables[0].subject_is))?,
                 level: <K::Level as Word>::from_code(&row.level)
-                    .ok_or(StoreError::Corrupt(table.level_is))?,
-            });
-        }
-    }
-    Ok(rules)
+                    .ok_or(StoreError::Corrupt(tables[0].level_is))?,
+            })
+        })
+        .collect()
 }
 
 /// The levels of fields that roles have set for one issue type, their own and those set for
-/// projects.
+/// projects: one statement for both tables.
 pub(crate) async fn read_typed_rules(
     reader: &mut impl Reader,
     which: Which<'_>,
 ) -> Result<Vec<TypedFieldRule>, StoreError> {
-    let mut rules = Vec::new();
-    for in_project in [false, true] {
-        let table = table(LevelKind::Field, in_project, true)?;
-        for row in read_rows(reader, table, which, in_project).await? {
-            rules.push(TypedFieldRule {
+    let tables = [
+        table(LevelKind::Field, false, true)?,
+        table(LevelKind::Field, true, true)?,
+    ];
+    read_rows(reader, tables, which)
+        .await?
+        .into_iter()
+        .map(|row| {
+            Ok(TypedFieldRule {
                 project: row.project,
                 role: row.role,
                 issue_type: row
                     .issue_type
                     .ok_or(StoreError::Corrupt("an issue type of a level"))?,
                 subject: FieldKey::from_code(&row.subject)
-                    .ok_or(StoreError::Corrupt(table.subject_is))?,
+                    .ok_or(StoreError::Corrupt(tables[0].subject_is))?,
                 level: <FieldLevel as Word>::from_code(&row.level)
-                    .ok_or(StoreError::Corrupt(table.level_is))?,
-            });
-        }
-    }
-    Ok(rules)
+                    .ok_or(StoreError::Corrupt(tables[0].level_is))?,
+            })
+        })
+        .collect()
 }
 
 /// A row of any of the tables, before its words are read.
@@ -180,48 +183,62 @@ struct RawRule {
     level: String,
 }
 
-async fn read_rows(
-    reader: &mut impl Reader,
-    table: Table,
-    which: Which<'_>,
-    in_project: bool,
-) -> Result<Vec<RawRule>, StoreError> {
+/// The names the rows of both tables are read under, so the two selects line up in one `UNION ALL`.
+const ROLE: &str = "level_role";
+const SUBJECT: &str = "level_subject";
+const LEVEL: &str = "level_level";
+const PROJECT: &str = "level_project";
+const ISSUE_TYPE: &str = "level_issue_type";
+
+/// The select of one table, narrowed as `which` says, with its columns under the common names. A
+/// table of a role's own levels has no project: its rows say none (a typed NULL).
+fn select_of(table: Table, which: Which<'_>) -> sea_query::SelectStatement {
     let mut select = Query::select();
     select
-        .columns([table.role, table.subject, table.level])
+        .expr_as(Expr::col(table.role), sea_query::Alias::new(ROLE))
+        .expr_as(Expr::col(table.subject), sea_query::Alias::new(SUBJECT))
+        .expr_as(Expr::col(table.level), sea_query::Alias::new(LEVEL))
         .from(table.name);
-    if let Some(project) = table.project {
-        select.column(project);
-    }
+    match table.project {
+        Some(project) => select.expr_as(Expr::col(project), sea_query::Alias::new(PROJECT)),
+        None => select.expr_as(Expr::val(None::<Vec<u8>>), sea_query::Alias::new(PROJECT)),
+    };
     if let Some(issue_type) = table.issue_type {
-        select.column(issue_type);
+        select.expr_as(Expr::col(issue_type), sea_query::Alias::new(ISSUE_TYPE));
     }
-    if let Which::At { chain, .. } = which {
-        if in_project && chain.is_empty() {
-            // The organization has no project: nothing is set for it.
-            return Ok(Vec::new());
-        }
-        if let Some(project) = table.project {
-            select.and_where(Expr::col(project).is_in(super::in_list(chain)));
-        }
+    if let (Which::At { chain, .. }, Some(project)) = (which, table.project) {
+        select.and_where(Expr::col(project).is_in(super::in_list(chain)));
     }
     if let Which::Roles(roles) | Which::At { roles, .. } = which {
         select.and_where(Expr::col(table.role).is_in(super::in_list(roles)));
     }
+    select
+}
+
+/// The rows of a role's own table and of the table set for projects, in one statement. At the
+/// organization (an empty chain) nothing is set for a project, so only the first is read.
+async fn read_rows(
+    reader: &mut impl Reader,
+    tables: [Table; 2],
+    which: Which<'_>,
+) -> Result<Vec<RawRule>, StoreError> {
+    let mut select = select_of(tables[0], which);
+    let organization_only = matches!(which, Which::At { chain, .. } if chain.is_empty());
+    if !organization_only {
+        select.union(sea_query::UnionType::All, select_of(tables[1], which));
+    }
     let mut rows = Vec::new();
     for row in reader.fetch_all(&select).await? {
         rows.push(RawRule {
-            project: match table.project {
-                Some(project) => Some(row.id::<ProjectId>(project)?),
-                None => None,
+            project: row.optional_id::<ProjectId>(PROJECT)?,
+            role: row.id::<RoleId>(ROLE)?,
+            issue_type: if tables[0].issue_type.is_some() {
+                Some(row.id::<IssueTypeId>(ISSUE_TYPE)?)
+            } else {
+                None
             },
-            role: row.id::<RoleId>(table.role)?,
-            issue_type: match table.issue_type {
-                Some(issue_type) => Some(row.id::<IssueTypeId>(issue_type)?),
-                None => None,
-            },
-            subject: row.get::<String>(table.subject)?,
-            level: row.get::<String>(table.level)?,
+            subject: row.get::<String>(SUBJECT)?,
+            level: row.get::<String>(LEVEL)?,
         });
     }
     Ok(rows)

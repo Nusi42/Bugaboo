@@ -92,9 +92,9 @@ pub trait PolicyStore: ChangeStore + 'static {
     reads! {
         /// What the engine needs to decide for `person` at any place: their rows (their own and
         /// their groups') wherever they are, the roles those name and the levels of those roles
-        /// for the organization and every project, as one snapshot. Which of it applies at a place is decided
-        /// by the engine (`Policy::inputs_from_rows`), so a request reads it once and decides
-        /// every place from it.
+        /// for the organization and every project, as one snapshot. Which of it applies at a
+        /// place is decided by the engine (`Policy::inputs_from_rows`), so a request reads it
+        /// once and decides every place from it.
         fn person_policy(person: UserId) -> Policy;
         /// The people who were administrators in M1 and have not got the role yet.
         fn legacy_administrators() -> Vec<UserId>;

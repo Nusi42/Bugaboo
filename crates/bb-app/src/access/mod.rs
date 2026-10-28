@@ -25,11 +25,11 @@ use bb_core::id::{AccessKeyId, GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, Narrowing, PeopleContext, Policy, Target, resolve};
+use bb_policy::{Evaluation, Narrowing, PeopleContext, Policy, Target, evaluate, resolve};
 
 pub use bb_policy::{
     Authorized, LevelKind, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree,
-    evaluate, guards,
+    guards,
 };
 pub(crate) use candidates::{Members, names_other_people, position_of};
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
@@ -108,8 +108,7 @@ pub(crate) async fn evaluation_in<S: AuthStore>(
 
 /// What `person` may do at `place` (with `chain`, the projects from the top down to it; none for
 /// the organization), decided by the engine from the rows, roles and levels of the person that
-/// were read once ([`PolicyStore::person_policy`], with the levels set for projects added for a
-/// project). The one place that chooses what applies at a place from them: it is
+/// were read once ([`PolicyStore::person_policy`]). The one place that chooses what applies at a place from them: it is
 /// [`Policy::inputs_from_rows`], the engine's own rule, not a copy of it.
 #[must_use]
 pub fn evaluation_from_person_policy(

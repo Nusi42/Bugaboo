@@ -411,7 +411,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue: &Issue,
         changes: &[FieldChange],
     ) -> Result<Vec<FieldChangeView>, AppError> {
-        // The people of the values of the page are resolved once for every row of it.
         let mut reading = Reading {
             actor,
             held,
@@ -657,6 +656,7 @@ pub async fn history<S: AuthStore>(
         HistoryTab::Comments => Some(HistoryKind::Comment),
         HistoryTab::Changes => Some(HistoryKind::Change),
     };
+    // The people of the values of the page are resolved once for every row of it.
     let mut reading = Reading {
         actor: &actor,
         held: &held,
