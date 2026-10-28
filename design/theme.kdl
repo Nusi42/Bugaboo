@@ -480,6 +480,12 @@ mixin "status-soft-done" {
     color "$st-done"
 }
 
+// The clear outline inside the edge that both ring mixins of a row share, written once.
+mixin "ring-clear" {
+    outline "$ring-width solid transparent"
+    outline-offset "calc($ring-width * -1)"
+}
+
 // The ring of a row that is selected or current: inside the edge, drawn by a shadow, so it is even on all
 // four sides and the colored edge of a priority stays whole. The clear outline is for forced colors, which
 // drop shadows and show an outline in a color of the system; it also stops the outline of the focus that
@@ -487,16 +493,14 @@ mixin "status-soft-done" {
 // mixins, so the accent ring is written here and again in `ring-keyboard`.
 mixin "ring-row" {
     box-shadow "inset 0 0 0 $ring-width $accent"
-    outline "$ring-width solid transparent"
-    outline-offset "calc($ring-width * -1)"
+    use "ring-clear"
 }
 
 // The keyboard focus on a row: the accent ring and, inside it, a second ring in the text color, so the focus
 // is told from a selected or a current row on every tint. Both are shadows, even on all four sides.
 mixin "ring-keyboard" {
     box-shadow "inset 0 0 0 $ring-width $accent, inset 0 0 0 calc($ring-width * 2) $fg"
-    outline "$ring-width solid transparent"
-    outline-offset "calc($ring-width * -1)"
+    use "ring-clear"
 }
 
 // The ring around what has the focus: the one definition of how the focus looks.
@@ -860,6 +864,12 @@ part "button[variant=primary]" {
     border-color "$accent"
     background "$accent"
     color "$on-accent"
+    // Forced colors keep the label readable: the face and the text of a button, and an edge in the text color.
+    forced {
+        border-color ButtonText
+        background ButtonFace
+        color ButtonText
+    }
 }
 
 part "button[variant=quiet]" {
@@ -867,6 +877,10 @@ part "button[variant=quiet]" {
     background transparent
     color "$accent-fg"
     use "hang-start"
+    // Forced colors draw the edge that is clear otherwise, so the button no longer hangs back into its neighbour.
+    forced {
+        margin-inline-start 0
+    }
 }
 
 // One start edge (R1) and one end edge: a text button hangs back by its own padding, so its words
@@ -877,6 +891,9 @@ part "button[variant=quiet]" {
 // by itself.
 part "button[variant=quiet]:last-child" {
     margin-inline-end "calc(-1 * $pad-control)"
+    forced {
+        margin-inline-end 0
+    }
 }
 
 // An icon has no padding to hang back by.
@@ -2354,12 +2371,19 @@ part "legend.swatch[variant=critical]" "legend.swatch[variant=high]" {
     border-radius 0
 }
 
+// Forced colors drop the fill of a bar, so it is drawn in the text color there.
 part "legend.swatch[variant=critical]" {
     background "$danger"
+    forced {
+        background CanvasText
+    }
 }
 
 part "legend.swatch[variant=high]" {
     background "$warning"
+    forced {
+        background CanvasText
+    }
 }
 
 // The row above a list: its main button, what is ticked, and the Legend at the end.

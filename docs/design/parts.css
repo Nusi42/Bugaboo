@@ -140,6 +140,14 @@ optgroup {
   color: var(--on-accent);
 }
 
+@media (forced-colors: active) {
+  [data-part="button"][data-variant~="primary"] {
+    border-color: ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+}
+
 [data-part="button"][data-variant~="quiet"] {
   border-color: transparent;
   background: transparent;
@@ -147,8 +155,20 @@ optgroup {
   margin-inline-start: calc(-1 * var(--pad-control));
 }
 
+@media (forced-colors: active) {
+  [data-part="button"][data-variant~="quiet"] {
+    margin-inline-start: 0;
+  }
+}
+
 [data-part="button"][data-variant~="quiet"]:last-child {
   margin-inline-end: calc(-1 * var(--pad-control));
+}
+
+@media (forced-colors: active) {
+  [data-part="button"][data-variant~="quiet"]:last-child {
+    margin-inline-end: 0;
+  }
 }
 
 [data-part="button"][data-variant~="quiet"][data-variant~="square"] {
@@ -1636,8 +1656,20 @@ optgroup {
   background: var(--danger);
 }
 
+@media (forced-colors: active) {
+  [data-part="legend.swatch"][data-variant~="critical"] {
+    background: CanvasText;
+  }
+}
+
 [data-part="legend.swatch"][data-variant~="high"] {
   background: var(--warning);
+}
+
+@media (forced-colors: active) {
+  [data-part="legend.swatch"][data-variant~="high"] {
+    background: CanvasText;
+  }
 }
 
 [data-part="list-toolbar"] {
