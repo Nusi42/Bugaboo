@@ -150,13 +150,13 @@ pub(crate) fn place_statement(request: &SearchRequest, plan: &SortPlan, after: I
 }
 
 /// The most projects of the sight that a page is asked of one by one (`branches`): each project is
-/// one more piece in the union of the page, so the number is kept small; past it the one statement
+/// one more piece in the union of the page, so the number is kept small (chosen, not measured); past it the one statement
 /// over all the projects of the sight is used.
 const MOST_BRANCHES: usize = 16;
 
 /// How many rows of the text index a word may have for the issues that have it to be made once
 /// (`Form::Driven`); with more, the issues are asked about one at a time (`Form::Each`). Making
-/// the issues of a word reads all its rows, so the number is kept small: a word that has more is
+/// the issues of a word reads all its rows, so the number is kept small (chosen, not measured): a word that has more is
 /// common, and a page of it stops early by asking about each issue.
 pub(crate) const SET_ROWS_AT_MOST: i64 = 2_000;
 
