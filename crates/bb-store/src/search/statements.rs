@@ -65,11 +65,9 @@ impl Iden for Counted {
 /// The condition every statement of a search has: the issues the person reads, that the search
 /// finds.
 fn found(compiler: &Compiler<'_>) -> Result<Cond, CompileError> {
-    let mut cond = Cond::all().add(sight_condition(&compiler.request.sight));
-    if let Some(filter) = &compiler.request.search.search().filter {
-        cond = cond.add(compiler.filter(filter)?);
-    }
-    Ok(cond)
+    Ok(Cond::all()
+        .add(sight_condition(&compiler.request.sight))
+        .add(found_by(compiler)?))
 }
 
 fn finish(compiler: &Compiler<'_>, select: SelectStatement) -> Built {
@@ -151,11 +149,15 @@ pub(crate) fn place_statement(request: &SearchRequest, plan: &SortPlan, after: I
     Built::Plain(select)
 }
 
-/// The most projects of the sight that a page is asked of one by one (`branches`).
+/// The most projects of the sight that a page is asked of one by one (`branches`): each project is
+/// one more piece in the union of the page, so the number is kept small; past it the one statement
+/// over all the projects of the sight is used.
 const MOST_BRANCHES: usize = 16;
 
 /// How many rows of the text index a word may have for the issues that have it to be made once
-/// (`Form::Driven`); with more, the issues are asked about one at a time (`Form::Each`).
+/// (`Form::Driven`); with more, the issues are asked about one at a time (`Form::Each`). Making
+/// the issues of a word reads all its rows, so the number is kept small: a word that has more is
+/// common, and a page of it stops early by asking about each issue.
 pub(crate) const SET_ROWS_AT_MOST: i64 = 2_000;
 
 /// How the words that decide the order by title hits are found for each of its two streams.
@@ -241,7 +243,8 @@ fn streams(
     let unsupported = || CompileError::Unsupported("an order by title hits without words");
     let mut streams = Vec::new();
     if standing != Standing::Rest {
-        // The issues of this stream have the words in the title, so they have them.
+        // The issues of this stream have the words in the title, so they have them. The filter is
+        // compiled for each stream: the form of the words and what is known of them differ.
         compiler.has_the_words.set(true);
         let found = found_by(compiler);
         compiler.has_the_words.set(false);
@@ -486,10 +489,14 @@ impl Iden for Probed {
 }
 
 /// The streams of a page by title hits, with the scope their texts are in.
-const STREAMS: [(i64, TextScope); 2] = [
-    (0, TextScope::Source(TextSource::Title)),
-    (1, TextScope::Everywhere),
+const STREAMS: [(usize, TextScope); 2] = [
+    (TITLE_STREAM, TextScope::Source(TextSource::Title)),
+    (REST_STREAM, TextScope::Everywhere),
 ];
+
+/// The place of each stream in `STREAMS`, the probe and `Forms`: the one definition of the order.
+const TITLE_STREAM: usize = 0;
+const REST_STREAM: usize = 1;
 
 /// How many rows of the text index each word of the order by title hits has in the title and in
 /// all texts, up to `at_most` each: a row for each word and stream. None without such an
@@ -509,12 +516,15 @@ pub(crate) fn probe_statement(
         for (at, word) in words.iter().enumerate() {
             let counted = text_rows_up_to(dialect, word, scope, at_most.unsigned_abs());
             let mut one = Query::select();
-            one.expr_as(Expr::val(stream), Probed::Stream)
-                .expr_as(
-                    Expr::val(i64::try_from(at).unwrap_or(i64::MAX)),
-                    Probed::Word,
-                )
-                .expr_as(super::scalar(counted), Probed::Rows);
+            one.expr_as(
+                Expr::val(i64::try_from(stream).unwrap_or(i64::MAX)),
+                Probed::Stream,
+            )
+            .expr_as(
+                Expr::val(i64::try_from(at).unwrap_or(i64::MAX)),
+                Probed::Word,
+            )
+            .expr_as(super::scalar(counted), Probed::Rows);
             match probe.as_mut() {
                 None => probe = Some(one),
                 Some(all) => {
@@ -547,7 +557,7 @@ pub(crate) fn read_forms(rows: &[Row], at_most: i64) -> Result<Forms, StoreError
         None => Form::Each,
     };
     Ok(Forms {
-        title: form(fewest[0]),
-        rest: form(fewest[1]),
+        title: form(fewest[TITLE_STREAM]),
+        rest: form(fewest[REST_STREAM]),
     })
 }

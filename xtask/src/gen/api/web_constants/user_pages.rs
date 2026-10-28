@@ -7,7 +7,9 @@ use std::fmt::Write as _;
 
 use anyhow::{Context as _, bail};
 
-use super::notifications::parsed as parsed_file;
+use super::notifications::{
+    HANDLE_SOURCE, MAIL_SOURCE, NOTIFICATION_SOURCE, SIGN_UP_SOURCE, parsed as parsed_file,
+};
 use super::number_const;
 use crate::generate::privacy::table;
 use crate::source::Source;
@@ -19,10 +21,6 @@ pub(crate) const NOTIFICATION_NUMBERS_PAGE: &str = "userDocs/notifications/numbe
 
 const LIMITS_SOURCE: &str = "crates/bb-searchlang/src/limits.rs";
 const WORDS_SOURCE: &str = "crates/bb-core/src/text_words.rs";
-const NOTIFICATION_SOURCE: &str = "crates/bb-core/src/notification.rs";
-const MAIL_SOURCE: &str = "crates/bb-core/src/mail.rs";
-const SIGN_UP_SOURCE: &str = "crates/bb-core/src/sign_up_invitation.rs";
-const HANDLE_SOURCE: &str = "crates/bb-core/src/handle.rs";
 
 /// What a generated page says first.
 fn header(title: &str) -> String {
