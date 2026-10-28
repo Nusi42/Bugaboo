@@ -32,6 +32,8 @@ export interface ListContextValue {
   readonly language: SearchLanguage;
   /** The field the list is grouped by. */
   readonly groupBy: string | null;
+  /** Why the search was refused, so the list has no rows and no head; none while it has a list. */
+  readonly failure: Error | null;
   /** Takes every filter out of the search (*Remove all filters*). */
   readonly onClear: () => void;
   /** A group (or the whole list) tells which issues it shows now. */

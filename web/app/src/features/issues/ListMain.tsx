@@ -52,7 +52,7 @@ export function ListMain({
         onView={onView}
         onCustomize={onCustomize}
       />
-      <ListInfo scopeName={props.scopeName} shown={shown} />
+      <ListInfo scopeName={props.scopeName} shown={shown} stale={props.stale} />
       <ListFrame columns={specs} keyChars={keyChars} compact={compact}>
         {phone ? null : (
           <ListHeader

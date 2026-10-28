@@ -1,4 +1,4 @@
-import { dataOf } from "@bugaboo/api-client";
+import { ApiError, dataOf, type ErrorCode } from "@bugaboo/api-client";
 import { t, textByKey } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
@@ -21,6 +21,8 @@ const DEMO_M5 = "M5/demo";
 export const HIGH_PRIORITY = "priority is high";
 /** The search that reads the own field *Customer*, which Contributors may not read. */
 export const CUSTOMER_SEARCH = 'customer is "Alder Street Bakery"';
+/** The answer for a field that is not there (the code the type of the API checks). */
+const SEARCH_INVALID: ErrorCode = "search.invalid";
 /** The saved search that reads *Customer*, shared with a group and with the project WEB. */
 const CUSTOMER_SEARCH_NAME = "Questions of customers";
 /** The saved search the project WEB shows as its list. */
@@ -71,16 +73,44 @@ export async function aHiddenFieldIsAnUnknownField(page: Page, server: Instance)
   await expect(page.getByText(t("search.found-stale"))).toBeVisible();
   await page.waitForLoadState("networkidle");
   await good(page, "03-a-field-that-is-not-there");
+  // On a phone the sheet of the bar covered the page: close it, and the list of the last good
+  // search stands behind the mistake, with its edge and its note.
+  await closeBar(page);
+  await good(page, "03-b-the-last-list-stays");
+  await openBar(page);
   // The words are those for a field that does not exist, with only the typed word changed.
   await box(page).fill('customex is "Alder Street Bakery"');
   expect((await mistakeIn(page)).replace("customex", "customer")).toBe(hidden);
   // The Team member who may read it is told nothing is wrong: the search is answered.
-  const team = await signInThroughApi(server, sampleTeamMember());
-  const answer = await team.client.GET("/api/v1/search/issues", {
-    params: { query: { q: CUSTOMER_SEARCH, limit: 1 } },
-  });
-  await team.dispose();
-  expect(answer.response.status).toBe(200);
+  // The server says the same to the Contributor through the API, and answers the Team member.
+  const [asked, answered] = await Promise.all([
+    searchAnswer(server, contributor()),
+    searchAnswer(server, sampleTeamMember()),
+  ]);
+  expect(asked.status).toBe(400);
+  expect(asked.code).toBe(SEARCH_INVALID);
+  expect(answered.status).toBe(200);
+}
+
+/** What the server answers a person who searches by *Customer*: the status, and the code of a refusal. */
+async function searchAnswer(
+  server: Instance,
+  person: Readonly<SamplePerson>,
+): Promise<{ readonly status: number; readonly code: unknown }> {
+  const session = await signInThroughApi(server, person);
+  try {
+    const answer = await session.client.GET("/api/v1/search/issues", {
+      params: { query: { q: CUSTOMER_SEARCH, limit: 1 } },
+    });
+    return { status: answer.response.status, code: undefined };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { status: error.status, code: error.problem?.code };
+    }
+    throw error;
+  } finally {
+    await session.dispose();
+  }
 }
 
 /** The words of the first mistake under the box of Advanced search. */
@@ -131,9 +161,14 @@ export async function theProjectShowsItsList(page: Page): Promise<void> {
   await page.goto(projectIssuesAddress("WEB"));
   // The list of the project starts from the chosen search: its filter stands in the bar.
   await openBar(page);
-  await expect(
-    page.getByRole("button", { name: t("search.bar.remove-filter", { filter: "Priority: high" }) }),
-  ).toBeVisible();
+  // Both filters of the saved search stand in the bar, not only the first.
+  await Promise.all(
+    ["Priority: high", "Status group: not Done"].map((filter) =>
+      expect(
+        page.getByRole("button", { name: t("search.bar.remove-filter", { filter }) }),
+      ).toBeVisible(),
+    ),
+  );
   await closeBar(page);
   await good(page, "05-the-list-of-a-project");
 }

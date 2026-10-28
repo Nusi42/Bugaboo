@@ -133,6 +133,10 @@ test("qry_06 pictures: Save, Save a copy and results that wait for a good text",
   // The offers are closed, so the note under the bar and the edged results show.
   await page.getByRole("textbox", { name: t("search.bar.advanced-label") }).press("Escape");
   await inFourThemes(page, "stale");
+  // On a phone the sheet of the bar covers the page: the list behind it is the second picture.
+  await closeBar(page);
+  await inFourThemes(page, "stale-page");
+  await openBar(page);
   await page
     .getByRole("textbox", { name: t("search.bar.advanced-label") })
     .fill("priority is high");

@@ -1,6 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { t } from "@bugaboo/messages";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { pageAttributes } from "../../../packages/ui/src/tokens.ts";
 import { inOrder } from "./sequence.ts";
@@ -185,4 +185,10 @@ export function expectGoodInEveryLook(page: Page): Promise<void> {
       await expectVisibleTextInName(page);
     }),
   );
+}
+
+/** The first element is drawn above the second. */
+export async function expectAbove(upper: Locator, lower: Locator): Promise<void> {
+  const [first, second] = await Promise.all([upper.boundingBox(), lower.boundingBox()]);
+  expect(first?.y ?? 0).toBeLessThan(second?.y ?? 0);
 }

@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, part, partOf } from "@bugaboo/ui";
+import { part, partOf } from "@bugaboo/ui";
 
-import { messageOf } from "../../shared/errors.ts";
 import type { SearchSpacing } from "../../shared/search-address.ts";
 import { useFoundGroups } from "./found-issues.ts";
 import { groupsOfKeys } from "./group-keys.ts";
@@ -18,9 +17,6 @@ export interface GroupedListProps {
 export function GroupedList({ spacing }: GroupedListProps) {
   const { search, groupBy, own } = useListContext();
   const groups = useFoundGroups(search, groupBy);
-  if (groups.isError) {
-    return <Alert tone={alertTone.danger}>{messageOf(groups.error)}</Alert>;
-  }
   if (groups.data?.groups.length === 0) {
     return <ListEmpty />;
   }

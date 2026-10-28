@@ -2,7 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { createAdmin } from "./support/accounts.ts";
-import { expectGoodInEveryTheme } from "./support/checks.ts";
+import { expectAbove, expectGoodInEveryTheme } from "./support/checks.ts";
 import { ana, createPeopleWithRoles, projectIdOf, roleName } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -116,9 +116,11 @@ test("qry_03 the results of the last good search stay, say so, and Save waits fo
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).fill("priority is");
   await expect(page.getByText(t("search.found-stale"))).toBeVisible();
-  // Only the list has the dashed edge; the note is not part of it.
-  await expect(page.locator("[data-part='search-results'][data-state='stale']")).toHaveCount(0);
-  await expect(page.locator("[data-part='search-results.list'][data-state='stale']")).toBeVisible();
+  // The edge goes round the head and the rows and takes no room: the rows stand where they stood.
+  const frame = page.locator("[data-part='list-frame']");
+  await expect(frame).toHaveCSS("outline-style", "dashed");
+  const note = page.getByText(t("search.found-stale"));
+  await expectAbove(note, frame);
   // The offers are closed first, so the note can be seen; it is good in every theme.
   await box(page).press("Escape");
   await expectGoodInEveryTheme(page);

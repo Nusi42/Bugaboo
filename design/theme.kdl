@@ -12575,7 +12575,7 @@ part "search-mistake" {
     overflow-wrap anywhere
 }
 
-// What a search finds, with the note that says whose results they are while the text has a mistake.
+// What a search finds.
 part "search-results" {
     display flex
     flex-direction column
@@ -12583,10 +12583,12 @@ part "search-results" {
 }
 
 // The results of the search that was fixed last stay while the text has a mistake. They keep their
-// full contrast (a dimmed list fails AA, 4.5:1); a dashed edge and the note above them say that
-// they are the last ones. The note is not part of them.
-part "search-results.list[state=stale]" {
-    border "$border-width dashed $border-control"
+// full contrast (a dimmed list fails AA, 4.5:1); a dashed edge round the head and the rows, drawn
+// as an outline just outside the frame (the head and the rows paint over an edge inside it) so
+// nothing moves, and the note above the list (the count line) say that they are the last ones.
+part "list-frame:has(search-results[state=stale])" {
+    outline "$border-width dashed $border-control"
+    outline-offset "$space-1"
 }
 
 // The lists of the Share window and of Saved searches.
