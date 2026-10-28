@@ -62,8 +62,8 @@ mod tests {
 
     use super::super::Database;
     use crate::db::StoredId as _;
-    use crate::schema::{PersonRow, PersonSettingCounterRow, PersonSettingRow};
-    use crate::test_support::{at, ids};
+    use crate::schema::{PersonSettingCounterRow, PersonSettingRow};
+    use crate::test_support::{at, ids, insert_old_person};
 
     #[tokio::test]
     async fn m5_f97_migration_28_starts_the_counter_at_the_highest_version_a_person_holds()
@@ -72,21 +72,7 @@ mod tests {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(27, at(0)).await?;
             let person = UserId::generate(&mut ids()).stored();
-            let mut made = Query::insert();
-            made.into_table(PersonRow::Table)
-                .columns([
-                    PersonRow::Id,
-                    PersonRow::DisplayName,
-                    PersonRow::Email,
-                    PersonRow::CreatedAt,
-                ])
-                .values([
-                    Expr::val(person.clone()),
-                    Expr::val("Ada"),
-                    Expr::val("ada@example.test"),
-                    Expr::val(1_i64),
-                ])?;
-            database.execute(&made).await?;
+            insert_old_person(&database, person.clone()).await?;
             for (key, version) in [("appearance.mode", 3_i64), ("region.time-zone", 9_i64)] {
                 let mut old = Query::insert();
                 old.into_table(PersonSettingRow::Table)

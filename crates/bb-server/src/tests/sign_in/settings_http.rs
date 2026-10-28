@@ -141,21 +141,13 @@ async fn m5_f97_a_stale_change_of_my_setting_is_refused_over_http() -> TestResul
         // Two tabs read the setting before it has a value of its own: version 0.
         assert_eq!(read(&mut ada).await?["version"], 0);
         let first = ada
-            .send(
-                "PUT",
-                path,
-                Some(json!({"value": "dark", "base_version": 0})),
-            )
+            .send("PUT", path, Some(json!({"value": "dark", "version": 0})))
             .await?;
         assert_eq!(first.status, StatusCode::OK);
         assert_eq!(first.body["version"], 1);
         // The second tab is stale: refused, and the first value stays.
         let second = ada
-            .send(
-                "PUT",
-                path,
-                Some(json!({"value": "light", "base_version": 0})),
-            )
+            .send("PUT", path, Some(json!({"value": "light", "version": 0})))
             .await?;
         assert_eq!(second.status, StatusCode::CONFLICT);
         assert_eq!(second.code(), "edit.version-changed");
@@ -166,11 +158,7 @@ async fn m5_f97_a_stale_change_of_my_setting_is_refused_over_http() -> TestResul
         );
         // From the version it has now, the change goes through; without a version it always does.
         let third = ada
-            .send(
-                "PUT",
-                path,
-                Some(json!({"value": "light", "base_version": 1})),
-            )
+            .send("PUT", path, Some(json!({"value": "light", "version": 1})))
             .await?;
         assert_eq!(third.body["version"], 2);
         let fourth = ada

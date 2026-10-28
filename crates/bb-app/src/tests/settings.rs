@@ -521,6 +521,10 @@ async fn m5_f97_a_persons_setting_changed_from_an_old_version_is_refused() -> Ou
         .map_err(|error| error.to_string())?;
     assert_eq!(list.settings[0].value, text("dark"));
     assert_eq!(list.settings[0].version, Some(1));
+    assert_eq!(
+        refused(change_mine(&world, mode, "light", Some(-1)).await),
+        ErrorCode::InvalidRequest
+    );
     // From the version it has now, the change goes through and counts the version up. Without a
     // version the last change wins, and a scope that has no version says none.
     let third = change_mine(&world, mode, "light", Some(1))

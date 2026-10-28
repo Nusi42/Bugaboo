@@ -12,6 +12,8 @@ use crate::api::projects::ProjectRef;
 problem_answers! {
     /// A lower level cannot change what the organization locked.
     LockedAnswer => ("409", "The organization locked this setting (setting.locked)."),
+    /// A person's own setting is locked from above, or was changed since the version that was sent.
+    LockedOrStaleAnswer => ("409", "The organization locked this setting (setting.locked), or the setting was changed since the version that was sent (edit.version-changed, with the version and the value it has now)."),
 }
 
 /// What a setting holds: yes or no, a whole number, or text.
@@ -310,7 +312,7 @@ pub(crate) struct NewMyValueBody {
     /// own). When the value was changed since, the change is refused with `edit.version-changed`
     /// and the person's value stays. Left out, the last change wins.
     #[serde(default)]
-    pub(super) base_version: Option<i64>,
+    pub(super) version: Option<i64>,
 }
 
 /// What a route of a list reads from its address.

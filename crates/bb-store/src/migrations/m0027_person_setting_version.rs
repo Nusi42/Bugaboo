@@ -33,8 +33,8 @@ mod tests {
 
     use super::super::Database;
     use crate::db::StoredId as _;
-    use crate::schema::{PersonRow, PersonSettingRow};
-    use crate::test_support::{at, ids};
+    use crate::schema::PersonSettingRow;
+    use crate::test_support::{at, ids, insert_old_person};
 
     #[tokio::test]
     async fn m5_f97_migration_27_puts_a_value_written_before_it_at_version_1() -> TestResult {
@@ -42,21 +42,7 @@ mod tests {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(26, at(0)).await?;
             let person = UserId::generate(&mut ids()).stored();
-            let mut made = Query::insert();
-            made.into_table(PersonRow::Table)
-                .columns([
-                    PersonRow::Id,
-                    PersonRow::DisplayName,
-                    PersonRow::Email,
-                    PersonRow::CreatedAt,
-                ])
-                .values([
-                    Expr::val(person.clone()),
-                    Expr::val("Ada"),
-                    Expr::val("ada@example.test"),
-                    Expr::val(1_i64),
-                ])?;
-            database.execute(&made).await?;
+            insert_old_person(&database, person.clone()).await?;
             let mut old = Query::insert();
             old.into_table(PersonSettingRow::Table)
                 .columns([

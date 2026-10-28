@@ -144,7 +144,7 @@ pub struct SettingView {
     /// On a lower scope: whether the organization's lock is in effect, so the value is read only.
     pub locked: bool,
     /// For a person's own setting: the version of the value of their own (`0` while there is
-    /// none), which a change sends back (ADR-0019). `None` on the other scopes.
+    /// none), which a change sends back (ADR-0018). `None` on the other scopes.
     pub version: Option<i64>,
 }
 
@@ -507,6 +507,10 @@ pub async fn change_setting<S: AuthStore>(
             ErrorCode::InvalidRequest
         }
         .into());
+    }
+    // A version is a number the server gave out: it never counts below zero.
+    if input.version.is_some_and(|version| version < 0) {
+        return Err(ErrorCode::InvalidRequest.into());
     }
     let layers = ctx.layers_of(scope, None).await?;
     if scope != Scope::Organization && layers.resolve(definition).locked {

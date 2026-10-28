@@ -1138,7 +1138,7 @@ Defined in `crates/bb-core/src/settings/mod.rs`.
 | `key`        | No            | –          | –           | The key of the setting, as declared in the registry.                                    |
 | `value`      | Yes           | `content`  | `contract`  | What the person chose: time zone, region, appearance, shortcut keys, start page.        |
 | `updated_at` | Yes           | `activity` | `contract`  | When the person last changed it.                                                        |
-| `version`    | No            | –          | –           | Counts up with every change; a change made from an older version is refused (ADR-0019). |
+| `version`    | No            | –          | –           | Counts up with every change; a change made from an older version is refused (ADR-0018). |
 
 ### StoredSecret
 

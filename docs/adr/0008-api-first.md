@@ -58,7 +58,7 @@ The frozen copy is `tools/checks/api-frozen.json`, the generated description in 
 
 ### Compatible later (not in the freeze)
 
-These are additions after the freeze and break no client: optional and nullable members that are always there in new bodies (M4-F174), the per-route list of error codes and the wording of the shared `400` and `409` answers (B2), the open `fields` maps with inline field keys (B11, M4-F177), cursors for the capped lists (M4-F172), a stable cursor in the store for the lists of fields and workflows (M4-F171) and a `truncated` member of the list of workflows (M4-F180), and an optional `base_version` in the body of a change of a person's own setting and a `version` member in the answer (M5-F97, ADR-0018).
+These are additions after the freeze and break no client: optional and nullable members that are always there in new bodies (M4-F174), the per-route list of error codes and the wording of the shared `400` and `409` answers (B2), the open `fields` maps with inline field keys (B11, M4-F177), cursors for the capped lists (M4-F172), a stable cursor in the store for the lists of fields and workflows (M4-F171) and a `truncated` member of the list of workflows (M4-F180), and an optional `version` in the body of a change of a person's own setting and the same member in the answer (M5-F97, ADR-0018) (M5-F97, ADR-0018).
 
 ## Alternatives considered
 

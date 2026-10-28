@@ -566,7 +566,7 @@ pub struct StoredPersonSetting {
     /// When the person last changed it.
     #[personal(category = "activity", basis = "contract")]
     pub updated_at: jiff::Timestamp,
-    /// Counts up with every change; a change made from an older version is refused (ADR-0019).
+    /// Counts up with every change; a change made from an older version is refused (ADR-0018).
     #[not_personal]
     pub version: i64,
 }

@@ -50,6 +50,10 @@ Adding a rule should be easy, and forgetting part of it impossible. The **META**
 7. **Suppressions are visible** (`META-SUPPRESS`): every `allow`, `oxlint-disable`, ast-grep ignore or "not affected" vulnerability statement needs a reason and an issue ID, and the total can't grow unnoticed. The file types searched are listed in `xtask/src/checks/meta_suppress.rs`.
 8. **Checks stay fast** (`META-SPEED`). The 3 and 10 seconds hold on a quiet PC. Several builds often run at once, and wall-clock time alone would then fail a fast check, so the check times a fixed *reference workload* (a few small processes plus some file and CPU work, like a typical check) right before, during and right after each measurement. The budget is a multiple of that reference: the quiet-PC budget times how much longer the reference took than on a quiet PC (the *load factor*, never below 1 and never above 20). Each timing is taken up to 3 times and the best attempt counts, which drops one-off spikes. A check that is slow by itself is slow in every attempt and still fails. The failure names the measured time, the allowed time, the reference time and the load factor, so a human can tell real slowness from load. The numbers (budgets, quiet reference, attempts, ceiling) are defined once, in `xtask/src/checks/meta_speed.rs`.
 
+## Lists of routes that a check allows
+
+Some checks keep a file of named exceptions, each with a reason, that shrinks as the routes are fixed and fails when an entry goes stale. `ARCH-VERSIONED` (`tools/checks/version-exemptions.toml`) has two lists. `[[exempt]]` names changes that take no `version` at all (signing in, making a new record). `[[optional]]` names changes whose `version` was added after the freeze of the API (ADR-0008): only `required` is waived, so the member must still be in the body, the `409` must still be the `ConflictProblem`, and an entry whose `version` is required now, or that has none, or whose route is gone, fails. The tests of the check have good and bad examples for both lists.
+
 ## Adding a rule
 
 1. Write the rule where it belongs (coding standards, a decision record, or a chapter here), with `Enforced by: <ID>`.

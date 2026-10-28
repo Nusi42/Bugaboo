@@ -16,6 +16,12 @@
 //! the own long-text fields of an issue, which travel inside the open `fields` map, are refused at
 //! run time (M3 WP-05). A route that takes a version must also document the structured answer to a stale
 //! version (`ConflictProblem`) as its `409`, so the generated client types it.
+//!
+//! One narrow category waives only `required`: a route named under `[[optional]]` in the same file
+//! took its `version` after the API was frozen (ADR-0008), so the member must stay optional for the
+//! clients that do not send it (the last change wins for them). It must still have `version` among
+//! its members and document `ConflictProblem` as its `409`; a route whose `version` is required
+//! already, or has none, or is not a change, fails, so the list cannot go stale.
 
 use bb_api_words::marks::LONG_TEXT;
 use bb_api_words::versions::{CONFLICT_SCHEMA, LOCK_TOKEN, LONG_TEXT_PROPERTIES, VERSION};
@@ -43,7 +49,7 @@ impl Check for ArchVersioned {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let spec = api_spec::load(context.repo)?;
         let file: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
-        Ok(evaluate(&spec, &file.exempt))
+        Ok(evaluate(&spec, &file.exempt, &file.optional))
     }
 }
 
@@ -52,6 +58,8 @@ impl Check for ArchVersioned {
 struct Exemptions {
     #[serde(default)]
     exempt: Vec<Exemption>,
+    #[serde(default)]
+    optional: Vec<Exemption>,
 }
 
 /// Routes (`POST /api/v1/auth/sign-in`) that take no version, and why.
@@ -138,7 +146,12 @@ fn is_change(operation: &Operation<'_>) -> bool {
     !READS.contains(&operation.method.as_str())
 }
 
-fn route_findings(spec: &Value, found: &Operation<'_>, exempt: Option<&Exemption>) -> Vec<Finding> {
+fn route_findings(
+    spec: &Value,
+    found: &Operation<'_>,
+    exempt: Option<&Exemption>,
+    optional: bool,
+) -> Vec<Finding> {
     let place = found.place();
     let properties = body_properties(spec, found.body);
     let required = body_required(spec, found.body);
@@ -187,6 +200,7 @@ fn route_findings(spec: &Value, found: &Operation<'_>, exempt: Option<&Exemption
         if properties.contains(&needed)
             && (needed == VERSION || long_text)
             && !required.contains(&needed)
+            && !(needed == VERSION && optional && !long_text)
         {
             findings.push(Finding::at(
                 &place,
@@ -203,11 +217,12 @@ fn route_findings(spec: &Value, found: &Operation<'_>, exempt: Option<&Exemption
     findings
 }
 
-fn evaluate(spec: &Value, exempt: &[Exemption]) -> Vec<Finding> {
+fn evaluate(spec: &Value, exempt: &[Exemption], optional: &[Exemption]) -> Vec<Finding> {
     let Some(operations) = api_spec::operations(spec) else {
         return vec![api_spec::no_paths()];
     };
     let mut findings = exemptions::reason_findings(EXEMPTIONS_PATH, exempt);
+    findings.extend(exemptions::reason_findings(EXEMPTIONS_PATH, optional));
     let changes: Vec<&Operation<'_>> = operations
         .iter()
         .filter(|operation| is_change(operation))
@@ -215,7 +230,32 @@ fn evaluate(spec: &Value, exempt: &[Exemption]) -> Vec<Finding> {
     for found in &changes {
         let place = found.place();
         let entry = exempt.iter().find(|entry| entry.routes.contains(&place));
-        findings.extend(route_findings(spec, found, entry));
+        let waived = optional.iter().any(|entry| entry.routes.contains(&place));
+        findings.extend(route_findings(spec, found, entry, waived));
+    }
+    for entry in optional {
+        for route in &entry.routes {
+            let Some(found) = changes.iter().find(|found| found.place() == *route) else {
+                findings.push(Finding::at(
+                    EXEMPTIONS_PATH,
+                    format!("The optional version `{route}` names a change that the API description does not have. Remove it."),
+                ));
+                continue;
+            };
+            if !body_properties(spec, found.body).contains(&VERSION) {
+                findings.push(Finding::at(
+                    EXEMPTIONS_PATH,
+                    format!("`{route}` is listed under `[[optional]]` but takes no `{VERSION}`: the category waives only `required`, so the member must be there."),
+                ));
+            } else if body_required(spec, found.body).contains(&VERSION) {
+                findings.push(Finding::at(
+                    EXEMPTIONS_PATH,
+                    format!(
+                        "`{route}` requires its `{VERSION}` now. Remove it from `[[optional]]`."
+                    ),
+                ));
+            }
+        }
     }
     for entry in exempt {
         for route in &entry.routes {
@@ -279,10 +319,69 @@ mod tests {
     }
 
     fn messages(spec: &Value, exempt: &[Exemption]) -> Vec<String> {
-        evaluate(spec, exempt)
+        messages_with(spec, exempt, &[])
+    }
+
+    fn messages_with(spec: &Value, exempt: &[Exemption], optional: &[Exemption]) -> Vec<String> {
+        evaluate(spec, exempt, optional)
             .into_iter()
             .map(|finding| finding.message)
             .collect()
+    }
+
+    /// A change whose `version` is a member but not required.
+    fn optional_version() -> Value {
+        let mut optional = change(&["name", "version"], true, false);
+        optional["requestBody"]["content"]["application/json"]["schema"]["required"] =
+            json!(["name"]);
+        optional
+    }
+
+    #[test]
+    fn good_example_a_version_added_after_the_freeze_may_stay_optional() {
+        let named = [exempt(&["PATCH /api/v1/things/{id}"], LONG)];
+        assert!(messages_with(&spec(&optional_version()), &[], &named).is_empty());
+    }
+
+    #[test]
+    fn bad_example_an_optional_version_is_still_a_version_with_its_conflict_answer() {
+        let named = [exempt(&["PATCH /api/v1/things/{id}"], LONG)];
+        let mut no_answer = optional_version();
+        no_answer["responses"] = json!({"200": {"description": "ok"}});
+        let found = messages_with(&spec(&no_answer), &[], &named).join(
+            "
+",
+        );
+        assert!(found.contains("ConflictProblem"), "{found}");
+        let renamed = spec(&change(&["name", "base_version"], true, false));
+        let found = messages_with(&renamed, &[], &named).join(
+            "
+",
+        );
+        assert!(found.contains("takes no `version`"), "{found}");
+    }
+
+    #[test]
+    fn bad_example_the_optional_category_waives_nothing_else_and_cannot_go_stale() {
+        let named = [exempt(&["PATCH /api/v1/things/{id}"], LONG)];
+        // Not listed: the version must be required.
+        let found = messages(&spec(&optional_version()), &[]).join(
+            "
+",
+        );
+        assert!(found.contains("must be required"), "{found}");
+        // Listed, but the version is required now, or the route is gone.
+        let found = messages_with(&spec(&change(&["version"], true, false)), &[], &named).join(
+            "
+",
+        );
+        assert!(found.contains("requires its `version` now"), "{found}");
+        let gone = [exempt(&["POST /api/v1/gone"], LONG)];
+        let found = messages_with(&spec(&optional_version()), &[], &gone).join(
+            "
+",
+        );
+        assert!(found.contains("does not have"), "{found}");
     }
 
     #[test]
@@ -407,7 +506,7 @@ mod tests {
         let repo = crate::repo::Repo::discover().unwrap();
         let spec = api_spec::load(&repo).unwrap();
         let file: Exemptions = exemptions::load(&repo, EXEMPTIONS_PATH).unwrap();
-        let found = messages(&spec, &file.exempt);
+        let found = messages_with(&spec, &file.exempt, &file.optional);
         assert!(found.is_empty(), "{found:?}");
     }
 }

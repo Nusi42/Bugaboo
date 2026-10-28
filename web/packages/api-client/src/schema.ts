@@ -5936,15 +5936,15 @@ export interface components {
      *     a time (tabs, devices), so a change can say which version it was made from.
      */
     NewMyValueBody: {
+      /** @description The value. It must be of the type of the setting and one it accepts. */
+      value: components["schemas"]["ValueBody"];
       /**
        * Format: int64
        * @description The version of the setting that was looked at (`version` of its answer, `0` while the person has no value of their
        *     own). When the value was changed since, the change is refused with `edit.version-changed`
        *     and the person's value stays. Left out, the last change wins.
        */
-      base_version?: number | null;
-      /** @description The value. It must be of the type of the setting and one it accepts. */
-      value: components["schemas"]["ValueBody"];
+      version?: number | null;
     };
     /** @description A row for the whole organization to give: to a person or to a group, and the role. */
     NewOrganizationRowBody: {
@@ -12950,7 +12950,7 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
-      /** @description The organization locked this setting (setting.locked). */
+      /** @description The organization locked this setting (setting.locked), or the setting was changed since the version that was sent (edit.version-changed, with the version and the value it has now). */
       409: {
         headers: {
           [name: string]: unknown;

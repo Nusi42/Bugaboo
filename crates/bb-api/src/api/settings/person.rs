@@ -2,8 +2,8 @@
 
 use super::{
     ApiError, ApiJson, ApiPath, ApiQuery, AuthHandle, ForbiddenAnswer, Info, InvalidAnswer,
-    KeyPath, LockedAnswer, NewMyValueBody, NotFoundAnswer, NotSignedInAnswer, Response, Session,
-    SettingBody, SettingsBody, SettingsScope, State, change, list, query, reset,
+    KeyPath, LockedOrStaleAnswer, NewMyValueBody, NotFoundAnswer, NotSignedInAnswer, Response,
+    Session, SettingBody, SettingsBody, SettingsScope, State, change, list, query, reset,
 };
 
 /// The settings of the person who asks, as they count for them: *My settings*.
@@ -46,7 +46,7 @@ pub(super) async fn list_my_settings(
         NotSignedInAnswer,
         ForbiddenAnswer,
         NotFoundAnswer,
-        LockedAnswer
+        LockedOrStaleAnswer
     )
 )]
 pub(super) async fn change_my_setting(
@@ -63,7 +63,7 @@ pub(super) async fn change_my_setting(
         SettingsScope::Person,
         path.key,
         body.value,
-        body.base_version,
+        body.version,
     )
     .await
 }

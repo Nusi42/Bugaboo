@@ -76,7 +76,7 @@ pub struct Layers {
     pub projects: Vec<(ProjectId, BTreeMap<String, SettingValue>)>,
     /// The person's own values by key.
     pub person: BTreeMap<String, SettingValue>,
-    /// The version of each of the person's own values by key, as the stores count it (ADR-0019);
+    /// The version of each of the person's own values by key, as the stores count it (ADR-0018);
     /// a key that is not here has no value of the person's own, which is version `0`.
     pub person_versions: BTreeMap<String, i64>,
 }

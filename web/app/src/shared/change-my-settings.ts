@@ -132,7 +132,7 @@ async function putChange(
   try {
     const { data } = await api.client.PUT("/api/v1/me/settings/{key}", {
       params: { path: { key: change.key } },
-      body: { value, ...(version === undefined ? {} : { base_version: version }) },
+      body: { value, ...(version === undefined ? {} : { version }) },
     });
     remember(change.key, data?.version);
   } catch (error) {

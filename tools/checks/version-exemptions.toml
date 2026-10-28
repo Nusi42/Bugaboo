@@ -44,8 +44,8 @@ routes = [
 reason = "Signing in and a person's own sign-in data have no stored version: each step answers for itself (a password or a code that is right or wrong, a session that ends), and nobody else can have changed it meanwhile."
 
 [[exempt]]
-routes = ["PUT /api/v1/me/settings/{key}", "DELETE /api/v1/me/settings/{key}"]
-reason = "A person's own choices belong to that one person. A change may name the version it read as `base_version` (M5-F97, ADR-0018), but it must stay optional: an old client sends none and the last choice wins, which the freeze of the API (ADR-0008) requires. *Reset to default* takes the choice away, so there is nothing left to protect."
+routes = ["DELETE /api/v1/me/settings/{key}"]
+reason = "*Reset to default* takes a person's own choice away and can be repeated: it has no body to carry a version, and a change made from an older version is refused afterwards, because the version of a person's settings never goes back (M5-F97, ADR-0018)."
 
 [[exempt]]
 routes = [
@@ -203,3 +203,10 @@ reason = "The person changes their own handle; a handle that is taken is refused
 [[exempt]]
 routes = ["POST /api/v1/notifications/read"]
 reason = "Marks notifications of the person as read; marking one again changes nothing, and nobody else edits them."
+
+# A route here took its `version` after the API was frozen (ADR-0008), so the member must stay
+# optional for the clients that do not send it: only `required` is waived. The route must still have
+# `version` among its members and document the conflict as its 409. Each entry names routes and says why.
+[[optional]]
+routes = ["PUT /api/v1/me/settings/{key}"]
+reason = "A person's own setting gained its version after the freeze (M5-F97, ADR-0018): an old client sends none and the last choice wins; a client that sends the version it read is refused when the setting changed since."
