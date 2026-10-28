@@ -389,3 +389,43 @@ fn f() { let r = p.rows_of_all(); let e = Policy::evaluate_at_home; }
 ";
     assert!(evaluate(&source("crates/bb-api/src/api/x.rs", text)).is_empty());
 }
+
+/// Uses of the engine methods that a check by text has to find, one finding each.
+const ENGINE_USES: [&str; 6] = [
+    "use bb_policy::Policy as P;\nfn f() { let r = P::rows_of(&p, who); }\n",
+    "fn f() { let r = bb_policy::Policy::rows_of(&p, who); }\n",
+    "use bb_policy::Policy as P;\nfn f() { let r = P::rows_of::<T>(&p, who); }\n",
+    "fn f() { let e = people.map(Policy::evaluate_at); }\n",
+    "fn f() { let e = <Policy>::evaluate_at(&p, who, &tree, place); }\n",
+    "fn f() { let g = p.rows_of; }\n",
+];
+
+#[test]
+fn bad_example_an_engine_method_by_an_alias_a_full_path_a_turbofish_or_as_a_value() {
+    for text in ENGINE_USES {
+        for folder in [
+            "crates/bb-api/src/api/x.rs",
+            "crates/bb-app/src/projects/x.rs",
+        ] {
+            assert_eq!(evaluate(&source(folder, text)).len(), 1, "{folder}: {text}");
+        }
+    }
+}
+
+#[test]
+fn bad_example_the_actors_evaluation_whatever_follows_person() {
+    let text = "fn f() { let e = ctx.evaluate(actor.person_id, place); }\n";
+    let findings = evaluate(&source("crates/bb-app/src/projects/x.rs", text));
+    assert_eq!(findings.len(), 1, "{text}");
+}
+
+#[test]
+fn good_example_an_import_of_another_rows_of_and_a_longer_name() {
+    let text = "use super::map::rows_of;\nfn f() { let r = p.rows_of_all(); let e = Policy::evaluate_at_home; }\n";
+    for folder in [
+        "crates/bb-api/src/api/x.rs",
+        "crates/bb-app/src/projects/x.rs",
+    ] {
+        assert!(evaluate(&source(folder, text)).is_empty(), "{folder}");
+    }
+}

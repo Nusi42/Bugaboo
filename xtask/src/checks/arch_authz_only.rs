@@ -19,14 +19,14 @@
 //!   lines) outside the same places: it would bring `evaluate` and `Inputs` in without naming them
 //!   (M2-F24);
 //! - in `bb-app` outside its access module: a judgment about the actor that skips the narrowing of
-//!   an access key, `ctx.evaluate(actor.person.id, …)` or the policy's `visible(`, `evaluate_at(`,
-//!   `evaluate_with(` and `rows_of(` (use `ctx.evaluation_of(actor, …)`, `ctx.require(…)`,
+//!   an access key, `ctx.evaluate(actor.person.id, …)` or the policy's `visible(` and the engine
+//!   methods in the same forms (use `ctx.evaluation_of(actor, …)`, `ctx.require(…)`,
 //!   `visible_as` and `evaluate_as` with the actor's key scope), so a key can never see more than
 //!   it was given (M2-F27);
 //! - the engine calls that make an evaluation of anybody from rows
 //!   (`evaluation_from_person_policy`, `inputs_from_rows`, and outside `bb-app` also
-//!   `evaluate_with(`, `evaluate_at(`, `rows_of(`, by `.name(` or `Policy::name(`) outside
-//!   `bb-policy` and the access module;
+//!   `evaluate_with`, `evaluate_at`, `rows_of`, in the forms of [`CALL_FORMS`] and
+//!   [`VALUE_FORMS`]) outside `bb-policy` and the access module;
 //! - inside `bb-policy`: a `pub` field in the definition of `Authorized`, a `pub` constructor
 //!   (`new`, `from`), or a derive that would make one out of nothing (`Default`, `Deserialize`).
 //!
@@ -45,7 +45,8 @@ const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
 /// from the stored rows.
 const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
 /// The methods of the policy that make an evaluation, or the rows it is made from, of anybody:
-/// none narrows to an access key. Written once; a call is `.name(`, `::name(` or `<Policy>::name(`.
+/// none narrows to an access key. Written once; they are found in the [`CALL_FORMS`] and the
+/// [`VALUE_FORMS`].
 const ENGINE_METHODS: [&str; 3] = ["evaluate_with", "evaluate_at", "rows_of"];
 /// The functions that make an evaluation from the rows a person holds: only `bb-policy` and the
 /// access module (which narrows it to an access key) may call them, in any crate.
@@ -75,30 +76,39 @@ const UNNARROWED: [(&str, &str); 2] = [
     ),
 ];
 
-/// How a method is called: after a value (`p.name(`) or by any path (`Policy::name(`,
-/// `<Policy>::name(`, `P::name(` after `use … Policy as P`, `bb_policy::Policy::name(`).
-const CALL_FORMS: [&str; 2] = [".", "::"];
-/// How a method is taken as a value, without a call (`.map(Policy::name)`): only a path of the type
-/// is read, so `use super::map::name;` is another function.
+/// How a method is called by a path: `Policy::name(`, `<Policy>::name(`, `P::name(` after
+/// `use … Policy as P`, `bb_policy::Policy::name(`, also with a turbofish (`P::name::<T>(`). Any
+/// path counts, so `map::rows_of(` of another module is a finding too: the check reads text and
+/// does not know which `rows_of` is meant, and the helper of another module is renamed.
+const CALL_FORMS: [&str; 1] = ["::"];
+/// How a method is used after a value (`p.name(`, `p.name`) or taken as a value from the type
+/// (`.map(Policy::name)`, `<Policy>::name`). Only a path of the type is read here, so
+/// `use super::map::name;` is another function. An alias taken as a value (`let f = P::name;`) is
+/// a known limit of a check by text (M5-F118): the compile-time guard, `Authorized<T>` built only
+/// in `bb-policy`, is the primary one.
 const VALUE_FORMS: [&str; 3] = [".", "Policy::", ">::"];
 
-/// Where `text` uses the method `token`: a call in any of the [`CALL_FORMS`], or the method taken
-/// as a value in the [`VALUE_FORMS`]. A token that ends in a name character (a bare name) is not
-/// followed by one, so `rows_of_all` is another method.
+/// Where `text` uses the method `token`, in the [`CALL_FORMS`] or the [`VALUE_FORMS`]. A bare name
+/// is not followed by a name character, so `rows_of_all` is another method; a token with a
+/// parenthesis is read as it is written.
 fn uses_of(text: &str, token: &str) -> Vec<usize> {
-    let ends_in_name = token.ends_with(|c: char| c.is_alphanumeric() || c == '_');
+    let bare = !token.contains('(');
     let mut found: Vec<(usize, usize)> = Vec::new();
-    for (forms, calls_only) in [
+    for (forms, call_forms) in [
         (CALL_FORMS.as_slice(), true),
         (VALUE_FORMS.as_slice(), false),
     ] {
         for form in forms {
             let pattern = format!("{form}{token}");
             for (at, _) in text.match_indices(&pattern) {
-                let after = text[at + pattern.len()..].chars().next();
-                let name_goes_on = after.is_some_and(|c| c.is_alphanumeric() || c == '_');
-                let is_call = after == Some('(') || !ends_in_name;
-                if (!ends_in_name || !name_goes_on) && (!calls_only || is_call) {
+                let rest = &text[at + pattern.len()..];
+                let found_use = !bare
+                    || match rest.chars().next() {
+                        Some(c) if c.is_alphanumeric() || c == '_' => false,
+                        _ if call_forms => rest.starts_with('(') || rest.starts_with("::<"),
+                        _ => true,
+                    };
+                if found_use {
                     found.push((at + pattern.len(), at));
                 }
             }
@@ -294,8 +304,8 @@ fn unnarrowed_findings(path: &str, code: &str) -> Vec<Finding> {
                 let line = lines.get(at).copied().unwrap_or(1);
                 findings.push(Finding::at(
                     format!("{path}:{line}"),
-                    "`None` in place of the key scope skips the narrowing: the actor is judged as if they came without \
-                     their access key. Pass `actor.key_scope()`.",
+                    "`None` in place of the key scope skips the narrowing: the actor is judged as \
+                     if they came without their access key. Pass `actor.key_scope()`.",
                 ));
             }
         }
