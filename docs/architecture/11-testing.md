@@ -150,7 +150,28 @@ The first numbers, on this computer, in a release build, at the 95th percentile 
 | *notifications-page*: the first page of 50 | 20.2 ms | 30.3 ms |
 | *project-list*: the list of projects (M3-F114) | 8.0 ms | 9.5 ms |
 
-The number on the menu was the read that cost most (M5 WP-03 fix round, on a dataset made with the final code: 1,000,000 issues, the biggest project APP with 133,505 issues and the smallest with 117). Before the fix it was 45.9 ms on SQLite and 88.0 ms on PostgreSQL (100.5 ms on the first dataset, over its budget), the page 35.7 and 62.6 ms. The statement for the rows is fast (0.8 ms on PostgreSQL, from the index `notification_by_recipient`); the time went into the rights: a page named the issues of a hundred notifications in many projects, and for each project the person's rows, roles and levels were read again (about fifteen statements) and the project on its own. They are now read once for all the projects of a page (`Ctx::evaluate_projects`, the same decision as `Policy::evaluate_with`), and the test `perf_05_the_number_on_the_menu_runs_as_many_statements_for_twelve_projects_as_for_two` holds it (183 statements against 53 before). After: 22.6 ms and 34.8 ms, the page 20.2 and 30.3 ms. The budget of the complex search (300 ms) has no scenario yet: the searches come with M5 WP-04 to WP-06, which add theirs to `scenarios.ts`.
+The number on the menu was the read that cost most (M5 WP-03 fix round, on a dataset made with the final code: 1,000,000 issues, the biggest project APP with 133,505 issues and the smallest with 117). Before the fix it was 45.9 ms on SQLite and 88.0 ms on PostgreSQL (100.5 ms on the first dataset, over its budget), the page 35.7 and 62.6 ms. The statement for the rows is fast (0.8 ms on PostgreSQL, from the index `notification_by_recipient`); the time went into the rights: a page named the issues of a hundred notifications in many projects, and for each project the person's rows, roles and levels were read again (about fifteen statements) and the project on its own. They are now read once for all the projects of a page (`Ctx::evaluate_projects`, the same decision as `Policy::evaluate_with`), and the test `perf_05_the_number_on_the_menu_runs_as_many_statements_for_twelve_projects_as_for_two` holds it (183 statements against 53 before). After: 22.6 ms and 34.8 ms, the page 20.2 and 30.3 ms.
+
+**The searches (M5 WP-04 to WP-10).** The scenarios of the searches, at the 95th percentile against the budget of 300 ms (PERF-01), in a release build on the datasets of 1,000,000 issues (the first number is SQLite, the second PostgreSQL; the list of the big project is held to the budget of 100 ms of a page):
+
+| Scenario | SQLite | PostgreSQL |
+|----------|-------:|-----------:|
+| *list-big-project*: the first page of the list of a project with sub-projects | 19.9 ms | 28.7 ms |
+| *search-complex*, *search-complex-sorted*: `statusGroup is not Done and priority is High`, with and without `sort by created` | 28.0 and 27.7 ms | 40.2 and 38.7 ms |
+| *search-count*: the count line of the same search | 77.1 ms | 48.9 ms |
+| *search-groups-status*: the groups by status | 95.2 ms | 62.2 ms |
+| *search-groups-assigned-to*: the groups by *Assigned to* | **572.9 ms** (over) | 272.5 ms |
+| *search-text-common-word* (a word in 187,000 texts), *-prefix*, *-and-filter*, *-rare-word* | 198.5, 232.2, 189.1 and 84.3 ms | 164.2, 246.4, 254.1 and 233.9 ms |
+
+What cut them (M5-F46, F47, F48; before: 716 ms for the list of the big project, 1,176 ms for the common word on SQLite and the 2,000 ms of the limit on PostgreSQL):
+
+- **A page is cut after its first rows of each stream.** The first page over a few projects (two to sixteen in the sight, no text) is the first rows of each project, read from the index of the project and the creation, put together (`branches` in `search/statements.rs`): SQLite cannot merge the ordered ranges of several projects from one index. The order by title hits (*the issues that have the words in the title come first, then the newest*) is two streams, the issues with the words in the title and then the others, each cut after its first rows. Both are exact: what comes first never depends on a cap, and a cursor continues in the right stream. Each page keeps the same order on both databases (ARCH-DB-PARITY).
+- **How the words are found** depends on how many rows of the text index a word has (`SET_ROWS_AT_MOST`, 2,000), which a probe of the index counts first (`text_rows_up_to`, one row for each word and stream, cut at that number, so it costs the same for a common and a rare word): the issues of the rarest word are made once and asked about the other words (`Form::Driven`), else each issue is asked in turn, which stops at the first rows (`Form::Each`); a count or the groups make the whole set (`Form::Set`). A search for a rare word is as quick as before, and for a common word it stops early.
+- **The groups of a field with many values** (assigned people, tags, labels, own fields) read the issues once with the rows of their values joined by `LEFT JOIN` (`Rows` in `search/source.rs`); the group without a value is the issues the join has no row for, so there is no second scan.
+
+*search-groups-assigned-to* is still over its budget on SQLite: about 109,000 issues match, and each needs one lookup in the index of the people assigned to it, which is the cost (a covering index of the issues did not help). It needs a decision of the owner: kept counts, parallel slices of the groups, or another budget. The scenario is measured on the 1 M dataset and fails the nightly run until then.
+
+The speed tests of the browser (`perf_01_*` in `perf-*.spec.ts`) run alone after the rest of the suite (the `speed` project), so their numbers do not follow the load of the other tests (M5-F98).
 
 ## Ten people at the same time
 
