@@ -6,7 +6,7 @@
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
-use bb_testing::{Failure, TestResult, each_database};
+use bb_testing::{Failure, TestDatabase, TestResult, each_database};
 use serde_json::json;
 
 use super::http::{Browser, rig_and_app};
@@ -87,32 +87,35 @@ async fn news_for_ada(
 }
 
 /// A page of forty rows of one kind runs as many statements as a page of five.
-async fn forty_run_as_many_as_five(name: &str, news: News) -> TestResult {
-    each_database(name, async |db| {
-        let (rig, app) = rig_and_app(db).await?;
-        let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (mut bob, _) = site
-            .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
-            .await?;
-        news_for_ada(&site, &mut ada, &mut bob, news, 40, 0).await?;
-        let path = |limit: u32| format!("{NOTIFICATIONS}?limit={limit}");
-        let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, path).await?;
-        assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page");
-        Ok(())
-    })
-    .await
+async fn forty_run_as_many_as_five(db: &TestDatabase, news: News) -> TestResult {
+    let (rig, app) = rig_and_app(db).await?;
+    let (site, mut ada) = Site::start(&rig, &app).await?;
+    let (mut bob, _) = site
+        .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
+        .await?;
+    news_for_ada(&site, &mut ada, &mut bob, news, 40, 0).await?;
+    let path = |limit: u32| format!("{NOTIFICATIONS}?limit={limit}");
+    let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, path).await?;
+    assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page");
+    Ok(())
 }
 
 #[tokio::test]
 async fn perf_05_a_page_of_forty_notifications_runs_as_many_statements_as_a_page_of_five()
 -> TestResult {
-    forty_run_as_many_as_five("perf_05_notifications_page", News::Comment).await
+    each_database("perf_05_notifications_page", async |db| {
+        forty_run_as_many_as_five(db, News::Comment).await
+    })
+    .await
 }
 
 #[tokio::test]
 async fn perf_05_a_page_of_forty_status_changes_runs_as_many_statements_as_a_page_of_five()
 -> TestResult {
-    forty_run_as_many_as_five("perf_05_notifications_page_changes", News::StatusChange).await
+    each_database("perf_05_notifications_page_changes", async |db| {
+        forty_run_as_many_as_five(db, News::StatusChange).await
+    })
+    .await
 }
 
 #[tokio::test]
