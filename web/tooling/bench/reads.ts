@@ -42,3 +42,24 @@ export async function someIssues(
   );
   return keys;
 }
+
+/** The readable IDs of the first `count` issues of the list of a project. */
+export async function firstIssues(
+  session: ApiSession,
+  project: string,
+  count: number,
+  cursor?: string,
+  found: readonly string[] = [],
+): Promise<readonly string[]> {
+  const page = await listPage(session, project, cursor);
+  const keys = [...found];
+  for (const item of page.items) {
+    if (typeof item.readable_id === "string") {
+      keys.push(item.readable_id);
+    }
+  }
+  const next = page.next_cursor ?? undefined;
+  return next === undefined || keys.length >= count
+    ? keys.slice(0, count)
+    : firstIssues(session, project, count, next, keys);
+}

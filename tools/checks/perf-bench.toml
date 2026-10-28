@@ -16,6 +16,14 @@ p95_ms = 100
 [budgets.search]
 p95_ms = 300
 
+# The preview of a change to the most issues one change names, 5,000 (M3-F133): it judges every issue
+# of the selection, so it takes seconds and has a budget of its own. Set from the measurement on the
+# large dataset (architecture section 11: 3.0 s on SQLite, 6.7 s on PostgreSQL after the definitions
+# of the fields were read once for a request), with a margin; it is held down by the count of the
+# statements for each issue (`perf_many_changes.rs`).
+[budgets.preview]
+p95_ms = 8000
+
 # A scenario that is over its budget on one database and is accepted for now (maintainer decision).
 # The nightly run tells it as a known gap and does not fail on it; the budget above stays as it is.
 # This is the one place for such an acceptance: each entry names the database, the follow-up that

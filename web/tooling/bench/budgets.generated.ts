@@ -3,6 +3,7 @@
 /** The most a request may take at the 95th percentile, in milliseconds (tools/checks/perf-bench.toml). */
 export const budgets = {
   page: { p95Ms: 100 },
+  preview: { p95Ms: 8000 },
   search: { p95Ms: 300 },
 } as const;
 

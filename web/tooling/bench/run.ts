@@ -1,4 +1,4 @@
-import { dataOf, pageSizeMax } from "@bugaboo/api-client";
+import { dataOf, manyChangesIssuesMax, pageSizeMax } from "@bugaboo/api-client";
 
 import { signInThroughApi } from "../../app/e2e/support/accounts.ts";
 import { buildOf } from "../../app/e2e/support/perf.ts";
@@ -7,7 +7,7 @@ import { inOrder } from "../../app/e2e/support/sequence.ts";
 import { type Instance } from "../../app/e2e/support/server.ts";
 import { measure } from "./measure.ts";
 import { bigAndSmall } from "./projects.ts";
-import { someIssues } from "./reads.ts";
+import { firstIssues, someIssues } from "./reads.ts";
 import { type Context, type Scenario, scenarios } from "./scenarios.ts";
 
 /**
@@ -33,10 +33,12 @@ export async function run(folder: string, database: string, server: Instance): P
     await session.client.GET("/api/v1/projects", { params: { query: { limit: pageSizeMax } } }),
   );
   const projects = listed.items.map((item) => String(item.short_name));
+  const places = await bigAndSmall(session, projects);
   const context: Context = {
     session,
     issues: await someIssues(session, projects),
-    ...(await bigAndSmall(session, projects)),
+    many: await firstIssues(session, places.big, manyChangesIssuesMax),
+    ...places,
   };
   const measured: Record<string, unknown> = {};
   await inOrder(
