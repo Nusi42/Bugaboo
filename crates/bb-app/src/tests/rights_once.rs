@@ -146,7 +146,7 @@ async fn organization(world: &World) -> Result<(Vec<UserId>, [Place; 4]), Failur
     .map_err(|e| format!("{e:?}"))?
     .into_value()
     .id;
-    // An own field: a role anywhere makes every own field known to the decision.
+    // An own field: it is known to every decision, closed where no role says otherwise.
     a_field(world, "Customer", FieldType::Text, &[]).await?;
     let (watcher, worker) = roles(world, a).await?;
     let [bob, cy, dee, nobody] = people(world).await?;

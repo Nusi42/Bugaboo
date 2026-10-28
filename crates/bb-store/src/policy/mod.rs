@@ -64,13 +64,16 @@ async fn starting_roles_made(reader: &mut impl Reader) -> Result<bool, StoreErro
     Ok(reader.fetch_optional(&select).await?.is_some())
 }
 
-/// Every level these roles have set, read on `reader`; none for no roles, without a statement.
+/// Every level these roles have set, read on `reader`. For no roles there is no rule, and every own
+/// field is known all the same ([`loading::own_fields_only`]): the one rule of every read of levels,
+/// so a decision lists the same fields whoever is asked about and a move preview lists a field for
+/// a person who gets a role in the target.
 pub(crate) async fn level_rules_of_roles_in(
     reader: &mut impl Reader,
     roles: Vec<RoleId>,
 ) -> Result<LevelRules, StoreError> {
     if roles.is_empty() {
-        return Ok(LevelRules::default());
+        return loading::own_fields_only(reader).await;
     }
     loading::rules_of(reader, Which::Roles(&roles)).await
 }
@@ -167,7 +170,7 @@ impl PolicyStore for AuthStorage {
             },
         };
         let levels = if roles.is_empty() {
-            LevelRules::default()
+            loading::own_fields_only(&mut transaction).await?
         } else {
             // The query narrows to the roles and the chain; what applies at the place is decided
             // once, by `LevelRules::at`, here as in the test double.
