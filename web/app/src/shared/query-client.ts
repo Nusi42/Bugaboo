@@ -44,10 +44,27 @@ function lost(error: unknown): void {
  * on a guest page the answer "nobody" is the normal one.
  */
 export const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: lost }),
+  queryCache: new QueryCache({
+    onError: lost,
+    onSuccess: (answer) => {
+      readHandler(answer);
+    },
+  }),
   mutationCache: new MutationCache({ onError: lost }),
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
+
+let readHandler: (answer: unknown) => void = () => {
+  // Until something wants to know what the server answered, nobody is told.
+};
+
+/**
+ * Says who is told every answer the server gave to a question (not what the app puts in its cache
+ * itself): the settings of the person use it to know the newest version the server has shown.
+ */
+export function onServerRead(handler: (answer: unknown) => void): void {
+  readHandler = handler;
+}
 
 /**
  * A question that was cancelled (the cache was emptied under it when somebody signed this place

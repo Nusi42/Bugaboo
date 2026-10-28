@@ -5,13 +5,14 @@ import { messageOf } from "./errors.ts";
 import {
   currentMySettings,
   isMySettings,
+  isSettingKey,
   mySettingsKey,
   settingOf,
   type MySettings,
   type SettingValue,
 } from "./my-settings.ts";
 import { optimisticSend } from "./optimistic.ts";
-import { queryClient } from "./query-client.ts";
+import { onServerRead, queryClient } from "./query-client.ts";
 import { withChange, type SettingChange } from "./setting-change.ts";
 
 /** What the person is told about their changes: nothing before the first, then where it stands. */
@@ -94,6 +95,7 @@ const confirmed = new Map<SettingKey, Confirmed>();
 /** Forgets what the server confirmed: when the person leaves, the next person starts without it. */
 export function forgetConfirmedSettings(): void {
   confirmed.clear();
+  readLast.clear();
 }
 
 function remember(key: SettingKey, value: SettingValue, version: number | null | undefined): void {
@@ -151,23 +153,42 @@ interface Base {
 }
 
 /**
- * What a change is made on: what the server confirmed last, when the change waited behind others
- * of this page and the page has not read a newer version since; else the value the change was
- * built from and the version the page read it at.
+ * The newest value and version of each setting that the page read from the server (not a value
+ * the page put in its cache itself, which holds the changes on their way too). A read can land
+ * while a change waits behind another, with a version another tab made.
  */
-function baseOf(
-  change: SettingChange,
-  value: SettingValue,
-): { value: SettingValue; version?: number } {
+const readLast = new Map<SettingKey, Confirmed>();
+
+onServerRead((answer) => {
+  if (!isMySettings(answer)) {
+    return;
+  }
+  for (const setting of answer.settings) {
+    if (isSettingKey(setting.key) && typeof setting.version === "number") {
+      readLast.set(setting.key, { value: setting.value, version: setting.version });
+    }
+  }
+});
+
+/**
+ * What a change is made on: the newest of what the server confirmed to this page and what the page
+ * read last, the change made again on that value (`rebase`; without it the value of the change)
+ * and its version. When the page has read nothing from the server, the value the change was built
+ * from and the version in the cache.
+ */
+function baseOf(change: SettingChange, value: SettingValue): Base {
   const known = confirmed.get(change.key);
-  const read = settingOf(currentMySettings(), change.key)?.version;
-  if (known !== undefined && (typeof read !== "number" || read <= known.version)) {
+  const read = readLast.get(change.key);
+  const latest =
+    read !== undefined && (known === undefined || read.version > known.version) ? read : known;
+  if (latest !== undefined) {
     return {
-      value: change.rebase === undefined ? value : change.rebase(known.value),
-      version: known.version,
+      value: change.rebase === undefined ? value : change.rebase(latest.value),
+      version: latest.version,
     };
   }
-  return typeof read === "number" ? { value, version: read } : { value };
+  const cached = settingOf(currentMySettings(), change.key)?.version;
+  return typeof cached === "number" ? { value, version: cached } : { value };
 }
 
 /**

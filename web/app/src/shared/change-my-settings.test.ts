@@ -8,7 +8,13 @@ import {
   rereadsMax,
   saveProgress,
 } from "./change-my-settings.ts";
-import { currentMySettings, mySettingsKey, type MySettings, type Setting } from "./my-settings.ts";
+import {
+  currentMySettings,
+  mySettingsKey,
+  mySettingsOptions,
+  type MySettings,
+  type Setting,
+} from "./my-settings.ts";
 import { queryClient } from "./query-client.ts";
 import { changeForSize } from "./window-sizes.ts";
 
@@ -230,6 +236,25 @@ describe("m5_f97 changes of one tab that follow each other", () => {
     expect(server.puts).toHaveLength(rereadsMax + 1);
     expect(saveProgress.read().state).toBe("not-saved");
     expect(formsOf(server.sizes)).not.toContain("mine");
+  });
+});
+
+describe("m5_f97 a change that waits while the page reads a newer version", () => {
+  beforeEach(startAgain);
+
+  it("is made on the value the page read last, not on the one it was built from", async () => {
+    server.sizes = JSON.stringify({ a: small });
+    server.version = 1;
+    const old = pageHasRead();
+    const change = changeForSize(old, "mine", small);
+    // Another tab sets a form, and the page reads the setting again before the change is sent.
+    otherTabSets("other-tab");
+    await queryClient.query({ ...mySettingsOptions(), staleTime: 0 });
+    server.reads = 0;
+    await changeMySettings([change]);
+    expect(server.puts.map((put) => put.version)).toEqual([2]);
+    expect(server.reads).toBe(0);
+    expect(formsOf(server.sizes).toSorted()).toEqual(["a", "mine", "other-tab"]);
   });
 });
 
