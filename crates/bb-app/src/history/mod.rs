@@ -5,6 +5,7 @@
 //! - `build.rs`: the consumer; idempotent, resumes from the place it recorded.
 //! - `read.rs`: the rows shaped for one reader, with the tabs *Everything*, *Comments* and
 //!   *Changes*; a change to a field the reader may not see is left out.
+//! - `walk.rs`: the rows walked past what the reader may not see, for the cursor.
 
 mod build;
 mod map;
@@ -12,6 +13,7 @@ mod names;
 mod read;
 mod store;
 mod types;
+mod walk;
 
 pub use build::{catch_up, catch_up_batch};
 pub(crate) use map::issue_in;

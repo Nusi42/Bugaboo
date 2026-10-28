@@ -29,6 +29,7 @@ use super::names::{KnownNames, leaves_nothing};
 use super::types::{
     ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
 };
+use super::walk::IssueHistory;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::comments::CommentView;
@@ -38,7 +39,7 @@ use crate::issues::member as issue_member;
 use crate::member::relation as relation_member;
 use crate::projects::ProjectRef;
 use crate::relations::LineMaker;
-use crate::walk::{Walk, fill_past_hidden};
+use crate::walk::fill_past_hidden;
 use bb_core::comment::Comment;
 use bb_core::files::Attachment;
 use bb_core::issue::Issue;
@@ -103,7 +104,7 @@ pub(crate) fn visible_changes<'a>(
 }
 
 /// What the rows of one batch need to be shaped, read once for the whole batch.
-struct Batch<'a> {
+pub(super) struct Batch<'a> {
     comments: BTreeMap<CommentId, Comment>,
     issues: BTreeMap<IssueId, Issue>,
     kinds: &'a [RelationKind],
@@ -410,6 +411,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue: &Issue,
         changes: &[FieldChange],
     ) -> Result<Vec<FieldChangeView>, AppError> {
+        // The people of the values of the page are resolved once for every row of it.
         let mut reading = Reading {
             actor,
             held,
@@ -529,7 +531,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The comments and the issues that the rows of a batch name, read once for the batch.
-    async fn batch_of<'k>(
+    pub(super) async fn batch_of<'k>(
         &self,
         rows: &[HistoryEntry],
         kinds: &'k [RelationKind],
@@ -576,7 +578,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// One row of the history as the reader sees it; `None` when there is nothing in it for them.
-    async fn history_item(
+    pub(super) async fn history_item(
         &self,
         reading: &mut Reading<'_>,
         issue: &Issue,
@@ -630,62 +632,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             by,
             what,
         }))
-    }
-}
-
-/// A row of the history: its place in the outbox and what is in it for the reader, if anything.
-struct Shaped {
-    position: i64,
-    item: Option<HistoryItem>,
-}
-
-/// The history of one issue for one reader, walked by [`fill_past_hidden`]: rows are shaped as
-/// they are fetched and one with nothing for the reader is skipped (M3-F68).
-struct IssueHistory<'a, 'c, 'r, S: AuthStore> {
-    ctx: &'a Ctx<'c, S>,
-    issue: &'a Issue,
-    kind: Option<HistoryKind>,
-    kinds: &'a [RelationKind],
-    reading: &'a mut Reading<'r>,
-}
-
-impl<S: AuthStore> Walk for IssueHistory<'_, '_, '_, S> {
-    type Row = Shaped;
-    type Key = i64;
-
-    async fn fetch(
-        &mut self,
-        after: Option<&i64>,
-        skip: u64,
-        limit: u64,
-    ) -> Result<Vec<Shaped>, AppError> {
-        let rows = self
-            .ctx
-            .store()
-            .history_page(self.issue.id, self.kind, after.copied(), skip, limit)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let batch = self.ctx.batch_of(&rows, self.kinds).await?;
-        let mut shaped = Vec::with_capacity(rows.len());
-        for row in &rows {
-            let item = self
-                .ctx
-                .history_item(self.reading, self.issue, &batch, row)
-                .await?;
-            shaped.push(Shaped {
-                position: row.position,
-                item,
-            });
-        }
-        Ok(shaped)
-    }
-
-    async fn keeps(&mut self, row: &Shaped) -> Result<bool, AppError> {
-        Ok(row.item.is_some())
-    }
-
-    fn key_of(row: &Shaped) -> Result<i64, AppError> {
-        Ok(row.position)
     }
 }
 
