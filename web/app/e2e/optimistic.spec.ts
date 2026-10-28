@@ -133,8 +133,9 @@ test("ux_06 grey shapes stand in for a slow list, and the list says it is busy",
   await expect(region).toHaveAttribute("aria-busy", "true");
   // Nothing grey in the first 0.3 s, so a quick answer never flashes.
   const shapes = partOn(region, part.skeletonLine);
+  await page.clock.runFor(skeletonDelayMs - 1);
   await expect(shapes).toHaveCount(0);
-  await page.clock.runFor(skeletonDelayMs);
+  await page.clock.runFor(1);
   await expect(shapes.first()).toBeVisible({ timeout: 3000 });
   await page.clock.resume();
   slow.resolve();
