@@ -58,6 +58,10 @@ impl<S: AuthStore> Walk for IssueHistory<'_, '_, '_, S> {
         Ok(shaped)
     }
 
+    fn costly_rows(&self) -> bool {
+        true
+    }
+
     async fn keeps(&mut self, row: &Shaped) -> Result<bool, AppError> {
         Ok(row.item.is_some())
     }
