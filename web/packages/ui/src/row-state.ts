@@ -12,9 +12,9 @@ export type RowStateWord = Extract<
   WordsOf<"timeline-bar">
 >;
 
-/** Not started rows stay plain; so do the rows of a normal or low priority. */
+/** Every status group has its tint; the rows of a normal or low priority have no edge. */
 const groupWord: Readonly<Record<StatusGroup, RowStateWord | undefined>> = {
-  "not-started": undefined,
+  "not-started": "group-not-started",
   "in-progress": "group-in-progress",
   done: "group-done",
 };

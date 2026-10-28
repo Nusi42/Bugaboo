@@ -93,7 +93,7 @@ describe("ux_4_2 a row says what it is", () => {
     const ticked = renderToStaticMarkup(
       <ListRow group={group.notStarted} priority={priority.normal} selected cells={{}} />,
     );
-    expect(ticked).toContain('data-state="selected"');
+    expect(ticked).toContain('data-state="group-not-started selected"');
     expect(ticked).toContain('aria-selected="true"');
   });
 

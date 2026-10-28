@@ -379,7 +379,7 @@ function renderSearchbar(){
 
 const GROUP_ORDER = ["ip","ns","done"];
 const GROUP_NAME = {ns:"Not started", ip:"In progress", done:"Done"};
-const GROUP_STATE = {ip:"group-in-progress", done:"group-done"};
+const GROUP_STATE = {ns:"group-not-started", ip:"group-in-progress", done:"group-done"};
 const PRIO_STATE = {Critical:"priority-critical", High:"priority-high"};
 const phoneRows = () => matchMedia("(max-width:767px)").matches;
 function listRow(i, phone){

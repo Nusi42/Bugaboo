@@ -933,6 +933,24 @@ body {
   outline-offset: calc(var(--ring-width) * -1);
 }
 
+[data-part="list-row"][data-state~="group-not-started"],
+[data-part="issue-row"][data-state~="group-not-started"],
+[data-part="timeline-bar"][data-state~="group-not-started"] {
+  background: var(--tint-ns);
+}
+
+[data-part="list-row"][data-state~="group-not-started"]:hover,
+[data-part="issue-row"][data-state~="group-not-started"]:hover,
+[data-part="timeline-bar"][data-state~="group-not-started"]:hover {
+  background: var(--tint-ns-hover);
+}
+
+[data-part="list-row"][data-state~="group-not-started"][data-state~="selected"],
+[data-part="issue-row"][data-state~="group-not-started"][data-state~="selected"],
+[data-part="timeline-bar"][data-state~="group-not-started"][data-state~="selected"] {
+  background: var(--tint-ns-selected);
+}
+
 [data-part="list-row"][data-state~="group-in-progress"],
 [data-part="issue-row"][data-state~="group-in-progress"],
 [data-part="timeline-bar"][data-state~="group-in-progress"] {
