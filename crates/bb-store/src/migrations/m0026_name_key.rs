@@ -80,7 +80,7 @@ mod tests {
                     Expr::val(1_i64),
                 ])?;
             database.execute(&insert).await?;
-            assert_eq!(database.migrate(at(1)).await?, [26]);
+            assert_eq!(database.migrate(at(1)).await?, [26, 27]);
             let folder = tempfile::tempdir()?;
             let keys = std::sync::Arc::new(database.open_keys(&folder.path().join("keys")).await?);
             let seal = crate::anchor::LogSeal::new(&keys, folder.path().join("head.log"));

@@ -8102,7 +8102,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewValueBody"
+                "$ref": "#/components/schemas/NewMyValueBody"
               }
             }
           },
@@ -18217,6 +18217,22 @@
           }
         }
       },
+      "NewMyValueBody": {
+        "type": "object",
+        "description": "A new value for a setting of the person's own. Settings are changed from several browsers at\na time (tabs, devices), so a change can say which version it was made from.",
+        "required": ["value"],
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/ValueBody",
+            "description": "The value. It must be of the type of the setting and one it accepts."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The version of the setting that was looked at (`0` while the person has no value of their\nown). When the value was changed since, the change is refused with `edit.version-changed`\nand the person's value stays. Left out, the last change wins."
+          }
+        }
+      },
       "NewOrganizationRowBody": {
         "type": "object",
         "description": "A row for the whole organization to give: to a person or to a group, and the role.",
@@ -21847,6 +21863,11 @@
           "value": {
             "$ref": "#/components/schemas/ValueBody",
             "description": "The value that counts here."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "In a person's own settings: counts up with every change of the value of their own, `0`\nwhile there is none. A change sends back the version that was looked at."
           }
         }
       },

@@ -211,6 +211,10 @@ pub(crate) struct SettingBody {
     /// On the organization's level: whether the value is locked. Below it: whether the
     /// organization's lock is in effect, so the value cannot be changed.
     pub(super) locked: bool,
+    /// In a person's own settings: counts up with every change of the value of their own, `0`
+    /// while there is none. A change sends back the version that was looked at.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) version: Option<i64>,
 }
 
 impl Masked for SettingBody {}
@@ -265,6 +269,7 @@ impl From<&SettingView> for SettingBody {
             source: SourceBody::from(&view.source),
             own: view.own,
             locked: view.locked,
+            version: view.version,
         }
     }
 }
@@ -293,6 +298,19 @@ pub(super) fn setting_body(view: Authorized<SettingView>) -> Result<Response, Ap
 pub(crate) struct NewValueBody {
     /// The value. It must be of the type of the setting and one it accepts.
     pub(super) value: ValueBody,
+}
+
+/// A new value for a setting of the person's own. Settings are changed from several browsers at
+/// a time (tabs, devices), so a change can say which version it was made from.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct NewMyValueBody {
+    /// The value. It must be of the type of the setting and one it accepts.
+    pub(super) value: ValueBody,
+    /// The version of the setting that was looked at (`0` while the person has no value of their
+    /// own). When the value was changed since, the change is refused with `edit.version-changed`
+    /// and the person's value stays. Left out, the last change wins.
+    #[serde(default)]
+    pub(super) version: Option<i64>,
 }
 
 /// What a route of a list reads from its address.

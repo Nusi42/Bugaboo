@@ -19,7 +19,7 @@ use bb_core::settings::{
     Layers, Level, OrganizationValue, Scope, Setting, SettingDefinition, SettingKind, SettingValue,
 };
 use bb_core::technical::TechnicalName;
-use bb_core::version::next;
+use bb_core::version::{FIRST_VERSION, Version, next};
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 
@@ -105,32 +105,11 @@ async fn upsert(
     change: &SettingChange,
     at: Timestamp,
 ) -> Result<(), StoreError> {
-    let value = serde_json::to_string(&change.value)?;
-    if let Scope::Person(person) = change.scope {
-        let mut insert = Query::insert();
-        insert
-            .into_table(PersonSettingRow::Table)
-            .columns([
-                PersonSettingRow::Person,
-                PersonSettingRow::Key,
-                PersonSettingRow::Value,
-                PersonSettingRow::UpdatedAt,
-            ])
-            .values([
-                Expr::val(id_bytes(person)),
-                Expr::val(key.as_str()),
-                Expr::val(value),
-                Expr::val(to_micros(at)),
-            ])
-            .map_err(|_| StoreError::Corrupt("a setting"))?
-            .on_conflict(
-                OnConflict::columns([PersonSettingRow::Person, PersonSettingRow::Key])
-                    .update_columns([PersonSettingRow::Value, PersonSettingRow::UpdatedAt])
-                    .to_owned(),
-            );
-        transaction.execute(&insert).await?;
-        return Ok(());
+    if matches!(change.scope, Scope::Person(_)) {
+        // A person's own value has a version and goes through `upsert_person`.
+        return Err(StoreError::Corrupt("a setting"));
     }
+    let value = serde_json::to_string(&change.value)?;
     let mut insert = Query::insert();
     insert
         .into_table(Columns::Table)
@@ -158,6 +137,67 @@ async fn upsert(
         );
     transaction.execute(&insert).await?;
     Ok(())
+}
+
+/// Writes a person's own value inside the transaction of a change, and counts its version up
+/// (a value that is not there has version `0`). With `expected` the value is written only when
+/// it is at that version, and `false` says it was not: somebody else changed it since the caller
+/// read it. Without, the last write wins, as before the versions.
+async fn upsert_person(
+    transaction: &mut Transaction,
+    person: UserId,
+    key: &TechnicalName,
+    value: &SettingValue,
+    at: Timestamp,
+    expected: Option<Version>,
+) -> Result<bool, StoreError> {
+    let value = serde_json::to_string(value)?;
+    if let Some(version) = expected.filter(|version| version.get() > 0) {
+        let mut update = Query::update();
+        update
+            .table(PersonSettingRow::Table)
+            .value(PersonSettingRow::Value, value)
+            .value(PersonSettingRow::UpdatedAt, to_micros(at))
+            .value(PersonSettingRow::Version, next(version.get()))
+            .and_where(Expr::col(PersonSettingRow::Person).eq(id_bytes(person)))
+            .and_where(Expr::col(PersonSettingRow::Key).eq(key.as_str()))
+            .and_where(Expr::col(PersonSettingRow::Version).eq(version.get()));
+        return Ok(transaction.execute(&update).await? > 0);
+    }
+    let mut insert = Query::insert();
+    insert
+        .into_table(PersonSettingRow::Table)
+        .columns([
+            PersonSettingRow::Person,
+            PersonSettingRow::Key,
+            PersonSettingRow::Value,
+            PersonSettingRow::UpdatedAt,
+            PersonSettingRow::Version,
+        ])
+        .values([
+            Expr::val(id_bytes(person)),
+            Expr::val(key.as_str()),
+            Expr::val(value),
+            Expr::val(to_micros(at)),
+            Expr::val(FIRST_VERSION),
+        ])
+        .map_err(|_| StoreError::Corrupt("a setting"))?;
+    let mut conflict = OnConflict::columns([PersonSettingRow::Person, PersonSettingRow::Key]);
+    if expected.is_some() {
+        // Version 0: the value was not there when the caller read it, so it must not be now.
+        insert.on_conflict(conflict.do_nothing().to_owned());
+    } else {
+        insert.on_conflict(
+            conflict
+                .update_columns([PersonSettingRow::Value, PersonSettingRow::UpdatedAt])
+                .value(
+                    PersonSettingRow::Version,
+                    Expr::col((PersonSettingRow::Table, PersonSettingRow::Version)).add(1),
+                )
+                .to_owned(),
+        );
+    }
+    Ok(transaction.execute(&insert).await? > 0)
 }
 
 /// Removes the value of one setting on one scope.
@@ -326,22 +366,26 @@ async fn layers_in(transaction: &mut Transaction, scopes: &Scopes) -> Result<Lay
     }
 
     if let Some(person) = scopes.person {
-        layers.person = person_values(transaction, &[person])
+        for (key, (value, version)) in person_values(transaction, &[person])
             .await?
             .remove(&person)
-            .unwrap_or_default();
+            .unwrap_or_default()
+        {
+            layers.person_versions.insert(key.clone(), version);
+            layers.person.insert(key, value);
+        }
     }
     Ok(layers)
 }
 
 /// The own settings of these people, the ones that can be read: the one reader of the person layer,
 /// for the settings of one person in a change (`layers_in`) and for those of many at once (the
-/// notifications). A person with none is not in the answer.
+/// notifications), each with the version it is at. A person with none is not in the answer.
 async fn person_values(
     reader: &mut impl Reader,
     people: &[UserId],
-) -> Result<BTreeMap<UserId, BTreeMap<String, SettingValue>>, StoreError> {
-    let mut found: BTreeMap<UserId, BTreeMap<String, SettingValue>> = BTreeMap::new();
+) -> Result<BTreeMap<UserId, BTreeMap<String, (SettingValue, i64)>>, StoreError> {
+    let mut found: BTreeMap<UserId, BTreeMap<String, (SettingValue, i64)>> = BTreeMap::new();
     for chunk in people.chunks(STATEMENT_ITEMS) {
         let mut select = Query::select();
         select
@@ -349,6 +393,7 @@ async fn person_values(
                 PersonSettingRow::Person,
                 PersonSettingRow::Key,
                 PersonSettingRow::Value,
+                PersonSettingRow::Version,
             ])
             .from(PersonSettingRow::Table)
             .and_where(
@@ -363,7 +408,7 @@ async fn person_values(
                 found
                     .entry(row.id::<UserId>(PersonSettingRow::Person)?)
                     .or_default()
-                    .insert(key, value);
+                    .insert(key, (value, row.get(PersonSettingRow::Version)?));
             }
         }
     }
@@ -406,6 +451,10 @@ impl Database {
     ) -> Result<(), StoreError> {
         let key = validate(change).map_err(StoreError::SettingRejected)?;
         self.record_change(event, async |transaction| {
+            if let Scope::Person(person) = change.scope {
+                upsert_person(transaction, person, &key, &change.value, event.time, None).await?;
+                return Ok(());
+            }
             upsert(transaction, &key, change, event.time).await
         })
         .await
@@ -578,6 +627,14 @@ impl SettingsStore for AuthStorage {
         Ok(person_values(&mut self.database(), &people)
             .await?
             .into_iter()
+            .map(|(person, own)| {
+                (
+                    person,
+                    own.into_iter()
+                        .map(|(key, (value, _))| (key, value))
+                        .collect(),
+                )
+            })
             .collect())
     }
 
@@ -595,7 +652,8 @@ impl SettingsStore for AuthStorage {
         setting: &'static SettingDefinition,
         value: &SettingValue,
         at: Timestamp,
-    ) -> Result<(), StoreError> {
+        expected: Option<Version>,
+    ) -> Result<bool, StoreError> {
         let mut change = SettingChange {
             key: setting.key().to_owned(),
             scope,
@@ -616,7 +674,15 @@ impl SettingsStore for AuthStorage {
                 }
             }
         }
-        upsert(transaction, &name, &change, at).await
+        match scope {
+            Scope::Person(person) => {
+                upsert_person(transaction, person, &name, value, at, expected).await
+            }
+            Scope::Organization | Scope::Project(_) => {
+                upsert(transaction, &name, &change, at).await?;
+                Ok(true)
+            }
+        }
     }
 
     async fn clear_setting_value(

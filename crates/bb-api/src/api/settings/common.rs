@@ -35,12 +35,14 @@ pub(super) async fn change(
     scope: SettingsScope,
     key: String,
     value: ValueBody,
+    version: Option<i64>,
 ) -> Result<Response, ApiError> {
     let view = auth
         .api()?
         .change_setting(
             info,
             ChangeSetting {
+                version,
                 session_token,
                 scope,
                 key,

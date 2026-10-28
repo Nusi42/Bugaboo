@@ -23,6 +23,12 @@ Define each setting once with the `settings!` macro, which is used only in the r
 - `appearance.theme` was replaced by `appearance.mode`, `appearance.light-theme` and `appearance.dark-theme`; migration `m0004` carries the stored values over.
 - The settings that exist only for tests (feature `test-settings` of `bb-core`) are the way the project level is tested while no real setting is set on a project.
 
+## Update (M5-F97, a version for a person's own settings)
+
+- A person works in several tabs and on several devices, and a setting like `window.sizes` holds one JSON map of every form, so the last write undid the size another tab had set for another form. A person's own value now has a **version** (`person_setting.version`, migration 27; `0` while there is no value, `1` for the first, counted up by every write). The list and a change answer it as `version` of the setting, only for a person's own settings.
+- `PUT /api/v1/me/settings/{key}` takes an optional `version` in its body, the one the person read. A change made from another version is refused with `edit.version-changed` (the plain `409`) and the value stays; the browser reads the setting again and applies only its own change to what it finds (for `window.sizes`, its one form's size into the fresh map). Without a `version` the last write still wins, so an old client keeps working (an addition after the freeze, ADR-0008). `DELETE` (*Reset to default*) takes none; a value taken away and set again starts again at version 1.
+- The organization's and the projects' settings have no version: administrators change them from the settings page one at a time.
+
 ## Alternatives considered
 
 - **Hand-written forms per setting:** slow and inconsistent. Rejected.

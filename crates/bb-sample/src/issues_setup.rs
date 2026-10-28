@@ -125,6 +125,7 @@ impl Setup {
                 change_setting(
                     &ctx,
                     ChangeSetting {
+                        version: None,
                         session_token: token.to_owned(),
                         scope: SettingsScope::ProjectAt(project.short_name.clone()),
                         key: ISSUES_ID_MODE.definition().key().to_owned(),

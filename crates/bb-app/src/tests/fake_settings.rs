@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 
 use bb_core::id::{ProjectId, UserId};
 use bb_core::settings::{Layers, OrganizationValue, Scope, SettingDefinition, SettingValue, find};
+use bb_core::version::{Version, next};
 use bb_policy::Tree;
 use jiff::Timestamp;
 
@@ -18,6 +19,8 @@ pub(crate) struct FakeSetting {
     pub(crate) key: String,
     pub(crate) value: SettingValue,
     pub(crate) locked: bool,
+    /// Counts up with every write of a person's own value; the other scopes stay at 1.
+    pub(crate) version: i64,
 }
 
 /// Everything stored that can matter for a person in a place.
@@ -59,6 +62,7 @@ pub(crate) fn layers_of(
         for row in state.settings.iter().filter(known) {
             if row.scope == Scope::Person(person) {
                 layers.person.insert(row.key.clone(), row.value.clone());
+                layers.person_versions.insert(row.key.clone(), row.version);
             }
         }
     }
@@ -72,6 +76,11 @@ pub(crate) fn put(state: &mut State, scope: Scope, key: &str, value: &SettingVal
             .settings
             .iter()
             .any(|row| row.scope == scope && row.key == key && row.locked);
+    let version = state
+        .settings
+        .iter()
+        .find(|row| row.scope == scope && row.key == key)
+        .map_or(1, |row| next(row.version));
     state
         .settings
         .retain(|row| !(row.scope == scope && row.key == key));
@@ -80,6 +89,7 @@ pub(crate) fn put(state: &mut State, scope: Scope, key: &str, value: &SettingVal
         key: key.to_owned(),
         value: value.clone(),
         locked,
+        version,
     });
 }
 
@@ -113,7 +123,8 @@ impl SettingsStore for FakeStore {
         setting: &'static SettingDefinition,
         value: &SettingValue,
         _at: Timestamp,
-    ) -> Result<(), FakeError> {
+        expected: Option<Version>,
+    ) -> Result<bool, FakeError> {
         let key = setting.key();
         let locked_above = scope != Scope::Organization
             && tx
@@ -124,8 +135,19 @@ impl SettingsStore for FakeStore {
         if locked_above {
             return Err(FakeError::Aborted);
         }
+        if let (Scope::Person(_), Some(expected)) = (scope, expected) {
+            let now = tx
+                .state
+                .settings
+                .iter()
+                .find(|row| row.scope == scope && row.key == key)
+                .map_or(0, |row| row.version);
+            if now != expected.get() {
+                return Ok(false);
+            }
+        }
         put(&mut tx.state, scope, key, value);
-        Ok(())
+        Ok(true)
     }
 
     async fn clear_setting_value(
@@ -175,6 +197,7 @@ impl SettingsStore for FakeStore {
             key: key.to_owned(),
             value: definition.default().to_value(),
             locked,
+            version: 1,
         });
         Ok(())
     }

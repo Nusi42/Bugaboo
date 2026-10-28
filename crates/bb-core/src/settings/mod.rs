@@ -553,6 +553,9 @@ pub struct StoredPersonSetting {
     /// When the person last changed it.
     #[personal(category = "activity", basis = "contract")]
     pub updated_at: jiff::Timestamp,
+    /// Counts up with every change; a change made from an older version is refused (ADR-0019).
+    #[not_personal]
+    pub version: i64,
 }
 
 /// The items of a list written as text with commas between the items: spaces around an item are

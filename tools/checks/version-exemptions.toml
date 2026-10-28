@@ -44,8 +44,8 @@ routes = [
 reason = "Signing in and a person's own sign-in data have no stored version: each step answers for itself (a password or a code that is right or wrong, a session that ends), and nobody else can have changed it meanwhile."
 
 [[exempt]]
-routes = ["PUT /api/v1/me/settings/{key}", "DELETE /api/v1/me/settings/{key}"]
-reason = "A person's own choices in My settings belong to that one person and have no version of their own; the last choice of the same person wins, and no other person can change them."
+routes = ["DELETE /api/v1/me/settings/{key}"]
+reason = "*Reset to default* takes a person's own choice away: there is no value left to protect, and the next change reads the setting again (the change of a value takes a version, M5-F97)."
 
 [[exempt]]
 routes = [

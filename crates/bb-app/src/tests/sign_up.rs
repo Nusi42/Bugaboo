@@ -241,6 +241,7 @@ async fn auth_signing_up_is_refused_while_mail_is_off_for_nothing_could_prove_th
     change_setting(
         &world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: token(&world),
             scope: SettingsScope::Organization,
             key: "mail.enabled".to_owned(),

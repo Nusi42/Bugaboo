@@ -658,6 +658,7 @@ stored_tables! {
         Key => key,
         Value => value,
         UpdatedAt => updated_at,
+        Version => version,
     },
     NotificationRow => bb_core::notification::Notification {
         Id => id,

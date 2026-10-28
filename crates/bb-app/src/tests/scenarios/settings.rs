@@ -60,6 +60,7 @@ async fn a_person_value(world: &World) -> Result<(), String> {
     change_setting(
         &world.ctx(),
         ChangeSetting {
+            version: None,
             session_token: token(world),
             scope: SettingsScope::Person,
             key: "appearance.mode".to_owned(),
@@ -77,6 +78,7 @@ pub(crate) async fn change_setting_scenario(world: &World) -> Added {
         change_setting(
             &world.ctx(),
             ChangeSetting {
+                version: None,
                 session_token: token(world),
                 scope: SettingsScope::Organization,
                 key: "security.session-idle-minutes".to_owned(),

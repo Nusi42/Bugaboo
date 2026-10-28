@@ -5931,6 +5931,21 @@ export interface components {
       /** @description The project, by its ID or its short name; leave it out for the whole organization. */
       project?: string | null;
     };
+    /**
+     * @description A new value for a setting of the person's own. Settings are changed from several browsers at
+     *     a time (tabs, devices), so a change can say which version it was made from.
+     */
+    NewMyValueBody: {
+      /** @description The value. It must be of the type of the setting and one it accepts. */
+      value: components["schemas"]["ValueBody"];
+      /**
+       * Format: int64
+       * @description The version of the setting that was looked at (`0` while the person has no value of their
+       *     own). When the value was changed since, the change is refused with `edit.version-changed`
+       *     and the person's value stays. Left out, the last change wins.
+       */
+      version?: number | null;
+    };
     /** @description A row for the whole organization to give: to a person or to a group, and the role. */
     NewOrganizationRowBody: {
       /** @description The ID of the role. */
@@ -7714,6 +7729,12 @@ export interface components {
       source: components["schemas"]["SourceBody"];
       /** @description The value that counts here. */
       value: components["schemas"]["ValueBody"];
+      /**
+       * Format: int64
+       * @description In a person's own settings: counts up with every change of the value of their own, `0`
+       *     while there is none. A change sends back the version that was looked at.
+       */
+      version?: number | null;
     };
     /**
      * @description What kind of text a text setting holds.
@@ -12912,7 +12933,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["NewValueBody"];
+        "application/json": components["schemas"]["NewMyValueBody"];
       };
     };
     responses: {
