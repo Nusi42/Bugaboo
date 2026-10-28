@@ -3,15 +3,11 @@
 //! Contributors may not read, so it never reaches them. All of it goes through the use cases the
 //! screens call, one change a second of the sample's clock.
 
-use bb_app::access::PolicyStore as _;
-use bb_app::roles::{SetFieldLevel, set_level};
+use bb_app::access::{PolicyStore as _, StartingRole};
 use bb_app::saved_searches::{
     SaveSearch, SetProjectList, ShareSearch, save_search, set_project_list, share_search,
 };
-use bb_core::access::FieldLevel;
-use bb_core::fields::FieldKey;
-use bb_core::id::{GroupId, ProjectId, RoleId, SavedSearchId};
-use bb_core::project::ShortName;
+use bb_core::id::{GroupId, SavedSearchId};
 use bb_core::saved_search::{Presentation, ShareTarget};
 use bb_dev_words::sample::{Layout, SavedSearchPlan};
 
@@ -33,14 +29,14 @@ impl Maker<'_, '_> {
 
     /// The own fields called so are not read by Contributors in any project.
     async fn hide_from_contributors(&mut self, names: &[String]) -> Result<(), SampleError> {
-        let contributor = self
-            .role_with_code(bb_app::access::StartingRole::Contributor.code())
-            .await?;
         let administrator = self
             .world
             .people
             .iter()
-            .position(|made| made.person.role.code() == "administrator" && !made.person.code_app)
+            .position(|made| {
+                made.person.role.code() == StartingRole::Administrator.code()
+                    && !made.person.code_app
+            })
             .ok_or(SampleError::PersonMissing)?;
         for name in names {
             let token = self.hands.token(administrator).await?;
@@ -55,40 +51,11 @@ impl Maker<'_, '_> {
                 .fields
                 .get(at)
                 .ok_or_else(|| SampleError::NotMade(name.clone()))?;
-            self.world.tick();
-            set_level(
-                &self.world.services.ctx(self.world.request()),
-                SetFieldLevel {
-                    session_token: token.clone(),
-                    role: contributor,
-                    project: None,
-                    issue_type: None,
-                    field: FieldKey::Own(made.id),
-                    level: Some(FieldLevel::Hidden),
-                },
-            )
-            .await
-            .map_err(|error| SampleError::step(Step::SavedSearches, &error))?;
+            self.world
+                .hide_from_contributors(&token, made.id, Step::SavedSearches)
+                .await?;
         }
         Ok(())
-    }
-
-    async fn role_with_code(&self, code: &str) -> Result<RoleId, SampleError> {
-        self.world
-            .storage
-            .roles()
-            .await?
-            .into_iter()
-            .find(|record| {
-                record
-                    .role
-                    .starting
-                    .as_ref()
-                    .map(bb_core::technical::TechnicalName::as_str)
-                    == Some(code)
-            })
-            .map(|record| record.role.id)
-            .ok_or_else(|| SampleError::NotMade(code.to_owned()))
     }
 
     /// One search: saved by the first person of its role, then shared and chosen as a list.
@@ -118,7 +85,9 @@ impl Maker<'_, '_> {
         let id: SavedSearchId = id_in(&saved, "id")?;
         let mut targets: Vec<ShareTarget> = groups.into_iter().map(ShareTarget::Group).collect();
         for short_name in &plan.projects {
-            targets.push(ShareTarget::Project(self.project_called(short_name).await?));
+            targets.push(ShareTarget::Project(
+                self.world.project_named(short_name).await?,
+            ));
         }
         for target in targets {
             self.world.tick();
@@ -166,7 +135,7 @@ impl Maker<'_, '_> {
             .position(|made| {
                 made.person.role.code() == plan.maker
                     && !made.person.code_app
-                    && (plan.maker == "administrator"
+                    && (plan.maker == StartingRole::Administrator.code()
                         || members
                             .iter()
                             .all(|group| group.iter().any(|member| member.person == made.id)))
@@ -181,24 +150,6 @@ impl Maker<'_, '_> {
             .get(key)
             .cloned()
             .ok_or_else(|| SampleError::NotMade(key.to_owned()))?;
-        self.world
-            .storage
-            .groups()
-            .await?
-            .into_iter()
-            .find(|group| group.name == name)
-            .map(|group| group.id)
-            .ok_or(SampleError::NotMade(name))
-    }
-
-    async fn project_called(&self, short_name: &str) -> Result<ProjectId, SampleError> {
-        let parsed =
-            ShortName::new(short_name).map_err(|_| SampleError::NotMade(short_name.to_owned()))?;
-        self.world
-            .storage
-            .project_by_short_name(&parsed)
-            .await?
-            .map(|project| project.id)
-            .ok_or_else(|| SampleError::NotMade(short_name.to_owned()))
+        self.world.group_named(&name).await
     }
 }

@@ -8,6 +8,7 @@
 
 use std::collections::BTreeMap;
 
+use bb_app::access::StartingRole;
 use bb_app::files::AttachmentStore as _;
 use bb_app::notifications::NotificationStore as _;
 use bb_app::projects::ProjectStore as _;
@@ -84,9 +85,10 @@ pub(crate) struct DumpWork {
 
 /// The role as the dump counts it: Administrators and Team members do the work of the team.
 fn role_of(code: &str) -> String {
-    match code {
-        "administrator" | "team-member" => "team_member".to_owned(),
-        other => other.replace('-', "_"),
+    if code == StartingRole::Administrator.code() || code == StartingRole::TeamMember.code() {
+        "team_member".to_owned()
+    } else {
+        code.replace('-', "_")
     }
 }
 
@@ -209,7 +211,7 @@ impl Sample {
                         .or_default() += 1;
                     *counted.to.entry(role.clone()).or_default() += 1;
                     counted.to_guests_about_others += u64::from(
-                        role == "guest"
+                        role == StartingRole::Guest.code()
                             && row
                                 .issue
                                 .is_some_and(|issue| reporters.get(&issue) != Some(&made.id)),
@@ -241,7 +243,7 @@ impl Sample {
             let changes = |field: &str| event.changes.iter().find(|change| change.field == field);
             if kind.as_str() == issue
                 && changes(Field::Title.code()).is_some_and(|change| change.before.is_none())
-                && (role == "contributor" || role == "guest")
+                && (role == StartingRole::Contributor.code() || role == StartingRole::Guest.code())
             {
                 *work.reports.entry(role.clone()).or_default() += 1;
             }
@@ -254,7 +256,7 @@ impl Sample {
             }
             if kind.as_str() == issue
                 && later
-                && role == "contributor"
+                && role == StartingRole::Contributor.code()
                 && changes(Field::Title.code()).is_none_or(|change| change.before.is_some())
             {
                 *work.own_changes.entry(role.clone()).or_default() += 1;

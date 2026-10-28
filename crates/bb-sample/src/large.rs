@@ -7,12 +7,7 @@
 //! files, is written in big transactions by [`crate::large_org`] and [`crate::large_write`], and the
 //! history and the notifications are then read from the events by the code a server runs.
 
-use bb_app::access::{PolicyStore as _, StartingRole};
 use bb_app::context::Clock as _;
-use bb_app::roles::{SetFieldLevel, set_level};
-use bb_core::access::FieldLevel;
-use bb_core::fields::FieldKey;
-use bb_core::technical::TechnicalName;
 use bb_core::time::SECONDS_PER_DAY;
 use bb_dev_words::sample::{FieldPlan, IssuePlan, Layout};
 
@@ -142,30 +137,8 @@ async fn cost_center(
         choices: Vec::new(),
     };
     let field = create_one_field(world, token, &plan, names, &setup.types, &projects).await?;
-    let contributor = world
-        .storage
-        .roles()
-        .await?
-        .into_iter()
-        .find(|record| {
-            record.role.starting.as_ref().map(TechnicalName::as_str)
-                == Some(StartingRole::Contributor.code())
-        })
-        .map(|record| record.role.id)
-        .ok_or_else(|| SampleError::NotMade("contributor".to_owned()))?;
-    world.tick();
-    set_level(
-        &world.services.ctx(world.request()),
-        SetFieldLevel {
-            session_token: token.to_owned(),
-            role: contributor,
-            project: None,
-            issue_type: None,
-            field: FieldKey::Own(field.id),
-            level: Some(FieldLevel::Hidden),
-        },
-    )
-    .await
-    .map_err(|error| SampleError::step(Step::Levels, &error))?;
+    world
+        .hide_from_contributors(token, field.id, Step::Levels)
+        .await?;
     Ok(field.id)
 }
