@@ -51,6 +51,26 @@ export interface Drafted {
   readonly found_as_draft?: boolean;
 }
 
+/** A search a person made while others changed data, and what they were told (architecture §11, "Searches while others change data"). */
+export interface Searched {
+  /** The ID of the person. */
+  readonly holder: string;
+  /** The text of the search. */
+  readonly query: string;
+  /** Whether the search asks for every issue the person reads, which no change of the run alters. */
+  readonly everything: boolean;
+  /** Whether the search reads the own field that Guests may not see. */
+  readonly reads_hidden: boolean;
+  /** The readable IDs of the issues the first page held. */
+  readonly found: readonly string[];
+  /** Whether there was a page after the first. */
+  readonly more: boolean;
+  /** What the count line said, for a search that asked for it. */
+  readonly count?: number;
+  /** The code of the refusal, when the search was refused. */
+  readonly refused?: string;
+}
+
 /** Everything the people did that counts, in the order it happened to each of them. */
 export interface Book {
   /** The issues of the run. */
@@ -71,4 +91,6 @@ export interface Book {
   readonly guests?: readonly string[];
   /** The keys of the own fields the run hid from Guests. */
   readonly hidden_from_guests?: readonly string[];
+  /** The searches people made. */
+  readonly searched?: readonly Searched[];
 }

@@ -16,6 +16,7 @@ import {
 import { type Work } from "./book.ts";
 import { broke, codeOf, type Context, read, tag } from "./context.ts";
 import { pick } from "./random.ts";
+import { searchNow } from "./search.ts";
 import { addFile, hear, moveOn } from "./work.ts";
 
 /** How often a stale change is sent again on the newer version before it is called stuck. */
@@ -162,6 +163,8 @@ async function guestDoes(context: Context, work: Work, kind: number): Promise<vo
     await addFile(context, work);
   } else if (kind < 80) {
     await hear(context);
+  } else if (kind < 90) {
+    await searchNow(context);
   } else {
     await look(context, work);
   }
@@ -182,6 +185,8 @@ async function doNext(context: Context, work: Work, kind: number): Promise<void>
   } else if (kind < 80) {
     await addFile(context, work);
     await hear(context);
+  } else if (kind < 90) {
+    await searchNow(context);
   } else {
     await look(context, work);
   }

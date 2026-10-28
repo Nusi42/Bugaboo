@@ -27,6 +27,9 @@ const ISSUES = 6;
 /** What the own field that the Team members write and Guests may not see is called. */
 export const HIDDEN_FIELD_NAME = "Internal note";
 
+/** The word a search names that field by (its name in lower camel case). */
+export const HIDDEN_FIELD_WORD = "internalNote";
+
 /** The people of a run: the administrator first, then Team members, and the Guest last. */
 function peopleOf(count: number): readonly Person[] {
   return [
