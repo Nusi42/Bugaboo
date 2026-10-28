@@ -6356,7 +6356,7 @@ body {
 }
 
 [data-part="search-results.list"][data-state~="stale"] {
-  opacity: var(--opacity-busy);
+  border: var(--border-width) dashed var(--border-control);
 }
 
 [data-part="search-list"] {

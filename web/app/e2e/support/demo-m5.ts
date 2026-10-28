@@ -59,17 +59,20 @@ export async function switchingKeepsTheSearch(page: Page): Promise<void> {
 
 /** Step 3: a Contributor who may not read *Customer* gets the answer of a field that is not there. */
 export async function aHiddenFieldIsAnUnknownField(page: Page, server: Instance): Promise<void> {
-  // The search is opened from its address, as a link would: the box shows the mistake and no list
-  // of an earlier search stands dimmed behind it.
-  await openSearch(page, CUSTOMER_SEARCH, contributor());
+  // The Contributor looks at a list and then types the search: the box says what is wrong while the
+  // list of the last good search stays behind it, with its note.
+  await openSearch(page, HIGH_PRIORITY, contributor());
   await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await box(page).fill(CUSTOMER_SEARCH);
   const hidden = await mistakeIn(page);
   expect(hidden).toBe(textByKey("search.mistake.unknown-field", { field: "customer" }));
+  await box(page).press("Escape");
+  await expect(page.getByText(t("search.found-stale"))).toBeVisible();
   await page.waitForLoadState("networkidle");
   await good(page, "03-a-field-that-is-not-there");
   // The words are those for a field that does not exist, with only the typed word changed.
-  await page.goto(`/search?s=${encodeURIComponent('customex is "Alder Street Bakery"')}`);
-  await openBar(page);
+  await box(page).fill('customex is "Alder Street Bakery"');
   expect((await mistakeIn(page)).replace("customex", "customer")).toBe(hidden);
   // The Team member who may read it is told nothing is wrong: the search is answered.
   const team = await signInThroughApi(server, sampleTeamMember());

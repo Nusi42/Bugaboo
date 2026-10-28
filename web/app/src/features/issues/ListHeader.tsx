@@ -6,6 +6,7 @@ import type { SearchFieldsAnswer } from "../search/index.ts";
 import { useListContext } from "./list-context.ts";
 import { ListHeadRow } from "./ListHeadRow.tsx";
 import { nextSort, sortOf } from "./list-sort.ts";
+import { useListFailed } from "./use-list-failed.ts";
 
 export interface ListHeaderProps {
   readonly view: ListView;
@@ -17,11 +18,15 @@ export interface ListHeaderProps {
   readonly onDragged: Dispatch<SetStateAction<Readonly<Record<string, number>>>>;
 }
 
-/** The head of the list wired to the search and to the view (UX §4.2): sorting, widths and *Tick the issues shown*. */
+/** The head of the list wired to the search and to the view (UX §4.2): sorting, widths and *Tick the issues shown*. A search that was refused has no list, so there is no head over nothing. */
 export function ListHeader({ view, fields, shown, onView, onText, onDragged }: ListHeaderProps) {
   const { listId, words, ticks, selection, search, language } = useListContext();
+  const failed = useListFailed();
   const kindOf = (word: string) =>
     fields.fields.fields.find((field) => field.word === word)?.kind ?? "text";
+  if (failed) {
+    return null;
+  }
   return (
     <ListHeadRow
       listId={listId}

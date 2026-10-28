@@ -14,7 +14,7 @@ export interface ResultsInput {
   /** The view the project's list, or the saved search, has: where the columns go back to. */
   readonly defaults: ListView;
   readonly onView: (view: ListView) => void;
-  /** The text in the search box has a mistake: the results stay, dimmed. */
+  /** The text in the search box has a mistake: the results stay, with a dashed edge and a note. */
   readonly stale: boolean;
 }
 

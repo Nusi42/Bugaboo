@@ -93,6 +93,21 @@ test("qry_06 somebody else's search is changed as a copy of their own", async ({
   expect(await original.text()).not.toContain("assignedTo is me");
 });
 
+test("qry_03 a mistake in the address leaves no head and no note about an earlier list", async ({
+  page,
+}) => {
+  await openSearch(page, 'customx is "Alder"');
+  await openBar(page);
+  await expect(page.locator("[data-part='search-mistake']").first()).toBeVisible();
+  await closeBar(page);
+  // There is no earlier list: no empty head, and not the note of the last good search; the one
+  // note that is left says what is wrong.
+  await expect(page.locator("[data-part='list-head']")).toHaveCount(0);
+  await expect(page.getByText(t("search.found-stale"))).toHaveCount(0);
+  await expect(page.getByText(t("error.search.invalid"))).toBeVisible();
+  await expectGoodInEveryTheme(page);
+});
+
 test("qry_03 the results of the last good search stay, say so, and Save waits for a good text", async ({
   page,
 }) => {
@@ -101,7 +116,7 @@ test("qry_03 the results of the last good search stay, say so, and Save waits fo
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).fill("priority is");
   await expect(page.getByText(t("search.found-stale"))).toBeVisible();
-  // Only the list is dimmed; the note is not part of it.
+  // Only the list has the dashed edge; the note is not part of it.
   await expect(page.locator("[data-part='search-results'][data-state='stale']")).toHaveCount(0);
   await expect(page.locator("[data-part='search-results.list'][data-state='stale']")).toBeVisible();
   // The offers are closed first, so the note can be seen; it is good in every theme.

@@ -12580,10 +12580,11 @@ part "search-results" {
     gap "$space-2"
 }
 
-// The results of the search that was fixed last stay while the text has a mistake, dimmed; the
-// note that says so is not part of them and stays as clear as any text.
+// The results of the search that was fixed last stay while the text has a mistake. They keep their
+// full contrast (a dimmed list fails AA, 4.5:1); a dashed edge and the note above them say that
+// they are the last ones. The note is not part of them.
 part "search-results.list[state=stale]" {
-    opacity "$opacity-busy"
+    border "$border-width dashed $border-control"
 }
 
 // The lists of the Share window and of Saved searches.
