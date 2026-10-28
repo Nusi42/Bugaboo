@@ -931,6 +931,13 @@ optgroup {
   margin-inline-start: var(--size-phone-hang);
 }
 
+@media (forced-colors: active) {
+  [data-part="files.actions"] [data-part="button"][data-variant~="quiet"],
+  [data-part="item.actions"] [data-part="button"][data-variant~="quiet"] {
+    margin-inline-start: 0;
+  }
+}
+
 [data-part="button"][data-variant~="item"] {
   justify-content: flex-start;
   border-color: transparent;
@@ -2407,17 +2414,12 @@ optgroup {
   background: var(--danger);
 }
 
-@media (forced-colors: active) {
-  [data-part="legend.swatch"][data-variant~="critical"] {
-    background: CanvasText;
-  }
-}
-
 [data-part="legend.swatch"][data-variant~="high"] {
   background: var(--warning);
 }
 
 @media (forced-colors: active) {
+  [data-part="legend.swatch"][data-variant~="critical"],
   [data-part="legend.swatch"][data-variant~="high"] {
     background: CanvasText;
   }

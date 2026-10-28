@@ -905,6 +905,9 @@ part "button[variant=quiet][variant=square]" {
 // a quiet one hangs back by its padding on a phone only.
 part "files.actions button[variant=quiet]" "item.actions button[variant=quiet]" {
     margin-inline-start "$size-phone-hang"
+    forced {
+        margin-inline-start 0
+    }
 }
 
 // An entry of a list of actions (the status list, *More*): its words start at the start edge, and it
@@ -2371,16 +2374,16 @@ part "legend.swatch[variant=critical]" "legend.swatch[variant=high]" {
     border-radius 0
 }
 
-// Forced colors drop the fill of a bar, so it is drawn in the text color there.
 part "legend.swatch[variant=critical]" {
     background "$danger"
-    forced {
-        background CanvasText
-    }
 }
 
 part "legend.swatch[variant=high]" {
     background "$warning"
+}
+
+// Forced colors drop the fill of a bar, so both are drawn in the text color there.
+part "legend.swatch[variant=critical]" "legend.swatch[variant=high]" {
     forced {
         background CanvasText
     }

@@ -1,13 +1,13 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { issueAddress } from "../src/shared/paths.ts";
+import { expectNoOverlap } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { openList, prepareLook, rowOf } from "./support/list-look.ts";
 import { focusRowByKeys, pictureIfWanted, tickIssues } from "./support/list-pictures.ts";
 import { partIn } from "./support/parts.ts";
-import { buttonsThatTouch } from "./support/touching.ts";
 
 // The cue of a state of a row (selected, current, focused) is a ring inside its edge, and under forced
 // colors, which drop shadows and fills, an outline that the browser keeps (WCAG 2.4.7, 1.4.1). The same
@@ -15,6 +15,9 @@ import { buttonsThatTouch } from "./support/touching.ts";
 
 test.use({ preparation: { run: prepareLook } });
 test.describe.configure({ mode: "serial" });
+
+/** Every place with a button directly in it: where the buttons of a row stand side by side. */
+const ROWS_WITH_BUTTONS = ":has(> [data-part='button'])";
 
 interface Outline {
   readonly width: number;
@@ -90,8 +93,7 @@ test("ux_7_2 under forced colors the main button has a readable label and quiet 
   // The label is not drawn in the color of its own fill, and the button has an edge.
   expect(colors.text).not.toBe(colors.face);
   expect(colors.edge).toBe(colors.text);
-  // Neighbouring buttons of one row leave a gap: a quiet one hangs back by its padding only without forced colors.
-  const touching = await buttonsThatTouch(page);
-  expect(touching).toEqual([]);
+  // Neighbouring buttons of one row are apart: a quiet one hangs back by its padding only without forced colors.
+  await expectNoOverlap(page, ROWS_WITH_BUTTONS);
   await pictureIfWanted(page, `buttons-forced-${info.project.name}`);
 });
