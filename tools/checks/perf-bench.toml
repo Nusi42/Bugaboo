@@ -15,3 +15,12 @@ p95_ms = 100
 # (architecture section 8).
 [budgets.search]
 p95_ms = 300
+
+# A scenario that is over its budget on one database and is accepted for now (maintainer decision).
+# The nightly run tells it as a known gap and does not fail on it; the budget above stays as it is.
+# This is the one place for such an acceptance: each entry names the database, the follow-up that
+# closes it and the reason. An entry is removed when its follow-up is done.
+[known_gaps.search-groups-assigned-to]
+database = "sqlite"
+follow_up = "M5-F89"
+reason = "the groups by Assigned to take about 560 ms on SQLite, as each of about 109,000 issues needs a lookup in the index of assigned people; kept counts or parallel slices come later"

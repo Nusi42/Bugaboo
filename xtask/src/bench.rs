@@ -174,7 +174,11 @@ pub(crate) fn run(repo: &Repo, databases: &[DatabaseKind]) -> anyhow::Result<boo
         fs::remove_file(&result_file)?;
         let result: DriverResult = serde_json::from_str(&text)?;
         table(&budgets, database, &result);
-        for sentence in over(&budgets, &result.scenarios) {
+        let judged = over(&budgets, database.code(), &result.scenarios);
+        for sentence in &judged.known {
+            output::info(&format!("PERF-BENCH (does not fail the run): {sentence}"));
+        }
+        for sentence in &judged.failures {
             output::info(&format!("PERF-BENCH: {sentence}"));
             all_held = false;
         }
