@@ -188,7 +188,25 @@ export function expectGoodInEveryLook(page: Page): Promise<void> {
 }
 
 /** The first element is drawn above the second. */
-export async function expectAbove(upper: Locator, lower: Locator): Promise<void> {
+async function expectAbove(upper: Locator, lower: Locator): Promise<void> {
   const [first, second] = await Promise.all([upper.boundingBox(), lower.boundingBox()]);
   expect(first?.y ?? 0).toBeLessThan(second?.y ?? 0);
+}
+
+/**
+ * The last list stands behind a mistake in the text (UX §4.3): a dashed edge round the whole list
+ * frame (its head too, where there is one), and the note above the frame.
+ */
+export async function expectStaleEdge(page: Page, note: Locator): Promise<void> {
+  const frame = page.locator("[data-part='list-frame']");
+  await expect(frame).toHaveCSS("outline-style", "dashed");
+  await expectAbove(note, frame);
+  const head = page.locator("[data-part='list-head']");
+  if ((await head.count()) > 0) {
+    const [outer, inner] = await Promise.all([frame.boundingBox(), head.boundingBox()]);
+    expect(inner?.y ?? 0).toBeGreaterThanOrEqual(outer?.y ?? 1);
+    expect((inner?.y ?? 0) + (inner?.height ?? 0)).toBeLessThanOrEqual(
+      (outer?.y ?? 0) + (outer?.height ?? 0),
+    );
+  }
 }

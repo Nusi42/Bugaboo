@@ -5598,6 +5598,11 @@ body {
   outline-offset: var(--space-1);
 }
 
+[data-part="list-frame"]:has([data-part="search-results"][data-state~="stale"])
+  [data-part="list-nothing"] {
+  padding: var(--pad-box) var(--space-3);
+}
+
 [data-part="search-list"] {
   margin: 0;
   padding: 0;

@@ -12604,6 +12604,11 @@ part "list-frame:has(search-results[state=stale])" {
     outline-offset "$space-1"
 }
 
+// An empty last list stands inside the edge, so its words keep their distance from it on a phone too (R3).
+part "list-frame:has(search-results[state=stale]) list-nothing" {
+    padding "$pad-box" "$space-3"
+}
+
 // The lists of the Share window and of Saved searches.
 part "search-list" {
     use "list-reset"

@@ -2,7 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { createAdmin } from "./support/accounts.ts";
-import { expectAbove, expectGoodInEveryTheme } from "./support/checks.ts";
+import { expectGoodInEveryTheme, expectStaleEdge } from "./support/checks.ts";
 import { ana, createPeopleWithRoles, projectIdOf, roleName } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -116,11 +116,8 @@ test("qry_03 the results of the last good search stay, say so, and Save waits fo
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).fill("priority is");
   await expect(page.getByText(t("search.found-stale"))).toBeVisible();
-  // The edge goes round the head and the rows and takes no room: the rows stand where they stood.
-  const frame = page.locator("[data-part='list-frame']");
-  await expect(frame).toHaveCSS("outline-style", "dashed");
-  const note = page.getByText(t("search.found-stale"));
-  await expectAbove(note, frame);
+  // The edge goes round the head and the list, also an empty one, and takes no room.
+  await expectStaleEdge(page, page.getByText(t("search.found-stale")));
   // The offers are closed first, so the note can be seen; it is good in every theme.
   await box(page).press("Escape");
   await expectGoodInEveryTheme(page);
@@ -128,6 +125,16 @@ test("qry_03 the results of the last good search stay, say so, and Save waits fo
   await box(page).fill("priority is high");
   await expect(page.getByText(t("search.found-stale"))).toHaveCount(0);
   await expect(page.getByRole("button", { name: t("search.save"), exact: true })).toBeEnabled();
+});
+
+test("qry_03 the last list with rows has the same edge and note", async ({ page }) => {
+  await openSearch(page, "priority is normal");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await box(page).fill("priority is");
+  await expect(page.getByText(t("search.found-stale"))).toBeVisible();
+  await expect(page.locator("[data-part='list-row']").first()).toBeVisible();
+  await expectStaleEdge(page, page.getByText(t("search.found-stale")));
 });
 
 test("qry_01 the help puts an example into the search", async ({ page }) => {
