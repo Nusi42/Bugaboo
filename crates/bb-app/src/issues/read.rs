@@ -11,12 +11,13 @@ use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, UserId};
 use bb_core::readable_id::ReadableId;
-use bb_policy::{Authorized, Place};
+use bb_policy::Authorized;
 use jiff::Timestamp;
 
 use super::fields::CHANGEABLE;
 use super::store::IssueFound;
 use super::types::{IssueDetail, IssueQuery, IssuesQuery};
+use crate::access::place_of_address;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::Item;
 use crate::search::{SearchPage, SearchQuery, SearchScope, search_page};
@@ -130,9 +131,7 @@ pub async fn issues<S: AuthStore>(
 ) -> Result<Authorized<SearchPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let found = ctx.find_project(&input.project).await?;
-    let place = found.as_ref().map_or(Place::Organization, |found| {
-        Place::Project(found.project.id)
-    });
+    let place = place_of_address(found.as_ref().map(|found| found.project.id))?;
     let held = ctx.evaluation_of(&actor, place).await?;
     let Some(project) = found
         .map(|found| found.project)

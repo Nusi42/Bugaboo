@@ -21,11 +21,12 @@ pub trait HistoryStore: IssueStore + 'static {
         /// consumer that stops half way reads the same events again and makes the same rows.
         fn store_history(entries: &[HistoryEntry], position: i64, now: Timestamp) -> ();
         /// The rows of one issue, newest first: the ones before `before` (a place in the outbox),
-        /// of one kind when `kind` is given, at most `limit`.
+        /// of one kind when `kind` is given, leaving out the first `skip`, at most `limit`.
         fn history_page(
             issue: IssueId,
             kind: Option<HistoryKind>,
             before: Option<i64>,
+            skip: u64,
             limit: u64
         ) -> Vec<HistoryEntry>;
     }

@@ -370,6 +370,7 @@ impl HistoryStore for FakeStore {
         issue: IssueId,
         kind: Option<HistoryKind>,
         before: Option<i64>,
+        skip: u64,
         limit: u64,
     ) -> Result<Vec<HistoryEntry>, FakeError> {
         Ok(self.read(|state| {
@@ -384,8 +385,11 @@ impl HistoryStore for FakeStore {
                 .cloned()
                 .collect();
             found.sort_by_key(|entry| std::cmp::Reverse((entry.position, entry.event)));
-            found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             found
+                .into_iter()
+                .skip(usize::try_from(skip).unwrap_or(usize::MAX))
+                .take(usize::try_from(limit).unwrap_or(usize::MAX))
+                .collect()
         }))
     }
 }

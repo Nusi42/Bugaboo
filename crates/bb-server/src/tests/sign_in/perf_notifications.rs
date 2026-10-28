@@ -18,8 +18,13 @@ use super::perf_queries::{
 const NOTIFICATIONS: &str = "/api/v1/notifications";
 /// The most statements the page or the number may run, however many rows there are (a ceiling that a
 /// change to the code has to notice; the exact numbers are compared apart). Most of them are the
-/// session and the rights of the person, which every read pays.
-const AT_MOST: usize = 42;
+/// session and the rights of the person, which every read pays (31 measured, 42 before the rights
+/// of the person were read once, M4-F137).
+const AT_MOST: usize = 31;
+
+/// The same for the number over many projects: the rights in each project of the page are decided
+/// from the tree (36 measured, 39 on main).
+const PROJECTS_AT_MOST: usize = 36;
 
 /// The most statements the reader runs to catch up with one change of an issue, with two followers (the
 /// kinds of news a person wants are decided before their rights are looked at).
@@ -211,7 +216,7 @@ async fn perf_05_the_number_on_the_menu_runs_as_many_statements_for_twelve_proje
         assert_eq!(ok(&many)?["unread"], 12);
         let on_twelve = counter.take();
         // The rights in each project are read together, not one project after the other.
-        assert_as_many_statements(on_two, on_twelve, AT_MOST, "more projects");
+        assert_as_many_statements(on_two, on_twelve, PROJECTS_AT_MOST, "more projects");
         Ok(())
     })
     .await

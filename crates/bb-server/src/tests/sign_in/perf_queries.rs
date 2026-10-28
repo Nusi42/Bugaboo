@@ -24,8 +24,9 @@ const AT_MOST: usize = 47;
 
 /// The most statements the list of a project may run: it is a search now (ADR-0034 decision 6),
 /// which reads what the person may search by, the names a search may use and the settings of the
-/// person before the one statement that finds the page (58 measured; M5-F45 looks for fewer).
-pub(super) const LIST_AT_MOST: usize = 58;
+/// person before the one statement that finds the page (44 measured, 58 before the rights of a
+/// person were read once, M4-F137; M5-F45 looks for fewer).
+pub(super) const LIST_AT_MOST: usize = 44;
 
 /// The most statements the history of an issue may run: the history names an issue type and a label
 /// only where the reader may know it (LM1 of the M4 exit review, `offers/known.rs`), so it also

@@ -11,7 +11,7 @@ use bb_policy::{Authorized, Permission, Place};
 
 use super::events::default_list_change;
 use super::types::{ProjectList, ProjectListQuery, SetProjectList};
-use crate::access::Actor;
+use crate::access::{Actor, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, if_there, internal};
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -19,9 +19,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// is not there and for one they may not know.
     async fn known_project(&self, actor: &Actor, address: &str) -> Result<ProjectId, AppError> {
         let found = self.find_project(address).await?;
-        let place = found.as_ref().map_or(Place::Organization, |found| {
-            Place::Project(found.project.id)
-        });
+        let place = place_of_address(found.as_ref().map(|found| found.project.id))?;
         let held = self.evaluation_of(actor, place).await?;
         match found {
             Some(found) if held.knows_project() => Ok(found.project.id),

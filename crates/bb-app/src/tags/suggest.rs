@@ -10,9 +10,10 @@ use bb_core::ErrorCode;
 use bb_core::fields::Field;
 use bb_core::id::IssueTypeId;
 use bb_core::tags::{TAG_SUGGESTIONS_MAX, tag_allowed_in};
-use bb_policy::{Authorized, Place};
+use bb_policy::Authorized;
 
 use super::types::{TagRef, TagSuggestions, TagSuggestionsQuery};
+use crate::access::place_of_address;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::input::clean_tag_search;
 
@@ -44,9 +45,7 @@ pub async fn tag_suggestions<S: AuthStore>(
     // A type that does not exist is no type: the lowest level across types counts (fail closed).
     let issue_type = input.issue_type.filter(|id| types.contains(id));
     let found = ctx.find_project(&input.project).await?;
-    let place = found.as_ref().map_or(Place::Organization, |found| {
-        Place::Project(found.project.id)
-    });
+    let place = place_of_address(found.as_ref().map(|found| found.project.id))?;
     let held = ctx.evaluation_of(&actor, place).await?;
     let Some(found) = found.filter(|_| held.sees_project()) else {
         return Err(AppError::Refused(ErrorCode::NotFound));

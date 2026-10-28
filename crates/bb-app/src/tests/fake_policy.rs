@@ -9,7 +9,7 @@ use bb_core::project::{Project, ShortName};
 use bb_core::version::Version;
 use bb_policy::guards::OrganizationState;
 use bb_policy::{
-    Inputs, LevelRule, LevelRules, LevelSubject, Permission, Place, Tree, TypedFieldRule,
+    Inputs, LevelRule, LevelRules, LevelSubject, Permission, Place, Policy, Tree, TypedFieldRule,
 };
 use jiff::Timestamp;
 
@@ -48,6 +48,22 @@ impl PolicyStore for FakeStore {
         }
         self.read_snapshot(move |tx| Box::pin(Self::policy_inputs_in(tx, person, place)))
             .await
+    }
+
+    async fn person_policy(&self, person: UserId) -> Result<Policy, FakeError> {
+        {
+            let mut shared = self.lock();
+            if shared.policy_reads_fail {
+                return Err(FakeError::Failed);
+            }
+            shared.policy_loads += 1;
+        }
+        Ok(self.read(|state| {
+            let mut policy = policy_of(state, Some(person));
+            let roles = policy.role_ids().into_iter().collect();
+            policy.rules = state.rules.of_roles(&roles);
+            policy
+        }))
     }
 
     async fn legacy_administrators(&self) -> Result<Vec<UserId>, FakeError> {

@@ -24,6 +24,10 @@ const LABEL_READS: usize = 2;
 /// them, and the reads of the labels.
 const AT_MOST: usize = LIST_AT_MOST + LABEL_READS;
 
+/// The same for the search with labels, which asks about the organization alone: 51 measured, 54 on
+/// main before the rights were read once (M4-F137).
+const SEARCH_AT_MOST: usize = 51;
+
 /// Makes a label and returns its ID.
 async fn label(browser: &mut Browser, name: &str) -> Result<String, Failure> {
     let made = browser
@@ -224,7 +228,12 @@ async fn perf_05_a_page_of_forty_issues_with_labels_runs_as_many_statements_as_a
         assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page of a list");
         let search = |limit: u32| format!("{SEARCH}?limit={limit}&fields=readable_id,labels");
         let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, search).await?;
-        assert_as_many_statements(on_five, on_forty, AT_MOST, "a longer page of a search");
+        assert_as_many_statements(
+            on_five,
+            on_forty,
+            SEARCH_AT_MOST,
+            "a longer page of a search",
+        );
         // The labels cost the page their reads, and nothing when they are not asked for.
         let mut counter = Counter::on(&rig.database);
         let with = format!("{SEARCH}?limit=5&fields=readable_id,labels");

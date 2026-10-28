@@ -14,7 +14,7 @@ use bb_core::id::{EventId, IdSource, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::notification::mail_batch;
 use bb_core::sign_in::SecurityAction;
-use bb_policy::{Evaluation, Place};
+use bb_policy::{Evaluation, Place, Policy};
 use jiff::{SignedDuration, Timestamp};
 
 use super::error::{AppError, internal};
@@ -172,6 +172,7 @@ impl<S> AuthServices<S> {
             services: self,
             request,
             evaluations: Mutex::default(),
+            policies: Mutex::default(),
             via_key: AtomicBool::new(false),
             image_hosts: Mutex::default(),
             known: Known::default(),
@@ -200,6 +201,10 @@ impl<S> AuthServices<S> {
             .is_some_and(|session| self.csrf.verify(&session, presented))
     }
 }
+
+/// What a request has read to decide for a person at any place, by person: their rows, roles and
+/// levels.
+pub(crate) type Policies = Mutex<HashMap<UserId, Arc<Policy>>>;
 
 /// The evaluations a request has made, by person and place.
 pub(crate) type Evaluations = Mutex<HashMap<(UserId, Place), Arc<Evaluation>>>;
@@ -268,6 +273,9 @@ pub struct Ctx<'a, S> {
     pub(crate) services: &'a AuthServices<S>,
     pub(crate) request: RequestInfo,
     pub(crate) evaluations: Evaluations,
+    /// What the engine decides every place of a person from (their rows, roles and levels),
+    /// read once for the request; nothing is kept across requests, like the evaluations.
+    pub(crate) policies: Policies,
     /// The request came with an access key, so what it changes is recorded as made through the
     /// API (the channel of its events).
     pub(crate) via_key: AtomicBool,

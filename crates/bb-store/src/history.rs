@@ -95,6 +95,7 @@ impl HistoryStore for AuthStorage {
         issue: IssueId,
         kind: Option<HistoryKind>,
         before: Option<i64>,
+        skip: u64,
         limit: u64,
     ) -> Result<Vec<HistoryEntry>, StoreError> {
         let mut select = Query::select();
@@ -114,7 +115,8 @@ impl HistoryStore for AuthStorage {
             .and_where(Expr::col(HistoryEntryRow::Issue).eq(issue.stored()))
             .order_by(HistoryEntryRow::Position, Order::Desc)
             .order_by(HistoryEntryRow::Event, Order::Desc)
-            .limit(limit);
+            .limit(limit)
+            .offset(skip);
         if let Some(kind) = kind {
             select.and_where(Expr::col(HistoryEntryRow::Kind).eq(kind.code()));
         }

@@ -17,7 +17,7 @@ use bb_core::paging::{Cut, page_len};
 use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place};
 use serde::Serialize;
 
-use crate::access::Members;
+use crate::access::{Members, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::people::write_cursor;
 
@@ -66,9 +66,7 @@ pub async fn assignable_people<S: AuthStore>(
 ) -> Result<Authorized<AssignablePeoplePage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let found = ctx.find_project(&input.project).await?;
-    let place = found.as_ref().map_or(Place::Organization, |found| {
-        Place::Project(found.project.id)
-    });
+    let place = place_of_address(found.as_ref().map(|found| found.project.id))?;
     let held = ctx.evaluation_of(&actor, place).await?;
     if found.is_none() || !held.sees_project() {
         return Err(AppError::Refused(ErrorCode::NotFound));

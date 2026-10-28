@@ -403,7 +403,7 @@ async fn iss_06_the_history_reader_resumes_after_a_restart() -> TestResult {
                 .as_str()
                 .ok_or("no ID")?
                 .parse()?;
-        let rows = again.history_page(issue_id, None, None, 50).await?;
+        let rows = again.history_page(issue_id, None, None, 0, 50).await?;
         assert_eq!(rows.len(), 4, "{rows:?}");
         assert_eq!(
             rows.iter()
@@ -622,8 +622,7 @@ async fn iss_05_a_mention_does_not_reach_a_person_who_cannot_see_the_issue() -> 
 }
 
 #[tokio::test]
-async fn iss_06_a_page_of_hidden_rows_still_answers_with_a_cursor_and_repeats_nothing() -> TestResult
-{
+async fn iss_06_a_page_is_filled_past_hidden_rows_and_repeats_nothing() -> TestResult {
     each_database("iss_06_bounded", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
@@ -654,13 +653,25 @@ async fn iss_06_a_page_of_hidden_rows_still_answers_with_a_cursor_and_repeats_no
                 None,
             )
             .await?;
-        // Nothing to show on the first page, but the history goes on: a cursor comes back.
-        assert!(items(&first).is_empty(), "{:?}", first.body);
+        // The hidden rows are skipped, not counted against the page (M3-F68): the first page
+        // holds the change the reader sees, and the history goes on after it with a cursor that
+        // names that change.
+        let shown = items(&first).len();
+        assert_eq!(shown, 1, "{:?}", first.body);
+        let mut events: Vec<String> = items(&first)
+            .iter()
+            .filter_map(|item| {
+                Some(format!(
+                    "{}/{}",
+                    item["event"].as_str()?,
+                    item["change"]["field"].as_str()?
+                ))
+            })
+            .collect();
         let mut cursor = ok(&first)?["next_cursor"]
             .as_str()
-            .ok_or("no cursor after a page of hidden rows")?
+            .ok_or("no cursor after a full page")?
             .to_owned();
-        let mut events: Vec<String> = Vec::new();
         for _ in 0..40 {
             let page = reader
                 .send(

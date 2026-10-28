@@ -3,8 +3,10 @@
 //! Like [`AuthStore`](crate::auth::AuthStore), reads take `&self`, and **writes** are associated
 //! functions that take the open transaction and are called from inside `record_change` of
 //! [`ChangeStore`], so a change and its domain event are committed together (ARCH-EVENTS).
-//! `policy_inputs` is the one call that loads everything the engine needs for one person at one
-//! place (SEC-03); the engine itself does no I/O.
+//! `policy_inputs` loads everything the engine needs for one person at one place (inside a change,
+//! and for the records that have no request); a request reads `person_policy`
+//! once and the engine chooses what applies at each place (SEC-03, M4-F137). The engine itself
+//! does no I/O.
 
 use std::collections::BTreeSet;
 use std::future::Future;
@@ -16,7 +18,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_core::version::Version;
 use bb_policy::guards::OrganizationState;
-use bb_policy::{Inputs, LevelRules, LevelSubject, Permission, Place, RoleData};
+use bb_policy::{Inputs, LevelRules, LevelSubject, Permission, Place, Policy, RoleData};
 use jiff::Timestamp;
 
 use crate::ports::ChangeStore;
@@ -88,6 +90,12 @@ pub trait PolicyStore: ChangeStore + 'static {
     }
 
     reads! {
+        /// What the engine needs to decide for `person` at any place: their rows (their own and
+        /// their groups') wherever they are, the roles those name and the levels of those roles
+        /// for the organization and every project, as one snapshot. Which of it applies at a
+        /// place is decided by the engine (`Policy::inputs_from_rows`), so a request reads it
+        /// once and decides every place from it.
+        fn person_policy(person: UserId) -> Policy;
         /// The people who were administrators in M1 and have not got the role yet.
         fn legacy_administrators() -> Vec<UserId>;
         /// Every role with its permissions, in the order of roles.

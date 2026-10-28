@@ -14,9 +14,9 @@ use sea_query::{Expr, ExprTrait as _};
 
 use super::assignments::{assignment_select, assignments_of};
 use super::groups::{member_select, read_member};
-use super::in_list;
 use super::levels::{Which, read_rules, read_typed_rules};
 use super::roles::roles_in;
+use super::{in_list, level_rules_of_roles_in};
 use crate::db::{Reader, Transaction};
 use crate::error::StoreError;
 use crate::projects::chain_of;
@@ -164,6 +164,19 @@ pub(crate) async fn rules_of(
         typed: read_typed_rules(reader, which).await?,
         own_fields: crate::fields::field_ids_in(reader).await?,
     })
+}
+
+/// What the engine needs to decide for `person` at any place, in one snapshot: their rows (their
+/// own and their groups') wherever they are, the roles those name and the levels of those roles
+/// for the organization and for all projects. Which of it applies at a place is decided by
+/// [`Policy::inputs_from_rows`], not here.
+pub(crate) async fn person_policy_in(
+    reader: &mut impl Reader,
+    person: UserId,
+) -> Result<Policy, StoreError> {
+    let mut policy = load_policy(reader, Wanted::Person(person)).await?;
+    policy.rules = level_rules_of_roles_in(reader, policy.role_ids()).await?;
+    Ok(policy)
 }
 
 /// Everything the engine needs for `person` at `place`, in one snapshot; `None` when the project
