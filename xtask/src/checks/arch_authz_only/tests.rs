@@ -385,7 +385,7 @@ fn peek_is_switched_on_only_by_dev_dependencies() {
 #[test]
 fn good_example_another_method_that_starts_with_the_name_is_not_the_engine() {
     let text = "use super::map::rows_of;
-fn f() { let r = p.rows_of_all(); let e = Policy::evaluate_at_home; let m = map::rows_of(&x); }
+fn f() { let r = p.rows_of_all(); let e = Policy::evaluate_at_home; }
 ";
     assert!(evaluate(&source("crates/bb-api/src/api/x.rs", text)).is_empty());
 }

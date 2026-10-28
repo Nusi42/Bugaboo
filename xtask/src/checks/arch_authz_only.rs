@@ -75,26 +75,39 @@ const UNNARROWED: [(&str, &str); 2] = [
     ),
 ];
 
-/// How a method is named after the value or the type it belongs to: `p.name`, `Policy::name`,
-/// `<Policy>::name`. A path of the type only: `use super::map::rows_of;` is another function.
-const FORMS: [&str; 3] = [".", "Policy::", ">::"];
+/// How a method is called: after a value (`p.name(`) or by any path (`Policy::name(`,
+/// `<Policy>::name(`, `P::name(` after `use … Policy as P`, `bb_policy::Policy::name(`).
+const CALL_FORMS: [&str; 2] = [".", "::"];
+/// How a method is taken as a value, without a call (`.map(Policy::name)`): only a path of the type
+/// is read, so `use super::map::name;` is another function.
+const VALUE_FORMS: [&str; 3] = [".", "Policy::", ">::"];
 
-/// Where `text` uses the method `token` in any of the [`FORMS`]: a call, or the method taken as a
-/// value (`.map(Policy::evaluate_at)`). A token that ends in a name character (a bare name) is
-/// not followed by one, so `rows_of_all` is another method.
+/// Where `text` uses the method `token`: a call in any of the [`CALL_FORMS`], or the method taken
+/// as a value in the [`VALUE_FORMS`]. A token that ends in a name character (a bare name) is not
+/// followed by one, so `rows_of_all` is another method.
 fn uses_of(text: &str, token: &str) -> Vec<usize> {
     let ends_in_name = token.ends_with(|c: char| c.is_alphanumeric() || c == '_');
-    let mut found = Vec::new();
-    for form in FORMS {
-        let pattern = format!("{form}{token}");
-        for (at, _) in text.match_indices(&pattern) {
-            let after = text[at + pattern.len()..].chars().next();
-            if !ends_in_name || !after.is_some_and(|c| c.is_alphanumeric() || c == '_') {
-                found.push(at);
+    let mut found: Vec<(usize, usize)> = Vec::new();
+    for (forms, calls_only) in [
+        (CALL_FORMS.as_slice(), true),
+        (VALUE_FORMS.as_slice(), false),
+    ] {
+        for form in forms {
+            let pattern = format!("{form}{token}");
+            for (at, _) in text.match_indices(&pattern) {
+                let after = text[at + pattern.len()..].chars().next();
+                let name_goes_on = after.is_some_and(|c| c.is_alphanumeric() || c == '_');
+                let is_call = after == Some('(') || !ends_in_name;
+                if (!ends_in_name || !name_goes_on) && (!calls_only || is_call) {
+                    found.push((at + pattern.len(), at));
+                }
             }
         }
     }
-    found
+    // One use is found once, by the call forms and by the value forms alike.
+    found.sort_unstable();
+    found.dedup_by_key(|(end, _)| *end);
+    found.into_iter().map(|(_, at)| at).collect()
 }
 
 /// Whether `text` uses the method `name` (see [`uses_of`]).
