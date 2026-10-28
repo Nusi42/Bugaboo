@@ -63,7 +63,7 @@ pub(super) async fn change_my_setting(
         SettingsScope::Person,
         path.key,
         body.value,
-        body.version,
+        body.base_version,
     )
     .await
 }

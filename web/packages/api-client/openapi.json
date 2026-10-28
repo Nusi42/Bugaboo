@@ -18222,14 +18222,14 @@
         "description": "A new value for a setting of the person's own. Settings are changed from several browsers at\na time (tabs, devices), so a change can say which version it was made from.",
         "required": ["value"],
         "properties": {
+          "base_version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The version of the setting that was looked at (`version` of its answer, `0` while the person has no value of their\nown). When the value was changed since, the change is refused with `edit.version-changed`\nand the person's value stays. Left out, the last change wins."
+          },
           "value": {
             "$ref": "#/components/schemas/ValueBody",
             "description": "The value. It must be of the type of the setting and one it accepts."
-          },
-          "version": {
-            "type": ["integer", "null"],
-            "format": "int64",
-            "description": "The version of the setting that was looked at (`0` while the person has no value of their\nown). When the value was changed since, the change is refused with `edit.version-changed`\nand the person's value stays. Left out, the last change wins."
           }
         }
       },

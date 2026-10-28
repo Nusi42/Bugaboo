@@ -44,8 +44,8 @@ routes = [
 reason = "Signing in and a person's own sign-in data have no stored version: each step answers for itself (a password or a code that is right or wrong, a session that ends), and nobody else can have changed it meanwhile."
 
 [[exempt]]
-routes = ["DELETE /api/v1/me/settings/{key}"]
-reason = "*Reset to default* takes a person's own choice away: there is no value left to protect, and the next change reads the setting again (the change of a value takes a version, M5-F97)."
+routes = ["PUT /api/v1/me/settings/{key}", "DELETE /api/v1/me/settings/{key}"]
+reason = "A person's own choices belong to that one person. A change may name the version it read as `base_version` (M5-F97, ADR-0018), but it must stay optional: an old client sends none and the last choice wins, which the freeze of the API (ADR-0008) requires. *Reset to default* takes the choice away, so there is nothing left to protect."
 
 [[exempt]]
 routes = [

@@ -306,11 +306,11 @@ pub(crate) struct NewValueBody {
 pub(crate) struct NewMyValueBody {
     /// The value. It must be of the type of the setting and one it accepts.
     pub(super) value: ValueBody,
-    /// The version of the setting that was looked at (`0` while the person has no value of their
+    /// The version of the setting that was looked at (`version` of its answer, `0` while the person has no value of their
     /// own). When the value was changed since, the change is refused with `edit.version-changed`
     /// and the person's value stays. Left out, the last change wins.
     #[serde(default)]
-    pub(super) version: Option<i64>,
+    pub(super) base_version: Option<i64>,
 }
 
 /// What a route of a list reads from its address.

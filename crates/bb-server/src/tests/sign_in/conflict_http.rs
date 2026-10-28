@@ -18,9 +18,8 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 31] = [
+const VERSIONED: [&str; 30] = [
     "changeSignUpPolicy",
-    "changeMySetting",
     "saveComment",
     "changeField",
     "addChoice",
@@ -138,15 +137,6 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
                 "/api/v1/auth/sign-up-policy".to_owned(),
                 json!({"enabled": false, "domains": []}),
                 &now["version"],
-            )
-        }
-        "changeMySetting" => {
-            let now = read(ada, "/api/v1/me/settings?topic=appearance.mode").await?;
-            Save::new(
-                "PUT",
-                "/api/v1/me/settings/appearance.mode".to_owned(),
-                json!({"value": "dark"}),
-                &now["settings"][0]["version"],
             )
         }
         "changeGroup" => {

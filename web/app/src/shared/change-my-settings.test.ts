@@ -82,7 +82,8 @@ function sentOf(text: string): { value: string; version?: number } {
   if (typeof sent !== "object" || sent === null || !("value" in sent)) {
     throw new Error("not a change");
   }
-  const version = "version" in sent && typeof sent.version === "number" ? sent.version : undefined;
+  const version =
+    "base_version" in sent && typeof sent.base_version === "number" ? sent.base_version : undefined;
   return { value: String(sent.value), ...(version === undefined ? {} : { version }) };
 }
 

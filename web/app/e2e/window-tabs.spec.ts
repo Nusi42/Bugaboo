@@ -33,7 +33,7 @@ test("m5_f97 a size set in another tab for another form stays when this tab resi
   const other = apiOf(page, server);
   await other.client.PUT("/api/v1/me/settings/{key}", {
     params: { path: { key: "window.sizes" } },
-    body: { value: JSON.stringify({ "other-form": otherForm }), version: 0 },
+    body: { value: JSON.stringify({ "other-form": otherForm }), base_version: 0 },
   });
   await sizesSaved(page, 2, async () => {
     await pressSizeKey(page, "ArrowRight");

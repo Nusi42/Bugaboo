@@ -2111,7 +2111,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li><strong>The tables of levels.</strong> <code>FieldLevelTableBody</code>, <code>PeopleLevelTableBody</code> and their rows, cells and answers have plain names (a macro writes one struct for each kind of subject), so there is no generic schema name left.</li>
 </ul>
 <h5>Compatible later (not in the freeze)</h5>
-<p>These are additions after the freeze and break no client: optional and nullable members that are always there in new bodies (M4-F174), the per-route list of error codes and the wording of the shared <code>400</code> and <code>409</code> answers (B2), the open <code>fields</code> maps with inline field keys (B11, M4-F177), cursors for the capped lists (M4-F172), a stable cursor in the store for the lists of fields and workflows (M4-F171) and a <code>truncated</code> member of the list of workflows (M4-F180).</p>
+<p>These are additions after the freeze and break no client: optional and nullable members that are always there in new bodies (M4-F174), the per-route list of error codes and the wording of the shared <code>400</code> and <code>409</code> answers (B2), the open <code>fields</code> maps with inline field keys (B11, M4-F177), cursors for the capped lists (M4-F172), a stable cursor in the store for the lists of fields and workflows (M4-F171) and a <code>truncated</code> member of the list of workflows (M4-F180), and an optional <code>base_version</code> in the body of a change of a person's own setting and a <code>version</code> member in the answer (M5-F97, ADR-0018).</p>
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>Hand-written TypeScript types:</strong> drift. Rejected.</li>
@@ -2406,6 +2406,12 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <li>One set of routes and one generic form serve every setting; special editors (the themes with their samples, the keys of shortcuts, the start page) draw their own control and store through the same routes.</li>
 <li><code>appearance.theme</code> was replaced by <code>appearance.mode</code>, <code>appearance.light-theme</code> and <code>appearance.dark-theme</code>; migration <code>m0004</code> carries the stored values over.</li>
 <li>The settings that exist only for tests (feature <code>test-settings</code> of <code>bb-core</code>) are the way the project level is tested while no real setting is set on a project.</li>
+</ul>
+<h4>Update 2026-10-28 (M5-F97, a version for a person's own settings)</h4>
+<ul>
+<li>A person works in several tabs and on several devices, and a setting like <code>window.sizes</code> holds one JSON map of every form, so the last write undid the size another tab had set for another form. A person's own value now has a <strong>version</strong> (<code>person_setting.version</code>, migration 27; <code>0</code> while there is no value, <code>1</code> for the first, counted up by every write). The list and a change answer it as <code>version</code> of the setting, only for a person's own settings.</li>
+<li><code>PUT /api/v1/me/settings/{key}</code> takes an optional <code>base_version</code> in its body, the <code>version</code> the person read (not named <code>version</code>, because ARCH-VERSIONED makes a <code>version</code> in a body required, which the freeze forbids). A change made from another version is refused with <code>edit.version-changed</code> and the structured conflict (<code>409</code>) and the value stays; the browser reads the setting again and applies only its own change to what it finds (for <code>window.sizes</code>, its one form's size into the fresh map). Without a <code>base_version</code> the last write still wins, so an old client keeps working (an addition after the freeze, ADR-0008). <code>DELETE</code> (<em>Reset to default</em>) takes none; a value taken away and set again starts again at version 1.</li>
+<li>The organization's and the projects' settings have no version: administrators change them from the settings page one at a time.</li>
 </ul>
 <h4>Alternatives considered</h4>
 <ul>
