@@ -2,8 +2,8 @@
 //! ADR-0004, ADR-0025).
 //!
 //! `bb-policy` decides without I/O; this module loads what it needs through the port
-//! [`PolicyStore`] (one call per person and place), keeps the evaluations for the length of one
-//! request in the [`Ctx`], and gives the use cases three things: who is asking ([`Actor`]), the
+//! [`PolicyStore`] (the rows, roles and levels of a person once for a request), keeps the
+//! evaluations for the length of one request in the [`Ctx`], and gives the use cases three things: who is asking ([`Actor`]), the
 //! evaluation at a place ([`Ctx::evaluate`]) and the check that stops a request that may not do
 //! what it asks ([`Ctx::require`]). A project that a person may not know about answers
 //! `resource.not-found`, exactly like one that does not exist.
@@ -24,7 +24,7 @@ use bb_core::id::{AccessKeyId, GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, Narrowing, PeopleContext, Target, evaluate, resolve};
+use bb_policy::{Evaluation, Narrowing, PeopleContext, Policy, Target, evaluate, resolve};
 
 pub use bb_policy::{
     Authorized, LevelKind, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree,
@@ -86,11 +86,14 @@ impl From<Refusal> for AppError {
     }
 }
 
-/// What `person` may do at `place`, read from the store and decided by the policy engine; `None`
-/// when the place is a project that does not exist. The one place that loads what the engine needs
-/// and asks it: `Ctx::evaluate` keeps the answer for the request, and the kinds of record that
-/// the editing use cases know (`EditableRecords`) have no context and ask here.
-pub(crate) async fn evaluation_in<S: AuthStore>(
+/// What `person` may do at `place`, read from the store for that one place and decided by the
+/// policy engine; `None` when the place is a project that does not exist. For the kinds of record
+/// that the editing use cases know (`EditableRecords`), which have no context and so no request
+/// to keep what was read; `Ctx::evaluate` reads the rows of a person once for a request.
+///
+/// # Errors
+/// An internal error when the store fails.
+pub async fn evaluation_in<S: AuthStore>(
     store: &S,
     person: UserId,
     place: Place,
@@ -100,6 +103,36 @@ pub(crate) async fn evaluation_in<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .map(|inputs| evaluate(&inputs)))
+}
+
+/// What `person` may do at `place` (with `chain`, the projects from the top down to it; none for
+/// the organization), decided by the engine from the rows, roles and levels of the person that
+/// were read once ([`PolicyStore::person_policy`], with the levels set for projects added for a
+/// project). The one place that chooses what applies at a place from them: it is
+/// [`Policy::inputs_from_rows`], the engine's own rule, not a copy of it.
+#[must_use]
+pub fn evaluation_from_person_policy(
+    policy: &Policy,
+    person: UserId,
+    place: Place,
+    chain: Vec<ProjectId>,
+) -> Evaluation {
+    evaluate(&policy.inputs_from_rows(person, &policy.rows_of(person), place, chain))
+}
+
+/// The place a request for a project by its address is judged at: the project when it was found,
+/// else a project that is not there. Judging the place of a missing project as the place of a
+/// found one makes the two cost the store the same reads (the rights of a project read the chain
+/// of the project and the levels set for projects), so what a request costs does not tell a
+/// project the person may not see from one that does not exist (PRJ-01, UX §2.1). Asking for the
+/// rights at the place of a missing project is `resource.not-found`.
+///
+/// # Errors
+/// `resource.not-found` when no ID can be made for the place of a missing project.
+pub(crate) fn place_of_address(found: Option<ProjectId>) -> Result<Place, AppError> {
+    let nowhere = ProjectId::from_parts(jiff::Timestamp::UNIX_EPOCH, [0; 10])
+        .map_err(|_| AppError::Refused(ErrorCode::NotFound))?;
+    Ok(Place::Project(found.unwrap_or(nowhere)))
 }
 
 /// The label of the first role of a person, from their evaluation at a place: how they are shown
@@ -210,20 +243,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(found) = self.cached_evaluation(person, place) {
             return Ok(found);
         }
-        let evaluation = Arc::new(
-            evaluation_in(self.store(), person, place)
-                .await?
-                .ok_or(AppError::Refused(ErrorCode::NotFound))?,
-        );
+        let evaluation = Arc::new(self.evaluation_from_rows(person, place).await?);
         self.remember_evaluation(person, place, &evaluation);
         Ok(evaluation)
     }
 
     /// Keeps the evaluation of `person` at each of `projects` for the rest of the request, from
-    /// one read of their rows, the levels of their roles and the tree of the projects. Each
-    /// `evaluate` of a place reads all of that again (some fifteen statements), which a page of
-    /// notifications in many projects pays for every project; the decision is the same
-    /// ([`Policy::evaluate_with`] is what a preview of a move asks too). Nothing is read when
+    /// one read of their rows, the levels of their roles and the tree of the projects: the tree
+    /// is what lets it decide a project without a read of its own, where `evaluate` reads the
+    /// chain of each project; the decision is the same ([`Policy::evaluate_with`] is what a
+    /// preview of a move asks too). Nothing is read when
     /// fewer than two of the places are not kept yet. What was read is given back, so that the
     /// caller does not read the projects once more.
     ///
@@ -252,6 +281,71 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.remember_evaluation(person, Place::Project(project), &Arc::new(found));
         }
         Ok(Some(shown))
+    }
+
+    /// The evaluation of `person` at `place`, decided by the engine from the person's rows, roles
+    /// and levels, which are read once for the request whatever the number of places asked
+    /// about; only the chain of a project is read for each place. The same decision as
+    /// [`evaluation_in`] makes from one read for one place ([`Policy::inputs_from_rows`] is the
+    /// one rule of which rows and levels apply at a place).
+    async fn evaluation_from_rows(
+        &self,
+        person: UserId,
+        place: Place,
+    ) -> Result<Evaluation, AppError> {
+        let chain = match place {
+            Place::Organization => Some(Vec::new()),
+            Place::Project(project) => self
+                .store()
+                .project_chain(project)
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        };
+        // Read whether or not the project is there: a project that does not exist costs the
+        // store the same reads as one the person may not see, so the reads tell nothing apart.
+        let policy = self
+            .person_policy(person, matches!(place, Place::Project(_)))
+            .await?;
+        let chain = chain.ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        Ok(evaluation_from_person_policy(&policy, person, place, chain))
+    }
+
+    /// The rows, roles and levels that decide for `person`, read once for the request: those the
+    /// roles have of their own first, and the levels set for projects when a project is asked
+    /// about (`with_projects`), so a request that asks only about the organization does not read
+    /// them.
+    async fn person_policy(
+        &self,
+        person: UserId,
+        with_projects: bool,
+    ) -> Result<Arc<Policy>, AppError> {
+        let held = locked(&self.policies).get(&person).cloned();
+        let (policy, has_projects) = match held {
+            Some(held) => held,
+            None => (
+                Arc::new(
+                    self.store()
+                        .person_policy(person)
+                        .await
+                        .map_err(|error| internal::<S>(&error))?,
+                ),
+                false,
+            ),
+        };
+        let (policy, has_projects) = if with_projects && !has_projects {
+            let levels = self
+                .store()
+                .project_levels(policy.role_ids())
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            let mut more = (*policy).clone();
+            more.rules = more.rules.with_project_rules(levels);
+            (Arc::new(more), true)
+        } else {
+            (policy, has_projects)
+        };
+        locked(&self.policies).insert(person, (Arc::clone(&policy), has_projects));
+        Ok(policy)
     }
 
     fn cached_evaluation(&self, person: UserId, place: Place) -> Option<Arc<Evaluation>> {

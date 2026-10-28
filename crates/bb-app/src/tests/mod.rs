@@ -50,6 +50,7 @@ mod offers;
 mod offers_known_uses;
 mod offers_secrecy;
 mod recurring_jobs;
+mod rights_once;
 mod runs_end;
 mod saved_searches;
 mod saved_searches_names;

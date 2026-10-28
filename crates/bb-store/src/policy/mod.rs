@@ -22,12 +22,12 @@ use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_core::version::Version;
 use bb_policy::guards::OrganizationState;
-use bb_policy::{Inputs, LevelRules, LevelSubject, Permission, Place};
+use bb_policy::{Inputs, LevelRules, LevelSubject, Permission, Place, Policy};
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use self::levels::Which;
-pub(crate) use self::loading::{Wanted, load_policy};
+pub(crate) use self::loading::{Wanted, load_policy, person_policy_in, project_levels_in};
 use crate::auth::AuthStorage;
 use crate::db::{Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
@@ -127,6 +127,16 @@ impl PolicyStore for AuthStorage {
         id: ProjectId,
     ) -> Result<Option<Project>, StoreError> {
         project_in(transaction, id).await
+    }
+
+    async fn person_policy(&self, person: UserId) -> Result<Policy, StoreError> {
+        let mut transaction = self.database().begin_read().await?;
+        person_policy_in(&mut transaction, person).await
+    }
+
+    async fn project_levels(&self, roles: Vec<RoleId>) -> Result<LevelRules, StoreError> {
+        let mut transaction = self.database().begin_read().await?;
+        project_levels_in(&mut transaction, roles).await
     }
 
     async fn legacy_administrators(&self) -> Result<Vec<UserId>, StoreError> {

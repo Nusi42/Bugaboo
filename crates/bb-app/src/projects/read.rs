@@ -14,7 +14,7 @@ use super::store::Found;
 use super::types::{
     MoveRight, ProjectDetail, ProjectItem, ProjectPage, ProjectQuery, ProjectView, ProjectsQuery,
 };
-use crate::access::Actor;
+use crate::access::{Actor, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
 use crate::fields::Item;
 
@@ -82,9 +82,7 @@ pub async fn project<S: AuthStore>(
     // evaluation before either is answered, so the answer is not the only thing that is equal.
     let shown = ctx.shown_to(&actor).await?;
     let found = ctx.find_project(&input.address).await?;
-    let place = found.as_ref().map_or(Place::Organization, |found| {
-        Place::Project(found.project.id)
-    });
+    let place = place_of_address(found.as_ref().map(|found| found.project.id))?;
     let held = ctx.evaluation_of(&actor, place).await?;
     let Some(found) = found.filter(|_| held.sees_project()) else {
         return Err(AppError::Refused(ErrorCode::NotFound));

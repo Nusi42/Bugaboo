@@ -68,6 +68,7 @@ mod perf_queries;
 mod permissions_http;
 mod policy;
 mod policy_probes;
+mod policy_reads;
 mod policy_rig;
 mod policy_rules;
 mod projects;
