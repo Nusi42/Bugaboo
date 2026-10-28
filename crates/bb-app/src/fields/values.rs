@@ -30,7 +30,7 @@ use super::manage::{current_default, must_be_asked_for};
 use super::pattern::Linear;
 use super::types::Definition;
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, entity, internal, locked};
 use crate::issues::{IssueView, OwnHtml};
 
 /// The values of a set of items, as stored, with the definitions they are read with.
@@ -494,14 +494,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         ))
     }
 
-    /// The definitions of the own fields.
+    /// The definitions of the own fields, read once for the request (every issue of a selection
+    /// and every row of a page asks for them).
     pub(crate) async fn field_catalogue(&self) -> Result<Arc<Vec<Definition>>, AppError> {
-        Ok(Arc::new(
+        if let Some(known) = locked(&self.known.field_catalogue).clone() {
+            return Ok(known);
+        }
+        let found = Arc::new(
             self.store()
                 .field_definitions()
                 .await
                 .map_err(|error| internal::<S>(&error))?,
-        ))
+        );
+        *locked(&self.known.field_catalogue) = Some(Arc::clone(&found));
+        Ok(found)
+    }
+
+    /// Drops the definitions the request has read: a use case that changed a field, a scope or a
+    /// choice calls it after its write, so a later read of the request sees the change.
+    pub(crate) fn forget_field_catalogue(&self) {
+        *locked(&self.known.field_catalogue) = None;
     }
 
     /// Reads the values of these items.

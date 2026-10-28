@@ -62,6 +62,7 @@ mod matrix;
 mod own_access_http;
 mod passkeys;
 mod people_http;
+mod perf_many_changes;
 mod perf_notifications;
 mod perf_queries;
 mod permissions_http;

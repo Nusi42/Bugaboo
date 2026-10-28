@@ -252,6 +252,9 @@ pub(crate) struct Known {
     /// Every issue type, read once for the request: the lines of issues, the rule of what a person
     /// may know and the history all take their types from it.
     pub(crate) issue_types: Mutex<Option<Arc<Vec<bb_core::issue::IssueType>>>>,
+    /// The definitions of the own fields with their scopes and choices, read once for the request;
+    /// a use case that changes a definition forgets them (`forget_field_catalogue`).
+    pub(crate) field_catalogue: Mutex<Option<Arc<Vec<crate::fields::Definition>>>>,
     /// The groups people are in, for the rule *Who can do it* of a status change.
     pub(crate) person_groups: Mutex<HashMap<UserId, Arc<Vec<bb_core::id::GroupId>>>>,
 }

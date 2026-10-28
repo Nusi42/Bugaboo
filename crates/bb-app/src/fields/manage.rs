@@ -333,6 +333,7 @@ pub async fn create_field<S: AuthStore>(
         })
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
+    ctx.forget_field_catalogue();
     let view = ctx.field_shown(&actor, &held, &definition).await?;
     Ok(held.authorize(view))
 }
@@ -591,6 +592,7 @@ pub async fn change_field<S: AuthStore>(
                 actor.person.id,
             )
         })?;
+    ctx.forget_field_catalogue();
     after.field.version = next(version);
     let view = ctx.field_shown(&actor, &held, &after).await?;
     Ok(held.authorize(view))
