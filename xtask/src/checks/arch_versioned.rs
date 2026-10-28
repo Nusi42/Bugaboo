@@ -197,11 +197,14 @@ fn route_findings(
     }
     // A property that is optional in the description is a request that may leave the version out.
     for needed in [VERSION, LOCK_TOKEN] {
-        if properties.contains(&needed)
-            && (needed == VERSION || long_text)
-            && !required.contains(&needed)
-            && !(needed == VERSION && optional && !long_text)
-        {
+        // The version is required, unless a route that took it after the freeze is listed as
+        // optional (a save of long text is never listed); the lock token only for long text.
+        let must = if needed == VERSION {
+            long_text || !optional
+        } else {
+            long_text
+        };
+        if properties.contains(&needed) && must && !required.contains(&needed) {
             findings.push(Finding::at(
                 &place,
                 format!("`{needed}` must be required in the body (not optional), so a request without it is refused."),
