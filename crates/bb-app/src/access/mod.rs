@@ -108,10 +108,10 @@ pub(crate) async fn evaluation_in<S: AuthStore>(
 
 /// What `person` may do at `place` (with `chain`, the projects from the top down to it; none for
 /// the organization), decided by the engine from the rows, roles and levels of the person that
-/// were read once ([`PolicyStore::person_policy`]). The one place that chooses what applies at a place from them: it is
-/// [`Policy::inputs_from_rows`], the engine's own rule, not a copy of it.
+/// were read once ([`PolicyStore::person_policy`]). The one place that chooses what applies at a
+/// place from them: it is [`Policy::inputs_from_rows`], the engine's own rule, not a copy of it.
 #[must_use]
-pub fn evaluation_from_person_policy(
+pub(crate) fn evaluation_from_person_policy(
     policy: &Policy,
     person: UserId,
     place: Place,

@@ -6,7 +6,7 @@
 //! project must give the same decision both ways. Every flow runs on SQLite and PostgreSQL.
 
 use bb_app::access::Place;
-use bb_app::access::{Permission, PolicyStore as _, evaluation_from_person_policy};
+use bb_app::access::{Permission, PolicyStore as _};
 use bb_app::fields::CreateField;
 use bb_app::roles::{Given, SetFieldLevel, Subject};
 use bb_core::access::{AppliesTo, FieldLevel};
@@ -125,7 +125,12 @@ async fn sec_03_the_rights_read_once_decide_every_place_as_the_rights_read_for_e
                         .await?
                         .ok_or("no such project")?,
                 };
-                let once = evaluation_from_person_policy(&policy, person.id, place, chain);
+                let once = evaluate(&policy.inputs_from_rows(
+                    person.id,
+                    &policy.rows_of(person.id),
+                    place,
+                    chain,
+                ));
                 let each = evaluate(
                     &rig.storage
                         .policy_inputs(person.id, place)

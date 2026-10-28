@@ -23,6 +23,9 @@
 //!   `evaluate_with(` and `rows_of(` (use `ctx.evaluation_of(actor, …)`, `ctx.require(…)`,
 //!   `visible_as` and `evaluate_as` with the actor's key scope), so a key can never see more than
 //!   it was given (M2-F27);
+//! - the engine calls that make an evaluation of anybody from rows (`evaluation_from_person_policy`,
+//!   `inputs_from_rows`, and outside `bb-app` also `evaluate_with(`, `evaluate_at(`, `rows_of(`)
+//!   outside `bb-policy` and the access module;
 //! - inside `bb-policy`: a `pub` field in the definition of `Authorized`, a `pub` constructor
 //!   (`new`, `from`), or a derive that would make one out of nothing (`Default`, `Deserialize`).
 //!
@@ -75,6 +78,16 @@ const UNNARROWED: [(&str, &str); 7] = [
     ),
     (".evaluate_with(", ENGINE_CALL_NOT_NARROWED),
     (".rows_of(", ENGINE_CALL_NOT_NARROWED),
+];
+/// The calls that make an evaluation of anybody from rows: only `bb-policy` and the access module
+/// (which narrows it to an access key) may make them. In `bb-app` the use cases are held to the
+/// list above, with advice; the first two are held everywhere.
+const ENGINE_CALLS: [&str; 5] = [
+    "evaluation_from_person_policy",
+    "inputs_from_rows",
+    ".evaluate_with(",
+    ".evaluate_at(",
+    ".rows_of(",
 ];
 /// The narrowed forms, which narrow to nothing when they are given no key: the second argument
 /// of each is the key scope.
@@ -176,6 +189,18 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                      the person holds from the store. Ask `ctx.evaluate(person, place)` or \
                      `ctx.require(…)` instead.",
                 ));
+            }
+            if !in_policy && !in_access {
+                for (at, call) in ENGINE_CALLS.iter().enumerate() {
+                    // In `bb-app` the first two are the use cases' to avoid; the rest has advice.
+                    let held_elsewhere = at >= 2 && path.starts_with(USE_CASES_FOLDER);
+                    if line.contains(call) && !held_elsewhere {
+                        findings.push(Finding::at(
+                            place(),
+                            "Only `bb-policy` and `bb-app/src/access` make an evaluation of a                              person from their rows (`evaluation_from_person_policy`,                              `inputs_from_rows`, `evaluate_with`, `evaluate_at`, `rows_of`):                              elsewhere it would skip the narrowing of an access key. Ask                              `ctx.evaluation_of(actor, place)` or `ctx.require(…)`.",
+                        ));
+                    }
+                }
             }
             if !in_policy
                 && !in_access
@@ -430,6 +455,47 @@ mod tests {
             let findings = evaluate(&source("crates/bb-api/src/api/x.rs", text));
             assert_eq!(findings.len(), 1, "{text}");
         }
+    }
+
+    #[test]
+    fn bad_example_the_engine_call_of_one_read_outside_the_policy_crate_and_the_access_module() {
+        for text in [
+            "fn f(p: &Policy) { let e = evaluation_from_person_policy(&p, who, place, chain); }
+",
+            "fn f(p: &Policy) { let i = p.inputs_from_rows(who, &rows, place, chain); }
+",
+            "fn f(p: &Policy) { let e = p.evaluate_with(who, &rows, &tree, place); }
+",
+            "fn f(p: &Policy) { let e = p.evaluate_at(who, &tree, place); }
+",
+            "fn f(p: &Policy) { let r = p.rows_of(who); }
+",
+        ] {
+            for folder in ["crates/bb-api/src/api/x.rs", "crates/bb-sample/src/x.rs"] {
+                assert_eq!(evaluate(&source(folder, text)).len(), 1, "{folder}: {text}");
+            }
+        }
+    }
+
+    #[test]
+    fn good_example_the_access_module_and_the_policy_crate_may_call_the_engine() {
+        let text = "fn f(p: &Policy) { let e = evaluation_from_person_policy(&p, who, place, chain); let i = p.inputs_from_rows(who, &rows, place, chain); let r = p.rows_of(who); }
+";
+        for folder in [
+            "crates/bb-app/src/access/mod.rs",
+            "crates/bb-policy/src/tree.rs",
+        ] {
+            assert!(evaluate(&source(folder, text)).is_empty(), "{folder}");
+        }
+        // A comment and a test do not count.
+        let quiet = source(
+            "crates/bb-api/src/api/x.rs",
+            "// p.inputs_from_rows(who)
+#[cfg(test)]
+mod tests { fn t(p: &Policy) { p.rows_of(who); } }
+",
+        );
+        assert!(evaluate(&quiet).is_empty());
     }
 
     #[test]
