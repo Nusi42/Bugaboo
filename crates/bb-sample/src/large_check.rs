@@ -168,7 +168,7 @@ impl Sample {
                 ));
             }
             let rows = storage
-                .history_page(issue.id, None, None, ROWS_AT_MOST)
+                .history_page(issue.id, None, None, 0, ROWS_AT_MOST)
                 .await?;
             for event in &events {
                 if rows.iter().all(|row| row.event != event.id) {
@@ -204,7 +204,7 @@ impl Sample {
     ) -> Result<(), SampleError> {
         let storage = &self.storage;
         let written = storage
-            .history_page(issue, Some(HistoryKind::Comment), None, ROWS_AT_MOST)
+            .history_page(issue, Some(HistoryKind::Comment), None, 0, ROWS_AT_MOST)
             .await?;
         let ids: Vec<CommentId> = written
             .iter()

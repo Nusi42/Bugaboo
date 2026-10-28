@@ -36,6 +36,7 @@ mod fields_references;
 mod files_history;
 mod files_http;
 mod history_creation;
+mod history_hidden_cursor;
 mod history_own_fields;
 pub(crate) mod http;
 mod invitations;

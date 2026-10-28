@@ -19,7 +19,7 @@ use bb_core::fields::{Field, FieldKey};
 use bb_core::history::{FileEvent, HistoryEntry, HistoryKind, HistoryTab};
 use bb_core::id::{AttachmentId, CommentId, FieldId, IssueId, IssueTypeId, UserId};
 use bb_core::own_fields::FieldType;
-use bb_core::paging::page_len;
+use bb_core::paging::{SkipCursor, page_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::relation::{Direction, RelationKind};
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef};
@@ -38,6 +38,7 @@ use crate::issues::member as issue_member;
 use crate::member::relation as relation_member;
 use crate::projects::ProjectRef;
 use crate::relations::LineMaker;
+use crate::walk::{Walk, fill_past_hidden};
 use bb_core::comment::Comment;
 use bb_core::files::Attachment;
 use bb_core::issue::Issue;
@@ -100,10 +101,6 @@ pub(crate) fn visible_changes<'a>(
         .filter(|change| Member::of(&change.field).may_show(can_see))
         .collect()
 }
-
-/// Most rows read for one request, as a multiple of the page size: a reader who may see few of
-/// them still gets a cursor back and asks again, so one request never reads a whole long history.
-const ROWS_PER_ITEM_MAX: usize = 10;
 
 /// What the rows of one batch need to be shaped, read once for the whole batch.
 struct Batch<'a> {
@@ -636,9 +633,66 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// A row of the history: its place in the outbox and what is in it for the reader, if anything.
+struct Shaped {
+    position: i64,
+    item: Option<HistoryItem>,
+}
+
+/// The history of one issue for one reader, walked by [`fill_past_hidden`]: rows are shaped as
+/// they are fetched and one with nothing for the reader is skipped (M3-F68).
+struct IssueHistory<'a, 'c, 'r, S: AuthStore> {
+    ctx: &'a Ctx<'c, S>,
+    issue: &'a Issue,
+    kind: Option<HistoryKind>,
+    kinds: &'a [RelationKind],
+    reading: &'a mut Reading<'r>,
+}
+
+impl<S: AuthStore> Walk for IssueHistory<'_, '_, '_, S> {
+    type Row = Shaped;
+    type Key = i64;
+
+    async fn fetch(
+        &mut self,
+        after: Option<&i64>,
+        skip: u64,
+        limit: u64,
+    ) -> Result<Vec<Shaped>, AppError> {
+        let rows = self
+            .ctx
+            .store()
+            .history_page(self.issue.id, self.kind, after.copied(), skip, limit)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let batch = self.ctx.batch_of(&rows, self.kinds).await?;
+        let mut shaped = Vec::with_capacity(rows.len());
+        for row in &rows {
+            let item = self
+                .ctx
+                .history_item(self.reading, self.issue, &batch, row)
+                .await?;
+            shaped.push(Shaped {
+                position: row.position,
+                item,
+            });
+        }
+        Ok(shaped)
+    }
+
+    async fn keeps(&mut self, row: &Shaped) -> Result<bool, AppError> {
+        Ok(row.item.is_some())
+    }
+
+    fn key_of(row: &Shaped) -> Result<i64, AppError> {
+        Ok(row.position)
+    }
+}
+
 /// The history of an issue, newest first, a page at a time, in three tabs: *Everything*,
 /// *Comments*, *Changes*. The history is caught up with the events first, so it is never behind
-/// what the reader just did.
+/// what the reader just did. Rows the reader may not see are skipped by [`fill_past_hidden`], so
+/// a cursor never names one and says no more than "there is more" (M3-F68).
 ///
 /// # Errors
 /// `resource.not-found` for an issue that does not exist, is in the trash or that the person may
@@ -650,21 +704,13 @@ pub async fn history<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
     ctx.catch_up_history().await?;
-    let before = match input.cursor.as_deref() {
-        Some(text) => Some(
-            text.parse::<i64>()
-                .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?,
-        ),
-        None => None,
-    };
+    let start = SkipCursor::read(input.cursor.as_deref())
+        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     let kind = match input.tab {
         HistoryTab::Everything => None,
         HistoryTab::Comments => Some(HistoryKind::Comment),
         HistoryTab::Changes => Some(HistoryKind::Change),
     };
-    let limit = page_len(Some(input.limit));
-    let read = u64::try_from(limit).unwrap_or(u64::MAX).saturating_add(1);
-    // The people of the values of the page are resolved once for every row of it.
     let mut reading = Reading {
         actor: &actor,
         held: &held,
@@ -677,42 +723,17 @@ pub async fn history<S: AuthStore>(
         .relation_kinds()
         .await
         .map_err(|error| internal::<S>(&error))?;
-    let mut items: Vec<(i64, HistoryItem)> = Vec::new();
-    let mut resume = None;
-    let mut before = before;
-    let mut rows_read = 0_usize;
-    // Rows the reader may not see are skipped, so more rows are read until the page is full, the
-    // history ends or the most rows of one request are read; then the cursor says where to go on.
-    'pages: loop {
-        let rows = ctx
-            .store()
-            .history_page(issue.id, kind, before, read)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let exhausted = rows.len() < usize::try_from(read).unwrap_or(usize::MAX);
-        let batch = ctx.batch_of(&rows, &kinds).await?;
-        for row in &rows {
-            if let Some(item) = ctx.history_item(&mut reading, &issue, &batch, row).await? {
-                if items.len() == limit {
-                    resume = items.last().map(|(position, _)| *position);
-                    break 'pages;
-                }
-                items.push((row.position, item));
-            }
-            before = Some(row.position);
-            rows_read += 1;
-            if rows_read >= limit.saturating_mul(ROWS_PER_ITEM_MAX) {
-                resume = before;
-                break 'pages;
-            }
-        }
-        if exhausted {
-            break;
-        }
-    }
+    let mut walk = IssueHistory {
+        ctx,
+        issue: &issue,
+        kind,
+        kinds: &kinds,
+        reading: &mut reading,
+    };
+    let filled = fill_past_hidden(&mut walk, &start, page_len(Some(input.limit))).await?;
     Ok(held.authorize(HistoryPage {
-        items: items.into_iter().map(|(_, item)| item).collect(),
-        next_cursor: resume.map(|position| position.to_string()),
+        items: filled.rows.into_iter().filter_map(|row| row.item).collect(),
+        next_cursor: filled.next.as_ref().map(SkipCursor::write),
     }))
 }
 
