@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   changeMySettings,
-  forgetSeenVersions,
+  forgetConfirmedSettings,
   rereadsMax,
   saveProgress,
 } from "./change-my-settings.ts";
@@ -18,8 +18,10 @@ const server = vi.hoisted(() => ({
   version: 0,
   puts: [] as { readonly version: number | undefined; readonly sizes: string }[],
   reads: 0,
-  /** Another tab changes the setting each time this page reads it, for a test of a lost race. */
+  /** Another tab changes the setting right after each refusal, for a test of a lost race. */
   rival: false,
+  /** Whether a refusal names what the server holds (it does, unless the conflict could not be made). */
+  withConflict: true,
   respond: undefined as undefined | ((method: string, body: string) => Response),
 }));
 
@@ -95,16 +97,20 @@ function formsOf(text: string): string[] {
 function answer(method: string, text: string): Response {
   if (method === "GET") {
     server.reads += 1;
-    const seen = json({ settings: [sizesSetting()] });
-    if (server.rival) {
-      // Another tab changes it right after this page has read it.
-      otherTabSets(`rival-${String(server.version)}`);
-    }
-    return seen;
+    return json({ settings: [sizesSetting()] });
   }
   const body = sentOf(text);
   server.puts.push({ version: body.version, sizes: body.value });
   if (body.version !== undefined && body.version !== server.version) {
+    const conflict = {
+      version: server.version,
+      fields: ["window_sizes"],
+      current: { window_sizes: server.sizes },
+    };
+    if (server.rival) {
+      // Another tab changes it right after this refusal.
+      otherTabSets(`rival-${String(server.version)}`);
+    }
     return json(
       {
         type: "edit.version-changed",
@@ -113,6 +119,7 @@ function answer(method: string, text: string): Response {
         code: "edit.version-changed",
         message_key: "error.edit.version-changed",
         params: {},
+        ...(server.withConflict ? { conflict } : {}),
       },
       409,
       "application/problem+json",
@@ -136,19 +143,23 @@ function pageHasRead(): MySettings {
   return settings;
 }
 
-describe("m5_f97 a change of a person's setting made from an old version", () => {
-  beforeEach(() => {
-    queryClient.clear();
-    forgetSeenVersions();
-    Object.assign(server, {
-      sizes: "{}",
-      version: 0,
-      puts: [],
-      reads: 0,
-      rival: false,
-    });
-    server.respond = answer;
+/** The page and the server start again: nothing read, nothing confirmed, nothing set. */
+function startAgain(): void {
+  queryClient.clear();
+  forgetConfirmedSettings();
+  Object.assign(server, {
+    sizes: "{}",
+    version: 0,
+    puts: [],
+    reads: 0,
+    rival: false,
+    withConflict: true,
   });
+  server.respond = answer;
+}
+
+describe("m5_f97 a change of a person's setting made from an old version", () => {
+  beforeEach(startAgain);
 
   it("is sent with the version the page read, and needs no second try when nobody else changed", async () => {
     server.sizes = JSON.stringify({ a: small });
@@ -161,7 +172,7 @@ describe("m5_f97 a change of a person's setting made from an old version", () =>
     expect(saveProgress.read().state).toBe("saved");
   });
 
-  it("reads the setting again and puts only its own form's size into what another tab set", async () => {
+  it("takes what the refusal names and puts only its own form's size into it, with no extra read", async () => {
     server.sizes = JSON.stringify({ a: small });
     server.version = 1;
     const read = pageHasRead();
@@ -169,7 +180,7 @@ describe("m5_f97 a change of a person's setting made from an old version", () =>
     otherTabSets("other-tab");
     await changeMySettings([changeForSize(read, "mine", { width: 900, height: 700 })]);
     expect(server.puts.map((put) => put.version)).toEqual([1, 2]);
-    expect(server.reads).toBe(1);
+    expect(server.reads).toBe(0);
     expect(parseWindowSizes(server.sizes)).toEqual({
       a: small,
       "other-tab": small,
@@ -180,18 +191,7 @@ describe("m5_f97 a change of a person's setting made from an old version", () =>
 });
 
 describe("m5_f97 changes of one tab that follow each other", () => {
-  beforeEach(() => {
-    queryClient.clear();
-    forgetSeenVersions();
-    Object.assign(server, {
-      sizes: "{}",
-      version: 0,
-      puts: [],
-      reads: 0,
-      rival: false,
-    });
-    server.respond = answer;
-  });
+  beforeEach(startAgain);
 
   it("sends the second of two quick changes from the version the first one got", async () => {
     server.version = 4;
@@ -208,6 +208,20 @@ describe("m5_f97 changes of one tab that follow each other", () => {
     expect(formsOf(server.sizes).toSorted()).toEqual(["a", "b"]);
   });
 
+  it("makes a change that waited on what the one before left, and keeps what another tab set", async () => {
+    server.sizes = JSON.stringify({ a: small });
+    server.version = 1;
+    // Both changes are made from what the page read; another tab sets a form in between.
+    const read = pageHasRead();
+    otherTabSets("other-tab");
+    await Promise.all([
+      changeMySettings([changeForSize(read, "first", small)]),
+      changeMySettings([changeForSize(read, "second", small)]),
+    ]);
+    expect(formsOf(server.sizes).toSorted()).toEqual(["a", "first", "other-tab", "second"]);
+    expect(saveProgress.read().state).toBe("saved");
+  });
+
   it("gives up after a few tries when the others keep winning, and says it was not saved", async () => {
     const read = pageHasRead();
     server.rival = true;
@@ -216,5 +230,20 @@ describe("m5_f97 changes of one tab that follow each other", () => {
     expect(server.puts).toHaveLength(rereadsMax + 1);
     expect(saveProgress.read().state).toBe("not-saved");
     expect(formsOf(server.sizes)).not.toContain("mine");
+  });
+});
+
+describe("m5_f97 a refusal that does not say what the server holds", () => {
+  beforeEach(startAgain);
+
+  it("reads the setting when the refusal does not say what the server holds", async () => {
+    server.withConflict = false;
+    server.sizes = JSON.stringify({ a: small });
+    server.version = 1;
+    const read = pageHasRead();
+    otherTabSets("other-tab");
+    await changeMySettings([changeForSize(read, "mine", small)]);
+    expect(server.reads).toBe(1);
+    expect(formsOf(server.sizes).toSorted()).toEqual(["a", "mine", "other-tab"]);
   });
 });

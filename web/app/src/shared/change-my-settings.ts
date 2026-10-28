@@ -1,4 +1,4 @@
-import { ApiError, type SettingKey } from "@bugaboo/api-client";
+import { ApiError, conflictOf, type SettingKey } from "@bugaboo/api-client";
 
 import { api } from "./api.ts";
 import { messageOf } from "./errors.ts";
@@ -8,7 +8,6 @@ import {
   mySettingsKey,
   settingOf,
   type MySettings,
-  type Setting,
   type SettingValue,
 } from "./my-settings.ts";
 import { optimisticSend } from "./optimistic.ts";
@@ -76,31 +75,57 @@ export function inOrderOfKey<Answer>(key: string, request: () => Promise<Answer>
  */
 export const rereadsMax = 3;
 
+/** What the server held of a setting the last time it said so, and the version of it. */
+interface Confirmed {
+  readonly value: SettingValue;
+  readonly version: number;
+}
+
 /**
- * The newest version of each setting that an answer of the server named. The page reads the
- * setting again after a change, but not at once, so the next change is made from the version the
- * one before made. A version that is too old or too new (another tab reset the setting, or
- * another person signed in) is refused as stale and the setting is read again, so a wrong guess
- * costs one request and never overwrites anything.
+ * The last value and version of each setting that an answer of the server named (the answer to a
+ * change, or the refusal of a stale one). The page reads the setting again after a change, but not
+ * at once, so a change that waits behind another is made on what the server holds after that one,
+ * not on what the page drew before it (M5-F97). A version that is too old or too new (another
+ * tab changed the setting, or another person signed in) is refused as stale and the change is made
+ * again on what the refusal names, so a wrong guess costs one request and overwrites nothing.
  */
-const versionsSeen = new Map<string, number>();
+const confirmed = new Map<SettingKey, Confirmed>();
 
-/** Forgets the versions seen: when the person leaves, the next person starts without them. */
-export function forgetSeenVersions(): void {
-  versionsSeen.clear();
+/** Forgets what the server confirmed: when the person leaves, the next person starts without it. */
+export function forgetConfirmedSettings(): void {
+  confirmed.clear();
 }
 
-/** The version a change is made from: the newest one this page knows of the setting. */
-function versionToSend(key: SettingKey): number | undefined {
-  const cached = settingOf(currentMySettings(), key)?.version;
-  const seen = versionsSeen.get(key);
-  return cached === undefined || cached === null ? seen : Math.max(cached, seen ?? cached);
-}
-
-function remember(key: SettingKey, version: number | null | undefined): void {
+function remember(key: SettingKey, value: SettingValue, version: number | null | undefined): void {
   if (typeof version === "number") {
-    versionsSeen.set(key, version);
+    confirmed.set(key, { value, version });
   }
+}
+
+/** The value of a refusal that names it, as a value of a setting. */
+function valueIn(found: unknown): SettingValue | undefined {
+  return typeof found === "string" || typeof found === "number" || typeof found === "boolean"
+    ? found
+    : undefined;
+}
+
+/**
+ * What the server holds of the setting, from the refusal of a stale change: its version and value
+ * (the standard value when the person has none of their own). Nothing when the refusal does not
+ * say, and the setting has to be read.
+ */
+function heldBy(error: unknown, key: SettingKey): Confirmed | undefined {
+  if (!(error instanceof ApiError) || error.problem?.code !== "edit.version-changed") {
+    return undefined;
+  }
+  const conflict = conflictOf(error);
+  const standard = settingOf(currentMySettings(), key)?.default;
+  const [field] = conflict?.fields ?? [];
+  const value = field === undefined ? undefined : valueIn(conflict?.current[field]);
+  const held = value ?? standard;
+  return typeof conflict?.version === "number" && held !== undefined
+    ? { value: held, version: conflict.version }
+    : undefined;
 }
 
 /** Whether the server refused because the setting was changed since the version that was sent. */
@@ -109,40 +134,69 @@ function isStale(error: unknown): boolean {
 }
 
 /** The setting as the server holds it now. */
-async function readNow(key: SettingKey): Promise<Setting | undefined> {
+async function readNow(key: SettingKey): Promise<Confirmed | undefined> {
   const { data } = await api.client.GET("/api/v1/me/settings", {
     params: { query: { topic: key } },
   });
-  return settingOf(data, key);
+  const setting = settingOf(data, key);
+  return setting === undefined
+    ? undefined
+    : { value: setting.value, version: setting.version ?? 0 };
+}
+
+/** What a change is made on: a value, and the version it was read at when the page knows it. */
+interface Base {
+  readonly value: SettingValue;
+  readonly version?: number;
 }
 
 /**
- * Asks the server for one change, made from `version` (the one the page knows; nothing when it
- * knows none). When another tab or device changed the setting meanwhile, the setting is read again
- * and only this change is made on what is found there (`rebase`; without it the value of the
- * change), so a change of one part of a value never undoes another part set elsewhere (M5-F97).
- * It reads again at most {@link rereadsMax} times.
+ * What a change is made on: what the server confirmed last, when the change waited behind others
+ * of this page and the page has not read a newer version since; else the value the change was
+ * built from and the version the page read it at.
  */
-async function putChange(
+function baseOf(
   change: SettingChange,
   value: SettingValue,
-  version: number | undefined,
-  rereads: number,
-): Promise<void> {
+): { value: SettingValue; version?: number } {
+  const known = confirmed.get(change.key);
+  const read = settingOf(currentMySettings(), change.key)?.version;
+  if (known !== undefined && (typeof read !== "number" || read <= known.version)) {
+    return {
+      value: change.rebase === undefined ? value : change.rebase(known.value),
+      version: known.version,
+    };
+  }
+  return typeof read === "number" ? { value, version: read } : { value };
+}
+
+/**
+ * Asks the server for one change, made on `base`. When another tab or device changed the setting
+ * meanwhile, the refusal says what it holds now and only this change is made on that (`rebase`;
+ * without it the value of the change), so a change of one part of a value never undoes another
+ * part set elsewhere (M5-F97). It tries again at most {@link rereadsMax} times.
+ */
+async function putChange(change: SettingChange, base: Base, rereads: number): Promise<void> {
   try {
     const { data } = await api.client.PUT("/api/v1/me/settings/{key}", {
       params: { path: { key: change.key } },
-      body: { value, ...(version === undefined ? {} : { version }) },
+      body: {
+        value: base.value,
+        ...(base.version === undefined ? {} : { version: base.version }),
+      },
     });
-    remember(change.key, data?.version);
+    remember(change.key, base.value, data?.version);
   } catch (error) {
     if (!isStale(error) || rereads >= rereadsMax) {
       throw error;
     }
-    const now = await readNow(change.key);
-    const again =
-      change.rebase === undefined || now === undefined ? value : change.rebase(now.value);
-    await putChange(change, again, now?.version ?? 0, rereads + 1);
+    const now = heldBy(error, change.key) ?? (await readNow(change.key));
+    if (now !== undefined) {
+      confirmed.set(change.key, now);
+    }
+    const value =
+      change.rebase === undefined || now === undefined ? base.value : change.rebase(now.value);
+    await putChange(change, { value, version: now?.version ?? 0 }, rereads + 1);
   }
 }
 
@@ -152,10 +206,10 @@ async function sendChange(change: SettingChange): Promise<void> {
     await api.client.DELETE("/api/v1/me/settings/{key}", {
       params: { path: { key: change.key } },
     });
-    versionsSeen.delete(change.key);
+    confirmed.delete(change.key);
     return;
   }
-  await putChange(change, change.value, versionToSend(change.key), 0);
+  await putChange(change, baseOf(change, change.value), 0);
 }
 
 /** Sends one change: the value counts at once, and goes back when the server refuses. */
