@@ -342,9 +342,9 @@ fn sec_03_the_depth_of_a_no_access_counts_whoever_it_is_for() {
 }
 
 #[test]
-fn sec_03_a_place_no_role_reaches_has_no_levels_not_even_the_list_of_own_fields() {
+fn sec_03_a_place_no_role_reaches_has_no_levels_but_still_lists_the_own_fields() {
     use bb_core::id::{FieldId, SequentialIds};
-    use bb_policy::{LevelRules, Place, Policy};
+    use bb_policy::{Place, Policy};
 
     let mut ids = SequentialIds::default();
     let mut world = World::new();
@@ -364,7 +364,10 @@ fn sec_03_a_place_no_role_reaches_has_no_levels_not_even_the_list_of_own_fields(
     let chain = world.chain(world.acme);
     let at_acme =
         policy.inputs_from_rows(world.person, &world.rows, Place::Project(world.acme), chain);
-    assert_eq!(at_acme.rules, LevelRules::default());
+    // No level, but every own field is known (closed): a move preview lists the field for a
+    // person who gets a role there.
+    assert!(at_acme.rules.fields.is_empty() && at_acme.rules.people.is_empty());
+    assert_eq!(at_acme.rules.own_fields, world.rules.own_fields);
     let at_other = policy.inputs_from_rows(
         world.person,
         &world.rows,
