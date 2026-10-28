@@ -51,7 +51,10 @@ h3,
 h4,
 h5,
 h6,
-th {
+th,
+strong,
+b,
+optgroup {
   font-weight: var(--weight-regular);
 }
 
@@ -215,7 +218,7 @@ th {
 [data-part="field.label"] {
   font-size: var(--fs-md);
   font-weight: var(--weight-regular);
-  color: var(--fg);
+  color: var(--fg-muted);
 }
 
 [data-part="field.description"] {
@@ -952,13 +955,13 @@ th {
 [data-part="list-row"][data-state~="group-not-started"]:hover,
 [data-part="issue-row"][data-state~="group-not-started"]:hover,
 [data-part="timeline-bar"][data-state~="group-not-started"]:hover {
-  background: var(--tint-ns-hover);
+  background: var(--tint-ns);
 }
 
 [data-part="list-row"][data-state~="group-not-started"][data-state~="selected"],
 [data-part="issue-row"][data-state~="group-not-started"][data-state~="selected"],
 [data-part="timeline-bar"][data-state~="group-not-started"][data-state~="selected"] {
-  background: var(--tint-ns-selected);
+  background: var(--tint-ns);
 }
 
 [data-part="list-row"][data-state~="group-in-progress"],
@@ -970,13 +973,13 @@ th {
 [data-part="list-row"][data-state~="group-in-progress"]:hover,
 [data-part="issue-row"][data-state~="group-in-progress"]:hover,
 [data-part="timeline-bar"][data-state~="group-in-progress"]:hover {
-  background: var(--tint-ip-hover);
+  background: var(--tint-ip);
 }
 
 [data-part="list-row"][data-state~="group-in-progress"][data-state~="selected"],
 [data-part="issue-row"][data-state~="group-in-progress"][data-state~="selected"],
 [data-part="timeline-bar"][data-state~="group-in-progress"][data-state~="selected"] {
-  background: var(--tint-ip-selected);
+  background: var(--tint-ip);
 }
 
 [data-part="list-row"][data-state~="group-done"],
@@ -988,13 +991,13 @@ th {
 [data-part="list-row"][data-state~="group-done"]:hover,
 [data-part="issue-row"][data-state~="group-done"]:hover,
 [data-part="timeline-bar"][data-state~="group-done"]:hover {
-  background: var(--tint-done-hover);
+  background: var(--tint-done);
 }
 
 [data-part="list-row"][data-state~="group-done"][data-state~="selected"],
 [data-part="issue-row"][data-state~="group-done"][data-state~="selected"],
 [data-part="timeline-bar"][data-state~="group-done"][data-state~="selected"] {
-  background: var(--tint-done-selected);
+  background: var(--tint-done);
 }
 
 [data-part="list-row"][data-state~="priority-critical"],
@@ -1041,14 +1044,8 @@ th {
 }
 
 [data-part="list-row"][data-state~="current"] {
-  background: var(--bg-selected);
-  color: var(--accent-fg);
-}
-
-@media (forced-colors: active) {
-  [data-part="list-row"][data-state~="current"] {
-    outline: var(--ring-width) solid var(--accent);
-  }
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: calc(var(--ring-width) * -1);
 }
 
 [data-part="list-row"][data-variant~="head"] {
@@ -1253,10 +1250,12 @@ th {
   align-items: center;
   gap: var(--space-2);
   min-height: var(--size-control);
+  margin-block-start: var(--space-2);
   padding: 0 var(--pad-box);
+  border-top: var(--border-width) solid var(--border);
   border-bottom: var(--border-width) solid var(--border-subtle);
   background: var(--bg-surface);
-  font-size: var(--fs-ui);
+  font-size: var(--fs-md);
   font-weight: var(--weight-regular);
 }
 
@@ -1644,6 +1643,11 @@ th {
   background: var(--bg-raised);
 }
 
+[data-part="legend.swatch"][data-variant~="not-started"] {
+  border-color: var(--st-ns);
+  background: var(--tint-ns);
+}
+
 [data-part="legend.swatch"][data-variant~="in-progress"] {
   border-color: var(--st-ip);
   background: var(--tint-ip);
@@ -1654,12 +1658,19 @@ th {
   background: var(--tint-done);
 }
 
+[data-part="legend.swatch"][data-variant~="critical"],
+[data-part="legend.swatch"][data-variant~="high"] {
+  width: var(--size-edge);
+  border: 0;
+  border-radius: 0;
+}
+
 [data-part="legend.swatch"][data-variant~="critical"] {
-  border-inline-start: var(--size-edge) solid var(--danger);
+  background: var(--danger);
 }
 
 [data-part="legend.swatch"][data-variant~="high"] {
-  border-inline-start: var(--size-edge) solid var(--warning);
+  background: var(--warning);
 }
 
 [data-part="list-toolbar"] {
@@ -3818,7 +3829,7 @@ th {
 
 [data-part="issue-details.heading"] {
   margin: 0;
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
   font-weight: var(--weight-bold);
 }
 
@@ -3839,7 +3850,7 @@ th {
 
 [data-part="issue-section.title"] {
   margin: 0;
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
   font-weight: var(--weight-bold);
 }
 

@@ -300,19 +300,11 @@ tokens {
     color "st-done-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
     // The tint of a row by its status group, one for each of the three groups (Not started, In progress,
     // Done): the group's hue at the lightness where every text color of a row still reaches 4.5:1
-    // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. The hovered and the
-    // selected row keep the hue and move further the same way the text allows (lighter in the light
-    // themes, darker in the dark ones) by at least 1.06:1, so the state stays visible on every tint
-    // (the `distinct` rules below); a selected row also draws a ring and an accent leaning hue.
+    // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
+    // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
     color "tint-ns" daylight="#e6eaf1" paper="#e6e1da" dusk="#343c4e" midnight="#1f2531"
-    color "tint-ns-hover" daylight="#eef1f6" paper="#ece8e2" dusk="#303848" midnight="#1a1f29"
-    color "tint-ns-selected" daylight="#f8f9fb" paper="#edf2eb" dusk="#2f3246" midnight="#161822"
-    color "tint-ip" daylight="#dbebff" paper="#b7eaf5" dusk="#153978" midnight="#052256"
-    color "tint-ip-hover" daylight="#e8f2ff" paper="#c9eff7" dusk="#14356f" midnight="#041d4a"
-    color "tint-ip-selected" daylight="#f7f9ff" paper="#e0f3fb" dusk="#14256f" midnight="#04114a"
+    color "tint-ip" daylight="#dbebff" paper="#d2e5ee" dusk="#153978" midnight="#052256"
     color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
-    color "tint-done-hover" daylight="#daf7e9" paper="#d9efce" dusk="#153f2a" midnight="#072516"
-    color "tint-done-selected" daylight="#f0fbfc" paper="#e1f5e7" dusk="#14383b" midnight="#051d1e"
     color "cat1-bg" daylight="#fde7ef" paper="#f6e1e4" dusk="#4a2638" midnight="#3a1428"
     color "cat1-fg" daylight="#a3195b" paper="#97304a" dusk="#ff9cc8" midnight="#ff92c2"
     color "cat2-bg" daylight="#e3f1ff" paper="#e0eaf3" dusk="#213a5c" midnight="#10294a"
@@ -346,7 +338,7 @@ tokens {
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
     text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
-    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ns-hover" "tint-ns-selected" "tint-ip" "tint-ip-hover" "tint-ip-selected" "tint-done" "tint-done-hover" "tint-done-selected" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
     restricted "on-accent" on="accent danger" reason="On-accent text is only ever drawn on the accent fill, and on the red of the Close button of a window."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
@@ -424,25 +416,9 @@ distinct min-against-surfaces=1.08 min-between-states=1.04 reason="Hovered and s
     surfaces "bg-canvas" "bg-surface" "bg-raised"
 }
 
-distinct min-against-surfaces=1.06 min-between-states=1.04 reason="On a row tinted by its status group, the hovered and the selected row differ from the tint by at least 1.06:1, and from each other by at least 1.04:1, in every theme. A selected row also draws a ring inside its edge, so it never relies on the fill alone." {
-    group {
-        states "tint-ns-hover" "tint-ns-selected"
-        surfaces "tint-ns"
-    }
-    group {
-        states "tint-ip-hover" "tint-ip-selected"
-        surfaces "tint-ip"
-    }
-    group {
-        states "tint-done-hover" "tint-done-selected"
-        surfaces "tint-done"
-    }
-}
-
-
 // Bold (UX §7.3, STY-BOLD): only these rules may set `$weight-bold`, one line for each selector. A role is
 // what the bold says: `issue-title` (24), `title` (the title of a page, a window or a card, 20), `section`
-// (a heading of a part of a page, 16 or 20), `priority` (the word of a Critical or High priority), `own`
+// (the heading of a part of a page, 16), `priority` (the word of a Critical or High priority), `own`
 // (what a person wrote in bold in a text). A new bold needs a role from this list, and a role needs UX §7.3.
 bold reason="Bold is kept for the titles, the headings of sections, the words of the two highest priorities and what a person wrote in bold (UX §7.3); everything else is regular, so bold still means something." {
     selector "issue-title" role="issue-title"
@@ -782,7 +758,7 @@ base "body" {
 
 // Headings and table heads come from the browser in bold; here they are regular, and the parts the
 // `bold` list names (UX §7.3, STY-BOLD) turn bold on again.
-base "h1, h2, h3, h4, h5, h6, th" {
+base "h1" "h2" "h3" "h4" "h5" "h6" "th" "strong" "b" "optgroup" {
     font-weight "$weight-regular"
 }
 
@@ -949,7 +925,7 @@ part "field" {
 part "field.label" {
     font-size "$fs-md"
     font-weight "$weight-regular"
-    color "$fg"
+    color "$fg-muted"
 }
 
 part "field.description" {
@@ -1632,8 +1608,7 @@ part "priority-icon" {
 //
 // Any row can carry the state of its status group (a tint) and of its priority (an edge of 4 px at
 // its start), by the words of `rowStates`. A row of the list, an issue row and a bar of the
-// timeline are the rows that do. Hovered and selected rows keep the hue of their tint and stay
-// distinct from it (`distinct` above). The rules come after the rows' own, so they win.
+// timeline are the rows that do. A hovered, a selected or a current row keeps its tint; the ring and the ticked box say the state. The rules come after the rows' own, so they win.
 
 // A selected row is also ringed inside its edge, so it never relies on the fill alone.
 part "issue-row[state=selected]" "timeline-bar[state=selected]" {
@@ -1646,11 +1621,11 @@ part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "t
 }
 
 part "list-row[state=group-not-started]:hover" "issue-row[state=group-not-started]:hover" "timeline-bar[state=group-not-started]:hover" {
-    background "$tint-ns-hover"
+    background "$tint-ns"
 }
 
 part "list-row[state=group-not-started][state=selected]" "issue-row[state=group-not-started][state=selected]" "timeline-bar[state=group-not-started][state=selected]" {
-    background "$tint-ns-selected"
+    background "$tint-ns"
 }
 
 part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "timeline-bar[state=group-in-progress]" {
@@ -1658,11 +1633,11 @@ part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "t
 }
 
 part "list-row[state=group-in-progress]:hover" "issue-row[state=group-in-progress]:hover" "timeline-bar[state=group-in-progress]:hover" {
-    background "$tint-ip-hover"
+    background "$tint-ip"
 }
 
 part "list-row[state=group-in-progress][state=selected]" "issue-row[state=group-in-progress][state=selected]" "timeline-bar[state=group-in-progress][state=selected]" {
-    background "$tint-ip-selected"
+    background "$tint-ip"
 }
 
 part "list-row[state=group-done]" "issue-row[state=group-done]" "timeline-bar[state=group-done]" {
@@ -1670,11 +1645,11 @@ part "list-row[state=group-done]" "issue-row[state=group-done]" "timeline-bar[st
 }
 
 part "list-row[state=group-done]:hover" "issue-row[state=group-done]:hover" "timeline-bar[state=group-done]:hover" {
-    background "$tint-done-hover"
+    background "$tint-done"
 }
 
 part "list-row[state=group-done][state=selected]" "issue-row[state=group-done][state=selected]" "timeline-bar[state=group-done][state=selected]" {
-    background "$tint-done-selected"
+    background "$tint-done"
 }
 
 part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "timeline-bar[state=priority-critical]" {
@@ -1723,7 +1698,7 @@ part "list-row[state=selected]" {
 
 // The issue that is open next to the list.
 part "list-row[state=current]" {
-    use "current-item"
+    use "ring-inside"
 }
 
 // The column names above the rows.
@@ -1931,10 +1906,12 @@ part "list-group" {
     align-items center
     gap "$space-2"
     min-height "$size-control"
+    margin-block-start "$space-2"
     padding 0 "$pad-box"
+    border-top "$border-width solid $border"
     border-bottom "$border-width solid $border-subtle"
     background "$bg-surface"
-    font-size "$fs-ui"
+    font-size "$fs-md"
     font-weight "$weight-regular"
 }
 
@@ -2357,6 +2334,11 @@ part "legend.swatch" {
     background "$bg-raised"
 }
 
+part "legend.swatch[variant=not-started]" {
+    border-color "$st-ns"
+    background "$tint-ns"
+}
+
 part "legend.swatch[variant=in-progress]" {
     border-color "$st-ip"
     background "$tint-ip"
@@ -2367,12 +2349,18 @@ part "legend.swatch[variant=done]" {
     background "$tint-done"
 }
 
+part "legend.swatch[variant=critical]" "legend.swatch[variant=high]" {
+    width "$size-edge"
+    border 0
+    border-radius 0
+}
+
 part "legend.swatch[variant=critical]" {
-    border-inline-start "$size-edge solid $danger"
+    background "$danger"
 }
 
 part "legend.swatch[variant=high]" {
-    border-inline-start "$size-edge solid $warning"
+    background "$warning"
 }
 
 // The row above a list: its main button, what is ticked, and the Legend at the end.
@@ -4466,7 +4454,7 @@ part "issue-details[variant=stacked]" {
 
 part "issue-details.heading" {
     margin 0
-    font-size "$fs-lg"
+    font-size "$fs-md"
     font-weight "$weight-bold"
 }
 
@@ -4487,7 +4475,7 @@ part "issue-section.head" {
 
 part "issue-section.title" {
     margin 0
-    font-size "$fs-lg"
+    font-size "$fs-md"
     font-weight "$weight-bold"
 }
 

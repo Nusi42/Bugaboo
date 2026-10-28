@@ -50,6 +50,17 @@ test("cfg_02 pictures: two issues ticked, and the head of the list ticked", asyn
   await listInFourThemes(page, "ticked");
 });
 
+test("iss_01 pictures: a hovered, a ticked and a keyboard-focused row keep their group color", async ({
+  page,
+}) => {
+  await openList(page);
+  await tickIssues(page, ["WEB-1"]);
+  await rowOf(page, webIssues.passkey).hover();
+  await page.keyboard.press("Shift");
+  await rowOf(page, webIssues.typo).getByRole("link").focus();
+  await listInFourThemes(page, "states");
+});
+
 test("cfg_02 pictures: Customize, then Columns", async ({ page }) => {
   test.skip(layoutOf(page) === "phone", "a phone has cards and no columns to choose");
   await openList(page);
