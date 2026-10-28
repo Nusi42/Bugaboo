@@ -1,4 +1,4 @@
-//! A person's own settings have a version: two writers, one of them stale (M5-F97, ADR-0019).
+//! A person's own settings have a version: two writers, one of them stale (M5-F97, ADR-0018).
 
 use super::*;
 
@@ -65,14 +65,11 @@ async fn m5_f97_without_a_version_the_last_write_wins_and_counts_up() -> TestRes
         let own = Scope::Person(ada);
         put(storage, &mut source, own, ZONE, text(BERLIN)).await?;
         put(storage, &mut source, own, ZONE, text(PARIS)).await?;
-        let sizes = version_of(storage, ada, ZONE).await?;
-        assert!(sizes > 1, "the second write counted the version up");
+        let zone = version_of(storage, ada, ZONE).await?;
+        assert!(zone > 1, "the second write counted the version up");
         // One counter serves all the settings of a person: the next write has the next number.
         put(storage, &mut source, own, "appearance.mode", text("dark")).await?;
-        assert_eq!(
-            version_of(storage, ada, "appearance.mode").await?,
-            sizes + 1
-        );
+        assert_eq!(version_of(storage, ada, "appearance.mode").await?, zone + 1);
         // The value of another person is another record.
         let ben = create_person(storage, &mut source, "ben@example.test").await?;
         assert_eq!(version_of(storage, ben, ZONE).await?, 0);

@@ -3,7 +3,7 @@
 //! The same person works in several tabs and on several devices, and without a version the last
 //! write won: a size of one form set in one tab undid another form's size set in another. A value
 //! that is there is at version 1 from now on (`person_setting.version`), and every change counts
-//! it up; a change made from an older version is refused (ADR-0019). A value that is not there is
+//! it up; a change made from an older version is refused (ADR-0018). A value that is not there is
 //! at version 0.
 
 use sea_query::{ColumnDef, Table};
