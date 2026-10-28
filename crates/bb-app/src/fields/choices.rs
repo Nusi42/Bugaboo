@@ -216,11 +216,9 @@ pub async fn add_choice<S: AuthStore>(
             S::insert_choice(transaction, &stored).await
         })
     });
-    ctx.store()
-        .record_change(&event, write)
+    ctx.record_change(&event, write)
         .await
         .map_err(|error| refused::<S>(&why, &error, &record, actor.person.id))?;
-    ctx.forget_field_catalogue();
     definition.choices.push(choice);
     Ok(held.authorize(ctx.field_after(&actor, &held, definition, true).await?))
 }
@@ -320,11 +318,9 @@ pub async fn change_choice<S: AuthStore>(
             S::update_choice(transaction, &stored).await
         })
     });
-    ctx.store()
-        .record_change(&event, write)
+    ctx.record_change(&event, write)
         .await
         .map_err(|error| refused::<S>(&why, &error, &record, actor.person.id))?;
-    ctx.forget_field_catalogue();
     definition.choices[position] = after;
     Ok(held.authorize(ctx.field_after(&actor, &held, definition, true).await?))
 }
@@ -369,11 +365,9 @@ pub async fn reorder_choices<S: AuthStore>(
     let (why, write) = guarded::<S, _>(input.field, input.version, move |transaction, _stopped| {
         Box::pin(async move { S::order_choices(transaction, field, &order).await })
     });
-    ctx.store()
-        .record_change(&event, write)
+    ctx.record_change(&event, write)
         .await
         .map_err(|error| refused::<S>(&why, &error, &record, actor.person.id))?;
-    ctx.forget_field_catalogue();
     for choice in &mut definition.choices {
         if let Some(at) = input.order.iter().position(|id| *id == choice.id) {
             choice.position = i64::try_from(at).unwrap_or(i64::MAX);
@@ -552,11 +546,9 @@ pub async fn combine_choices<S: AuthStore>(
             S::update_choice(transaction, &retired).await
         })
     });
-    ctx.store()
-        .record_change(&event, write)
+    ctx.record_change(&event, write)
         .await
         .map_err(|error| refused::<S>(&why, &error, &record, actor.person.id))?;
-    ctx.forget_field_catalogue();
     if let Some(found) = definition
         .choices
         .iter_mut()
