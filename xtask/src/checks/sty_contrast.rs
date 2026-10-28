@@ -464,6 +464,21 @@ mod tests {
     }
 
     #[test]
+    fn a_line_that_vanishes_into_a_tint_only_with_more_contrast_is_rejected() {
+        // The control edge color of Dusk with more contrast, one step from the tint of Not started.
+        let findings = evaluate(&with_value("border-control", "dusk-more", "#343c4f"));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("with more contrast")
+                    && f.message.contains("`border-control`")
+                    && f.message.contains("tint-ns")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
     fn a_tint_that_is_too_strong_for_the_text_on_it_is_rejected() {
         let findings = evaluate(&with_value("tint-ns", "daylight", "#c9d0dc"));
         assert!(

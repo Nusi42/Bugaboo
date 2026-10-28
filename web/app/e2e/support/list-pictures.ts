@@ -8,7 +8,7 @@ import { setBox } from "./list-keys.ts";
 import { chooseTheme, themes } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
 import { grid } from "./list-look.ts";
-import { folderOf, shootWindowAs, shotWholeAs } from "./screenshots.ts";
+import { folderOf, screenshotFolder, shootWindowAs, shotWholeAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 
 const MILESTONE = "M5/list";
@@ -22,6 +22,13 @@ export async function listInFourThemes(page: Page, name: string): Promise<void> 
       await shotWholeAs(page, `${name}-${layout}`, MILESTONE, theme.id);
     }),
   );
+}
+
+/** Takes the window as it is, when the pictures are wanted (`BB_SCREENSHOT_DIR` is set). */
+export async function pictureIfWanted(page: Page, name: string): Promise<void> {
+  if (screenshotFolder !== undefined) {
+    await page.screenshot({ path: join(folderOf(MILESTONE), `${name}.png`) });
+  }
 }
 
 /**
