@@ -48,14 +48,14 @@
   --size-col-icon: 24px;
   --size-col-rules: 64px;
   --size-col-remove: 80px;
-  --size-col-key: 72px;
+  --size-col-key: calc(152px * var(--text-scale));
   --size-col-short: 64px;
   --size-col-place: 112px;
   --size-col-priority: 72px;
   --size-col-person: 96px;
   --size-col-labels: 96px;
   --size-col-project: 96px;
-  --size-col-title: 140px;
+  --size-col-title: 120px;
   --size-col-least: 48px;
   --size-col-most: 800px;
   --size-col-step: 16px;
@@ -1917,7 +1917,7 @@ body {
 [data-part="list-row"][data-variant~="phone"],
 [data-part="list-row"][data-variant~="slim"] {
   display: grid;
-  grid-template-columns: var(--size-control) var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-columns: var(--size-control) var(--size-col-icon) auto minmax(0, 1fr);
   grid-template-areas: "select status key priority" "select title title title" "select person person changed";
   align-items: center;
   gap: var(--space-1) var(--space-3);
@@ -1949,6 +1949,7 @@ body {
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="key"],
 [data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="key"] {
   grid-area: key;
+  width: auto;
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="priority"],
@@ -1979,7 +1980,7 @@ body {
 }
 
 [data-part="list-row"][data-variant~="phone"][data-variant~="plain"] {
-  grid-template-columns: var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-columns: var(--size-col-icon) auto minmax(0, 1fr);
   grid-template-areas: "status key priority" "title title title" "person person changed";
 }
 
@@ -1988,7 +1989,7 @@ body {
 }
 
 [data-part="list-row"][data-variant~="slim"] {
-  grid-template-columns: var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-columns: var(--size-col-icon) auto minmax(0, 1fr);
   grid-template-areas: "status key priority" "title title title";
 }
 

@@ -76,3 +76,18 @@ export async function pressMiddleOf(page: Page, element: Locator): Promise<void>
   const box = await boxOf(element);
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
+
+/** How many of the IDs drawn in the list are cut: their cell holds less than they are wide. */
+export function idsCut(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    let count = 0;
+    for (const cell of document.querySelectorAll(
+      "[data-part='list-row.cell'][data-variant='key']",
+    )) {
+      if (cell.scrollWidth > cell.clientWidth) {
+        count += 1;
+      }
+    }
+    return count;
+  });
+}

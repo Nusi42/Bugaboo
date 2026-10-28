@@ -121,7 +121,8 @@ tokens {
     // The two columns of buttons at the end of a status change in the workflow editor: the same width in every row.
     size "size-col-rules" "64px"
     size "size-col-remove" "80px"
-    size "size-col-key" "72px"
+    // The ID column fits the longest ID, never cut: a short name of up to 10 characters, the dash and a code of up to 7 digits (or a longer random code) are 18 characters of the code font at 14px, 8.4px each, so 152px. It follows the text size like the rows do. Phone cards size their ID from what it says.
+    size "size-col-key" "calc(152px * $text-scale)"
     size "size-col-short" "64px"
     size "size-col-place" "112px"
     size "size-col-priority" "72px"
@@ -134,7 +135,7 @@ tokens {
     // up theirs, down to the least width; then the list scrolls sideways, head and rows together. A
     // column that is only an icon, the ID and the priority keep their width. A column a person drags
     // is no narrower than the least and moves by the step with the arrow keys.
-    size "size-col-title" "140px"
+    size "size-col-title" "120px"
     size "size-col-least" "48px"
     size "size-col-most" "800px"
     size "size-col-step" "16px"
@@ -1789,7 +1790,7 @@ part "list-row.cell[variant=select]" "list-row.cell[variant=action]" {
 // the day (R9: the same order). The other columns are left out.
 part "list-row[variant=phone]" "list-row[variant=slim]" {
     display grid
-    grid-template-columns "$size-control $size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-columns "$size-control $size-col-icon auto minmax(0, 1fr)"
     grid-template-areas "\"select status key priority\" \"select title title title\" \"select person person changed\""
     align-items center
     gap "$space-1 $space-3"
@@ -1815,6 +1816,7 @@ part "list-row[variant=phone] list-row.cell[variant=status]" "list-row[variant=s
 
 part "list-row[variant=phone] list-row.cell[variant=key]" "list-row[variant=slim] list-row.cell[variant=key]" {
     grid-area key
+    width auto
 }
 
 part "list-row[variant=phone] list-row.cell[variant=priority]" "list-row[variant=slim] list-row.cell[variant=priority]" {
@@ -1844,7 +1846,7 @@ part "list-row[variant=phone] list-row.cell[variant=changed]" {
 
 // A card without the box to tick (the Search page): the same lines without its column.
 part "list-row[variant=phone][variant=plain]" {
-    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-columns "$size-col-icon auto minmax(0, 1fr)"
     grid-template-areas "\"status key priority\" \"title title title\" \"person person changed\""
 }
 
@@ -1855,7 +1857,7 @@ part "list-row[variant=phone] list-row.cell[variant=status]" {
 
 // The slim list beside the open issue (UX §3.4): the two lines of a phone, without the tick box.
 part "list-row[variant=slim]" {
-    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-columns "$size-col-icon auto minmax(0, 1fr)"
     grid-template-areas "\"status key priority\" \"title title title\""
 }
 

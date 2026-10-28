@@ -48,14 +48,14 @@
   --size-col-icon: 24px;
   --size-col-rules: 64px;
   --size-col-remove: 80px;
-  --size-col-key: 72px;
+  --size-col-key: calc(152px * var(--text-scale));
   --size-col-short: 64px;
   --size-col-place: 112px;
   --size-col-priority: 72px;
   --size-col-person: 96px;
   --size-col-labels: 96px;
   --size-col-project: 96px;
-  --size-col-title: 140px;
+  --size-col-title: 120px;
   --size-col-least: 48px;
   --size-col-most: 800px;
   --size-col-step: 16px;
