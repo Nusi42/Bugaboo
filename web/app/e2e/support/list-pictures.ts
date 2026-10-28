@@ -1,11 +1,13 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
+import { join } from "node:path";
+
+import { type Locator, type Page } from "@playwright/test";
 
 import { tickBox } from "./issues.ts";
 import { setBox } from "./list-keys.ts";
 import { chooseTheme, themes } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
-import { shootWindowAs, shotWholeAs } from "./screenshots.ts";
+import { folderOf, shootWindowAs, shotWholeAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
 
 const MILESTONE = "M5/list";
@@ -17,6 +19,28 @@ export async function listInFourThemes(page: Page, name: string): Promise<void> 
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
       await shotWholeAs(page, `${name}-${layout}`, MILESTONE, theme.id);
+    }),
+  );
+}
+
+/**
+ * The window in the four themes with the pointer on one row: the pointer is put back before each
+ * picture, because a theme change or a grown window would take it away, and the hover line would be gone.
+ */
+export async function pointedRowInFourThemes(
+  page: Page,
+  row: Locator,
+  name: string,
+): Promise<void> {
+  const layout = layoutOf(page);
+  await inOrder(
+    themes.map((theme) => async () => {
+      await chooseTheme(page, theme);
+      await row.hover();
+      await page.waitForTimeout(300);
+      await page.screenshot({
+        path: join(folderOf(MILESTONE), `${name}-${layout}-${theme.id}.png`),
+      });
     }),
   );
 }

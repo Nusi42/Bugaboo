@@ -7,7 +7,12 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { grid, openList, prepareLook, rowOf } from "./support/list-look.ts";
-import { listInFourThemes, tickIssues, screenshotFolder } from "./support/list-pictures.ts";
+import {
+  listInFourThemes,
+  pointedRowInFourThemes,
+  tickIssues,
+  screenshotFolder,
+} from "./support/list-pictures.ts";
 import { webIssues } from "./support/issues.ts";
 
 // The pictures of the issue list (M5 WP-08, task 8): the list in the four themes on a computer and
@@ -55,10 +60,9 @@ test("iss_01 pictures: a hovered, a ticked and a keyboard-focused row keep their
 }) => {
   await openList(page);
   await tickIssues(page, ["WEB-1"]);
-  await rowOf(page, webIssues.passkey).hover();
   await page.keyboard.press("Shift");
   await rowOf(page, webIssues.typo).getByRole("link").focus();
-  await listInFourThemes(page, "states");
+  await pointedRowInFourThemes(page, rowOf(page, webIssues.passkey), "states");
 });
 
 test("cfg_02 pictures: Customize, then Columns", async ({ page }) => {

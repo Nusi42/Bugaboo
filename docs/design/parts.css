@@ -1035,6 +1035,7 @@ optgroup {
 
 [data-part="list-row"]:hover {
   background: var(--bg-hover);
+  box-shadow: inset 0 0 0 var(--border-width) var(--border-control);
 }
 
 [data-part="list-row"][data-state~="selected"] {
@@ -1058,6 +1059,7 @@ optgroup {
 
 [data-part="list-row"][data-variant~="head"]:hover {
   background: var(--bg-surface);
+  box-shadow: none;
 }
 
 [data-part="list-row.cell"] {

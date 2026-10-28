@@ -1687,8 +1687,11 @@ part "list-row" {
     font-size "$fs-ui"
 }
 
+// A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
+// nothing moves and the edge of its priority stays; it is thinner than the rings and another color.
 part "list-row:hover" {
     background "$bg-hover"
+    box-shadow "inset 0 0 0 $border-width $border-control"
 }
 
 part "list-row[state=selected]" {
@@ -1712,6 +1715,7 @@ part "list-row[variant=head]" {
 
 part "list-row[variant=head]:hover" {
     background "$bg-surface"
+    box-shadow none
 }
 
 part "list-row.cell" {
