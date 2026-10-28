@@ -10,7 +10,9 @@
 use std::collections::BTreeSet;
 
 use super::{Check, Context, Finding};
-use crate::generate::theme_file::{Item, Rule, RuleKind, THEME_PATH, ThemeFile};
+use crate::generate::theme_file::{
+    Declaration, Item, Rule, RuleKind, THEME_PATH, ThemeFile, TokenKind,
+};
 
 pub(crate) struct StyBold;
 
@@ -24,25 +26,67 @@ impl Check for StyBold {
     }
 }
 
-/// Whether a value of `font-weight` is a bold one: the token, a keyword or a number from 600.
-fn is_bold(value: &str) -> bool {
-    let value = value.trim();
-    value == "$weight-bold"
-        || matches!(value, "bold" | "bolder" | "semibold")
-        || value.parse::<u32>().is_ok_and(|weight| weight >= 600)
+/// The elements that the browser draws in bold; the theme file must make each of them regular, so
+/// bold only comes from a rule the `bold` list names.
+const BOLD_BY_BROWSER: [&str; 10] = [
+    "h1", "h2", "h3", "h4", "h5", "h6", "th", "strong", "b", "optgroup",
+];
+
+/// Whether a word is a bold weight: a keyword, a number from 600, or a weight token with such a number.
+fn word_is_bold(file: &ThemeFile, word: &str) -> bool {
+    if matches!(word, "bold" | "bolder" | "semibold") {
+        return true;
+    }
+    let number = match word.strip_prefix('$') {
+        Some(name) => file
+            .token(name)
+            .filter(|token| token.kind == TokenKind::Weight)
+            .and_then(|token| token.same.as_deref()),
+        None => Some(word),
+    };
+    number.is_some_and(|number| number.parse::<u32>().is_ok_and(|weight| weight >= 600))
+}
+
+/// Whether a line sets a bold weight: `font-weight`, or the weight inside a `font` shorthand (the
+/// first words, before the size, which is the one word with a unit or a slash).
+fn is_bold(file: &ThemeFile, declaration: &Declaration) -> bool {
+    match declaration.property.as_str() {
+        "font-weight" => word_is_bold(file, declaration.value.trim()),
+        "font" => declaration
+            .value
+            .split_whitespace()
+            .any(|word| word_is_bold(file, word)),
+        _ => false,
+    }
 }
 
 /// The line of the first bold weight in these lines, also inside `forced`, `media` and `container`.
-fn bold_line(items: &[Item]) -> Option<usize> {
+fn bold_line(file: &ThemeFile, items: &[Item]) -> Option<usize> {
     items.iter().find_map(|item| match item {
-        Item::Declaration(declaration)
-            if declaration.property == "font-weight" && is_bold(&declaration.value) =>
-        {
-            Some(declaration.line)
-        }
-        Item::Media { items, .. } => bold_line(items),
+        Item::Declaration(declaration) if is_bold(file, declaration) => Some(declaration.line),
+        Item::Media { items, .. } => bold_line(file, items),
         _ => None,
     })
+}
+
+/// The elements of the browser's bold that no base rule makes regular.
+fn not_reset(file: &ThemeFile) -> Vec<&'static str> {
+    let reset: Vec<&str> = file
+        .rules
+        .iter()
+        .filter(|rule| rule.kind == RuleKind::Base)
+        .filter(|rule| {
+            rule.items.iter().any(|item| {
+                matches!(item, Item::Declaration(d) if d.property == "font-weight" && !word_is_bold(file, d.value.trim()))
+            })
+        })
+        .flat_map(|rule| rule.selectors.iter().flat_map(|s| s.split(',')))
+        .map(str::trim)
+        .collect();
+    BOLD_BY_BROWSER
+        .into_iter()
+        .filter(|element| !reset.contains(element))
+        .collect()
 }
 
 fn evaluate(file: &ThemeFile) -> Vec<Finding> {
@@ -55,7 +99,7 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
         .collect();
     let mut made_bold: BTreeSet<&str> = BTreeSet::new();
     for mixin in &file.mixins {
-        if let Some(line) = bold_line(&mixin.items) {
+        if let Some(line) = bold_line(file, &mixin.items) {
             findings.push(Finding::at(
                 format!("{THEME_PATH}:{line}"),
                 format!(
@@ -66,11 +110,19 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
         }
     }
     for rule in file.rules.iter().filter(|rule| rule.kind != RuleKind::Doc) {
-        let Some(line) = bold_line(&rule.items) else {
+        let Some(line) = bold_line(file, &rule.items) else {
             continue;
         };
         findings.extend(unlisted(rule, line, &listed));
         made_bold.extend(rule.selectors.iter().map(String::as_str));
+    }
+    for element in not_reset(file) {
+        findings.push(Finding::at(
+            THEME_PATH,
+            format!(
+                "The browser draws `{element}` in bold, and no base rule of the theme file makes it regular. Add it to the base rule that sets the regular weight, so bold only comes from the `bold` list."
+            ),
+        ));
     }
     for entry in &file.bold.selectors {
         if !made_bold.contains(entry.selector.as_str()) {
@@ -185,6 +237,55 @@ mod tests {
             findings
                 .iter()
                 .any(|f| f.message.contains("no rule makes it bold")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
+    fn bad_example_a_weight_token_of_600_is_bold() {
+        let text = text()
+            .replacen(
+                "    weight \"weight-bold\" 700",
+                "    weight \"weight-bold\" 700
+    weight \"weight-semi\" 600",
+                1,
+            )
+            .replacen(
+                LABEL_REGULAR,
+                &LABEL_REGULAR.replace("$weight-regular", "$weight-semi"),
+                1,
+            );
+        let findings = evaluate(&ThemeFile::parse(&text).unwrap());
+        assert!(
+            findings.iter().any(|f| f.message.contains("`field.label`")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
+    fn bad_example_the_weight_in_a_font_shorthand_is_found() {
+        let file = changed(
+            LABEL_REGULAR,
+            "part \"field.label\" {
+    font-size \"$fs-md\"
+    font \"bold 14px sans-serif\"",
+        );
+        let findings = evaluate(&file);
+        assert!(
+            findings.iter().any(|f| f.message.contains("`field.label`")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
+    fn bad_example_an_element_that_is_bold_in_the_browser_and_not_reset() {
+        let file = changed(" \"strong\" \"b\" \"optgroup\" {", " \"b\" \"optgroup\" {");
+        let findings = evaluate(&file);
+        assert!(
+            findings.iter().any(|f| f.message.contains("`strong`")),
             "{:?}",
             messages(&findings)
         );

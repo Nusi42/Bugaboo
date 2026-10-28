@@ -412,27 +412,15 @@ mod tests {
     }
 
     #[test]
-    fn a_hover_color_that_vanishes_into_a_tint_is_rejected() {
-        let findings = evaluate(&with_value("tint-ip-hover", "daylight", "#dcecff"));
-        assert!(
-            findings
-                .iter()
-                .any(|f| f.message.contains("tint-ip-hover") && f.message.contains("`tint-ip`")),
-            "{:?}",
-            messages(&findings)
-        );
-    }
-
-    #[test]
     fn every_status_group_has_a_tint_with_readable_text_in_every_theme() {
         // The three groups, Not started included, each tint a row (UX §4.2): every text color of a
-        // row is checked on each tint and on its hovered and selected fill, in every theme.
+        // row is checked on each tint, in every theme (a row keeps its tint when hovered or selected).
         let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
         for theme in file.themes.iter().map(|theme| theme.name.as_str()) {
             let pairs = file.contrast.pairs(theme);
             for group in ["ns", "ip", "done"] {
-                for state in ["", "-hover", "-selected"] {
-                    let tint = format!("tint-{group}{state}");
+                {
+                    let tint = format!("tint-{group}");
                     for text in ["fg", "fg-muted", "fg-subtle", "accent-fg", "danger"] {
                         assert!(
                             pairs.contains(&(text, tint.as_str())),
