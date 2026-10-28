@@ -2,8 +2,10 @@
 //! an outbox consumer builds, and the place the consumer has come to (ISS-06, ADR-0007).
 //!
 //! A row is stored once for each event and issue (`ON CONFLICT DO NOTHING`), and the place of the
-//! consumer moves on after the rows are committed. A consumer that stops between the two reads the
-//! same events again and finds its rows made, so nothing is doubled and nothing is lost.
+//! consumer moves on in the same transaction as the rows (M5-F101: one wait for the write lock of
+//! the database, not two, for a reader that catches the history up while people write). A consumer
+//! that stops reads the same events again and finds its rows made, so nothing is doubled and nothing
+//! is lost.
 
 use bb_app::history::HistoryStore;
 use bb_core::event::{DomainEvent, FieldChange};
@@ -16,6 +18,7 @@ use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, to_micros};
 use crate::error::StoreError;
+use crate::events::{consumer_name, outbox_move};
 use crate::schema::HistoryEntryRow;
 
 fn read_entry(row: &Row) -> Result<HistoryEntry, StoreError> {
@@ -48,46 +51,43 @@ impl HistoryStore for AuthStorage {
         position: i64,
         now: Timestamp,
     ) -> Result<(), StoreError> {
-        let database = self.database();
-        if !entries.is_empty() {
-            let mut transaction = database.begin().await?;
-            for entry in entries {
-                let mut insert = Query::insert();
-                insert
-                    .into_table(HistoryEntryRow::Table)
-                    .columns([
-                        HistoryEntryRow::Event,
-                        HistoryEntryRow::Issue,
-                        HistoryEntryRow::Position,
-                        HistoryEntryRow::At,
-                        HistoryEntryRow::By,
-                        HistoryEntryRow::Kind,
-                        HistoryEntryRow::Record,
-                        HistoryEntryRow::RecordKind,
-                        HistoryEntryRow::Changes,
-                    ])
-                    .values([
-                        Expr::val(entry.event.stored()),
-                        Expr::val(entry.issue.stored()),
-                        Expr::val(entry.position),
-                        Expr::val(to_micros(entry.at)),
-                        Expr::val(entry.by.map(StoredId::stored)),
-                        Expr::val(entry.kind.code()),
-                        Expr::val(entry.record.stored()),
-                        Expr::val(entry.record_kind.as_str()),
-                        Expr::val(serde_json::to_string(&entry.changes)?),
-                    ])
-                    .map_err(|_| StoreError::Corrupt("a history row"))?
-                    .on_conflict(
-                        OnConflict::columns([HistoryEntryRow::Event, HistoryEntryRow::Issue])
-                            .do_nothing()
-                            .to_owned(),
-                    );
-                transaction.execute(&insert).await?;
-            }
-            transaction.commit().await?;
+        let mut transaction = self.database().begin().await?;
+        for entry in entries {
+            let mut insert = Query::insert();
+            insert
+                .into_table(HistoryEntryRow::Table)
+                .columns([
+                    HistoryEntryRow::Event,
+                    HistoryEntryRow::Issue,
+                    HistoryEntryRow::Position,
+                    HistoryEntryRow::At,
+                    HistoryEntryRow::By,
+                    HistoryEntryRow::Kind,
+                    HistoryEntryRow::Record,
+                    HistoryEntryRow::RecordKind,
+                    HistoryEntryRow::Changes,
+                ])
+                .values([
+                    Expr::val(entry.event.stored()),
+                    Expr::val(entry.issue.stored()),
+                    Expr::val(entry.position),
+                    Expr::val(to_micros(entry.at)),
+                    Expr::val(entry.by.map(StoredId::stored)),
+                    Expr::val(entry.kind.code()),
+                    Expr::val(entry.record.stored()),
+                    Expr::val(entry.record_kind.as_str()),
+                    Expr::val(serde_json::to_string(&entry.changes)?),
+                ])
+                .map_err(|_| StoreError::Corrupt("a history row"))?
+                .on_conflict(
+                    OnConflict::columns([HistoryEntryRow::Event, HistoryEntryRow::Issue])
+                        .do_nothing()
+                        .to_owned(),
+                );
+            transaction.execute(&insert).await?;
         }
-        database.outbox_set(CONSUMER, position, now).await
+        outbox_move(&mut transaction, &consumer_name(CONSUMER)?, position, now).await?;
+        transaction.commit().await
     }
 
     async fn history_page(
@@ -129,3 +129,7 @@ impl HistoryStore for AuthStorage {
             .collect()
     }
 }
+
+#[cfg(test)]
+#[path = "tests/history_rows.rs"]
+mod tests;
