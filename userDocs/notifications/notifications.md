@@ -28,7 +28,7 @@ The notifications are grouped by issue. The issue with the newest notification c
 
 A notification that tells you a change to many issues has ended has **Show the result**.
 
-The page shows the newest first and **Show earlier** adds older ones. Notifications are deleted after 90 days.
+The page shows the newest first and **Show earlier** adds older ones. How long a notification is kept is on [Times and counts](numbers.md).
 
 ## The start page
 

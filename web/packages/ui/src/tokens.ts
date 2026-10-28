@@ -31,8 +31,9 @@ export const variants = {
   "less-motion": { attribute: "data-motion", value: "less" },
 } as const;
 
-/** The variables the code may set while the person drags (`run-time="true"` in the theme file). */
+/** The variables the code may set while the person drags or the browser measures (`run-time="true"` in the theme file). */
 export const runTimeVariables = [
+  "size-code-char",
   "window-width",
   "window-height",
   "list-columns",
@@ -151,6 +152,7 @@ export const tokenNames = [
   "size-col-rules",
   "size-col-remove",
   "size-col-key",
+  "size-code-char",
   "size-col-short",
   "size-col-place",
   "size-col-priority",
@@ -351,6 +353,7 @@ export const part = {
   listGroupCount: "list-group.count",
   listMain: "list-main",
   listFrame: "list-frame",
+  listCharProbe: "list-char-probe",
   listScroll: "list-scroll",
   listHead: "list-head",
   listSort: "list-sort",
@@ -727,7 +730,6 @@ export const part = {
   searchMistakes: "search-mistakes",
   searchMistake: "search-mistake",
   searchResults: "search-results",
-  searchResultsList: "search-results.list",
   searchList: "search-list",
   searchListItem: "search-list.item",
   searchHelpTitle: "search-help.title",
@@ -831,6 +833,7 @@ export const partWords = {
   "list-group.count": { variant: [], state: [] },
   "list-main": { variant: [], state: [] },
   "list-frame": { variant: ["compact"], state: [] },
+  "list-char-probe": { variant: [], state: [] },
   "list-scroll": { variant: [], state: [] },
   "list-head": { variant: [], state: [] },
   "list-sort": { variant: [], state: [] },
@@ -1257,8 +1260,7 @@ export const partWords = {
   "search-wrap": { variant: [], state: [] },
   "search-mistakes": { variant: [], state: [] },
   "search-mistake": { variant: [], state: [] },
-  "search-results": { variant: [], state: [] },
-  "search-results.list": { variant: [], state: ["stale"] },
+  "search-results": { variant: [], state: ["stale"] },
   "search-list": { variant: [], state: [] },
   "search-list.item": { variant: [], state: [] },
   "search-help.title": { variant: [], state: [] },

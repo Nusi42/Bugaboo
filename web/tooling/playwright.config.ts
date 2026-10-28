@@ -11,8 +11,13 @@ import { viewports } from "./viewports.ts";
 const ports = readPorts();
 const portsForWorkers = ports.e2eWorkersTo - ports.e2eWorkersFrom + 1;
 
-/** The speed tests (PERF-01) run alone, after every other test, so no other test competes for the computer. */
-const speedFiles = "**/perf-issues.spec.ts";
+/**
+ * The speed tests (PERF-01) are the files `perf-*.spec.ts`. They run after every other test and one
+ * at a time (one worker), so no other test competes for the computer and their numbers mean
+ * something (M5-F98: beside the whole suite one reached 100.6 ms against its 100). A new speed test
+ * that measures a time goes into such a file; one that measures nothing does not.
+ */
+const speedFiles = "**/perf-*.spec.ts";
 
 /** How many WebKit tests run at the same time (see the project). */
 const WEBKIT_WORKERS = 2;
@@ -71,11 +76,14 @@ export default defineConfig({
       workers: WEBKIT_WORKERS,
       use: { browserName: "webkit", viewport: viewports.phone, hasTouch: true },
     },
-    // The speed of the pages of an issue and the lists on the sample (PERF-01, M3 WP-11): after the
-    // other projects, with every other worker idle. By hand: `--project=speed --no-deps`.
+    // The speed of the pages of an issue, the lists and the search page on the sample (PERF-01, M3
+    // WP-11, M5-F98): after the other projects, with every other worker idle. By hand:
+    // `--project=speed --no-deps`.
     {
       name: "speed",
       testMatch: speedFiles,
+      // One at a time: two speed tests side by side compete for the computer.
+      workers: 1,
       // A speed test that a busy computer slowed down is run once more; if it still misses, it is
       // a miss. On a busy computer run it alone: `--project=speed --no-deps`.
       retries: 1,

@@ -159,7 +159,74 @@
       "teamStatusChanges": 1200,
       "contributorChanges": 120,
       "viewerFollows": 400,
-      "readPercent": 40
+      "readPercent": 40,
+      "savedSearches": [
+        {
+          "name": "High priority, not done",
+          "text": "statusGroup is not Done and priority is high sort by priority, highest first",
+          "maker": "administrator",
+          "groups": [],
+          "projects": ["WEB"],
+          "projectList": "WEB"
+        },
+        {
+          "name": "Everything changed this week",
+          "text": "changed in last 7 days",
+          "maker": "administrator",
+          "groups": ["management"],
+          "projects": [],
+          "projectList": null
+        },
+        {
+          "name": "My open issues",
+          "text": "statusGroup is not Done and assignedTo is me sort by priority, highest first",
+          "maker": "team-member",
+          "groups": [],
+          "projects": [],
+          "projectList": null
+        },
+        {
+          "name": "Questions of customers",
+          "text": "customer is \"Alder Street Bakery\"",
+          "maker": "administrator",
+          "groups": ["frontend"],
+          "projects": ["WEB"],
+          "projectList": null
+        },
+        {
+          "name": "Slow things the team found",
+          "text": "contains slow and statusGroup is not Done",
+          "maker": "administrator",
+          "groups": ["backend"],
+          "projects": [],
+          "projectList": null
+        },
+        {
+          "name": "What I reported",
+          "text": "reportedBy is me",
+          "maker": "contributor",
+          "groups": [],
+          "projects": [],
+          "projectList": null
+        },
+        {
+          "name": "Changed lately",
+          "text": "changed in last 14 days",
+          "maker": "viewer",
+          "groups": [],
+          "projects": [],
+          "projectList": null
+        },
+        {
+          "name": "Still open",
+          "text": "statusGroup is not Done",
+          "maker": "guest",
+          "groups": [],
+          "projects": [],
+          "projectList": null
+        }
+      ],
+      "hiddenFromContributors": ["Customer"]
     }
   },
   "large": {

@@ -17,7 +17,7 @@ export interface SamplePerson extends Person {
 
 const MS_PER_SECOND = 1000;
 
-function sampleFolder(): string {
+export function sampleFolder(): string {
   return resolve(repoRoot, layout.out);
 }
 

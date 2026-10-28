@@ -315,24 +315,23 @@ pub async fn create_field<S: AuthStore>(
     let levels = ctx.starting_levels(input.applies_to).await?;
     let why = Why::default();
     let (stopped, stored) = (why.clone(), definition.clone());
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                S::lock_policy(transaction).await?;
-                let known = S::field_definitions_in(transaction).await?;
-                if name_taken(&known, &stored.field.name, stored.field.applies_to, None) {
-                    return Err(stopped.stop::<S>(ErrorCode::NameTaken));
-                }
-                S::insert_field(transaction, &stored).await?;
-                let key = FieldKey::Own(stored.field.id);
-                for (role, level) in &levels {
-                    S::put_level(transaction, *role, None, None, key, Some(*level)).await?;
-                }
-                Ok(())
-            })
+    ctx.record_change(&event, move |transaction| {
+        Box::pin(async move {
+            S::lock_policy(transaction).await?;
+            let known = S::field_definitions_in(transaction).await?;
+            if name_taken(&known, &stored.field.name, stored.field.applies_to, None) {
+                return Err(stopped.stop::<S>(ErrorCode::NameTaken));
+            }
+            S::insert_field(transaction, &stored).await?;
+            let key = FieldKey::Own(stored.field.id);
+            for (role, level) in &levels {
+                S::put_level(transaction, *role, None, None, key, Some(*level)).await?;
+            }
+            Ok(())
         })
-        .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
+    })
+    .await
+    .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
     let view = ctx.field_shown(&actor, &held, &definition).await?;
     Ok(held.authorize(view))
 }
@@ -547,50 +546,49 @@ pub async fn change_field<S: AuthStore>(
     let event = ctx.event(by(actor.person.id), record.clone(), changes)?;
     let why = Why::default();
     let (stopped, written, version) = (why.clone(), after.clone(), current.field.version);
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                S::lock_policy(transaction).await?;
-                let known = S::field_definitions_in(transaction).await?;
-                let renamed = is_new_or_changed(
-                    known
-                        .iter()
-                        .find(|stored| stored.field.id == written.field.id)
-                        .map(|stored| stored.field.name.as_str()),
+    ctx.record_change(&event, move |transaction| {
+        Box::pin(async move {
+            S::lock_policy(transaction).await?;
+            let known = S::field_definitions_in(transaction).await?;
+            let renamed = is_new_or_changed(
+                known
+                    .iter()
+                    .find(|stored| stored.field.id == written.field.id)
+                    .map(|stored| stored.field.name.as_str()),
+                &written.field.name,
+            );
+            if renamed
+                && name_taken(
+                    &known,
                     &written.field.name,
-                );
-                if renamed
-                    && name_taken(
-                        &known,
-                        &written.field.name,
-                        written.field.applies_to,
-                        Some(written.field.id),
-                    )
-                {
-                    return Err(stopped.stop::<S>(ErrorCode::NameTaken));
-                }
-                if S::update_field(
-                    transaction,
-                    &written.field,
-                    &written.scope,
-                    Version::new(version),
+                    written.field.applies_to,
+                    Some(written.field.id),
                 )
-                .await?
-                {
-                    Ok(())
-                } else {
-                    Err(stopped.stop::<S>(ErrorCode::VersionChanged))
-                }
-            })
-        })
-        .await
-        .map_err(|error| {
-            why.answer::<S>(&error, ErrorCode::VersionChanged).about(
-                &record,
-                Place::Organization,
-                actor.person.id,
+            {
+                return Err(stopped.stop::<S>(ErrorCode::NameTaken));
+            }
+            if S::update_field(
+                transaction,
+                &written.field,
+                &written.scope,
+                Version::new(version),
             )
-        })?;
+            .await?
+            {
+                Ok(())
+            } else {
+                Err(stopped.stop::<S>(ErrorCode::VersionChanged))
+            }
+        })
+    })
+    .await
+    .map_err(|error| {
+        why.answer::<S>(&error, ErrorCode::VersionChanged).about(
+            &record,
+            Place::Organization,
+            actor.person.id,
+        )
+    })?;
     after.field.version = next(version);
     let view = ctx.field_shown(&actor, &held, &after).await?;
     Ok(held.authorize(view))

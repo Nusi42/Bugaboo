@@ -15,10 +15,10 @@ use anyhow::{Context as _, bail};
 use super::{TS_HEADER, number_const, registry};
 use crate::source::Source;
 
-const NOTIFICATION_SOURCE: &str = "crates/bb-core/src/notification.rs";
-const MAIL_SOURCE: &str = "crates/bb-core/src/mail.rs";
-const SIGN_UP_SOURCE: &str = "crates/bb-core/src/sign_up_invitation.rs";
-const HANDLE_SOURCE: &str = "crates/bb-core/src/handle.rs";
+pub(super) const NOTIFICATION_SOURCE: &str = "crates/bb-core/src/notification.rs";
+pub(super) const MAIL_SOURCE: &str = "crates/bb-core/src/mail.rs";
+pub(super) const SIGN_UP_SOURCE: &str = "crates/bb-core/src/sign_up_invitation.rs";
+pub(super) const HANDLE_SOURCE: &str = "crates/bb-core/src/handle.rs";
 const COMMENT_SOURCE: &str = "crates/bb-core/src/comment.rs";
 
 /// The name of the type the table is declared on, and of the function that holds it.
@@ -29,7 +29,7 @@ const SETTING_FUNCTION: &str = "setting";
 const APP: &str = "App";
 const MAIL: &str = "Mail";
 
-fn parsed(sources: &[Source], path: &str) -> anyhow::Result<syn::File> {
+pub(super) fn parsed(sources: &[Source], path: &str) -> anyhow::Result<syn::File> {
     let Some((_, text)) = sources.iter().find(|(known, _)| known == path) else {
         bail!("{path} is missing");
     };

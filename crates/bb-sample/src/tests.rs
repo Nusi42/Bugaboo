@@ -15,6 +15,7 @@ use jiff::Timestamp;
 use serde_json::Value;
 
 mod issues;
+mod searches;
 mod work;
 
 use crate::{

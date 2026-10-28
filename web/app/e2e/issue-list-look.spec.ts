@@ -5,6 +5,7 @@ import { expectNoSidewaysScroll } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { tickBox, webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
+import { idsCut } from "./support/list-ids.ts";
 import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 import {
@@ -122,6 +123,11 @@ test("ux_4_2 the list is left-aligned: it starts where the heading starts and fi
   expect(Math.abs(table.x - heading.x)).toBeLessThanOrEqual(2);
   // The title column takes what the others leave: the table is not a narrow column in the middle.
   expect(table.width).toBeGreaterThan(table.x * 2);
+});
+
+test("ux_4_2 an ID is never cut, in a row and on a phone card", async ({ page }) => {
+  await openList(page);
+  expect(await idsCut(page)).toBe(0);
 });
 
 test("ux_4_2 a whole row opens its issue, and its title is not a link color (R8)", async ({

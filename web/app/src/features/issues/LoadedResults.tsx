@@ -33,6 +33,7 @@ export function LoadedResults(props: LoadedProps) {
           customizing={customizing}
           dragged={dragged}
           shown={shown.ids}
+          keyChars={shown.keyChars}
           onCustomize={() => {
             setCustomizing(!customizing);
           }}

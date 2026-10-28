@@ -1,6 +1,3 @@
-import { Alert, alertTone } from "@bugaboo/ui";
-
-import { messageOf } from "../../shared/errors.ts";
 import type { SearchSpacing } from "../../shared/search-address.ts";
 import { linesFrom } from "../../shared/paged.ts";
 import { foundLineOf, useFoundIssues } from "./found-issues.ts";
@@ -23,9 +20,6 @@ export function PlainList({ spacing }: PlainListProps) {
   const found = useFoundIssues(context.search, context.words);
   const lines = linesFrom(found.data?.pages, foundLineOf);
   useReportShown("all", lines);
-  if (found.isError) {
-    return <Alert tone={alertTone.danger}>{messageOf(found.error)}</Alert>;
-  }
   if (found.isSuccess && lines.length === 0) {
     return <ListEmpty />;
   }

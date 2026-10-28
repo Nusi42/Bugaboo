@@ -226,3 +226,34 @@ pub(crate) async fn save_field_text_scenario(world: &World) -> Added {
 fn token_of(world: &World) -> String {
     token(world)
 }
+
+#[tokio::test]
+async fn cf_01_a_field_written_in_a_request_is_read_in_the_same_request() -> Result<(), String> {
+    // The definitions are read once for a request; a write of a field or a choice drops them.
+    let world = World::new().await.map_err(text)?;
+    let ctx = world.ctx();
+    assert!(ctx.field_catalogue().await.map_err(text)?.is_empty());
+    let made = create_field(&ctx, new_field(&world, "Customer", FieldType::PickOne, &[]))
+        .await
+        .map_err(text)?
+        .into_value();
+    let after_create = ctx.field_catalogue().await.map_err(text)?;
+    assert_eq!(after_create.len(), 1);
+    assert!(after_create[0].choices.is_empty());
+    add_choice(
+        &ctx,
+        AddChoice {
+            session_token: token(&world),
+            field: made.id,
+            version: made.version,
+            name: "Bakery".to_owned(),
+            color: None,
+            icon: None,
+        },
+    )
+    .await
+    .map_err(text)?;
+    let after_choice = ctx.field_catalogue().await.map_err(text)?;
+    assert_eq!(after_choice[0].choices.len(), 1);
+    Ok(())
+}

@@ -17,6 +17,7 @@
 
 mod catalogue;
 mod choices;
+mod definitions;
 mod manage;
 pub(crate) mod member;
 mod naming;

@@ -83,8 +83,14 @@ async fn sec_17_a_search_text_with_a_walk_in_front_never_becomes_sql() -> TestRe
         let ask = request(&data, &text, None, 10);
         let dialect = fixture.storage.database().dialect();
         let plan = super::statements::SortPlan::of(&ask, dialect).map_err(|e| e.to_string())?;
-        let built = super::statements::page_statement(&ask, dialect, &plan, None)
-            .map_err(|error| error.to_string())?;
+        let built = super::statements::page_statement(
+            &ask,
+            dialect,
+            &plan,
+            None,
+            super::statements::Forms::EACH,
+        )
+        .map_err(|error| error.to_string())?;
         let super::statements::Built::With(query) = &built else {
             return Err("a walk is a statement with a head".into());
         };

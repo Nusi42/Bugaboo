@@ -5,7 +5,7 @@
 
 ## Goal
 
-M5 is shown working on the sample and proven fast on 1 M issues: the exit demo runs, ten people search while others change data and every rule holds, and the nightly benchmarks meet PERF-01.
+M5 is shown working on the sample and proven fast on 1 M issues: the exit demo runs, ten people search while others change data and every rule holds, and the nightly benchmarks meet PERF-01 (the groups by *Assigned to* on SQLite are a known gap, M5-F89, accepted by the maintainer).
 
 ## Owns
 
@@ -16,7 +16,7 @@ M5 is shown working on the sample and proven fast on 1 M issues: the exit demo r
 1. **Sample part 4:** saved searches for every role, private and shared with groups and projects, one with a field some roles may not read (so a receiver who may not read it never sees it), and a project default list.
 2. **Ten people searching:** the scenario "Searches while others change data" (architecture §11): every search answer holds the rules (no hidden issue, field or person; counts match the issues seen), on both databases.
 3. **Speed on 1 M issues:** every PERF-01 scenario of WP-03 to WP-09 within its budget on both databases in the nightly run; the preview of 5,000 issues gets a budget and meets it (M3-F133); the fixed statements of a request are measured and the largest cut (M4-F137). Numbers into §11.
-4. **The exit demo** (04-milestones M5): search the sample in both modes and switch; a Contributor who may not see *Cost center* searches by it and gets the answer of an unknown field; the run on 1 M issues meets its budget. Each step a test, with pictures in the four themes on computer and phone.
+4. **The exit demo** (04-milestones M5): search the sample in both modes and switch; a Contributor who may not see *Customer* (an own field; *Cost center* is a built-in field no search can read yet, so it is not the one, lead) searches by it and gets the answer of an unknown field; the run on 1 M issues meets its budget. Each step a test, with pictures in the four themes on computer and phone.
 5. **User docs:** searching, the search language with examples, saved searches and sharing, lists, *Quick search*; numbers taken from the code, not written by hand (M4-F82).
 
 ## Acceptance tests (write first)

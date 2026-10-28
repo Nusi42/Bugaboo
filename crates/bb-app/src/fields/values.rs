@@ -494,16 +494,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         ))
     }
 
-    /// The definitions of the own fields.
-    pub(crate) async fn field_catalogue(&self) -> Result<Arc<Vec<Definition>>, AppError> {
-        Ok(Arc::new(
-            self.store()
-                .field_definitions()
-                .await
-                .map_err(|error| internal::<S>(&error))?,
-        ))
-    }
-
     /// Reads the values of these items.
     pub(crate) async fn load_values(
         &self,

@@ -116,6 +116,8 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         APP_PATHS_PATH,
         NOTIFICATIONS_PATH,
         COOKIES_PAGE,
+        web_constants::user_pages::SEARCH_LIMITS_PAGE,
+        web_constants::user_pages::NOTIFICATION_NUMBERS_PAGE,
     ]
 }
 
@@ -126,7 +128,7 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     let purposes = purposes(&source_pairs(repo)?);
     let types = openapi_types(repo, &spec)?;
     let protocol = protocol(&cookies)?;
-    Ok(vec![
+    let mut files = vec![
         Generated::new(SPEC_PATH, format_with_oxfmt(repo, SPEC_PATH, &spec)?),
         Generated::new(
             SCHEMA_PATH,
@@ -201,7 +203,12 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
             )?,
         ),
         Generated::new(COOKIES_PAGE, cookies_page(&cookies.cookies, &purposes)?),
-    ])
+    ];
+    // The user pages whose numbers come from the code.
+    for (path, text) in web_constants::user_pages::pages(&sources)? {
+        files.push(Generated::new(path, text));
+    }
+    Ok(files)
 }
 
 /// Asks the program for its API description. Only stdout is the document; cargo's own messages

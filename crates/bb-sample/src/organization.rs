@@ -22,9 +22,8 @@ use bb_app::roles::{
 };
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::id::{GroupId, ProjectId, RoleId};
+use bb_core::id::{ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::project::ShortName;
 
 use crate::error::{SampleError, Step};
 use crate::generate::{Later, World};
@@ -459,7 +458,7 @@ impl Making<'_, '_> {
 
     async fn member(&self, group: &str, person: usize) -> Result<(), SampleError> {
         let (group, person) = (
-            self.group_id(group).await?,
+            self.world.group_named(group).await?,
             self.world
                 .people
                 .get(person)
@@ -486,7 +485,7 @@ impl Making<'_, '_> {
         parent: Option<&str>,
     ) -> Result<(), SampleError> {
         let parent = match parent {
-            Some(parent) => Some(self.project_id(parent).await?),
+            Some(parent) => Some(self.world.project_named(parent).await?),
             None => None,
         };
         create_project(
@@ -507,7 +506,7 @@ impl Making<'_, '_> {
     /// sign-in and sees little.
     async fn custom_roles(&self, names: &OrganizationNames) -> Result<(), SampleError> {
         let step = |error: &dyn std::fmt::Display| SampleError::step(Step::Role, &error);
-        let team_member = self.starting_role(StartingRole::TeamMember).await?;
+        let team_member = self.world.starting_role(StartingRole::TeamMember).await?;
         let support = names.role(SUPPORT_AGENT)?;
         copy_role(
             &self.world.services.ctx(self.world.request()),
@@ -546,8 +545,8 @@ impl Making<'_, '_> {
     /// Mobile app: *Cost center* is hidden from Contributors, and Guests see no names of authors
     /// or mentions. Website keeps the starting rules, so the exit demo has something to change.
     async fn what_roles_see(&self) -> Result<(), SampleError> {
-        let app = self.project_id("APP").await?;
-        let contributor = self.starting_role(StartingRole::Contributor).await?;
+        let app = self.world.project_named("APP").await?;
+        let contributor = self.world.starting_role(StartingRole::Contributor).await?;
         self.field_level(
             contributor,
             Some(app),
@@ -555,7 +554,7 @@ impl Making<'_, '_> {
             FieldLevel::Hidden,
         )
         .await?;
-        let guest = self.starting_role(StartingRole::Guest).await?;
+        let guest = self.world.starting_role(StartingRole::Guest).await?;
         for kind in [PeopleKind::Authors, PeopleKind::Mentions] {
             set_level(
                 &self.world.services.ctx(self.world.request()),
@@ -605,17 +604,19 @@ impl Making<'_, '_> {
                     .map(|made| made.id)
                     .ok_or(SampleError::PersonMissing)?,
             ),
-            Holder::Group(key) => Subject::Group(self.group_id(names.group(key)?).await?),
+            Holder::Group(key) => Subject::Group(self.world.group_named(names.group(key)?).await?),
         };
         let given = match row.grant {
             Grant::NoAccess => Given::NoAccess,
-            Grant::Role(RoleKey::Starting(role)) => Given::Role(self.starting_role(role).await?),
+            Grant::Role(RoleKey::Starting(role)) => {
+                Given::Role(self.world.starting_role(role).await?)
+            }
             Grant::Role(RoleKey::Custom(key)) => {
                 Given::Role(self.named_role(names.role(key)?).await?)
             }
         };
         let project = match &row.project {
-            Some(short_name) => Some(self.project_id(short_name).await?),
+            Some(short_name) => Some(self.world.project_named(short_name).await?),
             None => None,
         };
         assign_role(
@@ -633,46 +634,8 @@ impl Making<'_, '_> {
         .map_err(|error| SampleError::step(Step::Assignment, &error))
     }
 
-    async fn group_id(&self, name: &str) -> Result<GroupId, SampleError> {
-        self.world
-            .storage
-            .groups()
-            .await?
-            .into_iter()
-            .find(|group| group.name == name)
-            .map(|group| group.id)
-            .ok_or_else(|| SampleError::NotMade(name.to_owned()))
-    }
-
-    async fn project_id(&self, short_name: &str) -> Result<ProjectId, SampleError> {
-        let parsed =
-            ShortName::new(short_name).map_err(|_| SampleError::NotMade(short_name.to_owned()))?;
-        self.world
-            .storage
-            .project_by_short_name(&parsed)
-            .await?
-            .map(|project| project.id)
-            .ok_or_else(|| SampleError::NotMade(short_name.to_owned()))
-    }
-
     async fn roles(&self) -> Result<Vec<RoleRecord>, SampleError> {
         Ok(self.world.storage.roles().await?)
-    }
-
-    async fn starting_role(&self, role: StartingRole) -> Result<RoleId, SampleError> {
-        self.roles()
-            .await?
-            .into_iter()
-            .find(|record| {
-                record
-                    .role
-                    .starting
-                    .as_ref()
-                    .map(bb_core::technical::TechnicalName::as_str)
-                    == Some(role.code())
-            })
-            .map(|record| record.role.id)
-            .ok_or_else(|| SampleError::NotMade(role.code().to_owned()))
     }
 
     async fn named_role(&self, name: &str) -> Result<RoleId, SampleError> {

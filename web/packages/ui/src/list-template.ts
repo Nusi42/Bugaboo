@@ -38,9 +38,10 @@ function variable(token: TokenName): string {
 
 /**
  * The columns of the head and of every row as one `grid-template-columns`: the width a person gave
- * a column, or the one the theme file gives its kind, and the title takes what is left.
+ * a column, or the one the theme file gives its kind, and the title takes what is left. The ID
+ * column holds the longest ID that is drawn (`keyChars` characters of the code font).
  */
-export function listTemplate(columns: readonly ListColumnSpec[]): string {
+export function listTemplate(columns: readonly ListColumnSpec[], keyChars = 0): string {
   return columns
     .map(({ column, width }) => {
       if (width !== undefined) {
@@ -48,6 +49,10 @@ export function listTemplate(columns: readonly ListColumnSpec[]): string {
       }
       if (column === "title") {
         return `minmax(${variable("size-col-title")}, 1fr)`;
+      }
+      if (column === "key" && keyChars > 0) {
+        // The ID is as wide as the longest one drawn, and not narrower than its head needs.
+        return `max(${variable("size-col-key")}, calc(${variable("size-code-char")} * ${String(keyChars)}))`;
       }
       const token = widthToken[column];
       if (token === undefined) {

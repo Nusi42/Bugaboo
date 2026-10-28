@@ -8,7 +8,9 @@
 //! every other use case is a command, and its body must call `record_change`, its sibling
 //! `record_changes` (a change whose events are made inside the transaction, because they hold what
 //! the transaction found, such as the version a count-up gave) or `save_text` (the save of a long
-//! text under its lock, which calls `record_change` itself). Comments and
+//! text under its lock, which calls `record_change` itself), or the method `record_change` of the
+//! context of the fields (`fields/definitions.rs`), which calls the port and then drops what the
+//! request kept of the field definitions. Comments and
 //! string literals are removed before the code is read, so a mention of the call does not count.
 //! Calling a command a query is a way around the rule; review looks at the names (the type of the
 //! input is part of the signature, not just a parameter name). This check reads the code; the

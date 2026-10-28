@@ -74,6 +74,30 @@ pub struct Drafted {
     pub found_as_draft: Option<bool>,
 }
 
+/// A search a person made while others changed data, and what they were told (architecture §11,
+/// "Searches while others change data").
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Searched {
+    /// The ID of the person.
+    pub holder: String,
+    /// The text of the search.
+    pub query: String,
+    /// Whether the search asks for every issue the person reads, which no change of the run alters.
+    pub everything: bool,
+    /// Whether the search reads the own field that Guests may not see.
+    pub reads_hidden: bool,
+    /// The readable IDs of the issues the first page held.
+    pub found: Vec<String>,
+    /// Whether there was a page after the first.
+    pub more: bool,
+    /// What the count line said, for a search that asked for it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub count: Option<u64>,
+    /// The code of the refusal, when the search was refused.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refused: Option<String>,
+}
+
 /// Everything the people did that counts, in the order it happened to each of them.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Book {
@@ -98,6 +122,9 @@ pub struct Book {
     /// The keys of the own fields the run hid from Guests.
     #[serde(default)]
     pub hidden_from_guests: Vec<String>,
+    /// The searches people made.
+    #[serde(default)]
+    pub searched: Vec<Searched>,
 }
 
 impl Book {
@@ -163,10 +190,31 @@ mod tests {
             "broken": [],
             "files": ["LOAD-1"],
             "guests": ["00000000-0000-4000-8000-000000000004"],
-            "hidden_from_guests": ["00000000-0000-4000-8000-000000000005"]
+            "hidden_from_guests": ["00000000-0000-4000-8000-000000000005"],
+            "searched": [
+                {
+                    "holder": "00000000-0000-4000-8000-000000000002",
+                    "query": "",
+                    "everything": true,
+                    "reads_hidden": false,
+                    "found": ["LOAD-1"],
+                    "more": false,
+                    "count": 1
+                },
+                {
+                    "holder": "00000000-0000-4000-8000-000000000004",
+                    "query": "internalNote is x",
+                    "everything": false,
+                    "reads_hidden": true,
+                    "found": [],
+                    "more": false,
+                    "refused": "search.invalid"
+                }
+            ]
         });
         let book: Book = serde_json::from_value(example.clone()).unwrap();
         assert_eq!(book.kept.len(), 3);
+        assert_eq!(book.searched.len(), 2);
         assert_eq!(book.drafted[1].ending, DraftEnd::Vanished);
         assert_eq!(serde_json::to_value(&book).unwrap(), example);
     }

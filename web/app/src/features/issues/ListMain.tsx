@@ -16,6 +16,8 @@ export interface ListMainProps {
   readonly dragged: Readonly<Record<string, number>>;
   /** The ids of the issues drawn now. */
   readonly shown: readonly string[];
+  /** The characters of the longest readable ID drawn: the ID column is as wide. */
+  readonly keyChars: number;
   readonly onCustomize: () => void;
   readonly onDragged: Dispatch<SetStateAction<Readonly<Record<string, number>>>>;
 }
@@ -29,6 +31,7 @@ export function ListMain({
   customizing,
   dragged,
   shown,
+  keyChars,
   onCustomize,
   onDragged,
 }: ListMainProps) {
@@ -49,8 +52,8 @@ export function ListMain({
         onView={onView}
         onCustomize={onCustomize}
       />
-      <ListInfo scopeName={props.scopeName} shown={shown} />
-      <ListFrame columns={specs} compact={compact}>
+      <ListInfo scopeName={props.scopeName} shown={shown} stale={props.stale} />
+      <ListFrame columns={specs} keyChars={keyChars} compact={compact}>
         {phone ? null : (
           <ListHeader
             view={view}

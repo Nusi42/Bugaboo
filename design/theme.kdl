@@ -121,7 +121,10 @@ tokens {
     // The two columns of buttons at the end of a status change in the workflow editor: the same width in every row.
     size "size-col-rules" "64px"
     size "size-col-remove" "80px"
-    size "size-col-key" "72px"
+    // The ID column is as wide as the longest ID the list draws (its characters times the width of one character of the code font), and at least what its head needs: the name and the handle. Phone cards size their ID from what it says.
+    size "size-col-key" "calc(80px * $text-scale)"
+    // The width of one character of the code font, as the browser draws it: the code measures a probe in the code font once and sets it (run-time); the value here is only what stands until it has, 0.6 of the text size of the ID cells (`fs-ui`, 14px on a computer).
+    size "size-code-char" "calc(8.4px * $text-scale)" run-time="true"
     size "size-col-short" "64px"
     size "size-col-place" "112px"
     size "size-col-priority" "72px"
@@ -134,7 +137,7 @@ tokens {
     // up theirs, down to the least width; then the list scrolls sideways, head and rows together. A
     // column that is only an icon, the ID and the priority keep their width. A column a person drags
     // is no narrower than the least and moves by the step with the arrow keys.
-    size "size-col-title" "140px"
+    size "size-col-title" "120px"
     size "size-col-least" "48px"
     size "size-col-most" "800px"
     size "size-col-step" "16px"
@@ -1700,7 +1703,6 @@ part "list-row.cell[variant=status]" "list-row.cell[variant=type]" {
 
 part "list-row.cell[variant=key]" {
     flex none
-    width "$size-col-key"
     color "$fg-muted"
     font-family "$mono"
 }
@@ -1786,10 +1788,11 @@ part "list-row.cell[variant=select]" "list-row.cell[variant=action]" {
 }
 
 // On a phone the row has two lines: status, ID and priority, then the title, then the person and
-// the day (R9: the same order). The other columns are left out.
+// the day (R9: the same order). The other columns are left out. The ID and the person have the room
+// that is left; the priority and the day take what they need at the end, so no text meets another.
 part "list-row[variant=phone]" "list-row[variant=slim]" {
     display grid
-    grid-template-columns "$size-control $size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-columns "$size-control $size-col-icon minmax(0, 1fr) auto"
     grid-template-areas "\"select status key priority\" \"select title title title\" \"select person person changed\""
     align-items center
     gap "$space-1 $space-3"
@@ -1830,6 +1833,7 @@ part "list-row[variant=phone] list-row.cell[variant=title]" "list-row[variant=sl
 
 part "list-row[variant=phone] list-row.cell[variant=person]" {
     grid-area person
+    width auto
 }
 
 part "list-row[variant=phone] list-row.cell[variant=action]" {
@@ -1844,7 +1848,7 @@ part "list-row[variant=phone] list-row.cell[variant=changed]" {
 
 // A card without the box to tick (the Search page): the same lines without its column.
 part "list-row[variant=phone][variant=plain]" {
-    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
     grid-template-areas "\"status key priority\" \"title title title\" \"person person changed\""
 }
 
@@ -1855,7 +1859,7 @@ part "list-row[variant=phone] list-row.cell[variant=status]" {
 
 // The slim list beside the open issue (UX §3.4): the two lines of a phone, without the tick box.
 part "list-row[variant=slim]" {
-    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
     grid-template-areas "\"status key priority\" \"title title title\""
 }
 
@@ -1899,6 +1903,19 @@ part "list-frame" {
     flex-direction column
     min-width 0
     overflow-x auto
+}
+
+// Ten characters of the code font that nobody sees: the code measures them, so the ID column is as wide as the font really draws its IDs, whichever font the computer has for it.
+part "list-char-probe" {
+    position absolute
+    inset-block-start 0
+    inset-inline-start 0
+    height 0
+    overflow hidden
+    visibility hidden
+    white-space pre
+    font-family "$mono"
+    font-size "$fs-ui"
 }
 
 part "list-row[variant=grid]" {
@@ -12571,17 +12588,25 @@ part "search-mistake" {
     overflow-wrap anywhere
 }
 
-// What a search finds, with the note that says whose results they are while the text has a mistake.
+// What a search finds.
 part "search-results" {
     display flex
     flex-direction column
     gap "$space-2"
 }
 
-// The results of the search that was fixed last stay while the text has a mistake, dimmed; the
-// note that says so is not part of them and stays as clear as any text.
-part "search-results.list[state=stale]" {
-    opacity "$opacity-busy"
+// The results of the search that was fixed last stay while the text has a mistake. They keep their
+// full contrast (a dimmed list fails AA, 4.5:1); a dashed edge round the head and the rows, drawn
+// as an outline just outside the frame (the head and the rows paint over an edge inside it) so
+// nothing moves, and the note above the list (the count line) say that they are the last ones.
+part "list-frame:has(search-results[state=stale])" {
+    outline "$border-width dashed $border-control"
+    outline-offset "$space-1"
+}
+
+// An empty last list stands inside the edge, so its words keep their distance from it on a phone too (R3).
+part "list-frame:has(search-results[state=stale]) list-nothing" {
+    padding "$pad-box" "$space-3"
 }
 
 // The lists of the Share window and of Saved searches.

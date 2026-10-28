@@ -8,10 +8,10 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use bb_app::access::{PolicyStore as _, StartingRole};
+use bb_app::access::{LevelKind, PolicyStore as _, StartingRole};
 use bb_app::auth::{AccountStore as _, SecondStepStore as _};
 use bb_core::event::{Actor, DomainEvent, EntityRef};
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{EntityId, UserId};
 use bb_core::technical::TechnicalName;
 use serde::Serialize;
@@ -283,7 +283,17 @@ fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
             .iter()
             .map(|change| {
                 // An own field is named by an ID in its events, which is random by design.
-                let (field, kind) = match id_bytes(&change.field) {
+                // The level of a role for an own field names it as `field.<key of the field>`.
+                let id = id_bytes(&change.field).or_else(|| {
+                    change
+                        .field
+                        .strip_prefix(LevelKind::Field.code())
+                        .and_then(|rest| rest.strip_prefix('.'))
+                        .and_then(FieldKey::from_code)
+                        .and_then(FieldKey::own)
+                        .map(bb_core::id::FieldId::to_bytes)
+                });
+                let (field, kind) = match id {
                     Some(id) => (labels.label(OWN_FIELD, id), OWN_FIELD),
                     None => (change.field.clone(), change.field.as_str()),
                 };

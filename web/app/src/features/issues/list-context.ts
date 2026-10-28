@@ -5,6 +5,7 @@ import type { SearchState } from "../../shared/search-address.ts";
 import type { FoundSearch } from "./found-issues.ts";
 import type { IssueShow } from "./issue-show.ts";
 import type { OwnColumns } from "./own-columns.ts";
+import type { ListShown } from "./use-list-shown.ts";
 import type { IssueSelection } from "./use-selection.ts";
 
 /** What every row and every group of one list shares. */
@@ -31,10 +32,12 @@ export interface ListContextValue {
   readonly language: SearchLanguage;
   /** The field the list is grouped by. */
   readonly groupBy: string | null;
+  /** Why the search was refused, so the list has no rows and no head; none while it has a list. */
+  readonly failure: Error | null;
   /** Takes every filter out of the search (*Remove all filters*). */
   readonly onClear: () => void;
   /** A group (or the whole list) tells which issues it shows now. */
-  readonly report: (id: string, issues: readonly string[]) => void;
+  readonly report: ListShown["report"];
 }
 
 export const ListContext = createContext<ListContextValue | null>(null);

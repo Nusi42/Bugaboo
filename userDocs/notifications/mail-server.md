@@ -18,7 +18,7 @@ Bugaboo sends e-mail through your organization's mail server. E-mail is **off** 
 - *The mail server did not accept the e-mail*: check the user name, the password and the address e-mails are sent from.
 - *Bugaboo could not reach the mail server*: check the mail server, its port and the connection.
 - *E-mail is not set up*: enter the mail server first.
-- *You can send another test e-mail in … seconds*: a person can send one test e-mail every 10 seconds.
+- *You can send another test e-mail in … seconds*: how long a person waits is on [Times and counts](numbers.md).
 
 ## Switch it on
 

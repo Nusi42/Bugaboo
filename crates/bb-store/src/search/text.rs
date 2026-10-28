@@ -9,14 +9,19 @@
 
 use bb_app::search::{FieldTarget, TextPlace};
 use bb_core::text_index::TextSource;
-use bb_core::text_words::search_words;
-use bb_searchlang::Text;
+use bb_core::text_words::{SearchWord, search_words};
+use bb_searchlang::{MAX_CONTAINS_WORDS, Text};
 use sea_query::{Cond, Expr, ExprTrait as _};
 
 use super::source::reach_condition;
-use super::{CompileError, Compiler};
+use super::{CompileError, Compiler, Form};
 use crate::schema::IssueRow;
 use crate::text_index::{TextScope, TextSearch, text_issues, text_of_issue};
+
+/// What to find: the words, in the texts of the scope.
+fn asking(words: &[SearchWord], scope: TextScope) -> TextSearch<'_> {
+    TextSearch { words, scope }
+}
 
 impl Compiler<'_> {
     /// The issues whose text, in the part the field stands for, has every word of `text`.
@@ -41,20 +46,63 @@ impl Compiler<'_> {
 
     /// The issues that have every word of `text` in the texts of the scope, a test in the
     /// statement that starts from the sight, so the comments and the file names of an issue the
-    /// person does not read are never found. A page is cut after the first rows, so there the
-    /// issues are asked about one at a time (`EXISTS`, which stops at the first one that has the
-    /// words); a count or the groups ask about all of them (`IN`, the set made once).
+    /// person does not read are never found. How the database is asked depends on the statement
+    /// (see [`Form`]): a page is cut after the first rows, so there the issues are asked about one
+    /// at a time (`EXISTS`, which stops at the first one that has the words), or the issues of
+    /// one rare word are made once and asked about the others; a count or the groups ask about all
+    /// of them (`IN`, the set made once).
     pub(super) fn words_in(&self, scope: TextScope, text: &str) -> Cond {
+        self.text_used.set(true);
+        if self.has_the_words.get()
+            && matches!(scope, TextScope::Everywhere)
+            && self.title_words() == Some(text)
+        {
+            return Cond::all().add(Expr::val(1).eq(1));
+        }
         let words = search_words(text);
-        let search = TextSearch {
-            words: &words,
-            scope,
-        };
         let issue = Expr::col((IssueRow::Table, IssueRow::Id));
-        if self.paged {
-            Cond::all().add(Expr::exists(text_of_issue(self.dialect, &search, issue)))
-        } else {
-            Cond::all().add(issue.in_subquery(text_issues(self.dialect, &search)))
+        match self.form_of(text) {
+            Form::Set => Cond::all()
+                .add(issue.in_subquery(text_issues(self.dialect, &asking(&words, scope)))),
+            Form::Each => Cond::all().add(Expr::exists(text_of_issue(
+                self.dialect,
+                &asking(&words, scope),
+                issue,
+            ))),
+            Form::Driven(at) => {
+                // The words that are looked up are the first ones (`MAX_CONTAINS_WORDS`), each once.
+                let words: Vec<SearchWord> = words.into_iter().take(MAX_CONTAINS_WORDS).collect();
+                let Some(driver) = words.get(at) else {
+                    return Cond::all().add(Expr::val(1).eq(0));
+                };
+                let mut cond = Cond::all().add(issue.clone().in_subquery(text_issues(
+                    self.dialect,
+                    &asking(std::slice::from_ref(driver), scope),
+                )));
+                let others: Vec<SearchWord> = words
+                    .iter()
+                    .enumerate()
+                    .filter(|(place, _)| *place != at)
+                    .map(|(_, word)| word.clone())
+                    .collect();
+                if !others.is_empty() {
+                    cond = cond.add(Expr::exists(text_of_issue(
+                        self.dialect,
+                        &asking(&others, scope),
+                        issue,
+                    )));
+                }
+                cond
+            }
+        }
+    }
+
+    /// The form the words of this text are found in: the one of the statement, and for the words
+    /// that are not the ones the order is decided by, one at a time.
+    fn form_of(&self, text: &str) -> Form {
+        match self.form.get() {
+            Form::Driven(_) if self.title_words() != Some(text) => Form::Each,
+            form => form,
         }
     }
 }

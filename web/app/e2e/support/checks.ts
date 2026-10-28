@@ -1,6 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { t } from "@bugaboo/messages";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { pageAttributes } from "../../../packages/ui/src/tokens.ts";
 import { inOrder } from "./sequence.ts";
@@ -84,7 +84,8 @@ export async function expectNoSidewaysScroll(page: Page): Promise<void> {
 }
 
 /** Places where the items of a list, a group of buttons or a group of choices stand side by side. */
-const ROWS_OF_ITEMS = "ul, ol, [role='radiogroup'], [role='group'], [role='tablist']";
+const ROWS_OF_ITEMS =
+  "ul, ol, [role='radiogroup'], [role='group'], [role='tablist'], [data-part='list-row']";
 
 /** Where an item draws: its own box, and its text, which can reach out of a box that is too narrow. */
 interface Drawn {
@@ -109,7 +110,9 @@ export async function expectNoOverlap(page: Page): Promise<void> {
         const box = item.getBoundingClientRect();
         const range = document.createRange();
         range.selectNodeContents(item);
-        const text = range.getBoundingClientRect();
+        // A cell that clips its text (with an ellipsis) draws no more than its box.
+        const text =
+          getComputedStyle(item).overflowX === "visible" ? range.getBoundingClientRect() : box;
         if (box.width > 0 && box.height > 0) {
           drawn.push({
             text: (item.textContent ?? "").trim(),
@@ -182,4 +185,28 @@ export function expectGoodInEveryLook(page: Page): Promise<void> {
       await expectVisibleTextInName(page);
     }),
   );
+}
+
+/** The first element is drawn above the second. */
+async function expectAbove(upper: Locator, lower: Locator): Promise<void> {
+  const [first, second] = await Promise.all([upper.boundingBox(), lower.boundingBox()]);
+  expect(first?.y ?? 0).toBeLessThan(second?.y ?? 0);
+}
+
+/**
+ * The last list stands behind a mistake in the text (UX §4.3): a dashed edge round the whole list
+ * frame (its head too, where there is one), and the note above the frame.
+ */
+export async function expectStaleEdge(page: Page, note: Locator): Promise<void> {
+  const frame = page.locator("[data-part='list-frame']");
+  await expect(frame).toHaveCSS("outline-style", "dashed");
+  await expectAbove(note, frame);
+  const head = page.locator("[data-part='list-head']");
+  if ((await head.count()) > 0) {
+    const [outer, inner] = await Promise.all([frame.boundingBox(), head.boundingBox()]);
+    expect(inner?.y ?? 0).toBeGreaterThanOrEqual(outer?.y ?? 1);
+    expect((inner?.y ?? 0) + (inner?.height ?? 0)).toBeLessThanOrEqual(
+      (outer?.y ?? 0) + (outer?.height ?? 0),
+    );
+  }
 }

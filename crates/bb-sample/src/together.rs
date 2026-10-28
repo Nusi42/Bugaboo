@@ -108,7 +108,8 @@ impl Maker<'_, '_> {
         self.contributors_change(&mut work).await?;
         self.add_files(&mut work).await?;
         self.run_the_jobs().await?;
-        self.people_read(&mut work).await
+        self.people_read(&mut work).await?;
+        self.save_searches().await
     }
 
     /// The Viewers follow issues: together as many as the plan says, each one different. The issue

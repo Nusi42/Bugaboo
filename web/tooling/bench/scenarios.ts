@@ -1,6 +1,7 @@
 import { pageSizeMax } from "@bugaboo/api-client";
 
 import { type ApiSession } from "../../app/e2e/support/api.ts";
+import { previewStatus } from "../../app/e2e/support/many-changes.ts";
 import { listPage, pageReads } from "../../app/e2e/support/perf-reads.ts";
 import { NOTIFICATIONS_PAGE } from "../../app/e2e/support/perf-work.ts";
 import { timed } from "../../app/e2e/support/perf.ts";
@@ -19,6 +20,8 @@ export interface Context {
   /** A project with very many issues, and one of the tail. */
   readonly big: string;
   readonly small: string;
+  /** The readable IDs of the most issues one change to many issues names, from the big project. */
+  readonly many: readonly string[];
 }
 
 /** One kind of read, repeated `runs` times after the warm-up. */
@@ -26,10 +29,15 @@ export interface Scenario {
   readonly name: string;
   readonly budget: BudgetName;
   readonly runs: number;
+  /** How many runs are thrown away first; the usual number where it is not given. */
+  readonly warmUp?: number;
   readonly once: (context: Context, round: number) => Promise<number>;
 }
 
 const RUNS = 200;
+/** A preview of 5,000 issues takes seconds, so it is run fewer times than a read of a page. */
+const PREVIEW_RUNS = 20;
+const PREVIEW_WARM_UP = 3;
 
 /** Asks for the reads of an issue page all at once, as the browser does, and times them together. */
 async function issuePage(context: Context, round: number): Promise<number> {
@@ -84,6 +92,11 @@ async function searchGroups(context: Context, by: string, q: string): Promise<nu
       context.session.client.GET("/api/v1/search/issues/groups", { params: { query: { q, by } } }),
     )
   ).ms;
+}
+
+/** The preview of a change to the most issues one change names (M3-F133). */
+async function previewMany(context: Context): Promise<number> {
+  return (await timed(() => previewStatus(context.session, context.many, "done"))).ms;
 }
 
 /** The complex search of architecture section 8, across 500 projects. */
@@ -162,6 +175,14 @@ export const scenarios: readonly Scenario[] = [
     budget: "search",
     runs: RUNS,
     once: (context) => searchGroups(context, "assignedTo", COMPLEX),
+  },
+  // The preview judges each issue of the selection, so its cost grows with the issues (M3-F133).
+  {
+    name: "many-changes-preview",
+    budget: "preview",
+    runs: PREVIEW_RUNS,
+    warmUp: PREVIEW_WARM_UP,
+    once: previewMany,
   },
   // The text search (M5-F50): a word in very many issues, a word in few, and the start of a word.
   {

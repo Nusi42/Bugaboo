@@ -22,6 +22,7 @@
 //!   lock once the leases are over, and after the purge no row is left.
 
 use bb_app::access::StartingRole;
+use bb_core::ErrorCode;
 
 use crate::book::{Book, DraftEnd, last_drafts};
 use crate::facts::{Facts, IssueFacts, LockRow, NotificationFacts};
@@ -181,6 +182,70 @@ fn guests_hear_only_what_they_may(book: &Book, notifications: &[NotificationFact
     found
 }
 
+/// Every search holds the rules while others change data (SEC-06, SEC-17, QRY-05): it finds no
+/// issue the person may not read (a Guest reads only what they reported), a search for everything
+/// finds exactly the issues the person reads and the count line says how many, and a search that
+/// reads the own field hidden from Guests is refused for a Guest, as for an unknown field, and
+/// answered for everybody else.
+fn searches_hold_the_rules(book: &Book) -> Vec<String> {
+    let mut found = Vec::new();
+    for search in &book.searched {
+        let guest = book.guests.contains(&search.holder);
+        let readable: Vec<&str> = book
+            .issues
+            .iter()
+            .filter(|work| !guest || work.reporter.as_ref() == Some(&search.holder))
+            .map(|work| work.key.as_str())
+            .collect();
+        let who = if guest { "a Guest" } else { "a person" };
+        for key in &search.found {
+            if !readable.contains(&key.as_str()) {
+                found.push(format!(
+                    "the search `{}` of {who} found {key}, which they may not read",
+                    search.query
+                ));
+            }
+        }
+        // A search is refused only where it reads the field hidden from Guests, and then only for a
+        // Guest, with the answer for a field that is not there.
+        let expected = (search.reads_hidden && guest).then(|| ErrorCode::SearchInvalid.code());
+        if search.refused.as_deref() != expected {
+            found.push(format!(
+                "the search `{}` of {who} was {}, expected {}",
+                search.query,
+                search.refused.as_deref().map_or_else(
+                    || "answered".to_owned(),
+                    |code| format!("refused with {code}")
+                ),
+                expected.map_or_else(
+                    || "an answer".to_owned(),
+                    |code| format!("a refusal with {code}")
+                ),
+            ));
+        }
+        if search.everything && search.refused.is_none() && !search.more {
+            let mut got: Vec<&str> = search.found.iter().map(String::as_str).collect();
+            got.sort_unstable();
+            let mut want = readable.clone();
+            want.sort_unstable();
+            if got != want {
+                found.push(format!(
+                    "a search for everything found {got:?} for {who}, who reads {want:?}"
+                ));
+            }
+            if let Some(count) = search.count
+                && usize::try_from(count).ok() != Some(search.found.len())
+            {
+                found.push(format!(
+                    "the count line of a search for everything said {count} for {who}, the page held {}",
+                    search.found.len()
+                ));
+            }
+        }
+    }
+    found
+}
+
 /// What each person read of an issue only went up.
 fn reads_went_up(book: &Book) -> Vec<String> {
     let mut last: Vec<(u32, &str, i64)> = Vec::new();
@@ -288,6 +353,7 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
         found.extend(files_are_kept(book, issue));
     }
     found.extend(guests_hear_only_what_they_may(book, &facts.notifications));
+    found.extend(searches_hold_the_rules(book));
     found.extend(no_text_lost(book, facts));
     found.extend(locks_are_gone(book, facts, afterwards));
     found
@@ -296,7 +362,7 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::book::{Drafted, Kept, Seen, Work};
+    use crate::book::{Drafted, Kept, Searched, Seen, Work};
     use crate::facts::StoredDraft;
 
     const LEASE: i64 = 60;
@@ -338,6 +404,18 @@ mod tests {
         }
     }
 
+    /// A search for everything that was answered.
+    fn search(holder: &str, everything: bool, found: &[&str], count: Option<u64>) -> Searched {
+        Searched {
+            holder: holder.to_owned(),
+            query: String::new(),
+            everything,
+            found: found.iter().map(|key| (*key).to_owned()).collect(),
+            count,
+            ..Searched::default()
+        }
+    }
+
     /// A run of one issue that went well: made, a title change, a description save, a comment.
     fn good_run() -> (Book, Facts) {
         let book = Book {
@@ -370,6 +448,10 @@ mod tests {
             files: vec!["A-1".to_owned(), "A-1".to_owned()],
             guests: vec!["guest".to_owned()],
             hidden_from_guests: vec!["secret-field".to_owned()],
+            searched: vec![
+                search("p1", true, &["A-1", "A-2"], Some(2)),
+                search("guest", true, &["A-2"], Some(1)),
+            ],
         };
         let facts = Facts {
             issues: vec![
@@ -565,6 +647,66 @@ mod tests {
             assert_eq!(found.len(), 1, "{field}: {found:?}");
             assert!(found[0].contains(field), "{found:?}");
         }
+    }
+
+    #[test]
+    fn test_concurrent_sec_06_a_search_holds_the_rules_while_others_change_data() {
+        let (book, facts) = good_run();
+        let judged = |book: &Book| judge(book, &facts, &afterwards());
+        // A Guest finds an issue they did not report.
+        let mut wrong = good_run().0;
+        wrong.searched[1].found = vec!["A-1".to_owned(), "A-2".to_owned()];
+        assert!(
+            judged(&wrong)
+                .iter()
+                .any(|each| each.contains("may not read"))
+        );
+        // A search for everything that misses an issue, and a count that differs.
+        let mut missing = good_run().0;
+        missing.searched[0].found = vec!["A-2".to_owned()];
+        assert!(judged(&missing).iter().any(|each| each.contains("found")));
+        let mut counted = good_run().0;
+        counted.searched[0].count = Some(5);
+        assert!(
+            judged(&counted)
+                .iter()
+                .any(|each| each.contains("count line"))
+        );
+        // The hidden field: refused for a Guest, answered for a Team member.
+        let mut hidden = good_run().0;
+        hidden.searched.push(Searched {
+            reads_hidden: true,
+            query: "internalNote is x".to_owned(),
+            ..search("guest", false, &[], None)
+        });
+        assert!(
+            judged(&hidden)
+                .iter()
+                .any(|each| each.contains("expected a refusal"))
+        );
+        hidden.searched[2].refused = Some(ErrorCode::SearchInvalid.code().to_owned());
+        assert_eq!(judged(&hidden), Vec::<String>::new());
+        hidden.searched.push(Searched {
+            reads_hidden: true,
+            refused: Some(ErrorCode::SearchInvalid.code().to_owned()),
+            ..search("p1", false, &[], None)
+        });
+        assert!(judged(&hidden).iter().any(|each| each.contains("refused")));
+        // Another code for the Guest, or a refusal of a search that reads nothing hidden, counts too.
+        let mut other = good_run().0;
+        other.searched[0].refused = Some(ErrorCode::SearchTooSlow.code().to_owned());
+        assert!(
+            judged(&other)
+                .iter()
+                .any(|each| each.contains("expected an answer"))
+        );
+        hidden.searched[2].refused = Some(ErrorCode::Internal.code().to_owned());
+        assert!(
+            judged(&hidden)
+                .iter()
+                .any(|each| each.contains("expected a refusal"))
+        );
+        assert_eq!(judged(&book), Vec::<String>::new());
     }
 
     #[test]

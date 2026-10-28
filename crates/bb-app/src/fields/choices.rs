@@ -216,8 +216,7 @@ pub async fn add_choice<S: AuthStore>(
             S::insert_choice(transaction, &stored).await
         })
     });
-    ctx.store()
-        .record_change(&event, write)
+    ctx.record_change(&event, write)
         .await
         .map_err(|error| refused::<S>(&why, &error, &record, actor.person.id))?;
     definition.choices.push(choice);
@@ -319,8 +318,7 @@ pub async fn change_choice<S: AuthStore>(
             S::update_choice(transaction, &stored).await
         })
     });
-    ctx.store()
-        .record_change(&event, write)
+    ctx.record_change(&event, write)
         .await
         .map_err(|error| refused::<S>(&why, &error, &record, actor.person.id))?;
     definition.choices[position] = after;
@@ -367,8 +365,7 @@ pub async fn reorder_choices<S: AuthStore>(
     let (why, write) = guarded::<S, _>(input.field, input.version, move |transaction, _stopped| {
         Box::pin(async move { S::order_choices(transaction, field, &order).await })
     });
-    ctx.store()
-        .record_change(&event, write)
+    ctx.record_change(&event, write)
         .await
         .map_err(|error| refused::<S>(&why, &error, &record, actor.person.id))?;
     for choice in &mut definition.choices {
@@ -549,8 +546,7 @@ pub async fn combine_choices<S: AuthStore>(
             S::update_choice(transaction, &retired).await
         })
     });
-    ctx.store()
-        .record_change(&event, write)
+    ctx.record_change(&event, write)
         .await
         .map_err(|error| refused::<S>(&why, &error, &record, actor.person.id))?;
     if let Some(found) = definition

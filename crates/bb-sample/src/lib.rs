@@ -52,6 +52,7 @@ mod password;
 mod people_plan;
 mod random;
 mod relations;
+mod searches;
 #[cfg(test)]
 mod tests;
 mod together;
@@ -59,6 +60,7 @@ mod together_files;
 mod together_reading;
 mod together_reports;
 mod together_team;
+mod world_lookup;
 
 pub use bb_dev_words::sample::{Layout, OrganizationNames, ProjectNames, SubProjectNames};
 pub use clock::SampleClock;

@@ -101,3 +101,20 @@ describe("test_concurrent the book of a run is what the people wrote", () => {
     });
   });
 });
+
+describe("test_concurrent the book of a run holds the searches", () => {
+  it("holds the searches in the file and counts them", () => {
+    const book = newBook();
+    book.searched({
+      holder: "00000000-0000-4000-8000-000000000002",
+      query: "",
+      everything: true,
+      reads_hidden: false,
+      found: ["LOAD-1"],
+      more: false,
+      count: 1,
+    });
+    expect(book.file([]).searched).toHaveLength(1);
+    expect(book.counts()).toMatchObject({ searches: 1 });
+  });
+});

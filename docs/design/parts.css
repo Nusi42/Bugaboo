@@ -1061,7 +1061,6 @@ body {
 
 [data-part="list-row.cell"][data-variant~="key"] {
   flex: none;
-  width: var(--size-col-key);
   color: var(--fg-muted);
   font-family: var(--mono);
 }
@@ -1144,7 +1143,7 @@ body {
 [data-part="list-row"][data-variant~="phone"],
 [data-part="list-row"][data-variant~="slim"] {
   display: grid;
-  grid-template-columns: var(--size-control) var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-columns: var(--size-control) var(--size-col-icon) minmax(0, 1fr) auto;
   grid-template-areas: "select status key priority" "select title title title" "select person person changed";
   align-items: center;
   gap: var(--space-1) var(--space-3);
@@ -1193,6 +1192,7 @@ body {
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="person"] {
   grid-area: person;
+  width: auto;
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="action"] {
@@ -1206,7 +1206,7 @@ body {
 }
 
 [data-part="list-row"][data-variant~="phone"][data-variant~="plain"] {
-  grid-template-columns: var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-columns: var(--size-col-icon) minmax(0, 1fr) auto;
   grid-template-areas: "status key priority" "title title title" "person person changed";
 }
 
@@ -1215,7 +1215,7 @@ body {
 }
 
 [data-part="list-row"][data-variant~="slim"] {
-  grid-template-columns: var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-columns: var(--size-col-icon) minmax(0, 1fr) auto;
   grid-template-areas: "status key priority" "title title title";
 }
 
@@ -1250,6 +1250,18 @@ body {
   flex-direction: column;
   min-width: 0;
   overflow-x: auto;
+}
+
+[data-part="list-char-probe"] {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  white-space: pre;
+  font-family: var(--mono);
+  font-size: var(--fs-ui);
 }
 
 [data-part="list-row"][data-variant~="grid"] {
@@ -5581,8 +5593,14 @@ body {
   gap: var(--space-2);
 }
 
-[data-part="search-results.list"][data-state~="stale"] {
-  opacity: var(--opacity-busy);
+[data-part="list-frame"]:has([data-part="search-results"][data-state~="stale"]) {
+  outline: var(--border-width) dashed var(--border-control);
+  outline-offset: var(--space-1);
+}
+
+[data-part="list-frame"]:has([data-part="search-results"][data-state~="stale"])
+  [data-part="list-nothing"] {
+  padding: var(--pad-box) var(--space-3);
 }
 
 [data-part="search-list"] {

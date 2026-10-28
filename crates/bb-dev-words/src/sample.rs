@@ -124,6 +124,30 @@ pub struct WorkPlan {
     pub viewer_follows: u32,
     /// How many of a hundred notifications of a Viewer or a Guest were read.
     pub read_percent: u32,
+    /// The searches people of each role saved, some shared with groups and projects (QRY-06).
+    pub saved_searches: Vec<SavedSearchPlan>,
+    /// The names of the own fields that Contributors may not read, so a search that reads one
+    /// never reaches them.
+    pub hidden_from_contributors: Vec<String>,
+}
+
+/// A saved search of the sample: who made it, whom it is shared with, and the project that shows
+/// it as its list.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedSearchPlan {
+    /// What it is called.
+    pub name: String,
+    /// The search text.
+    pub text: String,
+    /// The starting role of the first person with that role, who makes it (its code).
+    pub maker: String,
+    /// The keys of the groups it is shared with.
+    pub groups: Vec<String>,
+    /// The short names of the projects it is shared with.
+    pub projects: Vec<String>,
+    /// The short name of the project that shows it as its list; it must be one of `projects`.
+    pub project_list: Option<String>,
 }
 
 /// The workflow a project has of its own: the starting workflow with a status change that asks

@@ -15,3 +15,21 @@ p95_ms = 100
 # (architecture section 8).
 [budgets.search]
 p95_ms = 300
+
+# The preview of a change to the most issues one change names, 5,000 (M3-F133): it judges every issue
+# of the selection, so it takes seconds and has a budget of its own. Set from the measurement on the
+# large dataset with a margin (the numbers are in architecture section 11); it is held down by the
+# count of the statements for each issue (`perf_many_changes.rs`).
+[budgets.preview]
+p95_ms = 8000
+
+# A scenario that is over its budget on one database and is accepted for now (maintainer decision).
+# The nightly run tells it as a known gap and fails it only over its limit; the budget above stays as it is.
+# The limit must be above the budget of the scenario.
+# This is the one place for such an acceptance: each entry names the database, the follow-up that
+# closes it, the most it may take (over that the run fails) and the reason. An entry is removed when its follow-up is done.
+[known_gaps.search-groups-assigned-to]
+database = "sqlite"
+p95_ms_at_most = 700
+follow_up = "M5-F89"
+reason = "each of the about 109,000 issues that match needs a lookup in the index of the people assigned to it; kept counts or parallel slices come later (numbers: architecture section 11)"

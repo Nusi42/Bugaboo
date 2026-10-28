@@ -1071,6 +1071,7 @@
   "sample.step.workflows": "creating the workflow of a project",
   "sample.step.files": "adding a file to an issue or a comment",
   "sample.step.following": "following an issue",
+  "sample.step.saved-searches": "saving, sharing or choosing a search",
   "sample.step.notifications": "reading or marking notifications",
   "sample.step.jobs": "running the jobs that were queued",
   "sample.step.dataset": "writing the large dataset",

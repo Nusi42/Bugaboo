@@ -15,7 +15,8 @@ function summary(book: BookWriter, options: LoadOptions): string {
   return [
     `${String(options.people)} people for ${String(options.seconds)} seconds on ${options.database}:`,
     `${String(count.kept)} changes kept, ${String(count.comments)} comments, ${String(count.files)} files, ${String(count.conflicts)} changes sent again after a conflict,`,
-    `${String(count.refused)} refused saves kept as drafts, ${String(count.tookOver)} take-overs, ${String(count.vanished)} editors who vanished.`,
+    `${String(count.refused)} refused saves kept as drafts, ${String(count.tookOver)} take-overs, ${String(count.vanished)} editors who vanished,`,
+    `${String(count.searches)} searches.`,
   ].join("\n");
 }
 

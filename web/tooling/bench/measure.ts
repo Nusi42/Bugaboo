@@ -79,7 +79,7 @@ export async function measure(
   const tally = new Tally();
   const rounds = (count: number, counted: boolean) =>
     Array.from({ length: count }, (_, round) => () => tally.run(scenario, context, round, counted));
-  await inOrder([...rounds(WARM_UP, false), ...rounds(scenario.runs, true)]);
+  await inOrder([...rounds(scenario.warmUp ?? WARM_UP, false), ...rounds(scenario.runs, true)]);
   const { median, p95, p99, slowest } = summary(tally.times);
   return {
     budget: scenario.budget,

@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use anyhow::Context as _;
+use bb_dev_words::database::DatabaseKind;
 use serde::Deserialize;
 
 /// Where the budgets are, relative to the repository root.
@@ -22,6 +23,21 @@ pub(crate) const OUTPUT: &str = "web/tooling/bench/budgets.generated.ts";
 #[derive(Debug, Deserialize)]
 pub(crate) struct Budgets {
     budgets: BTreeMap<String, Budget>,
+    /// Scenarios that are over their budget on one database and are accepted for now.
+    #[serde(default)]
+    known_gaps: BTreeMap<String, KnownGap>,
+}
+
+/// A scenario over its budget that the maintainer accepted: the one place that says so, with the
+/// follow-up that closes it and the reason. The budget itself stays as it is.
+#[derive(Debug, Deserialize)]
+struct KnownGap {
+    database: String,
+    /// The most the scenario may take at the 95th percentile while it is a known gap; over it the
+    /// run fails, so the gap cannot grow unseen.
+    p95_ms_at_most: f64,
+    follow_up: String,
+    reason: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -54,6 +70,12 @@ impl Budgets {
     /// The text is not TOML of this shape.
     pub(crate) fn parse(text: &str) -> anyhow::Result<Self> {
         toml::from_str(text).with_context(|| format!("{BUDGETS_PATH} is not valid"))
+    }
+
+    fn gap_of(&self, scenario: &str, database: &str) -> Option<&KnownGap> {
+        self.known_gaps
+            .get(scenario)
+            .filter(|gap| gap.database == database)
     }
 
     /// The most a budget allows at the 95th percentile.
@@ -124,6 +146,42 @@ pub(crate) fn problems(budgets: &Budgets, listed: &[(Scenario, usize)]) -> Vec<(
             ));
         }
     }
+    for (name, gap) in &budgets.known_gaps {
+        if !DatabaseKind::ALL
+            .iter()
+            .any(|kind| kind.code() == gap.database)
+        {
+            found.push((
+                BUDGETS_PATH.to_owned(),
+                format!(
+                    "The known gap {name} names the database {}, which does not exist.",
+                    gap.database
+                ),
+            ));
+        }
+        if gap.p95_ms_at_most.is_nan() || gap.p95_ms_at_most <= 0.0 {
+            found.push((
+                BUDGETS_PATH.to_owned(),
+                format!("The known gap {name} must allow more than 0 milliseconds."),
+            ));
+        }
+        let budget = listed
+            .iter()
+            .find(|(each, _)| &each.name == name)
+            .and_then(|(each, _)| budgets.p95_ms(&each.budget));
+        if budget.is_some_and(|allowed| gap.p95_ms_at_most <= allowed) {
+            found.push((
+                BUDGETS_PATH.to_owned(),
+                format!("The known gap {name} must allow more than the budget of the scenario."),
+            ));
+        }
+        if !listed.iter().any(|(each, _)| &each.name == name) {
+            found.push((
+                BUDGETS_PATH.to_owned(),
+                format!("The known gap {name} is not a registered scenario."),
+            ));
+        }
+    }
     found
 }
 
@@ -141,23 +199,52 @@ pub(crate) fn typescript(budgets: &Budgets) -> String {
     text
 }
 
-/// The scenarios of a run that are over their budget, each as the sentence that fails the run.
-pub(crate) fn over(budgets: &Budgets, run: &BTreeMap<String, Measured>) -> Vec<String> {
-    let mut found = Vec::new();
+/// What a run is judged to be: the sentences that fail it, and the known gaps it showed.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct Judged {
+    pub(crate) failures: Vec<String>,
+    pub(crate) known: Vec<String>,
+}
+
+/// The scenarios of a run on `database` that are over their budget. A scenario that
+/// `known_gaps` names for this database is told as a known gap and fails the run only over the
+/// limit of its entry.
+pub(crate) fn over(budgets: &Budgets, database: &str, run: &BTreeMap<String, Measured>) -> Judged {
+    let mut judged = Judged::default();
     for (name, measured) in run {
         match budgets.p95_ms(&measured.budget) {
-            None => found.push(format!(
+            None => judged.failures.push(format!(
                 "The scenario {name} has no budget: {} is not in {BUDGETS_PATH}.",
                 measured.budget
             )),
-            Some(allowed) if measured.p95 > allowed => found.push(format!(
-                "The scenario {name} took {:.1} ms at the 95th percentile, over its budget of {allowed} ms ({}).",
-                measured.p95, measured.budget
-            )),
-            Some(_) => {}
+            Some(allowed) if measured.p95 > allowed => {
+                let sentence = format!(
+                    "The scenario {name} took {:.1} ms at the 95th percentile, over its budget of {allowed} ms ({}).",
+                    measured.p95, measured.budget
+                );
+                match budgets.gap_of(name, database) {
+                    Some(gap) if measured.p95 <= gap.p95_ms_at_most => judged.known.push(format!(
+                        "{sentence} Known gap {}: {}",
+                        gap.follow_up, gap.reason
+                    )),
+                    Some(gap) => judged.failures.push(format!(
+                        "{sentence} It is over the {} ms that the known gap {} allows.",
+                        gap.p95_ms_at_most, gap.follow_up
+                    )),
+                    None => judged.failures.push(sentence),
+                }
+            }
+            Some(_) => {
+                if let Some(gap) = budgets.gap_of(name, database) {
+                    judged.known.push(format!(
+                        "The scenario {name} meets its budget again: remove the known gap {} from {BUDGETS_PATH}.",
+                        gap.follow_up
+                    ));
+                }
+            }
         }
     }
-    found
+    judged
 }
 
 #[cfg(test)]
@@ -230,13 +317,87 @@ p95_ms = 1
                 },
             ),
         ]);
-        let found = over(&budgets(), &run);
+        let found = over(&budgets(), "sqlite", &run);
         assert_eq!(
-            found,
+            found.failures,
             [
                 "The scenario issue-page took 123.4 ms at the 95th percentile, over its budget of 100 ms (page)."
             ]
         );
+        assert!(found.known.is_empty());
+    }
+
+    #[test]
+    fn a_known_gap_is_told_but_fails_only_the_database_it_names() {
+        let gap = Budgets::parse(&format!(
+            "{TOML}[known_gaps.search]
+database = \"sqlite\"
+p95_ms_at_most = 700
+follow_up = \"M5-F89\"
+reason = \"slow\"
+"
+        ))
+        .unwrap();
+        let run = BTreeMap::from([(
+            "search".to_owned(),
+            Measured {
+                budget: "search".to_owned(),
+                p50: 0.0,
+                p95: 560.0,
+                p99: 0.0,
+            },
+        )]);
+        let took = |p95: f64| {
+            BTreeMap::from([(
+                "search".to_owned(),
+                Measured {
+                    budget: "search".to_owned(),
+                    p50: 0.0,
+                    p95,
+                    p99: 0.0,
+                },
+            )])
+        };
+        let past = over(&gap, "sqlite", &took(701.0));
+        assert!(past.failures[0].contains("allows"), "{:?}", past.failures);
+        let again = over(&gap, "sqlite", &took(250.0));
+        assert!(again.failures.is_empty() && again.known[0].contains("meets its budget again"));
+        let nowhere = Budgets::parse(&format!(
+            "{TOML}[known_gaps.search]
+database = \"oracle\"
+p95_ms_at_most = 700
+follow_up = \"M5-F89\"
+reason = \"x\"
+"
+        ))
+        .unwrap();
+        assert_eq!(problems(&nowhere, &scenarios(SOURCE)).len(), 1);
+        let low = Budgets::parse(&format!(
+            "{TOML}[known_gaps.search]
+database = \"sqlite\"
+p95_ms_at_most = 300
+follow_up = \"M5-F89\"
+reason = \"x\"
+"
+        ))
+        .unwrap();
+        let found = problems(&low, &scenarios(SOURCE));
+        assert!(found[0].1.contains("more than the budget"), "{found:?}");
+        let on_sqlite = over(&gap, "sqlite", &run);
+        assert!(on_sqlite.failures.is_empty());
+        assert!(on_sqlite.known[0].contains("Known gap M5-F89: slow"));
+        assert_eq!(over(&gap, "postgres", &run).failures.len(), 1);
+        assert!(problems(&gap, &scenarios(SOURCE)).is_empty());
+        let stray = Budgets::parse(&format!(
+            "{TOML}[known_gaps.nothing]
+database = \"sqlite\"
+p95_ms_at_most = 700
+follow_up = \"M5-F89\"
+reason = \"x\"
+"
+        ))
+        .unwrap();
+        assert_eq!(problems(&stray, &scenarios(SOURCE)).len(), 1);
     }
 
     #[test]

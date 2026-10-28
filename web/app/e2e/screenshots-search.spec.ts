@@ -114,6 +114,19 @@ test("qry_01 pictures: finding a person and a project by name", async ({ page })
   await inFourThemes(page, "person-picker");
 });
 
+test("qry_06 pictures: a mistake in the address has no earlier list", async ({ page }) => {
+  await openSearch(page, "priority is");
+  await openBar(page);
+  await inFourThemes(page, "mistake-no-list");
+  // On a phone the sheet of the bar covers the page: the page behind it is the second picture.
+  await closeBar(page);
+  await onThisLayout(page, {
+    computer: nothing,
+    tablet: nothing,
+    phone: () => inFourThemes(page, "mistake-no-list-page"),
+  });
+});
+
 test("qry_06 pictures: Save, Save a copy and results that wait for a good text", async ({
   page,
 }) => {
@@ -121,9 +134,18 @@ test("qry_06 pictures: Save, Save a copy and results that wait for a good text",
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await page.getByRole("textbox", { name: t("search.bar.advanced-label") }).fill("priority is");
-  // The offers are closed, so the note under the bar and the dimmed results show.
+  // The offers are closed, so the note under the bar and the edged results show.
   await page.getByRole("textbox", { name: t("search.bar.advanced-label") }).press("Escape");
   await inFourThemes(page, "stale");
+  // On a phone the sheet of the bar covers the page: the list behind it is the second picture.
+  await closeBar(page);
+  // Only a phone has a second picture: on a computer the page was in the first.
+  await onThisLayout(page, {
+    computer: nothing,
+    tablet: nothing,
+    phone: () => inFourThemes(page, "stale-page"),
+  });
+  await openBar(page);
   await page
     .getByRole("textbox", { name: t("search.bar.advanced-label") })
     .fill("priority is high");
