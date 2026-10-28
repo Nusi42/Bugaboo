@@ -26,8 +26,7 @@ export async function listInFourThemes(page: Page, name: string): Promise<void> 
 
 /**
  * Gives a row the keyboard focus the way a person does: the list is one Tab stop and the arrow keys
- * go down to the row (the head of the first group, its row, the head of the next group, then the
- * row). A phone has no keyboard, so there nothing is done.
+ * land on the head of the first group and go down by its row and the head of the next group to the row. A phone has no keyboard, so there nothing is done.
  */
 export async function focusRowByKeys(page: Page, row: Locator): Promise<void> {
   if (layoutOf(page) === "phone") {
@@ -35,9 +34,7 @@ export async function focusRowByKeys(page: Page, row: Locator): Promise<void> {
   }
   await grid(page).focus();
   await inOrder(
-    ["ArrowDown", "ArrowDown", "ArrowDown", "ArrowDown"].map(
-      (key) => () => page.keyboard.press(key),
-    ),
+    ["ArrowDown", "ArrowDown", "ArrowDown"].map((key) => () => page.keyboard.press(key)),
   );
   await expect(row).toBeFocused();
   await expect(row).toHaveAttribute("data-focus-visible", "true");
