@@ -4447,6 +4447,7 @@ th {
   border-radius: var(--r-ctl);
   color: inherit;
   font-size: inherit;
+  font-weight: inherit;
   text-align: start;
   overflow-wrap: anywhere;
 }

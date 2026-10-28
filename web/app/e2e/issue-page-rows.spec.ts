@@ -69,7 +69,8 @@ test("ux_4_4 a related issue is a row with what the relation means before its ti
   const related = page.getByRole("region", { name: t("related-issues.title") });
   const row = partIn(related, "list-row").filter({ hasText: "WEB-3" });
   await expect(row).toContainText(BLOCKS);
-  // WEB-3 has not started and has a normal priority: its row is plain.
-  await expect(row).not.toHaveAttribute("data-state", /group-|priority-/u);
+  // WEB-3 has not started and has a normal priority: its row has the tint of its group and no edge.
+  await expect(row).toHaveAttribute("data-state", /group-not-started/u);
+  await expect(row).not.toHaveAttribute("data-state", /priority-/u);
   await expect(row.getByRole("img", { name: t("status.open"), exact: true })).toBeVisible();
 });

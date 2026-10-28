@@ -4311,6 +4311,7 @@ part "in-place.button" {
     border-radius "$r-ctl"
     color inherit
     font-size inherit
+    font-weight inherit
     text-align start
     overflow-wrap anywhere
 }
