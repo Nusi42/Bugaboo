@@ -3,6 +3,7 @@ import createQueryClient from "openapi-react-query";
 
 import { ApiError, isProblem, PROBLEM_CONTENT_TYPE } from "./problem.ts";
 import { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
+import { serverTimeLimitMs } from "./request-time.generated.ts";
 import { markSafeHtml } from "./safe-html.ts";
 import { safeHtmlPaths } from "./safe-html.generated.ts";
 import type { paths } from "./schema.ts";
@@ -10,16 +11,20 @@ import type { paths } from "./schema.ts";
 /** The methods that only read; every other method carries the CSRF token. */
 const SAFE_METHODS: ReadonlySet<string> = new Set(["GET", "HEAD"]);
 
+/** How much longer than the server the client waits, so the server's own answer (408) arrives first. */
+export const requestMarginMs = 5000;
+
 /**
- * How long a request of the client may wait for its answer before it counts as lost: the same
- * 30 seconds the server allows for a request to arrive (`DEFAULT_HEADER_TIMEOUT`). A request that
- * is not answered by then is refused like one that finds no server (`ApiError` with status `0`),
- * so what waits for it (a later change of the same setting, a button that shows *Saving…*) goes on
- * instead of waiting until the page is loaded again (M5-F96). It counts until the answer starts to
- * arrive. A part that has its own, shorter limit keeps it (the sources of quick search,
- * `sourceTimeoutMs`); no request of this client is longer: files go through their own connection.
+ * How long a request of the client may wait for its answer before it counts as lost: the time the
+ * server gives a request ({@link serverTimeLimitMs}, `bb_api::TIME_LIMIT`, written once in Rust)
+ * and a small margin. A request that is not answered by then is refused like one that finds no
+ * server (`ApiError` with status `0`), so what waits for it (a later change of the same setting, a
+ * button that shows *Saving…*) goes on instead of waiting until the page is loaded again (M5-F96).
+ * It counts until the answer starts to arrive, and it covers every request of the client, also the
+ * parts of an upload (each part is one request with the same limit as the server gives it). A part
+ * that has its own, shorter limit keeps it (the sources of quick search, `sourceTimeoutMs`).
  */
-export const requestTimeoutMs = 30_000;
+export const requestTimeoutMs = serverTimeLimitMs + requestMarginMs;
 
 /** What the client needs from its surroundings. Tests replace these. */
 export interface ClientOptions {
