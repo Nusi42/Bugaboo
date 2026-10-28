@@ -203,8 +203,8 @@ impl<S> AuthServices<S> {
 }
 
 /// What a request has read to decide for a person at any place, by person: their rows, roles and
-/// levels, and whether the levels set for projects are in it.
-pub(crate) type Policies = Mutex<HashMap<UserId, (Arc<Policy>, bool)>>;
+/// levels.
+pub(crate) type Policies = Mutex<HashMap<UserId, Arc<Policy>>>;
 
 /// The evaluations a request has made, by person and place.
 pub(crate) type Evaluations = Mutex<HashMap<(UserId, Place), Arc<Evaluation>>>;

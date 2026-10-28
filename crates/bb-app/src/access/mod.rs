@@ -3,10 +3,11 @@
 //!
 //! `bb-policy` decides without I/O; this module loads what it needs through the port
 //! [`PolicyStore`] (the rows, roles and levels of a person once for a request), keeps the
-//! evaluations for the length of one request in the [`Ctx`], and gives the use cases three things: who is asking ([`Actor`]), the
-//! evaluation at a place ([`Ctx::evaluate`]) and the check that stops a request that may not do
-//! what it asks ([`Ctx::require`]). A project that a person may not know about answers
-//! `resource.not-found`, exactly like one that does not exist.
+//! evaluations for the length of one request in the [`Ctx`], and gives the use cases three
+//! things: who is asking ([`Actor`]), the evaluation at a place ([`Ctx::evaluate`]) and the
+//! check that stops a request that may not do what it asks ([`Ctx::require`]). A project that a
+//! person may not know about answers `resource.not-found`, exactly like one that does not
+//! exist.
 
 mod candidates;
 mod changers;
@@ -24,11 +25,11 @@ use bb_core::id::{AccessKeyId, GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, Narrowing, PeopleContext, Policy, Target, evaluate, resolve};
+use bb_policy::{Evaluation, Narrowing, PeopleContext, Policy, Target, resolve};
 
 pub use bb_policy::{
     Authorized, LevelKind, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree,
-    guards,
+    evaluate, guards,
 };
 pub(crate) use candidates::{Members, names_other_people, position_of};
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
@@ -93,7 +94,7 @@ impl From<Refusal> for AppError {
 ///
 /// # Errors
 /// An internal error when the store fails.
-pub async fn evaluation_in<S: AuthStore>(
+pub(crate) async fn evaluation_in<S: AuthStore>(
     store: &S,
     person: UserId,
     place: Place,
@@ -252,9 +253,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// one read of their rows, the levels of their roles and the tree of the projects: the tree
     /// is what lets it decide a project without a read of its own, where `evaluate` reads the
     /// chain of each project; the decision is the same ([`Policy::evaluate_with`] is what a
-    /// preview of a move asks too). Nothing is read when
-    /// fewer than two of the places are not kept yet. What was read is given back, so that the
-    /// caller does not read the projects once more.
+    /// preview of a move asks too). Nothing is read when fewer than two of the places are not
+    /// kept yet. What was read is given back, so that the caller does not read the projects once
+    /// more.
     ///
     /// # Errors
     /// An internal error when the store fails.
@@ -303,48 +304,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         // Read whether or not the project is there: a project that does not exist costs the
         // store the same reads as one the person may not see, so the reads tell nothing apart.
-        let policy = self
-            .person_policy(person, matches!(place, Place::Project(_)))
-            .await?;
+        let policy = self.person_policy(person).await?;
         let chain = chain.ok_or(AppError::Refused(ErrorCode::NotFound))?;
         Ok(evaluation_from_person_policy(&policy, person, place, chain))
     }
 
-    /// The rows, roles and levels that decide for `person`, read once for the request: those the
-    /// roles have of their own first, and the levels set for projects when a project is asked
-    /// about (`with_projects`), so a request that asks only about the organization does not read
-    /// them.
-    async fn person_policy(
-        &self,
-        person: UserId,
-        with_projects: bool,
-    ) -> Result<Arc<Policy>, AppError> {
-        let held = locked(&self.policies).get(&person).cloned();
-        let (policy, has_projects) = match held {
-            Some(held) => held,
-            None => (
-                Arc::new(
-                    self.store()
-                        .person_policy(person)
-                        .await
-                        .map_err(|error| internal::<S>(&error))?,
-                ),
-                false,
-            ),
-        };
-        let (policy, has_projects) = if with_projects && !has_projects {
-            let levels = self
-                .store()
-                .project_levels(policy.role_ids())
+    /// The rows, roles and levels that decide for `person` at any place, read once for the
+    /// request in one snapshot.
+    async fn person_policy(&self, person: UserId) -> Result<Arc<Policy>, AppError> {
+        if let Some(found) = locked(&self.policies).get(&person) {
+            return Ok(Arc::clone(found));
+        }
+        let policy = Arc::new(
+            self.store()
+                .person_policy(person)
                 .await
-                .map_err(|error| internal::<S>(&error))?;
-            let mut more = (*policy).clone();
-            more.rules = more.rules.with_project_rules(levels);
-            (Arc::new(more), true)
-        } else {
-            (policy, has_projects)
-        };
-        locked(&self.policies).insert(person, (Arc::clone(&policy), has_projects));
+                .map_err(|error| internal::<S>(&error))?,
+        );
+        locked(&self.policies).insert(person, Arc::clone(&policy));
         Ok(policy)
     }
 

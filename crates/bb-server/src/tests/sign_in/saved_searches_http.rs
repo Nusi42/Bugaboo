@@ -17,11 +17,12 @@ const SEARCHES: &str = "/api/v1/saved-searches";
 /// The most statements a page of saved searches may run, however many rows there are (a ceiling
 /// that a change to the code has to notice; the exact numbers are compared apart). Most of them are
 /// the session, the rights of the person and the fields they may read (checking a shared search
-/// needs them).
-const AT_MOST: usize = 40;
+/// needs them; 42 measured: a request about the organization alone reads the levels set for
+/// projects too since the rights are read in one snapshot, M4-F137).
+const AT_MOST: usize = 43;
 /// The same for a guest, who sees the makers by their role only: the roles of all the makers of a
-/// page are read once (not for each maker), which costs the reads of that one policy (measured: 43).
-const AT_MOST_FOR_A_GUEST: usize = 43;
+/// page are read once (not for each maker), which costs the reads of that one policy (measured: 46).
+const AT_MOST_FOR_A_GUEST: usize = 46;
 /// The same for a list whose texts name a group the receiver is in, a tag, an issue and the
 /// receiver: each is read once for the request (the groups of the person, the catalogue of tags, the
 /// issue and what the person sees of it, the person), so the reads are those of the names and do

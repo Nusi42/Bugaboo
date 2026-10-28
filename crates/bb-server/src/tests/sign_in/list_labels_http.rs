@@ -24,9 +24,9 @@ const LABEL_READS: usize = 2;
 /// them, and the reads of the labels.
 const AT_MOST: usize = LIST_AT_MOST + LABEL_READS;
 
-/// The same for the search with labels, which asks about the organization only and so did not
-/// get cheaper when the rights of a person were read once (M4-F137): 54 measured.
-const SEARCH_AT_MOST: usize = 54;
+/// The same for the search with labels, which asks about the organization alone: it reads the
+/// levels set for projects too, since the rights are read in one snapshot (M4-F137): 57 measured.
+const SEARCH_AT_MOST: usize = 57;
 
 /// Makes a label and returns its ID.
 async fn label(browser: &mut Browser, name: &str) -> Result<String, Failure> {

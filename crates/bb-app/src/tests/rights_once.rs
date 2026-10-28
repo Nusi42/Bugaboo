@@ -6,9 +6,11 @@
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId, UserId};
+use bb_core::own_fields::FieldType;
 use bb_policy::{Permission, Place};
 
 use super::scenarios::{a_project, token};
+use super::scenarios_fields::a_field;
 use super::world::{Outcome, World};
 
 type Failure = Box<dyn std::error::Error + Send + Sync>;
@@ -144,6 +146,8 @@ async fn organization(world: &World) -> Result<(Vec<UserId>, [Place; 4]), Failur
     .map_err(|e| format!("{e:?}"))?
     .into_value()
     .id;
+    // An own field: a role anywhere makes every own field known to the decision.
+    a_field(world, "Customer", FieldType::Text, &[]).await?;
     let (watcher, worker) = roles(world, a).await?;
     let [bob, cy, dee, nobody] = people(world).await?;
     give(
@@ -275,6 +279,10 @@ async fn perf_05_the_reads_of_the_rights_do_not_grow_with_the_places_but_by_one_
         }
         reads.push(world.store.reads() - before);
     }
+    assert_eq!(
+        reads[0], 3,
+        "one read of the person's rows and levels (one snapshot) and the chain of each project"
+    );
     assert_eq!(
         reads[1] - reads[0],
         10,

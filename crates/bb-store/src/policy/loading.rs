@@ -14,9 +14,9 @@ use sea_query::{Expr, ExprTrait as _};
 
 use super::assignments::{assignment_select, assignments_of};
 use super::groups::{member_select, read_member};
-use super::in_list;
 use super::levels::{Which, read_rules, read_typed_rules};
 use super::roles::roles_in;
+use super::{in_list, level_rules_of_roles_in};
 use crate::db::{Reader, Transaction};
 use crate::error::StoreError;
 use crate::projects::chain_of;
@@ -166,43 +166,17 @@ pub(crate) async fn rules_of(
     })
 }
 
-/// What the engine needs to decide for `person` at the organization and, with
-/// [`project_levels_in`], at any project: their rows (their own and their groups') wherever they
-/// are, the roles those name and the levels those roles have of their own. Which of it applies at
-/// a place is decided by [`Policy::inputs_from_rows`], not here.
+/// What the engine needs to decide for `person` at any place, in one snapshot: their rows (their
+/// own and their groups') wherever they are, the roles those name and the levels of those roles
+/// for the organization and for all projects. Which of it applies at a place is decided by
+/// [`Policy::inputs_from_rows`], not here.
 pub(crate) async fn person_policy_in(
     reader: &mut impl Reader,
     person: UserId,
 ) -> Result<Policy, StoreError> {
     let mut policy = load_policy(reader, Wanted::Person(person)).await?;
-    let named = policy.role_ids();
-    if !named.is_empty() {
-        policy.rules = rules_of(
-            reader,
-            Which::At {
-                roles: &named,
-                chain: &[],
-            },
-        )
-        .await?;
-    }
+    policy.rules = level_rules_of_roles_in(reader, policy.role_ids()).await?;
     Ok(policy)
-}
-
-/// The levels these roles have set for projects, for all projects (no statement for no roles).
-pub(crate) async fn project_levels_in(
-    reader: &mut impl Reader,
-    roles: Vec<RoleId>,
-) -> Result<LevelRules, StoreError> {
-    if roles.is_empty() {
-        return Ok(LevelRules::default());
-    }
-    Ok(LevelRules {
-        fields: read_rules(reader, Which::InProjects(&roles)).await?,
-        people: read_rules(reader, Which::InProjects(&roles)).await?,
-        typed: read_typed_rules(reader, Which::InProjects(&roles)).await?,
-        own_fields: Vec::new(),
-    })
 }
 
 /// Everything the engine needs for `person` at `place`, in one snapshot; `None` when the project

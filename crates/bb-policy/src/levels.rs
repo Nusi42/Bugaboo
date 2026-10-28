@@ -263,17 +263,6 @@ impl LevelRules {
         K::rules_in(self)
     }
 
-    /// These rules with the rules of `projects` added to them: the rules a role has of its own,
-    /// and the ones set for projects, that were read apart. Only puts the lists together; which
-    /// rule applies at a place is still decided by [`LevelRules::at`].
-    #[must_use]
-    pub fn with_project_rules(mut self, projects: Self) -> Self {
-        self.fields.extend(projects.fields);
-        self.people.extend(projects.people);
-        self.typed.extend(projects.typed);
-        self
-    }
-
     /// Adds a rule.
     pub fn add<K: LevelSubject>(&mut self, rule: LevelRule<K>) {
         K::rules_in_mut(self).push(rule);

@@ -21,8 +21,9 @@ const NOTIFICATIONS: &str = "/api/v1/notifications";
 const AT_MOST: usize = 34;
 
 /// The same for the number over many projects: the rights in each project of the page are decided
-/// from one more read (39 measured).
-const PROJECTS_AT_MOST: usize = 39;
+/// from the tree (42 measured: the levels set for projects are read with the rights of the
+/// person, M4-F137).
+const PROJECTS_AT_MOST: usize = 42;
 
 /// The most statements the reader runs to catch up with one change of an issue, with two followers (the
 /// kinds of news a person wants are decided before their rights are looked at).

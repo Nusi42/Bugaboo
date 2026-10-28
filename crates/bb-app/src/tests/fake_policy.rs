@@ -61,20 +61,8 @@ impl PolicyStore for FakeStore {
         Ok(self.read(|state| {
             let mut policy = policy_of(state, Some(person));
             let roles = policy.role_ids().into_iter().collect();
-            policy.rules = state.rules.of_roles(&roles).at(&roles, &[]);
+            policy.rules = state.rules.of_roles(&roles);
             policy
-        }))
-    }
-
-    async fn project_levels(&self, roles: Vec<RoleId>) -> Result<LevelRules, FakeError> {
-        let roles = roles.into_iter().collect();
-        Ok(self.read(|state| {
-            let mut levels = state.rules.of_roles(&roles);
-            levels.fields.retain(|rule| rule.project.is_some());
-            levels.people.retain(|rule| rule.project.is_some());
-            levels.typed.retain(|rule| rule.project.is_some());
-            levels.own_fields.clear();
-            levels
         }))
     }
 

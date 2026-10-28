@@ -1,19 +1,45 @@
 //! The two reads of what the engine decides from agree (M4-F137, SEC-03): `policy_inputs` for one
 //! person at one place, and the rows, roles and levels of the person read once
-//! (`person_policy`, `project_levels`) with the engine choosing what applies at each place
+//! (`person_policy`) with the engine choosing what applies at each place
 //! (`Policy::inputs_from_rows`), which is how a request decides every place it asks about. Rows on
 //! the organization, in a project, in a sub-project, through a group, and levels set for a
 //! project must give the same decision both ways. Every flow runs on SQLite and PostgreSQL.
 
 use bb_app::access::Place;
-use bb_app::access::{Permission, PolicyStore as _, evaluation_from_person_policy, evaluation_in};
+use bb_app::access::{Permission, PolicyStore as _, evaluate, evaluation_from_person_policy};
+use bb_app::fields::CreateField;
 use bb_app::roles::{Given, SetFieldLevel, Subject};
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
+use bb_core::own_fields::{FieldFor, FieldType, Rules, Scope};
 use bb_testing::{TestResult, each_database};
 
 use super::policy_rig::{Org, Run};
 use super::rig::Rig;
+
+/// An own field: a role anywhere makes every own field known to the decision, which the read for
+/// one place does only where a role reaches.
+async fn customer_field(rig: &Rig, org: &Org<'_>) -> Run<()> {
+    rig.api()
+        .create_field(
+            Rig::info(),
+            CreateField {
+                session_token: org.admin.session.clone(),
+                name: "Customer".to_owned(),
+                help: None,
+                kind: FieldType::Text,
+                applies_to: FieldFor::Issues,
+                rules: Rules::default(),
+                default_value: None,
+                look: None,
+                never_to_assistant: false,
+                scope: Scope::default(),
+                choices: Vec::new(),
+            },
+        )
+        .await?;
+    Ok(())
+}
 
 #[tokio::test]
 async fn sec_03_the_rights_read_once_decide_every_place_as_the_rights_read_for_each() -> TestResult
@@ -24,6 +50,7 @@ async fn sec_03_the_rights_read_once_decide_every_place_as_the_rights_read_for_e
         let acme = org.project(None, "ACME").await?.id;
         let web = org.project(Some(acme), "WEB").await?.id;
         let other = org.project(None, "OTHER").await?.id;
+        customer_field(&rig, &org).await?;
         let worker = org
             .role(
                 "Worker",
@@ -87,9 +114,7 @@ async fn sec_03_the_rights_read_once_decide_every_place_as_the_rights_read_for_e
             Place::Project(other),
         ];
         for person in [&org.admin, &bob, &cy, &dee, &eve] {
-            let mut policy = rig.storage.person_policy(person.id).await?;
-            let more = rig.storage.project_levels(policy.role_ids()).await?;
-            policy.rules = policy.rules.with_project_rules(more);
+            let policy = rig.storage.person_policy(person.id).await?;
             for place in places {
                 let chain = match place {
                     Place::Organization => Vec::new(),
@@ -100,9 +125,12 @@ async fn sec_03_the_rights_read_once_decide_every_place_as_the_rights_read_for_e
                         .ok_or("no such project")?,
                 };
                 let once = evaluation_from_person_policy(&policy, person.id, place, chain);
-                let each = evaluation_in(&rig.storage, person.id, place)
-                    .await?
-                    .ok_or("no such project")?;
+                let each = evaluate(
+                    &rig.storage
+                        .policy_inputs(person.id, place)
+                        .await?
+                        .ok_or("no such project")?,
+                );
                 assert_eq!(once, each, "{:?} at {place:?}", person.id);
             }
         }
