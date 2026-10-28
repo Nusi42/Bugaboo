@@ -11,6 +11,6 @@ An administrator can lock a choice for everyone. You then see it with **Set by y
 
 ## What an e-mail says
 
-An e-mail is plain text. It says the issue ID and title, who changed what, and the comment, only with what you may see, and gives the link to the issue in Bugaboo. The text of a comment is quoted line by line. Changes to one issue within 5 minutes come in one e-mail.
+An e-mail is plain text. It says the issue ID and title, who changed what, and the comment, only with what you may see, and gives the link to the issue in Bugaboo. The text of a comment is quoted line by line. Changes to one issue that come close together come in one e-mail: how close is on [Times and counts](numbers.md).
 
 An organization can choose **Short e-mails**. They leave out all issue text (titles and comments) and the names of projects, and only say that something happened, with the link to open.

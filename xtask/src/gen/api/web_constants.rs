@@ -792,8 +792,8 @@ export const trustedTypesPolicyName = \"{name}\";
 "
     ))
 }
-
 mod notifications;
+pub(super) mod user_pages;
 pub(super) use notifications::notifications;
 
 #[cfg(test)]

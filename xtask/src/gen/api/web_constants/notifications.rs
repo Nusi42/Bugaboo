@@ -29,7 +29,7 @@ const SETTING_FUNCTION: &str = "setting";
 const APP: &str = "App";
 const MAIL: &str = "Mail";
 
-fn parsed(sources: &[Source], path: &str) -> anyhow::Result<syn::File> {
+pub(super) fn parsed(sources: &[Source], path: &str) -> anyhow::Result<syn::File> {
     let Some((_, text)) = sources.iter().find(|(known, _)| known == path) else {
         bail!("{path} is missing");
     };
