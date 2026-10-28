@@ -11,7 +11,9 @@ use serde_json::json;
 
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, key_of, ok, version_of};
-use super::perf_queries::{Counter, assert_as_many_statements, five_and_forty};
+use super::perf_queries::{
+    Counter, assert_as_many_statements, assert_same_statements, five_and_forty,
+};
 
 const NOTIFICATIONS: &str = "/api/v1/notifications";
 /// The most statements the page or the number may run, however many rows there are (a ceiling that a
@@ -30,8 +32,11 @@ const CHANGE_AT_MOST: usize = 23;
 /// news: the issue and its followers are read, the rights of the follower on it are not read again.
 const PER_CHANGE_AT_MOST: usize = 3;
 
-/// Bob finishes `count` new issues of Ada, one comment under each, so Ada, who follows what she
-/// reported, hears of `count` different issues.
+/// Bob writes a comment under each of `count` new issues of Ada, so Ada, who follows what she
+/// reported, hears of `count` different issues, one notification each. Every notification is of one
+/// kind: the reader makes them all in one request, in one moment, and IDs sort only by the
+/// millisecond, so the order of the newest few is chance; a page of five that happened to hold no
+/// comment read one statement and one setting fewer than a page of forty (M5-F65, 42 against 40).
 async fn news_for_ada(
     site: &Site<'_>,
     ada: &mut Browser,
@@ -41,15 +46,6 @@ async fn news_for_ada(
 ) -> Result<(), Failure> {
     for number in first..first + count {
         let issue = key_of(&site.create(ada, &format!("Issue {number}")).await?)?;
-        let version = version_of(bob, &issue).await?;
-        let changed = bob
-            .send(
-                "PATCH",
-                &format!("{ISSUES}/{issue}"),
-                Some(json!({"version": version, "status": "done"})),
-            )
-            .await?;
-        assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
         // The same words in every comment: a page names the same few things over and over and looks
         // each of them up once; what is different in every row must cost nothing.
         let written = bob
@@ -97,14 +93,15 @@ async fn perf_05_the_number_on_the_menu_runs_as_many_statements_for_forty_unread
         ok(&ada.send("GET", &unread, None).await?)?;
         counter.take();
         let few = ada.send("GET", &unread, None).await?;
-        assert_eq!(ok(&few)?["unread"], 10);
-        let on_five = counter.take();
+        assert_eq!(ok(&few)?["unread"], 5);
+        let (on_five, five_log) = counter.take_logged();
         news_for_ada(&site, &mut ada, &mut bob, 35, 5).await?;
         ok(&ada.send("GET", &unread, None).await?)?;
         counter.take();
         let many = ada.send("GET", &unread, None).await?;
-        assert_eq!(ok(&many)?["unread"], 80);
-        let on_forty = counter.take();
+        assert_eq!(ok(&many)?["unread"], 40);
+        let (on_forty, forty_log) = counter.take_logged();
+        assert_same_statements(&five_log, &forty_log);
         assert_as_many_statements(on_five, on_forty, AT_MOST, "more unread notifications");
         Ok(())
     })
