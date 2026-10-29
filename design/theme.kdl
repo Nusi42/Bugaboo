@@ -952,6 +952,8 @@ part "muted" {
     color "$fg-muted"
     font-size "$fs-base"
     line-height "$lh-body"
+    // No single word alone on the last line.
+    text-wrap pretty
 }
 
 // Words for screen readers only: the name of a column that holds only an icon.
@@ -3147,6 +3149,7 @@ part "text" {
     margin 0
     font-size "$fs-md"
     line-height "$lh-text"
+    text-wrap pretty
 }
 
 part "row" {

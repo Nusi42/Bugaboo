@@ -892,6 +892,7 @@ optgroup {
   color: var(--fg-muted);
   font-size: var(--fs-base);
   line-height: var(--lh-body);
+  text-wrap: pretty;
 }
 
 [data-part="visually-hidden"] {
@@ -3193,6 +3194,7 @@ optgroup {
   margin: 0;
   font-size: var(--fs-md);
   line-height: var(--lh-text);
+  text-wrap: pretty;
 }
 
 [data-part="row"] {
