@@ -16,9 +16,9 @@ import { messageOf } from "../../shared/errors.ts";
 import { personAddress } from "../../shared/paths.ts";
 import { type PersonLine, linesOf, usePeople } from "./people.ts";
 
-/** The address, groups and roles of a person in one line, as far as the viewer sees them. */
+/** The groups and roles of a person in one line, as far as the viewer sees them. */
 function factsOf(person: PersonLine): string {
-  const parts: string[] = [person.email];
+  const parts: string[] = [];
   if (person.groups !== null) {
     parts.push(
       person.groups.length === 0
@@ -52,6 +52,7 @@ function Rows({ lines, onLoadMore }: RowsProps) {
             >
               <span {...partOf(part.peoplePersonText)}>
                 <span {...partOf(part.peoplePersonName)}>{person.name}</span>
+                <span {...partOf(part.peoplePersonFacts)}>{person.email}</span>
                 <span {...partOf(part.peoplePersonFacts)}>{factsOf(person)}</span>
               </span>
               <RowChevron />

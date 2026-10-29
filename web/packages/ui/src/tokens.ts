@@ -209,6 +209,7 @@ export const tokenNames = [
   "size-bar-sheet",
   "size-bar-ticked",
   "size-matrix-cell",
+  "size-person-row",
   "size-list-tall",
   "size-line-medium",
   "size-line-short",
