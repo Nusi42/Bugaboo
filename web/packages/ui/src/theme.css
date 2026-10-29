@@ -4767,6 +4767,20 @@ optgroup {
   max-width: none;
 }
 
+[data-part="item-screen"] {
+  width: 100%;
+  max-width: var(--size-page);
+  min-width: 0;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-page-gutter);
+}
+
+[data-part="app-layout.main"]:has([data-part="item-screen"]) [data-part="app-layout.inner"] {
+  display: none;
+}
+
 [data-part="skip"] {
   position: absolute;
   left: var(--space-2);

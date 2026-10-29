@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { itemArea } from "./support/windows.ts";
 import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
 import { fillCreate, openOverview, tree, treeLink } from "./support/projects.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
@@ -32,7 +33,7 @@ test("prj_01 an administrator makes a project in the organization settings and f
   await expect(page.getByLabel(t("projects.field-short-name"), { exact: true })).toHaveValue("");
   // The list holds the project, which opens in the panel next to it.
   await page.getByRole("button", { name: "Website", exact: true }).click();
-  await expect(page.getByRole("complementary", { name: "Website" })).toBeVisible();
+  await expect(itemArea(page, "Website")).toBeVisible();
   await expect(page.getByRole("link", { name: t("projects.open") })).toHaveAttribute(
     "href",
     projectAddress("WEB"),

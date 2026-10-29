@@ -3,6 +3,7 @@ import { RowChevron, SearchField, useLayout, partOf, part } from "@bugaboo/ui";
 import { useId, useState, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
+import { ItemScreen } from "./item-screen.tsx";
 import { SidePanel } from "./SidePanel.tsx";
 
 /** One row of the list. */
@@ -94,8 +95,8 @@ export function ListEditor({
   const [query, setQuery] = useState("");
   const shown = rows.filter((row) => row.name.toLowerCase().includes(query.trim().toLowerCase()));
   const open = rows.find((row) => row.key === openKey);
-  // A phone shows one thing at a time: the open item takes the screen, and Back closes it. The
-  // list stays in the page, hidden, so the focus can go back to the row that was opened.
+  // A phone shows one thing at a time: the open item is a screen of its own (the page hides the rest), and Back closes it.
+  // The list stays in the page, hidden, so the focus can go back to the row that was opened.
   const alone = useLayout() === "phone" && open !== undefined;
   if (rows.length === 0 && none !== undefined) {
     return <p {...partOf(part.muted)}>{none}</p>;
@@ -118,7 +119,9 @@ export function ListEditor({
           columns={columns}
         />
       </div>
-      {open === undefined ? null : (
+      {open === undefined ? null : alone ? (
+        <ItemScreen name={open.name}>{open.editor}</ItemScreen>
+      ) : (
         <SidePanel title={open.name} onClose={onClose}>
           {open.editor}
         </SidePanel>

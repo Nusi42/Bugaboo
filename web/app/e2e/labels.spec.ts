@@ -5,7 +5,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { ada, bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { signIn } from "./support/flows.ts";
+import { itemArea, signIn } from "./support/flows.ts";
 import { detailRow, expectStatus, issueNote, prepareWeb, startWorking } from "./support/issues.ts";
 import { addTag, labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
@@ -152,7 +152,7 @@ test("tag_03 renaming a label shows which issues change before it is saved", asy
   await listNamed(page, t("labels.labels-search"))
     .getByRole("button", { name: "frontend", exact: true })
     .click();
-  const panel = page.getByRole("complementary", { name: "frontend" });
+  const panel = itemArea(page, "frontend");
   await panel.getByLabel(t("labels.field-name"), { exact: true }).fill("front end");
   await panel.getByRole("button", { name: t("labels.show-changes"), exact: true }).click();
   await expect(panel.getByText(t("preview.summary", { changed: 1, skipped: 0 }))).toBeVisible();

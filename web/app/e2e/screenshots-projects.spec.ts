@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { answerPreviewsWithEverything } from "./support/fake-preview.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { itemArea } from "./support/windows.ts";
 import { signIn } from "./support/flows.ts";
 import { createProject, openMove, tree } from "./support/projects.ts";
 import { screenshotFolder, shot } from "./support/screenshots.ts";
@@ -42,7 +43,7 @@ test("the project screens at phone width", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: t("projects.title") })).toBeVisible();
   await shot(page, "30-projects", MILESTONE);
   await page.goto(`${paths.projects}?open=WEB`);
-  await expect(page.getByRole("complementary", { name: "Website" })).toBeVisible();
+  await expect(itemArea(page, "Website")).toBeVisible();
   await shot(page, "31-projects-editor", MILESTONE);
 
   // The tree in the sheet *More* opens.

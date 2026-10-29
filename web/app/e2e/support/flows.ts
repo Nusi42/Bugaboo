@@ -295,3 +295,4 @@ export async function serverKeptFollow(page: Page, method: "PUT" | "DELETE"): Pr
       response.request().method() === method && response.url().includes("/follow") && response.ok(),
   );
 }
+export { itemArea } from "./windows.ts";

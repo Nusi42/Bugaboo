@@ -4521,6 +4521,18 @@ part "app-layout.inner[variant=wide]" {
     use "page-column-wide"
 }
 
+// An item of a list on a phone is a screen of its own: the page column and what else the content holds give way to it.
+part "item-screen" {
+    use "page-column"
+    display flex
+    flex-direction column
+    gap "$size-page-gutter"
+}
+
+part "app-layout.main:has(item-screen) app-layout.inner" {
+    display none
+}
+
 // The link that jumps to the content, in the app and before sign-in: out of sight until it has the focus.
 part "skip" {
     position absolute

@@ -4,6 +4,7 @@ import { type Page } from "@playwright/test";
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { itemArea } from "./support/windows.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
 import { createProject } from "./support/projects.ts";
 import { addressInProject, paths } from "../src/shared/paths.ts";
@@ -41,7 +42,7 @@ test("iss_02 an administrator sees the four types of the first start and opens o
   await page.getByRole("searchbox", { name: t("issue-types.search"), exact: true }).fill("fea");
   await expect(list.getByRole("listitem")).toHaveCount(1);
   await list.getByRole("button", { name: "Feature", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Feature" });
+  const panel = itemArea(page, "Feature");
   await expect(panel).toBeVisible();
   await expect(panel.getByLabel(t("issue-types.field-name"), { exact: true })).toHaveValue(
     "Feature",
@@ -54,16 +55,14 @@ test("iss_02 a type is renamed, given another icon and kept after the page is re
   await signIn(page, ada);
   await page.goto(paths.issueTypes);
   await page.getByRole("button", { name: "Task", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Task" });
+  const panel = itemArea(page, "Task");
   await panel.getByLabel(t("issue-types.field-name"), { exact: true }).fill("Chore");
   await panel.getByLabel(t("issue-types.field-icon"), { exact: true }).selectOption({
     label: t("issue-icon.wrench"),
   });
   await panel.getByRole("button", { name: t("common.save"), exact: true }).click();
   // The panel is named after the type, so it has the new name now.
-  await expect(
-    page.getByRole("complementary", { name: "Chore" }).getByText(t("save.saved")),
-  ).toBeVisible();
+  await expect(itemArea(page, "Chore").getByText(t("save.saved"))).toBeVisible();
   // The list is read again from the server, with the panel closed (a phone shows one thing at a
   // time).
   await page.goto(paths.issueTypes);
@@ -87,7 +86,7 @@ test("iss_02 a type is made, retired and offered again", async ({ page }) => {
   await page.getByRole("button", { name: t("issue-types.create"), exact: true }).click();
   await expect(page.getByText(t("error.name.taken"))).toBeVisible();
   await list.getByRole("button", { name: "Question", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Question" });
+  const panel = itemArea(page, "Question");
   // The switch is pressed by its words, as a person does; the words change with the state.
   await panel.getByText(t("issue-types.retire"), { exact: true }).click();
   await expect(
@@ -111,7 +110,7 @@ test("iss_02 Issue types is good in every theme, also with a type open", async (
   await expect(typeList(page).getByRole("listitem")).not.toHaveCount(0);
   await expectGoodInEveryLook(page);
   await typeList(page).getByRole("button", { name: "Bug", exact: true }).click();
-  await expect(page.getByRole("complementary", { name: "Bug" })).toBeVisible();
+  await expect(itemArea(page, "Bug")).toBeVisible();
   await expectGoodInEveryLook(page);
 });
 

@@ -4,6 +4,7 @@ import { type Page } from "@playwright/test";
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { itemArea } from "./support/windows.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -49,7 +50,7 @@ test("iss_04 an administrator sees the four kinds of the first start and opens o
     reads("related to", "related to"),
   ]);
   await list.getByRole("button", { name: reads("causes", "is caused by"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: reads("causes", "is caused by") });
+  const panel = itemArea(page, reads("causes", "is caused by"));
   await expect(panel.getByLabel(t("relation-kinds.field-forward"), { exact: true })).toHaveValue(
     "causes",
   );
@@ -72,7 +73,7 @@ test("iss_04 a kind is made, its words are changed, and it is retired and offere
   const list = kindList(page);
   await expect(list.getByRole("listitem")).toHaveCount(5);
   await list.getByRole("button", { name: reads("precedes", "follows"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: reads("precedes", "follows") });
+  const panel = itemArea(page, reads("precedes", "follows"));
   await panel.getByText(t("relation-kinds.retire"), { exact: true }).click();
   await expect(
     panel.getByRole("switch", { name: t("relation-kinds.offer-again"), exact: true }),
@@ -89,9 +90,7 @@ test("iss_04 Kinds of relation is good in every theme, also with a kind open", a
   await kindList(page)
     .getByRole("button", { name: reads("blocks", "is blocked by"), exact: true })
     .click();
-  await expect(
-    page.getByRole("complementary", { name: reads("blocks", "is blocked by") }),
-  ).toBeVisible();
+  await expect(itemArea(page, reads("blocks", "is blocked by"))).toBeVisible();
   await expectGoodInEveryLook(page);
 });
 

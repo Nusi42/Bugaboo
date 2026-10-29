@@ -15,7 +15,8 @@ import { Link } from "react-aria-components";
 import { paths } from "../../shared/paths.ts";
 import { openOverlay } from "./overlay-state.ts";
 import { pageTrails, type TrailStep } from "./page-trail.ts";
-import { placeAt, trailTo } from "../../shared/places.ts";
+import { placeAt } from "../../shared/places.ts";
+import { stepsOfScreens } from "./steps-of-screens.ts";
 import { useRegistry } from "./registry.ts";
 
 /** Words of the ARIA standard, not text for people. */
@@ -68,14 +69,6 @@ function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
       </ol>
     </nav>
   );
-}
-
-/** The steps of the fixed screens: from the start page down to this screen. */
-function stepsOfScreens(pathname: string): readonly TrailStep[] {
-  const trail = trailTo(pathname);
-  // The start page is where every trail begins, so it is only named when it is the page itself.
-  const shown = trail.length > 1 ? trail.slice(1) : trail;
-  return shown.map((place) => ({ label: t(place.name), href: place.path }));
 }
 
 export interface TopBarProps {

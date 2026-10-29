@@ -199,8 +199,8 @@ export async function sizesSaved(page: Page, count: number, act: () => Promise<v
   await done;
 }
 
-/** The place where one group is changed: the panel beside the list on a computer, its own screen on a phone. */
-export function groupArea(page: Page, name: string): Locator {
+/** The place where one item of a list is changed: the panel beside the list on a computer, its own screen on a phone. */
+export function itemArea(page: Page, name: string): Locator {
   return layoutOf(page) === "phone"
     ? page.getByRole("region", { name, exact: true })
     : page.getByRole("complementary", { name });

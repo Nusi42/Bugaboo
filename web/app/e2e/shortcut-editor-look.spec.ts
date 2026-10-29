@@ -6,7 +6,7 @@ import { ada, createAdmin, forgetChoices } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf, itemArea } from "./support/windows.ts";
 
 // The editor of a shortcut (the final check of M4): the keys of *Keys now* and of *Usual keys* start
 // on one edge, so the two rows read as one table.
@@ -28,7 +28,7 @@ async function openRows(page: Page) {
   await signIn(page, ada);
   await page.goto(paths.shortcuts);
   await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
+  const panel = itemArea(page, t("shortcut.go-home"));
   const rows = partIn(panel, "shortcut-editor.row");
   return {
     labels: partIn(panel, "shortcut-editor.label"),
