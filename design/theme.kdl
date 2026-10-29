@@ -209,9 +209,13 @@ tokens {
     size "size-bar-ticked" "40dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
-    // A row of the people list as tall as a name and three lines of small text need: the box of the list is five of them.
-    // How far the bar of a minimized window stands above the bottom edge; the page leaves the same room under its end.
+    // The room between the edge of the screen or of a column and what stands in the page: the same for the page, and for
+    // the strip of a minimized window, so the strip starts where the page column starts.
+    size "size-page-gutter" "$space-4"
+    // The room above and below the bar of a minimized window inside its strip, and the strip: bar and room.
     size "size-dock-gap" "$space-3"
+    size "size-dock-strip" "calc($size-control + 2 * $size-dock-gap)"
+    // A row of the people list as tall as a name and three lines of small text need: the box of the list is five of them.
     size "size-person-row" "calc(2 * $space-2 + 2 * $space-1 + $fs-md * $lh-body + 3 * $fs-base * $lh-body + $border-width)"
     size "size-list-tall" "calc($size-list * 2)"
     // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
@@ -852,8 +856,6 @@ mixin "quiet-column" {
     line-height "$lh-body"
 }
 
-// A button that holds text hangs back by its own padding, so its text stands on the start edge of
-// the text around it (R1). Every such button has the padding `pad-control`.
 // The bar at the top of a phone screen, the same for a page and for a window that is a screen (M5 exit, O13): the height
 // of the bar, the room for the notch above it, the canvas behind it, its parts level.
 mixin "phone-bar" {
@@ -866,6 +868,8 @@ mixin "phone-bar" {
     background "$bg-canvas"
 }
 
+// A button that holds text hangs back by its own padding, so its text stands on the start edge of
+// the text around it (R1). Every such button has the padding `pad-control`.
 mixin "hang-start" {
     margin-inline-start "calc(-1 * $pad-control)"
 }
@@ -3064,20 +3068,23 @@ part "window-layout.fields" {
 }
 
 // A window that is minimized is a bar at the bottom of the page with its title and what it keeps.
+// A minimized window is a strip at the bottom of the page: the page has room for it at its end (below), so the strip
+// covers no row and crosses no frame of a card; its bar starts where the page column starts and ends before the
+// column does (the wide view of the focus has the gutter only). The strip is a surface of its own with a shadow.
 part "window-dock" {
     position fixed
-    inset-inline-start "calc($space-4 * 2)"
-    bottom "$size-dock-gap"
+    inset-inline-start 0
+    inset-inline-end 0
+    bottom 0
     z-index "$z-panel"
     box-sizing border-box
     display flex
     align-items center
+    justify-content flex-start
     gap "$space-3"
-    min-height "$size-control"
-    max-width "calc(100% - $space-4 * 4)"
-    padding 0 "$pad-box"
-    border "$border-width solid $border-control"
-    border-radius "$r-card"
+    min-height "$size-dock-strip"
+    padding "$size-dock-gap $size-page-gutter"
+    border-top "$border-width solid $border-control"
     background "$bg-raised"
     box-shadow "$shadow"
     color "$fg"
@@ -3086,17 +3093,14 @@ part "window-dock" {
     cursor pointer
 }
 
-// On a computer the dock stands in the main area, after the menu, so it never covers it.
 part "app-layout[variant=side] window-dock" {
-    // Inside the column of the page, a little in from the frame of its card: the page column is centered where the
-    // room is wider than it.
-    inset-inline-start "calc($size-sidebar + max($space-4, (100% - $size-sidebar - $size-page) / 2) + $space-4)"
-    max-width "calc(100% - $size-sidebar - $space-4 * 4)"
+    inset-inline-start "$size-sidebar"
+    padding-inline "max($size-page-gutter, (100% - $size-sidebar - $size-page) / 2)"
 }
 
 part "app-layout[variant=side-narrow] window-dock" {
-    inset-inline-start "calc($size-sidebar-narrow + max($space-4, (100% - $size-sidebar-narrow - $size-page) / 2) + $space-4)"
-    max-width "calc(100% - $size-sidebar-narrow - $space-4 * 4)"
+    inset-inline-start "$size-sidebar-narrow"
+    padding-inline "max($size-page-gutter, (100% - $size-sidebar-narrow - $size-page) / 2)"
 }
 
 part "window-dock[hovered]" {
@@ -3114,7 +3118,10 @@ part "window-dock.title" {
     white-space nowrap
 }
 
+// A line between the title and its note, so they read as two things in one bar.
 part "window-dock.note" {
+    padding-inline-start "$space-3"
+    border-inline-start "$border-width solid $border-control"
     color "$fg"
     font-size "$fs-base"
     white-space nowrap
@@ -4353,7 +4360,7 @@ part "app-layout.main" {
     flex 1
     flex-direction column
     min-width 0
-    padding "$space-4"
+    padding "$size-page-gutter"
 }
 
 // What a phone shows under the page and above the bar of the app: the bar of the open issue. It is
@@ -4370,7 +4377,12 @@ part "app-layout.main:focus" {
 // While a window is minimized to its bar at the bottom of the page, the page has room for the bar at its end, so
 // the bar covers no row of a list (M5 exit, O7).
 part "app-layout:has(window-dock) app-layout.main" {
-    padding-block-end "calc($space-4 + $size-dock-gap + $size-control)"
+    padding-block-end "calc($size-page-gutter + $size-dock-strip)"
+}
+
+// The focus view takes the whole width, so the strip has the gutter only.
+part "app-layout:has(app-layout.inner[variant=wide]) window-dock" {
+    padding-inline "$size-page-gutter"
 }
 
 part "app-layout.inner" {

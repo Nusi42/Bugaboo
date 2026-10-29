@@ -104,7 +104,9 @@
   --size-bar-sheet: 80dvh;
   --size-bar-ticked: 40dvh;
   --size-matrix-cell: calc(var(--size-control) * 4);
+  --size-page-gutter: var(--space-4);
   --size-dock-gap: var(--space-3);
+  --size-dock-strip: calc(var(--size-control) + 2 * var(--size-dock-gap));
   --size-person-row: calc(
     2 * var(--space-2) + 2 * var(--space-1) + var(--fs-md) * var(--lh-body) + 3 * var(--fs-base) *
       var(--lh-body) + var(--border-width)
@@ -3110,18 +3112,18 @@ optgroup {
 
 [data-part="window-dock"] {
   position: fixed;
-  inset-inline-start: calc(var(--space-4) * 2);
-  bottom: var(--size-dock-gap);
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  bottom: 0;
   z-index: var(--z-panel);
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--space-3);
-  min-height: var(--size-control);
-  max-width: calc(100% - var(--space-4) * 4);
-  padding: 0 var(--pad-box);
-  border: var(--border-width) solid var(--border-control);
-  border-radius: var(--r-card);
+  min-height: var(--size-dock-strip);
+  padding: var(--size-dock-gap) var(--size-page-gutter);
+  border-top: var(--border-width) solid var(--border-control);
   background: var(--bg-raised);
   box-shadow: var(--shadow);
   color: var(--fg);
@@ -3131,20 +3133,16 @@ optgroup {
 }
 
 [data-part="app-layout"][data-variant~="side"] [data-part="window-dock"] {
-  inset-inline-start: calc(
-    var(--size-sidebar) + max(var(--space-4), (100% - var(--size-sidebar) - var(--size-page)) / 2) +
-      var(--space-4)
-  );
-  max-width: calc(100% - var(--size-sidebar) - var(--space-4) * 4);
+  inset-inline-start: var(--size-sidebar);
+  padding-inline: max(var(--size-page-gutter), (100% - var(--size-sidebar) - var(--size-page)) / 2);
 }
 
 [data-part="app-layout"][data-variant~="side-narrow"] [data-part="window-dock"] {
-  inset-inline-start: calc(
-    var(--size-sidebar-narrow) +
-      max(var(--space-4), (100% - var(--size-sidebar-narrow) - var(--size-page)) / 2) +
-      var(--space-4)
+  inset-inline-start: var(--size-sidebar-narrow);
+  padding-inline: max(
+    var(--size-page-gutter),
+    (100% - var(--size-sidebar-narrow) - var(--size-page)) / 2
   );
-  max-width: calc(100% - var(--size-sidebar-narrow) - var(--space-4) * 4);
 }
 
 [data-part="window-dock"][data-hovered] {
@@ -3171,6 +3169,8 @@ optgroup {
 }
 
 [data-part="window-dock.note"] {
+  padding-inline-start: var(--space-3);
+  border-inline-start: var(--border-width) solid var(--border-control);
   color: var(--fg);
   font-size: var(--fs-base);
   white-space: nowrap;
@@ -4465,7 +4465,7 @@ optgroup {
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  padding: var(--space-4);
+  padding: var(--size-page-gutter);
 }
 
 [data-part="app-layout.bar-slot"] {
@@ -4478,7 +4478,12 @@ optgroup {
 }
 
 [data-part="app-layout"]:has([data-part="window-dock"]) [data-part="app-layout.main"] {
-  padding-block-end: calc(var(--space-4) + var(--size-dock-gap) + var(--size-control));
+  padding-block-end: calc(var(--size-page-gutter) + var(--size-dock-strip));
+}
+
+[data-part="app-layout"]:has([data-part="app-layout.inner"][data-variant~="wide"])
+  [data-part="window-dock"] {
+  padding-inline: var(--size-page-gutter);
 }
 
 [data-part="app-layout.inner"] {

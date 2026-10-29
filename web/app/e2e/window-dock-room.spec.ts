@@ -5,6 +5,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { openNewIssueDialog } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
+import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { boxOf, titleBox, windowButton, windowDock } from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
@@ -35,7 +36,14 @@ test("ux_8 the bar of a minimized window covers no row at the end of the list", 
   await scrollToEnd(page);
   const dock = await boxOf(windowDock(page));
   const content = await boxOf(page.locator("[data-part='app-layout.inner']"));
+  const card = await boxOf(page.locator("[data-part='app-layout.inner'] > *").last());
+  // At the end of the page the strip is under the content: no row and no frame of a card is covered.
   expect(content.y + content.height).toBeLessThanOrEqual(dock.y + 0.5);
-  // And it stands inside the frame of the page, never across the border of the card behind it.
-  expect(dock.x).toBeGreaterThanOrEqual(content.x + 8);
+  expect(card.y + card.height).toBeLessThanOrEqual(dock.y + 0.5);
+  // Its bar starts where the page column starts and stays inside the column, so it sits under the cards, not across them.
+  const title = await boxOf(partIn(windowDock(page), "window-dock.title"));
+  const note = await boxOf(partIn(windowDock(page), "window-dock.note"));
+  // (a few pixels of rounding of the centered column are allowed)
+  expect(Math.abs(title.x - content.x)).toBeLessThanOrEqual(3);
+  expect(note.x + note.width).toBeLessThanOrEqual(content.x + content.width + 0.5);
 });
