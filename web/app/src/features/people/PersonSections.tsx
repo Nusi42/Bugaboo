@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, Link, partOf, part } from "@bugaboo/ui";
+import { Card, Link, RowChevron, partOf, part } from "@bugaboo/ui";
 
 import { heldText } from "../../shared/access-words.ts";
 import { formatDateTime } from "../../shared/format.ts";
@@ -19,7 +19,10 @@ export function Groups({ line }: { readonly line: PersonLine }) {
         <ul {...partOf(part.list)} aria-label={t("person.groups")}>
           {line.groups.map((group) => (
             <li key={group.id} {...partOf(part.item)}>
-              <Link href={groupAddress(group.id)}>{group.name}</Link>
+              <span {...partOf(part.rowMain)}>
+                <Link href={groupAddress(group.id)}>{group.name}</Link>
+              </span>
+              <RowChevron />
             </li>
           ))}
         </ul>

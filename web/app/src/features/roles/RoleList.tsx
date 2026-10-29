@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Link, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, Link, RowChevron, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { detailsText } from "../../shared/list-text.ts";
@@ -16,15 +16,18 @@ export function RoleList() {
       <ul {...partOf(part.list)} aria-label={t("roles.list")}>
         {lines.map((role) => (
           <li key={role.id} {...partOf(part.item)}>
-            <Link href={roleAddress(role.id)}>{role.name}</Link>
-            <span {...partOf(part.muted)}>
-              {detailsText(
-                [
-                  role.starting === null ? t("roles.own") : t("roles.starting-badge"),
-                  role.twoStep ? t("roles.two-step-badge") : null,
-                ].filter((word) => word !== null),
-              )}
+            <span {...partOf(part.rowMain)}>
+              <Link href={roleAddress(role.id)}>{role.name}</Link>
+              <span {...partOf(part.muted)}>
+                {detailsText(
+                  [
+                    role.starting === null ? t("roles.own") : t("roles.starting-badge"),
+                    role.twoStep ? t("roles.two-step-badge") : null,
+                  ].filter((word) => word !== null),
+                )}
+              </span>
             </span>
+            <RowChevron />
           </li>
         ))}
       </ul>

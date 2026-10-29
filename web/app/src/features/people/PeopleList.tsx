@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, SearchField, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, RowChevron, SearchField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 import {
   Collection,
@@ -15,12 +15,6 @@ import { detailsText, listText } from "../../shared/list-text.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { personAddress } from "../../shared/paths.ts";
 import { type PersonLine, linesOf, usePeople } from "./people.ts";
-
-/**
- * What a row is expected to measure, before it is drawn: the list measures the real rows as they
- * appear, so a row of another height only makes the first guess of the scroll bar a little off.
- */
-const ROW_GUESS = 84;
 
 /** The address, groups and roles of a person in one line, as far as the viewer sees them. */
 function factsOf(person: PersonLine): string {
@@ -46,7 +40,7 @@ interface RowsProps {
 /** The rows, drawn only where they are on screen. A row opens the page of the person. */
 function Rows({ lines, onLoadMore }: RowsProps) {
   return (
-    <Virtualizer layout={ListLayout} layoutOptions={{ estimatedRowSize: ROW_GUESS }}>
+    <Virtualizer layout={ListLayout}>
       <ListBox aria-label={t("people.list")} {...partOf(part.people)}>
         <Collection items={lines}>
           {(person) => (
@@ -56,8 +50,11 @@ function Rows({ lines, onLoadMore }: RowsProps) {
               textValue={person.name}
               {...partOf(part.peoplePerson)}
             >
-              <span {...partOf(part.peoplePersonName)}>{person.name}</span>
-              <span {...partOf(part.peoplePersonFacts)}>{factsOf(person)}</span>
+              <span {...partOf(part.peoplePersonText)}>
+                <span {...partOf(part.peoplePersonName)}>{person.name}</span>
+                <span {...partOf(part.peoplePersonFacts)}>{factsOf(person)}</span>
+              </span>
+              <RowChevron />
             </ListBoxItem>
           )}
         </Collection>

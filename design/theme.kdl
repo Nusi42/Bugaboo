@@ -691,6 +691,13 @@ mixin "menu-text" {
     text-decoration none
 }
 
+// Facts under a name, at the start edge: the row of a list on a phone (a field, a label), whatever the facts say.
+mixin "stacked-facts" {
+    flex-direction column
+    align-items flex-start
+    justify-content center
+}
+
 // The column the pages are drawn in, centered; what is drawn at its bottom (the offers to undo) uses it too.
 mixin "page-column" {
     width "100%"
@@ -3154,14 +3161,6 @@ part "item[variant=slim]" {
     padding "$space-1 $space-3"
 }
 
-// An item that is a name and a line of facts (a field): on a phone the facts stand under the name in every row,
-// not beside it in the rows where they fit and under it where they do not (M5 exit, O9).
-part "app-layout[variant=phone] item[variant=named]" {
-    flex-direction column
-    align-items flex-start
-    justify-content center
-}
-
 part "item[variant=wrap]" {
     overflow-wrap anywhere
 }
@@ -3706,13 +3705,32 @@ part "access.topic" "card.topic" {
     color "$fg"
 }
 
+// The name and what is said about it stand in one box, and the sign that the row opens at the end of the row, in
+// every layout (M5 exit, O16). On a phone the facts stand under the name, in the left column.
+part "row-main" {
+    display flex
+    flex 1
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    min-width 0
+}
+
+// The sign that a row opens something: at the end of the row, in the middle of its height, never on a line of its own.
+part "row-chevron" {
+    display inline-flex
+    flex none
+    align-self center
+    color "$fg-muted"
+}
+
 // ───────────── People ─────────────
 
 part "people" {
     display block
     // Whole rows: five rows of a fixed height (below), so the row at the edge is never cut where the list
     // scrolls (M5 exit, O17).
-    max-block-size "calc(5 * (2 * $size-control + $space-3))"
+    max-block-size "calc(5 * round(up, calc(2 * $space-2 + $space-1 + $fs-md * $lh-body + 2 * $fs-base * $lh-body + $border-width), $border-width))"
     margin 0
     padding-block 0
     padding-inline "$ring-width"
@@ -3720,13 +3738,32 @@ part "people" {
     use "surface-box"
 }
 
-// A row of the list has one height whatever it says (the list draws only the rows on screen, which need it): the
-// name, and the facts under it on at most two lines.
+// A row of the list has one height whatever it says (the list draws only the rows on screen, which need it), worked
+// out from the text sizes and rounded up to a whole pixel (the list puts its rows at whole pixels), so it grows with Larger text: the name on one line, the facts under it on at most two, an
+// ellipsis where they are cut, and the chevron at the end. The box above shows five of them (the same sum).
 part "people.person" {
     use "pick-row"
-    block-size "calc(2 * $size-control + $space-3)"
+    position relative
+    justify-content center
+    padding-inline-end "calc($space-3 + $size-icon-small + $space-2)"
+    block-size "round(up, calc(2 * $space-2 + $space-1 + $fs-md * $lh-body + 2 * $fs-base * $lh-body + $border-width), $border-width)"
     overflow hidden
     border-bottom "$border-width solid $border-subtle"
+}
+
+part "people.person-text" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+}
+
+// The chevron stands at the end of the row, in the middle of its height.
+part "people.person row-chevron" {
+    position absolute
+    inset-inline-end "$space-3"
+    top "50%"
+    transform "translateY(-50%)"
 }
 
 part "people.person[hovered]" {
@@ -3738,19 +3775,26 @@ part "people.person[focus-visible]" {
 }
 
 part "people.person-name" {
+    overflow hidden
+    font-size "$fs-md"
     font-weight "$weight-regular"
+    line-height "$lh-body"
     color "$accent-fg"
     text-decoration underline
     text-underline-offset "$space-1"
-    overflow-wrap anywhere
+    text-overflow ellipsis
+    white-space nowrap
 }
 
 part "people.person-facts" {
-    max-block-size "calc(2 * $fs-base * $lh-body)"
+    display "-webkit-box"
     overflow hidden
     color "$fg-muted"
     font-size "$fs-base"
+    line-height "$lh-body"
     overflow-wrap anywhere
+    -webkit-line-clamp 2
+    -webkit-box-orient vertical
 }
 
 // ───────────── Roles ─────────────
@@ -5137,13 +5181,16 @@ part "list-editor.open[variant=columns]" {
     padding-block "$space-2"
 }
 
-// The same on a phone for the rows of a list that opens its items (labels, groups of labels): the name, and under it
-// what is said about it.
 part "app-layout[variant=phone] list-editor.open" {
-    flex-direction column
-    align-items flex-start
-    justify-content center
     padding-block "$space-2"
+}
+
+part "app-layout[variant=phone] row-main" {
+    use "stacked-facts"
+}
+
+part "list-editor.open[variant=columns] row-main" {
+    display contents
 }
 
 part "list-editor.name" {
@@ -5175,11 +5222,9 @@ part "list-editor.open[variant=columns] projects.place" {
     grid-row 2
 }
 
-part "list-editor.chevron" {
+part "list-editor.open[variant=columns] row-chevron" {
     grid-column 3
     grid-row "1 / span 2"
-    align-self center
-    color "$fg-muted"
 }
 
 part "list-editor.open[hovered]" {

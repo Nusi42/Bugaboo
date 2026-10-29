@@ -39,6 +39,33 @@ test("ux_5 the list of people to put in shows whole rows at its start", async ({
   expect(await rowsCutAtTheEnd(list), "rows cut by the lower edge of the list").toBe(0);
 });
 
+/** How many rows hold more than their box shows (text cut by the edge of the row, without an ellipsis). */
+function rowsThatOverflow(list: Locator): Promise<number> {
+  return list.evaluate((node) => {
+    let over = 0;
+    for (const row of node.querySelectorAll("[role='option']")) {
+      if (row.scrollHeight > row.clientHeight + 1) {
+        over += 1;
+      }
+    }
+    return over;
+  });
+}
+
+test("ux_5 the rows of the people hold their text, also with Larger text, and the box shows whole rows", async ({
+  page,
+}) => {
+  await signIn(page, sampleAdministrator());
+  await page.goto(paths.people);
+  await page.evaluate(() => {
+    document.documentElement.dataset["text"] = "larger";
+  });
+  const list = page.getByRole("listbox", { name: t("people.list") });
+  await expect(list.getByRole("option").first()).toBeVisible();
+  expect(await rowsThatOverflow(list), "rows with text cut by their edge").toBe(0);
+  expect(await rowsCutAtTheEnd(list, "[role='option']"), "rows cut at the start").toBe(0);
+});
+
 test("ux_5 the list of the people shows whole rows at its start and when it is scrolled", async ({
   page,
 }) => {

@@ -1,4 +1,4 @@
-import { Icon, type IconName, partOf, part } from "@bugaboo/ui";
+import { Icon, type IconName, RowChevron, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 import { Button, Link, Tooltip, TooltipTrigger } from "react-aria-components";
 
@@ -14,10 +14,19 @@ interface ItemProps {
   readonly narrow?: boolean;
   /** A number after the words, such as the notifications not read yet. Nothing for none. */
   readonly count?: string | undefined;
+  /** The item opens a page of its own (a menu that is the page): the chevron at its end says so. */
+  readonly opens?: boolean;
 }
 
 /** The icon and the words; with icons only the words are for screen readers and the tooltip. */
-function Content({ icon, label, narrow, count, hint }: ItemProps & { readonly hint?: ReactNode }) {
+function Content({
+  icon,
+  label,
+  narrow,
+  count,
+  opens = false,
+  hint,
+}: ItemProps & { readonly hint?: ReactNode }) {
   return (
     <>
       <Icon name={icon} />
@@ -28,6 +37,7 @@ function Content({ icon, label, narrow, count, hint }: ItemProps & { readonly hi
       )}
       {count === undefined ? null : <span {...partOf(part.navItemCount)}>{count}</span>}
       {narrow === true ? null : hint}
+      {opens ? <RowChevron /> : null}
     </>
   );
 }
@@ -74,6 +84,7 @@ export function NavLink({
   href,
   current = false,
   count,
+  opens = false,
   onNavigate,
 }: NavLinkProps) {
   return (
@@ -84,7 +95,7 @@ export function NavLink({
         {...(current ? { "aria-current": currentPage } : {})}
         {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
       >
-        <Content icon={icon} label={label} narrow={narrow} count={count} />
+        <Content icon={icon} label={label} narrow={narrow} count={count} opens={opens} />
       </Link>
     </WithTooltip>
   );

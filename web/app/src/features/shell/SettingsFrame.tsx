@@ -39,6 +39,8 @@ export interface TopicListProps {
 
 /** A list of topics as links with their icons: the one menu of every settings screen. */
 export function TopicList({ topics, pathname, labelledBy }: TopicListProps) {
+  // On a phone the menu is a page of its own, and each topic opens one: the chevron says so.
+  const phone = useLayout() === "phone";
   return (
     <ul
       {...partOf(part.settingsFrameTopics)}
@@ -51,6 +53,7 @@ export function TopicList({ topics, pathname, labelledBy }: TopicListProps) {
             icon={topic.icon}
             label={t(topic.name)}
             current={pathname === topic.path}
+            opens={phone}
           />
         </li>
       ))}

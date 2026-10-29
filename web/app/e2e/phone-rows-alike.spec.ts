@@ -38,8 +38,8 @@ test("ux_5 on a phone the facts of a field and of a label stand under its name i
   test.skip(layoutOf(page) !== "phone", "the rows of a computer have the facts beside the name");
   await signIn(page, sampleAdministrator());
   const lists = [
-    { address: paths.fields, rows: "li[data-part='item']" },
-    { address: paths.labels, rows: "[data-part='list-editor.open']" },
+    { address: paths.fields, rows: "li[data-part='item'] > [data-part='row-main']" },
+    { address: paths.labels, rows: "[data-part='list-editor.open'] > [data-part='row-main']" },
   ] as const;
   await inOrder(
     lists.map((list) => async () => {

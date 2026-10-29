@@ -1,5 +1,15 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, Card, Link, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  buttonLook,
+  Card,
+  Link,
+  RowChevron,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -15,8 +25,11 @@ function SubProjectList({ project }: { readonly project: string }) {
       <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("projects.sub-projects")}>
         {linesOf(list.data?.pages).map((line) => (
           <li key={line.id} {...partOf(part.item, { variants: ["spread", "wrap"] })}>
-            <Link href={projectAddress(line.shortName)}>{line.name}</Link>
-            <span {...partOf(part.muted)}>{line.shortName}</span>
+            <span {...partOf(part.rowMain)}>
+              <Link href={projectAddress(line.shortName)}>{line.name}</Link>
+              <span {...partOf(part.muted)}>{line.shortName}</span>
+            </span>
+            <RowChevron />
           </li>
         ))}
       </ul>
