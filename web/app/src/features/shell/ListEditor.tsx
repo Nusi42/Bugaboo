@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { SearchField, useLayout, partOf, part } from "@bugaboo/ui";
+import { Icon, iconName, iconSize, SearchField, useLayout, partOf, part } from "@bugaboo/ui";
 import { useId, useState, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
@@ -66,6 +66,11 @@ function Rows({ rows, label, openKey, onOpen, columns = false }: RowsProps) {
             <span id={detailsId(row.key)} {...partOf(part.listEditorDetails)}>
               {row.details}
             </span>
+            {columns ? (
+              <span {...partOf(part.listEditorChevron)}>
+                <Icon name={iconName.next} size={iconSize.small} />
+              </span>
+            ) : null}
           </Button>
         </li>
       ))}

@@ -4771,8 +4771,13 @@ part "list-editor.open" {
 // the place) gives the rows the same two columns, so the details line up from row to row.
 part "list-editor.open[variant=columns]" {
     display grid
-    grid-template-columns "minmax(0, 1fr) minmax(0, 1.5fr)"
+    grid-template-columns "minmax(0, 1fr) auto auto"
+    align-items baseline
+    column-gap "$space-3"
+    row-gap "$space-1"
+    padding-block "$space-2"
 }
+
 
 part "list-editor.name" {
     min-width 0
@@ -4784,6 +4789,30 @@ part "list-editor.details" {
     display inline-flex
     align-items center
     gap "$space-2"
+}
+
+// The name and the short name stand on one line; where the project sits stands muted under them; a chevron says the row opens (A13).
+part "list-editor.open[variant=columns] list-editor.details" "list-editor.open[variant=columns] projects.details" {
+    display contents
+}
+
+part "list-editor.open[variant=columns] projects.short" {
+    grid-column 2
+    grid-row 1
+    color "$fg-muted"
+    font-family "$mono"
+}
+
+part "list-editor.open[variant=columns] projects.place" {
+    grid-column "1 / -1"
+    grid-row 2
+}
+
+part "list-editor.chevron" {
+    grid-column 3
+    grid-row 1
+    align-self center
+    color "$fg-muted"
 }
 
 part "list-editor.open[hovered]" {
