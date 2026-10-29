@@ -2,6 +2,7 @@ import { useId, type ReactNode } from "react";
 import { useLayout } from "./layout.ts";
 import { partOf } from "./parts.ts";
 import type { CardLook } from "./props.ts";
+import { useTitleInBar } from "./title-bar.ts";
 import { part } from "./tokens.ts";
 
 export interface CardProps {
@@ -20,8 +21,10 @@ export interface CardProps {
 export function Card({ heading, level = 2, look, actions, children }: CardProps) {
   const headingId = useId();
   const phone = useLayout() === "phone";
-  // The one card that is the whole page (level 1) has its heading for screen readers only on a phone: the top bar is its title, and a screen has one title (UX §7.3).
-  const hidden = level === 1 && phone;
+  const titleInBar = useTitleInBar();
+  // The one card that is the whole page (level 1) has its heading for screen readers only on a phone where a top bar
+  // carries the title, and a screen has one title (UX §7.3); a page without a top bar (the sign-in) shows its heading.
+  const hidden = level === 1 && phone && titleInBar;
   const Heading = level === 1 ? "h1" : "h2";
   // A card with nothing to show is not drawn: where its heading is for screen readers only and nothing is in it, only the heading stays.
   const nothing = children === null || children === undefined || children === false;
