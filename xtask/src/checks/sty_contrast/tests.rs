@@ -458,7 +458,7 @@ fn the_page_behind_a_sheet_is_dimmed_so_the_sheet_stands_out_and_the_page_text_i
 fn a_distinct_rule_that_names_no_minimum_is_rejected() {
     // It would check nothing and say nothing.
     let bad = text().replacen(
-        "distinct min-delta-e-between-states=31 reason=",
+        "distinct min-delta-e-between-states=31 min-delta-e-against-surfaces=30 reason=",
         "distinct reason=",
         1,
     );
@@ -466,6 +466,19 @@ fn a_distinct_rule_that_names_no_minimum_is_rejected() {
     assert!(
         format!("{error:#}").contains("at least one minimum"),
         "{error:#}"
+    );
+}
+
+#[test]
+fn the_knob_of_a_switch_is_seen_on_its_track_in_every_theme() {
+    // M5 exit: a dark knob on a dark track in Dusk and Midnight. The knob has the color of quiet words.
+    let findings = evaluate(&with_value("fg-muted", "midnight", "#2a2d33"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("the line `fg-muted`") && f.message.contains("bg-sunken")),
+        "{:?}",
+        messages(&findings)
     );
 }
 

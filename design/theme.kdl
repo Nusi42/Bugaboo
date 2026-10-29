@@ -305,7 +305,7 @@ tokens {
     // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
     // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
     color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#2f3c50" midnight="#1f2531"
-    color "tint-ip" daylight="#d2eefe" paper="#cde6f6" dusk="#153978" midnight="#052256"
+    color "tint-ip" daylight="#d2eefe" paper="#cde6f6" dusk="#1f3b68" midnight="#0a2350"
     color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
     // The edge of a row by its priority (UX §4.2): Critical is the red of `danger`, High is a clear orange, as
     // far from that red as the contrast rules ask (the brown of the text color `warning` was 28 from it in
@@ -424,6 +424,11 @@ contrast min=4.5 {
         on "bg-canvas" "bg-surface" "bg-raised"
     }
 
+    lines min=3 reason="The knob of a switch (the quiet words color) stands on its track, the sunken surface: it is seen at 3:1 in every theme, so the off state is no dark knob on a dark track (M5 exit)." {
+        colors "fg-muted"
+        on "bg-sunken"
+    }
+
     hovered brightness="hover-brightness" min=4.5 min-more=7 reason="A hovered or pressed main button is brightened (`filter: brightness`), which takes contrast away from a light fill and its words: as it is seen then it still reaches 4.5:1, and 7:1 with more contrast (M5 exit, A5)." {
         text "on-accent"
         on "accent"
@@ -434,8 +439,7 @@ contrast min=4.5 {
         on "tint-ns" "tint-ip" "tint-done"
     }
 
-    dimmed scrim="scrim" opacity="opacity-scrim" page="bg-canvas" text="fg" sheet="bg-raised" min-sheet-light=4 min-sheet-dark=1.1 max-text=1.5 reason="Behind a sheet, a menu or Quick search the page is dimmed by the scrim as it is drawn: the sheet stands out from the page (4:1 darker in a light theme, still darker in a dark one, where a black page leaves little to dim) and the text of the page is dim against it (at most 1.5:1), so it cannot be read under the panel (M5 exit, R4)." {
-    }
+    dimmed scrim="scrim" opacity="opacity-scrim" page="bg-canvas" text="fg" sheet="bg-raised" min-sheet-light=4 min-sheet-dark=1.1 max-text=1.5 reason="Behind a sheet, a menu or Quick search the page is dimmed by the scrim as it is drawn: the sheet stands out from the page (4:1 darker in a light theme, still darker in a dark one, where a black page leaves little to dim) and the text of the page is dim against it (at most 1.5:1), so it cannot be read under the panel (M5 exit, R4)."
 
     lines min=2 faded-by="opacity-disabled" reason="The edge of a button that cannot be pressed is drawn in the color of quiet words and faded by the opacity of a disabled control: as it is seen it stays 2:1 against every plain surface in every theme (a disabled control is exempt from WCAG 1.4.11, but its frame must not vanish; the final check of M4 found 1.24:1)." {
         colors "fg-muted"
@@ -460,7 +464,7 @@ distinct min-delta-e-between-states=11 min-delta-e-against-surfaces=7.5 reason="
 }
 
 // The edge of High is told from the edge of Critical (the red of `danger`) at a glance.
-distinct min-delta-e-between-states=31 reason="The orange edge of High differs from the red edge of Critical by at least 31 (delta E) in every theme (M5 exit, L24)." {
+distinct min-delta-e-between-states=31 min-delta-e-against-surfaces=30 reason="The orange edge of High differs from the red edge of Critical by at least 31 (delta E), and each differs from the plain page by at least 30, in every theme (M5 exit, L24)." {
     states "danger" "edge-high"
     surfaces "bg-canvas"
 }
@@ -1646,6 +1650,13 @@ part "status-icon[variant=in-progress]" {
 
 part "status-icon[variant=done]" {
     color "$st-done"
+}
+
+// Under forced colors the status is told by the shape of the icon, drawn in the text color.
+part "status-icon[variant=not-started]" "status-icon[variant=in-progress]" "status-icon[variant=done]" {
+    forced {
+        color CanvasText
+    }
 }
 
 // The small pill that shows a status in lists and in text.

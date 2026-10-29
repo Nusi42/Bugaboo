@@ -935,6 +935,14 @@ optgroup {
   color: var(--st-done);
 }
 
+@media (forced-colors: active) {
+  [data-part="status-icon"][data-variant~="not-started"],
+  [data-part="status-icon"][data-variant~="in-progress"],
+  [data-part="status-icon"][data-variant~="done"] {
+    color: CanvasText;
+  }
+}
+
 [data-part="status-pill"] {
   display: inline-flex;
   align-items: center;
