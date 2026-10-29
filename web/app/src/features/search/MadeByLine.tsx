@@ -36,9 +36,6 @@ export function MadeByLine({
     <div {...partOf(part.searchMadeBy)}>
       <div>
         <p {...partOf(part.muted)}>{t("search.made-by", { person: personName(search.maker) })}</p>
-        <p {...partOf(part.muted)} aria-hidden={unchanged}>
-          <span {...partOf(part.searchHeldActions, held)}>{t("search.changed-not-saved")}</span>
-        </p>
       </div>
       <span {...partOf(part.searchHeldActions, held)} inert={unchanged}>
         <ChangedActions
@@ -50,6 +47,9 @@ export function MadeByLine({
           onUndo={onUndo}
         />
       </span>
+      <p {...partOf(part.muted)} aria-hidden={unchanged}>
+        <span {...partOf(part.searchHeldActions, held)}>{t("search.changed-not-saved")}</span>
+      </p>
     </div>
   );
 }

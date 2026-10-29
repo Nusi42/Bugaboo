@@ -12704,10 +12704,17 @@ part "search-mistake" {
 // *Changed, not saved* appears (S29).
 part "search-made-by" {
     display flex
+    flex-wrap wrap
     align-items center
     justify-content space-between
-    gap "$space-2"
+    gap "$space-1" "$space-2"
     min-height "$size-control"
+}
+
+// The note of a change has the line under the two of them.
+part "search-made-by > p" {
+    flex "0 0 100%"
+    margin 0
 }
 
 part "search-made-by > div" {
