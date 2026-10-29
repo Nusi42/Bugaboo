@@ -3,7 +3,7 @@ import "@bugaboo/messages/parts/shell";
 
 export { AppLayout } from "./AppLayout.tsx";
 export { GuestLayout } from "./GuestLayout.tsx";
-export { ErrorPage, NotFoundPage, PendingPage } from "./Pages.tsx";
+export { ErrorPage, NotFoundPage, UnknownAddressPage, PendingPage } from "./Pages.tsx";
 export { QueryGate, type QueryGateProps } from "./QueryGate.tsx";
 export {
   addQuickSearchSource,

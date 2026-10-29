@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import { FocusBar } from "./FocusBar.tsx";
-import { useNarrowSidebarWhile } from "./sidebar-state.ts";
+import { useFocusViewOpen, useNarrowSidebarWhile } from "./sidebar-state.ts";
 import { escapeInField, useEscape } from "./use-escape.ts";
 import { useTakeFocus } from "./use-take-focus.ts";
 
@@ -28,6 +28,7 @@ export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
   const layout = useLayout();
   const [listHidden, setListHidden] = useState(false);
   useNarrowSidebarWhile(layout === "computer");
+  useFocusViewOpen(true);
   useShortcuts({
     "list-next": () => {
       onStep(1);

@@ -26,6 +26,8 @@ test("ux_3_4 on a phone an issue of the list opens as its page, and Back returns
   await rowOf(page, webIssues.login).getByRole("link", { name: webIssues.login }).click();
   await expect(page).toHaveURL(new RegExp(`${issueAddress("WEB-1")}$`, "u"));
   await expect(page.getByRole("heading", { level: 1, name: webIssues.login })).toBeVisible();
+  // The issue page has the bar of its own (Back, Previous, Next): no second top bar above it.
+  await expect(page.getByRole("banner")).toHaveCount(0);
   await expectNoSidewaysScroll(page);
   await page.getByRole("button", { name: t("focus.back"), exact: true }).click();
   await expect.poll(() => new URL(page.url()).pathname).toBe(projectIssuesAddress("WEB"));

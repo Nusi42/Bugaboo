@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { createAdmin, forgetChoices } from "./support/accounts.ts";
 import { openAppearance } from "./support/appearance.ts";
-import { test } from "./support/fixtures.ts";
+import { expect, test } from "./support/fixtures.ts";
 import { expectOneColumn, layoutOf } from "./support/layout.ts";
 
 // *My settings › Appearance* on a phone (UX §3.3; M5 exit A14).
@@ -30,4 +30,8 @@ test("thm_01 on a phone the choice of the colors is a list of full-width choices
     page.getByRole("radio", { name: t("appearance.mode.light"), exact: true }),
     page.getByRole("radio", { name: t("appearance.mode.dark"), exact: true }),
   ]);
+  // A phone never opens an issue in a side panel, so it is not asked where one opens (D1).
+  await expect(
+    page.getByText(t("setting.appearance.issue-view.name"), { exact: true }),
+  ).toHaveCount(0);
 });

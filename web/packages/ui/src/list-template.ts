@@ -30,15 +30,6 @@ const widthTokens = {
   action: ["size-col-icon"],
 } as const satisfies Readonly<Record<ListColumn, readonly TokenName[]>>;
 
-/** The columns whose width is a most: they are narrower, down to the least, where the list has no room for it. Not the priority: its word (*Critical*) does not shrink. */
-const shrinks: ReadonlySet<ListColumn> = new Set([
-  "project",
-  "labels",
-  "person",
-  "value",
-  "changed",
-]);
-
 function variable(token: TokenName): string {
   return `var(--${token})`;
 }
@@ -70,10 +61,8 @@ export function listTemplate(columns: readonly ListColumnSpec[], keyChars = 0): 
         // The ID is as wide as the longest one drawn, and not narrower than its head needs.
         return `max(${lengthOf(column)}, calc(${variable("size-code-char")} * ${String(keyChars)}))`;
       }
-      // The columns of fields give up room, down to the least, before the title or another column does.
-      return shrinks.has(column)
-        ? `minmax(${variable("size-col-least")}, ${lengthOf(column)})`
-        : lengthOf(column);
+      // A column has its width and the title the room that is left; where there is not room for the columns, the fit drops those of fields (listNeeds).
+      return lengthOf(column);
     })
     .join(" ");
 }

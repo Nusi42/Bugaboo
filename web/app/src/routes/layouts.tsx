@@ -4,7 +4,7 @@ import {
   AppLayout,
   ErrorPage,
   GuestLayout,
-  NotFoundPage,
+  UnknownAddressPage,
   PendingPage,
   SettingsFrame,
 } from "../features/shell/index.ts";
@@ -22,7 +22,7 @@ function hasReason(search: unknown): boolean {
 
 export const rootRoute = createRootRoute({
   component: Root,
-  notFoundComponent: NotFoundPage,
+  notFoundComponent: UnknownAddressPage,
   errorComponent: ErrorPage,
   pendingComponent: PendingPage,
 });

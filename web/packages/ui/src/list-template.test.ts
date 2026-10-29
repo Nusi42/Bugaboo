@@ -3,14 +3,14 @@ import { describe, expect, it } from "vitest";
 import { listNeeds, listTemplate } from "./list-template.ts";
 
 describe("ux_4_2 the columns of the list as one template", () => {
-  it("lets the columns of fields give up room, down to the least, before the title", () => {
+  it("gives a column of a field its width and the title the room that is left", () => {
     const template = listTemplate([
       { column: "title" },
       { column: "person" },
       { column: "changed" },
     ]);
     expect(template).toBe(
-      "minmax(var(--size-col-title-least), 1fr) minmax(var(--size-col-least), calc(var(--size-col-person) + var(--size-target-compact))) minmax(var(--size-col-least), calc(var(--size-col-changed) + var(--size-target-compact)))",
+      "minmax(var(--size-col-title-least), 1fr) calc(var(--size-col-person) + var(--size-target-compact)) calc(var(--size-col-changed) + var(--size-target-compact))",
     );
   });
 
