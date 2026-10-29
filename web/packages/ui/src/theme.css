@@ -3631,9 +3631,10 @@ optgroup {
 
 [data-part="people"] {
   display: block;
-  max-block-size: calc(5 * (2 * var(--size-control) + var(--space-3)) + 2 * var(--ring-width));
+  max-block-size: calc(5 * (2 * var(--size-control) + var(--space-3)));
   margin: 0;
-  padding: var(--ring-width);
+  padding-block: 0;
+  padding-inline: var(--ring-width);
   overflow-y: auto;
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);

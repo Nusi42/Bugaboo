@@ -16,7 +16,7 @@ test.use({ sample: true });
 /** How many rows are cut by the lower edge of a list that scrolls, as it stands at its start. */
 function rowsCutAtTheEnd(list: Locator, rows = ":scope > *"): Promise<number> {
   return list.evaluate((node, selector) => {
-    const edge = node.getBoundingClientRect().bottom;
+    const edge = node.getBoundingClientRect().top + node.clientTop + node.clientHeight;
     let cut = 0;
     for (const row of node.querySelectorAll(selector)) {
       const box = row.getBoundingClientRect();

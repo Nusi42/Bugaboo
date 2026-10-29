@@ -3561,9 +3561,10 @@ part "people" {
     display block
     // Whole rows: five rows of a fixed height (below), so the row at the edge is never cut where the list
     // scrolls (M5 exit, O17).
-    max-block-size "calc(5 * (2 * $size-control + $space-3) + 2 * $ring-width)"
+    max-block-size "calc(5 * (2 * $size-control + $space-3))"
     margin 0
-    padding "$ring-width"
+    padding-block 0
+    padding-inline "$ring-width"
     overflow-y auto
     use "surface-box"
 }
