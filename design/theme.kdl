@@ -552,12 +552,24 @@ mixin "ring-row" {
 mixin "ring-keyboard" {
     box-shadow "inset 0 0 0 $ring-width $accent, inset 0 0 0 calc($ring-width + $border-width) $bg-raised, inset 0 0 0 calc($ring-width * 2 + $border-width) $fg"
     use "ring-clear"
+    // Forced colors drop the shadows: the focus is a double outline inside the edge of the row (M5 exit, A16).
+    forced {
+        outline-style double
+        outline-width "calc($ring-width * 2)"
+        outline-offset "calc($ring-width * -2)"
+    }
 }
 
 // The ring around what has the focus: the one definition of how the focus looks.
 mixin "ring" {
     use "ring-line"
     outline-offset "$ring-offset"
+    // Forced colors draw the focus as a double outline: it is two lines, so it is told from a ring that is only a
+    // color of the system (M5 exit, A16). A double line is drawn from three widths of line.
+    forced {
+        outline-style double
+        outline-width "calc($ring-width * 2)"
+    }
 }
 
 // Words that are less important than their neighbours.
@@ -1729,6 +1741,23 @@ part "list-row[state=priority-high]" "issue-row[state=priority-high]" "timeline-
     border-inline-start "$size-edge solid $edge-high"
 }
 
+// Forced colors give every border the color of the system, so the transparent edge that keeps the titles in
+// one column (and the one of the head of the list) would be drawn as a bar like the edge of a priority; the row
+// and the bar of the timeline say `Canvas` for it. There the edge is told by its pattern (R5, M5 exit A15): Critical a double bar, High a single bar, every other row
+// and the head of the list none (the color of the canvas, so the width stays).
+part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "timeline-bar[state=priority-critical]" {
+    forced {
+        border-inline-start-style double
+        border-inline-start-color CanvasText
+    }
+}
+
+part "list-row[state=priority-high]" "issue-row[state=priority-high]" "timeline-bar[state=priority-high]" {
+    forced {
+        border-inline-start-color CanvasText
+    }
+}
+
 // ───────────── The grid of the issue list (UX §4.2) ─────────────
 //
 // One grid with fixed columns (R1, R9): tick box, status icon, ID, type icon, title, labels,
@@ -1754,6 +1783,9 @@ part "list-row" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-ui"
+    forced {
+        border-inline-start-color Canvas
+    }
 }
 
 // A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
@@ -2262,6 +2294,9 @@ part "timeline-bar" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-sm"
+    forced {
+        border-inline-start-color Canvas
+    }
 }
 
 // ───────────── Name and value (Details, UX §4.4) ─────────────
@@ -2440,6 +2475,15 @@ part "legend.swatch[variant=high]" {
 part "legend.swatch[variant=critical]" "legend.swatch[variant=high]" {
     forced {
         background CanvasText
+    }
+}
+
+// The same two patterns as the edge of a row: Critical a double bar, High a single bar.
+part "legend.swatch[variant=critical]" {
+    forced {
+        width 0
+        border-inline-start "$size-edge double CanvasText"
+        background Canvas
     }
 }
 
