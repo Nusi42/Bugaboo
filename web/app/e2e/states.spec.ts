@@ -26,12 +26,24 @@ test.beforeEach(async ({ server }) => {
   await forgetChoices(server);
 });
 
-/** The ring of the theme file: a solid line of the ring width, in this color. */
-async function expectRing(page: Page, element: Locator, color = "var(--accent)"): Promise<void> {
-  await expect(element).toHaveCSS("outline-style", "solid");
+/**
+ * The ring of the theme file: a solid line of the ring width, in this color. The focus under forced
+ * colors is a double line of twice the width (M5 exit, A16): `double` says so.
+ */
+async function expectRing(
+  page: Page,
+  element: Locator,
+  color = "var(--accent)",
+  double = false,
+): Promise<void> {
+  await expect(element).toHaveCSS("outline-style", double ? "double" : "solid");
   await expect(element).toHaveCSS(
     "outline-width",
-    await resolved(page, "outline-width", "var(--ring-width)"),
+    await resolved(
+      page,
+      "outline-width",
+      double ? "calc(var(--ring-width) * 2)" : "var(--ring-width)",
+    ),
   );
   await expect(element).toHaveCSS("outline-color", await resolved(page, "outline-color", color));
 }
@@ -192,7 +204,7 @@ test("thm_20 under forced colors the ring, the chosen choice and the thumb use t
   // but the mark that forced colors need (fills are dropped).
   await focusByKeyboard(page, sample.locator("input"));
   await inEveryLook(page, async () => {
-    await expectRing(page, partOn(sample, part.switchTrack), "Highlight");
+    await expectRing(page, partOn(sample, part.switchTrack), "Highlight", true);
     await expectRing(page, labelOf(choice), "Highlight");
     await expectCss(page, partOn(sample, part.switchThumb), "background-color", "ButtonText");
   });
