@@ -3967,6 +3967,7 @@ part "access.cell > field" {
 part "access.preview-line" {
     font-size "$fs-md"
     color "$fg"
+    text-wrap pretty
 }
 
 part "access.answer" {

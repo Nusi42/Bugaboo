@@ -4103,6 +4103,7 @@ optgroup {
 [data-part="access.preview-line"] {
   font-size: var(--fs-md);
   color: var(--fg);
+  text-wrap: pretty;
 }
 
 [data-part="access.answer"] {
