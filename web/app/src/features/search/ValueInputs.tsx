@@ -7,6 +7,7 @@ import { dayOf, decimalOf, numberTyped, textOperand } from "./filter-draft.ts";
 import { dayText, operandText, timeWordText } from "./filter-text.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
 import { NameChoice } from "./NameChoice.tsx";
+import { unbroken } from "../../shared/format.ts";
 import { nowhere } from "../../shared/search-tree.ts";
 
 export interface ValueInputProps {
@@ -72,27 +73,22 @@ function ChoiceSelect({ field, values, onValues }: ValueInputProps) {
 /** A person or a project, found by name; for a person, the one who searches may be chosen as *me*. */
 function NamedValue({ field, language, values, onValues }: ValueInputProps) {
   const [first] = values;
-  const me = first?.type === "me";
   return (
-    <>
-      <NameChoice
-        language={language}
-        what={field.kind === "person" ? "people" : "projects"}
-        chosen={first?.type === "text" ? first.text : ""}
-        onChoose={(name) => {
-          onValues([textOperand(name)]);
-        }}
-      />
-      {field.kind === "person" ? (
-        <Checkbox
-          label={t("search.bar.me")}
-          isSelected={me}
-          onChange={(on) => {
-            onValues(on ? [{ type: "me", span: nowhere }] : []);
-          }}
-        />
-      ) : null}
-    </>
+    <NameChoice
+      language={language}
+      what={field.kind === "person" ? "people" : "projects"}
+      chosen={first?.type === "me" ? t("search.bar.me") : first?.type === "text" ? first.text : ""}
+      onChoose={(name) => {
+        onValues([textOperand(name)]);
+      }}
+      {...(field.kind === "person"
+        ? {
+            onChooseMe: () => {
+              onValues([{ type: "me", span: nowhere }]);
+            },
+          }
+        : {})}
+    />
   );
 }
 
@@ -134,8 +130,9 @@ function TypedValue({ field, values, onValues }: ValueInputProps) {
 function DurationValue({ language, values, onValues }: ValueInputProps) {
   const [first] = values;
   // The examples are written by the language, so the words are the ones it reads.
+  // An example never breaks across two lines (*1 hour / 30 minutes*): its blanks do not break.
   const example = (minutes: number): string =>
-    language.operandSource({ type: "duration", minutes, span: nowhere });
+    unbroken(language.operandSource({ type: "duration", minutes, span: nowhere }));
   const examples = { hours: example(120), minutes: example(45), both: example(90) };
   // The language writes and reads the length of time, in its own words.
   const [typed, setTyped] = useState(
@@ -188,6 +185,7 @@ function DateValue({ values, onValues }: ValueInputProps) {
       {word === undefined ? (
         <TextField
           label={t("search.bar.day")}
+          description={t("search.bar.day-format")}
           value={typed}
           date={{ min: "0001-01-01", max: "9999-12-31" }}
           onChange={(day) => {

@@ -24,6 +24,12 @@ export interface AskedName {
   readonly label: string;
   /** The name itself, for a filter that writes it through the language: the short name, the ID. */
   readonly value: string;
+  /** For an issue: what a row of the finder shows apart from the label (ID, title, status). */
+  readonly issue?: {
+    readonly id: string;
+    readonly title: string;
+    readonly status?: Schema<"StatusRef">;
+  };
 }
 
 /** How many names are offered at once. */
@@ -84,7 +90,7 @@ export async function issuesStarting(
         query: {
           q,
           limit: offered,
-          fields: fieldList<Schema<"IssueItem">>(["readable_id", "title"]),
+          fields: fieldList<Schema<"IssueItem">>(["readable_id", "title", "status"]),
         },
       },
     }),
@@ -97,6 +103,11 @@ export async function issuesStarting(
             source: issueSource(language, item.readable_id),
             value: item.readable_id,
             label: t("search.found-issue", { id: item.readable_id, title: item.title ?? "" }),
+            issue: {
+              id: item.readable_id,
+              title: item.title ?? "",
+              ...(item.status === undefined || item.status === null ? {} : { status: item.status }),
+            },
           },
         ],
   );

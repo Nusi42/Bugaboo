@@ -48,7 +48,7 @@ export function SimpleSearch({ language, fields, bar, search }: SimpleSearchProp
           setEditing({ kind: "field", field });
         }}
         onAnyOf={() => {
-          setEditing({ kind: "text", anyOf: true });
+          setEditing({ kind: "any-of", members: [] });
         }}
       />
       <FilterWindows

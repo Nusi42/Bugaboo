@@ -27,7 +27,7 @@ const NO_BREAK_HYPHEN = "‑";
  * Dates and times never wrap in the middle (UX review of M4, A4): a line breaks before a date,
  * not inside it. The spaces and the hyphens of the text become ones that hold it together.
  */
-function unbroken(text: string): string {
+export function unbroken(text: string): string {
   return text.replaceAll(" ", NO_BREAK_SPACE).replaceAll("-", NO_BREAK_HYPHEN);
 }
 

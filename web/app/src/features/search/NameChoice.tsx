@@ -4,6 +4,8 @@ import { part, partOf } from "@bugaboo/ui";
 import { NameFinder, type NameFinderProps } from "./NameFinder.tsx";
 
 export interface NameChoiceProps extends Omit<NameFinderProps, "onPick"> {
+  /** *Me* was chosen (people only). */
+  readonly onChooseMe?: () => void;
   /** The name chosen so far; none yet when empty. */
   readonly chosen: string;
   /** A name was chosen: the name itself, as the language reads it. */
@@ -11,7 +13,7 @@ export interface NameChoiceProps extends Omit<NameFinderProps, "onPick"> {
 }
 
 /** The value of a filter on a person, a group or a project: the chosen name, and the finder. */
-export function NameChoice({ language, what, chosen, onChoose }: NameChoiceProps) {
+export function NameChoice({ language, what, chosen, onChoose, onChooseMe }: NameChoiceProps) {
   return (
     <div {...partOf(part.searchChoice)}>
       {chosen === "" ? null : (
@@ -20,6 +22,7 @@ export function NameChoice({ language, what, chosen, onChoose }: NameChoiceProps
       <NameFinder
         language={language}
         what={what}
+        {...(onChooseMe === undefined ? {} : { onPickMe: onChooseMe })}
         onPick={(name) => {
           onChoose(name.value);
         }}

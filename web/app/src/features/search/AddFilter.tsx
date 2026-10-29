@@ -1,19 +1,9 @@
 import { t } from "@bugaboo/messages";
-import {
-  Button,
-  buttonLook,
-  Icon,
-  iconName,
-  Overlay,
-  overlayEdge,
-  part,
-  partOf,
-  useLayout,
-} from "@bugaboo/ui";
+import { Button, Icon, iconName } from "@bugaboo/ui";
 import type { Field, ReadableFields } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
-import { FieldPicker } from "./FieldPicker.tsx";
+import { FieldChooser } from "./FieldChooser.tsx";
 
 export interface AddFilterProps {
   readonly fields: ReadableFields;
@@ -28,7 +18,6 @@ export interface AddFilterProps {
  */
 export function AddFilter({ fields, onPick }: AddFilterProps) {
   const [open, setOpen] = useState(false);
-  const phone = useLayout() === "phone";
   return (
     <>
       <Button
@@ -39,34 +28,13 @@ export function AddFilter({ fields, onPick }: AddFilterProps) {
         <Icon name={iconName.plus} />
         {t("search.bar.add-filter")}
       </Button>
-      <Overlay
+      <FieldChooser
         isOpen={open}
         onOpenChange={setOpen}
-        label={t("search.bar.add-filter")}
-        from={phone ? overlayEdge.bottom : overlayEdge.center}
-      >
-        <div {...partOf(part.searchPanel)}>
-          <h2 {...partOf(part.searchHelpTitle)}>{t("search.bar.add-filter")}</h2>
-          <p {...partOf(part.muted)}>{t("search.bar.add-filter-which")}</p>
-          <FieldPicker
-            fields={fields}
-            onPick={(field) => {
-              setOpen(false);
-              onPick(field);
-            }}
-          />
-          <div {...partOf(part.searchPanelActions)}>
-            <Button
-              look={buttonLook.quiet}
-              onPress={() => {
-                setOpen(false);
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-          </div>
-        </div>
-      </Overlay>
+        fields={fields}
+        title={t("search.bar.add-filter")}
+        onPick={onPick}
+      />
     </>
   );
 }
