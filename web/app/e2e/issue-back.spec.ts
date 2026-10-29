@@ -7,14 +7,16 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { prepareLook, rowOf } from "./support/list-look.ts";
+import { ask, result } from "./support/quick-search.ts";
 
 // Back from an issue (UX §3.4): to the page the person came from, with its search, or, where they
 // did not come from a page, to the list of the issue's project.
 
 test.use({ preparation: { run: prepareLook } });
 
-/** Presses *Back to list* of the issue that is open. */
+/** Presses *Back to list* of the issue that is open, once it is read (the project it belongs to is known then). */
 async function back(page: Page): Promise<void> {
+  await expect(page.getByRole("heading", { level: 1, name: webIssues.login })).toBeVisible();
   await page.getByRole("button", { name: t("focus.back"), exact: true }).click();
 }
 
@@ -35,10 +37,9 @@ test("ux_3_4 Back from an issue found by Quick search returns to the page it was
 }) => {
   await signIn(page, ada);
   await page.goto(paths.home);
-  await page.keyboard.press("Control+k");
-  await page.getByRole("searchbox", { name: t("search.label"), exact: true }).fill("password");
-  await expect(page.getByRole("option").first()).toBeVisible();
-  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await ask(page, "password");
+  await result(page, webIssues.login).click();
   await expect(page).toHaveURL(/\/issues\/WEB-1/u);
   await back(page);
   await expect.poll(() => new URL(page.url()).pathname).toBe(paths.home);
