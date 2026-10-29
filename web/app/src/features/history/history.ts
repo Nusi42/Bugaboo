@@ -72,13 +72,11 @@ function tabCanHold(tab: HistoryTabName, target: IssueTarget): boolean {
 }
 
 /** What decides whether *Open* of a notification reads one more page. */
-export interface OpenedSearch {
+export interface OpenedSearch extends Pick<PagedList, "hasNextPage" | "isFetchingNextPage"> {
   readonly target?: IssueTarget | undefined;
   readonly tab: HistoryTabName;
   readonly found: boolean;
   readonly pagesRead: number;
-  readonly hasNextPage: boolean;
-  readonly isFetchingNextPage: boolean;
 }
 
 /**
