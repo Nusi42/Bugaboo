@@ -146,3 +146,31 @@ export async function boxOf(element: Locator): Promise<{
   }
   return found;
 }
+
+/**
+ * What stands between the search box of a picker and its first row, and what the theme says it
+ * should be (the gap of the group plus the room of the list for the focus ring), in pixels.
+ */
+export function gapAboveRows(
+  list: Locator,
+): Promise<{ readonly gap: number; readonly wanted: number }> {
+  return list.evaluate((element) => {
+    const group = element.closest("fieldset");
+    const field = group?.querySelector('[data-part="search-field.box"]');
+    const first = element.firstElementChild;
+    if (
+      group === null ||
+      group === undefined ||
+      field === null ||
+      field === undefined ||
+      first === null
+    ) {
+      return { gap: Number.NaN, wanted: 0 };
+    }
+    const gap = first.getBoundingClientRect().top - field.getBoundingClientRect().bottom;
+    const wanted =
+      Number(getComputedStyle(group).rowGap.replace("px", "")) +
+      Number(getComputedStyle(element).paddingTop.replace("px", ""));
+    return { gap, wanted };
+  });
+}

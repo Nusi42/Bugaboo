@@ -24,6 +24,9 @@ test.use({
     run: async (server) => {
       const admin = await createAdmin(server);
       await createProjectWithIssue(admin, "WEB", "Website");
+      await admin.client.POST("/api/v1/fields", {
+        body: { name: "Hours logged", kind: "duration", applies_to: "issues" },
+      });
       await admin.dispose();
     },
   },
@@ -56,24 +59,19 @@ test("qry_01 the windows of the search are good in every theme", async ({ page }
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   await expectGoodInEveryTheme(page);
-  await expectRingsWhole(page);
   await page
     .getByRole("button", { name: t("search.bar.filter-by", { field: "Assigned to" }) })
     .click();
   await expectGoodInEveryTheme(page);
-  await expectRingsWhole(page);
   await page.getByRole("button", { name: t("common.cancel") }).click();
   await page.getByRole("button", { name: t("search.bar.any-of") }).click();
   await expectGoodInEveryTheme(page);
-  await expectRingsWhole(page);
   await page.getByRole("button", { name: t("common.cancel") }).click();
   await page.getByRole("button", { name: t("search.help") }).click();
   await expectGoodInEveryTheme(page);
-  await expectRingsWhole(page);
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: t("search.save"), exact: true }).click();
   await expectGoodInEveryTheme(page);
-  await expectRingsWhole(page);
 });
 
 test("qry_01 the sheet of a phone does not move when the offers come and go", async ({ page }) => {

@@ -162,7 +162,7 @@ export async function expectVisibleTextInName(page: Page): Promise<void> {
 }
 
 /** The open screen is accessible and does not scroll sideways, in every theme, picked as a person does. */
-export function expectGoodInEveryTheme(page: Page): Promise<void> {
+export function expectGoodInEveryTheme(page: Page, withRings = false): Promise<void> {
   return inOrder(
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
@@ -170,6 +170,9 @@ export function expectGoodInEveryTheme(page: Page): Promise<void> {
       await expectNoSidewaysScroll(page);
       await expectNoOverlap(page);
       await expectVisibleTextInName(page);
+      if (withRings) {
+        await expectRingsWhole(page);
+      }
     }),
   );
 }
@@ -212,49 +215,69 @@ export async function expectStaleEdge(page: Page, note: Locator): Promise<void> 
 }
 
 /**
- * The focus ring of every field of the open dialog is whole (WCAG 2.4.7, and the review of M5, S19):
- * each field is focused, its ring has a size, and no box that scrolls or hides on the way up to the
- * dialog cuts it on any of its four sides. A field whose ring cannot be seen fails too.
+ * What runs in the page for `expectRingsWhole`: it gives the problems it finds, as words. It is
+ * written as text because it runs in the browser, where the typed helpers of the tests do not exist.
+ */
+const ringProblemsScript = `(() => {
+  const dialog = [...document.querySelectorAll('[role="dialog"], [role="alertdialog"]')].at(-1);
+  if (dialog === undefined) {
+    return ["There is no open dialog."];
+  }
+  const px = (value) => Number(value.replace("px", ""));
+  const clips = (box) => {
+    const style = getComputedStyle(box);
+    return style.overflowX !== "visible" || style.overflowY !== "visible";
+  };
+  const cutBy = (ringed, reach) => {
+    const ring = ringed.getBoundingClientRect();
+    const above = [];
+    for (let up = ringed.parentElement; up !== null; up = up.parentElement) {
+      above.push(up);
+      if (up === dialog) {
+        break;
+      }
+    }
+    return above
+      .filter(clips)
+      .filter((box) => {
+        const frame = box.getBoundingClientRect();
+        return (
+          ring.left - reach < frame.left - 0.5 ||
+          ring.right + reach > frame.right + 0.5 ||
+          ring.top - reach < frame.top - 0.5 ||
+          ring.bottom + reach > frame.bottom + 0.5
+        );
+      })
+      .map((box) => box.tagName);
+  };
+  const problemsOf = (taker) => {
+    taker.scrollIntoView({ block: "nearest" });
+    taker.focus();
+    const ringed = taker.closest('[data-part="search-field.box"]') ?? taker;
+    const style = getComputedStyle(ringed);
+    const width = px(style.outlineWidth);
+    const outlined = style.outlineStyle !== "none" && width > 0;
+    const name = taker.tagName + " " + (taker.textContent ?? "").trim().slice(0, 24);
+    const cuts = outlined && px(style.outlineOffset) >= 0 ? cutBy(ringed, width + px(style.outlineOffset)) : [];
+    const missing = outlined || style.boxShadow !== "none" ? [] : [name + ": no focus ring is drawn"];
+    return [...missing, ...cuts.map((by) => name + ": the focus ring is cut by " + by)];
+  };
+  const takers = [
+    ...dialog.querySelectorAll('input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])'),
+  ].filter((taker) => taker.getClientRects().length > 0 && !taker.hasAttribute("disabled"));
+  return takers.flatMap((taker) => problemsOf(taker));
+})()`;
+
+/**
+ * The focus ring of everything in the open dialog that takes the focus is whole (WCAG 2.4.7, and the
+ * review of M5, S19): fields, buttons, links and the rest are focused one after the other; each has a
+ * ring that is drawn, and a ring that is drawn outside the edge is not cut off on any of its four
+ * sides by a box that scrolls or hides on the way up to the dialog. A ring drawn inside the edge
+ * (an offset below nothing) only has to be there.
  */
 export async function expectRingsWhole(page: Page): Promise<void> {
-  const found = await page.evaluate(() => {
-    const failures: string[] = [];
-    const dialogs = document.querySelectorAll('[role="dialog"], [role="alertdialog"]');
-    const dialog = [...dialogs].at(-1);
-    if (dialog === undefined) {
-      return ["There is no open dialog."];
-    }
-    const fields = dialog.querySelectorAll<HTMLElement>("input, select, textarea");
-    for (const field of fields) {
-      field.focus();
-      const ringed = field.closest('[data-part="search-field.box"]') ?? field;
-      const style = getComputedStyle(ringed);
-      const reach =
-        Number(style.outlineWidth.replace("px", "")) +
-        Number(style.outlineOffset.replace("px", ""));
-      if (!(reach > 0)) {
-        failures.push(`${field.tagName}: the focus ring has no size`);
-      }
-      const ring = ringed.getBoundingClientRect();
-      for (let parent = ringed.parentElement; parent !== null; parent = parent.parentElement) {
-        const { overflowX, overflowY } = getComputedStyle(parent);
-        if (overflowX !== "visible" || overflowY !== "visible") {
-          const frame = parent.getBoundingClientRect();
-          const cut =
-            ring.left - reach < frame.left - 0.5 ||
-            ring.right + reach > frame.right + 0.5 ||
-            ring.top - reach < frame.top - 0.5 ||
-            ring.bottom + reach > frame.bottom + 0.5;
-          if (cut) {
-            failures.push(`${field.tagName}: the focus ring is cut by ${parent.tagName}`);
-          }
-        }
-        if (parent === dialog) {
-          break;
-        }
-      }
-    }
-    return failures;
-  });
+  // A key press first: the browser then draws the ring of a focus that a script sets, as for the keyboard.
+  await page.keyboard.press("Shift");
+  const found: unknown = await page.evaluate(ringProblemsScript);
   expect(found).toEqual([]);
 }

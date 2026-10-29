@@ -600,10 +600,22 @@ mixin "page-column-wide" {
     max-width none
 }
 
-// Room for the focus ring inside a box that scrolls (it clips what is outside it): padding of the size
-// of the ring, and a negative margin at the sides so the text stays where it was.
+// Room for the focus ring inside a box that scrolls (it clips what is outside it): padding of the
+// size of the ring (also for scrolling), and no margin above or below (a list would get the browser's own).
 mixin "ring-room" {
+    use "ring-scroll-room"
+    margin-block 0
     padding "calc($ring-width + $ring-offset)"
+}
+
+// What the focus scrolls into view keeps that room from the edge of a box that scrolls: the ring is not cut there.
+mixin "ring-scroll-room" {
+    scroll-padding "calc($ring-width + $ring-offset)"
+}
+
+// With the ring room: the box reaches out by the same size at the sides, so the text inside stays on
+// the edge of the boxes above and below it. Only for boxes that ask for it.
+mixin "ring-room-flush" {
     margin-inline "calc(($ring-width + $ring-offset) * -1)"
 }
 
@@ -1480,10 +1492,10 @@ part "picker.options[variant=list]" {
     background-attachment "local, scroll"
 }
 
-// The negative margin of the ring room puts the text of rows that are one button each on the edge of
-// the box above them (S16); the lists of radio buttons keep their margin.
-part "picker.options[variant=list]:has(picker.option)" {
-    margin-inline 0
+// Rows that are one button each reach out by the ring room, so their text stands on the edge of the
+// box above them (S16); the lists of radio buttons stay as they were.
+part "picker.options[variant=list]:has(picker.choice)" {
+    use "ring-room-flush"
 }
 
 part "picker.option[variant=list]" {
@@ -3143,6 +3155,7 @@ part "confirm.body" {
 part "overlay.modal[variant=full] confirm.body" {
     overflow-y auto
     use "ring-room"
+    use "ring-room-flush"
 }
 
 part "confirm.title" {
@@ -12532,6 +12545,7 @@ part "search-filter > button" {
 
 // What opens over the page for the search: a window of the bar on a phone, the list of fields.
 part "search-panel" {
+    use "ring-scroll-room"
     display flex
     flex-direction column
     gap "$space-4"

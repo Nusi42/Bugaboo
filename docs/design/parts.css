@@ -764,8 +764,9 @@ optgroup {
   flex-direction: column;
   gap: var(--space-1);
   max-height: calc(var(--size-control) * 7 + var(--space-1) * 6);
+  scroll-padding: calc(var(--ring-width) + var(--ring-offset));
+  margin-block: 0;
   padding: calc(var(--ring-width) + var(--ring-offset));
-  margin-inline: calc((var(--ring-width) + var(--ring-offset)) * -1);
   list-style: none;
   overflow-y: auto;
   background-image:
@@ -781,8 +782,8 @@ optgroup {
   background-attachment: local, scroll;
 }
 
-[data-part="picker.options"][data-variant~="list"]:has([data-part="picker.option"]) {
-  margin-inline: 0;
+[data-part="picker.options"][data-variant~="list"]:has([data-part="picker.choice"]) {
+  margin-inline: calc((var(--ring-width) + var(--ring-offset)) * -1);
 }
 
 [data-part="picker.option"][data-variant~="list"] {
@@ -2403,6 +2404,8 @@ optgroup {
 
 [data-part="overlay.modal"][data-variant~="full"] [data-part="confirm.body"] {
   overflow-y: auto;
+  scroll-padding: calc(var(--ring-width) + var(--ring-offset));
+  margin-block: 0;
   padding: calc(var(--ring-width) + var(--ring-offset));
   margin-inline: calc((var(--ring-width) + var(--ring-offset)) * -1);
 }
@@ -5481,6 +5484,7 @@ optgroup {
 }
 
 [data-part="search-panel"] {
+  scroll-padding: calc(var(--ring-width) + var(--ring-offset));
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
