@@ -3599,13 +3599,16 @@ optgroup {
 }
 
 [data-part="confirm.title"] {
-  flex: none;
   margin: 0;
-  padding-block-end: var(--space-2);
-  border-bottom: var(--border-width) solid var(--border-subtle);
   font-size: var(--fs-lg);
   line-height: var(--lh-snug);
   font-weight: var(--weight-bold);
+}
+
+[data-part="confirm.dialog"] > [data-part="confirm.title"] {
+  flex: none;
+  padding-block-end: var(--space-2);
+  border-bottom: var(--border-width) solid var(--border-subtle);
 }
 
 [data-part="confirm.actions"] {

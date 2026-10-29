@@ -3535,13 +3535,18 @@ part "confirm.body" {
 // The title stands above the body that scrolls, so it never moves, and a line under it ends what scrolls (the review of
 // M5 exit, O1).
 part "confirm.title" {
-    flex none
     margin 0
-    padding-block-end "$space-2"
-    border-bottom "$border-width solid $border-subtle"
     font-size "$fs-lg"
     line-height "$lh-snug"
     font-weight "$weight-bold"
+}
+
+// Only the title of the question itself has the line under it; the same title in the head of a sheet (the fields, the
+// help) has its Close beside it and no line.
+part "confirm.dialog > confirm.title" {
+    flex none
+    padding-block-end "$space-2"
+    border-bottom "$border-width solid $border-subtle"
 }
 
 // A line above the answers, so what scrolls above them ends at a line and not at the buttons.
