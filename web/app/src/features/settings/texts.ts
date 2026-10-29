@@ -38,3 +38,12 @@ export function sourceInWords(setting: Setting): string {
     ? t("setting.ui.source-hidden-project")
     : t("setting.ui.source-project", { project: project.short_name });
 }
+
+/** Whether a setting is drawn as a box that is typed in, which has its own Save button and its hint inside. */
+export function isTypedSetting(setting: Setting): boolean {
+  const value = setting.value;
+  const fixedChoice = setting.format === "choice" && typeof value === "string";
+  const zone = setting.format === "time-zone" && typeof value === "string";
+  const yesNo = setting.kind === "yes-no" && typeof value === "boolean";
+  return !(yesNo || fixedChoice || zone || hasNoGenericControl(setting));
+}

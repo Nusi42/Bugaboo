@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { ChoiceGroup, Form, SelectField, SubmitButton, Switch, TextField } from "@bugaboo/ui";
+import {
+  ChoiceGroup,
+  Form,
+  SelectField,
+  SubmitButton,
+  Switch,
+  TextField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
@@ -9,6 +18,8 @@ import { hasNoGenericControl, wordsOf } from "./texts.ts";
 /** What a control needs: the setting, and what to do with a new value. */
 export interface SettingControlProps {
   readonly setting: Setting;
+  /** The one-line explanation of a box that is typed in: it stands with the box, above its Save button. */
+  readonly help?: string | undefined;
   /** The new value, to be shown at once and sent. */
   readonly onChange: (value: SettingValue) => void;
 }
@@ -30,7 +41,7 @@ function timeZoneChoices(
 }
 
 /** A text or a number the person types, saved with its own button. */
-function TypedControl({ setting, onChange }: SettingControlProps) {
+function TypedControl({ setting, onChange, help }: SettingControlProps) {
   const [draft, setDraft] = useState(String(setting.value));
   const [problem, setProblem] = useState<string>();
   const bounds = setting.bounds ?? undefined;
@@ -57,7 +68,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
     <Form onSubmit={submit}>
       <TextField
         label={wordsOf(setting.name_key)}
-        {...(between === undefined ? {} : { description: between })}
+        {...(help === undefined ? {} : { description: help })}
         errorMessage={problem}
         value={draft}
         onChange={(next) => {
@@ -65,7 +76,9 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
           setProblem(undefined);
         }}
       />
-      <SubmitButton>{t("common.save")}</SubmitButton>
+      <div {...partOf(part.row)}>
+        <SubmitButton>{t("common.save")}</SubmitButton>
+      </div>
     </Form>
   );
 }
@@ -75,7 +88,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
  * for a fixed list of choices, a list of time zones, a box for a number or a text. The keys of
  * shortcuts and the start page have pages of their own and are not drawn here.
  */
-export function SettingControl({ setting, onChange }: SettingControlProps) {
+export function SettingControl({ setting, onChange, help }: SettingControlProps) {
   const value = setting.value;
   if (setting.kind === "yes-no" && typeof value === "boolean") {
     return <Switch label={wordsOf(setting.name_key)} isSelected={value} onChange={onChange} />;
@@ -115,5 +128,5 @@ export function SettingControl({ setting, onChange }: SettingControlProps) {
     return null;
   }
   // Keyed by the stored value, so the box shows the new value after a reset.
-  return <TypedControl key={String(value)} setting={setting} onChange={onChange} />;
+  return <TypedControl key={String(value)} setting={setting} onChange={onChange} help={help} />;
 }
