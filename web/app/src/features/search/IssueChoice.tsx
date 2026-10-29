@@ -1,5 +1,13 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, PickerRow, SearchPicker, Skeleton, part, partOf } from "@bugaboo/ui";
+import {
+  PickerChoice,
+  PickerId,
+  SearchPicker,
+  Skeleton,
+  StatusPill,
+  part,
+  partOf,
+} from "@bugaboo/ui";
 import type { Operand, SearchLanguage } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
@@ -36,17 +44,27 @@ export function IssueFinder({ language, onPick }: IssueFinderProps) {
       more={undefined}
     >
       {found.map((issue) => (
-        <PickerRow key={issue.source} label={issue.label}>
-          <Button
-            look={buttonLook.quiet}
-            aria-label={t("search.bar.issue-take", { issue: issue.label })}
-            onPress={() => {
-              onPick(issue.source);
-            }}
-          >
-            {t("search.bar.issue-choose")}
-          </Button>
-        </PickerRow>
+        <PickerChoice
+          key={issue.source}
+          label={
+            issue.issue === undefined ? (
+              issue.label
+            ) : (
+              <>
+                <PickerId>{issue.issue.id}</PickerId>
+                {issue.issue.title}
+              </>
+            )
+          }
+          accessibleName={t("search.bar.issue-take", { issue: issue.label })}
+          onPick={() => {
+            onPick(issue.source);
+          }}
+        >
+          {issue.issue?.status === undefined ? null : (
+            <StatusPill group={issue.issue.status.status_group} label={issue.issue.status.name} />
+          )}
+        </PickerChoice>
       ))}
     </SearchPicker>
   );

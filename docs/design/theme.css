@@ -77,6 +77,7 @@
   --size-day-week: 16px;
   --ring-width: 2px;
   --ring-offset: 2px;
+  --ring-room: calc(var(--ring-width) + var(--ring-offset));
   --bp-tablet: 768px;
   --bp-computer: 1280px;
   --size-sidebar: 264px;

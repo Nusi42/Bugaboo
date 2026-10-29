@@ -121,10 +121,13 @@ export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.t
 export {
   PickerHint,
   PickerOption,
+  PickerChoice,
+  PickerId,
   PickerRow,
   SearchPicker,
   type PickerMore,
   type PickerOptionProps,
+  type PickerChoiceProps,
   type PickerRowProps,
   type SearchPickerProps,
 } from "./SearchPicker.tsx";

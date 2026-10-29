@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 
 import { ada, type Person } from "./accounts.ts";
 import { chooseTheme, themes } from "./checks.ts";
@@ -88,3 +88,89 @@ export async function closeBar(page: Page): Promise<void> {
 
 // The folder the pictures go to: the one flag of every picture spec, re-exported so a spec that already imports this file takes no other import.
 export { screenshotFolder } from "./screenshots.ts";
+
+/** The rows of a scrolling list that are only partly inside it (a row cut in half), as text; none when every row shows whole or not at all. */
+export function rowsCutOff(list: Locator): Promise<readonly string[]> {
+  return list.evaluate((element) => {
+    const frame = element.getBoundingClientRect();
+    const tolerance = 0.5;
+    const cut: string[] = [];
+    for (const child of element.children) {
+      const { top, bottom } = child.getBoundingClientRect();
+      const inside = bottom > frame.top && top < frame.bottom;
+      const whole = top >= frame.top - tolerance && bottom <= frame.bottom + tolerance;
+      if (inside && !whole) {
+        cut.push(`${top}-${bottom} in ${frame.top}-${frame.bottom}`);
+      }
+    }
+    return cut;
+  });
+}
+
+/** Where the words of an element start (not where the box that holds them starts), in pixels from the left of the page. */
+export function wordsStartOf(element: Locator): Promise<number> {
+  return element.first().evaluate((node) => {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    return range.getBoundingClientRect().left;
+  });
+}
+
+/** In the window of an *Any of*: *Add a filter*, the field *Title*, the words, and the window's own *Add filter*. */
+export async function addTitleFilter(page: Page, anyOf: Locator, words: string): Promise<void> {
+  await anyOf.getByRole("button", { name: t("search.bar.any-of-add") }).click();
+  await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Title" }) }).click();
+  await page.getByRole("textbox", { name: t("search.bar.value") }).fill(words);
+  await page
+    .getByRole("alertdialog", { name: "Title" })
+    .getByRole("button", { name: t("search.bar.add-filter-confirm") })
+    .click();
+}
+
+/** Where the box of an element starts, in pixels from the left of the page. */
+export async function leftEdgeOf(element: Locator): Promise<number> {
+  const found = await element.boundingBox();
+  return found === null ? Number.NaN : found.x;
+}
+
+/** The place and size of an element on the page; fails the test when it is not shown. */
+export async function boxOf(element: Locator): Promise<{
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}> {
+  const found = await element.boundingBox();
+  if (found === null) {
+    throw new Error("The element is not shown, so it has no place on the page.");
+  }
+  return found;
+}
+
+/**
+ * What stands between the search box of a picker and its first row, and what the theme says it
+ * should be (the gap of the group plus the room of the list for the focus ring), in pixels.
+ */
+export function gapAboveRows(
+  list: Locator,
+): Promise<{ readonly gap: number; readonly wanted: number }> {
+  return list.evaluate((element) => {
+    const group = element.closest("fieldset");
+    const field = group?.querySelector('[data-part="search-field.box"]');
+    const first = element.firstElementChild;
+    if (
+      group === null ||
+      group === undefined ||
+      field === null ||
+      field === undefined ||
+      first === null
+    ) {
+      return { gap: Number.NaN, wanted: 0 };
+    }
+    const gap = first.getBoundingClientRect().top - field.getBoundingClientRect().bottom;
+    const wanted =
+      Number(getComputedStyle(group).rowGap.replace("px", "")) +
+      Number(getComputedStyle(element).paddingTop.replace("px", ""));
+    return { gap, wanted };
+  });
+}

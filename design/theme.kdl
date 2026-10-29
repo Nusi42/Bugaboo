@@ -168,6 +168,7 @@ tokens {
     // Focus ring
     size "ring-width" "2px"
     size "ring-offset" "2px"
+    size "ring-room" "calc($ring-width + $ring-offset)"
 
     // Where the layout changes
     size "bp-tablet" "768px"
@@ -678,6 +679,25 @@ mixin "page-column" {
 // The focus view takes the whole width that the narrowed sidebar leaves.
 mixin "page-column-wide" {
     max-width none
+}
+
+// Room for the focus ring inside a box that scrolls (it clips what is outside it): padding of the
+// size of the ring (also for scrolling), and no margin above or below (a list would get the browser's own).
+mixin "ring-room" {
+    use "ring-scroll-room"
+    margin-block 0
+    padding "$ring-room"
+}
+
+// What the focus scrolls into view keeps that room from the edge of a box that scrolls: the ring is not cut there.
+mixin "ring-scroll-room" {
+    scroll-padding "$ring-room"
+}
+
+// With the ring room: the box reaches out by the same size at the sides, so the text inside stays on
+// the edge of the boxes above and below it. Only for boxes that ask for it.
+mixin "ring-room-flush" {
+    margin-inline "calc($ring-room * -1)"
 }
 
 // What floats over or stands out of the page: a card, a sheet, a panel, an offer.
@@ -1537,18 +1557,30 @@ part "picker.legend[variant=boxed]" {
     padding 0
 }
 
+// Whole rows: seven rows and the gaps between them (the padding, for the focus ring, is added around), so the last row
+// that shows is never cut in half (the review of M5, S1). A cue at the foot says there is more.
 part "picker.options[variant=list]" {
     display flex
     flex-direction column
     gap "$space-1"
-    // Whole rows: seven rows with the gaps between them (the padding for the focus ring is outside this height),
-    // so the row at the edge is not cut in half where the list starts to scroll (M5 exit, O3).
-    max-height "calc(7 * $size-control + 6 * $space-1)"
-    margin 0
-    // Room for the focus ring: a list that scrolls clips what is outside it.
-    padding "calc($ring-width + $ring-offset)"
+    max-height "calc($size-control * 7 + $space-1 * 6)"
+    use "ring-room"
     list-style none
     overflow-y auto
+    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
+    background-position "bottom, bottom"
+    background-size "100% $space-3, 100% $space-2"
+    background-repeat no-repeat
+    // The cue stays inside the edges of the field above the list, not in the padding for the ring.
+    background-origin content-box
+    background-clip content-box
+    background-attachment "local, scroll"
+}
+
+// Rows that are one button each reach out by the ring room, so their text stands on the edge of the
+// box above them (S16); the lists of radio buttons stay as they were.
+part "picker.options[variant=list]:has(picker.choice)" {
+    use "ring-room-flush"
 }
 
 part "picker.option[variant=list]" {
@@ -1609,6 +1641,43 @@ part "picker.row" {
 
 part "picker.row:hover" {
     background "$bg-hover"
+}
+
+// A row that is one button: its text starts at the edge of the box above it, and the name is
+// underlined when the row is pointed at or has the focus.
+part "picker.choice" {
+    display flex
+    align-items center
+    justify-content flex-start
+    gap "$space-3"
+    width "100%"
+    min-height "$size-control"
+    padding 0
+    border 0
+    border-radius "$r-ctl"
+    background transparent
+    color "$fg"
+    font-family inherit
+    font-size inherit
+    text-align start
+    cursor pointer
+}
+
+part "picker.choice picker.name" {
+    overflow hidden
+    overflow-wrap normal
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "picker.id" {
+    margin-inline-end "$space-2"
+    font-family "$mono"
+    font-size "$fs-base"
+}
+
+part "picker.choice:hover picker.name" "picker.choice:focus-visible picker.name" {
+    text-decoration underline
 }
 
 part "picker.name[variant=list]" {
@@ -3248,6 +3317,8 @@ part "confirm.body" {
     gap "$space-4"
     min-height 0
     overflow-y auto
+    use "ring-room"
+    use "ring-room-flush"
 }
 
 // The title stays at the top of the scrolling question, so a long preview never takes it off the screen (the
@@ -3267,8 +3338,13 @@ part "confirm.actions" {
     use "answer-row"
 }
 
+// The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end.
+part "search-panel.actions" {
+    use "answer-row"
+}
+
 // The text buttons of an answer row stand on the start edge, the others at the end.
-part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" {
+part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" "search-panel.actions button[variant=quiet]:first-child" {
     margin-inline-end auto
 }
 
@@ -3283,12 +3359,12 @@ part "overlay.modal[variant=full] confirm.actions" {
     margin-top auto
 }
 
-part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" {
+part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" "overlay[variant=bottom] search-panel.actions" {
     flex-direction column-reverse
     align-items stretch
 }
 
-part "overlay[variant=full] confirm.actions button[variant=quiet]:first-child" "overlay[variant=full] window.footer-actions button[variant=quiet]:first-child" {
+part "overlay[variant=full] confirm.actions button[variant=quiet]:first-child" "overlay[variant=full] window.footer-actions button[variant=quiet]:first-child" "overlay[variant=bottom] search-panel.actions button[variant=quiet]:first-child" {
     margin-inline 0
 }
 
@@ -12672,6 +12748,7 @@ part "search-filter > button" {
 
 // What opens over the page for the search: a window of the bar on a phone, the list of fields.
 part "search-panel" {
+    use "ring-scroll-room"
     display flex
     flex-direction column
     gap "$space-4"
@@ -12701,12 +12778,6 @@ part "search-choice" {
     gap "$space-3"
 }
 
-part "search-panel.actions" {
-    display flex
-    justify-content flex-end
-    gap "$space-2"
-}
-
 // The button that closes the sheet stays at the foot of it.
 part "search-panel[variant=sheet] search-panel.actions" {
     margin-block-start auto
@@ -12734,6 +12805,26 @@ part "search-filters.action" {
 }
 
 part "search-filters.action > button" {
+    width "100%"
+}
+
+// In a dialog (the filters inside an *Any of*) the list is as high as its filters, not the free height.
+part "confirm.body search-filters" {
+    flex none
+}
+
+// *+ Add a filter* of an *Any of* stands on a row of its own, not beside the last filter.
+part "confirm.body search-filters.action" {
+    flex "1 1 100%"
+    align-items flex-start
+}
+
+part "confirm.body search-filters.action > button" {
+    width auto
+}
+
+// On a phone it is as wide as the screen, like the main button.
+part "overlay[variant=full] confirm.body search-filters.action > button" {
     width "100%"
 }
 
@@ -12917,6 +13008,33 @@ part "search-list.item" {
     min-height "$size-control"
     padding 0 "$space-2"
     border-radius "$r-ctl"
+}
+
+// One project of the Share window: its tick box, and under it the quiet button that makes it the project's list.
+part "share-choice" {
+    display flex
+    flex-direction column
+    align-items flex-start
+    gap "$space-1"
+    flex 1
+    min-width 0
+}
+
+// The body of the Share window starts where its title starts (the title bar is padded by pad-box,
+// the body by pad-dialog), and a row of it has no padding of its own: title, groups and tick boxes
+// stand on one edge (S31).
+part "share-body" {
+    display flex
+    flex-direction column
+    gap "$space-5"
+    margin-inline "calc(($pad-dialog - $pad-box) * -1)"
+}
+
+part "share-row" {
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-control"
 }
 
 part "search-help.title" {

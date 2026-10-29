@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
+import { Button as AriaButton } from "react-aria-components";
 
 import { Alert } from "./Alert.tsx";
 import { Button } from "./Button.tsx";
@@ -136,4 +137,37 @@ export function PickerRow({ label, children }: PickerRowProps) {
 /** A short word next to a choice that tells it from others. */
 export function PickerHint({ children }: { readonly children: ReactNode }) {
   return <span {...partOf(part.pickerHint)}>{children}</span>;
+}
+
+export interface PickerChoiceProps {
+  readonly label: ReactNode;
+  /** The name for screen readers, when the label alone does not say what the press does; the words of the label when left out. */
+  readonly accessibleName?: string;
+  /** More to read in the same row, on the same line (a status, an ID). */
+  readonly children?: ReactNode;
+  readonly onPick: () => void;
+}
+
+/**
+ * One row of a list of which one is taken with a press: the whole row is the button, and the name
+ * is underlined when it is pointed at (no column of *Choose* links).
+ */
+export function PickerChoice({ label, accessibleName, children, onPick }: PickerChoiceProps) {
+  return (
+    <li>
+      <AriaButton
+        {...partOf(part.pickerChoice)}
+        {...(accessibleName === undefined ? {} : { "aria-label": accessibleName })}
+        onPress={onPick}
+      >
+        <span {...partOf(part.pickerName, { variants: [pickerLook.list] })}>{label}</span>
+        {children}
+      </AriaButton>
+    </li>
+  );
+}
+
+/** The ID of an issue in a row of a picker, in the font of IDs. */
+export function PickerId({ children }: { readonly children: ReactNode }) {
+  return <span {...partOf(part.pickerId)}>{children}</span>;
 }

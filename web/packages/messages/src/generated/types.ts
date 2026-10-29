@@ -438,6 +438,7 @@ export interface MessageArguments {
   "search.bar.last-days": { count: number };
   "search.bar.last-months": { count: number };
   "search.bar.last-weeks": { count: number };
+  "search.bar.me-row": { name: string | number };
   "search.bar.member-of": { group: string | number };
   "search.bar.name-colon": { name: string | number };
   "search.bar.name-value": { name: string | number; value: string | number };
@@ -510,8 +511,8 @@ export interface MessageArguments {
   "search.mistake.wrong-number": { field: string | number };
   "search.mistake.wrong-person": { field: string | number; me: string | number };
   "search.mistake.wrong-text": { field: string | number };
-  "search.project-list-stop": { project: string | number };
-  "search.project-list-use": { project: string | number };
+  "search.project-list-stop": { name: string | number };
+  "search.project-list-use": { name: string | number };
   "search.saved-by": { name: string | number; person: string | number };
   "search.share-title": { name: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };

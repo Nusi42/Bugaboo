@@ -67,10 +67,8 @@ export function HelpSheet({ language, fields, isOpen, onClose, onExample }: Help
     >
       <div {...partOf(part.searchPanel)}>
         <div {...partOf(part.searchPanelHead)}>
-          <h2 {...partOf(part.searchHelpTitle)}>{t("search.help-title")}</h2>
-          <Button look={buttonLook.primary} onPress={onClose}>
-            {t("common.close")}
-          </Button>
+          <h2 {...partOf(part.confirmTitle)}>{t("search.help-title")}</h2>
+          <Button onPress={onClose}>{t("common.close")}</Button>
         </div>
         <div {...partOf(part.searchHelp)}>
           {helpGroups.map((group) => (
