@@ -3795,9 +3795,9 @@ part "row-chevron" {
 
 part "people" {
     display block
-    // Whole rows: five rows of a fixed height (below), so the row at the edge is never cut where the list
-    // scrolls (M5 exit, O17).
-    max-block-size "calc(5 * round(up, calc(2 * $space-2 + $space-1 + $fs-md * $lh-body + 2 * $fs-base * $lh-body + $border-width), $border-width))"
+    // About five rows high, never more than most of the screen: a row is as tall as its words need (nothing is
+    // cut with an ellipsis), the list draws only the rows on screen.
+    max-block-size "min($size-list-scroll, calc(5 * $size-person-row))"
     margin 0
     padding-block 0
     padding-inline "$ring-width"
