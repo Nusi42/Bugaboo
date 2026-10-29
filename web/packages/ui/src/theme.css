@@ -1829,13 +1829,20 @@ optgroup {
   width: var(--size-control);
 }
 
-[data-part="list-row.cell"][data-variant~="status"],
-[data-part="list-row.cell"][data-variant~="type"] {
+[data-part="list-row.cell"][data-variant~="status"] {
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
   width: var(--size-col-icon);
+}
+
+[data-part="list-row.cell"][data-variant~="type"] {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: var(--size-col-project);
 }
 
 [data-part="list-row.cell"][data-variant~="key"] {
@@ -2064,7 +2071,6 @@ optgroup {
 }
 
 [data-part="list-row"][data-variant~="grid"] [data-part="list-row.cell"][data-variant~="status"],
-[data-part="list-row"][data-variant~="grid"] [data-part="list-row.cell"][data-variant~="type"],
 [data-part="list-row"][data-variant~="grid"] [data-part="list-row.cell"][data-variant~="select"] {
   justify-content: center;
 }
@@ -5338,6 +5344,23 @@ optgroup {
   white-space: nowrap;
 }
 
+[data-part="label-chip"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+[data-part="label-mark"] {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--space-3);
+  height: var(--space-3);
+  border: var(--border-width) solid currentColor;
+  border-radius: var(--r-ctl);
+}
+
 [data-part="field-text"] {
   margin: 0;
   color: var(--fg);
@@ -5437,84 +5460,96 @@ optgroup {
 
 [data-part="field-badge"][data-variant~="cat1"],
 [data-part="field-pill"][data-variant~="cat1"],
-[data-part="field-swatch"][data-variant~="cat1"] {
+[data-part="field-swatch"][data-variant~="cat1"],
+[data-part="label-mark"][data-variant~="cat1"] {
   background: var(--cat1-bg);
   color: var(--cat1-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat2"],
 [data-part="field-pill"][data-variant~="cat2"],
-[data-part="field-swatch"][data-variant~="cat2"] {
+[data-part="field-swatch"][data-variant~="cat2"],
+[data-part="label-mark"][data-variant~="cat2"] {
   background: var(--cat2-bg);
   color: var(--cat2-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat3"],
 [data-part="field-pill"][data-variant~="cat3"],
-[data-part="field-swatch"][data-variant~="cat3"] {
+[data-part="field-swatch"][data-variant~="cat3"],
+[data-part="label-mark"][data-variant~="cat3"] {
   background: var(--cat3-bg);
   color: var(--cat3-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat4"],
 [data-part="field-pill"][data-variant~="cat4"],
-[data-part="field-swatch"][data-variant~="cat4"] {
+[data-part="field-swatch"][data-variant~="cat4"],
+[data-part="label-mark"][data-variant~="cat4"] {
   background: var(--cat4-bg);
   color: var(--cat4-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat5"],
 [data-part="field-pill"][data-variant~="cat5"],
-[data-part="field-swatch"][data-variant~="cat5"] {
+[data-part="field-swatch"][data-variant~="cat5"],
+[data-part="label-mark"][data-variant~="cat5"] {
   background: var(--cat5-bg);
   color: var(--cat5-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat6"],
 [data-part="field-pill"][data-variant~="cat6"],
-[data-part="field-swatch"][data-variant~="cat6"] {
+[data-part="field-swatch"][data-variant~="cat6"],
+[data-part="label-mark"][data-variant~="cat6"] {
   background: var(--cat6-bg);
   color: var(--cat6-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat7"],
 [data-part="field-pill"][data-variant~="cat7"],
-[data-part="field-swatch"][data-variant~="cat7"] {
+[data-part="field-swatch"][data-variant~="cat7"],
+[data-part="label-mark"][data-variant~="cat7"] {
   background: var(--cat7-bg);
   color: var(--cat7-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat8"],
 [data-part="field-pill"][data-variant~="cat8"],
-[data-part="field-swatch"][data-variant~="cat8"] {
+[data-part="field-swatch"][data-variant~="cat8"],
+[data-part="label-mark"][data-variant~="cat8"] {
   background: var(--cat8-bg);
   color: var(--cat8-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat9"],
 [data-part="field-pill"][data-variant~="cat9"],
-[data-part="field-swatch"][data-variant~="cat9"] {
+[data-part="field-swatch"][data-variant~="cat9"],
+[data-part="label-mark"][data-variant~="cat9"] {
   background: var(--cat9-bg);
   color: var(--cat9-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat10"],
 [data-part="field-pill"][data-variant~="cat10"],
-[data-part="field-swatch"][data-variant~="cat10"] {
+[data-part="field-swatch"][data-variant~="cat10"],
+[data-part="label-mark"][data-variant~="cat10"] {
   background: var(--cat10-bg);
   color: var(--cat10-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat11"],
 [data-part="field-pill"][data-variant~="cat11"],
-[data-part="field-swatch"][data-variant~="cat11"] {
+[data-part="field-swatch"][data-variant~="cat11"],
+[data-part="label-mark"][data-variant~="cat11"] {
   background: var(--cat11-bg);
   color: var(--cat11-fg);
 }
 
 [data-part="field-badge"][data-variant~="cat12"],
 [data-part="field-pill"][data-variant~="cat12"],
-[data-part="field-swatch"][data-variant~="cat12"] {
+[data-part="field-swatch"][data-variant~="cat12"],
+[data-part="label-mark"][data-variant~="cat12"] {
   background: var(--cat12-bg);
   color: var(--cat12-fg);
 }

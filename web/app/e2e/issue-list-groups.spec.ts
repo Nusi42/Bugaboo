@@ -45,3 +45,17 @@ test("ux_4_2 a list with nothing in it has no head to tick and says so in the mi
   const list = await boxOf(partIn(page, "list-frame").first());
   expect(Math.abs(text.x + text.width / 2 - (list.x + list.width / 2))).toBeLessThanOrEqual(2);
 });
+
+test("ux_4_2 the type column has a name in the head and shows the type's name beside its icon (L9)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "only a computer has columns");
+  await signIn(page, ada);
+  await page.goto(`${projectIssuesAddress("WEB")}?cols=status,id,type,title,priority`);
+  await expect(rowOf(page, webIssues.login)).toBeVisible();
+  const head = page.getByRole("columnheader", { name: t("issue-field.issue-type") });
+  await expect(head).toBeVisible();
+  await expect(
+    partIn(page, "list-row.cell", "type").filter({ hasText: "Task" }).first(),
+  ).toBeVisible();
+});

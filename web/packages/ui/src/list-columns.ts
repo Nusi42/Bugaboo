@@ -29,7 +29,7 @@ export const listColumns: readonly ListColumn[] = partWords["list-row.cell"].var
 );
 
 /** The columns that hold only an icon: the header names them for screen readers, not for the eye. */
-export const iconColumns: readonly ListColumn[] = ["select", "status", "type"];
+export const iconColumns: readonly ListColumn[] = ["select", "status"];
 
 /** The id a head cell of the list `listId` has for a column, so that the cells of the rows below it can be named by it. */
 export function headId(listId: string, word: string): string {

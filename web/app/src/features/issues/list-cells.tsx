@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { listShowsWord, Priority } from "@bugaboo/ui";
+import { IssueTypeIcon, listShowsWord, Priority } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { formatAgo } from "../../shared/format.ts";
@@ -35,7 +35,13 @@ interface CellInput {
 const contentOf: Readonly<Record<ColumnCell, (input: CellInput) => ReactNode>> = {
   status: ({ start }) => start.status,
   key: ({ start }) => start.key,
-  type: ({ start }) => start.type,
+  type: ({ line }) =>
+    line.issueType === undefined ? undefined : (
+      <>
+        <IssueTypeIcon name={line.issueType.icon} />
+        {line.issueType.name}
+      </>
+    ),
   title: ({ start }) => start.title,
   labels: ({ line }) => labelsOf(line),
   priority: ({ line }) => (

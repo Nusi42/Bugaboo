@@ -1764,12 +1764,21 @@ part "list-row.cell[variant=select]" {
     width "$size-control"
 }
 
-part "list-row.cell[variant=status]" "list-row.cell[variant=type]" {
+part "list-row.cell[variant=status]" {
     flex none
     display flex
     align-items center
     justify-content center
     width "$size-col-icon"
+}
+
+// The type: its icon and its name, so the icon does not read as a second box to tick.
+part "list-row.cell[variant=type]" {
+    flex none
+    display flex
+    align-items center
+    gap "$space-1"
+    width "$size-col-project"
 }
 
 part "list-row.cell[variant=key]" {
@@ -2009,7 +2018,7 @@ part "list-row[variant=grid] list-row.cell" {
 
 
 // The cells of a column keep their alignment; a text column starts at the start edge.
-part "list-row[variant=grid] list-row.cell[variant=status]" "list-row[variant=grid] list-row.cell[variant=type]" "list-row[variant=grid] list-row.cell[variant=select]" {
+part "list-row[variant=grid] list-row.cell[variant=status]" "list-row[variant=grid] list-row.cell[variant=select]" {
     justify-content center
 }
 
@@ -5226,6 +5235,24 @@ part "field-pill" {
     white-space nowrap
 }
 
+// A label in a list (UX §7.5): a small square in its color and its name in the plain text color, so the label does not compete with the priority.
+part "label-chip" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    color "$fg"
+    white-space nowrap
+}
+
+part "label-mark" {
+    flex none
+    box-sizing border-box
+    width "$space-3"
+    height "$space-3"
+    border "$border-width solid currentColor"
+    border-radius "$r-ctl"
+}
+
 part "field-text" {
     margin 0
     color "$fg"
@@ -5320,62 +5347,62 @@ part "field-choice" {
 }
 
 
-part "field-badge[variant=cat1]" "field-pill[variant=cat1]" "field-swatch[variant=cat1]" {
+part "field-badge[variant=cat1]" "field-pill[variant=cat1]" "field-swatch[variant=cat1]" "label-mark[variant=cat1]" {
     background "$cat1-bg"
     color "$cat1-fg"
 }
 
-part "field-badge[variant=cat2]" "field-pill[variant=cat2]" "field-swatch[variant=cat2]" {
+part "field-badge[variant=cat2]" "field-pill[variant=cat2]" "field-swatch[variant=cat2]" "label-mark[variant=cat2]" {
     background "$cat2-bg"
     color "$cat2-fg"
 }
 
-part "field-badge[variant=cat3]" "field-pill[variant=cat3]" "field-swatch[variant=cat3]" {
+part "field-badge[variant=cat3]" "field-pill[variant=cat3]" "field-swatch[variant=cat3]" "label-mark[variant=cat3]" {
     background "$cat3-bg"
     color "$cat3-fg"
 }
 
-part "field-badge[variant=cat4]" "field-pill[variant=cat4]" "field-swatch[variant=cat4]" {
+part "field-badge[variant=cat4]" "field-pill[variant=cat4]" "field-swatch[variant=cat4]" "label-mark[variant=cat4]" {
     background "$cat4-bg"
     color "$cat4-fg"
 }
 
-part "field-badge[variant=cat5]" "field-pill[variant=cat5]" "field-swatch[variant=cat5]" {
+part "field-badge[variant=cat5]" "field-pill[variant=cat5]" "field-swatch[variant=cat5]" "label-mark[variant=cat5]" {
     background "$cat5-bg"
     color "$cat5-fg"
 }
 
-part "field-badge[variant=cat6]" "field-pill[variant=cat6]" "field-swatch[variant=cat6]" {
+part "field-badge[variant=cat6]" "field-pill[variant=cat6]" "field-swatch[variant=cat6]" "label-mark[variant=cat6]" {
     background "$cat6-bg"
     color "$cat6-fg"
 }
 
-part "field-badge[variant=cat7]" "field-pill[variant=cat7]" "field-swatch[variant=cat7]" {
+part "field-badge[variant=cat7]" "field-pill[variant=cat7]" "field-swatch[variant=cat7]" "label-mark[variant=cat7]" {
     background "$cat7-bg"
     color "$cat7-fg"
 }
 
-part "field-badge[variant=cat8]" "field-pill[variant=cat8]" "field-swatch[variant=cat8]" {
+part "field-badge[variant=cat8]" "field-pill[variant=cat8]" "field-swatch[variant=cat8]" "label-mark[variant=cat8]" {
     background "$cat8-bg"
     color "$cat8-fg"
 }
 
-part "field-badge[variant=cat9]" "field-pill[variant=cat9]" "field-swatch[variant=cat9]" {
+part "field-badge[variant=cat9]" "field-pill[variant=cat9]" "field-swatch[variant=cat9]" "label-mark[variant=cat9]" {
     background "$cat9-bg"
     color "$cat9-fg"
 }
 
-part "field-badge[variant=cat10]" "field-pill[variant=cat10]" "field-swatch[variant=cat10]" {
+part "field-badge[variant=cat10]" "field-pill[variant=cat10]" "field-swatch[variant=cat10]" "label-mark[variant=cat10]" {
     background "$cat10-bg"
     color "$cat10-fg"
 }
 
-part "field-badge[variant=cat11]" "field-pill[variant=cat11]" "field-swatch[variant=cat11]" {
+part "field-badge[variant=cat11]" "field-pill[variant=cat11]" "field-swatch[variant=cat11]" "label-mark[variant=cat11]" {
     background "$cat11-bg"
     color "$cat11-fg"
 }
 
-part "field-badge[variant=cat12]" "field-pill[variant=cat12]" "field-swatch[variant=cat12]" {
+part "field-badge[variant=cat12]" "field-pill[variant=cat12]" "field-swatch[variant=cat12]" "label-mark[variant=cat12]" {
     background "$cat12-bg"
     color "$cat12-fg"
 }

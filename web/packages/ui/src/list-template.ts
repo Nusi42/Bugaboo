@@ -13,7 +13,7 @@ const widthToken = {
   status: "size-col-icon",
   key: "size-col-key",
   project: "size-col-project",
-  type: "size-col-icon",
+  type: "size-col-project",
   title: undefined,
   labels: "size-col-labels",
   priority: "size-col-priority",

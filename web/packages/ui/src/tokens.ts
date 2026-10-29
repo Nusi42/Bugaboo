@@ -633,6 +633,8 @@ export const part = {
   filesLarge: "files.large",
   fieldBadge: "field-badge",
   fieldPill: "field-pill",
+  labelChip: "label-chip",
+  labelMark: "label-mark",
   fieldText: "field-text",
   fieldProgress: "field-progress",
   fieldProgressBar: "field-progress.bar",
@@ -1151,6 +1153,24 @@ export const partWords = {
     state: [],
   },
   "field-pill": {
+    variant: [
+      "cat1",
+      "cat2",
+      "cat3",
+      "cat4",
+      "cat5",
+      "cat6",
+      "cat7",
+      "cat8",
+      "cat9",
+      "cat10",
+      "cat11",
+      "cat12",
+    ],
+    state: [],
+  },
+  "label-chip": { variant: [], state: [] },
+  "label-mark": {
     variant: [
       "cat1",
       "cat2",
