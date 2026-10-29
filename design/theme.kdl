@@ -3461,9 +3461,9 @@ part "confirm.body" {
 // review of M5 exit, O1).
 part "confirm.title" {
     position sticky
-    top 0
+    top "calc(-1 * $ring-room)"
     margin 0
-    padding-block-end "$space-1"
+    padding-block "$ring-room $space-1"
     background "$bg-raised"
     font-size "$fs-lg"
     line-height "$lh-snug"

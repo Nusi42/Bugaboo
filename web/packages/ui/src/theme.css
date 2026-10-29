@@ -3488,9 +3488,9 @@ optgroup {
 
 [data-part="confirm.title"] {
   position: sticky;
-  top: 0;
+  top: calc(-1 * var(--ring-room));
   margin: 0;
-  padding-block-end: var(--space-1);
+  padding-block: var(--ring-room) var(--space-1);
   background: var(--bg-raised);
   font-size: var(--fs-lg);
   line-height: var(--lh-snug);
