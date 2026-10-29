@@ -209,6 +209,8 @@ tokens {
     size "size-bar-ticked" "40dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
+    // How much of the line color the shadow at the end of a scrolling box starts with.
+    size "size-cue-strength" "55%"
     // The room between the edge of the screen or of a column and what stands in the page: the same for the page, and for
     // the strip of a minimized window, so the strip starts where the page column starts.
     size "size-page-gutter" "$space-4"
@@ -709,7 +711,7 @@ mixin "stacked-facts" {
 // A box that scrolls says there is more above and below: a soft shadow at each edge that has more behind it, and none
 // where the end is reached (two covers of the colour of the box scroll with the content and hide the shadows).
 mixin "scroll-cue" {
-    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient($bg-raised, $bg-raised), linear-gradient(color-mix(in srgb, $border-control 55%, transparent), transparent), linear-gradient(to top, color-mix(in srgb, $border-control 55%, transparent), transparent)"
+    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient($bg-raised, $bg-raised), linear-gradient(color-mix(in srgb, $border-control $size-cue-strength, transparent), transparent), linear-gradient(to top, color-mix(in srgb, $border-control $size-cue-strength, transparent), transparent)"
     background-position "top, bottom, top, bottom"
     background-size "100% $space-3, 100% $space-3, 100% $space-1, 100% $space-1"
     background-repeat no-repeat

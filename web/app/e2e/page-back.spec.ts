@@ -38,6 +38,14 @@ const places: readonly Place[] = [
     back: t("fields.back"),
   },
   {
+    name: "a person",
+    open: async (page) => {
+      await page.goto(paths.people);
+      await page.getByRole("option").first().click();
+    },
+    back: t("person.back"),
+  },
+  {
     name: "the settings of a project",
     open: async (page) => {
       await page.goto(addressInProject(paths.projectSettings, "APP"));

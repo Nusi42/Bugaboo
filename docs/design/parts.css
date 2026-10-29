@@ -878,8 +878,15 @@ optgroup {
   background-image:
     linear-gradient(var(--bg-raised), var(--bg-raised)),
     linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(color-mix(in srgb, var(--border-control) 55%, transparent), transparent),
-    linear-gradient(to top, color-mix(in srgb, var(--border-control) 55%, transparent), transparent);
+    linear-gradient(
+      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
+      transparent
+    ),
+    linear-gradient(
+      to top,
+      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
+      transparent
+    );
   background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
@@ -2149,8 +2156,15 @@ optgroup {
   background-image:
     linear-gradient(var(--bg-raised), var(--bg-raised)),
     linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(color-mix(in srgb, var(--border-control) 55%, transparent), transparent),
-    linear-gradient(to top, color-mix(in srgb, var(--border-control) 55%, transparent), transparent);
+    linear-gradient(
+      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
+      transparent
+    ),
+    linear-gradient(
+      to top,
+      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
+      transparent
+    );
   background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
@@ -2769,8 +2783,15 @@ optgroup {
   background-image:
     linear-gradient(var(--bg-raised), var(--bg-raised)),
     linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(color-mix(in srgb, var(--border-control) 55%, transparent), transparent),
-    linear-gradient(to top, color-mix(in srgb, var(--border-control) 55%, transparent), transparent);
+    linear-gradient(
+      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
+      transparent
+    ),
+    linear-gradient(
+      to top,
+      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
+      transparent
+    );
   background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),

@@ -99,6 +99,6 @@ export async function expectEverySentence(dialog: Locator): Promise<void> {
     }),
   );
   // Under a person each project is named, then what changes in it.
-  await expect(dialog.getByText("Documents", { exact: true }).first()).toBeVisible();
+  await expect(dialog.getByText(documents.name, { exact: true }).first()).toBeVisible();
   await expect(dialog.getByRole("button", { name: t("projects.move-confirm") })).toBeDisabled();
 }
