@@ -47,6 +47,13 @@ button {
   outline-offset: var(--ring-offset);
 }
 
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-style: double;
+    outline-width: calc(var(--ring-width) * 2);
+  }
+}
+
 .ico {
   width: var(--space-4);
   height: var(--space-4);
