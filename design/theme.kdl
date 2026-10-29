@@ -12733,6 +12733,7 @@ part "search-choice" {
 
 // The button that closes the sheet stays at the foot of it.
 part "search-panel[variant=sheet] search-panel.actions" {
+    flex none
     margin-block-start auto
 }
 
