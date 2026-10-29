@@ -2633,7 +2633,6 @@ optgroup {
 [data-part="access.subheading"] {
   margin: 0;
   font-size: var(--fs-md);
-  font-weight: var(--weight-bold);
   color: var(--fg);
 }
 

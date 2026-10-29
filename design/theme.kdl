@@ -491,7 +491,6 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "issue-section.title" role="section"
     selector "form-section.title" role="section"
     selector "list-panel.title" role="section"
-    selector "access.subheading" role="section"
     selector "access.topic" role="section"
     selector "card.topic" role="section"
     selector "notification-group.head" role="section"
@@ -3327,10 +3326,11 @@ part "settings.locked-value" {
 
 // ───────────── Access ─────────────
 
+// The title of an answer of *Check access* (a permission, a field): the name of a row, regular weight (UX §7.3:
+// bold is for the heading of a section, not for the title of every line).
 part "access.subheading" {
     margin 0
     font-size "$fs-md"
-    font-weight "$weight-bold"
     color "$fg"
 }
 
