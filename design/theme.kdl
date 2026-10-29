@@ -1980,6 +1980,23 @@ part "list-group.count" {
 // The list and its options in one column: beside Customize where there is room for both, above it where there is not.
 part "list-main" {
     display flex
+    flex 1 1 "$size-list-main"
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+// The list and the panel of Customize: the panel stands beside the list level with its head, or under it, as wide as the list.
+part "list-body" {
+    display flex
+    flex-wrap wrap
+    align-items flex-start
+    gap "$space-4"
+    min-width 0
+}
+
+part "list-column" {
+    display flex
     flex 1000 1 "$size-list-main"
     flex-direction column
     gap "$space-3"

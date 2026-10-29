@@ -22,14 +22,17 @@ test("ux_4_2 Customize sits beside the list on a computer window of 1280", async
   await expect(rowOf(page, webIssues.login)).toBeVisible();
   await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
   const panel = page.getByRole("complementary", { name: t("issues.customize") });
-  const [list, side] = [await boxOf(page.locator("[data-part='list-main']")), await boxOf(panel)];
+  const [list, side] = [await boxOf(page.locator("[data-part='list-column']")), await boxOf(panel)];
   expect(side.x).toBeGreaterThanOrEqual(list.x + list.width);
+  // The panel is level with the head of the list (L13).
+  const head = await boxOf(page.locator("[data-part='list-head']"));
+  expect(Math.abs(side.y - head.y)).toBeLessThanOrEqual(2);
   // Beside Customize the title keeps its least width of 160 and the columns of fields that do not
   // fit are dropped from the right: the list does not scroll sideways and every head is in the box
   // of the list (UX §4.2, R5, R9).
   const frame = page.locator("[data-part='list-frame']");
   expect(await frame.evaluate((box) => box.scrollWidth - box.clientWidth)).toBe(0);
-  const main = await boxOf(page.locator("[data-part='list-main']"));
+  const main = await boxOf(page.locator("[data-part='list-column']"));
   const title = await boxOf(
     page.getByRole("columnheader", { name: t("issue-field.title"), exact: true }),
   );
@@ -50,7 +53,10 @@ test("ux_4_2 Customize under the list is as wide as the list, in more than one c
   await expect(rowOf(page, webIssues.login)).toBeVisible();
   await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
   const panel = page.getByRole("complementary", { name: t("issues.customize") });
-  const [list, under] = [await boxOf(page.locator("[data-part='list-main']")), await boxOf(panel)];
+  const [list, under] = [
+    await boxOf(page.locator("[data-part='list-column']")),
+    await boxOf(panel),
+  ];
   expect(under.y).toBeGreaterThanOrEqual(list.y + list.height);
   expect(Math.abs(under.width - list.width)).toBeLessThanOrEqual(2);
   const columns = await panel

@@ -40,18 +40,20 @@ export function LoadedResults(props: LoadedProps) {
           }}
           onDragged={setDragged}
           onRoom={setRoom}
+          aside={
+            customizing && !phone ? (
+              <ListPanel
+                view={view}
+                fields={fields}
+                defaults={defaults}
+                onView={onView}
+                onClose={() => {
+                  setCustomizing(false);
+                }}
+              />
+            ) : null
+          }
         />
-        {customizing && !phone ? (
-          <ListPanel
-            view={view}
-            fields={fields}
-            defaults={defaults}
-            onView={onView}
-            onClose={() => {
-              setCustomizing(false);
-            }}
-          />
-        ) : null}
       </div>
     </ListContext>
   );

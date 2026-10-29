@@ -1284,6 +1284,22 @@ optgroup {
 
 [data-part="list-main"] {
   display: flex;
+  flex: 1 1 var(--size-list-main);
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+[data-part="list-body"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+[data-part="list-column"] {
+  display: flex;
   flex: 1000 1 var(--size-list-main);
   flex-direction: column;
   gap: var(--space-3);

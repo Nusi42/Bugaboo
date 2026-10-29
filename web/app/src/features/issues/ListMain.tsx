@@ -1,14 +1,11 @@
-import { ListFrame, part, partOf, type ListColumnSpec } from "@bugaboo/ui";
+import { part, partOf } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
-import { cellOf } from "../../shared/list-columns.ts";
-import { useListContext } from "./list-context.ts";
-import { ListHeader } from "./ListHeader.tsx";
+import { ListColumn } from "./ListColumn.tsx";
 import { ListInfo } from "./ListInfo.tsx";
 import { ListOptions } from "./ListOptions.tsx";
-import { ListResults } from "./ListResults.tsx";
-import { Selected } from "./Selected.tsx";
 import type { LoadedProps } from "./results-props.ts";
-import { useRoom, useRowKeys } from "./use-row-keys.ts";
+import { useRowKeys } from "./use-row-keys.ts";
 
 export interface ListMainProps {
   readonly props: LoadedProps;
@@ -22,12 +19,11 @@ export interface ListMainProps {
   readonly onDragged: (dragged: Readonly<Record<string, number>>) => void;
   /** Tells how wide the list is, so the columns that do not fit can give way. */
   readonly onRoom: (width: number) => void;
+  /** The panel of Customize, beside the list level with its head, or under it. */
+  readonly aside: ReactNode;
 }
 
-/** The box to tick the rows of the head is the first column, where rows can be ticked. */
-const selectSpec: ListColumnSpec = { column: "select" };
-
-/** The options, the count line and the list with its head, in one column beside the panel. */
+/** The options, the count line, and the list with the panel of Customize beside or under it. */
 export function ListMain({
   props,
   customizing,
@@ -37,16 +33,10 @@ export function ListMain({
   onCustomize,
   onDragged,
   onRoom,
+  aside,
 }: ListMainProps) {
-  const { view, fields, onView, onText } = props;
-  const { words, ticks, phone, project, selection, search } = useListContext();
+  const { view, fields, onView } = props;
   const rows = useRowKeys();
-  useRoom(() => rows.current, onRoom);
-  const compact = view.spacing === "compact";
-  const specs: readonly ListColumnSpec[] = [
-    ...(ticks && !phone ? [selectSpec] : []),
-    ...words.map((word) => ({ column: cellOf(word), width: dragged[word] ?? view.widths[word] })),
-  ];
   return (
     <div ref={rows} {...partOf(part.listMain)}>
       <ListOptions
@@ -57,22 +47,17 @@ export function ListMain({
         onCustomize={onCustomize}
       />
       <ListInfo scopeName={props.scopeName} shown={shown} stale={props.stale} />
-      <ListFrame columns={specs} keyChars={keyChars} compact={compact}>
-        {phone ? null : (
-          <ListHeader
-            view={view}
-            fields={fields}
-            shown={shown}
-            onView={onView}
-            onText={onText}
-            onDragged={onDragged}
-          />
-        )}
-        <ListResults view={view} stale={props.stale} />
-      </ListFrame>
-      {project === undefined ? null : (
-        <Selected selection={selection} project={project} search={search} shown={shown} />
-      )}
+      <div {...partOf(part.listBody)}>
+        <ListColumn
+          props={props}
+          dragged={dragged}
+          shown={shown}
+          keyChars={keyChars}
+          onDragged={onDragged}
+          onRoom={onRoom}
+        />
+        {aside}
+      </div>
     </div>
   );
 }
