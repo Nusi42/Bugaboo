@@ -763,11 +763,20 @@ optgroup {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  max-height: var(--size-list);
-  margin: 0;
+  max-height: calc(var(--size-control) * 7 + var(--space-1) * 6);
+  margin: 0 calc((var(--ring-width) + var(--ring-offset)) * -1);
   padding: calc(var(--ring-width) + var(--ring-offset));
   list-style: none;
   overflow-y: auto;
+  background-image:
+    linear-gradient(var(--bg-raised), var(--bg-raised)),
+    linear-gradient(to top, var(--border), transparent);
+  background-position: bottom, bottom;
+  background-size:
+    100% var(--space-4),
+    100% var(--space-3);
+  background-repeat: no-repeat;
+  background-attachment: local, scroll;
 }
 
 [data-part="picker.option"][data-variant~="list"] {
@@ -818,6 +827,41 @@ optgroup {
 
 [data-part="picker.row"]:hover {
   background: var(--bg-hover);
+}
+
+[data-part="picker.choice"] {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--size-control);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-ctl);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+[data-part="picker.choice"] [data-part="picker.name"] {
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-part="picker.id"] {
+  margin-inline-end: var(--space-2);
+  font-family: var(--mono);
+  font-size: var(--fs-base);
+}
+
+[data-part="picker.choice"]:hover [data-part="picker.name"],
+[data-part="picker.choice"]:focus-visible [data-part="picker.name"] {
+  text-decoration: underline;
 }
 
 [data-part="picker.name"][data-variant~="list"] {
@@ -2370,7 +2414,8 @@ optgroup {
 }
 
 [data-part="window.footer-actions"] [data-part="button"][data-variant~="quiet"]:first-child,
-[data-part="confirm.actions"] [data-part="button"][data-variant~="quiet"]:first-child {
+[data-part="confirm.actions"] [data-part="button"][data-variant~="quiet"]:first-child,
+[data-part="search-panel.actions"] [data-part="button"][data-variant~="quiet"]:first-child {
   margin-inline-end: auto;
 }
 
@@ -5443,8 +5488,10 @@ optgroup {
 
 [data-part="search-panel.actions"] {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 [data-part="search-panel"][data-variant~="sheet"] [data-part="search-panel.actions"] {

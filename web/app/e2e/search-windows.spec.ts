@@ -5,7 +5,7 @@ import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
-import { box, openBar, openSearch } from "./support/search-bar.ts";
+import { box, openBar, openSearch, rowsCutOff } from "./support/search-bar.ts";
 
 // The windows of the search bar (UX design section 4.3): the button of a phone with its count and its
 // Close button, and every window of the bar in the four themes.
@@ -81,4 +81,16 @@ test("qry_01 the sheet of a phone does not move when the offers come and go", as
       expect(withoutOffers?.y).toBe(withOffers?.y);
     },
   });
+});
+
+test("qry_01 the list of the Add filter window shows whole rows, never half a row", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+  const list = page.getByRole("list", { name: t("search.bar.fields-list") });
+  await expect(list).toBeVisible();
+  const cut = await rowsCutOff(list);
+  expect(cut, "rows that are only partly inside the list").toEqual([]);
 });

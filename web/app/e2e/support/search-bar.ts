@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 
 import { ada, type Person } from "./accounts.ts";
 import { chooseTheme, themes } from "./checks.ts";
@@ -88,3 +88,21 @@ export async function closeBar(page: Page): Promise<void> {
 
 // The folder the pictures go to: the one flag of every picture spec, re-exported so a spec that already imports this file takes no other import.
 export { screenshotFolder } from "./screenshots.ts";
+
+/** The rows of a scrolling list that are only partly inside it (a row cut in half), as text; none when every row shows whole or not at all. */
+export function rowsCutOff(list: Locator): Promise<readonly string[]> {
+  return list.evaluate((element) => {
+    const frame = element.getBoundingClientRect();
+    const tolerance = 0.5;
+    const cut: string[] = [];
+    for (const child of element.children) {
+      const { top, bottom } = child.getBoundingClientRect();
+      const inside = bottom > frame.top && top < frame.bottom;
+      const whole = top >= frame.top - tolerance && bottom <= frame.bottom + tolerance;
+      if (inside && !whole) {
+        cut.push(`${top}-${bottom} in ${frame.top}-${frame.bottom}`);
+      }
+    }
+    return cut;
+  });
+}

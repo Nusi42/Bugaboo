@@ -1453,16 +1453,24 @@ part "picker.legend[variant=boxed]" {
     color "$fg"
 }
 
+// Whole rows: seven rows and the gaps between them (the padding, for the focus ring, is added around), so the last row
+// that shows is never cut in half (the review of M5, S1). A cue at the foot says there is more.
 part "picker.options[variant=list]" {
     display flex
     flex-direction column
     gap "$space-1"
-    max-height "$size-list"
-    margin 0
-    // Room for the focus ring: a list that scrolls clips what is outside it.
+    max-height "calc($size-control * 7 + $space-1 * 6)"
+    // The padding is room for the focus ring (a list that scrolls clips what is outside it); the
+    // negative margin puts the text of the rows on the edge of the box above them (S16).
+    margin 0 "calc(($ring-width + $ring-offset) * -1)"
     padding "calc($ring-width + $ring-offset)"
     list-style none
     overflow-y auto
+    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
+    background-position "bottom, bottom"
+    background-size "100% $space-4, 100% $space-3"
+    background-repeat no-repeat
+    background-attachment "local, scroll"
 }
 
 part "picker.option[variant=list]" {
@@ -1502,6 +1510,43 @@ part "picker.row" {
 
 part "picker.row:hover" {
     background "$bg-hover"
+}
+
+// A row that is one button: its text starts at the edge of the box above it, and the name is
+// underlined when the row is pointed at or has the focus.
+part "picker.choice" {
+    display flex
+    align-items center
+    justify-content flex-start
+    gap "$space-3"
+    width "100%"
+    min-height "$size-control"
+    padding 0
+    border 0
+    border-radius "$r-ctl"
+    background transparent
+    color "$fg"
+    font-family inherit
+    font-size inherit
+    text-align start
+    cursor pointer
+}
+
+part "picker.choice picker.name" {
+    overflow hidden
+    overflow-wrap normal
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "picker.id" {
+    margin-inline-end "$space-2"
+    font-family "$mono"
+    font-size "$fs-base"
+}
+
+part "picker.choice:hover picker.name" "picker.choice:focus-visible picker.name" {
+    text-decoration underline
 }
 
 part "picker.name[variant=list]" {
@@ -3096,7 +3141,7 @@ part "confirm.actions" {
 }
 
 // The text buttons of an answer row stand on the start edge, the others at the end.
-part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" {
+part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" "search-panel.actions button[variant=quiet]:first-child" {
     margin-inline-end auto
 }
 
@@ -12495,10 +12540,9 @@ part "search-choice" {
     gap "$space-3"
 }
 
+// The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end.
 part "search-panel.actions" {
-    display flex
-    justify-content flex-end
-    gap "$space-2"
+    use "answer-row"
 }
 
 // The button that closes the sheet stays at the foot of it.

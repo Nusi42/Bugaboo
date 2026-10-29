@@ -3910,9 +3910,6 @@ pub const SEARCH_BAR_FIELDS_SEARCH: MessageKey = MessageKey::new("search.bar.fie
 /// The message `search.bar.filter-as-text`.
 pub const SEARCH_BAR_FILTER_AS_TEXT: MessageKey = MessageKey::new("search.bar.filter-as-text");
 
-/// The message `search.bar.filter-by-short`.
-pub const SEARCH_BAR_FILTER_BY_SHORT: MessageKey = MessageKey::new("search.bar.filter-by-short");
-
 /// The message `search.bar.filters`.
 pub const SEARCH_BAR_FILTERS: MessageKey = MessageKey::new("search.bar.filters");
 
@@ -3924,9 +3921,6 @@ pub const SEARCH_BAR_IS_EMPTY: MessageKey = MessageKey::new("search.bar.is-empty
 
 /// The message `search.bar.is-not-empty`.
 pub const SEARCH_BAR_IS_NOT_EMPTY: MessageKey = MessageKey::new("search.bar.is-not-empty");
-
-/// The message `search.bar.issue-choose`.
-pub const SEARCH_BAR_ISSUE_CHOOSE: MessageKey = MessageKey::new("search.bar.issue-choose");
 
 /// The message `search.bar.issue-clear`.
 pub const SEARCH_BAR_ISSUE_CLEAR: MessageKey = MessageKey::new("search.bar.issue-clear");
@@ -4032,9 +4026,6 @@ pub const SEARCH_BAR_OPERATOR: MessageKey = MessageKey::new("search.bar.operator
 
 /// The message `search.bar.pick`.
 pub const SEARCH_BAR_PICK: MessageKey = MessageKey::new("search.bar.pick");
-
-/// The message `search.bar.pick-choose`.
-pub const SEARCH_BAR_PICK_CHOOSE: MessageKey = MessageKey::new("search.bar.pick-choose");
 
 /// The message `search.bar.pick-clear`.
 pub const SEARCH_BAR_PICK_CLEAR: MessageKey = MessageKey::new("search.bar.pick-clear");
@@ -14289,13 +14280,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.fields-search", "Find a field"),
     ("search.bar.filter-as-text", "The filter as text"),
     ("search.bar.filter-by", "Choose {field} to filter by"),
-    ("search.bar.filter-by-short", "Choose"),
     ("search.bar.filters", "Filters"),
     ("search.bar.filters-count", "Filters ({count})"),
     ("search.bar.from", "from"),
     ("search.bar.is-empty", "empty"),
     ("search.bar.is-not-empty", "not empty"),
-    ("search.bar.issue-choose", "Choose"),
     ("search.bar.issue-chosen", "Chosen: {id}"),
     ("search.bar.issue-clear", "Clear the words"),
     ("search.bar.issue-legend", "Issue"),
@@ -14353,7 +14342,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.op-within", "is inside the project"),
     ("search.bar.operator", "Compare"),
     ("search.bar.pick", "Choose …"),
-    ("search.bar.pick-choose", "Choose"),
     ("search.bar.pick-chosen", "Chosen: {name}"),
     ("search.bar.pick-clear", "Clear the name"),
     ("search.bar.pick-groups", "Group"),

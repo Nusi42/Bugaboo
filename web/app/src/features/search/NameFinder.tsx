@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, PickerRow, SearchPicker } from "@bugaboo/ui";
+import { PickerChoice, SearchPicker } from "@bugaboo/ui";
 import type { AskKind, SearchLanguage } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
@@ -40,17 +40,14 @@ export function NameFinder({ language, what, onPick }: NameFinderProps) {
       more={undefined}
     >
       {found.map((name) => (
-        <PickerRow key={name.source} label={name.label}>
-          <Button
-            look={buttonLook.quiet}
-            aria-label={t("search.bar.pick-take", { name: name.label })}
-            onPress={() => {
-              onPick(name);
-            }}
-          >
-            {t("search.bar.pick-choose")}
-          </Button>
-        </PickerRow>
+        <PickerChoice
+          key={name.source}
+          label={name.label}
+          accessibleName={t("search.bar.pick-take", { name: name.label })}
+          onPick={() => {
+            onPick(name);
+          }}
+        />
       ))}
     </SearchPicker>
   );

@@ -65,7 +65,6 @@ export const messages = {
   "search.bar.fields-list": "Fields you can filter by",
   "search.bar.fields-none": "No field has these words.",
   "search.bar.filter-by": "Choose {field} to filter by",
-  "search.bar.filter-by-short": "Choose",
   "search.bar.operator": "Compare",
   "search.bar.value": "Value",
   "search.bar.pick": "Choose …",
@@ -104,7 +103,6 @@ export const messages = {
   "search.bar.pick-list": "Names found",
   "search.bar.pick-none": "Nothing found.",
   "search.bar.pick-take": "Choose {name}",
-  "search.bar.pick-choose": "Choose",
   "search.bar.pick-chosen": "Chosen: {name}",
   "search.bar.issue-legend": "Issue",
   "search.bar.issue-search": "Issue ID or words of the title",
@@ -112,7 +110,6 @@ export const messages = {
   "search.bar.issue-list": "Issues found",
   "search.bar.issue-none": "No issue found.",
   "search.bar.issue-take": "Choose {issue}",
-  "search.bar.issue-choose": "Choose",
   "search.save": "Save search",
   "search.save-copy": "Save a copy",
   "search.save-text":

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, PickerRow, SearchPicker } from "@bugaboo/ui";
+import { PickerChoice, SearchPicker } from "@bugaboo/ui";
 import type { Field, ReadableFields } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
@@ -39,17 +39,14 @@ export function FieldPicker({ fields, onPick }: FieldPickerProps) {
       more={undefined}
     >
       {found.map((field) => (
-        <PickerRow key={field.word} label={nameOf(field.word)}>
-          <Button
-            look={buttonLook.quiet}
-            aria-label={t("search.bar.filter-by", { field: nameOf(field.word) })}
-            onPress={() => {
-              onPick(field);
-            }}
-          >
-            {t("search.bar.filter-by-short")}
-          </Button>
-        </PickerRow>
+        <PickerChoice
+          key={field.word}
+          label={nameOf(field.word)}
+          accessibleName={t("search.bar.filter-by", { field: nameOf(field.word) })}
+          onPick={() => {
+            onPick(field);
+          }}
+        />
       ))}
     </SearchPicker>
   );

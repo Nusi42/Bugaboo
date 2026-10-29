@@ -46,7 +46,7 @@ export function AddFilter({ fields, onPick }: AddFilterProps) {
         from={phone ? overlayEdge.bottom : overlayEdge.center}
       >
         <div {...partOf(part.searchPanel)}>
-          <h2 {...partOf(part.searchHelpTitle)}>{t("search.bar.add-filter")}</h2>
+          <h2 {...partOf(part.confirmTitle)}>{t("search.bar.add-filter")}</h2>
           <p {...partOf(part.muted)}>{t("search.bar.add-filter-which")}</p>
           <FieldPicker
             fields={fields}
