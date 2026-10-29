@@ -814,6 +814,44 @@ optgroup {
   outline: none;
 }
 
+[data-part="overlay.dialog"]::before {
+  content: "";
+  position: sticky;
+  z-index: var(--z-raised);
+  display: block;
+  flex: none;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 0 var(--space-3) var(--border-width)
+    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+  animation-timeline: scroll(nearest);
+  animation-fill-mode: both;
+  animation-timing-function: linear;
+  animation-name: cue-in;
+  animation-range: 0% var(--space-3);
+  top: 0;
+}
+
+[data-part="overlay.dialog"]::after {
+  content: "";
+  position: sticky;
+  z-index: var(--z-raised);
+  display: block;
+  flex: none;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 0 var(--space-3) var(--border-width)
+    color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+  animation-timeline: scroll(nearest);
+  animation-fill-mode: both;
+  animation-timing-function: linear;
+  animation-name: cue-out;
+  animation-range: calc(100% - var(--space-3)) 100%;
+  bottom: 0;
+}
+
 [data-part="overlay"][data-entering]::before {
   animation: fade var(--motion-base) var(--ease-out);
 }

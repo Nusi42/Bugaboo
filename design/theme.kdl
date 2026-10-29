@@ -1671,6 +1671,17 @@ part "overlay.dialog" {
     outline none
 }
 
+// A menu or a sheet that is taller than the screen scrolls, with a shadow at each end that has more behind it.
+part "overlay.dialog::before" {
+    use "edge-shadow-start"
+    top 0
+}
+
+part "overlay.dialog::after" {
+    use "edge-shadow-end"
+    bottom 0
+}
+
 part "overlay[entering]::before" {
     animation "fade $motion-base $ease-out"
 }
