@@ -30,12 +30,12 @@ function Focused({ address, project, lines, onFocus, onBack, onPanel }: InnerPro
   const at = lines.findIndex((line) => line.key === address || line.id === address);
   const here = lines[at]?.key ?? address;
   // Where you are: the projects above it, the project, then the issue, as on every project page.
-  const found = useProject(project ?? "");
+  const found = useProject(project);
   const last = useMemo(
     (): readonly TrailStep[] => [{ label: here, href: issueAddress(here) }],
     [here],
   );
-  useProjectTrail(project === undefined ? undefined : found.data, last);
+  useProjectTrail(found.isPlaceholderData ? undefined : found.data, last);
   const step = (direction: 1 | -1): void => {
     const next = lines[at + direction];
     if (next !== undefined) {
