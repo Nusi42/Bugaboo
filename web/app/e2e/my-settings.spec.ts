@@ -237,6 +237,15 @@ test("cfg_04 times follow the region the person chose", async ({ page }) => {
   await expect(page.getByText(/\d{4}\u2011\d{2}\u2011\d{2},\s/u)).toHaveCount(0);
 });
 
+/** The hint of an access-key box is its explanation and the bounds of the registry, once, in that order. */
+async function expectBoundsOnce(page: Page, which: "default" | "longest"): Promise<void> {
+  await expect(
+    page.getByLabel(t(`setting.auth.access-key-${which}-days.name`), { exact: true }),
+  ).toHaveAccessibleDescription(
+    `${t(`setting.auth.access-key-${which}-days.help`)} ${t("setting.ui.between", { least: 1, most: 365 })}`,
+  );
+}
+
 test("cfg_06 the sign-in rules are drawn from the registry and saved at once", async ({ page }) => {
   await signIn(page, ada);
   await page.goto(paths.signInRules);
@@ -248,13 +257,8 @@ test("cfg_06 the sign-in rules are drawn from the registry and saved at once", a
   await expect(
     page.getByLabel(t("setting.auth.access-key-longest-days.name"), { exact: true }),
   ).toHaveValue("365");
-  // The bounds are in the hint of each box, said once (the explanation of the setting says them or they follow it).
-  await expect(
-    page.getByLabel(t("setting.auth.access-key-default-days.name"), { exact: true }),
-  ).toHaveAccessibleDescription(/365/u);
-  await expect(
-    page.getByLabel(t("setting.auth.access-key-longest-days.name"), { exact: true }),
-  ).toHaveAccessibleDescription(/365/u);
+  await expectBoundsOnce(page, "default");
+  await expectBoundsOnce(page, "longest");
   await page.getByLabel(idle, { exact: true }).fill("45");
   await page
     .getByRole("button", { name: t("common.save") })

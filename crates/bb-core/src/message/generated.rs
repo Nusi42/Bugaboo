@@ -15099,7 +15099,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.access-key-default-days.help",
-        "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
+        "How many days a new access key lives when the person picks no other date.",
     ),
     (
         "setting.auth.access-key-default-days.name",
@@ -15107,7 +15107,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.access-key-longest-days.help",
-        "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
+        "The most days an access key can live, whatever date the person picks.",
     ),
     (
         "setting.auth.access-key-longest-days.name",
@@ -15147,7 +15147,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.files.max-megabytes.help",
-        "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
+        "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more.",
     ),
     ("setting.files.max-megabytes.name", "Biggest file"),
     (
@@ -15381,7 +15381,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.security.session-absolute-hours.help",
-        "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+        "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again.",
     ),
     (
         "setting.security.session-absolute-hours.name",
@@ -15389,7 +15389,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.security.session-idle-minutes.help",
-        "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
+        "How many minutes without activity pass before people are signed out automatically.",
     ),
     (
         "setting.security.session-idle-minutes.name",

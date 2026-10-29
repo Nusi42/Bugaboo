@@ -25,10 +25,16 @@ test("ux_4 the settings of a project have one kind of Save button, and the hint 
   );
   // The box of the number: its hint is above the Save button of the same form.
   const form = page.locator("form").filter({ has: page.getByLabel(/biggest file/iu) });
-  const hint = form.getByText(/between 1 and 100/iu);
-  await expect(hint).toHaveCount(1);
+  const field = form.getByLabel(/biggest file/iu);
+  const help = t("setting.files.max-megabytes.help");
+  // The hint of the box is the explanation of the setting and the bounds of the registry, once, and the
+  // explanation is nowhere else on the page (no paragraph under the form).
+  await expect(field).toHaveAccessibleDescription(
+    `${help} ${t("setting.ui.between", { least: 1, most: 100 })}`,
+  );
+  await expect(page.getByText(help)).toHaveCount(1);
   const save = form.getByRole("button", { name: t("common.save"), exact: true });
-  expect((await boxOf(hint)).y).toBeLessThan((await boxOf(save)).y);
+  expect((await boxOf(page.getByText(help))).y).toBeLessThan((await boxOf(save)).y);
 });
 
 test("ux_4 the two choices of Issue IDs stand on one line when they fit", async ({ page }) => {

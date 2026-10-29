@@ -13,7 +13,7 @@ import { useState } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { wholeNumberIn } from "../../shared/number.ts";
-import { hasNoGenericControl, wordsOf } from "./texts.ts";
+import { controlKindOf, wordsOf } from "./texts.ts";
 
 /** What a control needs: the setting, and what to do with a new value. */
 export interface SettingControlProps {
@@ -50,14 +50,9 @@ function TypedControl({ setting, onChange, help }: SettingControlProps) {
     bounds === undefined
       ? undefined
       : t("setting.ui.between", { least: bounds.least, most: bounds.most });
-  // The explanation of the setting is the hint of the box, with its bounds once: where the explanation does not
-  // say them, they follow it.
-  const description =
-    help === undefined
-      ? between
-      : bounds === undefined || help.includes(String(bounds.most))
-        ? help
-        : `${help} ${between ?? ""}`;
+  // The hint of the box is the explanation of the setting and, from the registry, the bounds it accepts: said once,
+  // never typed into the explanation.
+  const description = [help, between].filter((piece) => piece !== undefined).join(" ") || undefined;
   const submit = (): void => {
     if (!number) {
       onChange(draft);
@@ -98,15 +93,16 @@ function TypedControl({ setting, onChange, help }: SettingControlProps) {
  */
 export function SettingControl({ setting, onChange, help }: SettingControlProps) {
   const value = setting.value;
-  if (setting.kind === "yes-no" && typeof value === "boolean") {
+  const kind = controlKindOf(setting);
+  if (kind === "switch" && typeof value === "boolean") {
     return <Switch label={wordsOf(setting.name_key)} isSelected={value} onChange={onChange} />;
   }
-  if (setting.format === "choice" && typeof value === "string") {
+  if ((kind === "choices" || kind === "list") && typeof value === "string") {
     const choices = setting.choices.map((choice) => ({
       value: choice.value,
       label: wordsOf(choice.label_key),
     }));
-    return choices.length <= 4 ? (
+    return kind === "choices" ? (
       <ChoiceGroup
         legend={wordsOf(setting.name_key)}
         choices={choices}
@@ -123,7 +119,7 @@ export function SettingControl({ setting, onChange, help }: SettingControlProps)
       />
     );
   }
-  if (setting.format === "time-zone" && typeof value === "string") {
+  if (kind === "time-zone" && typeof value === "string") {
     return (
       <SelectField
         label={wordsOf(setting.name_key)}
@@ -133,7 +129,7 @@ export function SettingControl({ setting, onChange, help }: SettingControlProps)
       />
     );
   }
-  if (hasNoGenericControl(setting)) {
+  if (kind === "none") {
     return null;
   }
   // Keyed by the stored value, so the box shows the new value after a reset.

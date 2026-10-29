@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { SettingControl } from "./SettingControl.tsx";
-import { isTypedSetting, sourceInWords, wordsOf } from "./texts.ts";
+import { controlKindOf, sourceInWords, wordsOf } from "./texts.ts";
 
 /** What a row can do with its setting. */
 export interface SettingActions {
@@ -63,7 +63,7 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
     actions.onChange(setting.key, value);
   };
   // A box that is typed in has its explanation inside, with its field; every other control has it under it.
-  const helpWithField = control === undefined && isTypedSetting(setting);
+  const helpWithField = control === undefined && controlKindOf(setting) === "typed";
   return (
     <li {...partOf(part.box)}>
       {lockedBelow ? (

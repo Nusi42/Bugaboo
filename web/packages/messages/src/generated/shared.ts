@@ -56,15 +56,15 @@ export const messages = {
   "error.server.unavailable": "Bugaboo is not available right now. Please try again in a moment.",
   "error.server.internal": "Something went wrong on our side. Nothing you did caused this.",
   "setting.security.session-idle-minutes.help":
-    "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
+    "How many minutes without activity pass before people are signed out automatically.",
   "setting.security.two-step-required.help":
     "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
   "setting.security.session-absolute-hours.help":
-    "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+    "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again.",
   "setting.auth.access-key-default-days.help":
-    "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
+    "How many days a new access key lives when the person picks no other date.",
   "setting.auth.access-key-longest-days.help":
-    "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
+    "The most days an access key can live, whatever date the person picks.",
   "setting.auth.sign-up-enabled.help":
     "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the e-mail address they give, and the account is created only when they open the link in it, so this works only while e-mail is on.",
   "setting.content.image-hosts.name": "Hosts that images may come from",
@@ -469,7 +469,7 @@ export const messages = {
     "This project does not offer that issue type. Choose another type, or ask the project lead.",
   "setting.files.max-megabytes.name": "Biggest file",
   "setting.files.max-megabytes.help":
-    "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
+    "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more.",
   "setting.files.blocked-types.name": "Types of file that are never accepted",
   "setting.files.blocked-types.help":
     "File types the organization never accepts, as a list separated by commas, like exe, bat. A file is refused when its content or its name has one of these types.",
