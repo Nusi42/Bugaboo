@@ -133,12 +133,12 @@ function Question({
         </Heading>
         <p {...partOf(part.text)}>{text}</p>
         {children}
-        {confirmDisabled && confirmHint !== undefined ? (
-          <p {...partOf(part.muted)} id={hintId}>
-            {confirmHint}
-          </p>
-        ) : null}
       </div>
+      {confirmDisabled && confirmHint !== undefined ? (
+        <p {...partOf(part.muted)} id={hintId}>
+          {confirmHint}
+        </p>
+      ) : null}
       <div {...partOf(part.confirmActions)}>
         <Button look={buttonLook.quiet} onPress={close}>
           {cancelLabel}

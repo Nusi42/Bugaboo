@@ -19,6 +19,18 @@ export interface NameFinderProps {
 /** A person is shown with the round face of the avatar look (UX design section 7.5). */
 const avatar: FieldLook = "avatar";
 
+/** *Me (Your Name)*: the first row of the list of people. */
+function MeChoice({ name, onPick }: { readonly name: string; readonly onPick: () => void }) {
+  return (
+    <PickerChoice
+      label={
+        <FieldValue look={avatar} text={t("search.bar.me-row", { name })} initialsFrom={name} />
+      }
+      onPick={onPick}
+    />
+  );
+}
+
 /** The words of the finder for each kind of name. */
 const legends: Readonly<Record<NameFinderProps["what"], () => string>> = {
   people: () => t("search.bar.pick-people"),
@@ -34,8 +46,14 @@ export function NameFinder({ language, what, onPick, onPickMe }: NameFinderProps
   const [words, setWords] = useState("");
   const asked = useAskedNames(language, { what, startingWith: words.trim() });
   const myName = useMe()?.name;
-  // The person who searches is the first row, as *Me*, and is not in the list a second time.
-  const meRow = what === "people" && onPickMe !== undefined && myName !== undefined;
+  // The person who searches is the first row, as *Me*, while the words typed are the start of their
+  // name (or nothing is typed), and is not in the list a second time.
+  const typed = words.trim().toLowerCase();
+  const meRow =
+    what === "people" &&
+    onPickMe !== undefined &&
+    myName !== undefined &&
+    myName.toLowerCase().startsWith(typed);
   const found = meRow ? asked.filter((name) => name.value !== myName) : asked;
   return (
     <SearchPicker
@@ -49,18 +67,7 @@ export function NameFinder({ language, what, onPick, onPickMe }: NameFinderProps
       nothing={found.length === 0 && !meRow ? t("search.bar.pick-none") : undefined}
       more={undefined}
     >
-      {meRow && words.trim() === "" ? (
-        <PickerChoice
-          label={
-            <FieldValue
-              look={avatar}
-              text={t("search.bar.me-row", { name: myName })}
-              initialsFrom={myName}
-            />
-          }
-          onPick={onPickMe}
-        />
-      ) : null}
+      {meRow ? <MeChoice name={myName} onPick={onPickMe} /> : null}
       {found.map((name) => (
         <PickerChoice
           key={name.source}

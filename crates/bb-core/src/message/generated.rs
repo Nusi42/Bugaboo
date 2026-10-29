@@ -3873,9 +3873,15 @@ pub const SEARCH_BAR_ANY_OF: MessageKey = MessageKey::new("search.bar.any-of");
 /// The message `search.bar.any-of-add`.
 pub const SEARCH_BAR_ANY_OF_ADD: MessageKey = MessageKey::new("search.bar.any-of-add");
 
+/// The message `search.bar.any-of-change`.
+pub const SEARCH_BAR_ANY_OF_CHANGE: MessageKey = MessageKey::new("search.bar.any-of-change");
+
 /// The message `search.bar.any-of-conditions`.
 pub const SEARCH_BAR_ANY_OF_CONDITIONS: MessageKey =
     MessageKey::new("search.bar.any-of-conditions");
+
+/// The message `search.bar.any-of-confirm`.
+pub const SEARCH_BAR_ANY_OF_CONFIRM: MessageKey = MessageKey::new("search.bar.any-of-confirm");
 
 /// The message `search.bar.any-of-need`.
 pub const SEARCH_BAR_ANY_OF_NEED: MessageKey = MessageKey::new("search.bar.any-of-need");
@@ -3979,6 +3985,12 @@ pub const SEARCH_BAR_KIND_VALUE: MessageKey = MessageKey::new("search.bar.kind-v
 
 /// The message `search.bar.me`.
 pub const SEARCH_BAR_ME: MessageKey = MessageKey::new("search.bar.me");
+
+/// The message `search.bar.need-day`.
+pub const SEARCH_BAR_NEED_DAY: MessageKey = MessageKey::new("search.bar.need-day");
+
+/// The message `search.bar.need-person`.
+pub const SEARCH_BAR_NEED_PERSON: MessageKey = MessageKey::new("search.bar.need-person");
 
 /// The message `search.bar.not-a-number`.
 pub const SEARCH_BAR_NOT_A_NUMBER: MessageKey = MessageKey::new("search.bar.not-a-number");
@@ -14284,7 +14296,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.after", "after"),
     ("search.bar.any-of", "Any of"),
     ("search.bar.any-of-add", "Add a filter"),
+    ("search.bar.any-of-change", "Change Any of"),
     ("search.bar.any-of-conditions", "Filters of this Any of"),
+    ("search.bar.any-of-confirm", "Add Any of"),
     ("search.bar.any-of-need", "Add at least two filters."),
     (
         "search.bar.any-of-text",
@@ -14353,6 +14367,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.member-of", "in the group {group}"),
     ("search.bar.name-colon", "{name}:"),
     ("search.bar.name-value", "{name}: {value}"),
+    ("search.bar.need-day", "Choose a day first."),
+    ("search.bar.need-person", "Choose a person first."),
     ("search.bar.not", "not {value}"),
     (
         "search.bar.not-a-duration",

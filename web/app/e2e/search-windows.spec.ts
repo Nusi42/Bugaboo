@@ -5,7 +5,17 @@ import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
-import { addTitleFilter, box, openBar, openSearch, rowsCutOff } from "./support/search-bar.ts";
+import {
+  addTitleFilter,
+  box,
+  boxOf,
+  focusRingClipped,
+  leftEdgeOf,
+  openBar,
+  openSearch,
+  rowsCutOff,
+  wordsStartOf,
+} from "./support/search-bar.ts";
 
 // The windows of the search bar (UX design section 4.3): the button of a phone with its count and its
 // Close button, and every window of the bar in the four themes.
@@ -128,13 +138,11 @@ test("qry_01 an Any of shows its filters inside and adds them with the same pick
   const window = page.getByRole("alertdialog", { name: t("search.bar.any-of") });
   // The reason the main button waits is on the page, not only in its colour.
   await expect(window.getByText(t("search.bar.any-of-need"))).toBeVisible();
-  await expect(
-    window.getByRole("button", { name: t("search.bar.add-filter-confirm") }),
-  ).toBeDisabled();
+  await expect(window.getByRole("button", { name: t("search.bar.any-of-confirm") })).toBeDisabled();
   await addTitleFilter(page, window, "login");
   await addTitleFilter(page, window, "logout");
   await expect(window.getByText(t("search.bar.any-of-need"))).toHaveCount(0);
-  await window.getByRole("button", { name: t("search.bar.add-filter-confirm") }).click();
+  await window.getByRole("button", { name: t("search.bar.any-of-confirm") }).click();
   await expect(page.getByRole("button", { name: /Change the filter Any of/u })).toBeVisible();
 });
 
@@ -159,4 +167,102 @@ test("qry_01 the date editor is the browser's date box and the help names the ty
   await expect(
     page.getByRole("button", { name: /Change the filter Created.*2026/u }),
   ).toBeVisible();
+});
+
+test("qry_01 the person picker keeps Me while the typed words start your name, and says when nothing is found", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+  await page
+    .getByRole("button", { name: t("search.bar.filter-by", { field: "Assigned to" }) })
+    .click();
+  const search = page.getByRole("searchbox", { name: t("search.bar.pick-search") });
+  const list = page.getByRole("list", { name: t("search.bar.pick-list") });
+  await search.fill("Ad");
+  await expect(
+    list.getByRole("button", { name: t("search.bar.me-row", { name: "Ada Admin" }) }),
+  ).toBeVisible();
+  await search.fill("zzz");
+  await expect(page.getByText(t("search.bar.pick-none"))).toBeVisible();
+  await expect(list.getByRole("button")).toHaveCount(0);
+});
+
+test("qry_01 a row of the issue finder is the mono ID, the title and the status on one line, and its field keeps its ring", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+  await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Part of" }) }).click();
+  const search = page.getByRole("searchbox", { name: t("search.bar.issue-search") });
+  await search.fill("login");
+  const row = page
+    .getByRole("list", { name: t("search.bar.issue-list") })
+    .getByRole("button")
+    .first();
+  await expect(row).toBeVisible();
+  // The ID is in the mono font; the status is a pill with its word; the row is one line high.
+  const id = row.locator('[data-part="picker.id"]');
+  await expect(id).toHaveCSS("font-family", /mono/iu);
+  await expect(row.getByText("Open", { exact: true })).toBeVisible();
+  const nameHeight = (await boxOf(row.locator('[data-part="picker.name"]'))).height;
+  expect(nameHeight).toBeLessThan((await boxOf(id)).height * 1.6);
+  // The ring of the focused box is not cut off by the box that holds it, on a phone too.
+  await search.focus();
+  expect(await focusRingClipped(page)).toEqual([]);
+});
+
+test("qry_01 the titles are the dialog title and the rows start on the edge of the field", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+  const title = page.getByRole("heading", { name: t("search.bar.add-filter") });
+  await expect(title).toHaveAttribute("data-part", "confirm.title");
+  const field = page.locator('[data-part="search-field.box"]').first();
+  const row = page
+    .getByRole("list", { name: t("search.bar.fields-list") })
+    .getByRole("button")
+    .first();
+  const edge = await leftEdgeOf(field);
+  expect(Math.abs((await leftEdgeOf(row)) - edge)).toBeLessThanOrEqual(1);
+  expect(Math.abs((await wordsStartOf(row.locator("span").first())) - edge)).toBeLessThanOrEqual(1);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: t("search.help") }).click();
+  const help = page.getByRole("heading", { name: t("search.help-title") });
+  await expect(help).toHaveAttribute("data-part", "confirm.title");
+  await expect(page.getByRole("heading", { name: t("search.help-your-fields") })).toHaveAttribute(
+    "data-part",
+    "search-help.title",
+  );
+});
+
+test("qry_01 the reason a main button waits is directly above it, and an Any of has its own main words", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.any-of"), exact: true }).click();
+  const window = page.getByRole("alertdialog", { name: t("search.bar.any-of") });
+  const main = window.getByRole("button", { name: t("search.bar.any-of-confirm") });
+  await expect(main).toBeDisabled();
+  const hint = await boxOf(window.getByText(t("search.bar.any-of-need")));
+  expect((await boxOf(main)).y - (hint.y + hint.height)).toBeLessThan(24);
+  await addTitleFilter(page, window, "login");
+  await addTitleFilter(page, window, "logout");
+  // The button that adds a filter stands on a row of its own, below the filters.
+  const add = await boxOf(window.getByRole("button", { name: t("search.bar.any-of-add") }));
+  const last = await boxOf(
+    window
+      .getByRole("list", { name: t("search.bar.any-of-conditions") })
+      .getByRole("listitem")
+      .nth(1),
+  );
+  expect(add.y).toBeGreaterThanOrEqual(last.y + last.height - 1);
+  await main.click();
+  await page.getByRole("button", { name: /Change the filter Any of/u }).click();
+  await expect(window.getByRole("button", { name: t("search.bar.any-of-change") })).toBeVisible();
 });

@@ -4,7 +4,7 @@ import type { Expr, ReadableFields, SearchLanguage } from "@bugaboo/wasm-search"
 import { useState } from "react";
 
 import { joinedOr } from "../../shared/search-tree.ts";
-import { AnyOfConditions } from "./AnyOfConditions.tsx";
+import { AnyOfFilters } from "./AnyOfFilters.tsx";
 import { editingFor, type Editing } from "./editing.ts";
 import { FieldChooser } from "./FieldChooser.tsx";
 import { FilterWindows } from "./FilterWindows.tsx";
@@ -12,48 +12,48 @@ import { FilterWindows } from "./FilterWindows.tsx";
 export interface AnyOfEditorProps {
   readonly language: SearchLanguage;
   readonly fields: ReadableFields;
-  /** The conditions the window starts with; none for a new *Any of*. */
+  /** The filters the window starts with; none for a new *Any of*. */
   readonly members: readonly Expr[];
   readonly isNew: boolean;
   readonly onApply: (filter: Expr) => void;
   readonly onClose: () => void;
 }
 
-/** A condition that is changed in its own window. `index` is its place among the conditions; none for a new one. */
+/** A filter that is changed in its own window. `index` is its place among the filters; none for a new one. */
 interface Inner {
   readonly editing: Editing;
   readonly index: number | undefined;
 }
 
-/** How many conditions an *Any of* needs: one condition is just a filter. */
+/** How many filters an *Any of* needs: one filter is just a filter. */
 const fewest = 2;
 
-/** The conditions with `condition` in the place of the one at `index`, or at the end when there is no place. */
+/** The filters with `filter` in the place of the one at `index`, or at the end when there is no place. */
 function withCondition(
-  conditions: readonly Expr[],
+  filters: readonly Expr[],
   index: number | undefined,
-  condition: Expr,
+  filter: Expr,
 ): readonly Expr[] {
   return index === undefined
-    ? [...conditions, condition]
-    : conditions.map((each, at) => (at === index ? condition : each));
+    ? [...filters, filter]
+    : filters.map((each, at) => (at === index ? filter : each));
 }
 
 interface AnyOfDialogProps {
   readonly language: SearchLanguage;
-  readonly conditions: readonly Expr[];
+  readonly filters: readonly Expr[];
   readonly isNew: boolean;
-  readonly onChange: (condition: Expr, index: number) => void;
+  readonly onChange: (filter: Expr, index: number) => void;
   readonly onRemove: (index: number) => void;
   readonly onAdd: () => void;
   readonly onApply: (filter: Expr) => void;
   readonly onClose: () => void;
 }
 
-/** The question: the conditions inside, and what is still needed before the *Any of* can be added. */
+/** The question: the filters inside, and what is still needed before the *Any of* can be added. */
 function AnyOfDialog({
   language,
-  conditions,
+  filters,
   isNew,
   onChange,
   onRemove,
@@ -61,8 +61,7 @@ function AnyOfDialog({
   onApply,
   onClose,
 }: AnyOfDialogProps) {
-  const joined = conditions.length < fewest ? null : joinedOr(conditions);
-  const confirm = isNew ? "search.bar.add-filter-confirm" : "search.bar.change-filter-confirm";
+  const joined = filters.length < fewest ? null : joinedOr(filters);
   return (
     <AskDialog
       isOpen
@@ -73,7 +72,7 @@ function AnyOfDialog({
       }}
       title={t("search.bar.any-of")}
       text={t("search.bar.any-of-text")}
-      confirmLabel={t(confirm)}
+      confirmLabel={t(isNew ? "search.bar.any-of-confirm" : "search.bar.any-of-change")}
       cancelLabel={t("common.cancel")}
       confirmDisabled={joined === null}
       confirmHint={t("search.bar.any-of-need")}
@@ -83,9 +82,9 @@ function AnyOfDialog({
         }
       }}
     >
-      <AnyOfConditions
+      <AnyOfFilters
         language={language}
-        conditions={conditions}
+        filters={filters}
         onChange={onChange}
         onRemove={onRemove}
         onAdd={onAdd}
@@ -102,8 +101,8 @@ interface AnyOfWindowsProps {
   readonly onChoosing: (open: boolean) => void;
   readonly inner: Inner | null;
   readonly onInner: (inner: Inner | null) => void;
-  /** A condition was made or changed in its window. */
-  readonly onCondition: (condition: Expr) => void;
+  /** A filter was made or changed in its window. */
+  readonly onCondition: (filter: Expr) => void;
 }
 
 /** The windows over the *Any of*: the list of fields, then the window of the field picked or of the filter pressed. */
@@ -134,8 +133,8 @@ function AnyOfWindows({
         language={language}
         fields={fields}
         editing={inner?.editing}
-        onApply={(condition) => {
-          onCondition(condition);
+        onApply={(filter) => {
+          onCondition(filter);
           close();
         }}
         onClose={close}
@@ -157,20 +156,20 @@ export function AnyOfEditor({
   onApply,
   onClose,
 }: AnyOfEditorProps) {
-  const [conditions, setConditions] = useState<readonly Expr[]>(members);
+  const [filters, setFilters] = useState<readonly Expr[]>(members);
   const [choosing, setChoosing] = useState(false);
   const [inner, setInner] = useState<Inner | null>(null);
   return (
     <>
       <AnyOfDialog
         language={language}
-        conditions={conditions}
+        filters={filters}
         isNew={isNew}
-        onChange={(condition, index) => {
-          setInner({ editing: editingFor(fields, condition, { index }), index });
+        onChange={(filter, index) => {
+          setInner({ editing: editingFor(fields, filter, { index }), index });
         }}
         onRemove={(index) => {
-          setConditions(conditions.filter((_, at) => at !== index));
+          setFilters(filters.filter((_, at) => at !== index));
         }}
         onAdd={() => {
           setChoosing(true);
@@ -185,8 +184,8 @@ export function AnyOfEditor({
         onChoosing={setChoosing}
         inner={inner}
         onInner={setInner}
-        onCondition={(condition) => {
-          setConditions(withCondition(conditions, inner?.index, condition));
+        onCondition={(filter) => {
+          setFilters(withCondition(filters, inner?.index, filter));
         }}
       />
     </>

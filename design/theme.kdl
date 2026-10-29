@@ -1465,10 +1465,13 @@ part "picker.options[variant=list]" {
     padding "calc($ring-width + $ring-offset)"
     list-style none
     overflow-y auto
-    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border-subtle, transparent)"
+    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
     background-position "bottom, bottom"
-    background-size "100% $space-4, 100% $space-3"
+    background-size "100% $space-3, 100% $space-2"
     background-repeat no-repeat
+    // The cue stays inside the edges of the field above the list, not in the padding for the ring.
+    background-origin content-box
+    background-clip content-box
     background-attachment "local, scroll"
 }
 
@@ -3130,8 +3133,12 @@ part "confirm.body" {
     min-height 0
 }
 
+// The body scrolls, so it clips: the ring of a field at its edge gets its room as padding, and the
+// negative margin keeps the text where it was.
 part "overlay.modal[variant=full] confirm.body" {
     overflow-y auto
+    margin-inline "calc(($ring-width + $ring-offset) * -1)"
+    padding-inline "calc($ring-width + $ring-offset)"
 }
 
 part "confirm.title" {
@@ -12505,11 +12512,6 @@ part "search-filters" {
     min-width 0
 }
 
-// In a dialog (the filters inside an *Any of*) the list is as high as its filters, not the free height.
-part "confirm.body search-filters" {
-    flex none
-}
-
 // A filter: the button that changes it and the button that takes it away, in one outline.
 part "search-filter" {
     use "control-box"
@@ -12583,6 +12585,17 @@ part "search-filters.action" {
 
 part "search-filters.action > button" {
     width "100%"
+}
+
+// In a dialog (the filters inside an *Any of*) the list is as high as its filters, not the free height.
+part "confirm.body search-filters" {
+    flex none
+}
+
+// *+ Add a filter* of an *Any of* stands on a row of its own, not beside the last filter.
+part "confirm.body search-filters.action" {
+    flex "1 1 100%"
+    align-items flex-start
 }
 
 part "search-panel search-bar.actions" {

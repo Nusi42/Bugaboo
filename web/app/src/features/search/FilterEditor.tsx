@@ -26,6 +26,14 @@ function operatorsOf(field: Field) {
   return field.operators.filter((operator) => operator !== "in" || field.choices.length > 0);
 }
 
+/** What is still needed before the filter can be added, in the words of the field's kind. */
+function needText(field: Field): string {
+  if (field.kind === "person") {
+    return t("search.bar.need-person");
+  }
+  return field.kind === "date" ? t("search.bar.need-day") : t("search.bar.add-filter-need");
+}
+
 /** The first mistake the checker finds in the filter as it would be written, in plain words. */
 function problemOf(
   language: SearchLanguage,
@@ -102,7 +110,7 @@ export function FilterEditor({
       }
       cancelLabel={t("common.cancel")}
       confirmDisabled={made === null || problem !== undefined}
-      confirmHint={t("search.bar.add-filter-need")}
+      confirmHint={needText(field)}
       onConfirm={() => {
         if (made !== null) {
           onApply(made);
