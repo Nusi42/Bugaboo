@@ -36,11 +36,14 @@ impl StatusGroup {
     /// finished (the glossary names the same order).
     pub const LIST_ORDER: [Self; 3] = [Self::InProgress, Self::NotStarted, Self::Done];
 
-    /// The word of the group in the search language: its code in lower camel case, the same in
-    /// every language of the app (ADR-0005 amendment M5, decision 9).
+    /// The word of the group in the search language: its name as the glossary writes it (`In
+    /// progress`), the same in every language of the app (ADR-0005 amendment M5, decisions 9 and
+    /// 11). A text written in the old form (`inProgress`) is the same word ([`word_key`]).
+    ///
+    /// [`word_key`]: crate::fields::word_key
     #[must_use]
     pub fn search_word(self) -> String {
-        crate::fields::code_word(self.code())
+        crate::fields::code_phrase(self.code())
     }
 
     /// The closed date after an issue enters a status of this group, given the date it had: the
@@ -70,11 +73,11 @@ words! {
 words_in_api!(Priority, "How important an issue is.");
 
 impl Priority {
-    /// The word of the priority in the search language: its code in lower camel case, the same in
-    /// every language of the app (ADR-0005 amendment M5, decision 9).
+    /// The word of the priority in the search language: its name as the glossary writes it
+    /// (`High`), the same in every language of the app (ADR-0005 amendment M5, decisions 9 and 11).
     #[must_use]
     pub fn search_word(self) -> String {
-        crate::fields::code_word(self.code())
+        crate::fields::code_phrase(self.code())
     }
 
     /// The priority of a new issue.
@@ -307,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn qry_05_the_search_words_of_priorities_and_status_groups_are_one_word_each_and_different() {
+    fn qry_05_the_search_words_of_priorities_and_status_groups_are_different_names() {
         let mut words: Vec<String> = Priority::ALL
             .iter()
             .map(|each| each.search_word())
@@ -317,7 +320,7 @@ mod tests {
         assert!(
             words
                 .iter()
-                .all(|word| word.chars().all(char::is_alphanumeric))
+                .all(|word| word.chars().next().is_some_and(char::is_uppercase))
         );
         words.sort_unstable();
         words.dedup();

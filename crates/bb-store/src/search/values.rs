@@ -7,6 +7,7 @@
 //! comparison uses `LOWER`, `ILIKE` or a collation, so both databases answer alike.
 
 use bb_app::search::ProjectLink;
+use bb_core::fields::word_key;
 use bb_core::issue::Priority;
 use bb_core::names::name_key;
 use bb_core::readable_id::ReadableId;
@@ -64,15 +65,18 @@ impl Compiler<'_> {
     /// The place of the named thing among the levels, `None` when there is no such name.
     fn level_of(&self, domain: Domain, operand: &Operand) -> Option<usize> {
         let wanted = name_key(&operand.spelling());
+        // The words of the built-in lists are told apart by their letters alone, so the form of the
+        // old language (`inProgress`) is the group `In progress` still.
+        let letters = word_key(&operand.spelling());
         match domain {
             Domain::Priority => Priority::ALL
                 .iter()
-                .position(|each| name_key(&each.search_word()) == wanted),
+                .position(|each| word_key(&each.search_word()) == letters),
             Domain::StatusGroup => self
                 .request
                 .status_groups
                 .iter()
-                .position(|(group, _)| name_key(&group.search_word()) == wanted),
+                .position(|(group, _)| word_key(&group.search_word()) == letters),
             Domain::Choice(field) => self
                 .request
                 .names

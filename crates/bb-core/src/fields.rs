@@ -68,37 +68,36 @@ pub const ASSIGNED_TO_PEOPLE: PeopleKind = PeopleKind::AssignedTo;
 /// says ([`Field::person_kind`]), and what the views of an issue ask.
 pub const REPORTED_BY_PEOPLE: PeopleKind = PeopleKind::ReportedBy;
 
-/// The word of a stable code in the search language: the code in lower camel case (`assigned-to` is
-/// `assignedTo`). The one rule for the fields, the priorities and the status groups, so no second
-/// list of words can disagree with the codes.
+/// The word of a stable code in the search language, as the person reads it (ADR-0005 amendment
+/// M5, decision 11): the code with spaces, in lower case (`assigned-to` is `assigned to`). The one
+/// rule for the fields; the priorities and the status groups are written the same way, with a
+/// capital at the start ([`code_phrase`]). So no second list of words can disagree with the codes.
 #[must_use]
 pub fn code_word(code: &str) -> String {
-    lower_camel(code.split('-'))
+    code.split('-').collect::<Vec<_>>().join(" ")
 }
 
-/// Parts of a name written as one word in lower camel case: the first part in lower case at its
-/// start, each next part with a capital at its start, the rest of every part as it is. The one
-/// rule for the word of a built-in field (`assigned-to` is `assignedTo`) and of an own field
-/// (`Story points` is `storyPoints`).
+/// The word of a stable code as a value of the language, in display case: the words of
+/// [`code_word`] with a capital at the start (`in-progress` is `In progress`).
 #[must_use]
-pub fn lower_camel<'a>(parts: impl IntoIterator<Item = &'a str>) -> String {
-    let mut word = String::new();
-    for (at, part) in parts
-        .into_iter()
-        .filter(|part| !part.is_empty())
-        .enumerate()
-    {
-        let mut letters = part.chars();
-        if let Some(first) = letters.next() {
-            if at == 0 {
-                word.extend(first.to_lowercase());
-            } else {
-                word.extend(first.to_uppercase());
-            }
-        }
-        word.push_str(letters.as_str());
-    }
-    word
+pub fn code_phrase(code: &str) -> String {
+    let word = code_word(code);
+    let mut letters = word.chars();
+    letters.next().map_or_else(String::new, |first| {
+        first.to_uppercase().chain(letters).collect()
+    })
+}
+
+/// What tells two words of the language apart: lower case, with no space in it. `status group`,
+/// `Status group` and the form of the old language, `statusGroup`, are the same word, so a saved
+/// search written in any of them still reads. The one rule for the fields and for the values of
+/// the built-in lists.
+#[must_use]
+pub fn word_key(word: &str) -> String {
+    word.chars()
+        .filter(|character| !character.is_whitespace())
+        .flat_map(char::to_lowercase)
+        .collect()
 }
 
 words_in_api!(
@@ -240,9 +239,9 @@ impl Field {
         }
     }
 
-    /// The word of the field in the search language (ADR-0005): the key in lower camel case
-    /// (`assigned-to` is `assignedTo`), so the word is made from the key by one rule and no
-    /// second list of words can disagree with the catalogue.
+    /// The word of the field in the search language (ADR-0005 amendment M5, decision 11): the key
+    /// with spaces (`assigned-to` is `assigned to`), so the word is made from the key by one rule
+    /// and no second list of words can disagree with the catalogue.
     #[must_use]
     pub fn search_word(self) -> String {
         code_word(self.code())
@@ -291,21 +290,29 @@ mod tests {
     }
 
     #[test]
-    fn qry_05_the_search_word_of_a_field_is_its_key_in_lower_camel_case() {
-        assert_eq!(Field::AssignedTo.search_word(), "assignedTo");
-        assert_eq!(Field::PlannedForRelease.search_word(), "plannedForRelease");
+    fn qry_05_the_search_word_of_a_field_is_its_key_with_spaces() {
+        assert_eq!(Field::AssignedTo.search_word(), "assigned to");
+        assert_eq!(
+            Field::PlannedForRelease.search_word(),
+            "planned for release"
+        );
         assert_eq!(Field::Title.search_word(), "title");
-        let words: std::collections::HashSet<String> =
-            Field::ALL.iter().map(|field| field.search_word()).collect();
+        let words: std::collections::HashSet<String> = Field::ALL
+            .iter()
+            .map(|field| word_key(&field.search_word()))
+            .collect();
         assert_eq!(words.len(), Field::ALL.len());
     }
 
     #[test]
-    fn lower_camel_joins_parts_in_one_word() {
-        assert_eq!(lower_camel(["Story", "points"]), "storyPoints");
-        assert_eq!(lower_camel(["assigned", "to"]), "assignedTo");
-        assert_eq!(lower_camel(["", "a", "b"]), "aB");
-        assert_eq!(lower_camel([]), "");
+    fn qry_05_a_word_is_told_from_another_by_its_letters_alone() {
+        // The form of the old language, the new words and any case are the same word.
+        assert_eq!(word_key("statusGroup"), word_key("Status  group"));
+        assert_eq!(word_key("assigned to"), word_key("assignedTo"));
+        assert_ne!(word_key("status"), word_key("status group"));
+        assert_eq!(code_phrase("in-progress"), "In progress");
+        assert_eq!(code_phrase("high"), "High");
+        assert_eq!(code_phrase(""), "");
     }
 
     #[test]

@@ -17,12 +17,12 @@ export const helpGroups: readonly HelpGroup[] = [
   {
     heading: "search.help-fields",
     text: "search.help-fields-text",
-    examples: ["status is Open", "assignedTo is me", 'title is "Login fails"'],
+    examples: ["status is Open", "assigned to is me", 'title is "Login fails"'],
   },
   {
     heading: "search.help-comparing",
     text: "search.help-comparing-text",
-    examples: ["priority >= high", "status in (Open, Done)", "assignedTo is not empty"],
+    examples: ["priority >= High", "status in (Open, Done)", "assigned to is not empty"],
   },
   {
     heading: "search.help-time",

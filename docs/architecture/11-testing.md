@@ -157,7 +157,7 @@ The number on the menu was the read that cost most (M5 WP-03 fix round, on a dat
 | Scenario | SQLite | PostgreSQL |
 |----------|-------:|-----------:|
 | *list-big-project*: the first page of the list of a project with sub-projects | 19.9 ms | 28.7 ms |
-| *search-complex*, *search-complex-sorted*: `statusGroup is not Done and priority is High`, with and without `sort by created` | 28.0 and 27.7 ms | 40.2 and 38.7 ms |
+| *search-complex*, *search-complex-sorted*: `status group is not Done and priority is High`, with and without `sort by created` | 28.0 and 27.7 ms | 40.2 and 38.7 ms |
 | *search-count*: the count line of the same search | 77.1 ms | 48.9 ms |
 | *search-groups-status*: the groups by status | 95.2 ms | 62.2 ms |
 | *search-groups-assigned-to*: the groups by *Assigned to* | **572.9 ms** (over) | 272.5 ms |

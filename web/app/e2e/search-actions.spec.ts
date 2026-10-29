@@ -2,7 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { createAdmin } from "./support/accounts.ts";
-import { expectGoodInEveryTheme, expectStaleEdge } from "./support/checks.ts";
+import { expectGoodInEveryTheme, expectStaleNote } from "./support/checks.ts";
 import { ana, createPeopleWithRoles, projectIdOf, roleName } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -26,7 +26,7 @@ test.use({
       ]);
       adasSearch = dataOf(
         await admin.client.POST("/api/v1/saved-searches", {
-          body: { name: "Ada's list", search_text: "priority is high" },
+          body: { name: "Ada's list", search_text: "priority is High" },
         }),
       ).id;
       await admin.client.POST("/api/v1/saved-searches/{search}/shares", {
@@ -39,7 +39,7 @@ test.use({
 });
 
 test("qry_06 Save keeps the search under a name and opens its page", async ({ page }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   await page.getByRole("button", { name: t("search.save"), exact: true }).click();
   const dialog = page.getByRole("alertdialog", { name: t("search.save") });
@@ -58,13 +58,13 @@ test("qry_06 Save keeps a change of one's own search, and the address holds no t
   await page.goto(savedSearchAddress(adasSearch));
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  await box(page).fill("priority is low");
-  await expect.poll(() => addressText(page)).toBe("priority is low");
+  await box(page).fill("priority is Low");
+  await expect.poll(() => addressText(page)).toBe("priority is Low");
   await closeBar(page);
   await page.getByRole("button", { name: t("search.save-changes"), exact: true }).click();
   await expect.poll(() => addressText(page)).toBe("");
   await openBar(page);
-  await expect(box(page)).toHaveValue("priority is low");
+  await expect(box(page)).toHaveValue("priority is Low");
   await expect(page.getByRole("button", { name: t("search.save-changes") })).toHaveCount(0);
 });
 
@@ -73,7 +73,7 @@ test("qry_06 somebody else's search is changed as a copy of their own", async ({
   await page.goto(savedSearchAddress(adasSearch));
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  await box(page).fill("assignedTo is me");
+  await box(page).fill("assigned to is me");
   await closeBar(page);
   await expect(
     page.getByRole("button", { name: t("search.save-changes"), exact: true }),
@@ -90,7 +90,7 @@ test("qry_06 somebody else's search is changed as a copy of their own", async ({
   // The search of Ada is as it was.
   const original = await page.request.get(`/api/v1/saved-searches/${adasSearch}`);
   expect(await original.text()).toContain("Ada's list");
-  expect(await original.text()).not.toContain("assignedTo is me");
+  expect(await original.text()).not.toContain("assigned to is me");
 });
 
 test("qry_03 a mistake in the address leaves no head and no note about an earlier list", async ({
@@ -111,30 +111,30 @@ test("qry_03 a mistake in the address leaves no head and no note about an earlie
 test("qry_03 the results of the last good search stay, say so, and Save waits for a good text", async ({
   page,
 }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).fill("priority is");
   await expect(page.getByText(t("search.found-stale"))).toBeVisible();
-  // The edge goes round the head and the list, also an empty one, and takes no room.
-  await expectStaleEdge(page, page.getByText(t("search.found-stale")));
+  // The note is a blue one above the list, and the list has no edge of its own.
+  await expectStaleNote(page, page.getByText(t("search.found-stale")));
   // The offers are closed first, so the note can be seen; it is good in every theme.
   await box(page).press("Escape");
   await expectGoodInEveryTheme(page);
   await expect(page.getByRole("button", { name: t("search.save"), exact: true })).toBeDisabled();
-  await box(page).fill("priority is high");
+  await box(page).fill("priority is High");
   await expect(page.getByText(t("search.found-stale"))).toHaveCount(0);
   await expect(page.getByRole("button", { name: t("search.save"), exact: true })).toBeEnabled();
 });
 
-test("qry_03 the last list with rows has the same edge and note", async ({ page }) => {
-  await openSearch(page, "priority is normal");
+test("qry_03 the last list with rows has the same note", async ({ page }) => {
+  await openSearch(page, "priority is Normal");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).fill("priority is");
   await expect(page.getByText(t("search.found-stale"))).toBeVisible();
   await expect(page.locator("[data-part='list-row']").first()).toBeVisible();
-  await expectStaleEdge(page, page.getByText(t("search.found-stale")));
+  await expectStaleNote(page, page.getByText(t("search.found-stale")));
 });
 
 test("qry_01 the help puts an example into the search", async ({ page }) => {
@@ -144,9 +144,9 @@ test("qry_01 the help puts an example into the search", async ({ page }) => {
   const help = page.getByRole("dialog", { name: t("search.help-title") });
   await expect(help).toBeVisible();
   await help
-    .getByRole("button", { name: t("search.help-use", { example: "assignedTo is me" }) })
+    .getByRole("button", { name: t("search.help-use", { example: "assigned to is me" }) })
     .click();
-  await expect.poll(() => addressText(page)).toContain("assignedTo is me");
+  await expect.poll(() => addressText(page)).toContain("assigned to is me");
   // The panel closes when the example is taken into the search.
   await expect(help).toHaveCount(0);
 });

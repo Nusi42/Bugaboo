@@ -13,29 +13,29 @@ use crate::suggest::{Suggestions, suggest};
 /// The fields of the vectors, as a person who may read all of them would get them.
 #[must_use]
 pub fn sample_fields() -> ReadableFields {
-    let priority = ["lowest", "low", "normal", "high", "highest"];
+    let priority = ["Lowest", "Low", "Normal", "High", "Highest"];
     ReadableFields {
         fields: vec![
             Field::new("project", FieldKind::Project),
             Field::new("title", FieldKind::Text),
             Field::new("description", FieldKind::Text),
             Field::new("status", FieldKind::Choice).with_choices(&["Open", "In progress", "Done"]),
-            Field::new("statusGroup", FieldKind::Choice).with_choices(&[
+            Field::new("status group", FieldKind::Choice).with_choices(&[
                 "To do",
                 "In progress",
                 "Done",
             ]),
             Field::new("priority", FieldKind::Choice).with_choices(&priority),
             Field::new("tag", FieldKind::Choice),
-            Field::new("assignedTo", FieldKind::Person),
-            Field::new("reportedBy", FieldKind::Person),
+            Field::new("assigned to", FieldKind::Person),
+            Field::new("reported by", FieldKind::Person),
             Field::new("parent", FieldKind::Issue),
             Field::new("created", FieldKind::Date),
             Field::new("changed", FieldKind::Date),
             Field::new("due", FieldKind::Date),
             Field::new("estimate", FieldKind::Number),
-            Field::new("storyPoints", FieldKind::Number),
-            Field::new("timeSpent", FieldKind::Duration),
+            Field::new("story points", FieldKind::Number),
+            Field::new("time spent", FieldKind::Duration),
         ],
     }
 }
@@ -43,7 +43,14 @@ pub fn sample_fields() -> ReadableFields {
 /// Texts that are searches: each parses, checks against the sample fields and prints to its
 /// canonical text (the first example is the one of QRY-01).
 pub const ACCEPTED: &[&str] = &[
-    "project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first",
+    "project within WEB and status group is not Done and assigned to is me and changed in last 7 days sort by priority, highest first",
+    // The same search in the words of the old language: the same tree, shown in the new words.
+    "project within WEB and statusGroup is not done and assignedTo is me and changed in last 7 days sort by priority, highest first",
+    "Status Group IS NOT \"in progress\" and PRIORITY is high",
+    "statusGroup in (inProgress, \"to do\") sort by assignedTo, timeSpent",
+    "assigned to is empty and reported by is not empty sort by story points, A to Z",
+    "time spent > 2 hours and story points > 5 sort by time spent, highest first",
+    "\"story points\" > 5",
     "",
     "sort by due, oldest first, title, A to Z",
     "status is Open",
@@ -152,6 +159,11 @@ pub const REFUSED: &[&str] = &[
 pub const SUGGESTED: &[&str] = &[
     "|",
     "assi|",
+    "assigned t|",
+    "status g|",
+    "status is Open and assigned |",
+    "status is Open sort by assigned t|",
+    "status group |",
     "assignedTo |",
     "priority is |",
     "priority is not |",

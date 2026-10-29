@@ -497,6 +497,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "card.topic" role="section"
     selector "notification-group.head" role="section"
     selector "search-help.title" role="section"
+    selector "search-panel.title" role="section"
     selector "priority[variant=critical]" role="priority"
     selector "priority[variant=high]" role="priority"
     selector "[data-part=markdown] h1" role="own"
@@ -12696,6 +12697,15 @@ part "search-panel" {
 part "search-panel[variant=sheet]" {
     height "$size-bar-sheet"
     max-height "100%"
+    overflow-y hidden
+}
+
+// What the sheet holds scrolls inside it; its foot (the title row above and the button below) stays
+// where it is, whatever the offers or the mistakes add.
+part "search-panel[variant=sheet] search-bar" {
+    flex "1 1 auto"
+    min-height 0
+    overflow-y auto
 }
 
 // The head of a panel: its title, and the button that closes it at the end of the same row.
@@ -12704,6 +12714,14 @@ part "search-panel.head" {
     align-items center
     justify-content space-between
     gap "$space-3"
+}
+
+// The title of a window of the bar (S14): the size and weight of every window title.
+part "search-panel.title" {
+    margin 0
+    font-size "$fs-lg"
+    line-height "$lh-snug"
+    font-weight "$weight-bold"
 }
 
 // The chosen name and the finder of a filter on a person, a group or a project.
@@ -12807,7 +12825,7 @@ part "search-text.marks" "search-text.input" {
     margin 0
     padding 0
     border 0
-    font-family inherit
+    font-family "$mono"
     font-size inherit
     letter-spacing inherit
     line-height inherit
@@ -12846,12 +12864,11 @@ part "search-mark[variant=mistake]" {
     text-underline-offset "$space-1"
 }
 
+// The offers stand under the box in the flow of the page and push what follows down, so they never
+// cover words (S4); on a phone the sheet scrolls and its foot stays, so a long list never pushes
+// the button off the screen (S3).
 part "search-suggestions" {
     use "floating-box"
-    position absolute
-    inset-inline 0
-    top "100%"
-    z-index "$z-panel"
     max-height "calc($size-row * 6)"
     overflow-y auto
     margin 0
@@ -12882,12 +12899,21 @@ part "search-suggestion[state=active]" {
     use "ring-inside"
 }
 
+// The words that are offered are words of the language: in the same font as the box they go into (S8).
+part "search-suggestion.name" {
+    font-family "$mono"
+}
+
 part "search-suggestion.kind" {
     color "$fg-muted"
     font-size "$fs-base"
 }
 
+// The box, the words about what is wrong with it and the offers stand 8 apart (S5).
 part "search-wrap" {
+    display flex
+    flex-direction column
+    gap "$space-2"
     position relative
 }
 
@@ -12905,6 +12931,56 @@ part "search-mistake" {
     overflow-wrap anywhere
 }
 
+part "search-held-actions" {
+    display flex
+    flex none
+    align-items center
+    gap "$space-2"
+}
+
+part "search-held-actions[state=held]" {
+    visibility hidden
+}
+
+// The line under the name of a saved search says who made it, and what is done with a change stands
+// at its end. The line is always as high as the buttons, so nothing under the name moves when
+// *Changed, not saved* appears (S29).
+part "search-made-by" {
+    display grid
+    align-items center
+    min-height "$size-control"
+}
+
+// The words and the buttons share one cell, so the buttons that are held (and not seen) take no
+// width from the words: they are one line on a phone too. The held height (the control height) holds
+// for words up to two lines long.
+part "search-made-by > muted" {
+    grid-area "1 / 1"
+    min-width 0
+}
+
+part "search-made-by > search-held-actions" {
+    grid-area "1 / 1"
+    justify-self end
+}
+
+// Once changed, the words and the buttons are side by side, and the words give way (they wrap) so
+// the two never overlap.
+part "search-made-by[state=changed]" {
+    display flex
+    justify-content space-between
+    gap "$space-2"
+}
+
+part "search-made-by[state=changed] > muted" {
+    flex "1 1 auto"
+}
+
+// While the person is still typing at the end of the text, what is missing is a hint, not a fault (S6).
+part "search-mistake[variant=hint]" {
+    color "$fg-muted"
+}
+
 // What a search finds.
 part "search-results" {
     display flex
@@ -12913,18 +12989,8 @@ part "search-results" {
 }
 
 // The results of the search that was fixed last stay while the text has a mistake. They keep their
-// full contrast (a dimmed list fails AA, 4.5:1); a dashed edge round the head and the rows, drawn
-// as an outline just outside the frame (the head and the rows paint over an edge inside it) so
-// nothing moves, and the note above the list (the count line) say that they are the last ones.
-part "list-frame:has(search-results[state=stale])" {
-    outline "$border-width dashed $border-control"
-    outline-offset "$space-1"
-}
-
-// An empty last list stands inside the edge, so its words keep their distance from it on a phone too (R3).
-part "list-frame:has(search-results[state=stale]) list-nothing" {
-    padding "$pad-box" "$space-3"
-}
+// full contrast (a dimmed list fails AA, 4.5:1); the blue note above the list says that they are the
+// last ones (UX design section 6.1), so the list itself has no edge of its own.
 
 // The lists of the Share window and of Saved searches.
 part "search-list" {

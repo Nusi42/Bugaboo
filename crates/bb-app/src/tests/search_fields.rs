@@ -168,23 +168,23 @@ async fn qry_05_a_person_reads_the_fields_their_role_shows_and_the_ones_every_is
         "title",
         "status",
         "priority",
-        "assignedTo",
-        "reportedBy",
+        "assigned to",
+        "reported by",
         "labels",
         "tags",
         "project",
         "type",
-        "statusGroup",
+        "status group",
         "parent",
         "created",
         "changed",
         "closed",
-        "storyPoints",
+        "story points",
     ] {
         assert!(has(&words, word), "{word} is readable: {words:?}");
     }
     // A field whose values the issues do not hold yet is not offered.
-    assert!(!has(&words, "dueDate"));
+    assert!(!has(&words, "due date"));
     Ok(())
 }
 
@@ -257,8 +257,8 @@ async fn qry_05_a_kind_of_people_whose_names_are_hidden_cannot_be_searched() -> 
     let (bob, role) = bob_with_a_role(&world, &every_field()).await?;
     set_people(&world, role, PeopleKind::AssignedTo, PeopleLevel::RoleOnly).await?;
     let words = words_of(&world, &bob, SearchScope::Everywhere).await?;
-    assert!(!has(&words, "assignedTo"));
-    assert!(has(&words, "reportedBy"));
+    assert!(!has(&words, "assigned to"));
+    assert!(has(&words, "reported by"));
     Ok(())
 }
 

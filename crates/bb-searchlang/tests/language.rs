@@ -28,14 +28,14 @@ fn mistakes_of(text: &str) -> Vec<Mistake> {
 
 #[test]
 fn qry_01_the_example_parses_checks_and_prints_back() {
-    let text = "project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first";
+    let text = "project within WEB and status group is not Done and assigned to is me and changed in last 7 days sort by priority, highest first";
     assert_eq!(checked(text).as_deref(), Ok(text));
 }
 
 #[test]
 fn qry_04_every_helper_parses_checks_and_prints_back() {
     for text in [
-        "assignedTo is me",
+        "assigned to is me",
         "created is today",
         "created is yesterday",
         "created is this week",
@@ -44,7 +44,7 @@ fn qry_04_every_helper_parses_checks_and_prints_back() {
         "changed in last 7 days",
         "changed in last 2 weeks",
         "changed in last 3 months",
-        "assignedTo member of \"Backend\"",
+        "assigned to member of \"Backend\"",
         "project within WEB",
         "under WEB-7",
         "blocks WEB-1",
@@ -131,15 +131,15 @@ fn qry_01_a_mistake_names_the_field_and_offers_what_may_be_meant() {
     assert_eq!((mistakes[0].span.start, mistakes[0].span.end), (0, 4));
 }
 
-/// The fields of a person who may not read `reportedBy`. They are written out here, so a change of
+/// The fields of a person who may not read `reported by`. They are written out here, so a change of
 /// the sample cannot make the test pass for another reason.
 fn without_reported_by() -> ReadableFields {
     ReadableFields {
         fields: vec![
             Field::new("title", FieldKind::Text),
             Field::new("status", FieldKind::Choice).with_choices(&["Open", "Done"]),
-            Field::new("assignedTo", FieldKind::Person),
-            Field::new("reportedOn", FieldKind::Date),
+            Field::new("assigned to", FieldKind::Person),
+            Field::new("reported on", FieldKind::Date),
         ],
     }
 }
@@ -166,12 +166,12 @@ fn qry_05_a_hidden_field_and_an_unknown_field_give_the_same_mistake() {
     let readable = without_reported_by();
     // Both words are as close to the visible `reportedOn`, and as long, as each other.
     for (hidden, invented) in [
-        ("reportedBy is me", "reportedXx is me"),
+        ("reported by is me", "reported xx is me"),
         (
-            "title is x sort by reportedBy",
-            "title is x sort by reportedXx",
+            "title is x sort by reported by",
+            "title is x sort by reported xx",
         ),
-        ("reportedBy is not empty", "reportedXx is not empty"),
+        ("reported by is not empty", "reported xx is not empty"),
     ] {
         let from_hidden = check(parse(hidden).unwrap(), &readable).unwrap_err();
         let from_invented = check(parse(invented).unwrap(), &readable).unwrap_err();
@@ -186,34 +186,40 @@ fn qry_05_a_hidden_field_and_an_unknown_field_give_the_same_mistake() {
             messages::UNKNOWN_FIELD_DID_YOU_MEAN,
             "{hidden}"
         );
-        assert_eq!(from_hidden[0].args["field"], "reportedBy");
-        assert_eq!(from_invented[0].args["field"], "reportedXx");
+        assert_eq!(from_hidden[0].args["field"], "reported by");
+        assert_eq!(from_invented[0].args["field"], "reported xx");
     }
     // A text where nothing visible is close: the same plain mistake for both.
     let nothing = ReadableFields::default();
-    let from_hidden = check(parse("reportedBy is me").unwrap(), &nothing).unwrap_err();
-    let from_invented = check(parse("qqqqqqqqqq is me").unwrap(), &nothing).unwrap_err();
+    let from_hidden = check(parse("reported by is me").unwrap(), &nothing).unwrap_err();
+    let from_invented = check(parse("qqqqqqqqqqq is me").unwrap(), &nothing).unwrap_err();
     assert_eq!(shape(&from_hidden[0]), shape(&from_invented[0]));
     assert_eq!(from_hidden[0].key, messages::UNKNOWN_FIELD);
     // Neither the suggestions of a mistake nor the offers at the cursor give the field away.
-    for text in ["reportedby is me", "reportedB is me", "reported is me"] {
+    for text in [
+        "reportedby is me",
+        "reportedBy is me",
+        "Reported By is me",
+        "reported b is me",
+        "reported is me",
+    ] {
         let mistakes = check(parse(text).unwrap(), &readable).unwrap_err();
         assert!(
             mistakes[0]
                 .suggestions
                 .iter()
-                .all(|word| word != "reportedBy"),
+                .all(|word| word != "reported by"),
             "{text}"
         );
     }
-    let offered = suggest("reportedB", 9, &readable);
+    let offered = suggest("reported b", 10, &readable);
     assert!(offered.items.iter().all(|offer| match offer {
-        Suggestion::Word { text, .. } => text != "reportedBy",
+        Suggestion::Word { text, .. } => text != "reported by",
         Suggestion::Ask { .. } => true,
     }));
     // The person who may read it gets it offered, so the checks above can fail.
-    let close = mistakes_of("reportedby is me");
-    assert_eq!(close[0].suggestions, ["reportedBy"]);
+    let close = mistakes_of("reported bz is me");
+    assert_eq!(close[0].suggestions, ["reported by"]);
 }
 
 #[test]
@@ -520,13 +526,30 @@ fn suggestions_at(marked: &str) -> (Vec<String>, (usize, usize)) {
 #[test]
 fn qry_03_suggestions_after_a_typed_start_offer_the_fields_that_begin_so() {
     let (words, replace) = suggestions_at("assi|");
-    assert_eq!(words, ["assignedTo"]);
+    assert_eq!(words, ["assigned to"]);
     assert_eq!(replace, (0, 4));
 }
 
 #[test]
+fn qry_03_suggestions_continue_the_words_of_a_field() {
+    // The words typed so far are the start of a field of several words, or a whole field and the
+    // start of another one: the offer replaces all of them.
+    let (words, replace) = suggestions_at("status g|");
+    assert_eq!(words, ["status group"]);
+    assert_eq!(replace, (0, 8));
+    let (words, replace) = suggestions_at("status is Open and assigned t|");
+    assert_eq!(words, ["assigned to"]);
+    assert_eq!(replace, (19, 29));
+    let (words, replace) = suggestions_at("sort by assigned t|");
+    assert_eq!(words, ["assigned to"]);
+    assert_eq!(replace, (8, 18));
+    let (words, _) = suggestions_at("status group |");
+    assert!(words.contains(&"is not".to_owned()));
+}
+
+#[test]
 fn qry_03_suggestions_after_a_field_offer_what_it_allows() {
-    let (words, replace) = suggestions_at("assignedTo |");
+    let (words, replace) = suggestions_at("assigned to |");
     assert_eq!(
         words,
         [
@@ -538,7 +561,7 @@ fn qry_03_suggestions_after_a_field_offer_what_it_allows() {
             "is not empty"
         ]
     );
-    assert_eq!(replace, (11, 11));
+    assert_eq!(replace, (12, 12));
     let (words, _) = suggestions_at("title |");
     assert!(words.contains(&"contains".to_owned()));
     assert!(!words.contains(&"member of".to_owned()));
@@ -549,10 +572,10 @@ fn qry_03_suggestions_after_is_offer_the_choices_of_the_field() {
     let (words, _) = suggestions_at("priority is |");
     assert_eq!(
         words,
-        ["not", "empty", "lowest", "low", "normal", "high", "highest"]
+        ["not", "empty", "Lowest", "Low", "Normal", "High", "Highest"]
     );
     let (words, _) = suggestions_at("priority is hi|");
-    assert_eq!(words, ["high", "highest"]);
+    assert_eq!(words, ["High", "Highest"]);
     let (words, _) = suggestions_at("assignedTo is |");
     assert_eq!(words, ["not", "empty", "me", "ask People "]);
 }
@@ -665,10 +688,13 @@ fn qry_05_a_contains_on_its_own_is_offered_and_allowed_only_with_title_and_descr
 #[test]
 fn qry_02_a_length_of_time_prints_in_the_largest_units_and_reads_back() {
     for (text, canonical) in [
-        ("timeSpent is 90 minutes", "timeSpent is 1 hour 30 minutes"),
-        ("timeSpent >= 120 minutes", "timeSpent >= 2 hours"),
-        ("timeSpent < 1 hour 1 minute", "timeSpent < 1 hour 1 minute"),
-        ("timeSpent is 0 minutes", "timeSpent is 0 minutes"),
+        ("timeSpent is 90 minutes", "time spent is 1 hour 30 minutes"),
+        ("time spent >= 120 minutes", "time spent >= 2 hours"),
+        (
+            "time spent < 1 hour 1 minute",
+            "time spent < 1 hour 1 minute",
+        ),
+        ("time spent is 0 minutes", "time spent is 0 minutes"),
     ] {
         assert_eq!(checked(text).as_deref(), Ok(canonical), "{text}");
     }

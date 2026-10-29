@@ -2,7 +2,7 @@
 //! one space between words, brackets only where the meaning needs them, and the order of `sort by`
 //! kept. The address, the API and a saved search carry this text (ADR-0005, amendment M5).
 
-use crate::literal::{quoted, value_or_quoted, word_or_quoted};
+use crate::literal::{field_or_quoted, quoted, value_or_quoted};
 use crate::span::Span;
 use crate::syntax::{Expr, FieldRef, Operand, Search, SortKey, Test, Text};
 use crate::words::{Keyword, steps_word, unit_word};
@@ -124,7 +124,7 @@ fn expression(node: &Expr, needed: Level) -> String {
             expression(item, Level::Single)
         ),
         Expr::Field { field, test, .. } => {
-            format!("{} {}", word_or_quoted(&field.word), test_text(test))
+            format!("{} {}", field_or_quoted(&field.word), test_text(test))
         }
         Expr::Contains { text, .. } => format!("{} {}", Keyword::Contains.text(), text_of(text)),
         Expr::Under { id, .. } => format!("{} {}", Keyword::Under.text(), id.text),
@@ -225,7 +225,7 @@ pub(crate) fn operand_source(value: &Operand) -> String {
 }
 
 fn sort_key(key: &SortKey) -> String {
-    let field = word_or_quoted(&key.field.word);
+    let field = field_or_quoted(&key.field.word);
     match key.direction {
         Some(direction) => format!("{field}, {}", direction.text()),
         None => field,

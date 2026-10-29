@@ -34,7 +34,7 @@ test.use({
       });
       someSearch = dataOf(
         await admin.client.POST("/api/v1/saved-searches", {
-          body: { name: "Mine to do", search_text: "assignedTo is me and priority >= high" },
+          body: { name: "Mine to do", search_text: "assigned to is me and priority >= High" },
         }),
       ).id;
       await createPeopleWithRoles(server, admin, [
@@ -50,7 +50,7 @@ test.use({
 });
 
 test("qry_01 pictures: Simple search with filters", async ({ page }) => {
-  await openSearch(page, "assignedTo is me and priority >= high and hoursLogged > 2 hours");
+  await openSearch(page, "assigned to is me and priority >= High and hours logged > 2 hours");
   await inFourThemes(page, "simple");
   // On a phone the bar is a sheet that opens; on a computer it looks as it did.
   await onThisLayout(page, {
@@ -64,7 +64,7 @@ test("qry_01 pictures: Simple search with filters", async ({ page }) => {
 });
 
 test("qry_03 pictures: Advanced search with a mistake and with offers", async ({ page }) => {
-  await openSearch(page, "assignedTo is me");
+  await openSearch(page, "assigned to is me");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await inFourThemes(page, "advanced");
@@ -77,7 +77,7 @@ test("qry_03 pictures: Advanced search with a mistake and with offers", async ({
 });
 
 test("qry_01 pictures: the windows of Simple search", async ({ page }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   await inFourThemes(page, "add-filter");
@@ -90,7 +90,7 @@ test("qry_01 pictures: the windows of Simple search", async ({ page }) => {
 test("qry_01 pictures: the Any of window, the issue finder and the date editor", async ({
   page,
 }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.any-of") }).click();
   await inFourThemes(page, "any-of");
@@ -135,7 +135,7 @@ test("qry_06 pictures: a mistake in the address has no earlier list", async ({ p
 test("qry_06 pictures: Save, Save a copy and results that wait for a good text", async ({
   page,
 }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await page.getByRole("textbox", { name: t("search.bar.advanced-label") }).fill("priority is");
@@ -153,7 +153,7 @@ test("qry_06 pictures: Save, Save a copy and results that wait for a good text",
   await openBar(page);
   await page
     .getByRole("textbox", { name: t("search.bar.advanced-label") })
-    .fill("priority is high");
+    .fill("priority is High");
   // The list of offers is closed first: on a phone the sheet is as high as its content.
   await page.getByRole("textbox", { name: t("search.bar.advanced-label") }).press("Escape");
   await page.getByRole("button", { name: t("search.save"), exact: true }).click();
@@ -164,7 +164,7 @@ test("qry_06 pictures: Save, Save a copy and results that wait for a good text",
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await page
     .getByRole("textbox", { name: t("search.bar.advanced-label") })
-    .fill("assignedTo is me");
+    .fill("assigned to is me");
   await closeBar(page);
   await inFourThemes(page, "saved-changed");
 });
@@ -176,14 +176,14 @@ test("qry_06 pictures: Save a copy of a search somebody else made", async ({ pag
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await page
     .getByRole("textbox", { name: t("search.bar.advanced-label") })
-    .fill("assignedTo is me");
+    .fill("assigned to is me");
   await closeBar(page);
   await page.getByRole("button", { name: t("search.save-copy"), exact: true }).click();
   await inFourThemes(page, "save-copy");
 });
 
 test("qry_01 pictures: the help sheet", async ({ page }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   await page.getByRole("button", { name: t("search.help") }).click();
   await inFourThemes(page, "help");

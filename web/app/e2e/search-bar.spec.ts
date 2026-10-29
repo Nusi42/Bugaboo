@@ -33,7 +33,7 @@ test.use({
       });
       someSearch = dataOf(
         await admin.client.POST("/api/v1/saved-searches", {
-          body: { name: "Mine to do", search_text: "assignedTo is me" },
+          body: { name: "Mine to do", search_text: "assigned to is me" },
         }),
       ).id;
       await admin.dispose();
@@ -42,14 +42,14 @@ test.use({
 });
 
 const texts = [
-  "priority is high",
-  "assignedTo is me and priority >= high",
-  '(priority is high or priority is low) and title contains "crash"',
+  "priority is High",
+  "assigned to is me and priority >= High",
+  '(priority is High or priority is Low) and title contains "crash"',
   "changed in last 7 days sort by priority, highest first",
   'not title contains "login" and created is this week',
-  "assignedTo is not empty",
-  "hoursLogged > 2 hours",
-  "hoursLogged <= 1 hour 30 minutes",
+  "assigned to is not empty",
+  "hours logged > 2 hours",
+  "hours logged <= 1 hour 30 minutes",
 ];
 
 for (const text of texts) {
@@ -72,14 +72,14 @@ for (const text of texts) {
 test("qry_02 a filter that is taken away and added in Simple search is the text in Advanced search", async ({
   page,
 }) => {
-  await openSearch(page, "priority is high and assignedTo is me");
+  await openSearch(page, "priority is High and assigned to is me");
   await openBar(page);
   await page
     .getByRole("button", { name: t("search.bar.remove-filter", { filter: "Priority: high" }) })
     .click();
-  await expect.poll(() => addressText(page)).toBe("assignedTo is me");
+  await expect.poll(() => addressText(page)).toBe("assigned to is me");
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  await expect(box(page)).toHaveValue("assignedTo is me");
+  await expect(box(page)).toHaveValue("assigned to is me");
 });
 
 test("qry_03 a mistake shows before the server is asked and matches the server", async ({
@@ -131,15 +131,15 @@ test("qry_05 a field that does not exist is told in plain words", async ({ page 
 });
 
 test("qry_03 a duration is written and seen as hours and minutes", async ({ page }) => {
-  await openSearch(page, "hoursLogged > 90 minutes");
+  await openSearch(page, "hours logged > 90 minutes");
   await openBar(page);
-  await expect.poll(() => addressText(page)).toBe("hoursLogged > 1 hour 30 minutes");
+  await expect.poll(() => addressText(page)).toBe("hours logged > 1 hour 30 minutes");
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  await box(page).fill("hoursLogged > 5");
+  await box(page).fill("hours logged > 5");
   await expect(
     page.getByText(
       textByKey("search.mistake.wrong-duration", {
-        field: "hoursLogged",
+        field: "hours logged",
         hour: "hour",
         hours: "hours",
         minutes: "minutes",
@@ -157,10 +157,10 @@ test("qry_06 a saved search opens at its address with its text, and a change is 
   await openBar(page);
   await expect(page.getByRole("heading", { level: 1, name: "Mine to do" })).toBeVisible();
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  await expect(box(page)).toHaveValue("assignedTo is me");
-  await box(page).fill("assignedTo is me and priority is high");
+  await expect(box(page)).toHaveValue("assigned to is me");
+  await box(page).fill("assigned to is me and priority is High");
   await expect(page.getByRole("button", { name: t("search.save-changes") })).toBeVisible();
-  await expect.poll(() => addressText(page)).toBe("assignedTo is me and priority is high");
+  await expect.poll(() => addressText(page)).toBe("assigned to is me and priority is High");
 });
 
 test("qry_06 share lists only what the person may share with", async ({ page }) => {
@@ -197,7 +197,7 @@ test("qry_01 the slash key goes to the search bar", async ({ page }) => {
 });
 
 test("qry_01 the screens of the search are good in every theme", async ({ page }) => {
-  await openSearch(page, "priority is high and assignedTo is me");
+  await openSearch(page, "priority is High and assigned to is me");
   await openBar(page);
   await expectGoodInEveryTheme(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();

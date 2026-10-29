@@ -30,7 +30,7 @@ test.use({
       await addToGroup(admin, mine, await ownId(session));
       anasSearch = dataOf(
         await session.client.POST("/api/v1/saved-searches", {
-          body: { name: "Ana's list", search_text: "assignedTo is me" },
+          body: { name: "Ana's list", search_text: "assigned to is me" },
         }),
       ).id;
       await session.dispose();

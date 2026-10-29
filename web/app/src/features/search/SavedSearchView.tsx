@@ -1,8 +1,6 @@
-import { t } from "@bugaboo/messages";
-import { Card, part, partOf } from "@bugaboo/ui";
+import { Card } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
-import { personName } from "../../shared/person.ts";
 import {
   historyStep,
   textShown,
@@ -16,7 +14,8 @@ import {
   withoutChanges,
   type ResultsInput,
 } from "../../shared/use-list-view.ts";
-import { ChangedActions } from "./ChangedActions.tsx";
+import { useCanonicalForms } from "./canonical-forms.ts";
+import { MadeByLine } from "./MadeByLine.tsx";
 import type { SavedSearch } from "./saved-searches.ts";
 import { SearchBar } from "./SearchBar.tsx";
 import { ShareButton } from "./ShareButton.tsx";
@@ -33,34 +32,35 @@ export interface SavedSearchViewProps {
 /** A saved search that was opened: its name, the bar with its text, what it finds with its columns. */
 export function SavedSearchView({ search, state, onState, results }: SavedSearchViewProps) {
   const [stale, setStale] = useState(false);
-  const text = textShown(state, search.search_text);
+  const forms = useCanonicalForms();
+  // A search saved before D3 holds the old spelling: what it is compared with is its text as written today.
+  const saved = forms === undefined ? search.search_text : forms.text(search.search_text);
+  const text = textShown(state, saved);
   const { view, defaults, onView } = useListView(state, onState, {
     everywhere: true,
     presentation: search.presentation,
+    word: forms?.word,
   });
+  const unchanged = text === saved && !viewIsChanged(state);
   // Back at the saved text there is nothing to save, and the address is the saved search's own.
   const onText = (canonical: string, step: HistoryStep): void => {
-    onState(withText(state, canonical, search.search_text), step);
+    onState(withText(state, canonical, saved), step);
   };
   return (
-    <Card
-      heading={search.name}
-      level={1}
-      actions={
-        text === search.search_text && !viewIsChanged(state) ? null : (
-          <ChangedActions
-            search={search}
-            text={text}
-            view={view}
-            hasMistake={stale}
-            onSaved={() => {
-              onState(withoutChanges(state), historyStep.replace);
-            }}
-          />
-        )
-      }
-    >
-      <p {...partOf(part.muted)}>{t("search.made-by", { person: personName(search.maker) })}</p>
+    <Card heading={search.name} level={1}>
+      <MadeByLine
+        search={search}
+        text={text}
+        view={view}
+        unchanged={unchanged}
+        hasMistake={stale}
+        onSaved={() => {
+          onState(withoutChanges(state), historyStep.replace);
+        }}
+        onUndo={() => {
+          onState(withoutChanges(state), historyStep.push);
+        }}
+      />
       <SearchBar
         text={text}
         onText={onText}

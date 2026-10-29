@@ -6,6 +6,7 @@ import { presentationOf } from "../../shared/list-view.ts";
 import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
 import { useListView, type ResultsInput } from "../../shared/use-list-view.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
+import { useCanonicalForms } from "./canonical-forms.ts";
 import { SaveSearchButton } from "./SaveSearchButton.tsx";
 import { SearchBar } from "./SearchBar.tsx";
 
@@ -27,7 +28,11 @@ export interface SearchPageProps {
 export function SearchPage({ state, onState, results }: SearchPageProps) {
   usePageTitle(t("search.page.title"));
   const [stale, setStale] = useState(false);
-  const { view, defaults, onView } = useListView(state, onState, { everywhere: true });
+  const forms = useCanonicalForms();
+  const { view, defaults, onView } = useListView(state, onState, {
+    everywhere: true,
+    word: forms?.word,
+  });
   const onText = (canonical: string, step: HistoryStep): void => {
     onState({ ...state, text: canonical }, step);
   };

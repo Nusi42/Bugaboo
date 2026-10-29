@@ -64,7 +64,7 @@ export function ListMain({
             onDragged={onDragged}
           />
         )}
-        <ListResults view={view} stale={props.stale} />
+        <ListResults view={view} />
       </ListFrame>
     </div>
   );

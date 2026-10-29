@@ -13,6 +13,7 @@ import {
   parse,
   print,
   suggest,
+  word_key,
 } from "../generated/bb_wasm_search.js";
 import { inStringUnits, offsetsOf } from "./offsets.ts";
 import type { Answer, Operand, ReadableFields, Search, Suggestions } from "./types.generated.ts";
@@ -37,6 +38,8 @@ export interface SearchLanguage {
   readonly durationMinutesOf: (text: string) => number | undefined;
   /** The word of an own field, made from its name by the one rule of the language. */
   readonly ownFieldWord: (name: string) => string;
+  /** What tells two words apart: lower case, no space (`statusGroup` is `status group`). */
+  readonly wordKey: (word: string) => string;
 }
 
 function isAnswer(value: unknown): value is Answer {
@@ -76,4 +79,5 @@ export const language: SearchLanguage = {
   issueIdOf: (words) => issue_id_of(words) ?? undefined,
   durationMinutesOf: (text) => duration_minutes_of(text) ?? undefined,
   ownFieldWord: own_field_word,
+  wordKey: word_key,
 };

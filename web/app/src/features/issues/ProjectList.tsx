@@ -7,7 +7,7 @@ import {
   type SearchState,
 } from "../../shared/search-address.ts";
 import { useListView } from "../../shared/use-list-view.ts";
-import { SearchBar, useProjectListChoice } from "../search/index.ts";
+import { SearchBar, useCanonicalForms, useProjectListChoice } from "../search/index.ts";
 import { IssueResults } from "./IssueResults.tsx";
 import type { IssueShow } from "./issue-show.ts";
 import { ProjectSave } from "./ProjectSave.tsx";
@@ -37,11 +37,15 @@ export interface ProjectListProps {
 export function ProjectList({ project, state, onState, openIn, selection }: ProjectListProps) {
   const [stale, setStale] = useState(false);
   const chosen = useProjectListChoice(project.shortName).data?.search ?? undefined;
+  const forms = useCanonicalForms(project.id);
   const list = useListView(state, onState, {
     everywhere: false,
     presentation: chosen?.presentation,
+    word: forms?.word,
   });
-  const usual = chosen?.search_text ?? "";
+  // A list saved before D3 holds the old spelling: it is the usual text once written as today.
+  const stored = chosen?.search_text ?? "";
+  const usual = forms === undefined ? stored : forms.text(stored);
   const text = textShown(state, usual);
   const onText = (canonical: string, step: HistoryStep): void => {
     onState(withText(state, canonical, usual), step);

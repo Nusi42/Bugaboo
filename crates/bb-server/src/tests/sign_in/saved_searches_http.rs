@@ -118,7 +118,7 @@ async fn qry_06_a_saved_search_is_private_and_found_by_its_address_only_where_it
         let path = format!("{SEARCHES}?scope=shared&fields=name,search_text,maker");
         let listed = bob.send("GET", &path, None).await?;
         assert_eq!(names(&listed), ["Open bugs"]);
-        assert_eq!(listed.body["items"][0]["search_text"], "status is open");
+        assert_eq!(listed.body["items"][0]["search_text"], "status is Open");
         let opened = bob.send("GET", &format!("{SEARCHES}/{id}"), None).await?;
         assert_eq!(ok(&opened)?["mine"], false);
         assert_eq!(opened.body["shared_with"], json!([]));

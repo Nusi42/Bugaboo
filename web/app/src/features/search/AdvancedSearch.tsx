@@ -25,15 +25,19 @@ export function AdvancedSearch({ language, fields, bar }: AdvancedSearchProps) {
   const id = useId();
   const listId = `${id}-offers`;
   const mistakesId = `${id}-mistakes`;
+  const { box, offers, showing, active, take, unfinishedAt, faults } = useAdvancedBox(
+    language,
+    fields,
+    bar,
+  );
   const { mistakes } = bar.answer;
-  const { box, offers, showing, active, take } = useAdvancedBox(language, fields, bar);
   return (
     <div {...partOf(part.searchWrap)}>
       <label htmlFor={id} {...partOf(part.visuallyHidden)}>
         {t("search.bar.advanced-label")}
       </label>
-      <div {...partOf(part.searchText, { states: [mistakes.length > 0 && "mistake"] })}>
-        <MarkedText text={bar.shown} search={bar.answer.search} mistakes={mistakes} />
+      <div {...partOf(part.searchText, { states: [faults.length > 0 && "mistake"] })}>
+        <MarkedText text={bar.shown} search={bar.answer.search} mistakes={faults} />
         <textarea
           {...partOf(part.searchTextInput)}
           ref={box}
@@ -46,12 +50,13 @@ export function AdvancedSearch({ language, fields, bar }: AdvancedSearchProps) {
           onChange={doNothing}
           aria-autocomplete={ariaWords.list}
           {...(showing ? { "aria-controls": listId } : {})}
-          aria-invalid={mistakes.length > 0}
+          aria-invalid={faults.length > 0}
           {...(mistakes.length > 0 ? { "aria-describedby": mistakesId } : {})}
           {...(active === undefined ? {} : { "aria-activedescendant": offerId(listId, active) })}
         />
       </div>
-      <MistakeList id={mistakesId} mistakes={mistakes} />
+      <MistakeList id={mistakesId} mistakes={mistakes} unfinishedAt={unfinishedAt} />
+      {mistakes.length > 0 ? <p {...partOf(part.muted)}>{t("search.bar.blocked")}</p> : null}
       {showing ? (
         <OfferList id={listId} offers={offers.items} active={active} onTake={take} />
       ) : null}
