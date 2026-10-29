@@ -36,7 +36,7 @@ test("qry_01 on a phone the button says how many filters the search has", async 
       // The sheet has a button that closes it.
       await page.getByRole("button", { name: t("search.bar.filters-count", { count: 2 }) }).click();
       const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
-      await sheet.getByRole("button", { name: t("search.bar.sheet-done") }).click();
+      await sheet.getByRole("button", { name: t("search.bar.sheet-done"), exact: true }).click();
       await expect(sheet).toHaveCount(0);
     },
   });
@@ -102,7 +102,7 @@ test("qry_03 the offers never push the foot of the sheet off the screen or cover
     tablet: nothing,
     phone: async () => {
       const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
-      const button = sheet.getByRole("button", { name: t("search.bar.sheet-done") });
+      const button = sheet.getByRole("button", { name: t("search.bar.sheet-done"), exact: true });
       await expect(button).toBeInViewport({ ratio: 1 });
       const [sheetBox, buttonBox] = await Promise.all([boxOf(sheet), boxOf(button)]);
       // The offers start above the foot (the body of the sheet scrolls to the rest), and the foot
