@@ -104,3 +104,16 @@ test("cfg_08 Ctrl+K opens quick search also while a text field has the focus", a
   await page.keyboard.press("Escape");
   await expect(search).toBeFocused();
 });
+
+test("cfg_08 Esc closes quick search at once, also with a word typed, and the keys work again (M5 exit)", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.keyboard.press("Control+k");
+  await page.getByRole("searchbox", { name: t("search.label"), exact: true }).fill("a");
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toHaveCount(0);
+  // Focus is back on the page, not in a text box: the key for the list of shortcuts works.
+  await page.keyboard.press("?");
+  await expect(page.getByRole("dialog", { name: t("shortcut.title") })).toBeVisible();
+});
