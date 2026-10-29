@@ -6398,6 +6398,14 @@ optgroup {
   overflow-wrap: anywhere;
 }
 
+[data-part="search-held-actions"] {
+  display: contents;
+}
+
+[data-part="search-held-actions"][data-state~="held"] {
+  visibility: hidden;
+}
+
 [data-part="search-mistake"][data-variant~="hint"] {
   color: var(--fg-muted);
 }

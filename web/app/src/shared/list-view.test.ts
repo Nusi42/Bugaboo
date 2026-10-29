@@ -5,6 +5,7 @@ import {
   noGrouping,
   presentationOf,
   viewFromPresentation,
+  viewInWords,
   viewOf,
   withView,
 } from "./list-view.ts";
@@ -12,6 +13,25 @@ import { readSearch, searchLocation } from "./search-address.ts";
 
 const project = builtInView({ everywhere: false, spacing: "comfortable" });
 const everywhere = builtInView({ everywhere: true, spacing: "comfortable" });
+
+describe("an own field kept in the old words is found by its name (D3)", () => {
+  it("keeps the column, the width and the grouping of an own field", () => {
+    const old = {
+      columns: ["id", "storyPoints", "assignedTo"],
+      widths: { storyPoints: 120 },
+      spacing: "comfortable",
+      groupBy: "storyPoints",
+    } as const;
+    expect(viewInWords(old, ["id", "story points", "assigned to"])).toEqual({
+      columns: ["id", "story points", "assigned to"],
+      widths: { "story points": 120 },
+      spacing: "comfortable",
+      groupBy: "story points",
+    });
+    // A word that is no field of the person's stays as it is, and is left out later as unreadable.
+    expect(viewInWords(old, []).columns).toEqual(["id", "storyPoints", "assigned to"]);
+  });
+});
 
 describe("the words of the old language in an address or a saved search (D3)", () => {
   it("reads the words of the old language: an address or a saved search from before D3 still works", () => {

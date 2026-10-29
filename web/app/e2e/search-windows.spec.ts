@@ -112,3 +112,22 @@ test("qry_03 the offers never push the foot of the sheet off the screen or cover
     },
   });
 });
+
+test("qry_06 on a phone Save search stands next to Done in the foot of the sheet", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is High");
+  await onThisLayout(page, {
+    computer: nothing,
+    tablet: nothing,
+    phone: async () => {
+      await openBar(page);
+      const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
+      const save = sheet.getByRole("button", { name: t("search.save"), exact: true });
+      const done = sheet.getByRole("button", { name: t("search.bar.sheet-done"), exact: true });
+      const [saveBox, doneBox] = await Promise.all([boxOf(save), boxOf(done)]);
+      expect(saveBox.y).toBe(doneBox.y);
+      expect(saveBox.x + saveBox.width).toBeLessThanOrEqual(doneBox.x);
+    },
+  });
+});

@@ -51,11 +51,16 @@ function wordKey(word: string): string {
 /**
  * The word of a built-in field for a word of the old language (`statusGroup` is `status group`,
  * ADR-0005 amendment M5, decision 11), so an address or a saved search that names a column or a
- * grouping the old way keeps working. Any other word stays as it is.
+ * grouping the old way keeps working. `known` are the words the person may read, so an own field
+ * (`storyPoints` is `story points`) is found by the same rule. Any other word stays as it is.
  */
-export function currentWord(word: string): string {
+export function currentWord(word: string, known: readonly string[] = []): string {
   const key = wordKey(word);
-  return searchWords.find((each) => wordKey(each) === key) ?? word;
+  return (
+    known.find((each) => wordKey(each) === key) ??
+    searchWords.find((each) => wordKey(each) === key) ??
+    word
+  );
 }
 
 /** The cell a column is drawn in: one the list has a cell for, or a plain value (an own field). */

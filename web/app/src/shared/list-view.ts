@@ -54,7 +54,7 @@ export function builtInView({ everywhere, spacing }: BuiltInInput): ListView {
 export function viewOf(state: SearchState, defaults: ListView): ListView {
   const { groupBy } = state;
   return {
-    columns: state.columns?.map(currentWord) ?? defaults.columns,
+    columns: state.columns?.map((word) => currentWord(word)) ?? defaults.columns,
     widths: state.widths === undefined ? defaults.widths : wordsNow(state.widths),
     spacing: state.spacing ?? defaults.spacing,
     groupBy:
@@ -73,6 +73,24 @@ function wordsNow(widths: Readonly<Record<string, number>>): Readonly<Record<str
     now[currentWord(word)] = widths[word] ?? 0;
   }
   return now;
+}
+
+/**
+ * The view with every word of a column, of a width and of the grouping written as the fields the
+ * person may read write it (`known`), so a list saved before D3 keeps the columns of its own fields.
+ */
+export function viewInWords(view: ListView, known: readonly string[]): ListView {
+  const now = (word: string): string => currentWord(word, known);
+  const widths: Record<string, number> = {};
+  for (const word of Object.keys(view.widths)) {
+    widths[now(word)] = view.widths[word] ?? 0;
+  }
+  return {
+    ...view,
+    columns: view.columns.map(now),
+    widths,
+    groupBy: view.groupBy === null ? null : now(view.groupBy),
+  };
 }
 
 function sameWidths(

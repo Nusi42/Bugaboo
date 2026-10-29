@@ -12699,6 +12699,16 @@ part "search-mistake" {
     overflow-wrap anywhere
 }
 
+// The room of the buttons of a changed saved search is held before they are there, so nothing
+// under the title moves when *Changed, not saved* appears (S29).
+part "search-held-actions" {
+    display contents
+}
+
+part "search-held-actions[state=held]" {
+    visibility hidden
+}
+
 // While the person is still typing at the end of the text, what is missing is a hint, not a fault (S6).
 part "search-mistake[variant=hint]" {
     color "$fg-muted"

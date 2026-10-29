@@ -9,10 +9,13 @@ import { filtersOf } from "../../shared/search-tree.ts";
 export function PhoneSheet({
   open,
   onOpenChange,
+  footer,
   children,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  /** What is done with the search (*Save search*, *Share*), next to the button that is done. */
+  readonly footer?: ReactNode;
   readonly children: ReactNode;
 }) {
   return (
@@ -26,6 +29,7 @@ export function PhoneSheet({
         <h2 {...partOf(part.searchPanelTitle)}>{t("search.bar.filters")}</h2>
         <div {...partOf(part.searchBar)}>{children}</div>
         <div {...partOf(part.searchPanelActions)}>
+          {footer}
           <Button
             look={buttonLook.primary}
             onPress={() => {

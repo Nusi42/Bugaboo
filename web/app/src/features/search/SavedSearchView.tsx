@@ -38,6 +38,7 @@ export function SavedSearchView({ search, state, onState, results }: SavedSearch
     everywhere: true,
     presentation: search.presentation,
   });
+  const unchanged = text === search.search_text && !viewIsChanged(state);
   // Back at the saved text there is nothing to save, and the address is the saved search's own.
   const onText = (canonical: string, step: HistoryStep): void => {
     onState(withText(state, canonical, search.search_text), step);
@@ -47,7 +48,10 @@ export function SavedSearchView({ search, state, onState, results }: SavedSearch
       heading={search.name}
       level={1}
       actions={
-        text === search.search_text && !viewIsChanged(state) ? null : (
+        <span
+          {...partOf(part.searchHeldActions, { states: [unchanged && "held"] })}
+          inert={unchanged}
+        >
           <ChangedActions
             search={search}
             text={text}
@@ -60,7 +64,7 @@ export function SavedSearchView({ search, state, onState, results }: SavedSearch
               onState(withoutChanges(state), historyStep.push);
             }}
           />
-        )
+        </span>
       }
     >
       <p {...partOf(part.muted)}>{t("search.made-by", { person: personName(search.maker) })}</p>

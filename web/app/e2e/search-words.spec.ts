@@ -6,7 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
-import { addressText, box, closeBar, openBar, openSearch } from "./support/search-bar.ts";
+import { addressText, box, boxOf, closeBar, openBar, openSearch } from "./support/search-bar.ts";
 import { savedSearchAddress } from "../src/shared/paths.ts";
 
 // The words of the search language (D3 of the exit polish of M5): fields and values in the words of
@@ -14,6 +14,7 @@ import { savedSearchAddress } from "../src/shared/paths.ts";
 // S28, S29).
 
 let adasSearch = "";
+let oldColumns = "";
 
 test.use({
   preparation: {
@@ -23,6 +24,29 @@ test.use({
       adasSearch = dataOf(
         await admin.client.POST("/api/v1/saved-searches", {
           body: { name: "Not done", search_text: "status group is not Done" },
+        }),
+      ).id;
+      await admin.client.POST("/api/v1/fields", {
+        body: { name: "Hours logged", kind: "duration", applies_to: "issues" },
+      });
+      // A list saved before D3: its columns name the fields the old way, an own field included.
+      oldColumns = dataOf(
+        await admin.client.POST("/api/v1/saved-searches", {
+          body: {
+            name: "Old columns",
+            search_text: "",
+            presentation: {
+              view: "list",
+              columns: [
+                { field: "id", width: null },
+                { field: "title", width: null },
+                { field: "assignedTo", width: null },
+                { field: "hoursLogged", width: null },
+              ],
+              spacing: "comfortable",
+              group_by: null,
+            },
+          },
         }),
       ).id;
       await admin.dispose();
@@ -146,13 +170,46 @@ test("qry_06 a changed saved search says it is not saved and the changes can be 
   await signIn(page, ada);
   await page.goto(savedSearchAddress(adasSearch));
   await openBar(page);
-  await expect(page.getByText(t("search.changed-not-saved"))).toHaveCount(0);
+  await expect(page.getByText(t("search.changed-not-saved"))).toBeHidden();
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).fill("status group is Done");
   await closeBar(page);
   await expect(page.getByText(t("search.changed-not-saved"))).toBeVisible();
   await page.getByRole("button", { name: t("search.undo-changes") }).click();
-  await expect(page.getByText(t("search.changed-not-saved"))).toHaveCount(0);
+  await expect(page.getByText(t("search.changed-not-saved"))).toBeHidden();
   await openBar(page);
   await expect(box(page)).toHaveValue("status group is not Done");
+});
+
+test("qry_06 a list saved with the old words keeps the columns of its own fields", async ({
+  page,
+}) => {
+  await onThisLayout(page, {
+    computer: async () => {
+      await signIn(page, ada);
+      await page.goto(savedSearchAddress(oldColumns));
+      const head = page.locator("[data-part='list-head']");
+      await expect(head.getByText("Hours logged")).toBeVisible();
+      await expect(head.getByText("Assigned to")).toBeVisible();
+    },
+    tablet: nothing,
+    phone: nothing,
+  });
+});
+
+test("qry_06 nothing moves when Changed, not saved appears", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto(savedSearchAddress(adasSearch));
+  const bar = page.locator("[data-part='search-bar']").first();
+  const heading = page.getByRole("heading", { level: 1, name: "Not done" });
+  const before = await Promise.all([boxOf(bar), boxOf(heading)]);
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await box(page).fill("status group is Done");
+  await closeBar(page);
+  await expect(page.getByText(t("search.changed-not-saved"))).toBeVisible();
+  const after = await Promise.all([boxOf(bar), boxOf(heading)]);
+  // The room of the buttons is there before they are: the bar and the title stay where they were.
+  expect(after[0].y).toBe(before[0].y);
+  expect(after[1].y).toBe(before[1].y);
 });
