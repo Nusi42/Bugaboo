@@ -51,7 +51,7 @@ export const messages = {
     "Not saved yet: someone took over the editing. Your text is kept as a draft.",
   "error.search.invalid": "The search has a mistake. Find it in the search box and correct it.",
   "error.search.too-slow":
-    "This search took too long. Add a filter to narrow it down and try again.",
+    "This search takes too long. Add a filter, for example a project or a status.",
   "error.rate-limit.exceeded": "Too many tries. Please wait a little and try again.",
   "error.server.unavailable": "Bugaboo is not available right now. Please try again in a moment.",
   "error.server.internal": "Something went wrong on our side. Nothing you did caused this.",

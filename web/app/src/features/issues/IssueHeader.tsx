@@ -3,6 +3,8 @@ import {
   ActionMenu,
   Button,
   CopyButton,
+  IconButton,
+  iconName,
   InPlaceText,
   IssueTypeIcon,
   type MenuAction,
@@ -26,6 +28,16 @@ export interface IssueHeaderProps {
   readonly onTitle: (title: string) => void;
   /** Open in the other way: from the panel to the full page, from the focus view to the panel. */
   readonly onSwitch: () => void;
+}
+
+/** The way to the other view: a word in the focus view; in the narrow panel an icon, so the head stays on one row. */
+function SwitchButton({ show, onSwitch }: Pick<IssueHeaderProps, "show" | "onSwitch">) {
+  if (show === "focus") {
+    return <Button onPress={onSwitch}>{t("issues.side-panel-view")}</Button>;
+  }
+  return (
+    <IconButton icon={iconName.expand} label={t("issues.open-full-page")} onPress={onSwitch} />
+  );
 }
 
 /**
@@ -58,11 +70,7 @@ export function IssueHeader(props: IssueHeaderProps) {
           copiedLabel={t("issues.link-copied")}
         />
         <div {...partOf(part.issueHeadActions)}>
-          {phone ? null : (
-            <Button onPress={onSwitch}>
-              {show === "focus" ? t("issues.side-panel-view") : t("issues.open-full-page")}
-            </Button>
-          )}
+          {phone ? null : <SwitchButton show={show} onSwitch={onSwitch} />}
           <ActionMenu label={t("issues.more")} actions={actions} cancelLabel={t("common.cancel")} />
         </div>
       </div>

@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { FieldValue } from "@bugaboo/ui";
+import { LabelChip } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { chipLook } from "../../shared/chip-look.ts";
 import { formatDateTime } from "../../shared/format.ts";
 import { listWord } from "../../shared/list-columns.ts";
 import { listText } from "../../shared/list-text.ts";
@@ -41,11 +40,11 @@ export function assignedText(line: FoundLine): string {
   return listText(line.assignedTo.map((person) => personName(person)));
 }
 
-/** The labels on an issue, each in its own color. */
+/** The labels on an issue: each a small square in its color and its name (UX §7.5). */
 export function labelsOf(line: FoundLine): ReactNode {
   return line.labels.length === 0
     ? undefined
     : line.labels.map((label) => (
-        <FieldValue key={label.id} look={chipLook} text={label.name} color={label.color} />
+        <LabelChip key={label.id} text={label.name} color={label.color} />
       ));
 }

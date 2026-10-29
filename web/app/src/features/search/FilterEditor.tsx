@@ -40,6 +40,16 @@ function needText(field: Field): string {
   return field.kind === "duration" ? t("search.bar.need-length") : t("search.bar.add-filter-need");
 }
 
+/** What the window of a new filter asks, in the words of the field's kind: a person or an issue is chosen. */
+function askText(field: Field, name: string): string {
+  if (field.kind === "person") {
+    return t("search.bar.add-filter-person");
+  }
+  return field.kind === "issue"
+    ? t("search.bar.add-filter-issue")
+    : t("search.bar.add-filter-text", { field: name });
+}
+
 /** The first mistake the checker finds in the filter as it would be written, in plain words. */
 function problemOf(
   language: SearchLanguage,
@@ -106,11 +116,7 @@ export function FilterEditor({
         }
       }}
       title={name}
-      text={
-        isNew
-          ? t("search.bar.add-filter-text", { field: name })
-          : t("search.bar.change-filter-text", { field: name })
-      }
+      text={isNew ? askText(field, name) : t("search.bar.change-filter-text", { field: name })}
       confirmLabel={
         isNew ? t("search.bar.add-filter-confirm") : t("search.bar.change-filter-confirm")
       }

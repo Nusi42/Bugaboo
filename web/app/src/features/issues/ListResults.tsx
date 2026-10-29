@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, part, partOf } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Icon, iconName, part, partOf } from "@bugaboo/ui";
 
-import { messageOf } from "../../shared/errors.ts";
+import { isInvalidSearch, messageOf } from "../../shared/errors.ts";
 import { showSearchSheet } from "../../shared/search-sheet.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import { PlainList } from "./ListBody.tsx";
@@ -23,11 +23,16 @@ export function ListResults({ view }: ListResultsProps) {
     // On a phone the mistake is in the closed sheet of the bar: the way on is a button in the note.
     return (
       <Alert tone={alertTone.danger}>
-        {messageOf(failure)}
-        {phone ? (
-          <Button look={buttonLook.quiet} onPress={showSearchSheet}>
-            {t("search.show-mistake")}
-          </Button>
+        <span {...partOf(part.row, { variants: ["inline"] })}>
+          <Icon name={iconName.danger} />
+          {messageOf(failure)}
+        </span>
+        {phone && isInvalidSearch(failure) ? (
+          <div>
+            <Button look={buttonLook.quiet} onPress={showSearchSheet}>
+              {t("search.show-mistake")}
+            </Button>
+          </div>
         ) : null}
       </Alert>
     );

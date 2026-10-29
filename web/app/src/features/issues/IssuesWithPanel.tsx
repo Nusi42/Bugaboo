@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, cardLook, useLayout, partOf, part } from "@bugaboo/ui";
+import { Card, cardLook, partOf, part } from "@bugaboo/ui";
 
 import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
 
@@ -7,6 +7,7 @@ import { OpenIssue } from "./OpenIssue.tsx";
 import { useOpenIssuesIn } from "./open-in.ts";
 import { ProjectList, type ListedProject } from "./ProjectList.tsx";
 import { ProjectToolbar } from "./ProjectToolbar.tsx";
+import { useIssueOnPhone } from "./use-issue-on-phone.ts";
 import { useSelection } from "./use-selection.ts";
 
 export interface IssuesWithPanelProps {
@@ -31,9 +32,10 @@ export function IssuesWithPanel({
   const openIn = useOpenIssuesIn();
   const { open } = state;
   const selection = useSelection();
-  // A phone shows one thing at a time: the open issue takes the screen and Back closes it.
-  const layout = useLayout();
-  const alone = layout === "phone" && open !== undefined;
+  const toPage = useIssueOnPhone(state);
+  if (toPage) {
+    return null;
+  }
   return (
     <Card
       heading={t("issues.page-title", { project: project.name })}
@@ -41,8 +43,8 @@ export function IssuesWithPanel({
       look={cardLook.openOnPhone}
     >
       <div {...partOf(part.listEditor)}>
-        <div {...partOf(part.listEditorList, { states: [alone && "hidden"] })} hidden={alone}>
-          <ProjectToolbar shortName={project.shortName} selection={selection} />
+        <div {...partOf(part.listEditorList)}>
+          <ProjectToolbar shortName={project.shortName} beside={open !== undefined} />
           <ProjectList
             project={project}
             state={state}

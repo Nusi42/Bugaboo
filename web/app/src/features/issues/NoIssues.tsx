@@ -6,7 +6,7 @@ import { openNewIssue } from "./new-issue-state.ts";
 /** An empty list says so in one sentence and offers the one thing to do (UX §6.1). */
 export function NoIssues({ project }: { readonly project: string }) {
   return (
-    <div {...partOf(part.stack)}>
+    <div {...partOf(part.listNothing)}>
       <p {...partOf(part.muted)}>{t("issues.nothing")}</p>
       <Button
         look={buttonLook.primary}

@@ -28,16 +28,28 @@ export async function tickIssues(page: Page, keys: readonly string[]): Promise<v
   ).toBeVisible();
 }
 
-/** Opens the dialog of one of the five things. */
-export async function openAction(page: Page, name: string) {
-  await page.getByRole("button", { name, exact: true }).click();
+/**
+ * Opens the dialog of one of the five things from the bar of the ticked issues. *Change* and
+ * *Delete* carry how many issues are ticked (*Change 2 issues*); the others are named by what they do.
+ */
+export async function openAction(page: Page, action: BarAction, count: number) {
+  const names: Readonly<Record<BarAction, string>> = {
+    change: t("many-changes.apply", { count }),
+    delete: t("many-changes.apply-delete", { count }),
+    move: t("many-changes.action-move"),
+    label: t("many-changes.action-label"),
+    relation: t("many-changes.action-relation"),
+  };
+  await page.getByRole("button", { name: names[action], exact: true }).click();
   return page.getByRole("alertdialog");
 }
 
+/** The five things of the bar of the ticked issues. */
+export type BarAction = "change" | "delete" | "move" | "label" | "relation";
+
 /** Chooses *Change status* to *Done* for the ticked issues and reads the preview; gives the dialog back. */
 export async function previewDoneOnScreen(page: Page, count: number) {
-  await page.getByRole("button", { name: t("many-changes.action-change"), exact: true }).click();
-  const dialog = page.getByRole("alertdialog");
+  const dialog = await openAction(page, "change", count);
   await dialog
     .getByLabel(t("issue-field.status"), { exact: true })
     .selectOption({ label: serverWord("workflow-change.mark-as-done") });

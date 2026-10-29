@@ -41,6 +41,8 @@ export { FilePicker, type FilePickerProps } from "./FilePicker.tsx";
 export { passPastedFiles, takePastedFiles, usePastedFiles, type Paste } from "./pasted-files.ts";
 export { Form, type FormProps } from "./Form.tsx";
 export { Icon, type IconProps } from "./Icon.tsx";
+export { BottomSheet, type BottomSheetProps } from "./BottomSheet.tsx";
+export { LabelChip, type LabelChipProps } from "./LabelChip.tsx";
 export { iconName, type IconName } from "./icons.ts";
 export { IconButton, type IconButtonProps } from "./IconButton.tsx";
 export {
@@ -67,7 +69,8 @@ export {
   type ListFrameProps,
 } from "./ListColumns.tsx";
 export { RowBox, TableBox } from "./ListRoles.tsx";
-export { pixelsOf, type ListColumnSpec } from "./list-template.ts";
+export { pixelsOf } from "./css-length.ts";
+export { listNeeds, type ListColumnSpec } from "./list-template.ts";
 export type { ColumnResize } from "./use-column-resize.ts";
 export {
   ListGrid,

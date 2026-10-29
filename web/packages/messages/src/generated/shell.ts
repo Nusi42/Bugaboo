@@ -9,6 +9,7 @@ export const messages = {
   "page.not-found.title": "This page does not exist",
   "page.not-found.text": "The address may be mistyped, or the page may have moved.",
   "page.not-found.home": "Go to the start page",
+  "shell.quick-search": "Quick search",
   "shell.more": "More",
   "shell.widen": "Widen the menu",
   "shell.menu-button": "Menu",

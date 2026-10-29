@@ -1,6 +1,6 @@
 import { settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Card, ChoiceGroup, useAppearance } from "@bugaboo/ui";
+import { Card, ChoiceGroup, part, partOf, useAppearance, useLayout } from "@bugaboo/ui";
 
 import { themeLabels } from "../../shared/theme-labels.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -39,6 +39,7 @@ function useModePicker(): ControlRenderer {
       }))}
       value={String(setting.value)}
       onChange={onChange}
+      stacked
     />
   );
 }
@@ -53,11 +54,17 @@ export function AppearancePage() {
   usePageTitle(t("appearance.title"));
   const form = usePersonalForm(["appearance."]);
   const modePicker = useModePicker();
+  // A phone never opens an issue in a side panel (UX §3.4), so it is not asked where one opens.
+  const phone = useLayout() === "phone";
+  const settings = phone
+    ? form.settings.filter((setting) => setting.key !== settingKeys.appearanceIssueView)
+    : form.settings;
   return (
     <Card heading={t("appearance.title")} level={1}>
-      <p>{t("appearance.device-help")}</p>
+      <p {...partOf(part.text)}>{t("appearance.device-help")}</p>
       <SettingsForm
         {...form}
+        settings={settings}
         searchable={false}
         controls={{
           [settingKeys.appearanceMode]: modePicker,
@@ -65,7 +72,7 @@ export function AppearancePage() {
           [settingKeys.appearanceDarkTheme]: themePicker,
         }}
       />
-      <p>{t("appearance.device-settings")}</p>
+      <p {...partOf(part.text)}>{t("appearance.device-settings")}</p>
     </Card>
   );
 }

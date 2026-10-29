@@ -21,7 +21,7 @@ export async function shootManyIssues(page: Page, server: Instance): Promise<voi
   await admin.dispose();
   await page.goto(projectIssuesAddress("WEB"));
   await tickAll(page, issues);
-  const dialog = await openAction(page, t("many-changes.action-change"));
+  const dialog = await openAction(page, "change", issues.length);
   await dialog
     .getByLabel(t("issue-field.status"), { exact: true })
     .selectOption({ label: serverWord("workflow-change.send-to-testing") });

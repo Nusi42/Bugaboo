@@ -15,6 +15,7 @@ import {
   prepareLook,
   pressMiddleOf,
   rowOf,
+  showLegend,
 } from "./support/list-look.ts";
 
 // The list of issues in the new look (UX §4.2, R1, R4, R5, R8, R9, M3 WP-17): one grid with fixed
@@ -111,7 +112,7 @@ test("ux_4_2 the Legend beside the list says what the row color and the left edg
   page,
 }) => {
   await openList(page);
-  const legend = page.getByRole("list", { name: t("issues.legend"), exact: true });
+  const legend = await showLegend(page);
   await expect(legend).toBeVisible();
   await Promise.all(
     [groups.running, groups.finished, t("priority.critical"), t("priority.high")].map((word) =>

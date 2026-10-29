@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { part, partOf } from "@bugaboo/ui";
+import { part, partOf, Skeleton } from "@bugaboo/ui";
 
 import type { SearchSpacing } from "../../shared/search-address.ts";
 import { useFoundGroups } from "./found-issues.ts";
@@ -17,6 +17,9 @@ export interface GroupedListProps {
 export function GroupedList({ spacing }: GroupedListProps) {
   const { search, groupBy, own } = useListContext();
   const groups = useFoundGroups(search, groupBy);
+  if (groups.isPending) {
+    return <Skeleton lines={3} />;
+  }
   if (groups.data?.groups.length === 0) {
     return <ListEmpty />;
   }

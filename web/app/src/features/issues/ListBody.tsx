@@ -1,3 +1,5 @@
+import { Skeleton } from "@bugaboo/ui";
+
 import type { SearchSpacing } from "../../shared/search-address.ts";
 import { linesFrom } from "../../shared/paged.ts";
 import { foundLineOf, useFoundIssues } from "./found-issues.ts";
@@ -20,6 +22,10 @@ export function PlainList({ spacing }: PlainListProps) {
   const found = useFoundIssues(context.search, context.words);
   const lines = linesFrom(found.data?.pages, foundLineOf);
   useReportShown("all", lines);
+  // While the first answer is on its way the list shows that it is loading, not an empty frame.
+  if (found.isPending) {
+    return <Skeleton lines={3} />;
+  }
   if (found.isSuccess && lines.length === 0) {
     return <ListEmpty />;
   }

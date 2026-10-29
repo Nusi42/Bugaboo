@@ -83,18 +83,21 @@ test("ux_04 the issue opens in the side panel when the person chose that view", 
   await page.goto(projectIssuesAddress("WEB"));
   const list = page.getByRole("grid", { name: t("issues.list"), exact: true });
   await list.getByRole("link", { name: webIssues.passkey }).click();
-  await expect(page).toHaveURL(/open=WEB-2$/u);
   const panel = page.getByRole("complementary", { name: "WEB-2", exact: true });
-  await expect(panel).toBeVisible();
   await onThisLayout(page, {
     computer: async () => {
+      await expect(page).toHaveURL(/open=WEB-2$/u);
+      await expect(panel).toBeVisible();
       await expect(list.getByRole("link", { name: webIssues.login })).toBeVisible();
     },
     tablet: async () => {
+      await expect(page).toHaveURL(/open=WEB-2$/u);
       await expect(panel).toBeVisible();
     },
+    // A phone has no room for a panel: the issue opens as its page (UX §3.4, M5 exit decision D1).
     phone: async () => {
-      await expect(list).toBeHidden();
+      await expect(page).toHaveURL(/\/issues\/WEB-2$/u);
+      await expect(page.getByRole("heading", { level: 1, name: webIssues.passkey })).toBeVisible();
     },
   });
   await expectGoodInEveryLook(page);

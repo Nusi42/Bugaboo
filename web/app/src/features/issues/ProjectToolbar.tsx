@@ -1,39 +1,78 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, part, partOf } from "@bugaboo/ui";
+import { Button, buttonLook, part, partOf, useLayout } from "@bugaboo/ui";
 import { useEffect } from "react";
 
+import { LegendButton } from "./LegendButton.tsx";
 import { IssueLegend } from "./IssueLegend.tsx";
 import { openNewIssue, rememberProject } from "./new-issue-state.ts";
-import { Selected } from "./Selected.tsx";
-import type { IssueSelection } from "./use-selection.ts";
 
 export interface ProjectToolbarProps {
   readonly shortName: string;
-  readonly selection: IssueSelection;
+  /** An issue is open beside the list, which leaves the toolbar little room. */
+  readonly beside: boolean;
+}
+
+/** *New issue* for the project. */
+function NewIssue({ shortName }: { readonly shortName: string }) {
+  return (
+    <Button
+      look={buttonLook.primary}
+      onPress={() => {
+        openNewIssue(shortName);
+      }}
+    >
+      {t("issues.new")}
+    </Button>
+  );
 }
 
 /**
- * The rows above a project's list: *New issue* with the key to the colors of the rows at the end,
- * and what is ticked with the bars that act on it. The project is remembered for the next new issue.
+ * What a phone has of the toolbar, in the row of *Filters* (it has one row of three buttons:
+ * *New issue*, *Legend* and *Filters*): the search bar draws it first.
  */
-export function ProjectToolbar({ shortName, selection }: ProjectToolbarProps) {
+export function PhoneActions({ shortName }: { readonly shortName: string }) {
+  return (
+    <>
+      <NewIssue shortName={shortName} />
+      <LegendButton />
+    </>
+  );
+}
+
+/**
+ * The row above a project's list on a computer or a tablet: *New issue* with the legend of the colors
+ * of the rows at the end (a *Legend* button where it has no room). A phone has it in the row of its
+ * search bar. The project is remembered for the next new issue.
+ */
+export function ProjectToolbar({ shortName, beside }: ProjectToolbarProps) {
+  const layout = useLayout();
   useEffect(() => {
     rememberProject(shortName);
   }, [shortName]);
+  if (layout === "phone") {
+    return null;
+  }
   return (
-    <>
-      <div {...partOf(part.listToolbar)}>
-        <Button
-          look={buttonLook.primary}
-          onPress={() => {
-            openNewIssue(shortName);
-          }}
-        >
-          {t("issues.new")}
-        </Button>
-        <IssueLegend />
-      </div>
-      <Selected selection={selection} project={shortName} />
-    </>
+    <div {...partOf(part.listToolbar)}>
+      <NewIssue shortName={shortName} />
+      {layout === "computer" && !beside ? <IssueLegend /> : <LegendButton />}
+    </div>
+  );
+}
+
+/**
+ * The row above the list of the *Search* page and of a saved search on a computer or a tablet: the
+ * legend of the colors of the rows (a *Legend* button where it has no room). A phone has the button in
+ * the row of its search bar.
+ */
+export function SearchToolbar() {
+  const layout = useLayout();
+  if (layout === "phone") {
+    return null;
+  }
+  return (
+    <div {...partOf(part.listToolbar)}>
+      {layout === "computer" ? <IssueLegend /> : <LegendButton />}
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import "@bugaboo/messages/parts/issues";
 
 export { IssueFocusPage, type IssueFocusPageProps } from "./IssueFocusPage.tsx";
 export { ProjectIssuesPage, type ProjectIssuesPageProps } from "./ProjectIssuesPage.tsx";
+export { LegendButton } from "./LegendButton.tsx";
 export { SearchResults } from "./SearchResults.tsx";
 export { IssueLongText, type IssueLongTextProps } from "./IssueLongText.tsx";
 export { registerIssues } from "./register.tsx";

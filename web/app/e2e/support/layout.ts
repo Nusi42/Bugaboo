@@ -1,4 +1,4 @@
-import { type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { layoutForWidth, type LayoutMode } from "../../../packages/ui/src/layout.ts";
 import { viewports } from "../../../tooling/viewports.ts";
@@ -30,4 +30,17 @@ export function handleIn(scope: Locator | Page, label: string): Locator {
 /** The places where a dragged thing can be dropped. */
 export function slotsIn(scope: Locator): Locator {
   return scope.locator('[data-part="drop-slot"]');
+}
+
+/** The elements stand in one column and are as wide as each other (the choices of a list on a phone). */
+export async function expectOneColumn(elements: readonly Locator[]): Promise<void> {
+  const boxes = await Promise.all(elements.map((element) => element.boundingBox()));
+  const first = boxes[0];
+  if (first === null || first === undefined) {
+    throw new TypeError("The first element has no box.");
+  }
+  for (const box of boxes) {
+    expect(Math.abs((box?.x ?? Number.NaN) - first.x)).toBeLessThanOrEqual(2);
+    expect(Math.abs((box?.width ?? Number.NaN) - first.width)).toBeLessThanOrEqual(2);
+  }
 }

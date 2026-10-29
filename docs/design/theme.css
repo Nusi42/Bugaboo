@@ -43,6 +43,7 @@
   --size-row-compact: 28px;
   --pad-nothing: var(--pad-box);
   --size-list-scroll: 70dvh;
+  --size-list-scroll-least: 120px;
   --size-edge: 4px;
   --size-name: 112px;
   --size-col-icon: 24px;
@@ -56,7 +57,7 @@
   --size-col-person: 96px;
   --size-col-labels: 96px;
   --size-col-project: 96px;
-  --size-col-title: 120px;
+  --size-col-title-least: 160px;
   --size-col-least: 48px;
   --size-col-most: 800px;
   --size-col-step: 16px;
@@ -91,6 +92,7 @@
   --size-icon-small: 16px;
   --size-list: 300px;
   --size-list-main: 560px;
+  --size-list-item: 240px;
   --legend-start: auto;
   --size-details: 340px;
   --gap-details: var(--space-5);
@@ -100,6 +102,7 @@
   --size-sheet-share: 85%;
   --size-side-panel: 30rem;
   --size-bar-sheet: 80dvh;
+  --size-bar-ticked: 40dvh;
   --size-matrix-cell: calc(var(--size-control) * 4);
   --size-list-tall: calc(var(--size-list) * 2);
   --size-line-medium: 80%;
