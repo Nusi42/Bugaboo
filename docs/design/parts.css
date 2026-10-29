@@ -4516,7 +4516,7 @@ optgroup {
 
 [data-part="list-editor.chevron"] {
   grid-column: 3;
-  grid-row: 1 / -1;
+  grid-row: 1 / span 2;
   align-self: center;
   color: var(--fg-muted);
 }
