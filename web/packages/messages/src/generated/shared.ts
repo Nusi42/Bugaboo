@@ -627,7 +627,7 @@ export const messages = {
     "Some issues have more than one label of this label group already, so it cannot be a label group to pick one from. Take the extra labels off first.",
   "common.show-all": "Show all {count}",
   "common.show-fewer": "Show fewer",
-  "nav.labels": "Labels and tags",
+  "nav.labels": "Labels & tags",
   "labels.pick-label": "Choose a label",
   "preview.summary":
     "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",

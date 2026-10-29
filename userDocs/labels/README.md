@@ -21,7 +21,7 @@ A tag can be limited to some projects. In another project it is not offered whil
 
 ## Looking after labels and tags
 
-*Organization settings › Labels and tags* is for people who hold the permission "Manage labels and tags". There are three lists:
+*Organization settings › Labels & tags* is for people who hold the permission "Manage labels and tags". There are three lists:
 
 - **Label groups:** create a label group, rename it, turn it into a label group to pick one from, or **retire** it. A label group cannot become a label group to pick one from while an issue already has two of its labels: Bugaboo says so, and you take the extra labels off first.
 - **Labels:** create a label (name, color, label group), change them, or retire it. A retired label is not offered for new issues, and the issues that have it keep it.
