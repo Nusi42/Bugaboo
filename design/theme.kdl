@@ -13067,7 +13067,9 @@ part "search-filter" {
 part "search-filter > button" {
     min-width 0
     overflow hidden
-    padding-inline-start "$space-3"
+    // The same room before and after the words, inside the outline: a button does not hang back over the edge here.
+    padding-inline "$space-3"
+    margin-inline 0
     border-color transparent
     min-height "calc($size-control - $border-width * 2)"
     text-overflow ellipsis
@@ -13157,6 +13159,7 @@ part "search-filters.action > button" {
 // sign was outside the border and touched Advanced search, M5 exit).
 part "search-filter > button:last-child" {
     flex none
+    margin-inline-end 0
 }
 
 // In a dialog (the filters inside an *Any of*) the list is as high as its filters, not the free height.
