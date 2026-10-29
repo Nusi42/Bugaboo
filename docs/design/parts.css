@@ -4943,6 +4943,9 @@ optgroup {
 }
 
 [data-part="list-editor.name"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   min-width: 0;
   font-weight: var(--weight-regular);
   overflow-wrap: break-word;

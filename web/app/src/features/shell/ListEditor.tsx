@@ -12,6 +12,8 @@ export interface ListRow {
   readonly key: string;
   /** What the person calls the item: the list is searched by it, and the panel is named after it. */
   readonly name: string;
+  /** What stands before the name on the same line (an icon). */
+  readonly lead?: ReactNode;
   /** The rest of the row, after the name. */
   readonly details?: ReactNode;
   /** What the side panel shows when this item is open: the editor of a simple item. */
@@ -63,6 +65,7 @@ function Rows({ rows, label, openKey, onOpen, columns = false }: RowsProps) {
           >
             <span {...partOf(part.rowMain)}>
               <span id={nameId(row.key)} {...partOf(part.listEditorName)}>
+                {row.lead}
                 {row.name}
               </span>
               <span id={detailsId(row.key)} {...partOf(part.listEditorDetails)}>

@@ -5420,6 +5420,9 @@ part "list-editor.open[variant=columns] row-main" {
 }
 
 part "list-editor.name" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
     min-width 0
     font-weight "$weight-regular"
     overflow-wrap break-word

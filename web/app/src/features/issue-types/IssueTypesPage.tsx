@@ -17,17 +17,15 @@ export interface IssueTypesPageProps {
   readonly onClose: () => void;
 }
 
-/** The row of an issue type: its icon and, while it is retired, a word that says so. */
+/** The row of an issue type: its icon before the name and, while it is retired, a word that says so. */
 function rowOf(issueType: IssueTypeLine): ListRow {
   return {
     key: issueType.id,
     name: issueType.name,
-    details: (
-      <>
-        <IssueTypeIcon name={issueType.icon} />
-        {issueType.retired ? <span {...partOf(part.muted)}>{t("issue-types.retired")}</span> : null}
-      </>
-    ),
+    lead: <IssueTypeIcon name={issueType.icon} />,
+    details: issueType.retired ? (
+      <span {...partOf(part.muted)}>{t("issue-types.retired")}</span>
+    ) : null,
     editor: (
       <div {...partOf(part.stack)}>
         {issueType.mayManage ? (
