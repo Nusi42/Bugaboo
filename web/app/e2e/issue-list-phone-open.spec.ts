@@ -31,6 +31,6 @@ test("ux_3_4 on a phone an issue of the list opens as its page, and Back returns
   await expectNoSidewaysScroll(page);
   await page.getByRole("button", { name: t("focus.back"), exact: true }).click();
   await expect.poll(() => new URL(page.url()).pathname).toBe(projectIssuesAddress("WEB"));
-  expect(new URL(page.url()).searchParams.get("s")).toBe("priority is not low");
+  expect(new URL(page.url()).searchParams.get("s")).toBe("priority is not Low");
   expect(new URL(page.url()).searchParams.get("open")).toBeNull();
 });
