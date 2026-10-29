@@ -1,5 +1,15 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, Checkbox, part, partOf, Window } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  buttonLook,
+  Checkbox,
+  part,
+  partOf,
+  Window,
+  ShowMore,
+} from "@bugaboo/ui";
 import type { Schema } from "@bugaboo/api-client";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -30,9 +40,7 @@ function MoreChoices({
   readonly onMore: () => void;
 }) {
   return hasMore ? (
-    <Button isPending={isPending} onPress={onMore}>
-      {t("search.share-more")}
-    </Button>
+    <ShowMore label={t("search.share-more")} pending={isPending} onPress={onMore} />
   ) : null;
 }
 

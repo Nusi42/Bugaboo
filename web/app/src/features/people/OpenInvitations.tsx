@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, buttonLook, ConfirmDialog, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -85,18 +85,7 @@ export function OpenInvitations() {
           />
         ))}
       </ul>
-      {invitations.hasNextPage ? (
-        <div {...partOf(part.row)}>
-          <Button
-            isPending={invitations.isFetchingNextPage}
-            onPress={() => {
-              void invitations.fetchNextPage();
-            }}
-          >
-            {t("invitations.more")}
-          </Button>
-        </div>
-      ) : null}
+      {<ShowMoreOf label={t("invitations.more")} list={invitations} />}
     </>
   );
 }

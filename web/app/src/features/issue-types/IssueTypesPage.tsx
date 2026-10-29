@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card, IssueTypeIcon, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, IssueTypeIcon, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -63,16 +63,7 @@ export function IssueTypesPage({ open, onOpen, onClose }: IssueTypesPageProps) {
           onOpen={onOpen}
           onClose={onClose}
         />
-        {list.hasNextPage ? (
-          <Button
-            isPending={list.isFetchingNextPage}
-            onPress={() => {
-              void list.fetchNextPage();
-            }}
-          >
-            {t("issue-types.more")}
-          </Button>
-        ) : null}
+        {<ShowMoreOf label={t("issue-types.more")} list={list} />}
       </Card>
       <Card heading={t("issue-types.create-title")}>
         <p {...partOf(part.text)}>{t("issue-types.create-intro")}</p>

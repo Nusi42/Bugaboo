@@ -11,6 +11,7 @@ import {
   TextField,
   partOf,
   part,
+  ShowMoreOf,
 } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
@@ -234,16 +235,7 @@ export function SubIssuesBlock({ readableId }: BlockProps) {
         <Progress done={progress.done} total={progress.total} />
       )}
       <Parts parts={itemsOf(list.data?.pages)} mayChange={mayChange} />
-      {list.hasNextPage ? (
-        <Button
-          isPending={list.isFetchingNextPage}
-          onPress={() => {
-            void list.fetchNextPage();
-          }}
-        >
-          {t("sub-issues.more")}
-        </Button>
-      ) : null}
+      {<ShowMoreOf label={t("sub-issues.more")} list={list} />}
       {mayChange ? <AddSubIssue readableId={readableId} /> : null}
     </section>
   );

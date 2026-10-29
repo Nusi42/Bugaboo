@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Tabs, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Tabs, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -49,16 +49,7 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
           <ChangeEntry key={group[0]?.event} items={group} highlighted={at === found} />
         ),
       )}
-      {list.hasNextPage ? (
-        <Button
-          isPending={list.isFetchingNextPage}
-          onPress={() => {
-            void list.fetchNextPage();
-          }}
-        >
-          {t("history.more")}
-        </Button>
-      ) : null}
+      {<ShowMoreOf label={t("history.more")} list={list} />}
     </div>
   );
 }

@@ -20,3 +20,23 @@ export function ShowMore({ label, pending, onPress }: ShowMoreProps) {
     </div>
   );
 }
+
+/** What of a paged query *Show more* needs: the shape of a TanStack infinite query. */
+export interface PagedList {
+  readonly hasNextPage: boolean;
+  readonly isFetchingNextPage: boolean;
+  readonly fetchNextPage: () => unknown;
+}
+
+/** *Show more* for a paged query: drawn only while there is a next page, and it reads the next page. */
+export function ShowMoreOf({ label, list }: { readonly label: string; readonly list: PagedList }) {
+  return list.hasNextPage ? (
+    <ShowMore
+      label={label}
+      pending={list.isFetchingNextPage}
+      onPress={() => {
+        void list.fetchNextPage();
+      }}
+    />
+  ) : null;
+}

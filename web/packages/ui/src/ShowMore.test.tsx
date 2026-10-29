@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { doNothing } from "./do-nothing.ts";
 import { SearchPicker } from "./SearchPicker.tsx";
-import { ShowMore } from "./ShowMore.tsx";
+import { ShowMore, ShowMoreOf } from "./ShowMore.tsx";
 
 /** Words of the tests, not text for people. */
 const words = {
@@ -44,5 +44,17 @@ describe("ux_5 the one Show more", () => {
     );
     expect(markup).toContain(words.more);
     expect(markup).not.toContain("quiet");
+  });
+
+  it("is drawn for a paged list only while there is a next page", () => {
+    const list = { hasNextPage: true, isFetchingNextPage: false, fetchNextPage: doNothing };
+    expect(renderToStaticMarkup(<ShowMoreOf label={words.more} list={list} />)).toContain(
+      words.more,
+    );
+    expect(
+      renderToStaticMarkup(
+        <ShowMoreOf label={words.more} list={{ ...list, hasNextPage: false }} />,
+      ),
+    ).toBe("");
   });
 });

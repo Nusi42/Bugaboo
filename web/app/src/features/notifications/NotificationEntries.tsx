@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { itemsOf } from "../../shared/paged.ts";
@@ -45,16 +45,7 @@ export function NotificationEntries({ filter, newest, nothing }: NotificationEnt
           read.mutate({ body: { ids: [id] } });
         }}
       />
-      {newest === undefined && list.hasNextPage ? (
-        <Button
-          isPending={list.isFetchingNextPage}
-          onPress={() => {
-            void list.fetchNextPage();
-          }}
-        >
-          {t("notifications.more")}
-        </Button>
-      ) : null}
+      {newest === undefined ? <ShowMoreOf label={t("notifications.more")} list={list} /> : null}
     </div>
   );
 }

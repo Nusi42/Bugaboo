@@ -7,9 +7,9 @@ import {
   Card,
   Link,
   RowChevron,
-  ShowMore,
   partOf,
   part,
+  ShowMoreOf,
 } from "@bugaboo/ui";
 import { useState } from "react";
 
@@ -36,15 +36,7 @@ function SubProjectList({ project }: { readonly project: string }) {
           </li>
         ))}
       </ul>
-      {list.hasNextPage ? (
-        <ShowMore
-          label={t("projects.sub-projects-more")}
-          pending={list.isFetchingNextPage}
-          onPress={() => {
-            void list.fetchNextPage();
-          }}
-        />
-      ) : null}
+      {<ShowMoreOf label={t("projects.sub-projects-more")} list={list} />}
     </>
   );
 }

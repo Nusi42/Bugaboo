@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, NameValueRow, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  buttonLook,
+  NameValueRow,
+  partOf,
+  part,
+  ShowMoreOf,
+} from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -133,16 +142,7 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
       />
       {mine.problem === null ? null : <Alert tone={alertTone.danger}>{mine.problem}</Alert>}
       {shown ? <FollowerNames people={people} /> : null}
-      {shown && list.hasNextPage ? (
-        <Button
-          isPending={list.isFetchingNextPage}
-          onPress={() => {
-            void list.fetchNextPage();
-          }}
-        >
-          {t("followers.more")}
-        </Button>
-      ) : null}
+      {shown ? <ShowMoreOf label={t("followers.more")} list={list} /> : null}
     </NameValueRow>
   );
 }

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -48,16 +48,7 @@ export function RelationKindsPage({ open, onOpen, onClose }: RelationKindsPagePr
           onOpen={onOpen}
           onClose={onClose}
         />
-        {list.hasNextPage ? (
-          <Button
-            isPending={list.isFetchingNextPage}
-            onPress={() => {
-              void list.fetchNextPage();
-            }}
-          >
-            {t("relation-kinds.more")}
-          </Button>
-        ) : null}
+        {<ShowMoreOf label={t("relation-kinds.more")} list={list} />}
       </Card>
       <Card heading={t("relation-kinds.create-title")}>
         <p {...partOf(part.text)}>{t("relation-kinds.create-intro")}</p>

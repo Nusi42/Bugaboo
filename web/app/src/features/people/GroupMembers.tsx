@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, ShowMore, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { membersOf, useMembers, type GroupLine } from "./groups.ts";
@@ -37,15 +37,7 @@ function MemberList({ group, changes }: ListProps) {
           ))}
         </ul>
       )}
-      {members.hasNextPage ? (
-        <ShowMore
-          label={t("groups.members-more")}
-          pending={members.isFetchingNextPage}
-          onPress={() => {
-            void members.fetchNextPage();
-          }}
-        />
-      ) : null}
+      {<ShowMoreOf label={t("groups.members-more")} list={members} />}
     </div>
   );
 }
