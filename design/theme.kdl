@@ -211,8 +211,6 @@ tokens {
     size "size-matrix-cell" "calc($size-control * 4)"
     // The gap between the rows of a list in a picker: the box, its height and the lines at its ends use it.
     size "size-option-gap" "$space-1"
-    // How much of the line color the shadow at the end of a scrolling box starts with (a percent).
-    number "cue-strength" 55
     // The gap between the things in the body of the question Move: the shadow lines at its ends take it back.
     size "size-body-gap" "$space-4"
     // The room between the edge of the screen or of a column and what stands in the page: the same for the page, and for
@@ -299,6 +297,9 @@ tokens {
     // The edge of a control that is drawn by its edge (a box to tick, the track of a switch): a line a
     // person has to see, so it reaches 3:1 against every surface (WCAG 1.4.11, checked by the `lines` rule of the contrast rules), unlike the dividers.
     color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
+    // The shadow at the end of a scrolling box that has more behind it: it must be seen in every theme (the `distinct` rule
+    // below keeps it so), a dark shade on the light themes and a light one on the dark themes, where the shade of a dark box has nothing to darken.
+    color "cue" daylight="#4b5160" paper="#4f4638" dusk="#aab3c5" midnight="#9aa2b3"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "divider" daylight="#a9b0bc" paper="#b2a795" dusk="#5a6272" midnight="#454b57" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
@@ -443,6 +444,7 @@ contrast min=4.5 {
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
     }
 
+    non-text "cue" reason="The shadow at the end of a scrolling box is a shade, not text; it is kept clear by the `distinct` rule below and measured in the browser (edge-cue-strength.spec.ts)."
     non-text "edge-high" "hover-line" "scrim" reason="The edge of High, the line of a hovered row and the dimmed page behind a sheet are lines and fills, not text; the lines are kept at 3:1 by the `lines` rules below, the dimmed page by the `dimmed` rule below."
 
     lines min=3 reason="The ring of a selected or focused row, the line of a hovered row and the edge of its priority carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
@@ -510,6 +512,12 @@ distinct min-delta-e-against-surfaces=7.5 reason="The fill of a main button that
 distinct min-delta-e-between-states=31 min-delta-e-against-surfaces=30 reason="The orange edge of High differs from the red edge of Critical by at least 31 (delta E), and each differs from the plain page by at least 30, in every theme (M5 exit, L24)." {
     states "danger" "edge-high"
     surfaces "bg-canvas"
+}
+
+// The shadow at the end of a scrolling box (the color it is cast in) is far from the plain surfaces it falls on, in every theme.
+distinct min-delta-e-against-surfaces=25 reason="The color of the shadow at the end of a scrolling box differs from the plain surfaces it falls on by at least 25 (delta E), in every theme, so it cannot fade to nothing in Dusk and Midnight again (M5 exit, round 8)." {
+    states "cue"
+    surfaces "bg-canvas" "bg-surface" "bg-raised"
 }
 
 // Hovered and selected rows must stay visible.
@@ -720,8 +728,9 @@ mixin "stacked-facts" {
     justify-content center
 }
 
-// The shadow at an end of a scrolling box: a line of no height that stays at the edge and casts a soft shadow over what scrolls
+// The shadow at an end of a scrolling box: a line of no size that stays at the edge and casts a soft shadow over what scrolls
 // under it, there only while the box is scrolled away from that end (the scroll position drives it, `cue-in` and `cue-out`).
+// A part says the axis it scrolls along (`edge-block`, `edge-inline`) and the end it is at (`edge-from-start`, `edge-from-end`).
 // Where the browser has no scroll-driven animation the box keeps the old cue (`scroll-cue`, under).
 mixin "edge-shadow" {
     content "\"\""
@@ -731,56 +740,45 @@ mixin "edge-shadow" {
     flex none
     opacity 0
     pointer-events none
-    box-shadow "0 0 $space-3 $border-width color-mix(in srgb, $border-control calc($cue-strength * 1%), transparent)"
+    box-shadow "0 0 $space-3 $border-width $cue"
     animation-fill-mode both
     animation-timing-function linear
 }
 
-mixin "edge-shadow-start" {
+// The box scrolls down: the line is as wide as the box and has no height.
+mixin "edge-block" {
     use "edge-shadow"
     height 0
     animation-timeline "scroll(nearest block)"
+}
+
+// The box scrolls sideways: the line is as high as the box and has no width.
+mixin "edge-inline" {
+    use "edge-shadow"
+    width 0
+    align-self stretch
+    animation-timeline "scroll(nearest inline)"
+}
+
+// The line at the start of the box: there while the box is scrolled away from its start.
+mixin "edge-from-start" {
     animation-name "cue-in"
     animation-range "0% $space-3"
 }
 
-mixin "edge-shadow-end" {
-    use "edge-shadow"
-    height 0
-    animation-timeline "scroll(nearest block)"
-    animation-name "cue-out"
-    animation-range "calc(100% - $space-3) 100%"
-}
-
-// The same on the inline axis: a line of no width, as high as the box, at the start edge and at the end edge.
-mixin "edge-shadow-inline-start" {
-    use "edge-shadow"
-    width 0
-    align-self stretch
-    inset-inline-start 0
-    animation-timeline "scroll(nearest inline)"
-    animation-name "cue-in"
-    animation-range "0% $space-3"
-}
-
-mixin "edge-shadow-inline-end" {
-    use "edge-shadow"
-    width 0
-    align-self stretch
-    inset-inline-end 0
-    animation-timeline "scroll(nearest inline)"
+// The line at the end of the box: there while the box is scrolled away from its end.
+mixin "edge-from-end" {
     animation-name "cue-out"
     animation-range "calc(100% - $space-3) 100%"
 }
 
 // A box that scrolls says there is more above and below: a soft shadow at each edge that has more behind it, and none
-// where the end is reached (two covers of the colour of the box scroll with the content and hide the shadows).
+// where the end is reached (two covers of the colour of the box scroll with the content and hide the shadows). A box
+// of another color than the raised surface sets `--cue-cover` to its own.
 mixin "scroll-cue" {
-    background-image "linear-gradient(var(--cue-cover, $bg-raised), var(--cue-cover, $bg-raised)), linear-gradient(var(--cue-cover, $bg-raised), var(--cue-cover, $bg-raised)), linear-gradient(color-mix(in srgb, $border-control calc($cue-strength * 1%), transparent), transparent), linear-gradient(to top, color-mix(in srgb, $border-control calc($cue-strength * 1%), transparent), transparent)"
+    --cue-cover "$bg-raised"
+    background-image "linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient($cue, transparent), linear-gradient(to top, $cue, transparent)"
     background-position "top, bottom, top, bottom"
-    background-size "100% $space-3, 100% $space-3, 100% $space-1, 100% $space-1"
-    background-repeat no-repeat
-    background-attachment "local, local, scroll, scroll"
 }
 
 // The column the pages are drawn in, centered; what is drawn at its bottom (the offers to undo) uses it too.
@@ -1710,14 +1708,16 @@ part "overlay.dialog" {
 // A menu or a sheet that is taller than the screen scrolls, with a shadow at each end that has more behind it.
 part "overlay.dialog::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-start"
+        use "edge-block"
+        use "edge-from-start"
         top 0
     }
 }
 
 part "overlay.dialog::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-end"
+        use "edge-block"
+        use "edge-from-end"
         bottom 0
     }
 }
@@ -1805,7 +1805,8 @@ part "picker.options[variant=list]" {
 // The gap of the rows is taken back, so the lines at the ends take no room.
 part "picker.options[variant=list]::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-start"
+        use "edge-block"
+        use "edge-from-start"
         top "calc(-1 * $ring-room)"
         margin-block-end "calc(-1 * $size-option-gap)"
     }
@@ -1813,7 +1814,8 @@ part "picker.options[variant=list]::before" {
 
 part "picker.options[variant=list]::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-end"
+        use "edge-block"
+        use "edge-from-end"
         bottom "calc(-1 * $ring-room)"
         margin-block-start "calc(-1 * $size-option-gap)"
     }
@@ -3073,14 +3075,16 @@ part "window.body" {
 
 part "window.body::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-start"
+        use "edge-block"
+        use "edge-from-start"
         top "calc(-1 * $pad-dialog)"
     }
 }
 
 part "window.body::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-end"
+        use "edge-block"
+        use "edge-from-end"
         bottom "calc(-1 * $pad-dialog)"
     }
 }
@@ -3702,7 +3706,8 @@ part "confirm.body" {
 // The gap of the body is taken back, so the lines at its ends take no room.
 part "confirm.body::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-start"
+        use "edge-block"
+        use "edge-from-start"
         top "calc(-1 * $ring-room)"
         margin-block-end "calc(-1 * $size-body-gap)"
     }
@@ -3710,7 +3715,8 @@ part "confirm.body::before" {
 
 part "confirm.body::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-end"
+        use "edge-block"
+        use "edge-from-end"
         bottom "calc(-1 * $ring-room)"
         margin-block-start "calc(-1 * $size-body-gap)"
     }
@@ -3872,13 +3878,17 @@ part "access.matrix" {
 // browser has no scroll-driven animation there is none.
 part "access.scroll::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-inline-start"
+        use "edge-inline"
+        use "edge-from-start"
+        inset-inline-start 0
     }
 }
 
 part "access.scroll::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-inline-end"
+        use "edge-inline"
+        use "edge-from-end"
+        inset-inline-end 0
     }
 }
 
@@ -4028,22 +4038,24 @@ part "people" {
     use "surface-box"
     supports "not (animation-timeline: scroll())" {
         // The covers of the old cue are the color of this box, the plain surface.
-        --cue-cover "$bg-surface"
         use "scroll-cue"
+        --cue-cover "$bg-surface"
     }
 }
 
 // The shadows at the ends of the box that have more people behind them.
 part "people::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-start"
+        use "edge-block"
+        use "edge-from-start"
         top 0
     }
 }
 
 part "people::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-shadow-end"
+        use "edge-block"
+        use "edge-from-end"
         bottom 0
     }
 }

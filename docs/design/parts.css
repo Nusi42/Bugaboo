@@ -816,26 +816,12 @@ optgroup {
 
 @supports not (animation-timeline: scroll()) {
   [data-part="overlay.dialog"] {
+    --cue-cover: var(--bg-raised);
     background-image:
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      ),
-      linear-gradient(
-        to top,
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      );
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
+      linear-gradient(to top, var(--cue), transparent);
     background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -848,8 +834,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -869,8 +854,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -969,26 +953,12 @@ optgroup {
 
 @supports not (animation-timeline: scroll()) {
   [data-part="picker.options"][data-variant~="list"] {
+    --cue-cover: var(--bg-raised);
     background-image:
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      ),
-      linear-gradient(
-        to top,
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      );
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
+      linear-gradient(to top, var(--cue), transparent);
     background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -1001,8 +971,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -1023,8 +992,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -2296,26 +2264,12 @@ optgroup {
 
 @supports not (animation-timeline: scroll()) {
   [data-part="window.body"] {
+    --cue-cover: var(--bg-raised);
     background-image:
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      ),
-      linear-gradient(
-        to top,
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      );
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
+      linear-gradient(to top, var(--cue), transparent);
     background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -2328,8 +2282,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -2349,8 +2302,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -2978,26 +2930,12 @@ optgroup {
 
 @supports not (animation-timeline: scroll()) {
   [data-part="confirm.body"] {
+    --cue-cover: var(--bg-raised);
     background-image:
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      ),
-      linear-gradient(
-        to top,
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      );
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
+      linear-gradient(to top, var(--cue), transparent);
     background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -3010,8 +2948,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -3032,8 +2969,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -3218,16 +3154,15 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     width: 0;
     align-self: stretch;
-    inset-inline-start: 0;
     animation-timeline: scroll(nearest inline);
     animation-name: cue-in;
     animation-range: 0% var(--space-3);
+    inset-inline-start: 0;
   }
 }
 
@@ -3240,16 +3175,15 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     width: 0;
     align-self: stretch;
-    inset-inline-end: 0;
     animation-timeline: scroll(nearest inline);
     animation-name: cue-out;
     animation-range: calc(100% - var(--space-3)) 100%;
+    inset-inline-end: 0;
   }
 }
 
@@ -3407,27 +3341,13 @@ optgroup {
 
 @supports not (animation-timeline: scroll()) {
   [data-part="people"] {
-    --cue-cover: var(--bg-surface);
+    --cue-cover: var(--bg-raised);
     background-image:
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(var(--cue-cover, var(--bg-raised)), var(--cue-cover, var(--bg-raised))),
-      linear-gradient(
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      ),
-      linear-gradient(
-        to top,
-        color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent),
-        transparent
-      );
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
+      linear-gradient(to top, var(--cue), transparent);
     background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
+    --cue-cover: var(--bg-surface);
   }
 }
 
@@ -3440,8 +3360,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
@@ -3461,8 +3380,7 @@ optgroup {
     flex: none;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width)
-      color-mix(in srgb, var(--border-control) calc(var(--cue-strength) * 1%), transparent);
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
     animation-fill-mode: both;
     animation-timing-function: linear;
     height: 0;
