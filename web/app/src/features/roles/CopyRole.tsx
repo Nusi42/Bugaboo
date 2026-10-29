@@ -1,16 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonType,
-  Form,
-  TextField,
-  partOf,
-  part,
-  useLayout,
-} from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -28,8 +18,6 @@ export interface CopyRoleProps {
 export function CopyRole({ id, name }: CopyRoleProps) {
   const [typed, setTyped] = useState(t("roles.copy-of", { name }));
   const navigate = useNavigate();
-  // The main button of a form is as wide as the screen on a phone.
-  const phone = useLayout() === "phone";
   const copy = api.query.useMutation("post", "/api/v1/roles/{role}/copy", {
     onSuccess: (made: Schema<"RoleBody">) => {
       refreshAccess();
@@ -51,9 +39,7 @@ export function CopyRole({ id, name }: CopyRoleProps) {
       />
       {copy.isError ? <Alert tone={alertTone.danger}>{messageOf(copy.error)}</Alert> : null}
       <div {...partOf(part.row)}>
-        <Button type={buttonType.submit} wide={phone} isPending={copy.isPending}>
-          {t("roles.copy")}
-        </Button>
+        <SubmitButton isPending={copy.isPending}>{t("roles.copy")}</SubmitButton>
       </div>
     </Form>
   );
