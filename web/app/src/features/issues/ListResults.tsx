@@ -1,4 +1,4 @@
-import { Alert, alertTone, part, partOf } from "@bugaboo/ui";
+import { Alert, alertTone, Icon, iconName, part, partOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import type { ListView } from "../../shared/list-view.ts";
@@ -20,7 +20,14 @@ export interface ListResultsProps {
 export function ListResults({ view, stale }: ListResultsProps) {
   const { failure } = useListContext();
   if (failure !== null) {
-    return <Alert tone={alertTone.danger}>{messageOf(failure)}</Alert>;
+    return (
+      <Alert tone={alertTone.danger}>
+        <span {...partOf(part.row)}>
+          <Icon name={iconName.danger} />
+          {messageOf(failure)}
+        </span>
+      </Alert>
+    );
   }
   return (
     <div {...partOf(part.searchResults, { states: [stale && "stale"] })}>

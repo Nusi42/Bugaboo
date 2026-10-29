@@ -39,6 +39,7 @@ function useModePicker(): ControlRenderer {
       }))}
       value={String(setting.value)}
       onChange={onChange}
+      stacked
     />
   );
 }

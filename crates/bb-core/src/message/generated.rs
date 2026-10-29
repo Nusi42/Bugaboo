@@ -11926,7 +11926,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.search.too-slow",
-        "This search took too long. Add a filter to narrow it down and try again.",
+        "This search takes too long. Add a filter, for example a project or a status.",
     ),
     (
         "error.server.internal",
