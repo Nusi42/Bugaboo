@@ -2886,6 +2886,8 @@ part "window.control[variant=back]" {
 // On a phone the window is a screen, and its bar is the bar of every other page: the canvas, not the tinted
 // surface of the bar of a window (M5 exit, O13).
 part "overlay.modal[variant=full] window.title-bar" {
+    box-sizing border-box
+    align-items center
     gap "$space-3"
     min-height "$size-bar"
     padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"

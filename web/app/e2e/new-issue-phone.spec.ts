@@ -27,6 +27,8 @@ test("ux_8 on a phone the footer of New issue is the hint and one button, the re
     screenHeight * 0.25,
   );
   const body = partIn(dialog, "window.body");
+  // The form scrolls above the footer, and says so: a soft shadow at each edge that has more behind it.
+  await expect(body).toHaveCSS("background-image", /(linear-gradient.*){4}/u);
   await expect(body.getByRole("button", { name: t("issues.create-another") })).toHaveCount(1);
   await expect(body.getByText(t("issues.draft-kept"))).toHaveCount(1);
   await expect(partIn(dialog, "window.footer").getByRole("button")).toHaveCount(1);
@@ -47,4 +49,28 @@ test("ux_8 on a phone the footer of New issue is the hint and one button, the re
     "background-color",
     await resolved(page, "background-color", "var(--bg-canvas)"),
   );
+});
+
+test("ux_8 on a phone the bar of New issue is one line, as high as the bar of every page", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "phone", "a window on a computer has its own bar");
+  await openList(page);
+  await openNewIssueDialog(page);
+  const dialog = page.getByRole("dialog");
+  // One line: Back and the title are level, and the bar is as high as the bar of every other page.
+  const [back, title, bar] = [
+    await boxOf(partIn(dialog, "window.control").first()),
+    await boxOf(partIn(dialog, "window.title")),
+    await boxOf(partIn(dialog, "window.title-bar")),
+  ];
+  expect(
+    Math.abs(back.y + back.height / 2 - (title.y + title.height / 2)),
+    "Back and the title are level",
+  ).toBeLessThanOrEqual(2);
+  const sizeBar = Number((await resolved(page, "min-height", "var(--size-bar)")).replace("px", ""));
+  expect(
+    bar.height,
+    "the bar is as high as the bar of a page (about 60, not 72)",
+  ).toBeLessThanOrEqual(sizeBar + 5);
 });
