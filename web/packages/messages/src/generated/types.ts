@@ -501,7 +501,7 @@ export interface MessageArguments {
   "search.mistake.wrong-text": { field: string | number };
   "search.project-list-stop": { name: string | number };
   "search.project-list-use": { name: string | number };
-  "search.saved-by": { name: string | number; person: string | number };
+  "search.saved-by": { person: string | number };
   "search.share-title": { name: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };

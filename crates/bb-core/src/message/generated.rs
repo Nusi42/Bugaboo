@@ -10032,13 +10032,10 @@ pub fn search_project_list_use(name: impl std::fmt::Display) -> Message {
 
 /// The message `search.saved-by`.
 #[must_use]
-pub fn search_saved_by(name: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+pub fn search_saved_by(person: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.saved-by"),
-        vec![
-            ("name", Value::Text(name.to_string())),
-            ("person", Value::Text(person.to_string())),
-        ],
+        vec![("person", Value::Text(person.to_string()))],
     )
 }
 
@@ -11179,7 +11176,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "assignments.intro-project",
-        "The people and groups with a role here. A row that comes from a parent project says so; change it for this project by giving a row here. No access hides this project and its sub‑projects, whatever role comes from above.",
+        "The people and groups with a role here. A row that comes from a parent project says so; change it for this project by giving a row here. No access hides this project and its sub-projects, whatever role comes from above.",
     ),
     ("assignments.kind-group", "A group"),
     ("assignments.kind-person", "A person"),
@@ -11187,7 +11184,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("assignments.more", "Show more rows"),
     (
         "assignments.no-access-help",
-        "No access covers this project and its sub‑projects. It wins over any role from above and over a role through a group on this project. A role given on a sub‑project still counts there.",
+        "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",
     ),
     ("assignments.none", "Nobody has a role here yet."),
     ("assignments.pick-group", "Choose the group"),
@@ -11908,7 +11905,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.project.move-into-itself",
-        "A project cannot go inside itself or inside one of its own sub‑projects.",
+        "A project cannot go inside itself or inside one of its own sub-projects.",
     ),
     (
         "error.project.move-lifts-no-access",
@@ -12052,7 +12049,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "field-permissions.intro-project",
-        "These levels count in {project} and in its sub‑projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
+        "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
     ),
     ("field-permissions.more-options", "More options"),
     (
@@ -13579,7 +13576,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "people-visibility.intro-project",
-        "These levels count in {project} and in its sub‑projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
+        "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
     ),
     ("people-visibility.preview-heading", "What {role} sees"),
     (
@@ -13641,7 +13638,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "permission.create-sub-projects",
-        "Create sub‑projects inside the project",
+        "Create sub-projects inside the project",
     ),
     (
         "permission.decide-roles",
@@ -13691,7 +13688,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "permission.move-projects",
-        "Move sub‑projects into or out of the project",
+        "Move sub-projects into or out of the project",
     ),
     (
         "permission.see-issues",
@@ -13740,9 +13737,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.create", "Create the project"),
     (
         "projects.create-intro",
-        "A project at the top level. Sub‑projects are created inside their project.",
+        "A project at the top level. Sub-projects are created inside their project.",
     ),
-    ("projects.create-sub-project", "Create a sub‑project"),
+    ("projects.create-sub-project", "Create a sub-project"),
     ("projects.create-title", "Create a project"),
     ("projects.created", "Created the project {name}."),
     ("projects.edit-title", "Name and short name"),
@@ -13911,20 +13908,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "projects.short-name-fixed",
         "You can change the name here. Changing the short name takes the right to create projects where this project sits.",
     ),
-    ("projects.sub-projects", "Sub‑projects"),
+    ("projects.sub-projects", "Sub-projects"),
     (
         "projects.sub-projects-ask",
         "Ask a project lead if you need one.",
     ),
     (
         "projects.sub-projects-empty",
-        "This project has no sub‑projects yet.",
+        "This project has no sub-projects yet.",
     ),
-    ("projects.sub-projects-more", "Show more sub‑projects"),
+    ("projects.sub-projects-more", "Show more sub-projects"),
     ("projects.tab-general", "Name and place"),
     ("projects.tabs", "Settings of the project"),
     ("projects.title", "Projects"),
-    ("projects.toggle-name", "Sub‑projects of {name}"),
+    ("projects.toggle-name", "Sub-projects of {name}"),
     ("projects.tree-empty", "You do not see any project yet."),
     ("projects.tree-more", "Show more projects"),
     ("related-issues.add", "Add relation"),
@@ -13995,7 +13992,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("roles.applies.project", "Only this project"),
     (
         "roles.applies.project-and-sub-projects",
-        "This project and its sub‑projects",
+        "This project and its sub-projects",
     ),
     ("roles.back", "All roles"),
     ("roles.badge-used", "{badge}. {used}"),
@@ -14715,7 +14712,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.save-text",
         "Give the search a name. It keeps the filters and how the results are shown. At first only you can see it.",
     ),
-    ("search.saved-by", "{name}\u{a0}· {person}"),
+    ("search.saved-by", "· {person}"),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
     ("search.saved-shared", "Shared with me"),

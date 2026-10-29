@@ -14,6 +14,8 @@ interface ItemProps {
   readonly narrow?: boolean;
   /** A number after the words, such as the notifications not read yet. Nothing for none. */
   readonly count?: string | undefined;
+  /** Who it is by, after the label on the same line, kept in one piece (a saved search that somebody shared). */
+  readonly by?: string | undefined;
   /** The item opens a page of its own (a menu that is the page): the chevron at its end says so. */
   readonly opens?: boolean;
 }
@@ -24,6 +26,7 @@ function Content({
   label,
   narrow,
   count,
+  by,
   opens = false,
   hint,
 }: ItemProps & { readonly hint?: ReactNode }) {
@@ -33,7 +36,10 @@ function Content({
       {narrow === true ? (
         <span {...partOf(part.visuallyHidden)}>{label}</span>
       ) : (
-        <span {...partOf(part.navItemLabel)}>{label}</span>
+        <span {...partOf(part.navItemLabel)}>
+          {label}
+          {by === undefined ? null : <span {...partOf(part.navItemBy)}>{by}</span>}
+        </span>
       )}
       {count === undefined ? null : <span {...partOf(part.navItemCount)}>{count}</span>}
       {narrow === true ? null : hint}
@@ -84,6 +90,7 @@ export function NavLink({
   href,
   current = false,
   count,
+  by,
   opens = false,
   onNavigate,
 }: NavLinkProps) {
@@ -95,7 +102,7 @@ export function NavLink({
         {...(current ? { "aria-current": currentPage } : {})}
         {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
       >
-        <Content icon={icon} label={label} narrow={narrow} count={count} opens={opens} />
+        <Content icon={icon} label={label} narrow={narrow} count={count} by={by} opens={opens} />
       </Link>
     </WithTooltip>
   );

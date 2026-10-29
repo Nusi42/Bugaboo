@@ -40,11 +40,10 @@ function SavedList({
           <li key={saved.id}>
             <NavLink
               icon={iconName.search}
-              label={
-                which === savedSet.shared
-                  ? t("search.saved-by", { name: saved.name, person: personName(saved.maker) })
-                  : saved.name
-              }
+              label={saved.name}
+              {...(which === savedSet.shared
+                ? { by: t("search.saved-by", { person: personName(saved.maker) }) }
+                : {})}
               href={savedSearchAddress(saved.id)}
               current={pathname === savedSearchAddress(saved.id)}
               {...(onNavigate === undefined ? {} : { onNavigate })}

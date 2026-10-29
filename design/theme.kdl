@@ -4696,6 +4696,13 @@ part "nav-item.label" {
     overflow-wrap anywhere
 }
 
+// Who a shared saved search is by: the dot goes with the name, so a line never starts with the dot.
+part "nav-item.by" {
+    display inline-block
+    margin-inline-start "$space-1"
+    white-space nowrap
+}
+
 part "nav-item.tooltip" {
     padding "$space-1 $space-3"
     border "$border-width solid $border"

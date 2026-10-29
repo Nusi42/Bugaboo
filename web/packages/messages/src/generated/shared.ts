@@ -284,7 +284,7 @@ export const messages = {
   "error.project.too-deep":
     "Projects cannot be nested any deeper than this. Create or move it somewhere higher up.",
   "error.project.move-into-itself":
-    "A project cannot go inside itself or inside one of its own sub‑projects.",
+    "A project cannot go inside itself or inside one of its own sub-projects.",
   "error.project.preview-changed":
     "The projects, or who has which role, changed since you looked at the preview. Look at it again before you move the project.",
   "permission-topic.projects": "Projects",
@@ -310,8 +310,8 @@ export const messages = {
   "permission.manage-fields": "Create, change and retire fields",
   "permission.manage-labels": "Manage labels and tags, also rename and combine them",
   "permission.create-projects": "Create projects at the top level",
-  "permission.create-sub-projects": "Create sub‑projects inside the project",
-  "permission.move-projects": "Move sub‑projects into or out of the project",
+  "permission.create-sub-projects": "Create sub-projects inside the project",
+  "permission.move-projects": "Move sub-projects into or out of the project",
   "permission.change-project-settings": "Change the project's name, short name and settings",
   "permission.decide-roles": "Decide who has which role, including No access",
   "permission.decide-what-roles-see":
@@ -392,7 +392,7 @@ export const messages = {
   "roles.no-access": "No access",
   "roles.applies.organization": "Whole organization",
   "roles.applies.project": "Only this project",
-  "roles.applies.project-and-sub-projects": "This project and its sub‑projects",
+  "roles.applies.project-and-sub-projects": "This project and its sub-projects",
   "roles.project-link": "Who has which role",
   "assignments.title-project": "Who has which role in {name}",
   "own.ask-title": "This takes away your own way to manage roles",
