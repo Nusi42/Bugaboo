@@ -1097,6 +1097,10 @@ part "button[variant=primary][disabled]" {
     border-color "$disabled-fill"
     background "$disabled-fill"
     color "$on-disabled"
+    // Forced colors draw the edge of a button that cannot be pressed in the colour of words that cannot be used.
+    forced {
+        border-color GrayText
+    }
 }
 
 part "button[state=busy]" {

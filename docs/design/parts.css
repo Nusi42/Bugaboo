@@ -234,6 +234,12 @@ optgroup {
   color: var(--on-disabled);
 }
 
+@media (forced-colors: active) {
+  [data-part="button"][data-variant~="primary"][data-disabled] {
+    border-color: GrayText;
+  }
+}
+
 [data-part="button"][data-state~="busy"] {
   cursor: progress;
   opacity: var(--opacity-busy);
