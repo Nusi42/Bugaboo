@@ -1,5 +1,3 @@
-import type { Dispatch, SetStateAction } from "react";
-
 import type { ListView } from "../../shared/list-view.ts";
 import { historyStep, type HistoryStep } from "../../shared/search-address.ts";
 import type { SearchFieldsAnswer } from "../search/index.ts";
@@ -14,7 +12,7 @@ export interface ListHeaderProps {
   readonly onView: (view: ListView) => void;
   readonly onText: (text: string, step: HistoryStep) => void;
   /** The width of the column that is dragged right now. */
-  readonly onDragged: Dispatch<SetStateAction<Readonly<Record<string, number>>>>;
+  readonly onDragged: (dragged: Readonly<Record<string, number>>) => void;
 }
 
 /** The head of the list wired to the search and to the view (UX §4.2): sorting, widths and *Tick the issues shown*. A search that was refused has no list, so there is no head over nothing. */
