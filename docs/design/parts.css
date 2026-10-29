@@ -882,6 +882,8 @@ optgroup {
   background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
+    100% var(--space-3),
+    100% var(--space-2),
     100% var(--space-2);
   background-repeat: no-repeat;
   background-origin: content-box;
@@ -2112,6 +2114,8 @@ optgroup {
 }
 
 [data-part="overlay.modal"][data-variant~="full"] [data-part="window.title-bar"] {
+  box-sizing: border-box;
+  align-items: center;
   gap: var(--space-3);
   min-height: var(--size-bar);
   padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-4) var(--space-2);
@@ -2291,7 +2295,7 @@ optgroup {
 [data-part="window-dock"] {
   position: fixed;
   inset-inline-start: var(--space-4);
-  bottom: 0;
+  bottom: var(--space-3);
   z-index: var(--z-panel);
   box-sizing: border-box;
   display: flex;
@@ -2300,9 +2304,8 @@ optgroup {
   min-height: var(--size-control);
   max-width: calc(100% - var(--space-4) * 2);
   padding: 0 var(--pad-box);
-  border: var(--border-width) solid var(--border);
-  border-bottom: 0;
-  border-radius: var(--r-card) var(--r-card) 0 0;
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--r-card);
   background: var(--bg-raised);
   box-shadow: var(--shadow);
   color: var(--fg);
@@ -2345,7 +2348,7 @@ optgroup {
 }
 
 [data-part="window-dock.note"] {
-  color: var(--fg-muted);
+  color: var(--fg);
   font-size: var(--fs-base);
   white-space: nowrap;
 }
@@ -2423,6 +2426,7 @@ optgroup {
 }
 
 [data-part="item"] {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2763,6 +2767,8 @@ optgroup {
   background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
+    100% var(--space-3),
+    100% var(--space-2),
     100% var(--space-2);
   background-repeat: no-repeat;
   background-origin: content-box;
@@ -2771,7 +2777,10 @@ optgroup {
 }
 
 [data-part="confirm.title"] {
+  flex: none;
   margin: 0;
+  padding-block-end: var(--space-2);
+  border-bottom: var(--border-width) solid var(--border-subtle);
   font-size: var(--fs-lg);
   line-height: var(--lh-snug);
   font-weight: var(--weight-bold);
@@ -3117,7 +3126,6 @@ optgroup {
 }
 
 [data-part="people.person-name"] {
-  overflow: hidden;
   font-size: var(--fs-md);
   font-weight: var(--weight-regular);
   line-height: var(--lh-body);
@@ -3126,8 +3134,6 @@ optgroup {
 }
 
 [data-part="people.person-facts"] {
-  display: -webkit-box;
-  overflow: hidden;
   color: var(--fg-muted);
   font-size: var(--fs-base);
   line-height: var(--lh-body);
@@ -3645,7 +3651,7 @@ optgroup {
 }
 
 [data-part="app-layout"]:has([data-part="window-dock"]) [data-part="app-layout.main"] {
-  padding-block-end: calc(var(--space-4) + var(--size-control));
+  padding-block-end: calc(var(--space-4) + var(--space-3) + var(--size-control));
 }
 
 [data-part="app-layout.inner"] {
@@ -6116,7 +6122,8 @@ optgroup {
 [data-part="search-filter"] > [data-part="button"] {
   min-width: 0;
   overflow: hidden;
-  padding-inline-start: var(--space-3);
+  padding-inline: var(--space-3);
+  margin-inline: 0;
   border-color: transparent;
   min-height: calc(var(--size-control) - var(--border-width) * 2);
   text-overflow: ellipsis;
@@ -6195,6 +6202,7 @@ optgroup {
 
 [data-part="search-filter"] > [data-part="button"]:last-child {
   flex: none;
+  margin-inline-end: 0;
 }
 
 [data-part="confirm.body"] [data-part="search-filters"] {
