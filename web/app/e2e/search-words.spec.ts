@@ -215,3 +215,16 @@ test("qry_06 nothing moves when Changed, not saved appears", async ({ page }) =>
   expect(after[0].y).toBe(before[0].y);
   expect(after[1].y).toBe(before[1].y);
 });
+
+test("qry_06 a saved search has one line under its name and no empty band", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto(savedSearchAddress(adasSearch));
+  const heading = page.getByRole("heading", { level: 1, name: "Not done" });
+  const bar = page.locator("[data-part='search-bar']").first();
+  const line = page.locator("[data-part='search-made-by']");
+  const [title, held, shown] = await Promise.all([boxOf(heading), boxOf(line), boxOf(bar)]);
+  // The line is one row of the height of the buttons, and the bar follows it at once.
+  expect(held.height).toBeLessThanOrEqual(48);
+  expect(shown.y - (held.y + held.height)).toBeLessThan(24);
+  expect(held.y - (title.y + title.height)).toBeLessThan(24);
+});

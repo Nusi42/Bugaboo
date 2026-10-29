@@ -18,9 +18,9 @@ export interface MadeByLineProps {
 }
 
 /**
- * The line under the name of a saved search: who made it, whether it was changed, and what is done
- * with a change. The room of all of it is held while nothing is changed, so nothing under the name
- * moves when *Changed, not saved* appears (S29).
+ * The line under the name of a saved search: who made it, or, once it is changed, that the change is
+ * not saved, with *Undo changes* and *Save* at its end. It is always as high as the buttons, so
+ * nothing under the name moves when the state changes (S29), and it is one line, never a band.
  */
 export function MadeByLine({
   search,
@@ -31,13 +31,17 @@ export function MadeByLine({
   onSaved,
   onUndo,
 }: MadeByLineProps) {
-  const held = { states: [unchanged && "held"] } as const;
   return (
     <div {...partOf(part.searchMadeBy)}>
-      <div>
-        <p {...partOf(part.muted)}>{t("search.made-by", { person: personName(search.maker) })}</p>
-      </div>
-      <span {...partOf(part.searchHeldActions, held)} inert={unchanged}>
+      <p {...partOf(part.muted)}>
+        {unchanged
+          ? t("search.made-by", { person: personName(search.maker) })
+          : t("search.changed-not-saved")}
+      </p>
+      <span
+        {...partOf(part.searchHeldActions, { states: [unchanged && "held"] })}
+        inert={unchanged}
+      >
         <ChangedActions
           search={search}
           text={text}
@@ -47,9 +51,6 @@ export function MadeByLine({
           onUndo={onUndo}
         />
       </span>
-      <p {...partOf(part.muted)} aria-hidden={unchanged}>
-        <span {...partOf(part.searchHeldActions, held)}>{t("search.changed-not-saved")}</span>
-      </p>
     </div>
   );
 }
