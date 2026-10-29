@@ -20,9 +20,11 @@ export const messages = {
   "issues.no-issue-type": "This project offers no issue type. Ask who looks after the project.",
   "issues.create": "Create the issue",
   "issues.create-another": "Create the issue and start another",
-  "issues.missing-title": "Write a title first, then you can create and start another.",
-  "issues.missing-type": "Choose an issue type first, then you can create and start another.",
-  "issues.missing-project": "Choose a project first, then you can create and start another.",
+  "issues.missing-title": "Write a title first, then you can create the issue and start another.",
+  "issues.missing-type":
+    "Choose an issue type first, then you can create the issue and start another.",
+  "issues.missing-project":
+    "Choose a project first, then you can create the issue and start another.",
   "issues.ready-to-create": "Nothing is missing: you can create the issue.",
   "issues.refused-at-field": "{field}: {reason}",
   "issues.created": "{key} was created.",

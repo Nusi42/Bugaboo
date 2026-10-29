@@ -12764,15 +12764,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.list", "Issues"),
     (
         "issues.missing-project",
-        "Choose a project first, then you can create and start another.",
+        "Choose a project first, then you can create the issue and start another.",
     ),
     (
         "issues.missing-title",
-        "Write a title first, then you can create and start another.",
+        "Write a title first, then you can create the issue and start another.",
     ),
     (
         "issues.missing-type",
-        "Choose an issue type first, then you can create and start another.",
+        "Choose an issue type first, then you can create the issue and start another.",
     ),
     ("issues.more", "More"),
     ("issues.new", "New issue"),
