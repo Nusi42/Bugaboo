@@ -2,6 +2,7 @@ import type { ListView } from "../../shared/list-view.ts";
 import { historyStep, type HistoryStep } from "../../shared/search-address.ts";
 import type { SearchFieldsAnswer } from "../search/index.ts";
 import { useListContext } from "./list-context.ts";
+import { useFoundCount } from "./found-issues.ts";
 import { ListHeadRow } from "./ListHeadRow.tsx";
 import { nextSort, sortOf } from "./list-sort.ts";
 
@@ -18,9 +19,11 @@ export interface ListHeaderProps {
 /** The head of the list wired to the search and to the view (UX §4.2): sorting, widths and *Tick the issues shown*. A search that was refused has no list, so there is no head over nothing. */
 export function ListHeader({ view, fields, shown, onView, onText, onDragged }: ListHeaderProps) {
   const { listId, words, ticks, selection, search, language, failure } = useListContext();
+  const count = useFoundCount(search).data;
   const kindOf = (word: string) =>
     fields.fields.fields.find((field) => field.word === word)?.kind ?? "text";
-  if (failure !== null) {
+  // A list with nothing in it has no head, and no box to tick what is not there (R1).
+  if (failure !== null || count === 0) {
     return null;
   }
   return (

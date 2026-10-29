@@ -1262,6 +1262,7 @@ optgroup {
   min-height: var(--size-control);
   margin-block-start: var(--space-2);
   padding: 0 var(--pad-box);
+  border-inline-start: var(--size-edge) solid transparent;
   border-top: var(--border-width) solid var(--border);
   border-bottom: var(--border-width) solid var(--border-subtle);
   background: var(--bg-surface);
@@ -1420,16 +1421,36 @@ optgroup {
   background: transparent;
   font-family: var(--font);
   cursor: pointer;
-  display: flex;
-  flex: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: var(--size-control) var(--size-col-icon) minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  flex: 1;
   min-height: var(--size-control);
   padding: 0;
   color: inherit;
   font-size: inherit;
   font-weight: inherit;
   text-align: start;
+}
+
+[data-part="list-group.toggle"][data-variant~="no-select"] {
+  grid-template-columns: var(--size-col-icon) minmax(0, 1fr) auto;
+}
+
+[data-part="list-group.chevron"] {
+  display: flex;
+  justify-content: center;
+}
+
+[data-part="list-group.toggle"][data-variant~="no-select"] [data-part="list-group.chevron"] {
+  order: 9;
+}
+
+[data-part="list-group.kind"] {
+  display: flex;
+  justify-content: center;
 }
 
 [data-part="list-group.toggle"][data-focus-visible] {
@@ -1508,9 +1529,10 @@ optgroup {
 [data-part="list-nothing"] {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
   padding: var(--pad-box) var(--pad-nothing);
+  text-align: center;
 }
 
 [data-part="list-options"] {

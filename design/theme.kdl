@@ -1948,6 +1948,7 @@ part "list-group" {
     min-height "$size-control"
     margin-block-start "$space-2"
     padding 0 "$pad-box"
+    border-inline-start "$size-edge solid transparent"
     border-top "$border-width solid $border"
     border-bottom "$border-width solid $border-subtle"
     background "$bg-surface"
@@ -2113,18 +2114,40 @@ part "list-row[variant=head] list-row.cell:has(list-handle)" {
 }
 
 // A group of rows can be folded: the whole header is the button.
+// The header of a group stands on the columns of the rows (R1): the arrow in the column of the tick box, the icon of
+// the group on the status icon, the name on the ID. A list without tick boxes has its arrow at the end.
 part "list-group.toggle" {
     use "bare-button"
-    display flex
-    flex 1
+    display grid
+    grid-auto-flow column
+    grid-template-columns "$size-control $size-col-icon minmax(0, 1fr) auto"
     align-items center
-    gap "$space-2"
+    gap "$space-3"
+    flex 1
     min-height "$size-control"
     padding 0
     color inherit
     font-size inherit
     font-weight inherit
     text-align start
+}
+
+part "list-group.toggle[variant=no-select]" {
+    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
+}
+
+part "list-group.chevron" {
+    display flex
+    justify-content center
+}
+
+part "list-group.toggle[variant=no-select] list-group.chevron" {
+    order 9
+}
+
+part "list-group.kind" {
+    display flex
+    justify-content center
 }
 
 part "list-group.toggle[focus-visible]" {
@@ -2193,13 +2216,14 @@ part "list-panel.items" {
     gap "$space-1"
 }
 
-// What the list says when no issue is found: a sentence and the one thing to do, inside the list's padding (R3).
+// What the list says when no issue is found: a sentence and the one thing to do, in the middle of the list (R1).
 part "list-nothing" {
     display flex
     flex-direction column
-    align-items flex-start
+    align-items center
     gap "$space-3"
     padding "$pad-box" "$pad-nothing"
+    text-align center
 }
 
 // The controls above the list: Group by, Spacing, Customize.
