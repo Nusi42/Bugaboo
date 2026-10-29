@@ -32,20 +32,18 @@ function offsetsOfNames(matrix: Locator): Promise<readonly number[]> {
   });
 }
 
-/** The heights of the rows that hold nothing but selects, the last row (it has no line under it) left out. */
-function heightsOfPlainRows(matrix: Locator): Promise<readonly number[]> {
-  return matrix.evaluate((node) => {
-    const heights: number[] = [];
-    const rows = node.querySelectorAll("tr");
-    for (let at = 0; at < rows.length - 1; at += 1) {
-      const row = rows[at];
-      const holdsSelects = row?.querySelector("select") !== null;
-      const holdsMore = row?.querySelector("button, [data-part='field.description']") !== null;
-      if (row !== undefined && holdsSelects && !holdsMore) {
-        heights.push(Math.round(row.getBoundingClientRect().height));
+/** How many selects stand across the edge of the box that scrolls, as it is at rest: cut by it. */
+function selectsCutAtTheEdge(scroll: Locator): Promise<number> {
+  return scroll.evaluate((node) => {
+    const edge = node.getBoundingClientRect().left + node.clientWidth;
+    let cut = 0;
+    for (const select of node.querySelectorAll("select")) {
+      const box = select.getBoundingClientRect();
+      if (box.left < edge - 0.5 && box.right > edge + 0.5) {
+        cut += 1;
       }
     }
-    return heights;
+    return cut;
   });
 }
 
@@ -60,13 +58,11 @@ test("ux_5 the name of a row stands level with the selects of its row", async ({
   expect(Math.max(...offsets)).toBeLessThanOrEqual(1);
 });
 
-test("ux_5 a row of selects only is as high as one control and its padding", async ({ page }) => {
+test("ux_5 no select is cut by the edge of the table at rest", async ({ page }) => {
   test.skip(layoutOf(page) === "phone", "a phone shows the levels as cards, not as a matrix");
   await signIn(page, sampleAdministrator());
   await page.goto(paths.fieldPermissions);
-  const matrix = partIn(page, "access.matrix");
-  await expect(matrix).toBeVisible();
-  const heights = await heightsOfPlainRows(matrix);
-  expect(heights.length).toBeGreaterThan(3);
-  expect([...new Set(heights)], "the heights of the plain rows").toHaveLength(1);
+  const scroll = partIn(page, "access.scroll");
+  await expect(scroll).toBeVisible();
+  expect(await selectsCutAtTheEdge(scroll), "selects cut by the right edge").toBe(0);
 });

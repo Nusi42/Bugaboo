@@ -77,7 +77,11 @@ const NEW_COLLEAGUE = "new.colleague@bugaboo.example";
 
 /** Takes back every open invitation for this address, one after the other, until none is left. */
 async function takeBackInvitationsOf(page: Page, email: string): Promise<void> {
-  const rows = page.getByRole("listitem").filter({ hasText: email });
+  // Only the rows of the list of open invitations (a list inside a card inside a list would count the card too),
+  // counted once the list has been read.
+  const open = page.getByRole("list", { name: t("invitations.open") });
+  await expect(open.or(page.getByText(t("invitations.none")))).toBeVisible();
+  const rows = open.getByRole("listitem").filter({ hasText: email });
   const before = await rows.count();
   if (before === 0) {
     return;

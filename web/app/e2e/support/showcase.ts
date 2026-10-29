@@ -108,6 +108,19 @@ const withCrops: ReadonlySet<string> = new Set([
 
 /** The pictures of the top and of the next part of a tall page, at the size of the window. */
 async function takeCrops(page: Page, shot: Shot): Promise<void> {
+  if (shot.screen === "project-move") {
+    // The question with its body scrolled to the end, so the last words of what changes are seen whole.
+    await page.locator("[data-part='confirm.body']").evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+    await shootWindowAs(
+      page,
+      `${numbered(shot.order)}-${shot.screen}-${shot.device}-scrolled`,
+      SHOWCASE,
+      shot.theme.id,
+    );
+    return;
+  }
   if (shot.device !== "computer" || !withCrops.has(shot.screen)) {
     return;
   }

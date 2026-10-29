@@ -3583,6 +3583,7 @@ part "access.scroll" {
     // The names of the lists that only screen readers read are positioned boxes: this keeps them in the region.
     position relative
     overflow-x auto
+    container-type inline-size
     // A column comes to rest whole, beside the names, where the scrolling stops near it (a control is not left cut).
     scroll-snap-type "x proximity"
     scroll-padding-inline-start "$size-matrix-cell"
@@ -3602,7 +3603,11 @@ part "access.matrix" {
     width "100%"
 }
 
+// A column is as wide as the room allows for a whole number of them beside the names: the box shows 2, 3 or 4
+// columns at their least width or more, never a column cut at its edge (M5 exit, O2).
 part "access.matrix-cell" {
+    box-sizing border-box
+    min-width "max($size-matrix-cell, calc((100cqw - $size-matrix-cell) / max(1, round(down, (100cqw - $size-matrix-cell) / $size-matrix-cell, 1))))"
     padding "$space-2 $space-3"
     scroll-snap-align start
     border-bottom "$border-width solid $border-subtle"
@@ -3617,7 +3622,6 @@ part "access.matrix-cell[variant=head]" {
     background "$bg-sunken"
     color "$fg"
     font-weight "$weight-regular"
-    min-width "$size-matrix-cell"
 }
 
 part "access.matrix-cell[variant=row]" {
@@ -3634,6 +3638,7 @@ part "access.matrix-cell[variant=row]" {
 }
 
 part "access.matrix-cell[variant=head]:first-child" {
+    min-width "$size-matrix-cell"
     inset-inline-start 0
     z-index "$z-raised"
 }

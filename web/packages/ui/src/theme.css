@@ -3627,6 +3627,7 @@ optgroup {
 [data-part="access.scroll"] {
   position: relative;
   overflow-x: auto;
+  container-type: inline-size;
   scroll-snap-type: x proximity;
   scroll-padding-inline-start: var(--size-matrix-cell);
   border: var(--border-width) solid var(--border-subtle);
@@ -3646,6 +3647,14 @@ optgroup {
 }
 
 [data-part="access.matrix-cell"] {
+  box-sizing: border-box;
+  min-width: max(
+    var(--size-matrix-cell),
+    calc(
+      (100cqw - var(--size-matrix-cell)) /
+        max(1, round(down, (100cqw - var(--size-matrix-cell)) / var(--size-matrix-cell), 1))
+    )
+  );
   padding: var(--space-2) var(--space-3);
   scroll-snap-align: start;
   border-bottom: var(--border-width) solid var(--border-subtle);
@@ -3659,7 +3668,6 @@ optgroup {
   background: var(--bg-sunken);
   color: var(--fg);
   font-weight: var(--weight-regular);
-  min-width: var(--size-matrix-cell);
 }
 
 [data-part="access.matrix-cell"][data-variant~="row"] {
@@ -3677,6 +3685,7 @@ optgroup {
 }
 
 [data-part="access.matrix-cell"][data-variant~="head"]:first-child {
+  min-width: var(--size-matrix-cell);
   inset-inline-start: 0;
   z-index: var(--z-raised);
 }
