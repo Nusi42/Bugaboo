@@ -3,9 +3,8 @@ import { useLayout, partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { projectPageAddress } from "../../shared/project-pages.ts";
 import { TopicList } from "../shell/index.ts";
-import { tabsOf } from "./settings-tabs.ts";
+import { projectTopics } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /**
@@ -20,28 +19,18 @@ export function ProjectSettingsFrame({
   readonly project: OneProject;
   readonly children: ReactNode;
 }) {
-  const pages = tabsOf(project);
   const { pathname } = useLocation();
+  const topics = projectTopics(project);
   const phone = useLayout() === "phone";
-  const topics = pages.map((page) => ({
-    path: projectPageAddress(page, project.project.short_name),
-    name: page.tab ?? page.name,
-    icon: page.icon,
-  }));
   const content = <div {...partOf(part.stack)}>{children}</div>;
-  if (topics.length < 2) {
+  // On a phone a section is a screen of its own (the menu is another, `ProjectSettingsMenu`).
+  if (topics.length < 2 || phone) {
     return content;
   }
-  const menu = <TopicList topics={topics} pathname={pathname} />;
-  return phone ? (
-    <div {...partOf(part.stack)}>
-      <nav aria-label={t("projects.tabs")}>{menu}</nav>
-      {content}
-    </div>
-  ) : (
+  return (
     <div {...partOf(part.settingsFrame)}>
       <nav aria-label={t("projects.tabs")} {...partOf(part.settingsFrameMenu)}>
-        {menu}
+        <TopicList topics={topics} pathname={pathname} />
       </nav>
       <div {...partOf(part.shellContent)}>{content}</div>
     </div>

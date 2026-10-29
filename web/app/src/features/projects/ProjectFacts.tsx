@@ -1,7 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Link, partOf, part } from "@bugaboo/ui";
+import { Link, partOf, part, useLayout } from "@bugaboo/ui";
 
-import { projectPageAddress, projectPages } from "../../shared/project-pages.ts";
+import {
+  projectPageAddress,
+  projectPages,
+  projectSettingsMenuAddress,
+} from "../../shared/project-pages.ts";
 import { tabsOf } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
 
@@ -29,10 +33,18 @@ function ProjectLinks({ project }: { readonly project: OneProject }) {
   const tabs = tabsOf(project);
   const [first] = tabs;
   const shortName = project.project.short_name;
+  // On a phone the settings start with their menu, a screen of its own.
+  const phone = useLayout() === "phone";
   return (
     <div {...partOf(part.row)}>
       {first === undefined ? null : (
-        <Link href={projectPageAddress(first, shortName)}>{t("projects.settings-link")}</Link>
+        <Link
+          href={
+            phone ? projectSettingsMenuAddress(shortName) : projectPageAddress(first, shortName)
+          }
+        >
+          {t("projects.settings-link")}
+        </Link>
       )}
       {first !== projectPages.roles && tabs.includes(projectPages.roles) ? (
         <Link href={projectPageAddress(projectPages.roles, shortName)}>

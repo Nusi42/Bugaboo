@@ -1,22 +1,35 @@
 import { t } from "@bugaboo/messages";
+import { useLayout } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 
 import { routeParam } from "../../shared/paths.ts";
-import { projectPageAddress, projectPages, type ProjectPage } from "../../shared/project-pages.ts";
+import {
+  projectPageAddress,
+  projectPages,
+  projectSettingsMenuAddress,
+  type ProjectPage,
+} from "../../shared/project-pages.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import type { TrailStep } from "../shell/index.ts";
 import { useProjectTrail } from "./project-trail.ts";
 import { useProject } from "./use-projects.ts";
 
 /** The trail steps of a page of the settings, after the project itself: the tab, below *Project settings*. */
-function stepsOf(page: ProjectPage, shortName: string): readonly TrailStep[] | undefined {
+function stepsOf(
+  page: ProjectPage,
+  shortName: string,
+  phone: boolean,
+): readonly TrailStep[] | undefined {
   if (page.tab === null) {
     return undefined;
   }
   const settings = {
     label: t(projectPages.settings.name),
-    href: projectPageAddress(projectPages.settings, shortName),
+    // On a phone *Project settings* is the menu, a screen of its own.
+    href: phone
+      ? projectSettingsMenuAddress(shortName)
+      : projectPageAddress(projectPages.settings, shortName),
   };
   return page === projectPages.settings
     ? [settings]
@@ -36,7 +49,11 @@ export function useProjectPage(address: string, page: ProjectPage) {
   const current = project.isPlaceholderData ? undefined : found?.project.short_name;
   const name = found?.project.name ?? "";
   usePageTitle(page.title(name));
-  const last = useMemo(() => stepsOf(page, current ?? address), [page, current, address]);
+  const phone = useLayout() === "phone";
+  const last = useMemo(
+    () => stepsOf(page, current ?? address, phone),
+    [page, current, address, phone],
+  );
   useProjectTrail(found, last);
   useEffect(() => {
     if (current !== undefined && current !== address) {

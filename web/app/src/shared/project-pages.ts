@@ -149,6 +149,11 @@ export function projectPageAddress(page: ProjectPage, shortName: string): string
   return addressInProject(page.path, shortName);
 }
 
+/** The menu of the settings of a project, which a phone shows as a screen of its own before a section (`?menu`). */
+export function projectSettingsMenuAddress(shortName: string): string {
+  return `${projectPageAddress(projectPages.settings, shortName)}?menu`;
+}
+
 /** What a person holds in a project that decides which of its pages open. */
 export interface HeldInProject {
   readonly permissions: readonly PermissionKey[];
