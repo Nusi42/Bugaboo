@@ -4324,6 +4324,8 @@ part "shell.narrow" {
 }
 
 part "shell.footer" {
+    // No wider than the card above it: the choices of theme wrap there as they do on a phone.
+    max-width "$size-form"
     padding-top "$space-4"
     border-top "$border-width solid $border-subtle"
 }

@@ -4440,6 +4440,7 @@ optgroup {
 }
 
 [data-part="shell.footer"] {
+  max-width: var(--size-form);
   padding-top: var(--space-4);
   border-top: var(--border-width) solid var(--border-subtle);
 }
