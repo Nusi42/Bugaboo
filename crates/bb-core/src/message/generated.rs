@@ -3851,6 +3851,9 @@ pub const SEARCH_BAR_ADD_FILTER: MessageKey = MessageKey::new("search.bar.add-fi
 pub const SEARCH_BAR_ADD_FILTER_CONFIRM: MessageKey =
     MessageKey::new("search.bar.add-filter-confirm");
 
+/// The message `search.bar.add-filter-need`.
+pub const SEARCH_BAR_ADD_FILTER_NEED: MessageKey = MessageKey::new("search.bar.add-filter-need");
+
 /// The message `search.bar.add-filter-which`.
 pub const SEARCH_BAR_ADD_FILTER_WHICH: MessageKey = MessageKey::new("search.bar.add-filter-which");
 
@@ -3866,6 +3869,21 @@ pub const SEARCH_BAR_AFTER: MessageKey = MessageKey::new("search.bar.after");
 
 /// The message `search.bar.any-of`.
 pub const SEARCH_BAR_ANY_OF: MessageKey = MessageKey::new("search.bar.any-of");
+
+/// The message `search.bar.any-of-add`.
+pub const SEARCH_BAR_ANY_OF_ADD: MessageKey = MessageKey::new("search.bar.any-of-add");
+
+/// The message `search.bar.any-of-change`.
+pub const SEARCH_BAR_ANY_OF_CHANGE: MessageKey = MessageKey::new("search.bar.any-of-change");
+
+/// The message `search.bar.any-of-confirm`.
+pub const SEARCH_BAR_ANY_OF_CONFIRM: MessageKey = MessageKey::new("search.bar.any-of-confirm");
+
+/// The message `search.bar.any-of-filters`.
+pub const SEARCH_BAR_ANY_OF_FILTERS: MessageKey = MessageKey::new("search.bar.any-of-filters");
+
+/// The message `search.bar.any-of-need`.
+pub const SEARCH_BAR_ANY_OF_NEED: MessageKey = MessageKey::new("search.bar.any-of-need");
 
 /// The message `search.bar.any-of-text`.
 pub const SEARCH_BAR_ANY_OF_TEXT: MessageKey = MessageKey::new("search.bar.any-of-text");
@@ -3895,6 +3913,9 @@ pub const SEARCH_BAR_COUNT: MessageKey = MessageKey::new("search.bar.count");
 /// The message `search.bar.day`.
 pub const SEARCH_BAR_DAY: MessageKey = MessageKey::new("search.bar.day");
 
+/// The message `search.bar.day-format`.
+pub const SEARCH_BAR_DAY_FORMAT: MessageKey = MessageKey::new("search.bar.day-format");
+
 /// The message `search.bar.fields-clear`.
 pub const SEARCH_BAR_FIELDS_CLEAR: MessageKey = MessageKey::new("search.bar.fields-clear");
 
@@ -3913,9 +3934,6 @@ pub const SEARCH_BAR_FIELDS_SEARCH: MessageKey = MessageKey::new("search.bar.fie
 /// The message `search.bar.filter-as-text`.
 pub const SEARCH_BAR_FILTER_AS_TEXT: MessageKey = MessageKey::new("search.bar.filter-as-text");
 
-/// The message `search.bar.filter-by-short`.
-pub const SEARCH_BAR_FILTER_BY_SHORT: MessageKey = MessageKey::new("search.bar.filter-by-short");
-
 /// The message `search.bar.filters`.
 pub const SEARCH_BAR_FILTERS: MessageKey = MessageKey::new("search.bar.filters");
 
@@ -3927,9 +3945,6 @@ pub const SEARCH_BAR_IS_EMPTY: MessageKey = MessageKey::new("search.bar.is-empty
 
 /// The message `search.bar.is-not-empty`.
 pub const SEARCH_BAR_IS_NOT_EMPTY: MessageKey = MessageKey::new("search.bar.is-not-empty");
-
-/// The message `search.bar.issue-choose`.
-pub const SEARCH_BAR_ISSUE_CHOOSE: MessageKey = MessageKey::new("search.bar.issue-choose");
 
 /// The message `search.bar.issue-clear`.
 pub const SEARCH_BAR_ISSUE_CLEAR: MessageKey = MessageKey::new("search.bar.issue-clear");
@@ -3972,6 +3987,18 @@ pub const SEARCH_BAR_KIND_VALUE: MessageKey = MessageKey::new("search.bar.kind-v
 
 /// The message `search.bar.me`.
 pub const SEARCH_BAR_ME: MessageKey = MessageKey::new("search.bar.me");
+
+/// The message `search.bar.need-day`.
+pub const SEARCH_BAR_NEED_DAY: MessageKey = MessageKey::new("search.bar.need-day");
+
+/// The message `search.bar.need-issue`.
+pub const SEARCH_BAR_NEED_ISSUE: MessageKey = MessageKey::new("search.bar.need-issue");
+
+/// The message `search.bar.need-length`.
+pub const SEARCH_BAR_NEED_LENGTH: MessageKey = MessageKey::new("search.bar.need-length");
+
+/// The message `search.bar.need-person`.
+pub const SEARCH_BAR_NEED_PERSON: MessageKey = MessageKey::new("search.bar.need-person");
 
 /// The message `search.bar.not-a-number`.
 pub const SEARCH_BAR_NOT_A_NUMBER: MessageKey = MessageKey::new("search.bar.not-a-number");
@@ -4035,9 +4062,6 @@ pub const SEARCH_BAR_OPERATOR: MessageKey = MessageKey::new("search.bar.operator
 
 /// The message `search.bar.pick`.
 pub const SEARCH_BAR_PICK: MessageKey = MessageKey::new("search.bar.pick");
-
-/// The message `search.bar.pick-choose`.
-pub const SEARCH_BAR_PICK_CHOOSE: MessageKey = MessageKey::new("search.bar.pick-choose");
 
 /// The message `search.bar.pick-clear`.
 pub const SEARCH_BAR_PICK_CLEAR: MessageKey = MessageKey::new("search.bar.pick-clear");
@@ -4265,6 +4289,9 @@ pub const SEARCH_SAVE_COPY_CONFIRM: MessageKey = MessageKey::new("search.save-co
 /// The message `search.save-name`.
 pub const SEARCH_SAVE_NAME: MessageKey = MessageKey::new("search.save-name");
 
+/// The message `search.save-need`.
+pub const SEARCH_SAVE_NEED: MessageKey = MessageKey::new("search.save-need");
+
 /// The message `search.save-text`.
 pub const SEARCH_SAVE_TEXT: MessageKey = MessageKey::new("search.save-text");
 
@@ -4289,8 +4316,11 @@ pub const SEARCH_SHARE_GROUPS: MessageKey = MessageKey::new("search.share-groups
 /// The message `search.share-more`.
 pub const SEARCH_SHARE_MORE: MessageKey = MessageKey::new("search.share-more");
 
-/// The message `search.share-none`.
-pub const SEARCH_SHARE_NONE: MessageKey = MessageKey::new("search.share-none");
+/// The message `search.share-none-groups`.
+pub const SEARCH_SHARE_NONE_GROUPS: MessageKey = MessageKey::new("search.share-none-groups");
+
+/// The message `search.share-none-projects`.
+pub const SEARCH_SHARE_NONE_PROJECTS: MessageKey = MessageKey::new("search.share-none-projects");
 
 /// The message `search.share-note`.
 pub const SEARCH_SHARE_NOTE: MessageKey = MessageKey::new("search.share-note");
@@ -9429,6 +9459,15 @@ pub fn search_bar_last_weeks(count: i64) -> Message {
     )
 }
 
+/// The message `search.bar.me-row`.
+#[must_use]
+pub fn search_bar_me_row(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.me-row"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `search.bar.member-of`.
 #[must_use]
 pub fn search_bar_member_of(group: impl std::fmt::Display) -> Message {
@@ -9990,19 +10029,19 @@ pub fn search_mistake_wrong_text(field: impl std::fmt::Display) -> Message {
 
 /// The message `search.project-list-stop`.
 #[must_use]
-pub fn search_project_list_stop(project: impl std::fmt::Display) -> Message {
+pub fn search_project_list_stop(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.project-list-stop"),
-        vec![("project", Value::Text(project.to_string()))],
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
 /// The message `search.project-list-use`.
 #[must_use]
-pub fn search_project_list_use(project: impl std::fmt::Display) -> Message {
+pub fn search_project_list_use(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.project-list-use"),
-        vec![("project", Value::Text(project.to_string()))],
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -14271,10 +14310,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
     ),
     ("search.actions", "Actions"),
-    ("search.bar.a-day", "A day"),
+    ("search.bar.a-day", "A day I choose"),
     ("search.bar.above", "above"),
     ("search.bar.add-filter", "Add filter"),
     ("search.bar.add-filter-confirm", "Add filter"),
+    ("search.bar.add-filter-need", "Choose a value first."),
     ("search.bar.add-filter-text", "What should {field} be?"),
     (
         "search.bar.add-filter-which",
@@ -14287,9 +14327,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("search.bar.after", "after"),
     ("search.bar.any-of", "Any of"),
+    ("search.bar.any-of-add", "Add a filter"),
+    ("search.bar.any-of-change", "Change Any of"),
+    ("search.bar.any-of-confirm", "Add Any of"),
+    ("search.bar.any-of-filters", "Filters of this Any of"),
+    ("search.bar.any-of-need", "Add at least two filters."),
     (
         "search.bar.any-of-text",
-        "Write the conditions with “or” between them. A result needs to fit at least one.",
+        "A result needs to fit at least one of these filters.",
     ),
     ("search.bar.at-least", "at least"),
     ("search.bar.at-most", "at most"),
@@ -14308,7 +14353,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.compared", "{comparison} {value}"),
     ("search.bar.contains", "contains {text}"),
     ("search.bar.count", "How many"),
-    ("search.bar.day", "The day"),
+    ("search.bar.day", "Which day"),
+    ("search.bar.day-format", "In Advanced search: 2026-12-31."),
     (
         "search.bar.duration-help",
         "Write a length of time, for example {hours}, {minutes} or {both}.",
@@ -14320,13 +14366,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.fields-search", "Find a field"),
     ("search.bar.filter-as-text", "The filter as text"),
     ("search.bar.filter-by", "Choose {field} to filter by"),
-    ("search.bar.filter-by-short", "Choose"),
     ("search.bar.filters", "Filters"),
     ("search.bar.filters-count", "Filters ({count})"),
     ("search.bar.from", "from"),
     ("search.bar.is-empty", "empty"),
     ("search.bar.is-not-empty", "not empty"),
-    ("search.bar.issue-choose", "Choose"),
     ("search.bar.issue-chosen", "Chosen: {id}"),
     ("search.bar.issue-clear", "Clear the words"),
     ("search.bar.issue-legend", "Issue"),
@@ -14355,9 +14399,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "in the last {count, plural, one {week} other {# weeks}}",
     ),
     ("search.bar.me", "me"),
+    ("search.bar.me-row", "Me ({name})"),
     ("search.bar.member-of", "in the group {group}"),
     ("search.bar.name-colon", "{name}:"),
     ("search.bar.name-value", "{name}: {value}"),
+    ("search.bar.need-day", "Choose a day first."),
+    ("search.bar.need-issue", "Choose an issue first."),
+    ("search.bar.need-length", "Write a length of time first."),
+    ("search.bar.need-person", "Choose a person first."),
     ("search.bar.not", "not {value}"),
     (
         "search.bar.not-a-duration",
@@ -14384,7 +14433,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.op-within", "is inside the project"),
     ("search.bar.operator", "Compare"),
     ("search.bar.pick", "Choose …"),
-    ("search.bar.pick-choose", "Choose"),
     ("search.bar.pick-chosen", "Chosen: {name}"),
     ("search.bar.pick-clear", "Clear the name"),
     ("search.bar.pick-groups", "Group"),
@@ -14414,7 +14462,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.unit-weeks", "weeks"),
     ("search.bar.until", "until"),
     ("search.bar.value", "Value"),
-    ("search.bar.when", "Day"),
+    ("search.bar.when", "When"),
     (
         "search.bar.with-mistakes",
         "{filters} · {count, plural, one {# mistake} other {# mistakes}}",
@@ -14463,7 +14511,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.help-time", "Time"),
     (
         "search.help-time-text",
-        "Days are written like 2026-12-31. Words like today and this week also work.",
+        "Typed in Advanced search, days are written like 2026-12-31. Words like today and this week also work.",
     ),
     ("search.help-title", "The words of the search"),
     ("search.help-use", "Use {example} in the search"),
@@ -14658,9 +14706,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "search.project-list-stop",
-        "Stop using as the list of {project}",
+        "Stop using this as the {name} project's list",
     ),
-    ("search.project-list-use", "Use as the list of {project}"),
+    (
+        "search.project-list-use",
+        "Use this as the {name} project's list",
+    ),
     ("search.projects", "Projects"),
     ("search.results", "Results"),
     ("search.save", "Save search"),
@@ -14669,6 +14720,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.save-copy", "Save a copy"),
     ("search.save-copy-confirm", "Save a copy"),
     ("search.save-name", "Name"),
+    ("search.save-need", "Give the search a name first."),
     (
         "search.save-text",
         "Give the search a name. It keeps the filters and how the results are shown. At first only you can see it.",
@@ -14681,7 +14733,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.share-done", "Done"),
     ("search.share-groups", "Groups"),
     ("search.share-more", "Show more"),
-    ("search.share-none", "There is nothing you may share with."),
+    (
+        "search.share-none-groups",
+        "You can't share with any group.",
+    ),
+    (
+        "search.share-none-projects",
+        "You can't share with any project.",
+    ),
     (
         "search.share-note",
         "Everyone sees only the issues and fields they are allowed to see.",

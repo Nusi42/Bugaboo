@@ -58,7 +58,7 @@ function joinedAnd(filters: readonly Expr[]): Expr | null {
 }
 
 /** `or` of at least two filters, the filter itself for one, nothing for none. */
-function joinedOr(members: readonly Expr[]): Expr | null {
+export function joinedOr(members: readonly Expr[]): Expr | null {
   const items = members.flatMap((each) => (each.type === "or" ? each.items : [each]));
   const [first, second] = items;
   if (first === undefined) {

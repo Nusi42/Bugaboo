@@ -55,6 +55,7 @@ export function SaveSearchButton({
         confirmLabel={copy ? t("search.save-copy-confirm") : t("search.save-confirm")}
         cancelLabel={t("common.cancel")}
         confirmDisabled={name.trim().length === 0}
+        confirmHint={t("search.save-need")}
         onConfirm={() => {
           save.mutate(
             { name: name.trim(), text, presentation },

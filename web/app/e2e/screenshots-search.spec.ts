@@ -9,6 +9,7 @@ import { signIn } from "./support/flows.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { onThisLayout, nothing } from "./support/layout.ts";
 import {
+  addTitleFilter,
   closeBar,
   inFourThemes,
   openBar,
@@ -93,6 +94,10 @@ test("qry_01 pictures: the Any of window, the issue finder and the date editor",
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.any-of") }).click();
   await inFourThemes(page, "any-of");
+  const anyOf = page.getByRole("alertdialog", { name: t("search.bar.any-of") });
+  await addTitleFilter(page, anyOf, "login");
+  await addTitleFilter(page, anyOf, "logout");
+  await inFourThemes(page, "any-of-filled");
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Part of" }) }).click();
