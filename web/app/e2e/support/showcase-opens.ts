@@ -48,6 +48,12 @@ export async function openTree({ page }: Needs): Promise<void> {
     await region.getByRole("button", { name: /Mobile app/u }).click();
   }
   await expect(sub).toBeVisible();
+  // Where the tree is a sheet (a phone), it shows from its top, as it opens.
+  await page.evaluate(() => {
+    for (const node of document.querySelectorAll("[role='dialog']")) {
+      node.scrollTop = 0;
+    }
+  });
 }
 
 /** Opens quick search with a word typed, and waits for what it found. */
