@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, Link, RowChevron, partOf, part } from "@bugaboo/ui";
+import { Card, Link, RowChevron, partOf, part, useLayout } from "@bugaboo/ui";
 
 import { heldText } from "../../shared/access-words.ts";
 import { formatDateTime } from "../../shared/format.ts";
@@ -55,6 +55,8 @@ export function Roles({ line }: { readonly line: PersonLine }) {
 
 /** The address and the day the account was made. */
 export function Facts({ line, since }: { readonly line: PersonLine; readonly since: string }) {
+  // On a phone the bar of the screen has Back already.
+  const phone = useLayout() === "phone";
   return (
     <Card heading={line.name} level={1}>
       <dl {...partOf(part.facts)}>
@@ -67,9 +69,11 @@ export function Facts({ line, since }: { readonly line: PersonLine; readonly sin
           <dd {...partOf(part.definition)}>{formatDateTime(since)}</dd>
         </div>
       </dl>
-      <div {...partOf(part.row)}>
-        <Link href={paths.people}>{t("person.back")}</Link>
-      </div>
+      {phone ? null : (
+        <div {...partOf(part.row)}>
+          <Link href={paths.people}>{t("person.back")}</Link>
+        </div>
+      )}
     </Card>
   );
 }

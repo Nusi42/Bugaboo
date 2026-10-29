@@ -5,6 +5,7 @@ import { ada, bob, cleo, createAdmin, createPerson } from "./support/accounts.ts
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
+import { onThisLayout } from "./support/layout.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // People and Groups (SEC-02, PRIV-12, WP-11): the list of people (a searchable list that draws only
@@ -45,7 +46,16 @@ test("sec_02 an administrator finds the people, searches them and opens one", as
   // Her groups and roles: none yet.
   await expect(page.getByText(t("person.groups-none", { name: cleo.name }))).toBeVisible();
   await expect(page.getByText(t("person.roles-none", { name: cleo.name }))).toBeVisible();
-  await page.getByRole("link", { name: t("person.back") }).click();
+  // On a phone the bar of the screen has Back, and the page does not say it twice.
+  const back = page.getByRole("link", { name: t("person.back") });
+  await onThisLayout(page, {
+    computer: () => back.click(),
+    tablet: () => back.click(),
+    phone: async () => {
+      await expect(back).toHaveCount(0);
+      await page.goBack();
+    },
+  });
   await expect(page).toHaveURL(addressEndingAt(paths.people));
 });
 
