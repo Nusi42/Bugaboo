@@ -121,6 +121,16 @@ async function takeCrops(page: Page, shot: Shot): Promise<void> {
     );
     return;
   }
+  if (shot.screen === "new-issue-minimized" && shot.device === "computer") {
+    // The bar of the minimized window, at the size it has, clear of the card behind it.
+    await shootWindowAs(
+      page,
+      `${numbered(shot.order)}-${shot.screen}-${shot.device}-crop-bar`,
+      SHOWCASE,
+      shot.theme.id,
+    );
+    return;
+  }
   if (shot.device !== "computer" || !withCrops.has(shot.screen)) {
     return;
   }
