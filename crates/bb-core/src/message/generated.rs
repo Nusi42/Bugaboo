@@ -11138,7 +11138,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access.origin-unset", "Nothing set, so it is hidden"),
     ("access.reset", "Reset"),
     ("access.reset-label", "Reset {subject} for {role}"),
-    ("access.role-chooser", "Show the levels of the role"),
+    ("access.role-chooser", "Choose a role"),
     (
         "access.roles-cut",
         "There are more roles than fit in this table. The first ones are shown.",
@@ -13590,7 +13590,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
     ),
     ("people-visibility.preview-heading", "What {role} sees"),
-    ("people-visibility.preview-role", "See what this role sees"),
+    ("people-visibility.preview-role", "Choose a role"),
     (
         "people-visibility.project-title",
         "Who sees people in {project}",
