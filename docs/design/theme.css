@@ -43,6 +43,7 @@
   --size-row-compact: 28px;
   --pad-nothing: var(--pad-box);
   --size-list-scroll: 70dvh;
+  --size-list-scroll-least: 120px;
   --size-edge: 4px;
   --size-name: 112px;
   --size-col-icon: 24px;

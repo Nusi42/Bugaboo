@@ -14,3 +14,18 @@ export function emptyCardsOf(page: Page): Promise<number> {
     return empty;
   });
 }
+
+/** How far the content of the first card starts under its top edge, and the padding of the card: no slot of a hidden heading is between. */
+export function slotAboveContent(page: Page): Promise<{ gap: number; padding: number }> {
+  return page.evaluate(() => {
+    const card = document.querySelector('[data-part="card"]');
+    const stack = card?.querySelector(':scope > [data-part="stack"]');
+    if (card === null || card === undefined || stack === null || stack === undefined) {
+      return { gap: 0, padding: 0 };
+    }
+    return {
+      gap: stack.getBoundingClientRect().top - card.getBoundingClientRect().top,
+      padding: Number(getComputedStyle(card).paddingTop.replace("px", "")),
+    };
+  });
+}

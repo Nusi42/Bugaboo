@@ -23,4 +23,14 @@ describe("sec_12 leaving the session forgets the page the person came from", () 
     });
     expect(cameFrom()).toBeUndefined();
   });
+
+  it("forgets it also when `go` fails after the move was noted", async () => {
+    queryClient.clear();
+    const left = leaveSession(() => {
+      noteResolved({ fromLocation: { pathname: "/search", href: "/search?s=x" } });
+      return Promise.reject(new Error("the page did not change"));
+    });
+    await expect(left).rejects.toThrow("the page did not change");
+    expect(cameFrom()).toBeUndefined();
+  });
 });

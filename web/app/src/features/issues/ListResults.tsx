@@ -1,15 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, Icon, iconName, part, partOf } from "@bugaboo/ui";
 
-import { codeOf, messageOf } from "../../shared/errors.ts";
+import { isInvalidSearch, messageOf } from "../../shared/errors.ts";
 import { showSearchSheet } from "../../shared/search-sheet.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import { PlainList } from "./ListBody.tsx";
 import { GroupedList } from "./ListGroups.tsx";
 import { useListContext } from "./list-context.ts";
-
-/** The code of the answer for a text that has a mistake in the search language (a search that takes too long has none). */
-const searchInvalid = "search.invalid";
 
 export interface ListResultsProps {
   readonly view: ListView;
@@ -30,7 +27,7 @@ export function ListResults({ view }: ListResultsProps) {
           <Icon name={iconName.danger} />
           {messageOf(failure)}
         </span>
-        {phone && codeOf(failure) === searchInvalid ? (
+        {phone && isInvalidSearch(failure) ? (
           <div>
             <Button look={buttonLook.quiet} onPress={showSearchSheet}>
               {t("search.show-mistake")}

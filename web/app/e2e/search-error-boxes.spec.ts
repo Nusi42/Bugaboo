@@ -23,6 +23,7 @@ test("ux_6_1 a search that takes too long says so, and offers no mistake to show
     title: "This search took too long.",
     type: "urn:bugaboo:error:search.too-slow",
   });
+  // The answer has the code of the search that took too long; a 4xx status is what the tests of refusals may log (a 503 would count as a defect of the page).
   await page.route(/\/api\/v1\/search\/issues\/(count|groups)/u, (route) =>
     route.fulfill({ status: 408, contentType: "application/problem+json", body: tooSlow }),
   );

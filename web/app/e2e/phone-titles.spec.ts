@@ -1,5 +1,6 @@
 import { paths } from "../src/shared/paths.ts";
 import { ada, createAdmin } from "./support/accounts.ts";
+import { slotAboveContent } from "./support/cards.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
@@ -44,6 +45,22 @@ test("ux_7_3 on a phone the heading of a page is not drawn a second time under t
       // Not drawn: a heading for screen readers only is a point.
       expect((await boxOf(heading)).width, address).toBeLessThanOrEqual(1);
       await expect(partIn(page, "top-bar.title")).toBeVisible();
+    }),
+  );
+});
+
+test("ux_7_3 on a phone the first line of a card whose heading is hidden starts within the padding of the card (R3)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "phone", "only a phone hides the heading");
+  await signIn(page, ada);
+  await inOrder(
+    [paths.shortcuts, paths.appearance, paths.projects, paths.region].map((address) => async () => {
+      await page.goto(address);
+      await expect(page.getByRole("heading", { level: 1 })).toBeAttached();
+      const { gap, padding } = await slotAboveContent(page);
+      // The border and the rounding of the card, and nothing else: no row for the heading above the first line.
+      expect(gap, address).toBeLessThanOrEqual(padding + 2);
     }),
   );
 });

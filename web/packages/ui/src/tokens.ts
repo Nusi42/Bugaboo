@@ -146,6 +146,7 @@ export const tokenNames = [
   "size-row-compact",
   "pad-nothing",
   "size-list-scroll",
+  "size-list-scroll-least",
   "size-edge",
   "size-name",
   "size-col-icon",
