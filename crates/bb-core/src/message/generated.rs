@@ -14304,10 +14304,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.contains", "contains {text}"),
     ("search.bar.count", "How many"),
     ("search.bar.day", "Which day"),
-    (
-        "search.bar.day-format",
-        "In Advanced search, a day is typed like 2026-12-31.",
-    ),
+    ("search.bar.day-format", "In Advanced search: 2026-12-31."),
     (
         "search.bar.duration-help",
         "Write a length of time, for example {hours}, {minutes} or {both}.",

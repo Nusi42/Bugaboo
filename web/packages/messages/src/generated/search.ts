@@ -75,7 +75,7 @@ export const messages = {
   "search.bar.when": "When",
   "search.bar.a-day": "A day I choose",
   "search.bar.day": "Which day",
-  "search.bar.day-format": "In Advanced search, a day is typed like 2026-12-31.",
+  "search.bar.day-format": "In Advanced search: 2026-12-31.",
   "search.bar.count": "How many",
   "search.bar.unit": "Unit",
   "search.bar.unit-days": "days",

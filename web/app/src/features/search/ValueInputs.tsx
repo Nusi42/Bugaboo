@@ -125,12 +125,18 @@ function TypedValue({ field, values, onValues }: ValueInputProps) {
   );
 }
 
+/** A blank that does not break a line. */
+const noBreakSpace = " ";
+
 /** A length of time typed (`2 hours`, `1 hour 30 minutes`): the search language reads it. */
 function DurationValue({ language, values, onValues }: ValueInputProps) {
   const [first] = values;
   // The examples are written by the language, so the words are the ones it reads.
+  // An example never breaks across two lines (*1 hour / 30 minutes*): its blanks do not break.
   const example = (minutes: number): string =>
-    language.operandSource({ type: "duration", minutes, span: nowhere });
+    language
+      .operandSource({ type: "duration", minutes, span: nowhere })
+      .replaceAll(" ", noBreakSpace);
   const examples = { hours: example(120), minutes: example(45), both: example(90) };
   // The language writes and reads the length of time, in its own words.
   const [typed, setTyped] = useState(
