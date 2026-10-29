@@ -5,6 +5,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWorkflows } from "./support/workflows.ts";
 import { blockOf, openSimple } from "./support/workflows-pages.ts";
+import { inOrder } from "./support/sequence.ts";
 import { inEveryLook, resolved } from "./support/styles.ts";
 
 // A button that cannot be pressed has the edge of the theme file, which STY-CONTRAST holds at a
@@ -40,4 +41,31 @@ test("ux_07 a quiet button that cannot be pressed has no edge", async ({ page })
     "border-top-color",
     await resolved(page, "border-top-color", "transparent"),
   );
+});
+
+test("ux_07 a main button that cannot be pressed is flat and quiet, not selected and not outlined, in every theme", async ({
+  page,
+}) => {
+  // The review of M5 (S20): it looked like an outlined button with grey words; with the soft accent fill it
+  // looked like a selected segment. It is sunken, with quiet words and the edge of a button that cannot be
+  // pressed (tested above): the fill of neither a chosen thing (`bg-selected`, `accent-soft`) nor a button.
+  await signIn(page, ada);
+  await openSimple(page);
+  const publish = page.getByRole("button", { name: t("workflows.publish"), exact: true });
+  await expect(publish).toBeDisabled();
+  await inEveryLook(page, async (look) => {
+    const sunken = await resolved(page, "background-color", "var(--bg-sunken)");
+    await expect(publish, look).toHaveCSS("background-color", sunken);
+    await expect(publish, look).toHaveCSS(
+      "color",
+      await resolved(page, "color", "var(--fg-muted)"),
+    );
+    await inOrder(
+      ["var(--accent-soft)", "var(--bg-selected)", "var(--bg-raised)"].map((chosen) => async () => {
+        expect(sunken, `${look}: not ${chosen}`).not.toBe(
+          await resolved(page, "background-color", chosen),
+        );
+      }),
+    );
+  });
 });

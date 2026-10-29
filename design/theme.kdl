@@ -991,14 +991,15 @@ part "button[pressed]" {
     background "$bg-selected"
 }
 
-// A main button that cannot be pressed yet looks like any button that cannot be pressed: the same
-// edge, the same fill and the same pale words as a disabled secondary button, not a pale copy of the
-// filled one, whose white words are hard to read (the review of M4, A14). The dashed edge belongs to
-// the places to drop things on and to *Not started*.
+// A main button that cannot be pressed yet is a sunken, flat button with quiet words: not a pale copy of the
+// filled one, whose white words are hard to read (the review of M4, A14), not an outlined button with grey
+// words (the review of M5, S20), and not the soft accent fill either, which a selected segment or menu item
+// has and which reads as "chosen". It has the edge of every button that cannot be pressed. The dashed edge
+// belongs to the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" {
     border-color "$fg-muted"
-    background "$bg-raised"
-    color "$fg"
+    background "$bg-sunken"
+    color "$fg-muted"
 }
 
 part "button[state=busy]" {

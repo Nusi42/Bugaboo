@@ -210,8 +210,8 @@ optgroup {
 
 [data-part="button"][data-variant~="primary"][data-disabled] {
   border-color: var(--fg-muted);
-  background: var(--bg-raised);
-  color: var(--fg);
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
 }
 
 [data-part="button"][data-state~="busy"] {
