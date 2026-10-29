@@ -2859,6 +2859,14 @@ part "stack" {
     min-width 0
 }
 
+// A button that stands in a column on a computer is as wide as its words, not as wide as the column (M5 exit, O6);
+// on a phone a form's button is as wide as the screen.
+part "stack > button" {
+    media "(width >= $bp-tablet)" {
+        align-self flex-start
+    }
+}
+
 // Things under each other on the start edge, with text buttons among them: a button that stands
 // in the column hangs back by its padding, so its text starts where the text above starts (R1).
 part "start-column" {

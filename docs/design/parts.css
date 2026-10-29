@@ -2154,6 +2154,12 @@ optgroup {
   min-width: 0;
 }
 
+@media (width >= 768px) {
+  [data-part="stack"] > [data-part="button"] {
+    align-self: flex-start;
+  }
+}
+
 [data-part="start-column"] {
   display: flex;
   flex-direction: column;
