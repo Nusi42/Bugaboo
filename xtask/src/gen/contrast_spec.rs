@@ -28,10 +28,90 @@ pub(crate) struct DistinctSpec {
     /// The states and the surfaces they must stay visible on: one group for the plain surfaces, one
     /// for each kind of tinted row. A rule has one group of its own, or `group { … }` children.
     pub(crate) groups: Vec<DistinctGroup>,
-    /// Smallest contrast ratio between a state and each surface.
+    /// Smallest contrast ratio between a state and each surface (0 when the rule does not ask for one).
     pub(crate) min_against_surfaces: f64,
-    /// Smallest contrast ratio between two states.
+    /// Smallest contrast ratio between two states (0 when the rule does not ask for one).
     pub(crate) min_between_states: f64,
+    /// Smallest difference in color (CIE 76 delta E) between a state and each surface. A ratio is
+    /// blind to the hue, so a rule that has to tell a blue from a grey of the same brightness says this.
+    pub(crate) min_delta_e_against_surfaces: Option<f64>,
+    /// Smallest difference in color (delta E) between two states.
+    pub(crate) min_delta_e_between_states: Option<f64>,
+}
+
+/// A text color on a fill that is brightened while it is pointed at (`filter: brightness`): the
+/// pair is checked again as it is seen then.
+pub(crate) struct Hovered {
+    pub(crate) text: String,
+    pub(crate) on: String,
+    /// The number token with the brightness of the hover.
+    pub(crate) brightness: String,
+    /// The smallest ratio as it is, and with the device setting for more contrast.
+    pub(crate) min: f64,
+    pub(crate) min_more: f64,
+}
+
+impl Hovered {
+    fn parse(node: Node<'_>) -> anyhow::Result<Self> {
+        reason(node)?;
+        Ok(Self {
+            text: node.child("text")?.only_arg()?,
+            on: node.child("on")?.only_arg()?,
+            brightness: node.required_prop("brightness")?,
+            min: node.number_prop("min")?,
+            min_more: node.number_prop("min-more")?,
+        })
+    }
+}
+
+/// The page behind a sheet, dimmed by a scrim: the sheet must stand out from it and the text of the
+/// page must be dim, in every theme, as it is drawn (the scrim mixed over the fill and over the text).
+pub(crate) struct Dimmed {
+    pub(crate) scrim: String,
+    pub(crate) opacity: String,
+    pub(crate) page: String,
+    pub(crate) text: String,
+    pub(crate) sheet: String,
+    /// The least ratio of the sheet to the dimmed page in a light theme and in a dark one.
+    pub(crate) min_sheet_light: f64,
+    pub(crate) min_sheet_dark: f64,
+    /// The most ratio that the dimmed text of the page may have against the dimmed page.
+    pub(crate) max_text: f64,
+}
+
+impl Dimmed {
+    fn parse(node: Node<'_>) -> anyhow::Result<Self> {
+        reason(node)?;
+        Ok(Self {
+            scrim: node.required_prop("scrim")?,
+            opacity: node.required_prop("opacity")?,
+            page: node.required_prop("page")?,
+            text: node.required_prop("text")?,
+            sheet: node.required_prop("sheet")?,
+            min_sheet_light: node.number_prop("min-sheet-light")?,
+            min_sheet_dark: node.number_prop("min-sheet-dark")?,
+            max_text: node.number_prop("max-text")?,
+        })
+    }
+}
+
+/// Text colors that need more than the usual ratio on some backgrounds, because small words in a
+/// thin face are read on them all day (the muted words of a tinted row).
+pub(crate) struct StrongerText {
+    pub(crate) min: f64,
+    pub(crate) text: Vec<String>,
+    pub(crate) on: Vec<String>,
+}
+
+impl StrongerText {
+    fn parse(node: Node<'_>) -> anyhow::Result<Self> {
+        reason(node)?;
+        Ok(Self {
+            min: node.number_prop("min")?,
+            text: node.words("text")?,
+            on: node.words("on")?,
+        })
+    }
 }
 
 /// Some states and the surfaces they sit on.
@@ -65,10 +145,28 @@ impl DistinctSpec {
                 .map(DistinctGroup::parse)
                 .collect::<anyhow::Result<Vec<_>>>()?
         };
+        let named = [
+            "min-against-surfaces",
+            "min-between-states",
+            "min-delta-e-against-surfaces",
+            "min-delta-e-between-states",
+        ];
+        if !named
+            .iter()
+            .any(|key| node.prop(key).ok().flatten().is_some())
+        {
+            bail!(
+                "line {}: a `distinct` rule names at least one minimum ({}), or it checks nothing",
+                node.line(),
+                named.join(", ")
+            );
+        }
         Ok(Self {
             groups,
-            min_against_surfaces: node.number_prop("min-against-surfaces")?,
-            min_between_states: node.number_prop("min-between-states")?,
+            min_against_surfaces: optional_number(node, "min-against-surfaces")?.unwrap_or(0.0),
+            min_between_states: optional_number(node, "min-between-states")?.unwrap_or(0.0),
+            min_delta_e_against_surfaces: optional_number(node, "min-delta-e-against-surfaces")?,
+            min_delta_e_between_states: optional_number(node, "min-delta-e-between-states")?,
         })
     }
 }
@@ -110,6 +208,9 @@ pub(crate) struct PlainLines {
 pub(crate) struct ContrastSpec {
     pub(crate) min: f64,
     pub(crate) plain_lines: Vec<PlainLines>,
+    pub(crate) hovered: Vec<Hovered>,
+    pub(crate) stronger: Vec<StrongerText>,
+    pub(crate) dimmed: Vec<Dimmed>,
     pub(crate) more: MoreSpec,
     pub(crate) text: Vec<String>,
     pub(crate) backgrounds: Vec<String>,
@@ -160,6 +261,17 @@ impl ContrastSpec {
                     .iter()
                     .flat_map(|r| std::iter::once(&r.text).chain(&r.on)),
             )
+            .chain(self.hovered.iter().flat_map(|rule| [&rule.text, &rule.on]))
+            .chain(
+                self.dimmed
+                    .iter()
+                    .flat_map(|rule| [&rule.scrim, &rule.page, &rule.text, &rule.sheet]),
+            )
+            .chain(
+                self.stronger
+                    .iter()
+                    .flat_map(|rule| rule.text.iter().chain(&rule.on)),
+            )
     }
 
     /// Whether the rules say what this color is: text, a background, or not text at all.
@@ -197,6 +309,9 @@ impl ContrastSpec {
         let mut non_text = Vec::new();
         let mut more = None;
         let mut plain_lines = Vec::new();
+        let mut hovered = Vec::new();
+        let mut stronger = Vec::new();
+        let mut dimmed = Vec::new();
         for child in node.children() {
             match child.name() {
                 "text" | "backgrounds" => {}
@@ -236,6 +351,9 @@ impl ContrastSpec {
                         faded_by: child.prop("faded-by")?,
                     });
                 }
+                "hovered" => hovered.push(Hovered::parse(child)?),
+                "stronger" => stronger.push(StrongerText::parse(child)?),
+                "dimmed" => dimmed.push(Dimmed::parse(child)?),
                 "more" => more = Some(MoreSpec::parse(child)?),
                 other => bail!("line {}: unknown contrast rule `{other}`", child.line()),
             }
@@ -243,6 +361,9 @@ impl ContrastSpec {
         Ok(Self {
             min: node.number_prop("min")?,
             plain_lines,
+            hovered,
+            stronger,
+            dimmed,
             more: more.ok_or_else(|| node.problem("needs a `more` rule"))?,
             text: node.words("text")?,
             backgrounds: node.words("backgrounds")?,
@@ -251,6 +372,16 @@ impl ContrastSpec {
             non_text,
         })
     }
+}
+
+/// A pair that is a number, when the node has it.
+fn optional_number(node: Node<'_>, key: &str) -> anyhow::Result<Option<f64>> {
+    node.prop(key)?
+        .map(|text| {
+            text.parse()
+                .map_err(|_| node.problem(format!("`{key}` must be a number")))
+        })
+        .transpose()
 }
 
 fn reason(node: Node<'_>) -> anyhow::Result<()> {
