@@ -5015,7 +5015,7 @@ optgroup {
 
 [data-part="nav-item.by"] {
   display: block;
-  font-size: var(--doc-font-12);
+  font-size: var(--fs-xs);
   color: var(--fg-muted);
 }
 

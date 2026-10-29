@@ -4786,7 +4786,7 @@ part "nav-item.label" {
 // Who a shared saved search is by: a second, quiet line under its name.
 part "nav-item.by" {
     display block
-    font-size "$doc-font-12"
+    font-size "$fs-xs"
     color "$fg-muted"
 }
 
