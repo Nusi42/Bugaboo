@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { pageAttributes } from "../../../packages/ui/src/tokens.ts";
+import { expectRingsWhole } from "./rings.ts";
 import { inOrder } from "./sequence.ts";
 import { type SettingChoice, settingChoices } from "@bugaboo/api-client";
 
@@ -161,15 +162,31 @@ export async function expectVisibleTextInName(page: Page): Promise<void> {
   expect(mismatches).toEqual([]);
 }
 
-/** The open screen is accessible and does not scroll sideways, in every theme, picked as a person does. */
+/** The open screen is accessible, does not scroll sideways, has nothing over anything and names what it shows. */
+async function expectGoodScreen(page: Page): Promise<void> {
+  await expectNoViolations(page);
+  await expectNoSidewaysScroll(page);
+  await expectNoOverlap(page);
+  await expectVisibleTextInName(page);
+}
+
+/** The open screen is good (see `expectGoodScreen`) in every theme, picked as a person does. */
 export function expectGoodInEveryTheme(page: Page): Promise<void> {
   return inOrder(
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
-      await expectNoViolations(page);
-      await expectNoSidewaysScroll(page);
-      await expectNoOverlap(page);
-      await expectVisibleTextInName(page);
+      await expectGoodScreen(page);
+    }),
+  );
+}
+
+/** The screens are good in every theme, and every focus ring of the open dialog is whole in each. */
+export function expectGoodWithRingsInEveryTheme(page: Page): Promise<void> {
+  return inOrder(
+    themes.map((theme) => async () => {
+      await chooseTheme(page, theme);
+      await expectGoodScreen(page);
+      await expectRingsWhole(page);
     }),
   );
 }
@@ -179,10 +196,7 @@ export function expectGoodInEveryLook(page: Page): Promise<void> {
   return inOrder(
     themes.map((theme) => async () => {
       await putOnTheme(page, theme);
-      await expectNoViolations(page);
-      await expectNoSidewaysScroll(page);
-      await expectNoOverlap(page);
-      await expectVisibleTextInName(page);
+      await expectGoodScreen(page);
     }),
   );
 }

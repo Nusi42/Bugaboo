@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { Dialog, DialogTrigger, Heading, Modal, ModalOverlay } from "react-aria-components";
 
 import { Button } from "./Button.tsx";
@@ -38,6 +38,8 @@ export interface ConfirmDialogProps {
   readonly children?: ReactNode;
   /** The confirming button waits until what is filled in is complete. */
   readonly confirmDisabled?: boolean;
+  /** Why the button waits, in words under what is filled in; shown only while it waits. */
+  readonly confirmHint?: string;
   /** Called when the question closes, whichever way, so what was filled in can be cleared. */
   readonly onClosed?: () => void;
 }
@@ -118,8 +120,11 @@ function Question({
   onConfirm,
   children,
   confirmDisabled = false,
+  confirmHint,
   close,
 }: Omit<ConfirmDialogProps, "triggerLabel" | "triggerName"> & { readonly close: () => void }) {
+  // The note that says why the main button waits is the description of that button.
+  const hintId = useId();
   return (
     <Dialog {...partOf(part.confirmDialog)} role={dialogRole}>
       <div {...partOf(part.confirmBody)}>
@@ -129,6 +134,11 @@ function Question({
         <p {...partOf(part.text)}>{text}</p>
         {children}
       </div>
+      {confirmDisabled && confirmHint !== undefined ? (
+        <p {...partOf(part.muted)} id={hintId}>
+          {confirmHint}
+        </p>
+      ) : null}
       <div {...partOf(part.confirmActions)}>
         <Button look={buttonLook.quiet} onPress={close}>
           {cancelLabel}
@@ -136,6 +146,7 @@ function Question({
         <Button
           look={confirmLook}
           isDisabled={confirmDisabled}
+          {...(confirmDisabled && confirmHint !== undefined ? { "aria-describedby": hintId } : {})}
           onPress={() => {
             // The answer first: closing tells whoever listens that the question went away, and
             // that must not be taken for a "no".
