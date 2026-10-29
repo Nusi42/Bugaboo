@@ -20,13 +20,14 @@ export function IssueResults(props: IssueResultsProps) {
     return <Skeleton lines={3} />;
   }
   const known = new Map(fields.data.fields.fields.map((field) => [field.word, field]));
+  const { view, defaults } = props;
   const drawn = (columns: readonly string[]): readonly string[] =>
     columns.filter((word) => isDrawnColumn(word, known.get(word)));
   return (
     <LoadedResults
       {...props}
-      view={{ ...props.view, columns: drawn(props.view.columns) }}
-      defaults={{ ...props.defaults, columns: drawn(props.defaults.columns) }}
+      view={{ ...view, columns: drawn(view.columns) }}
+      defaults={{ ...defaults, columns: drawn(defaults.columns) }}
       language={language}
       fields={{ ...fields.data, names: { id: t("issue-field.readable-id"), ...fields.data.names } }}
     />

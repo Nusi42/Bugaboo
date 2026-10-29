@@ -83,6 +83,6 @@ test("cfg_02 a folded group loads nothing when the search changes", async ({ pag
   // A new sort changes the search of every open group, and the folded one is not asked for.
   await columnButton(page, title).click();
   await expect(grid(page).getByRole("link", { name: webIssues.login })).toBeVisible();
-  expect(asked.filter((text) => text.includes("priority is critical"))).not.toEqual([]);
-  expect(asked.filter((text) => text.includes("priority is high"))).toEqual([]);
+  expect(asked.filter((text) => text.includes("priority is Critical"))).not.toEqual([]);
+  expect(asked.filter((text) => text.includes("priority is High"))).toEqual([]);
 });

@@ -13,6 +13,8 @@ import { copySampleInto } from "./sample.ts";
 export interface Instance {
   /** The address people type: HTTPS on this computer, with the certificate the server made. */
   readonly url: string;
+  /** The folder the server keeps its data in (what a test that needs a row the API cannot make writes into). */
+  readonly dataDir: string;
   /** The setup code of the first start, from the file the server saves it in. */
   readonly setupCode: () => string;
   /**
@@ -165,6 +167,7 @@ export async function startServer(
   });
   return {
     url: origin,
+    dataDir: folder,
     setupCode: () => readFileSync(join(folder, SETUP_CODE_FILE), "utf8").trim(),
     verifySecurityLog: () => verifySecurityLog(executable, folder),
     stop,

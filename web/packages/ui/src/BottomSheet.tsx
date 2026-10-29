@@ -13,7 +13,9 @@ export interface BottomSheetProps {
   readonly label: string;
   /** The title at the top of the sheet; none where the content says what it is. */
   readonly title?: string;
-  /** What the button at the foot says (*Close*). */
+  /** What is done with the content (*Save search*), next to the button that closes the sheet. */
+  readonly footer?: ReactNode;
+  /** What the button at the foot says (*Close*, *Done*). */
   readonly closeLabel: string;
   /** The sheet has the height of the sheet of the filters, so it does not jump as its content changes. */
   readonly tall?: boolean;
@@ -26,6 +28,7 @@ export function BottomSheet({
   onOpenChange,
   label,
   title,
+  footer,
   closeLabel,
   tall = false,
   children,
@@ -36,6 +39,7 @@ export function BottomSheet({
         {title === undefined ? null : <h2 {...partOf(part.bottomSheetTitle)}>{title}</h2>}
         {children}
         <div {...partOf(part.bottomSheetActions)}>
+          {footer}
           <Button
             look={buttonLook.primary}
             onPress={() => {

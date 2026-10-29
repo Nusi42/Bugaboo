@@ -447,6 +447,7 @@ export interface MessageArguments {
   "search.bar.pick-chosen": { name: string | number };
   "search.bar.pick-take": { name: string | number };
   "search.bar.remove-filter": { filter: string | number };
+  "search.bar.with-mistakes": { count: number; filters: string | number };
   "search.copy-name": { name: string | number };
   "search.count": { count: number };
   "search.found-issue": { id: string | number; title: string | number };

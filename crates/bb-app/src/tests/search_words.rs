@@ -209,9 +209,9 @@ async fn qry_05_between_own_fields_the_first_keeps_the_word_for_every_person() -
     let (bob, _) = bob_with_a_role(&world, &shown).await?;
     let for_bob = targets_of(&world, &bob).await?;
     // The first field is hidden from Bob, so nobody takes its word in its place.
-    assert!(!for_bob.iter().any(|(word, _)| word == "storyPoints"));
+    assert!(!for_bob.iter().any(|(word, _)| word == "story points"));
     let for_admin = targets_of(&world, &token(&world)).await?;
-    let owner = for_admin.iter().find(|(word, _)| word == "storyPoints");
+    let owner = for_admin.iter().find(|(word, _)| word == "story points");
     assert_eq!(
         owner.map(|found| found.1),
         Some(FieldTarget::Own {

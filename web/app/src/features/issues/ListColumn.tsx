@@ -56,7 +56,7 @@ export function ListColumn({
             onDragged={onDragged}
           />
         )}
-        <ListResults view={view} stale={props.stale} />
+        <ListResults view={view} />
       </ListFrame>
       {project === undefined ? null : (
         <Selected selection={selection} project={project} search={search} shown={shown} />

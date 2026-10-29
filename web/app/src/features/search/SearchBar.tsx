@@ -83,10 +83,18 @@ function LoadedBar(props: LoadedProps) {
   const container = useSearchKey(() => {
     setOpen(true);
   });
+  const phone = layout === "phone";
+  // On a phone what is done with the search stands in the foot of the sheet, next to *Done*.
   const body = (
-    <SearchBarBody language={language} fields={fields} names={names} bar={bar} actions={actions} />
+    <SearchBarBody
+      language={language}
+      fields={fields}
+      names={names}
+      bar={bar}
+      actions={phone ? undefined : actions}
+    />
   );
-  if (layout !== "phone") {
+  if (!phone) {
     return (
       <div {...partOf(part.searchBar)} ref={container}>
         {body}
@@ -96,11 +104,13 @@ function LoadedBar(props: LoadedProps) {
   return (
     <PhoneFilters
       search={bar.search}
+      mistakes={bar.answer.mistakes.length}
       open={open}
       onOpenChange={setOpen}
       fields={{ fields, names }}
       listView={listView}
       start={phoneStart}
+      footer={actions}
     >
       {body}
     </PhoneFilters>

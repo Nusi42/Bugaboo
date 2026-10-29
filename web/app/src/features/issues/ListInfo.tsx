@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Announce, part, partOf } from "@bugaboo/ui";
+import { Alert, alertTone, Announce, Button, buttonLook, part, partOf } from "@bugaboo/ui";
 
+import { showSearchSheet } from "../../shared/search-sheet.ts";
 import { useFoundCount } from "./found-issues.ts";
 import { useListContext } from "./list-context.ts";
 
@@ -15,7 +16,7 @@ export interface ListInfoProps {
 
 /** The count line above the list, *302 in Website · 13 shown* (UX §4.2). */
 export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
-  const { search, failure } = useListContext();
+  const { search, failure, phone } = useListContext();
   const count = useFoundCount(search);
   // With no earlier list (the address itself has the mistake) the error says it all.
   const note = stale && failure === null;
@@ -24,7 +25,16 @@ export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
   }
   return (
     <>
-      {note ? <output {...partOf(part.text)}>{t("search.found-stale")}</output> : null}
+      {note ? (
+        <Alert tone={alertTone.info}>
+          {t("search.found-stale")}
+          {phone ? (
+            <Button look={buttonLook.quiet} onPress={showSearchSheet}>
+              {t("search.show-mistake")}
+            </Button>
+          ) : null}
+        </Alert>
+      ) : null}
       <p {...partOf(part.muted)}>
         {t("issues.count-line", {
           total: count.data,

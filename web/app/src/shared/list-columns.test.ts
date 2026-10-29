@@ -12,12 +12,12 @@ const readable = ["title", "status", "priority", "labels", "plannedFor"];
 
 describe("the columns a person chooses in Customize", () => {
   it("starts with the columns of UX 4.2 as search words, with no tick box or buttons", () => {
-    expect(projectColumns).toEqual(["status", "id", "title", "priority", "assignedTo", "changed"]);
+    expect(projectColumns).toEqual(["status", "id", "title", "priority", "assigned to", "changed"]);
   });
 
   it("draws a search word in the cell of its field, and a field without a cell as a plain value", () => {
     expect(cellOf("id")).toBe("key");
-    expect(cellOf("assignedTo")).toBe("person");
+    expect(cellOf("assigned to")).toBe("person");
     expect(cellOf("plannedFor")).toBe("value");
   });
 
@@ -62,7 +62,7 @@ describe("the columns that can be drawn", () => {
   });
 
   it("keeps the fields that have a cell of their own and the plain values", () => {
-    expect(isDrawnColumn("assignedTo", field("person"))).toBe(true);
+    expect(isDrawnColumn("assigned to", field("person"))).toBe(true);
     expect(isDrawnColumn("project", field("project"))).toBe(true);
     expect(isDrawnColumn("plannedFor", field("choice", ["2.4"]))).toBe(true);
     expect(isDrawnColumn("estimate", field("duration"))).toBe(true);
@@ -71,7 +71,7 @@ describe("the columns that can be drawn", () => {
 
 describe("the columns the list draws as text of the row", () => {
   it("draws Reported by, the days of making and closing and the status group, and never the long description", () => {
-    for (const word of ["reportedBy", "created", "closed", "statusGroup"]) {
+    for (const word of ["reported by", "created", "closed", "status group"]) {
       expect(isDrawnColumn(word, field("person"))).toBe(true);
     }
     expect(isDrawnColumn("description", field("text"))).toBe(false);

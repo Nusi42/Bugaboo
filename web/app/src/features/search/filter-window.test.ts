@@ -35,7 +35,7 @@ describe("qry_02 the window of a filter keeps what a filter says", () => {
     "created > 2026-10-25",
     "estimate <= 2.5",
     "timeSpent >= 1 hour 30 minutes",
-    'assignedTo member of "Backend"',
+    'assigned to member of "Backend"',
     "project within WEB",
   ])("opens %j and comes back to the same filter", (text) => {
     const filter = filterOfText(text);

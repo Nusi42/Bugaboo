@@ -42,13 +42,13 @@ test.use({
 /** What is typed in Advanced search, and the field word the odd name comes to. */
 const oddWord = language.ownFieldWord(oddField);
 const typedTexts = [
-  "priority is high or assignedTo is me",
-  "not (priority is high and assignedTo is me)",
-  "not priority is high",
+  "priority is High or assigned to is me",
+  "not (priority is High and assigned to is me)",
+  "not priority is High",
   'title contains "say \\"hi\\" \\ now"',
   `"${oddWord}" is "a b"`,
   `"${oddWord}" is not empty`,
-  "priority is high or priority is low or title contains crash sort by title",
+  "priority is High or priority is Low or title contains crash sort by title",
 ];
 
 /** Each text with the text the language writes for it (the module reads every one). */
@@ -81,7 +81,7 @@ test("qry_03 the words marked in the box are the ones the server names", async (
   await openSearch(page, "");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  const text = "priority is high and nosuchfield is me";
+  const text = "priority is High and nosuchfield is me";
   await box(page).fill(text);
   const server = await page.request.get(`/api/v1/search/issues?q=${encodeURIComponent(text)}`);
   const [mistake = noMistake] = mistakesOf(await server.json());
@@ -97,15 +97,15 @@ test("qry_03 a caret in the middle of the text stays where it is when a letter i
   await openSearch(page, "");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  await box(page).fill("priority is high and assignedTo is me");
-  await box(page).press("Home");
+  await box(page).fill("priority is High and assigned to is me");
+  await box(page).press("ControlOrMeta+Home");
   await inOrder(
     Array.from({ length: 8 }, () => async () => {
       await page.keyboard.press("ArrowRight");
     }),
   );
   await page.keyboard.type("X");
-  await expect(box(page)).toHaveValue("priorityX is high and assignedTo is me");
+  await expect(box(page)).toHaveValue("priorityX is High and assigned to is me");
   await expect(box(page)).toHaveJSProperty("selectionStart", 9);
   await page.keyboard.type("Y");
   await expect(box(page)).toHaveJSProperty("selectionStart", 10);
@@ -114,7 +114,7 @@ test("qry_03 a caret in the middle of the text stays where it is when a letter i
 test("qry_02 back and forward step through the searches, typing is not a step per letter", async ({
   page,
 }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   // A change in Simple search is a step.
   await page
@@ -123,16 +123,16 @@ test("qry_02 back and forward step through the searches, typing is not a step pe
   await expect.poll(() => addressText(page)).toBe("");
   // Typing in Advanced search is one step, however many letters, and stops being one at the next change.
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
-  await box(page).pressSequentially("assignedTo is me and priority is high");
-  await expect.poll(() => addressText(page)).toBe("assignedTo is me and priority is high");
+  await box(page).pressSequentially("assigned to is me and priority is High");
+  await expect.poll(() => addressText(page)).toBe("assigned to is me and priority is High");
   await page.goBack();
   await expect.poll(() => addressText(page)).toBe("");
   await page.goBack();
-  await expect.poll(() => addressText(page)).toBe("priority is high");
+  await expect.poll(() => addressText(page)).toBe("priority is High");
   await page.goForward();
   await expect.poll(() => addressText(page)).toBe("");
   await page.goForward();
-  await expect.poll(() => addressText(page)).toBe("assignedTo is me and priority is high");
+  await expect.poll(() => addressText(page)).toBe("assigned to is me and priority is High");
 });
 
 test("qry_01 the columns, widths, spacing and grouping of the address stay when the search changes", async ({
@@ -140,7 +140,7 @@ test("qry_01 the columns, widths, spacing and grouping of the address stay when 
 }) => {
   await openSearch(page, "");
   await page.goto(
-    `/search?s=${encodeURIComponent("priority is high")}&cols=id,title&widths=title:300&spacing=compact&group=status`,
+    `/search?s=${encodeURIComponent("priority is High")}&cols=id,title&widths=title:300&spacing=compact&group=status`,
   );
   await openBar(page);
   await page
@@ -178,24 +178,24 @@ test("qry_03 words that are an Issue ID and more are not offered as an Issue ID"
 test("qry_02 typing onto a text that is there makes one step, and Back goes to that text", async ({
   page,
 }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).press("End");
   // The first letters give the same search as the address holds: no step is made for them.
-  await box(page).pressSequentially(" and assignedTo is me");
-  await expect.poll(() => addressText(page)).toBe("priority is high and assignedTo is me");
+  await box(page).pressSequentially(" and assigned to is me");
+  await expect.poll(() => addressText(page)).toBe("priority is High and assigned to is me");
   await page.goBack();
-  await expect.poll(() => addressText(page)).toBe("priority is high");
+  await expect.poll(() => addressText(page)).toBe("priority is High");
 });
 
 test("qry_02 typing again after leaving the box makes a new step", async ({ page }) => {
-  await openSearch(page, "priority is high");
+  await openSearch(page, "priority is High");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
   await box(page).press("End");
-  await box(page).pressSequentially(" and assignedTo is me");
-  await expect.poll(() => addressText(page)).toBe("priority is high and assignedTo is me");
+  await box(page).pressSequentially(" and assigned to is me");
+  await expect.poll(() => addressText(page)).toBe("priority is High and assigned to is me");
   // Leaving the box ends the stretch; the next text is a step of its own.
   await box(page).blur();
   await box(page).focus();
@@ -203,9 +203,9 @@ test("qry_02 typing again after leaving the box makes a new step", async ({ page
   await box(page).pressSequentially(" and title contains crash");
   await expect
     .poll(() => addressText(page))
-    .toBe('priority is high and assignedTo is me and title contains "crash"');
+    .toBe('priority is High and assigned to is me and title contains "crash"');
   await page.goBack();
-  await expect.poll(() => addressText(page)).toBe("priority is high and assignedTo is me");
+  await expect.poll(() => addressText(page)).toBe("priority is High and assigned to is me");
   await page.goBack();
-  await expect.poll(() => addressText(page)).toBe("priority is high");
+  await expect.poll(() => addressText(page)).toBe("priority is High");
 });

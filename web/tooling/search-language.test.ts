@@ -95,10 +95,17 @@ function mistakeOf(text: string, fields: typeof vectors.readable_fields): Mistak
 }
 
 describe("qry_05 a hidden field is told like an unknown one", () => {
-  // The person may not read `reportedBy`, so the fields they get do not hold it.
+  // The person may not read *Reported by*, so the fields they get do not hold it, in any spelling.
+  const hiddenKey = language.wordKey("reported by");
   const readable = {
-    fields: vectors.readable_fields.fields.filter((field) => field.word !== "reportedBy"),
+    fields: vectors.readable_fields.fields.filter(
+      (field) => language.wordKey(field.word) !== hiddenKey,
+    ),
   };
+
+  it("leaves the hidden field out of what the person gets", () => {
+    expect(readable.fields.length).toBe(vectors.readable_fields.fields.length - 1);
+  });
 
   it("says the same words, with the word of the person in them", () => {
     const hidden = mistakeOf("reportedBy is me", readable);
@@ -115,8 +122,9 @@ describe("qry_05 a hidden field is told like an unknown one", () => {
   });
 
   it("does not offer the field at the cursor", () => {
-    const offered = language.suggest("reported", "reported".length, readable);
-    expect(JSON.stringify(offered)).not.toContain("reportedBy");
+    const offered = JSON.stringify(language.suggest("reported", "reported".length, readable));
+    expect(offered).not.toContain("reported by");
+    expect(offered).not.toContain("reportedBy");
   });
 });
 
@@ -129,7 +137,7 @@ describe("qry_03 the module gives the browser what the server has", () => {
   });
 
   it("gives an own field its word by the rule of the language", () => {
-    expect(language.ownFieldWord("Story points")).toBe("storyPoints");
+    expect(language.ownFieldWord("Story points")).toBe("story points");
   });
 
   it("prints a tree that Simple search edited", () => {

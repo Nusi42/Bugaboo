@@ -17,7 +17,7 @@ test.use({ preparation: { run: preparePanel } });
 test.describe.configure({ mode: "serial" });
 
 const kept = {
-  s: "priority is not low sort by title",
+  s: "priority is not Low sort by title",
   group: "priority",
   spacing: "compact",
   cols: "status,id,title,priority",

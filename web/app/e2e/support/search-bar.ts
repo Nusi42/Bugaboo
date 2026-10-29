@@ -99,7 +99,7 @@ export async function closeBar(page: Page): Promise<void> {
   if (layoutOf(page) === "phone") {
     await page
       .getByRole("dialog", { name: t("search.bar.filters") })
-      .getByRole("button", { name: t("common.close") })
+      .getByRole("button", { name: t("search.bar.sheet-done"), exact: true })
       .click();
   }
 }

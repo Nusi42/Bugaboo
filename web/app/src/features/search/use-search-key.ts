@@ -1,6 +1,7 @@
 import { useLayout } from "@bugaboo/ui";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
+import { onShowSearchSheet } from "../../shared/search-sheet.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 
 /** The box of Advanced search, and the first button when the bar has no box. */
@@ -15,6 +16,8 @@ const buttonSelector = "button";
 export function useSearchKey(openSheet: () => void) {
   const container = useRef<HTMLDivElement>(null);
   const layout = useLayout();
+  // A note about a mistake, far from the bar, can ask for the sheet too.
+  useEffect(() => onShowSearchSheet(openSheet), [openSheet]);
   useShortcuts({
     "focus-search-bar": () => {
       if (layout === "phone") {

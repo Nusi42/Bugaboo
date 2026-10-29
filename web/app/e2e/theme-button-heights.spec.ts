@@ -53,6 +53,9 @@ test("ux_7_4 Put in and Take out are as high as a control", async ({ page }) => 
   await expect(panel).toBeVisible();
   const takeOut = panel.getByRole("button", { name: t("groups.remove"), exact: false });
   const putIn = panel.getByRole("button", { name: t("groups.add"), exact: false });
+  // The members and the people come in after the panel opens: wait for both lists.
+  await expect(takeOut.first()).toBeVisible();
+  await expect(putIn.first()).toBeVisible();
   const [takeOutHeights, putInHeights] = [await heightsOf(takeOut), await heightsOf(putIn)];
   const all = [...takeOutHeights, ...putInHeights];
   expect(takeOutHeights.length).toBeGreaterThan(0);

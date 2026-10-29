@@ -8,6 +8,7 @@ export const messages = {
   "search.found-stale":
     "These are the issues of the last search without a mistake. Fix the mistake to update them.",
   "search.found-none": "No issues match this search.",
+  "search.show-mistake": "Show the mistake",
   "issues.changed": "{field} changed to {value}.",
   "issues.changed-people":
     "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",

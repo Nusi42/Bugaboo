@@ -49,7 +49,7 @@ test("qry_01 on a phone the button says how many filters the search has", async 
       // The sheet has a button that closes it.
       await page.getByRole("button", { name: t("search.bar.filters-count", { count: 2 }) }).click();
       const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
-      await sheet.getByRole("button", { name: t("common.close") }).click();
+      await sheet.getByRole("button", { name: t("search.bar.sheet-done"), exact: true }).click();
       await expect(sheet).toHaveCount(0);
     },
   });

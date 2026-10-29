@@ -3906,6 +3906,9 @@ pub const SEARCH_BAR_BEFORE: MessageKey = MessageKey::new("search.bar.before");
 /// The message `search.bar.below`.
 pub const SEARCH_BAR_BELOW: MessageKey = MessageKey::new("search.bar.below");
 
+/// The message `search.bar.blocked`.
+pub const SEARCH_BAR_BLOCKED: MessageKey = MessageKey::new("search.bar.blocked");
+
 /// The message `search.bar.change-filter-confirm`.
 pub const SEARCH_BAR_CHANGE_FILTER_CONFIRM: MessageKey =
     MessageKey::new("search.bar.change-filter-confirm");
@@ -4087,6 +4090,9 @@ pub const SEARCH_BAR_PICK_PROJECTS: MessageKey = MessageKey::new("search.bar.pic
 /// The message `search.bar.pick-search`.
 pub const SEARCH_BAR_PICK_SEARCH: MessageKey = MessageKey::new("search.bar.pick-search");
 
+/// The message `search.bar.sheet-done`.
+pub const SEARCH_BAR_SHEET_DONE: MessageKey = MessageKey::new("search.bar.sheet-done");
+
 /// The message `search.bar.text-filter`.
 pub const SEARCH_BAR_TEXT_FILTER: MessageKey = MessageKey::new("search.bar.text-filter");
 
@@ -4134,6 +4140,9 @@ pub const SEARCH_BAR_VALUE: MessageKey = MessageKey::new("search.bar.value");
 
 /// The message `search.bar.when`.
 pub const SEARCH_BAR_WHEN: MessageKey = MessageKey::new("search.bar.when");
+
+/// The message `search.changed-not-saved`.
+pub const SEARCH_CHANGED_NOT_SAVED: MessageKey = MessageKey::new("search.changed-not-saved");
 
 /// The message `search.clear`.
 pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
@@ -4325,8 +4334,14 @@ pub const SEARCH_SHARE_NOTE: MessageKey = MessageKey::new("search.share-note");
 /// The message `search.share-projects`.
 pub const SEARCH_SHARE_PROJECTS: MessageKey = MessageKey::new("search.share-projects");
 
+/// The message `search.show-mistake`.
+pub const SEARCH_SHOW_MISTAKE: MessageKey = MessageKey::new("search.show-mistake");
+
 /// The message `search.title`.
 pub const SEARCH_TITLE: MessageKey = MessageKey::new("search.title");
+
+/// The message `search.undo-changes`.
+pub const SEARCH_UNDO_CHANGES: MessageKey = MessageKey::new("search.undo-changes");
 
 /// The message `second-step.back`.
 pub const SECOND_STEP_BACK: MessageKey = MessageKey::new("second-step.back");
@@ -9546,6 +9561,18 @@ pub fn search_bar_remove_filter(filter: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `search.bar.with-mistakes`.
+#[must_use]
+pub fn search_bar_with_mistakes(count: i64, filters: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.with-mistakes"),
+        vec![
+            ("count", Value::Number(count)),
+            ("filters", Value::Text(filters.to_string())),
+        ],
+    )
+}
+
 /// The message `search.copy-name`.
 #[must_use]
 pub fn search_copy_name(name: impl std::fmt::Display) -> Message {
@@ -11964,7 +11991,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.search.invalid",
-        "The search has a mistake. Read the notes next to it and correct it.",
+        "The search has a mistake. Find it in the search box and correct it.",
     ),
     (
         "error.search.too-slow",
@@ -14307,7 +14334,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.advanced-label", "Advanced search"),
     (
         "search.bar.advanced-placeholder",
-        "Write a search, for example: status is Open and assignedTo is me",
+        "Write a search, for example: status is Open and assigned to is me",
     ),
     ("search.bar.after", "after"),
     ("search.bar.any-of", "Any of"),
@@ -14324,6 +14351,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.at-most", "at most"),
     ("search.bar.before", "before"),
     ("search.bar.below", "below"),
+    (
+        "search.bar.blocked",
+        "Simple search and Save search work again when the mistake is fixed.",
+    ),
     ("search.bar.change-filter", "Change the filter {filter}"),
     ("search.bar.change-filter-confirm", "Change filter"),
     (
@@ -14423,6 +14454,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.pick-search", "Type the start of a name"),
     ("search.bar.pick-take", "Choose {name}"),
     ("search.bar.remove-filter", "Remove the filter {filter}"),
+    ("search.bar.sheet-done", "Done"),
     ("search.bar.text-filter", "Filter written as text"),
     (
         "search.bar.text-filter-text",
@@ -14442,6 +14474,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.until", "until"),
     ("search.bar.value", "Value"),
     ("search.bar.when", "When"),
+    (
+        "search.bar.with-mistakes",
+        "{filters} · {count, plural, one {# mistake} other {# mistakes}}",
+    ),
+    ("search.changed-not-saved", "Changed, not saved"),
     ("search.clear", "Clear the search"),
     ("search.copy-name", "Copy of {name}"),
     (
@@ -14721,7 +14758,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("search.share-projects", "Projects"),
     ("search.share-title", "Share {name}"),
+    ("search.show-mistake", "Show the mistake"),
     ("search.title", "Quick search"),
+    ("search.undo-changes", "Undo changes"),
     ("second-step.back", "Back to sign in"),
     ("second-step.code", "Code"),
     (
