@@ -1,15 +1,10 @@
 import { t } from "@bugaboo/messages";
 import { useLayout } from "@bugaboo/ui";
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 
-import { routeParam } from "../../shared/paths.ts";
-import {
-  projectPageAddress,
-  projectPages,
-  projectSettingsMenuAddress,
-  type ProjectPage,
-} from "../../shared/project-pages.ts";
+import { asksForSettingsMenu, projectSettingsMenuAddress, routeParam } from "../../shared/paths.ts";
+import { projectPageAddress, projectPages, type ProjectPage } from "../../shared/project-pages.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import type { TrailStep } from "../shell/index.ts";
 import { useProjectTrail } from "./project-trail.ts";
@@ -20,6 +15,7 @@ function stepsOf(
   page: ProjectPage,
   shortName: string,
   phone: boolean,
+  onMenu: boolean,
 ): readonly TrailStep[] | undefined {
   if (page.tab === null) {
     return undefined;
@@ -31,9 +27,12 @@ function stepsOf(
       ? projectSettingsMenuAddress(shortName)
       : projectPageAddress(projectPages.settings, shortName),
   };
-  return page === projectPages.settings
-    ? [settings]
-    : [settings, { label: t(page.tab), href: projectPageAddress(page, shortName) }];
+  const section = { label: t(page.tab), href: projectPageAddress(page, shortName) };
+  // On a phone every section, the first too, is a step of its own below the menu, so the bar names it.
+  if (page === projectPages.settings) {
+    return phone && !onMenu ? [settings, section] : [settings];
+  }
+  return [settings, section];
 }
 
 /**
@@ -50,9 +49,10 @@ export function useProjectPage(address: string, page: ProjectPage) {
   const name = found?.project.name ?? "";
   usePageTitle(page.title(name));
   const phone = useLayout() === "phone";
+  const onMenu = asksForSettingsMenu(useLocation().searchStr);
   const last = useMemo(
-    () => stepsOf(page, current ?? address, phone),
-    [page, current, address, phone],
+    () => stepsOf(page, current ?? address, phone, onMenu),
+    [page, current, address, phone, onMenu],
   );
   useProjectTrail(found, last);
   useEffect(() => {

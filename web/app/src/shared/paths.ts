@@ -224,3 +224,16 @@ export function projectIssuesAddress(shortName: string): string {
 export function savedSearchAddress(id: string): string {
   return filled(paths.savedSearch, routeParam.search, id);
 }
+
+/** The name of the parameter that asks for the menu of the settings of a project instead of a section. */
+const SETTINGS_MENU_PARAM = "menu";
+
+/** The menu of the settings of a project, which a phone shows as a screen of its own before a section. */
+export function projectSettingsMenuAddress(shortName: string): string {
+  return `${addressInProject(paths.projectSettings, shortName)}?${SETTINGS_MENU_PARAM}`;
+}
+
+/** Whether the address (its search part) asks for the menu of the settings of a project. */
+export function asksForSettingsMenu(searchStr: string): boolean {
+  return new URLSearchParams(searchStr).has(SETTINGS_MENU_PARAM);
+}

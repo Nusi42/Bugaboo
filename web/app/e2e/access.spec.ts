@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { addressInProject, paths } from "../src/shared/paths.ts";
+import { addressInProject, paths, projectSettingsMenuAddress } from "../src/shared/paths.ts";
 import { ada, bob, cleo, createAdmin } from "./support/accounts.ts";
 import {
   ana,
@@ -124,7 +124,7 @@ async function changeBelow(page: Page): Promise<void> {
 test("sec_04 the settings of a project lead to what roles see there", async ({ page }) => {
   await signIn(page, ada);
   // The menu of the settings: beside the section on a computer, a screen of its own on a phone (`?menu`).
-  const menu = `${addressInProject(paths.projectSettings, "ACME")}?menu`;
+  const menu = projectSettingsMenuAddress("ACME");
   await page.goto(menu);
   await page.getByRole("link", { name: t("nav.field-permissions"), exact: true }).click();
   await expect(

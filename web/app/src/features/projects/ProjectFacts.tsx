@@ -1,11 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { Link, partOf, part, useLayout } from "@bugaboo/ui";
 
-import {
-  projectPageAddress,
-  projectPages,
-  projectSettingsMenuAddress,
-} from "../../shared/project-pages.ts";
+import { projectSettingsMenuAddress } from "../../shared/paths.ts";
+import { projectPageAddress, projectPages } from "../../shared/project-pages.ts";
 import { tabsOf } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
 
