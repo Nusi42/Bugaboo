@@ -28,6 +28,21 @@ function rowsCutAtTheEnd(list: Locator, rows = ":scope > *"): Promise<number> {
   }, rows);
 }
 
+/** How much room the box leaves between its last whole row and its lower edge, as it stands at its start. */
+function roomBelowTheLastRow(list: Locator): Promise<number> {
+  return list.evaluate((node) => {
+    const edge = node.getBoundingClientRect().top + node.clientTop + node.clientHeight;
+    let last = 0;
+    for (const row of node.querySelectorAll(":scope > *")) {
+      const bottom = row.getBoundingClientRect().bottom;
+      if (bottom <= edge + 0.5) {
+        last = Math.max(last, bottom);
+      }
+    }
+    return edge - last;
+  });
+}
+
 test("ux_5 the list of people to put in shows whole rows at its start", async ({ page }) => {
   test.skip(layoutOf(page) !== "computer", "the panel is for a computer");
   await signIn(page, sampleAdministrator());
@@ -37,6 +52,9 @@ test("ux_5 the list of people to put in shows whole rows at its start", async ({
   const list = partIn(panel, "picker.options").last();
   await expect(list).toBeVisible();
   expect(await rowsCutAtTheEnd(list), "rows cut by the lower edge of the list").toBe(0);
+  expect(await roomBelowTheLastRow(list), "room under the last whole row").toBeGreaterThanOrEqual(
+    3,
+  );
 });
 
 /** How many texts of the rows are cut: by an ellipsis, or by the edge of the row (a line that is not shown). */

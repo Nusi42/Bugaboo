@@ -705,7 +705,7 @@ mixin "stacked-facts" {
 // A box that scrolls says there is more above and below: a soft shadow at each edge that has more behind it, and none
 // where the end is reached (two covers of the colour of the box scroll with the content and hide the shadows).
 mixin "scroll-cue" {
-    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient($bg-raised, $bg-raised), linear-gradient($border-control, transparent), linear-gradient(to top, $border-control, transparent)"
+    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient($bg-raised, $bg-raised), linear-gradient(color-mix(in srgb, $border-control 55%, transparent), transparent), linear-gradient(to top, color-mix(in srgb, $border-control 55%, transparent), transparent)"
     background-position "top, bottom, top, bottom"
     background-size "100% $space-3, 100% $space-3, 100% $space-1, 100% $space-1"
     background-repeat no-repeat
@@ -1677,6 +1677,8 @@ part "picker.options[variant=list]" {
     display flex
     flex-direction column
     gap "$space-1"
+    // The seven rows are the room inside; the padding for the ring is around them, so the last row has room below it.
+    box-sizing content-box
     max-height "calc($size-control * 7 + $space-1 * 6)"
     use "ring-room"
     list-style none

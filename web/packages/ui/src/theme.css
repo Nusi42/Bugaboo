@@ -1682,6 +1682,7 @@ optgroup {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  box-sizing: content-box;
   max-height: calc(var(--size-control) * 7 + var(--space-1) * 6);
   scroll-padding: var(--ring-room);
   margin-block: 0;
@@ -1691,8 +1692,8 @@ optgroup {
   background-image:
     linear-gradient(var(--bg-raised), var(--bg-raised)),
     linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(var(--border-control), transparent),
-    linear-gradient(to top, var(--border-control), transparent);
+    linear-gradient(color-mix(in srgb, var(--border-control) 55%, transparent), transparent),
+    linear-gradient(to top, color-mix(in srgb, var(--border-control) 55%, transparent), transparent);
   background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
@@ -2962,8 +2963,8 @@ optgroup {
   background-image:
     linear-gradient(var(--bg-raised), var(--bg-raised)),
     linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(var(--border-control), transparent),
-    linear-gradient(to top, var(--border-control), transparent);
+    linear-gradient(color-mix(in srgb, var(--border-control) 55%, transparent), transparent),
+    linear-gradient(to top, color-mix(in srgb, var(--border-control) 55%, transparent), transparent);
   background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
@@ -3584,8 +3585,8 @@ optgroup {
   background-image:
     linear-gradient(var(--bg-raised), var(--bg-raised)),
     linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(var(--border-control), transparent),
-    linear-gradient(to top, var(--border-control), transparent);
+    linear-gradient(color-mix(in srgb, var(--border-control) 55%, transparent), transparent),
+    linear-gradient(to top, color-mix(in srgb, var(--border-control) 55%, transparent), transparent);
   background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
