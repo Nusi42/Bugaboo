@@ -7,6 +7,7 @@ import {
   Card,
   Link,
   RowChevron,
+  ShowMore,
   partOf,
   part,
 } from "@bugaboo/ui";
@@ -36,14 +37,13 @@ function SubProjectList({ project }: { readonly project: string }) {
         ))}
       </ul>
       {list.hasNextPage ? (
-        <Button
-          isPending={list.isFetchingNextPage}
+        <ShowMore
+          label={t("projects.sub-projects-more")}
+          pending={list.isFetchingNextPage}
           onPress={() => {
             void list.fetchNextPage();
           }}
-        >
-          {t("projects.sub-projects-more")}
-        </Button>
+        />
       ) : null}
     </>
   );

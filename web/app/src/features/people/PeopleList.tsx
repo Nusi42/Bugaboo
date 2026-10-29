@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, RowChevron, SearchField, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, ShowMore, RowChevron, SearchField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 import {
   Collection,
@@ -94,11 +94,7 @@ export function PeopleList() {
         <Rows lines={lines} onLoadMore={more} />
       )}
       {people.hasNextPage ? (
-        <div {...partOf(part.row)}>
-          <Button isPending={people.isFetchingNextPage} onPress={more}>
-            {t("people.more")}
-          </Button>
-        </div>
+        <ShowMore label={t("people.more")} pending={people.isFetchingNextPage} onPress={more} />
       ) : null}
     </div>
   );

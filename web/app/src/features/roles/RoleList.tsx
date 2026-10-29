@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Link, RowChevron, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, ShowMore, Link, RowChevron, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { detailsText } from "../../shared/list-text.ts";
@@ -34,16 +34,13 @@ export function RoleList() {
         ))}
       </ul>
       {roles.hasNextPage ? (
-        <div {...partOf(part.row)}>
-          <Button
-            isPending={roles.isFetchingNextPage}
-            onPress={() => {
-              void roles.fetchNextPage();
-            }}
-          >
-            {t("roles.more")}
-          </Button>
-        </div>
+        <ShowMore
+          label={t("roles.more")}
+          pending={roles.isFetchingNextPage}
+          onPress={() => {
+            void roles.fetchNextPage();
+          }}
+        />
       ) : null}
     </div>
   );

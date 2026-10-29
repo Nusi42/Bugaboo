@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, partOf, part, useLayout } from "@bugaboo/ui";
+import { Alert, alertTone, ShowMore, partOf, part, useLayout } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -39,20 +39,17 @@ export function AssignmentList({ project, onRemove, onChangeHere }: AssignmentLi
         </ul>
       )}
       {hiddenHere || list.hasNextPage ? (
-        <div {...partOf(part.row)}>
-          <Button
-            isPending={list.isFetchingNextPage}
-            onPress={() => {
-              // Ten more are shown, and the next page is read where the rows that are loaded do not reach.
-              setShown(shown + PHONE_ROWS);
-              if (all.length < shown + PHONE_ROWS && list.hasNextPage) {
-                void list.fetchNextPage();
-              }
-            }}
-          >
-            {t("assignments.more")}
-          </Button>
-        </div>
+        <ShowMore
+          label={t("assignments.more")}
+          pending={list.isFetchingNextPage}
+          onPress={() => {
+            // Ten more are shown, and the next page is read where the rows that are loaded do not reach.
+            setShown(shown + PHONE_ROWS);
+            if (all.length < shown + PHONE_ROWS && list.hasNextPage) {
+              void list.fetchNextPage();
+            }
+          }}
+        />
       ) : null}
     </>
   );
