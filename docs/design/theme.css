@@ -104,7 +104,8 @@
   --size-bar-sheet: 80dvh;
   --size-bar-ticked: 40dvh;
   --size-matrix-cell: calc(var(--size-control) * 4);
-  --size-cue-strength: 55%;
+  --cue-strength: 55;
+  --size-body-gap: var(--space-4);
   --size-page-gutter: var(--space-4);
   --size-dock-gap: var(--space-3);
   --size-dock-strip: calc(var(--size-control) + 2 * var(--size-dock-gap));

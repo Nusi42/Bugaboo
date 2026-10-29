@@ -6,6 +6,7 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
+import { shadowsOf } from "./support/windows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, package O (O3): the list of people to put into a group shows whole rows: no row is cut by the
@@ -84,4 +85,14 @@ test("ux_5 the rows of the people never cut their words, also with Larger text a
   const list = page.getByRole("listbox", { name: t("people.list") });
   await expect(list.getByRole("option").first()).toBeVisible();
   expect(await textsCut(list), "words cut by an ellipsis or by the edge of their row").toEqual([]);
+});
+
+test("ux_5 the box of the people shows a shadow at its end while more people follow", async ({
+  page,
+}) => {
+  await signIn(page, sampleAdministrator());
+  await page.goto(paths.people);
+  const list = page.getByRole("listbox", { name: t("people.list") });
+  await expect(list.getByRole("option").first()).toBeVisible();
+  await expect.poll(() => shadowsOf(list)).toEqual({ top: 0, end: 1 });
 });
