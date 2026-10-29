@@ -22,6 +22,7 @@ export function NewIssueDialog() {
   const form = useNewIssue();
   const windowProps = useWindowProps(windowForms.newIssue);
   const formId = useId();
+  const whyId = useId();
   const onMade = useOnMade();
   const phone = useLayout() === "phone";
   return (
@@ -30,11 +31,19 @@ export function NewIssueDialog() {
       {...windowProps}
       title={t("issues.new-title")}
       footer={
-        <NewIssueActions form={form} formId={formId} onMade={onMade} onClose={closeOverlay} />
+        <NewIssueActions
+          form={form}
+          formId={formId}
+          onMade={onMade}
+          onClose={closeOverlay}
+          whyId={whyId}
+        />
       }
     >
       <NewIssueForm form={form} formId={formId} onMade={onMade} />
-      {phone ? <NewIssueMoreActions form={form} onMade={onMade} onClose={closeOverlay} /> : null}
+      {phone ? (
+        <NewIssueMoreActions form={form} onMade={onMade} onClose={closeOverlay} whyId={whyId} />
+      ) : null}
     </Window>
   );
 }

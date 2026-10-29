@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, SubmitButton, partOf, part, useLayout } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useId } from "react";
 
 import { layoutsAddress } from "../../shared/paths.ts";
 import { closeOverlay } from "../shell/index.ts";
@@ -14,6 +13,8 @@ export interface NewIssueActionsProps {
   readonly formId: string;
   readonly onMade: (key: string, project: string) => void;
   readonly onClose: () => void;
+  /** The ID of the sentence that says what is missing: the buttons it holds back are described by it. */
+  readonly whyId: string;
 }
 
 /** *Customize this form*, for people who may change the layout of the project: opens its editor for this type. */
@@ -60,8 +61,8 @@ function missingForCreate(form: NewIssue) {
  * person types, so the buttons stay where a finger is on its way to them. The footer stays in place
  * while the form scrolls.
  */
-export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActionsProps) {
-  const why = useId();
+export function NewIssueActions({ form, formId, onMade, onClose, whyId }: NewIssueActionsProps) {
+  const why = whyId;
   const missing = missingForCreate(form);
   const phone = useLayout() === "phone";
   return (
@@ -131,8 +132,9 @@ export function NewIssueMoreActions({
   form,
   onMade,
   onClose,
+  whyId,
 }: Omit<NewIssueActionsProps, "formId">) {
-  const why = useId();
+  const why = whyId;
   const missing = missingForCreate(form);
   return (
     <div {...partOf(part.stack)}>
