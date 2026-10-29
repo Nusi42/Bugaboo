@@ -2892,7 +2892,7 @@ optgroup {
   vertical-align: top;
 }
 
-@media (width >= 0px) {
+@supports (width: calc(1px * round(down, 5px / 2px, 1))) {
   [data-part="access.matrix-cell"] {
     min-width: max(
       var(--size-matrix-cell),

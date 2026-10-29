@@ -223,6 +223,27 @@ fn a_container_block_is_written_under_container_with_the_token_resolved() {
 }
 
 #[test]
+fn a_supports_block_is_written_under_supports_and_may_use_tokens_in_its_lines() {
+    let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+    let extra = "
+part \"zz\" {
+  supports \"(width: calc(1px * (2px / 1px)))\" {
+    min-width \"$bp-tablet\"
+  }
+}
+";
+    let css = css(&ThemeFile::parse(&format!("{text}{extra}")).unwrap()).unwrap();
+    assert!(
+        css.contains(
+            "@supports (width: calc(1px * (2px / 1px))) {
+  [data-part=\"zz\"] {
+    min-width: var(--bp-tablet);"
+        ),
+        "{css}"
+    );
+}
+
+#[test]
 fn a_choice_needs_an_attribute_and_a_value_or_only_a_device_setting() {
     let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
     for extra in [

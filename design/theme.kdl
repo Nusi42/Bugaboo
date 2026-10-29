@@ -3635,9 +3635,10 @@ part "access.matrix" {
 part "access.matrix-cell" {
     box-sizing border-box
     min-width "$size-matrix-cell"
-    // Where the browser does not know round() with typed arithmetic, the line below is dropped and the column keeps its
-    // least width above (then a column may be cut at the edge): the query is always true, it only makes a block of its own.
-    media "(width >= 0px)" {
+    // Where the browser does not know round() with typed arithmetic, the block below is not read and the column keeps
+    // its least width above (then a column may be cut at the edge): a variable in a line that such a browser cannot
+    // compute would drop the line to nothing, not to the line before, so the browser is asked first, with plain numbers.
+    supports "(width: calc(1px * round(down, 5px / 2px, 1)))" {
         min-width "max($size-matrix-cell, calc((100cqw - $size-matrix-cell) / max(1, round(down, (100cqw - $size-matrix-cell) / $size-matrix-cell, 1))))"
     }
     padding "$space-2 $space-3"
