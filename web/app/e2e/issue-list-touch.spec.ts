@@ -5,7 +5,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
-import { prepareLook, rowOf } from "./support/list-look.ts";
+import { cutHeadNames, prepareLook, rowOf } from "./support/list-look.ts";
 import { listInFourThemes, screenshotFolder } from "./support/list-pictures.ts";
 import { boxOf } from "./support/windows.ts";
 
@@ -48,4 +48,16 @@ test("ux_7_4 pictures: Customize under the list on a tablet with a finger", asyn
   await expect(rowOf(page, webIssues.login)).toBeVisible();
   await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
   await listInFourThemes(page, "customize-under-touch");
+});
+
+test("ux_7_4 on a coarse pointer no column name is cut while the title has room to spare (L16)", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(
+    `${projectIssuesAddress("WEB")}?cols=status,id,title,priority,assignedTo,changed`,
+  );
+  await expect(rowOf(page, webIssues.login)).toBeVisible();
+  const cut = await cutHeadNames(page);
+  expect(cut).toEqual([]);
 });

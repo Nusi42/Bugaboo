@@ -13,7 +13,7 @@ export interface ProjectToolbarProps {
 }
 
 /**
- * The rows above a project's list: *New issue* with the key to the colors of the rows at the end (a *Key* button where it has no room),
+ * The rows above a project's list: *New issue* with the key to the colors of the rows at the end (a *Legend* button where it has no room),
  * and what is ticked with the bars that act on it. The project is remembered for the next new issue.
  */
 export function ProjectToolbar({ shortName, beside }: ProjectToolbarProps) {

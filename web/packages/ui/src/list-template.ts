@@ -1,3 +1,4 @@
+import { lengthInPixels } from "./css-length.ts";
 import type { ListColumn } from "./list-columns.ts";
 import type { TokenName } from "./tokens.ts";
 
@@ -10,20 +11,22 @@ export interface ListColumnSpec {
 /**
  * The tokens whose sum is the width each column is drawn at: the one place that says it (the
  * template of the list and the count of the columns that fit both read it). The title has a least
- * width and takes the room that is left; the priority holds its name and the arrow of the sort.
+ * width and takes the room that is left; the priority holds its name and the arrow of the sort; a
+ * column of a field holds its width and the edge that sets it (24 px, 44 on a finger), so its name is
+ * not cut where there is room.
  */
 const widthTokens = {
   select: ["size-control"],
   status: ["size-col-icon"],
   key: ["size-col-key"],
-  project: ["size-col-project"],
-  type: ["size-col-project"],
+  project: ["size-col-project", "size-target-compact"],
+  type: ["size-col-project", "size-target-compact"],
   title: ["size-col-title-least"],
-  labels: ["size-col-labels"],
+  labels: ["size-col-labels", "size-target-compact"],
   priority: ["size-col-priority", "size-icon-small"],
-  person: ["size-col-person"],
-  value: ["size-col-value"],
-  changed: ["size-col-changed"],
+  person: ["size-col-person", "size-target-compact"],
+  value: ["size-col-value", "size-target-compact"],
+  changed: ["size-col-changed", "size-target-compact"],
   action: ["size-col-icon"],
 } as const satisfies Readonly<Record<ListColumn, readonly TokenName[]>>;
 
@@ -75,17 +78,16 @@ export function listTemplate(columns: readonly ListColumnSpec[], keyChars = 0): 
     .join(" ");
 }
 
-/** The size in pixels of a length token of the theme file, as the page has it; none where there is no page. */
+/**
+ * The size in pixels of a length token of the theme file, as the page has it (the density and the
+ * size of the text counted, and the sizes of a touch screen); none where there is no page.
+ */
 export function pixelsOf(token: TokenName): number {
   if (typeof document === "undefined") {
     return 0;
   }
-  const written = getComputedStyle(document.documentElement).getPropertyValue(`--${token}`);
-  const found = Number(/[\d.]+/u.exec(written)?.[0]);
-  if (Number.isNaN(found)) {
-    return 0;
-  }
-  return found;
+  const style = getComputedStyle(document.documentElement);
+  return lengthInPixels(`var(--${token})`, (name) => style.getPropertyValue(name));
 }
 
 /** The width in pixels of the tokens of a column added, as the page has them. */
@@ -96,7 +98,9 @@ function pixelsOfColumn(column: ListColumn): number {
 /**
  * The width in pixels a list needs for these columns where none gives way: the width each is
  * drawn at (the one a person gave it, or the ID as wide as the longest ID drawn), the gaps of the
- * row, the edge and the padding. The list counts it to see which columns fit.
+ * row, the edge and the padding. The list counts it to see which columns fit. The gap (`space-3`),
+ * the edge (`size-edge`) and the padding (`pad-box`) are the spacing of `list-row` in the theme
+ * file: change them there and here together.
  */
 export function listNeeds(columns: readonly ListColumnSpec[], keyChars = 0): number {
   const widths = columns.map(({ column, width }) => {

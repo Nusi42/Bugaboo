@@ -43,3 +43,8 @@ export function noteResolved(move: { readonly fromLocation?: Place | undefined }
 export function cameFrom(): string | undefined {
   return before;
 }
+
+/** Forgets the page the person came from: the next person at this browser has none. */
+export function forgetCameFrom(): void {
+  before = undefined;
+}

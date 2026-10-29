@@ -65,7 +65,7 @@ export function Button({
       {...(current ? { "aria-current": currentItem } : {})}
       {...partOf(part.button, {
         variants: [look !== buttonLook.plain && look, wide && buttonShape.wide],
-        states: [isPending && busyState.busy],
+        states: [isPending && busyState.busy, current && "current"],
       })}
     >
       {children}

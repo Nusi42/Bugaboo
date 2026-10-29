@@ -7,7 +7,7 @@ import { ada } from "./accounts.ts";
 import { signIn } from "./flows.ts";
 import { issueOf, prepareWeb, setStatusAndPriority, versionOf, webIssues } from "./issues.ts";
 import { type Instance } from "./server.ts";
-import { partIn } from "./parts.ts";
+import { boxOf } from "./windows.ts";
 export { inViewChoices } from "./search-bar.ts";
 
 /** The sample of the project WEB: one issue in progress and critical, one done and high, one plain. */
@@ -40,17 +40,17 @@ export function columnButton(page: Page, column: string): Locator {
 
 /** The header of a group of rows, found by the name of the group. */
 export function groupOf(page: Page, name: string): Locator {
-  return partIn(grid(page), "list-group").filter({ hasText: name });
+  return grid(page).locator("[data-part='list-group']").filter({ hasText: name });
 }
 
 /** The titles of the issues in the rows, from the top. */
 export function titlesInOrder(page: Page): Promise<string[]> {
-  return partIn(grid(page), "list-row.cell", "title").allInnerTexts();
+  return grid(page).locator("[data-part='list-row.cell'][data-variant='title']").allInnerTexts();
 }
 
 /** The row of an issue in the list, found by its title. */
 export function rowOf(page: Page, title: string): Locator {
-  return partIn(grid(page), "list-row").filter({ hasText: title });
+  return grid(page).locator("[data-part='list-row']").filter({ hasText: title });
 }
 
 /** Signs in as the administrator and opens the list of the project WEB. */
@@ -82,10 +82,19 @@ export async function placeInGrid(page: Page, text: string): Promise<number> {
  * over the whole row (R8), so the browser test must not ask whether the element itself is hit.
  */
 export async function pressMiddleOf(page: Page, element: Locator): Promise<void> {
-  const box = await element.boundingBox();
-  expect(box).not.toBeNull();
-  await page.mouse.click(
-    (box?.x ?? 0) + (box?.width ?? 0) / 2,
-    (box?.y ?? 0) + (box?.height ?? 0) / 2,
-  );
+  const box = await boxOf(element);
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/** The names of the columns in the head that are cut (a word that ends in an ellipsis), by their words. */
+export function cutHeadNames(page: Page): Promise<(string | null)[]> {
+  return page.evaluate(() => {
+    const found: (string | null)[] = [];
+    for (const label of document.querySelectorAll('[data-part="list-sort.label"]')) {
+      if (label.scrollWidth > label.clientWidth) {
+        found.push(label.textContent);
+      }
+    }
+    return found;
+  });
 }

@@ -1,6 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "./api.ts";
+import { forgetCameFrom } from "./came-from.ts";
 import { forgetConfirmedSettings } from "./change-my-settings.ts";
 import { forgetBrowserDrafts } from "./editing/browser-drafts.ts";
 import { codeOf } from "./errors.ts";
@@ -103,6 +104,7 @@ async function answersOnTheirWay(): Promise<void> {
  * still ask for their data makes those requests fail half way.
  */
 export async function leaveSession(go: () => Promise<void>): Promise<void> {
+  forgetCameFrom();
   forgetPersonalChoices();
   forgetConfirmedSettings();
   queryClient.removeQueries({ queryKey: meOptions().queryKey });

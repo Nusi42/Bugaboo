@@ -202,6 +202,8 @@ tokens {
     // The sheet of the search bar on a phone is always this high, so what is under a finger does not
     // move when the offers under the box come and go.
     size "size-bar-sheet" "80dvh"
+    // The bar of the issues ticked, in the column of a phone, is never taller than this, and scrolls inside.
+    size "size-bar-ticked" "40dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
     size "size-list-tall" "calc($size-list * 2)"
@@ -1014,6 +1016,14 @@ part "button[hovered]" {
 
 part "button[pressed]" {
     background "$bg-selected"
+}
+
+// A button that shows something is open (Customize while its panel is): chosen like a choice of Spacing.
+part "button[state=current]" {
+    border-color "$accent"
+    background "$bg-selected"
+    color "$accent-fg"
+    use "marked"
 }
 
 // A main button that cannot be pressed yet is a sunken, flat button with quiet words: not a pale copy of the
@@ -2156,6 +2166,7 @@ part "list-char-probe" {
     font-size "$fs-ui"
 }
 
+// The gap, with the edge and the padding of `list-row`, is what `listNeeds` (ui, list-template.ts) counts to see which columns fit: change them there and here together.
 part "list-row[variant=grid]" {
     display grid
     grid-template-columns "$list-columns"
@@ -2182,6 +2193,7 @@ part "list-frame[variant=compact] list-row[variant=head]" {
 
 // Compact: the tick box draws at its least size and keeps its target (24 for a pointer, WCAG 2.5.8; 44 on touch), and the group headers are as low as the rows.
 part "list-frame[variant=compact] checkbox" {
+    min-width "$size-target-compact"
     min-height "$size-target-compact"
 }
 
@@ -3713,16 +3725,18 @@ part "selected-bar" {
 part "selected-bar[state=active]" {
     use "floating-box"
     position sticky
-    inset-block-end 0
+    inset-block-end "$space-3"
     z-index "$z-sticky"
     padding "$space-2" "$space-3"
     margin-block-start "$space-3"
     border-radius "$r-card"
 }
 
-// On a phone the bar stays at the end of the list: stuck to the bottom it would cover the cards being ticked.
+// On a phone the bar stands in the column of the app above the bottom navigation (like the bar of an issue): fixed there, it covers no card.
 part "app-layout[variant=phone] selected-bar[state=active]" {
     position static
+    max-height "$size-bar-ticked"
+    overflow-y auto
 }
 
 // What the bar offers for the issues ticked.
@@ -5443,8 +5457,7 @@ part "label-mark" {
     box-sizing border-box
     width "$space-3"
     height "$space-3"
-    border "$border-width solid currentColor"
-    border-radius "$r-ctl"
+    background currentColor
 }
 
 part "field-text" {
@@ -5599,6 +5612,11 @@ part "field-badge[variant=cat11]" "field-pill[variant=cat11]" "field-swatch[vari
 part "field-badge[variant=cat12]" "field-pill[variant=cat12]" "field-swatch[variant=cat12]" "label-mark[variant=cat12]" {
     background "$cat12-bg"
     color "$cat12-fg"
+}
+
+// A label in a list is a small filled square in its color (§7.5): the swatch is the color itself, not the pale ground of a pill.
+part "label-mark[variant=cat1]" "label-mark[variant=cat2]" "label-mark[variant=cat3]" "label-mark[variant=cat4]" "label-mark[variant=cat5]" "label-mark[variant=cat6]" "label-mark[variant=cat7]" "label-mark[variant=cat8]" "label-mark[variant=cat9]" "label-mark[variant=cat10]" "label-mark[variant=cat11]" "label-mark[variant=cat12]" {
+    background currentColor
 }
 
 // ───────────── The design pages (docs/design) ─────────────
@@ -12765,7 +12783,7 @@ part "search-filter > button" {
 }
 
 // What opens over the page for the search: a window of the bar on a phone, the list of fields.
-part "search-panel" {
+part "search-panel" "bottom-sheet" {
     display flex
     flex-direction column
     gap "$space-4"
@@ -12774,14 +12792,8 @@ part "search-panel" {
     overflow-y auto
 }
 
-// A sheet from the bottom of a phone (the filters, the legend): its content, and the button that closes it at its foot.
+// A sheet from the bottom of a phone (the filters, the legend) has the look of a panel (above), never taller than the screen.
 part "bottom-sheet" {
-    display flex
-    flex-direction column
-    gap "$space-4"
-    box-sizing border-box
-    padding "$space-5"
-    overflow-y auto
     max-height "100%"
 }
 
@@ -12790,10 +12802,8 @@ part "bottom-sheet[variant=tall]" {
     height "$size-bar-sheet"
 }
 
+// The button that closes a sheet stays at the foot of it.
 part "bottom-sheet.actions" {
-    display flex
-    justify-content flex-end
-    gap "$space-2"
     margin-block-start auto
 }
 
@@ -12812,24 +12822,24 @@ part "search-choice" {
     gap "$space-3"
 }
 
-part "search-panel.actions" {
+part "search-panel.actions" "bottom-sheet.actions" {
     display flex
     justify-content flex-end
     gap "$space-2"
 }
 
 // In the sheet of a phone the filters stand under each other, as wide as the sheet.
-part "search-panel search-bar.head" "bottom-sheet search-bar.head" {
+part "bottom-sheet search-bar.head" {
     flex-direction column
     align-items stretch
 }
 
-part "search-panel search-filters" "bottom-sheet search-filters" {
+part "bottom-sheet search-filters" {
     flex-direction column
     align-items stretch
 }
 
-part "search-panel search-filter" "bottom-sheet search-filter" {
+part "bottom-sheet search-filter" {
     justify-content space-between
     white-space normal
 }
@@ -12844,7 +12854,7 @@ part "search-filters.action > button" {
     width "100%"
 }
 
-part "search-panel search-bar.actions" "bottom-sheet search-bar.actions" {
+part "bottom-sheet search-bar.actions" {
     margin-inline-start 0
 }
 
@@ -13034,8 +13044,15 @@ part "search-help.title" {
     font-weight "$weight-bold"
 }
 
-// The name of a list in the sidebar (*Mine*, *Shared with me*).
 // The sub-groups of Saved searches (Mine, Shared with me): a smaller muted name over a thin line, so they read as groups and not as a second header.
+part "nav-subgroup" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+    padding-inline-start "$space-3"
+}
+
 part "nav-subheading" {
     margin 0
     padding "$space-3 $space-3 $space-1"

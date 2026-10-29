@@ -10,7 +10,7 @@ import { NavButton } from "./NavItem.tsx";
 import { openOverlay } from "./overlay-state.ts";
 import { PlaceLink, type PlaceLinkProps } from "./PlaceLink.tsx";
 
-/** Search and the start page. */
+/** Quick search, a new issue, the start page, notifications and the page of Search. */
 export function Top({ narrow, onNavigate }: Pick<PlaceLinkProps, "narrow" | "onNavigate">) {
   const overrides = useShortcutOverrides();
   const unread = useUnreadCountText();
@@ -47,6 +47,7 @@ export function Top({ narrow, onNavigate }: Pick<PlaceLinkProps, "narrow" | "onN
         onNavigate={onNavigate}
         count={unread}
       />
+      <PlaceLink path={paths.search} narrow={narrow} onNavigate={onNavigate} />
     </ul>
   );
 }
