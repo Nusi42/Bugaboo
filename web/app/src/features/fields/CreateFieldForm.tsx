@@ -46,7 +46,6 @@ function Questions({
         value={kind}
         onChange={setKind}
       />
-      <p {...partOf(part.muted)}>{typeExample(kind)}</p>
       <ChoiceGroup
         legend={t("fields.for-question")}
         choices={forChoices}
@@ -88,6 +87,25 @@ function bodyOf(draft: Draft, withChoices: boolean) {
   };
 }
 
+/** The choices of a *Pick one* or *Pick several* field, one on each line. */
+function Choices({
+  value,
+  onChange,
+}: {
+  readonly value: string;
+  readonly onChange: (value: string) => void;
+}) {
+  return (
+    <TextField
+      label={t("fields.field-choices")}
+      description={t("fields.field-choices-help")}
+      kind={fieldKind.multiline}
+      value={value}
+      onChange={onChange}
+    />
+  );
+}
+
 /** The form of a new field, once the kinds are known. */
 function CreateFieldFields({ kinds }: { readonly kinds: readonly TypeInfo[] }) {
   const [draft, setDraft] = useState(emptyDraft);
@@ -113,20 +131,14 @@ function CreateFieldFields({ kinds }: { readonly kinds: readonly TypeInfo[] }) {
       />
       <TextField
         label={t("fields.field-name")}
+        description={typeExample(draft.kind)}
+        hintAbove
         requiredMessage={t("error.field.required")}
         value={draft.name}
         onChange={set("name")}
       />
       <TextField label={t("fields.field-help")} value={draft.help} onChange={set("help")} />
-      {hasChoices === true ? (
-        <TextField
-          label={t("fields.field-choices")}
-          description={t("fields.field-choices-help")}
-          kind={fieldKind.multiline}
-          value={draft.choices}
-          onChange={set("choices")}
-        />
-      ) : null}
+      {hasChoices === true ? <Choices value={draft.choices} onChange={set("choices")} /> : null}
       <Switch
         label={t("fields.field-required")}
         isSelected={draft.required}
