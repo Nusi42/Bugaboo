@@ -145,9 +145,9 @@ tokens {
     size "size-col-step" "16px"
     size "size-col-value" "96px"
     size "size-col-changed" "80px"
-    // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 480 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
+    // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 560 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
     size "size-window" "760px"
-    size "size-window-width-min" "480px"
+    size "size-window-width-min" "560px"
     size "size-window-height-min" "360px"
     size "size-window-button" "46px"
     // The places to drag at the edges of a window.
