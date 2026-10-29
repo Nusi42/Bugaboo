@@ -20,11 +20,11 @@ test("ux_08 a column names the type of its issue, and a tick is told", async ({ 
   // The type is no column by default (the title keeps the room), and no card of a phone has it.
   const task = row.getByRole("img", { name: "Task", exact: true });
   await expect(task).toHaveCount(0);
-  // Chosen as a column, the type is named, not only drawn (the scenarios make their issues of the type Task).
+  // Chosen as a column, the type is named in words beside its icon (the scenarios make their issues of the type Task).
   await page.goto(`${projectIssuesAddress("WEB")}?cols=status,id,type,title`);
-  await expect(
-    rowOf(page, webIssues.passkey).getByRole("img", { name: "Task", exact: true }),
-  ).toHaveCount(Number(layoutOf(page) !== "phone"));
+  await expect(rowOf(page, webIssues.passkey).getByText("Task", { exact: true })).toHaveCount(
+    Number(layoutOf(page) !== "phone"),
+  );
   // A person presses the box they see, not the input behind it.
   await row.locator("label").click();
   await expect(
