@@ -3790,6 +3790,7 @@ optgroup {
   color: var(--fg-muted);
   font-size: var(--fs-base);
   overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 [data-part="nav-item"] {
