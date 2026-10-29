@@ -4,6 +4,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { sampleAdministrator } from "./support/sample.ts";
+import { boxOf } from "./support/windows.ts";
 import { inOrder } from "./support/sequence.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -47,4 +48,22 @@ test("ux_5 on a phone the facts of a field and of a label stand under its name i
       expect(await rowsWithFactsBeside(page.locator("main"), list.rows), list.address).toBe(0);
     }),
   );
+});
+
+test("ux_5 on a phone the choices of Fields stand as a list of full-width choices", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "phone", "a computer has the choices side by side");
+  await signIn(page, sampleAdministrator());
+  await page.goto(paths.fields);
+  const choices = page.locator("[data-part='choice-group.label']");
+  await expect(choices.first()).toBeVisible();
+  const [first, second, third] = [
+    await boxOf(choices.nth(0)),
+    await boxOf(choices.nth(1)),
+    await boxOf(choices.nth(2)),
+  ];
+  expect(Math.round(second.width)).toBe(Math.round(first.width));
+  expect(Math.round(third.width)).toBe(Math.round(first.width));
+  expect(second.y).toBeGreaterThan(first.y + first.height - 1);
 });

@@ -104,6 +104,7 @@ export function SettingControl({ setting, onChange, help }: SettingControlProps)
         choices={choices}
         value={value}
         onChange={onChange}
+        stacked
       />
     ) : (
       <SelectField
