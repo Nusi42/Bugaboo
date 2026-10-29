@@ -2545,6 +2545,57 @@ optgroup {
   border-bottom: var(--border-width) solid var(--divider);
 }
 
+@supports not (animation-timeline: scroll()) {
+  [data-part="list-scroll"] {
+    --cue-cover: var(--bg-raised);
+    background-image:
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
+      linear-gradient(to top, var(--cue), transparent);
+    background-position: top, bottom, top, bottom;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="list-scroll"]::before {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-in;
+    animation-range: 0% var(--space-3);
+    top: 0;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="list-scroll"]::after {
+    content: "";
+    position: sticky;
+    z-index: var(--z-raised);
+    display: block;
+    flex: none;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    height: 0;
+    animation-timeline: scroll(nearest block);
+    animation-name: cue-out;
+    animation-range: calc(100% - var(--space-3)) 100%;
+    bottom: 0;
+  }
+}
+
 [data-part="list-head"] {
   box-sizing: border-box;
   width: min-content;

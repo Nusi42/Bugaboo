@@ -8,7 +8,7 @@ import { mostLevelsBetween } from "./support/png.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
 import { shadowsOf } from "./support/windows.ts";
-import { paths } from "../src/shared/paths.ts";
+import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 
 // M5 exit, package O (round 8): the shadow at the end of a scrolling box is clearly seen in every theme, the
 // same for a box that scrolls down and for a table that scrolls sideways: at its strongest it moves a
@@ -61,4 +61,24 @@ test("ux_5 the shadows at the ends of a scrolling box are clear in every theme",
   for (const [name, levels] of Object.entries(measured)) {
     expect.soft(levels, name).toBeGreaterThanOrEqual(LEAST_LEVELS);
   }
+});
+
+test("ux_5 the list of issues shades its end while rows remain, and not at its end", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "phone", "a phone scrolls the page, not the list");
+  await signIn(page, sampleAdministrator());
+  await page.goto(projectIssuesAddress("WEB"));
+  const rows = partIn(page, "list-scroll");
+  await expect(rows).toBeVisible();
+  await expect.poll(() => shadowsOf(rows)).toEqual({ start: 0, end: 1 });
+  // The list measures its rows as they come, so the end moves while it is scrolled: keep going to it.
+  await expect
+    .poll(async () => {
+      await rows.evaluate((node) => {
+        node.scrollTop = node.scrollHeight;
+      });
+      return shadowsOf(rows);
+    })
+    .toEqual({ start: 1, end: 0 });
 });

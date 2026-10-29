@@ -2515,6 +2515,26 @@ part "list-scroll" {
     max-height "$size-list-scroll"
     overflow auto
     border-bottom "$border-width solid $divider"
+    supports "not (animation-timeline: scroll())" {
+        use "scroll-cue"
+    }
+}
+
+// The shadows at the ends of the rows that have more rows behind them (the list is a box of its own, as high as the page lets it be).
+part "list-scroll::before" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-block"
+        use "edge-from-start"
+        top 0
+    }
+}
+
+part "list-scroll::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-block"
+        use "edge-from-end"
+        bottom 0
+    }
 }
 
 // The head is as wide as its columns at their least need and at least the frame (the code measures it and gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
