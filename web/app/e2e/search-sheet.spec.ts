@@ -61,13 +61,24 @@ test("qry_06 on a phone Save search stands with Done in the foot of the sheet", 
       const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
       const save = sheet.getByRole("button", { name: t("search.save"), exact: true });
       const done = sheet.getByRole("button", { name: t("search.bar.sheet-done"), exact: true });
-      const [saveBox, doneBox] = await Promise.all([boxOf(save), boxOf(done)]);
-      // The foot of a window has one pattern (package D): Done as wide as the foot, Save search under it.
-      expect(saveBox.x).toBe(doneBox.x);
-      expect(saveBox.y).toBeGreaterThan(doneBox.y + doneBox.height - 1);
-      expect(saveBox.y + saveBox.height).toBeLessThanOrEqual(
-        (await boxOf(sheet)).y + (await boxOf(sheet)).height,
-      );
+      // The sheet slides in from the bottom: the boxes are read together, until it stands still.
+      await expect
+        .poll(async () => {
+          const [sheetBox, saveBox, doneBox] = await Promise.all([
+            boxOf(sheet),
+            boxOf(save),
+            boxOf(done),
+          ]);
+          // The foot of a window has one pattern (package D): Done as wide as the foot, Save search
+          // under it, and the whole foot inside the sheet.
+          // The least of the three gaps (aligned, under, inside) is not negative when all hold.
+          return Math.min(
+            1 - Math.abs(saveBox.x - doneBox.x),
+            saveBox.y - (doneBox.y + doneBox.height) + 1,
+            sheetBox.y + sheetBox.height - (saveBox.y + saveBox.height),
+          );
+        })
+        .toBeGreaterThanOrEqual(0);
     },
   });
 });

@@ -5785,6 +5785,7 @@ optgroup {
 }
 
 [data-part="search-panel"][data-variant~="sheet"] [data-part="search-panel.actions"] {
+  flex: none;
   margin-block-start: auto;
 }
 
