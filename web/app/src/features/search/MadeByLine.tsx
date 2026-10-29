@@ -32,7 +32,7 @@ export function MadeByLine({
   onUndo,
 }: MadeByLineProps) {
   return (
-    <div {...partOf(part.searchMadeBy)}>
+    <div {...partOf(part.searchMadeBy, { states: [!unchanged && "changed"] })}>
       <p {...partOf(part.muted)}>
         {unchanged
           ? t("search.made-by", { person: personName(search.maker) })

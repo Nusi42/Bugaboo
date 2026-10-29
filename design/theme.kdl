@@ -12869,6 +12869,18 @@ part "search-made-by > search-held-actions" {
     justify-self end
 }
 
+// Once changed, the words and the buttons are side by side, and the words give way (they wrap) so
+// the two never overlap.
+part "search-made-by[state=changed]" {
+    display flex
+    justify-content space-between
+    gap "$space-2"
+}
+
+part "search-made-by[state=changed] > muted" {
+    flex "1 1 auto"
+}
+
 // While the person is still typing at the end of the text, what is missing is a hint, not a fault (S6).
 part "search-mistake[variant=hint]" {
     color "$fg-muted"

@@ -1285,7 +1285,7 @@ export const partWords = {
   "search-mistakes": { variant: [], state: [] },
   "search-mistake": { variant: ["hint"], state: [] },
   "search-held-actions": { variant: [], state: ["held"] },
-  "search-made-by": { variant: [], state: [] },
+  "search-made-by": { variant: [], state: ["changed"] },
   "search-results": { variant: [], state: [] },
   "search-list": { variant: [], state: [] },
   "search-list.item": { variant: [], state: [] },

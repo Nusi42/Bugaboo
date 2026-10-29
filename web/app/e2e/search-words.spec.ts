@@ -230,6 +230,12 @@ test("qry_06 nothing moves when Changed, not saved appears", async ({ page }) =>
   await closeBar(page);
   await expect(page.getByText(t("search.changed-not-saved"))).toBeVisible();
   const after = await Promise.all([boxOf(bar), boxOf(heading)]);
+  // The words never run under the buttons.
+  const [words, undo] = await Promise.all([
+    boxOf(page.locator("[data-part='search-made-by'] [data-part='muted']")),
+    boxOf(page.getByRole("button", { name: t("search.undo-changes") })),
+  ]);
+  expect(words.x + words.width).toBeLessThanOrEqual(undo.x + 4);
   // The room of the buttons is there before they are: the bar and the title stay where they were.
   expect(after[0].y).toBe(before[0].y);
   expect(after[1].y).toBe(before[1].y);

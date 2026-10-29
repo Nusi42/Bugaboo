@@ -5934,6 +5934,16 @@ optgroup {
   justify-self: end;
 }
 
+[data-part="search-made-by"][data-state~="changed"] {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+[data-part="search-made-by"][data-state~="changed"] > [data-part="muted"] {
+  flex: 1 1 auto;
+}
+
 [data-part="search-mistake"][data-variant~="hint"] {
   color: var(--fg-muted);
 }
