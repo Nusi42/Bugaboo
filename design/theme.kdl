@@ -852,6 +852,18 @@ mixin "quiet-column" {
 
 // A button that holds text hangs back by its own padding, so its text stands on the start edge of
 // the text around it (R1). Every such button has the padding `pad-control`.
+// The bar at the top of a phone screen, the same for a page and for a window that is a screen (M5 exit, O13): the height
+// of the bar, the room for the notch above it, the canvas behind it, its parts level.
+mixin "phone-bar" {
+    display flex
+    align-items center
+    gap "$space-3"
+    box-sizing border-box
+    min-height "$size-bar"
+    padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"
+    background "$bg-canvas"
+}
+
 mixin "hang-start" {
     margin-inline-start "calc(-1 * $pad-control)"
 }
@@ -2892,13 +2904,8 @@ part "window.control[variant=back]" {
 // On a phone the window is a screen, and its bar is the bar of every other page: the canvas, not the tinted
 // surface of the bar of a window (M5 exit, O13).
 part "overlay.modal[variant=full] window.title-bar" {
-    box-sizing border-box
-    align-items center
-    gap "$space-3"
-    min-height "$size-bar"
-    padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"
+    use "phone-bar"
     border-radius 0
-    background "$bg-canvas"
 }
 
 // The same bar as every page of a phone: Back in the color of a quiet button, the title at its side, one line (M5 exit, O13).
@@ -2908,7 +2915,7 @@ part "overlay.modal[variant=full] window.title" {
 }
 
 part "overlay.modal[variant=full] window.control[variant=back]" {
-    margin-inline-start "calc(-1 * $pad-control)"
+    use "hang-start"
     color "$accent-fg"
 }
 
@@ -4585,14 +4592,8 @@ part "top-bar" {
     position sticky
     top 0
     z-index "$z-sticky"
-    display flex
-    align-items center
-    gap "$space-3"
-    box-sizing border-box
-    min-height "$size-bar"
-    padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"
+    use "phone-bar"
     border-bottom "$border-width solid $border"
-    background "$bg-canvas"
 }
 
 part "top-bar.crumbs" {

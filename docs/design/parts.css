@@ -2114,13 +2114,14 @@ optgroup {
 }
 
 [data-part="overlay.modal"][data-variant~="full"] [data-part="window.title-bar"] {
-  box-sizing: border-box;
+  display: flex;
   align-items: center;
   gap: var(--space-3);
+  box-sizing: border-box;
   min-height: var(--size-bar);
   padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-4) var(--space-2);
-  border-radius: 0;
   background: var(--bg-canvas);
+  border-radius: 0;
 }
 
 [data-part="overlay.modal"][data-variant~="full"] [data-part="window.title"] {
@@ -3931,8 +3932,8 @@ optgroup {
   box-sizing: border-box;
   min-height: var(--size-bar);
   padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-4) var(--space-2);
-  border-bottom: var(--border-width) solid var(--border);
   background: var(--bg-canvas);
+  border-bottom: var(--border-width) solid var(--border);
 }
 
 [data-part="top-bar.crumbs"] {
