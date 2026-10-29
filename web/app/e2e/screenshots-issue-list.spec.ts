@@ -6,7 +6,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
-import { grid, openList, prepareLook, rowOf } from "./support/list-look.ts";
+import { grid, inViewChoices, openList, prepareLook, rowOf } from "./support/list-look.ts";
 import {
   focusRowByKeys,
   listInFourThemes,
@@ -32,15 +32,21 @@ test("iss_01 pictures: the list grouped by status group", async ({ page }) => {
 
 test("cfg_02 pictures: grouped by priority, compact, and not grouped", async ({ page }) => {
   await openList(page);
-  await page.getByLabel(t("issues.group-by"), { exact: true }).selectOption({
-    label: t("issue-field.priority"),
+  await inViewChoices(page, async (scope) => {
+    await scope.getByLabel(t("issues.group-by"), { exact: true }).selectOption({
+      label: t("issue-field.priority"),
+    });
   });
   await expect(grid(page).getByRole("link", { name: webIssues.login })).toBeVisible();
   await listInFourThemes(page, "grouped-priority");
-  await page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }).check();
+  await inViewChoices(page, async (scope) => {
+    await scope.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }).check();
+  });
   await listInFourThemes(page, "compact");
-  await page.getByLabel(t("issues.group-by"), { exact: true }).selectOption({
-    label: t("issues.group-by-none"),
+  await inViewChoices(page, async (scope) => {
+    await scope.getByLabel(t("issues.group-by"), { exact: true }).selectOption({
+      label: t("issues.group-by-none"),
+    });
   });
   await listInFourThemes(page, "plain");
 });
