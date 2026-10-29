@@ -1705,8 +1705,10 @@ part "overlay.modal[variant=top]" {
     border-radius "0 0 $r-card $r-card"
 }
 
-// The shadows at the ends of every box that scrolls its own content and has more behind it (the scroll position drives them,
-// where the browser has scroll timelines). A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
+// The shadows at the ends of every box that scrolls its own content and has more behind it: a menu or a sheet taller than the
+// screen, the options of a picker, the rows of the list of issues (a box of its own, as high as the page lets it be), the body
+// of a window or of a question, the list of people. The scroll position drives them, where the browser has scroll timelines.
+// A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
 part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
@@ -1731,9 +1733,6 @@ part "overlay.dialog" {
     overflow-y auto
     outline none
 }
-
-// A menu or a sheet that is taller than the screen scrolls, with a shadow at each end that has more behind it.
-
 
 part "overlay[entering]::before" {
     animation "fade $motion-base $ease-out"
@@ -2513,9 +2512,6 @@ part "list-scroll" {
     overflow auto
     border-bottom "$border-width solid $divider"
 }
-
-// The shadows at the ends of the rows that have more rows behind them (the list is a box of its own, as high as the page lets it be).
-
 
 // The head is as wide as its columns at their least need and at least the frame (the code measures it and gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
 part "list-head" {
@@ -4029,9 +4025,6 @@ part "people" {
     overflow-y auto
     use "surface-box"
 }
-
-// The shadows at the ends of the box that have more people behind them.
-
 
 // Where the browser has no scroll timelines these boxes keep the old cue (covers that scroll with the content). It comes after the six
 // boxes, so their own backgrounds do not reset it. The rows of `list-scroll` are opaque and paint over it: there that cue is not seen (accepted).
