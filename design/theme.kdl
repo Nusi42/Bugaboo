@@ -3610,7 +3610,12 @@ part "access.matrix" {
 // columns at their least width or more, never a column cut at its edge (M5 exit, O2).
 part "access.matrix-cell" {
     box-sizing border-box
-    min-width "max($size-matrix-cell, calc((100cqw - $size-matrix-cell) / max(1, round(down, (100cqw - $size-matrix-cell) / $size-matrix-cell, 1))))"
+    min-width "$size-matrix-cell"
+    // Where the browser does not know round() with typed arithmetic, the line below is dropped and the column keeps its
+    // least width above (then a column may be cut at the edge): the query is always true, it only makes a block of its own.
+    media "(width >= 0px)" {
+        min-width "max($size-matrix-cell, calc((100cqw - $size-matrix-cell) / max(1, round(down, (100cqw - $size-matrix-cell) / $size-matrix-cell, 1))))"
+    }
     padding "$space-2 $space-3"
     scroll-snap-align start
     border-bottom "$border-width solid $border-subtle"
@@ -3655,8 +3660,16 @@ part "access.cell" {
     align-items flex-start
 }
 
+// In a matrix a cell is one line: the list of levels and, beside it, the button that takes a level set here away.
+part "access.cell[variant=inline]" {
+    flex-direction row
+    align-items center
+    gap "$space-1"
+}
+
 part "access.cell > field" {
     width "100%"
+    min-width 0
 }
 
 part "access.preview-line" {

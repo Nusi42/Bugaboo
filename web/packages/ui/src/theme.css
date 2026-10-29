@@ -3665,18 +3665,24 @@ optgroup {
 
 [data-part="access.matrix-cell"] {
   box-sizing: border-box;
-  min-width: max(
-    var(--size-matrix-cell),
-    calc(
-      (100cqw - var(--size-matrix-cell)) /
-        max(1, round(down, (100cqw - var(--size-matrix-cell)) / var(--size-matrix-cell), 1))
-    )
-  );
+  min-width: var(--size-matrix-cell);
   padding: var(--space-2) var(--space-3);
   scroll-snap-align: start;
   border-bottom: var(--border-width) solid var(--border-subtle);
   text-align: start;
   vertical-align: top;
+}
+
+@media (width >= 0px) {
+  [data-part="access.matrix-cell"] {
+    min-width: max(
+      var(--size-matrix-cell),
+      calc(
+        (100cqw - var(--size-matrix-cell)) /
+          max(1, round(down, (100cqw - var(--size-matrix-cell)) / var(--size-matrix-cell), 1))
+      )
+    );
+  }
 }
 
 [data-part="access.matrix-cell"][data-variant~="head"] {
@@ -3719,8 +3725,15 @@ optgroup {
   align-items: flex-start;
 }
 
+[data-part="access.cell"][data-variant~="inline"] {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 [data-part="access.cell"] > [data-part="field"] {
   width: 100%;
+  min-width: 0;
 }
 
 [data-part="access.preview-line"] {

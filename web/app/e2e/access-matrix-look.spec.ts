@@ -5,6 +5,7 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
+import { inOrder } from "./support/sequence.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, package O (O2): in the tables of Field permissions and Who sees people the name of a field stands
@@ -46,6 +47,43 @@ function selectsCutAtTheEdge(scroll: Locator): Promise<number> {
     return cut;
   });
 }
+
+/** The heights of the rows whose name is on one line (a name of several lines is a taller row), the last row left out. */
+function heightsOfRows(matrix: Locator): Promise<readonly number[]> {
+  return matrix.evaluate((node) => {
+    const heights: number[] = [];
+    const rows = node.querySelectorAll("tbody tr");
+    for (let at = 0; at < rows.length - 1; at += 1) {
+      const row = rows[at];
+      const name = row?.querySelector("th");
+      if (row !== undefined && name !== null && name !== undefined) {
+        const range = document.createRange();
+        range.selectNodeContents(name);
+        if (range.getBoundingClientRect().height < 30) {
+          heights.push(Math.round(row.getBoundingClientRect().height));
+        }
+      }
+    }
+    return heights;
+  });
+}
+
+test("ux_5 every row of Field permissions and of Who sees people is one height", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) === "phone", "a phone shows the levels as cards, not as a matrix");
+  await signIn(page, sampleAdministrator());
+  await inOrder(
+    [paths.fieldPermissions, paths.peopleVisibility].map((address) => async () => {
+      await page.goto(address);
+      const matrix = partIn(page, "access.matrix");
+      await expect(matrix).toBeVisible();
+      const heights = await heightsOfRows(matrix);
+      expect(heights.length).toBeGreaterThan(3);
+      expect([...new Set(heights)], `${address}: the heights of the rows`).toHaveLength(1);
+    }),
+  );
+});
 
 test("ux_5 the name of a row stands level with the selects of its row", async ({ page }) => {
   test.skip(layoutOf(page) === "phone", "a phone shows the levels as cards, not as a matrix");

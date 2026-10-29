@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, SelectField, partOf, part } from "@bugaboo/ui";
+import { Button, buttonLook, iconName, IconButton, SelectField, partOf, part } from "@bugaboo/ui";
 
 import { mayPick, type Cell } from "./levels.ts";
 import { originText } from "./origin-text.ts";
@@ -25,6 +25,25 @@ export interface CellControlProps<Level extends string> {
   readonly onChange: (level: Level | null) => void;
 }
 
+/** *Reset*: a button with an icon in a matrix (a row does not grow), with its word elsewhere. */
+function ResetButton({
+  label,
+  icon,
+  onReset,
+}: {
+  readonly label: string;
+  readonly icon: boolean;
+  readonly onReset: () => void;
+}) {
+  return icon ? (
+    <IconButton icon={iconName.undo} label={label} onPress={onReset} />
+  ) : (
+    <Button look={buttonLook.quiet} aria-label={label} onPress={onReset}>
+      {t("access.reset")}
+    </Button>
+  );
+}
+
 /** The level of one role for one field or kind: a list of the levels, where it was set, and *Reset*. */
 export function CellControl<Level extends string>({
   label,
@@ -44,12 +63,15 @@ export function CellControl<Level extends string>({
     ? cell.for_type === true &&
       (inProject ? cell.origin.kind === "set-here" : cell.origin.kind === "role-own")
     : inProject && cell.origin.kind === "set-here";
+  // In a matrix a cell is one control high whatever it says: where the level comes from is words for screen readers beside the list
+  // and a tooltip, and *Reset* is a button with an icon beside the list, so no row grows.
+  const resetLabel = t("access.reset-label", { subject: subjectName, role: roleName });
   return (
-    <div {...partOf(part.accessCell)}>
+    <div {...partOf(part.accessCell, { variants: [hideLabel && "inline"] })} title={origin}>
       <SelectField
         label={label}
         hideLabel={hideLabel}
-        {...(origin === undefined ? {} : { description: origin })}
+        {...(origin === undefined || hideLabel ? {} : { description: origin })}
         choices={levels.map((level) => ({
           value: level,
           label: levelName(level),
@@ -58,16 +80,17 @@ export function CellControl<Level extends string>({
         value={cell.level}
         onChange={onChange}
       />
+      {hideLabel && origin !== undefined ? (
+        <span {...partOf(part.visuallyHidden)}>{origin}</span>
+      ) : null}
       {resettable ? (
-        <Button
-          look={buttonLook.quiet}
-          aria-label={t("access.reset-label", { subject: subjectName, role: roleName })}
-          onPress={() => {
+        <ResetButton
+          label={resetLabel}
+          icon={hideLabel}
+          onReset={() => {
             onChange(null);
           }}
-        >
-          {t("access.reset")}
-        </Button>
+        />
       ) : null}
     </div>
   );

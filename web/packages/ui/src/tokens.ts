@@ -987,7 +987,7 @@ export const partWords = {
   "access.matrix": { variant: [], state: [] },
   "access.matrix-cell": { variant: ["head", "row"], state: [] },
   "access.matrix-row": { variant: [], state: [] },
-  "access.cell": { variant: [], state: [] },
+  "access.cell": { variant: ["inline"], state: [] },
   "access.preview-line": { variant: [], state: [] },
   "access.answer": { variant: [], state: [] },
   "access.answer-head": { variant: [], state: [] },
