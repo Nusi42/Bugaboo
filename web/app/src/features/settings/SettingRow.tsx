@@ -62,8 +62,9 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
   const change = (value: SettingValue): void => {
     actions.onChange(setting.key, value);
   };
-  // A box that is typed in has its explanation inside, with its field; every other control has it under it.
-  const helpWithField = control === undefined && controlKindOf(setting) === "typed";
+  // A box that is typed in has its explanation inside, with its field; every other control, and a setting that is
+  // locked (no box), has it under it.
+  const helpWithField = !lockedBelow && control === undefined && controlKindOf(setting) === "typed";
   const withField = helpWithField
     ? { help: wordsOf(setting.help_key), source: sourceInWords(setting) }
     : {};
