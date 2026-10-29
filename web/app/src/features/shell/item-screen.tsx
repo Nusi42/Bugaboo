@@ -1,24 +1,12 @@
 import { Card, partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
-import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { doNothing } from "../../shared/do-nothing.ts";
 import { CONTENT_ID } from "./content-id.ts";
-import { usePageTrail, type TrailStep } from "./page-trail.ts";
+import { useItemTrail } from "./page-trail.ts";
 import { useEscape } from "./use-escape.ts";
-import { stepsOfScreens } from "./steps-of-screens.ts";
-
-/** The trail of the screen of an item: where the list is, then the item, so the bar has its name and Back leads to the list. */
-function useItemScreenTrail(name: string): void {
-  const { pathname } = useLocation();
-  const steps = useMemo((): readonly TrailStep[] => {
-    const base = stepsOfScreens(pathname);
-    const list = base.at(-1);
-    return list === undefined ? [] : [...base, { label: name, href: list.href }];
-  }, [pathname, name]);
-  usePageTrail(steps);
-}
 
 export interface ItemScreenProps {
   /** The name of the item: the title in the bar of the screen. */
@@ -62,7 +50,7 @@ function Screen({ name, onClose, children }: ItemScreenProps) {
  * so what it shows reads and writes as it did in the panel.
  */
 export function ItemScreen(props: ItemScreenProps) {
-  useItemScreenTrail(props.name);
+  useItemTrail(useLocation().pathname, props.name);
   // The content of the page is there once the page is drawn: it is read again after the first drawing, and the screen is put in it.
   const place = useSyncExternalStore(
     noChange,

@@ -1,7 +1,6 @@
-import { t } from "@bugaboo/messages";
 import { useEffect, useMemo } from "react";
 
-import { paths } from "../../shared/paths.ts";
+import { stepsOfScreens } from "./steps-of-screens.ts";
 
 import { createRegistry } from "./registry.ts";
 
@@ -41,19 +40,16 @@ export function usePageTrail(steps: readonly TrailStep[] | undefined): void {
 }
 
 /**
- * The trail of an item of a list in the organization settings (a person, a role, a group): *Organization settings*,
- * then the list, then the item, which is the title in the bar of a phone. Back leads to the list.
+ * The trail of an item of a list (a person, a role, a group, an issue type): where the list is, then the item, which is
+ * the title in the bar of a phone. Back leads to the list.
  */
-export function useItemTrail(listLabel: string, listHref: string, name: string | undefined): void {
+export function useItemTrail(listPath: string, name: string | undefined): void {
   const steps = useMemo((): readonly TrailStep[] | undefined => {
-    if (name === undefined) {
-      return undefined;
-    }
-    return [
-      { label: t("nav.organization-settings"), href: paths.organizationSettings },
-      { label: listLabel, href: listHref },
-      { label: name, href: listHref },
-    ];
-  }, [listLabel, listHref, name]);
+    const base = stepsOfScreens(listPath);
+    const list = base.at(-1);
+    return name === undefined || list === undefined
+      ? undefined
+      : [...base, { label: name, href: list.href }];
+  }, [listPath, name]);
   usePageTrail(steps);
 }

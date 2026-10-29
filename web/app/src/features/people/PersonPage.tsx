@@ -20,7 +20,7 @@ export function PersonPage({ id }: { readonly id: string }) {
       ? { line, since: found.data.created_at }
       : undefined;
   usePageTitle(line?.name ?? t("nav.people"));
-  useItemTrail(t("nav.people"), paths.people, line?.name);
+  useItemTrail(paths.people, line?.name);
   return (
     <QueryGate error={found.error} data={shown} notFound={<NotFoundPage />}>
       {(person) => (

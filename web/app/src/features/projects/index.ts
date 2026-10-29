@@ -10,6 +10,7 @@ export { ProjectGate, type ProjectGateProps } from "./ProjectGate.tsx";
 export { ProjectSettingsFrame } from "./ProjectSettingsFrame.tsx";
 export type { OneProject } from "./use-projects.ts";
 export { linesOf, useProject, useProjectList, type ProjectLine } from "./use-projects.ts";
+export { useProjectTrail } from "./project-trail.ts";
 export { OfferedHere, type OfferedHereProps } from "./OfferedHere.tsx";
 export { offerChangeBody } from "./offer-body.ts";
 export { ProjectOffers, type ProjectOffer, type ProjectOffersProps } from "./ProjectOffers.tsx";
