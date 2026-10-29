@@ -1596,7 +1596,7 @@ optgroup {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  max-height: var(--size-list);
+  max-height: calc(7 * var(--size-control) + 6 * var(--space-1));
   margin: 0;
   padding: calc(var(--ring-width) + var(--ring-offset));
   list-style: none;

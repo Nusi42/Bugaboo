@@ -1540,7 +1540,9 @@ part "picker.options[variant=list]" {
     display flex
     flex-direction column
     gap "$space-1"
-    max-height "$size-list"
+    // Whole rows: seven rows with the gaps between them (the padding for the focus ring is outside this height),
+    // so the row at the edge is not cut in half where the list starts to scroll (M5 exit, O3).
+    max-height "calc(7 * $size-control + 6 * $space-1)"
     margin 0
     // Room for the focus ring: a list that scrolls clips what is outside it.
     padding "calc($ring-width + $ring-offset)"
