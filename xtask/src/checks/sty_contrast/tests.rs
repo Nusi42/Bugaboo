@@ -323,6 +323,153 @@ fn faint_lines_with_more_contrast_are_rejected() {
 }
 
 #[test]
+fn the_main_button_keeps_its_contrast_while_it_is_hovered() {
+    // Hovering brightens the fill and its words (`hover-brightness`), which takes contrast away
+    // from white on a light violet: with more contrast the fill of Daylight reached 7.09:1 as it
+    // is and only 6.02:1 hovered (M5 exit, A5). The old fill is rejected by the hovered rule only.
+    let findings = evaluate(&with_value("accent", "daylight-more", "#573cd0"));
+    assert!(
+        findings.iter().any(|f| f.message.contains("hovered")
+            && f.message.contains("more contrast")
+            && f.message.contains("daylight")
+            && f.message.contains("`on-accent`")),
+        "{:?}",
+        messages(&findings)
+    );
+    // Every theme is held to 4.5:1 hovered and 7:1 hovered with more contrast.
+    let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+    let rule = file
+        .contrast
+        .hovered
+        .iter()
+        .find(|rule| rule.text == "on-accent" && rule.on == "accent")
+        .expect("the main button has a hovered rule");
+    assert!(rule.min >= 4.5 && rule.min_more >= 7.0);
+}
+
+#[test]
+fn the_three_status_tints_are_told_apart_from_each_other_and_from_the_card() {
+    // M5 exit A7: in Daylight the tints of Not started and In progress were 7.7 apart (delta E);
+    // A8: in Dusk Not started was 6.9 from the raised card. Both are rejected now.
+    let findings = evaluate(&with_value("tint-ip", "daylight", "#e0ebfa"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`tint-ns`") && f.message.contains("`tint-ip`")),
+        "{:?}",
+        messages(&findings)
+    );
+    let findings = evaluate(&with_value("tint-ns", "dusk", "#343c4e"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`tint-ns`") && f.message.contains("`bg-raised`")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
+fn the_quiet_words_of_a_tinted_row_have_room_to_spare() {
+    // M5 exit L23: the ID and the hint words of a row were 4.5:1 and a little over on the tints,
+    // which a small thin text shows as hard to read. The old muted colors of Paper are rejected.
+    let findings = evaluate(&with_value("fg-subtle", "paper", "#6b635a"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`fg-subtle`") && f.message.contains("a row")),
+        "{:?}",
+        messages(&findings)
+    );
+    let findings = evaluate(&with_value("fg-muted", "paper", "#6a6157"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`fg-muted`") && f.message.contains("a row")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
+fn the_edge_of_high_is_told_from_the_edge_of_critical_and_is_seen() {
+    // M5 exit L24: the brown of High was 28 from the red of Critical in Daylight. The edge is a
+    // line (3:1 on every tint and surface) and a clear orange.
+    let findings = evaluate(&with_value("edge-high", "daylight", "#aa4e09"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("`edge-high`") && f.message.contains("`danger`")),
+        "{:?}",
+        messages(&findings)
+    );
+    let findings = evaluate(&with_value("edge-high", "paper", "#e8c9a0"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("the line `edge-high`")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
+fn the_line_of_a_hovered_row_is_seen_on_every_tint_in_every_theme() {
+    let findings = evaluate(&with_value("hover-line", "dusk", "#3b414d"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("the line `hover-line`")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
+fn the_page_behind_a_sheet_is_dimmed_so_the_sheet_stands_out_and_the_page_text_is_dim() {
+    // M5 exit R4: behind Quick search and the dialogs of Daylight and Paper the page was a light
+    // wash (the sunken surface at 80%), and its text stayed easy to read right under the panel. The
+    // wash as the scrim is rejected twice: the sheet does not stand out, and the text is not dim.
+    let findings = evaluate(&with_value("scrim", "daylight", "#eef0f3"));
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("Theme daylight") && f.message.contains("to stand out")),
+        "{:?}",
+        messages(&findings)
+    );
+    // A dark scrim that is only a little opaque leaves the page text readable under the panel.
+    let faint = text().replacen(
+        "opacity \"opacity-scrim\" 0.9",
+        "opacity \"opacity-scrim\" 0.4",
+        1,
+    );
+    let findings = evaluate(&ThemeFile::parse(&faint).unwrap());
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.message.contains("Theme daylight") && f.message.contains("still")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
+fn a_distinct_rule_that_names_no_minimum_is_rejected() {
+    // It would check nothing and say nothing.
+    let bad = text().replacen(
+        "distinct min-delta-e-between-states=31 reason=",
+        "distinct reason=",
+        1,
+    );
+    let error = ThemeFile::parse(&bad).err().expect("it is rejected");
+    assert!(
+        format!("{error:#}").contains("at least one minimum"),
+        "{error:#}"
+    );
+}
+
+#[test]
 fn bad_example() {
     // Light grey text on the white page in Daylight.
     let findings = evaluate(&with_value("fg", "daylight", "#cccccc"));

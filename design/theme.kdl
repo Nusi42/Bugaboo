@@ -257,7 +257,7 @@ tokens {
     // A control that waits for an answer is seen by people while it waits, so its text keeps AA (4.5:1)
     // on its own fill; a disabled control is exempt, a busy one is not. Held by the test of the busy Save.
     opacity "opacity-busy" 0.85
-    opacity "opacity-scrim" 0.8 forced=0.6
+    opacity "opacity-scrim" 0.9 forced=0.6
 
     // Easing, for the animations
     easing "ease-in" "ease-in"
@@ -280,9 +280,9 @@ tokens {
     color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
-    color "fg-muted" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
-    color "fg-subtle" daylight="#636879" paper="#6b635a" dusk="#a0a6b1" midnight="#8c939f" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
-    color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#573cd0" paper-more="#2e5b87" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
+    color "fg-muted" daylight="#565d6b" paper="#5f564d" dusk="#aeb5c1" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
+    color "fg-subtle" daylight="#5c6172" paper="#645b51" dusk="#a9afbb" midnight="#9198a4" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
+    color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#4a30b8" paper-more="#244b78" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
     color "accent-soft" daylight="#eeeafd" paper="#e4ecf4" dusk="#37325a" midnight="#221d47"
     color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
     color "on-accent" daylight="#ffffff" paper="#ffffff" dusk="#1a1530" midnight="#0b0820" forced="HighlightText"
@@ -292,7 +292,9 @@ tokens {
     color "warning-soft" daylight="#fef3e2" paper="#f6ead5" dusk="#47391f" midnight="#382810"
     color "success" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
     color "success-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
-    color "st-ns" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
+    // The value of `fg-muted` on purpose, written twice: there is no alias between tokens, and the two are named
+    // for what they say (a status, a quiet word) so one may change without the other.
+    color "st-ns" daylight="#565d6b" paper="#5f564d" dusk="#aeb5c1" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
     color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#262a31" midnight-more="#1a1c21"
     color "st-ip" daylight="#1d5fd1" paper="#1d6b80" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#14495a" dusk-more="#b3d0ff" midnight-more="#82b1ff"
     color "st-ip-soft" daylight="#e7effc" paper="#dfeef1" dusk="#24365a" midnight="#10244a"
@@ -302,9 +304,22 @@ tokens {
     // Done): the group's hue at the lightness where every text color of a row still reaches 4.5:1
     // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
     // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
-    color "tint-ns" daylight="#e6eaf1" paper="#e6e1da" dusk="#343c4e" midnight="#1f2531"
-    color "tint-ip" daylight="#dbebff" paper="#d2e5ee" dusk="#153978" midnight="#052256"
+    color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#2f3c50" midnight="#1f2531"
+    color "tint-ip" daylight="#d2eefe" paper="#cde6f6" dusk="#153978" midnight="#052256"
     color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
+    // The edge of a row by its priority (UX §4.2): Critical is the red of `danger`, High is a clear orange, as
+    // far from that red as the contrast rules ask (the brown of the text color `warning` was 28 from it in
+    // Daylight) and a line to see (3:1) on every tint and surface.
+    color "edge-high" daylight="#cf6a00" paper="#cb6300" dusk="#f5b65b" midnight="#ffb547" forced="CanvasText"
+    // The thin line just inside a row that is pointed at: the edge of a control in the light themes, a step
+    // stronger in the dark ones, where the edge of a control was barely seen on the tints of Dusk.
+    // A token of its own, though three themes give it the value of `border-control`: the two are set apart by
+    // what they draw, and the dark themes already differ. A token that says "the same as" another is not in
+    // the file (tokens have no alias); a follow-up may add one.
+    color "hover-line" daylight="#80838b" paper="#7a7366" dusk="#a0a8b6" midnight="#8e95a2" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#b0b4bb" midnight-more="#9a9ca2" forced="ButtonText"
+    // The dimmed page behind a sheet, a menu or Quick search. Dark in every theme: in the light themes the old
+    // fill (the sunken surface at 80%) left the text under the panel readable.
+    color "scrim" daylight="#1c2029" paper="#2a2826" dusk="#101217" midnight="#000000" forced="Canvas"
     color "cat1-bg" daylight="#fde7ef" paper="#f6e1e4" dusk="#4a2638" midnight="#3a1428"
     color "cat1-fg" daylight="#a3195b" paper="#97304a" dusk="#ff9cc8" midnight="#ff92c2"
     color "cat2-bg" daylight="#e3f1ff" paper="#e0eaf3" dusk="#213a5c" midnight="#10294a"
@@ -397,9 +412,29 @@ contrast min=4.5 {
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
     }
 
-    lines min=3 reason="The ring of a selected or focused row and the line of a hovered row carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
-        colors "accent" "border-control"
+    non-text "edge-high" "hover-line" "scrim" reason="The edge of High, the line of a hovered row and the dimmed page behind a sheet are lines and fills, not text; the lines are kept at 3:1 by the `lines` rules below, the dimmed page by the `dimmed` rule below."
+
+    lines min=3 reason="The ring of a selected or focused row, the line of a hovered row and the edge of its priority carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
+        colors "accent" "border-control" "hover-line" "edge-high" "danger"
         on "tint-ns" "tint-ip" "tint-done"
+    }
+
+    lines min=3 reason="The edge of High and the line of a hovered row stand on the raised and plain surfaces too (a row of no group, a card of the phone): WCAG 1.4.11 asks 3:1 against every surface." {
+        colors "edge-high" "hover-line"
+        on "bg-canvas" "bg-surface" "bg-raised"
+    }
+
+    hovered brightness="hover-brightness" min=4.5 min-more=7 reason="A hovered or pressed main button is brightened (`filter: brightness`), which takes contrast away from a light fill and its words: as it is seen then it still reaches 4.5:1, and 7:1 with more contrast (M5 exit, A5)." {
+        text "on-accent"
+        on "accent"
+    }
+
+    stronger min=5 reason="The ID, the hint and the quiet words of a row are small and thin and are read on the tints all day: they reach 5:1 there, not only the 4.5:1 that every text color has (M5 exit, L23: sampled in a picture the ID of a row looked like 4.2:1). With the device setting for more contrast every text color already asks 7:1 (the `more` rule)." {
+        text "fg-muted" "fg-subtle"
+        on "tint-ns" "tint-ip" "tint-done"
+    }
+
+    dimmed scrim="scrim" opacity="opacity-scrim" page="bg-canvas" text="fg" sheet="bg-raised" min-sheet-light=4 min-sheet-dark=1.1 max-text=1.5 reason="Behind a sheet, a menu or Quick search the page is dimmed by the scrim as it is drawn: the sheet stands out from the page (4:1 darker in a light theme, still darker in a dark one, where a black page leaves little to dim) and the text of the page is dim against it (at most 1.5:1), so it cannot be read under the panel (M5 exit, R4)." {
     }
 
     lines min=2 faded-by="opacity-disabled" reason="The edge of a button that cannot be pressed is drawn in the color of quiet words and faded by the opacity of a disabled control: as it is seen it stays 2:1 against every plain surface in every theme (a disabled control is exempt from WCAG 1.4.11, but its frame must not vanish; the final check of M4 found 1.24:1)." {
@@ -413,6 +448,21 @@ contrast min=4.5 {
         lines "border" "border-subtle"
         line-on "bg-canvas" "bg-surface" "bg-raised"
     }
+}
+
+// The three status groups must be told apart at a glance (UX §4.2, R5): the tints differ from each other
+// and from the raised card they stand on by a clear difference in color. The contrast ratio only knows
+// brightness, and every tint has about the same brightness, because every text color has to be read on it;
+// the difference of color is what tells them apart (M5 exit, A7, A8).
+distinct min-delta-e-between-states=11 min-delta-e-against-surfaces=7.5 reason="The tints of Not started, In progress and Done differ from each other by at least 11 (delta E) and from the plain card by at least 7.5, in every theme." {
+    states "tint-ns" "tint-ip" "tint-done"
+    surfaces "bg-canvas" "bg-raised"
+}
+
+// The edge of High is told from the edge of Critical (the red of `danger`) at a glance.
+distinct min-delta-e-between-states=31 reason="The orange edge of High differs from the red edge of Critical by at least 31 (delta E) in every theme (M5 exit, L24)." {
+    states "danger" "edge-high"
+    surfaces "bg-canvas"
 }
 
 // Hovered and selected rows must stay visible.
