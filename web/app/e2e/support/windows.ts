@@ -3,6 +3,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { part } from "../../../packages/ui/src/tokens.ts";
 import { keyboardStep, menuStep, windowEdges } from "../../../packages/ui/src/window-size.ts";
+import { layoutOf } from "./layout.ts";
 import { partIn } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 
@@ -196,4 +197,11 @@ export async function sizesSaved(page: Page, count: number, act: () => Promise<v
   });
   await act();
   await done;
+}
+
+/** The place where one group is changed: the panel beside the list on a computer, its own screen on a phone. */
+export function groupArea(page: Page, name: string): Locator {
+  return layoutOf(page) === "phone"
+    ? page.getByRole("region", { name, exact: true })
+    : page.getByRole("complementary", { name });
 }

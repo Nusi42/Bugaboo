@@ -4,6 +4,7 @@ import { type Page } from "@playwright/test";
 import { ada, bob, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { groupArea } from "./support/windows.ts";
 import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
 import { paths } from "../src/shared/paths.ts";
@@ -96,7 +97,7 @@ test("sec_02 a group is made, people are put into it and taken out with Undo", a
   await page.getByRole("button", { name: t("groups.create"), exact: true }).click();
   await expect(page.getByText(t("groups.created", { name: "Backend" }))).toBeVisible();
   await page.getByRole("button", { name: "Backend", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Backend" });
+  const panel = groupArea(page, "Backend");
   await expect(panel).toBeVisible();
   await expect(panel.getByText(t("groups.members-none"))).toBeVisible();
 
@@ -126,7 +127,7 @@ test("sec_02 a group is deleted after a dialog that says what happens", async ({
   await signIn(page, ada);
   await page.goto(paths.groups);
   await page.getByRole("button", { name: "Backend", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Backend" });
+  const panel = groupArea(page, "Backend");
   await panel.getByRole("button", { name: t("groups.delete-name", { name: "Backend" }) }).click();
   const dialog = page.getByRole("alertdialog");
   await expect(dialog.getByText(t("groups.delete-text", { members: 1 }))).toBeVisible();

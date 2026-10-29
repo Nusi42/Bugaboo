@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { groupArea } from "./support/windows.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
 import {
@@ -40,7 +41,7 @@ test("ux_04 the offer to undo on a page without Details stands in the middle, wi
       await page.getByLabel(t("groups.field-name"), { exact: true }).fill(groupName);
       await page.getByRole("button", { name: t("groups.create"), exact: true }).click();
       await page.getByRole("button", { name: groupName, exact: true }).click();
-      const panel = page.getByRole("complementary", { name: groupName });
+      const panel = groupArea(page, groupName);
       await panel.getByRole("searchbox", { name: t("groups.add-search") }).fill("builder");
       await panel.getByRole("button", { name: t("groups.add-name", { name: bob.name }) }).click();
       await expect(
