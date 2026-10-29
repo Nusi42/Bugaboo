@@ -3420,6 +3420,12 @@ part "save-bar button[variant=primary]" {
     margin-inline-start auto
 }
 
+// The main button of a form stands on a row of its own and is as wide as the screen on a phone, whether the form keeps it
+// in a row (with a way out beside it) or alone: one width for every form (M5 exit, O: sign-in rules, groups, access keys).
+part "app-layout[variant=phone] stack > row > button[variant=primary]" {
+    flex "1 1 100%"
+}
+
 part "skeleton.line" {
     display block
     height "$space-4"

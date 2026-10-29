@@ -3467,6 +3467,13 @@ optgroup {
   margin-inline-start: auto;
 }
 
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="stack"]
+  > [data-part="row"]
+  > [data-part="button"][data-variant~="primary"] {
+  flex: 1 1 100%;
+}
+
 [data-part="skeleton.line"] {
   display: block;
   height: var(--space-4);
