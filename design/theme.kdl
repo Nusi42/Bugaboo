@@ -547,9 +547,10 @@ mixin "ring-row" {
 }
 
 // The keyboard focus on a row: the accent ring and, inside it, a second ring in the text color, so the focus
-// is told from a selected or a current row on every tint. Both are shadows, even on all four sides.
+// is told from a selected or a current row on every tint, and between them a gap of one line in the color of
+// the raised surface, so the two do not read as one heavy box (M5 exit, L26). All are shadows, even on all four sides.
 mixin "ring-keyboard" {
-    box-shadow "inset 0 0 0 $ring-width $accent, inset 0 0 0 calc($ring-width * 2) $fg"
+    box-shadow "inset 0 0 0 $ring-width $accent, inset 0 0 0 calc($ring-width + $border-width) $bg-raised, inset 0 0 0 calc($ring-width * 2 + $border-width) $fg"
     use "ring-clear"
 }
 
@@ -1722,7 +1723,7 @@ part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "t
 }
 
 part "list-row[state=priority-high]" "issue-row[state=priority-high]" "timeline-bar[state=priority-high]" {
-    border-inline-start "$size-edge solid $warning"
+    border-inline-start "$size-edge solid $edge-high"
 }
 
 // ───────────── The grid of the issue list (UX §4.2) ─────────────
@@ -1755,7 +1756,7 @@ part "list-row" {
 // A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
 // nothing moves and the edge of its priority stays; it is thinner than the rings and another color.
 part "list-row:hover" {
-    box-shadow "inset 0 0 0 $border-width $border-control"
+    box-shadow "inset 0 0 0 $border-width $hover-line"
 }
 
 // A selected row, and the issue that is open next to the list, are ringed inside their edge, so they never
@@ -2429,7 +2430,7 @@ part "legend.swatch[variant=critical]" {
 }
 
 part "legend.swatch[variant=high]" {
-    background "$warning"
+    background "$edge-high"
 }
 
 // Forced colors drop the fill of a bar, so both are drawn in the text color there.

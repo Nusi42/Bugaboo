@@ -993,7 +993,7 @@ optgroup {
 [data-part="list-row"][data-state~="priority-high"],
 [data-part="issue-row"][data-state~="priority-high"],
 [data-part="timeline-bar"][data-state~="priority-high"] {
-  border-inline-start: var(--size-edge) solid var(--warning);
+  border-inline-start: var(--size-edge) solid var(--edge-high);
 }
 
 [data-part="list-grid"] {
@@ -1018,7 +1018,7 @@ optgroup {
 }
 
 [data-part="list-row"]:hover {
-  box-shadow: inset 0 0 0 var(--border-width) var(--border-control);
+  box-shadow: inset 0 0 0 var(--border-width) var(--hover-line);
 }
 
 [data-part="list-row"][data-state~="selected"],
@@ -1145,7 +1145,8 @@ optgroup {
 [data-part="list-row.cell"][data-variant~="title"] [data-part="link"][data-focus-visible]::after {
   box-shadow:
     inset 0 0 0 var(--ring-width) var(--accent),
-    inset 0 0 0 calc(var(--ring-width) * 2) var(--fg);
+    inset 0 0 0 calc(var(--ring-width) + var(--border-width)) var(--bg-raised),
+    inset 0 0 0 calc(var(--ring-width) * 2 + var(--border-width)) var(--fg);
   outline: var(--ring-width) solid transparent;
   outline-offset: calc(var(--ring-width) * -1);
 }
@@ -1422,7 +1423,8 @@ optgroup {
 [data-part="list-group"][data-focus-visible] {
   box-shadow:
     inset 0 0 0 var(--ring-width) var(--accent),
-    inset 0 0 0 calc(var(--ring-width) * 2) var(--fg);
+    inset 0 0 0 calc(var(--ring-width) + var(--border-width)) var(--bg-raised),
+    inset 0 0 0 calc(var(--ring-width) * 2 + var(--border-width)) var(--fg);
   outline: var(--ring-width) solid transparent;
   outline-offset: calc(var(--ring-width) * -1);
 }
@@ -1664,7 +1666,7 @@ optgroup {
 }
 
 [data-part="legend.swatch"][data-variant~="high"] {
-  background: var(--warning);
+  background: var(--edge-high);
 }
 
 @media (forced-colors: active) {
