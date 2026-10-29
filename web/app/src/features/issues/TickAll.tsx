@@ -42,7 +42,7 @@ export function TickAll({ search, shown, selection }: TickAllProps) {
           {t("issues.tick-all", { count: offer.count })}
         </Button>
       ) : (
-        <p {...partOf(part.row)}>
+        <p {...partOf(part.row, { variants: ["inline"] })}>
           <Icon name={iconName.info} size={iconSize.small} />
           <span {...partOf(part.muted)}>{t("issues.tick-narrow", { limit: offer.limit })}</span>
         </p>

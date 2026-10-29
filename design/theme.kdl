@@ -2989,6 +2989,12 @@ part "row.end" {
     margin-inline-start auto
 }
 
+// A row that does not wrap and keeps its first item level with the first line of the rest (an icon before a sentence that wraps).
+part "row[variant=inline]" {
+    flex-wrap nowrap
+    align-items flex-start
+}
+
 // A row that does not wrap: its items stay together and the row is as wide as they are (Spacing and Customize).
 part "row[variant=nowrap]" {
     flex-wrap nowrap
@@ -3805,7 +3811,8 @@ part "project-tree.link" {
     box-sizing border-box
     min-width 0
     min-height "$size-control"
-    padding "0 $space-3"
+    // The text of a project starts where the text of the other items of the sidebar starts: the arrow before it takes the room of the icon.
+    padding "0 $space-3 0 $space-1"
     border-radius "$r-ctl"
     use "menu-text"
 }
@@ -4984,13 +4991,13 @@ part "list-editor.open[variant=columns] projects.short" {
 }
 
 part "list-editor.open[variant=columns] projects.place" {
-    grid-column "1 / -1"
+    grid-column "1 / 3"
     grid-row 2
 }
 
 part "list-editor.chevron" {
     grid-column 3
-    grid-row 1
+    grid-row "1 / -1"
     align-self center
     color "$fg-muted"
 }

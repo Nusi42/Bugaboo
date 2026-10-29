@@ -22,7 +22,7 @@ export function ListResults({ view, stale }: ListResultsProps) {
   if (failure !== null) {
     return (
       <Alert tone={alertTone.danger}>
-        <span {...partOf(part.row)}>
+        <span {...partOf(part.row, { variants: ["inline"] })}>
           <Icon name={iconName.danger} />
           {messageOf(failure)}
         </span>
