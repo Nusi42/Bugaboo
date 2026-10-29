@@ -6115,6 +6115,7 @@ optgroup {
   font-size: var(--fs-ui);
   display: inline-flex;
   align-items: center;
+  flex: none;
   max-width: 100%;
   white-space: nowrap;
 }
@@ -6124,6 +6125,7 @@ optgroup {
   overflow: hidden;
   padding-inline: var(--space-3);
   margin-inline: 0;
+  justify-content: flex-start;
   border-color: transparent;
   min-height: calc(var(--size-control) - var(--border-width) * 2);
   text-overflow: ellipsis;

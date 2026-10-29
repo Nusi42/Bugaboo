@@ -13066,6 +13066,7 @@ part "search-filter" {
     font-size "$fs-ui"
     display inline-flex
     align-items center
+    flex none
     max-width "100%"
     white-space nowrap
 }
@@ -13077,6 +13078,7 @@ part "search-filter > button" {
     // The same room before and after the words, inside the outline: a button does not hang back over the edge here.
     padding-inline "$space-3"
     margin-inline 0
+    justify-content flex-start
     border-color transparent
     min-height "calc($size-control - $border-width * 2)"
     text-overflow ellipsis
