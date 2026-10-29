@@ -205,3 +205,11 @@ export function groupArea(page: Page, name: string): Locator {
     ? page.getByRole("region", { name, exact: true })
     : page.getByRole("complementary", { name });
 }
+
+/** How much of the shadow at the top and at the end of a scrolling box shows: 1 where more is behind it, 0 where it ends. */
+export function shadowsOf(box: Locator): Promise<{ readonly top: number; readonly end: number }> {
+  return box.evaluate((node) => ({
+    top: Math.round(Number(getComputedStyle(node, "::before").opacity)),
+    end: Math.round(Number(getComputedStyle(node, "::after").opacity)),
+  }));
+}

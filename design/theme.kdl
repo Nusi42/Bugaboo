@@ -716,6 +716,24 @@ mixin "stacked-facts" {
     justify-content center
 }
 
+// The shadow at an end of a scrolling box that has boxes of its own inside (the question Move, the body of a window): a line
+// of no height that stays at the edge and casts the shadow over what scrolls under it, there only while the box is scrolled away
+// from that end (the scroll position drives it, `cue-in` and `cue-out`).
+mixin "edge-shadow" {
+    content "\"\""
+    position sticky
+    z-index "$z-raised"
+    display block
+    flex none
+    height 0
+    opacity 0
+    pointer-events none
+    box-shadow "0 0 $space-2 $border-width color-mix(in srgb, $border-control $size-cue-strength, transparent)"
+    animation-timeline "scroll(nearest)"
+    animation-fill-mode both
+    animation-timing-function linear
+}
+
 // A box that scrolls says there is more above and below: a soft shadow at each edge that has more behind it, and none
 // where the end is reached (two covers of the colour of the box scroll with the content and hide the shadows).
 mixin "scroll-cue" {
@@ -2964,7 +2982,22 @@ part "window.body" {
     min-height 0
     padding "$pad-dialog"
     overflow-y auto
-    use "scroll-cue"
+}
+
+part "window.body::before" "window.body::after" {
+    use "edge-shadow"
+}
+
+part "window.body::before" {
+    top "calc(-1 * $pad-dialog)"
+    animation-name "cue-in"
+    animation-range "0% $space-3"
+}
+
+part "window.body::after" {
+    bottom "calc(-1 * $pad-dialog)"
+    animation-name "cue-out"
+    animation-range "calc(100% - $space-3) 100%"
 }
 
 // Rows: what is missing (it comes and goes), the buttons in one row at the right, the main one last
@@ -3574,23 +3607,11 @@ part "confirm.body" {
     use "ring-room-flush"
 }
 
-// The ends of the body: a line of no height that stays at the edge and casts a shadow over the boxes that scroll under it,
-// there only while the body is scrolled away from that end (the gap of the body is taken back, so the line takes no room).
 part "confirm.body::before" "confirm.body::after" {
-    content "\"\""
-    position sticky
-    z-index "$z-raised"
-    display block
-    flex none
-    height 0
-    opacity 0
-    pointer-events none
-    box-shadow "0 0 $space-1 $border-width color-mix(in srgb, $border-control $size-cue-strength, transparent)"
-    animation-timeline "scroll(nearest)"
-    animation-fill-mode both
-    animation-timing-function linear
+    use "edge-shadow"
 }
 
+// The gap of the body is taken back, so the line takes no room.
 part "confirm.body::before" {
     top "calc(-1 * $ring-room)"
     margin-block-end "calc(-1 * $space-4)"
@@ -3605,8 +3626,6 @@ part "confirm.body::after" {
     animation-range "calc(100% - $space-3) 100%"
 }
 
-// The title stands above the body that scrolls, so it never moves, and a line under it ends what scrolls (the review of
-// M5 exit, O1).
 part "confirm.title" {
     margin 0
     font-size "$fs-lg"
@@ -5359,6 +5378,11 @@ part "list-editor.details" {
     display inline-flex
     align-items center
     gap "$space-2"
+}
+
+// A row with no details (a group) is only its name: nothing is left under it, so the name stands in the middle of the row.
+part "list-editor.details:empty" {
+    display none
 }
 
 // The name and the short name stand on one line; where the project sits stands muted under them; a chevron says the row opens (A13).

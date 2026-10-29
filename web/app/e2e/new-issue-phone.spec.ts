@@ -6,7 +6,7 @@ import { layoutOf } from "./support/layout.ts";
 import { openList, prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { resolved } from "./support/styles.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf, shadowsOf } from "./support/windows.ts";
 
 // M5 exit, package O (O13): on a phone the fixed footer of New issue holds the hint and the main button only;
 // the other answers and the note stand at the end of the scrolling form, and the bar of the screen is the bar
@@ -28,7 +28,7 @@ test("ux_8 on a phone the footer of New issue is the hint and one button, the re
   );
   const body = partIn(dialog, "window.body");
   // The form scrolls above the footer, and says so: a soft shadow at each edge that has more behind it.
-  await expect(body).toHaveCSS("background-image", /(linear-gradient.*){4}/u);
+  await expect.poll(() => shadowsOf(body)).toEqual({ top: 0, end: 1 });
   await expect(body.getByRole("button", { name: t("issues.create-another") })).toHaveCount(1);
   await expect(body.getByText(t("issues.draft-kept"))).toHaveCount(1);
   await expect(partIn(dialog, "window.footer").getByRole("button")).toHaveCount(1);

@@ -3008,26 +3008,35 @@ optgroup {
   min-height: 0;
   padding: var(--pad-dialog);
   overflow-y: auto;
-  background-image:
-    linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(
-      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
-      transparent
-    ),
-    linear-gradient(
-      to top,
-      color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent),
-      transparent
-    );
-  background-position: top, bottom, top, bottom;
-  background-size:
-    100% var(--space-3),
-    100% var(--space-3),
-    100% var(--space-1),
-    100% var(--space-1);
-  background-repeat: no-repeat;
-  background-attachment: local, local, scroll, scroll;
+}
+
+[data-part="window.body"]::before,
+[data-part="window.body"]::after {
+  content: "";
+  position: sticky;
+  z-index: var(--z-raised);
+  display: block;
+  flex: none;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 0 var(--space-2) var(--border-width)
+    color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent);
+  animation-timeline: scroll(nearest);
+  animation-fill-mode: both;
+  animation-timing-function: linear;
+}
+
+[data-part="window.body"]::before {
+  top: calc(-1 * var(--pad-dialog));
+  animation-name: cue-in;
+  animation-range: 0% var(--space-3);
+}
+
+[data-part="window.body"]::after {
+  bottom: calc(-1 * var(--pad-dialog));
+  animation-name: cue-out;
+  animation-range: calc(100% - var(--space-3)) 100%;
 }
 
 [data-part="window.footer"] {
@@ -3651,7 +3660,7 @@ optgroup {
   height: 0;
   opacity: 0;
   pointer-events: none;
-  box-shadow: 0 0 var(--space-1) var(--border-width)
+  box-shadow: 0 0 var(--space-2) var(--border-width)
     color-mix(in srgb, var(--border-control) var(--size-cue-strength), transparent);
   animation-timeline: scroll(nearest);
   animation-fill-mode: both;
@@ -5601,6 +5610,10 @@ optgroup {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+[data-part="list-editor.details"]:empty {
+  display: none;
 }
 
 [data-part="list-editor.open"][data-variant~="columns"] [data-part="list-editor.details"],

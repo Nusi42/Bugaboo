@@ -7,7 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { partIn } from "./support/parts.ts";
 import { createProject, openMove } from "./support/projects.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf, shadowsOf } from "./support/windows.ts";
 import { addressInProject, paths } from "../src/shared/paths.ts";
 
 // M5 exit, package O (O1): the question *Move* with a long preview keeps its title and its answers on the
@@ -24,14 +24,6 @@ test.use({
     },
   },
 });
-
-/** How much of the shadow at the top and at the end of a box shows: 1 where more is behind it, 0 where it ends. */
-function shadowsOf(box: Locator): Promise<{ readonly top: number; readonly end: number }> {
-  return box.evaluate((node) => ({
-    top: Math.round(Number(getComputedStyle(node, "::before").opacity)),
-    end: Math.round(Number(getComputedStyle(node, "::after").opacity)),
-  }));
-}
 
 /** Scrolls an element to its end and says whether there was anything to scroll. */
 function scrollToEnd(element: Locator): Promise<boolean> {
