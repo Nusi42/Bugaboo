@@ -8,9 +8,6 @@ export const messages = {
   "search.found-stale":
     "These are the issues of the last search without a mistake. Fix the mistake to update them.",
   "search.found-none": "No issues match this search.",
-  "appearance.spacing.legend": "Spacing",
-  "appearance.spacing.comfortable": "Comfortable",
-  "appearance.spacing.compact": "Compact",
   "issues.changed": "{field} changed to {value}.",
   "issues.changed-people":
     "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
@@ -44,8 +41,6 @@ export const messages = {
   "issues.everywhere": "all projects",
   "issues.count": "{count, plural, one {# issue found} other {# issues found}}",
   "issues.remove-filters": "Remove all filters",
-  "issues.group-by": "Group by",
-  "issues.group-by-none": "No grouping",
   "issues.group-empty": "None",
   "issues.group-unnamed": "Other",
   "issues.group-unlisted": "The issues of this group cannot be listed here yet.",

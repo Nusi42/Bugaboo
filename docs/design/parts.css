@@ -4090,6 +4090,10 @@ optgroup {
   color: var(--fg-muted);
 }
 
+[data-part="list-editor.list"][data-state~="hidden"] {
+  display: none;
+}
+
 [data-part="shell-overlays"] {
   display: flex;
   flex-direction: column;

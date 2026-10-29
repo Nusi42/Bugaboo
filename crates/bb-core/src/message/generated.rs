@@ -2083,6 +2083,9 @@ pub const ISSUES_HIDE_DETAILS: MessageKey = MessageKey::new("issues.hide-details
 /// The message `issues.keep-theirs-unnamed`.
 pub const ISSUES_KEEP_THEIRS_UNNAMED: MessageKey = MessageKey::new("issues.keep-theirs-unnamed");
 
+/// The message `issues.key`.
+pub const ISSUES_KEY: MessageKey = MessageKey::new("issues.key");
+
 /// The message `issues.legend`.
 pub const ISSUES_LEGEND: MessageKey = MessageKey::new("issues.legend");
 
@@ -12707,6 +12710,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.hide-details", "Hide details"),
     ("issues.keep-theirs", "Keep {name}'s change"),
     ("issues.keep-theirs-unnamed", "Keep their change"),
+    ("issues.key", "Key"),
     ("issues.legend", "What the colors mean"),
     ("issues.link-copied", "Address copied"),
     ("issues.list", "Issues"),

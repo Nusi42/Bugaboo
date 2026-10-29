@@ -216,6 +216,11 @@ export const messages = {
   "search.mistake.too-long": "This search is too long. Please shorten it.",
   "search.mistake.too-many-steps": "A search can look at most {limit} steps away.",
   "search.mistake.too-many-words": "A text to find can have at most {limit} different words.",
+  "appearance.spacing.legend": "Spacing",
+  "appearance.spacing.comfortable": "Comfortable",
+  "appearance.spacing.compact": "Compact",
+  "issues.group-by": "Group by",
+  "issues.group-by-none": "No grouping",
 } as const;
 
 register(messages);

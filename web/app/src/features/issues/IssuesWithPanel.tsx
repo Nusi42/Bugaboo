@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, cardLook, partOf, part } from "@bugaboo/ui";
+import { Card, cardLook, partOf, part, useLayout } from "@bugaboo/ui";
 
 import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
 
@@ -32,6 +32,8 @@ export function IssuesWithPanel({
   const openIn = useOpenIssuesIn();
   const { open } = state;
   const selection = useSelection();
+  // The top bar of a phone already shows the title: one title for the screen (UX §7.3).
+  const phone = useLayout() === "phone";
   const toPage = useListReturn(project.shortName, state);
   if (toPage) {
     return null;
@@ -40,11 +42,16 @@ export function IssuesWithPanel({
     <Card
       heading={t("issues.page-title", { project: project.name })}
       level={1}
+      headingHidden={phone}
       look={cardLook.openOnPhone}
     >
       <div {...partOf(part.listEditor)}>
         <div {...partOf(part.listEditorList)}>
-          <ProjectToolbar shortName={project.shortName} selection={selection} />
+          <ProjectToolbar
+            shortName={project.shortName}
+            selection={selection}
+            beside={open !== undefined}
+          />
           <ProjectList
             project={project}
             state={state}

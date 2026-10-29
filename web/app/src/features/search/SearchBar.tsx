@@ -1,24 +1,13 @@
-import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonLook,
-  Overlay,
-  overlayEdge,
-  Skeleton,
-  useLayout,
-  part,
-  partOf,
-} from "@bugaboo/ui";
+import { Alert, alertTone, Skeleton, useLayout, part, partOf } from "@bugaboo/ui";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 
 import { useSearchFields } from "./search-fields.ts";
 import { useSearchLanguage } from "./search-language.ts";
-import { filtersOf } from "../../shared/search-tree.ts";
+import { PhoneFilters } from "./PhoneSheet.tsx";
 import { SearchBarBody } from "./SearchBarBody.tsx";
+import type { ListViewControl } from "./ViewChoices.tsx";
 import { useSearchKey } from "./use-search-key.ts";
 import { useSearchBar, type SearchBarInput } from "./use-search-bar.ts";
 
@@ -33,6 +22,8 @@ export interface SearchBarProps {
   readonly onStale?: (stale: boolean) => void;
   /** Buttons for what is done with the search (*Save search*, *Share*, *Help*), at the end. */
   readonly actions?: ReactNode;
+  /** How the results are shown: on a phone *Group by* and *Spacing* are in the sheet of the filters (D2). */
+  readonly listView?: ListViewControl;
 }
 
 /**
@@ -40,7 +31,7 @@ export interface SearchBarProps {
  * filter buttons, or Advanced search as text. Both edit the same tree, so switching never loses
  * anything. On a phone it is one button, *Filters (n)*, that opens the same in a sheet.
  */
-export function SearchBar({ text, onText, within, onStale, actions }: SearchBarProps) {
+export function SearchBar({ text, onText, within, onStale, actions, listView }: SearchBarProps) {
   const language = useSearchLanguage();
   const fields = useSearchFields(within);
   if (fields.isError) {
@@ -58,16 +49,19 @@ export function SearchBar({ text, onText, within, onStale, actions }: SearchBarP
       onText={onText}
       onStale={onStale}
       actions={actions}
+      listView={listView}
     />
   );
 }
 
-type LoadedProps = Omit<SearchBarProps, "within" | "onStale"> & {
+type LoadedProps = Omit<SearchBarProps, "within" | "onStale" | "listView"> & {
   readonly onStale: ((stale: boolean) => void) | undefined;
+  readonly listView: ListViewControl | undefined;
   readonly names: Readonly<Record<string, string>>;
 } & Required<Pick<Parameters<typeof useSearchBar>[0], "language" | "fields">>;
 
-function LoadedBar({ language, fields, names, text, onText, onStale, actions }: LoadedProps) {
+function LoadedBar(props: LoadedProps) {
+  const { language, fields, names, text, onText, onStale, actions, listView } = props;
   const bar = useSearchBar({ language, fields, text, onText });
   const stale = bar.answer.mistakes.length > 0;
   useEffect(() => {
@@ -88,55 +82,15 @@ function LoadedBar({ language, fields, names, text, onText, onStale, actions }: 
       </div>
     );
   }
-  const count = bar.search === null ? 0 : filtersOf(bar.search).length;
   return (
-    <div {...partOf(part.searchBar)}>
-      <div {...partOf(part.searchBarHead)}>
-        <Button
-          onPress={() => {
-            setOpen(true);
-          }}
-        >
-          {bar.search === null ? t("search.bar.filters") : t("search.bar.filters-count", { count })}
-        </Button>
-      </div>
-      <PhoneSheet open={open} onOpenChange={setOpen}>
-        {body}
-      </PhoneSheet>
-    </div>
-  );
-}
-
-/** The bar in a sheet from the bottom of a phone, with a button that closes it. */
-function PhoneSheet({
-  open,
-  onOpenChange,
-  children,
-}: {
-  readonly open: boolean;
-  readonly onOpenChange: (open: boolean) => void;
-  readonly children: ReactNode;
-}) {
-  return (
-    <Overlay
-      isOpen={open}
-      onOpenChange={onOpenChange}
-      label={t("search.bar.filters")}
-      from={overlayEdge.bottom}
+    <PhoneFilters
+      search={bar.search}
+      open={open}
+      onOpenChange={setOpen}
+      fields={{ fields, names }}
+      listView={listView}
     >
-      <div {...partOf(part.searchPanel, { variants: ["sheet"] })}>
-        <div {...partOf(part.searchBar)}>{children}</div>
-        <div {...partOf(part.searchPanelActions)}>
-          <Button
-            look={buttonLook.primary}
-            onPress={() => {
-              onOpenChange(false);
-            }}
-          >
-            {t("common.close")}
-          </Button>
-        </div>
-      </div>
-    </Overlay>
+      {body}
+    </PhoneFilters>
   );
 }

@@ -60,6 +60,35 @@ export async function openList(page: Page): Promise<void> {
   await expect(rowOf(page, webIssues.login)).toBeVisible();
 }
 
+/**
+ * Where Group by and Spacing are: above the list on a computer, in the sheet of the Filters on a
+ * phone (D2). Opens the sheet where it is needed, does what `act` says in it, and closes it again.
+ */
+export async function inViewChoices(
+  page: Page,
+  act: (scope: Locator | Page) => Promise<void>,
+): Promise<void> {
+  const filters = page.getByRole("button", { name: /^Filters/u });
+  if ((await filters.count()) === 0) {
+    await act(page);
+    return;
+  }
+  await filters.click();
+  const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
+  await act(sheet);
+  await sheet.getByRole("button", { name: t("common.close"), exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+}
+
+/** Shows the Legend: it stands beside the toolbar on a computer, and opens from the Key button on a phone (D2). */
+export async function showLegend(page: Page): Promise<Locator> {
+  const key = page.getByRole("button", { name: t("issues.key"), exact: true });
+  if ((await key.count()) > 0) {
+    await key.click();
+  }
+  return page.getByRole("list", { name: t("issues.legend"), exact: true });
+}
+
 /** The place of a text among the rows and the group headers of the grid, from the top. */
 export async function placeInGrid(page: Page, text: string): Promise<number> {
   const rows = await grid(page)

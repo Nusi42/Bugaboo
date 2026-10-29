@@ -56,6 +56,7 @@ export function ProjectList({ project, state, onState, openIn, selection }: Proj
         onText={onText}
         within={project.id}
         onStale={setStale}
+        listView={{ view: list.view, onView: list.onView }}
         actions={save}
       />
       <IssueResults

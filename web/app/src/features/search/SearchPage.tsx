@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { Card, cardLook, useLayout } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { presentationOf } from "../../shared/list-view.ts";
@@ -26,17 +26,25 @@ export interface SearchPageProps {
  */
 export function SearchPage({ state, onState, results }: SearchPageProps) {
   usePageTitle(t("search.page.title"));
+  // The top bar of a phone already shows the title: one title for the screen (UX §7.3).
+  const phone = useLayout() === "phone";
   const [stale, setStale] = useState(false);
   const { view, defaults, onView } = useListView(state, onState, { everywhere: true });
   const onText = (canonical: string, step: HistoryStep): void => {
     onState({ ...state, text: canonical }, step);
   };
   return (
-    <Card heading={t("search.page.title")} level={1}>
+    <Card
+      heading={t("search.page.title")}
+      level={1}
+      headingHidden={phone}
+      look={cardLook.openOnPhone}
+    >
       <SearchBar
         text={state.text}
         onText={onText}
         onStale={setStale}
+        listView={{ view, onView }}
         actions={
           <SaveSearchButton
             text={state.text}
