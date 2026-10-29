@@ -29,9 +29,11 @@ export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
         <Alert tone={alertTone.info}>
           {t("search.found-stale")}
           {phone ? (
-            <Button look={buttonLook.quiet} onPress={showSearchSheet}>
-              {t("search.show-mistake")}
-            </Button>
+            <div>
+              <Button look={buttonLook.quiet} onPress={showSearchSheet}>
+                {t("search.show-mistake")}
+              </Button>
+            </div>
           ) : null}
         </Alert>
       ) : null}

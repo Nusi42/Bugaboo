@@ -1,9 +1,12 @@
+import { t } from "@bugaboo/messages";
+
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareManyWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
+import { setBox } from "./support/list-keys.ts";
 import { boxOf } from "./support/windows.ts";
 
 // The end of a long list (UX §4.2; M5 exit R2): room under the last row.
@@ -39,5 +42,21 @@ test.describe("the end of a long list", () => {
     const last = await boxOf(rows.last());
     const box = await boxOf(scroll);
     expect(box.y + box.height - (last.y + last.height)).toBeGreaterThanOrEqual(8);
+  });
+
+  test("ux_4_2 the bar of many ticked issues is pinned to the bottom of the window, whole, with no row under it", async ({
+    page,
+  }) => {
+    test.skip(layoutOf(page) !== "computer", "only a computer has the bar stuck to the window");
+    await signIn(page, ada);
+    await page.goto(projectIssuesAddress("WEB"));
+    await expect(page.locator("[data-part='list-scroll']")).toBeVisible();
+    await setBox(page.getByRole("checkbox", { name: t("issues.select-shown"), exact: true }), true);
+    const bar = page.getByRole("region", { name: t("issues.selected-bar"), exact: true });
+    await expect(bar).toBeVisible();
+    const box = await boxOf(bar);
+    const height = await page.evaluate(() => window.innerHeight);
+    // The bar ends at the bottom edge of the window: nothing of the list shows under it.
+    expect(Math.abs(box.y + box.height - height)).toBeLessThanOrEqual(1);
   });
 });

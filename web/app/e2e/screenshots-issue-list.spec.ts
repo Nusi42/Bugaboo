@@ -116,6 +116,8 @@ test("iss_01 pictures: no issue matches, and the search that takes too long", as
   );
   await page.goto(projectIssuesAddress("WEB"));
   await expect(page.getByRole("alert")).toContainText(t("error.search.too-slow"));
+  // A search that takes too long has no mistake to show, on a phone as on a computer.
+  await expect(page.getByRole("button", { name: t("search.show-mistake") })).toHaveCount(0);
   await listInFourThemes(page, "error");
 });
 
