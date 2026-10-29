@@ -13,12 +13,43 @@ export interface CreatedLinkProps {
   readonly linkPath: string;
 }
 
+/** Marks of the place of the address in the message, which the message has once. */
+const WHERE = "";
+
+/**
+ * The address with room to break after its `@` and its dots, so a narrow screen breaks it at those places and
+ * never inside a word (M5 exit, O8). The text stays the same: a break point is no character.
+ */
+function Address({ email }: { readonly email: string }) {
+  const pieces = email.split(/(?<=[@.])/u);
+  return pieces.map((piece, at) => (
+    <span key={pieces.slice(0, at + 1).join("")}>
+      {piece}
+      <wbr />
+    </span>
+  ));
+}
+
+/** The message that an invitation was made, with the address of the person where it belongs. */
+function CreatedMessage({ email }: { readonly email: string }) {
+  const [before, after] = t("invitations.created", { email: WHERE }).split(WHERE);
+  return (
+    <>
+      {before}
+      <Address email={email} />
+      {after}
+    </>
+  );
+}
+
 /** The link of a new invitation, shown once: the server keeps only a hash of its secret. */
 function CreatedLink({ email, linkPath }: CreatedLinkProps) {
   const link = `${window.location.origin}${linkPath}`;
   return (
     <div {...partOf(part.stack)}>
-      <Alert tone={alertTone.success}>{t("invitations.created", { email })}</Alert>
+      <Alert tone={alertTone.success}>
+        <CreatedMessage email={email} />
+      </Alert>
       <p {...partOf(part.muted)}>{t("invitations.link-help")}</p>
       <code {...partOf(part.keyBox, { variants: ["small"] })} aria-label={t("invitations.link")}>
         {link}
