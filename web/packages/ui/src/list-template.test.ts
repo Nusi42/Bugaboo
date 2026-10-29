@@ -16,7 +16,7 @@ describe("ux_4_2 the columns of the list as one template", () => {
 
   it("keeps the width of the ID and an icon, and gives the priority its head: the name and the arrow", () => {
     expect(listTemplate([{ column: "priority" }, { column: "key" }, { column: "status" }])).toBe(
-      "calc(var(--size-col-priority) + var(--size-icon-small)) calc(var(--size-col-key) + var(--size-target-compact)) var(--size-col-icon)",
+      "calc(var(--size-col-priority) + var(--size-icon-small)) var(--size-col-key) var(--size-col-icon)",
     );
   });
 
@@ -26,11 +26,9 @@ describe("ux_4_2 the columns of the list as one template", () => {
 
   it("makes the ID as wide as the longest one drawn, and no narrower than its head needs", () => {
     expect(listTemplate([{ column: "key" }], 19)).toBe(
-      "max(calc(var(--size-col-key) + var(--size-target-compact)), calc(var(--size-code-char) * 19))",
+      "max(var(--size-col-key), calc(var(--size-code-char) * 19))",
     );
-    expect(listTemplate([{ column: "key" }], 0)).toBe(
-      "calc(var(--size-col-key) + var(--size-target-compact))",
-    );
+    expect(listTemplate([{ column: "key" }], 0)).toBe("var(--size-col-key)");
     expect(listTemplate([{ column: "key", width: 150 }], 19)).toBe("150px");
   });
 

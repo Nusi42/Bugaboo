@@ -2357,6 +2357,11 @@ part "list-row[variant=head] list-row.cell:has(list-handle)" {
     padding-inline-end "$size-target-compact"
 }
 
+// The name "Issue ID" is short and its column is narrow: the edge that sets its width overlaps the end of the cell by little, so the name is not cut on a finger.
+part "list-row[variant=head] list-row.cell[variant=key]:has(list-handle)" {
+    padding-inline-end "$space-3"
+}
+
 // A group of rows can be folded: the whole header is the button.
 // The header of a group stands on the columns of the rows (R1): the arrow in the column of the tick box, the icon of
 // the group on the status icon, the name on the ID. A list without tick boxes has its arrow at the end.

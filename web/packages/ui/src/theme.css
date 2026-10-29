@@ -2419,6 +2419,11 @@ optgroup {
   padding-inline-end: var(--size-target-compact);
 }
 
+[data-part="list-row"][data-variant~="head"]
+  [data-part="list-row.cell"][data-variant~="key"]:has([data-part="list-handle"]) {
+  padding-inline-end: var(--space-3);
+}
+
 [data-part="list-group.toggle"] {
   border: 0;
   background: transparent;

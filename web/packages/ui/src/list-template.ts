@@ -18,7 +18,7 @@ export interface ListColumnSpec {
 const widthTokens = {
   select: ["size-control"],
   status: ["size-col-icon"],
-  key: ["size-col-key", "size-target-compact"],
+  key: ["size-col-key"],
   project: ["size-col-project", "size-target-compact"],
   type: ["size-col-project", "size-target-compact"],
   title: ["size-col-title-least"],
