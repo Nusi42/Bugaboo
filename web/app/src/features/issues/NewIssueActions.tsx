@@ -87,7 +87,7 @@ export function NewIssueActions({ form, formId, onMade, onClose, whyId }: NewIss
   );
 }
 
-/** *Create and start another*, which keeps the project and the type. */
+/** *Create the issue and start another*, which keeps the project and the type. */
 function CreateAnother({
   form,
   missing,
