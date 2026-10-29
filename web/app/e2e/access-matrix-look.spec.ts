@@ -2,6 +2,7 @@ import { type Locator } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { paths } from "../src/shared/paths.ts";
@@ -49,6 +50,7 @@ function heightsOfPlainRows(matrix: Locator): Promise<readonly number[]> {
 }
 
 test("ux_5 the name of a row stands level with the selects of its row", async ({ page }) => {
+  test.skip(layoutOf(page) === "phone", "a phone shows the levels as cards, not as a matrix");
   await signIn(page, sampleAdministrator());
   await page.goto(paths.fieldPermissions);
   const matrix = partIn(page, "access.matrix");
@@ -59,6 +61,7 @@ test("ux_5 the name of a row stands level with the selects of its row", async ({
 });
 
 test("ux_5 a row of selects only is as high as one control and its padding", async ({ page }) => {
+  test.skip(layoutOf(page) === "phone", "a phone shows the levels as cards, not as a matrix");
   await signIn(page, sampleAdministrator());
   await page.goto(paths.fieldPermissions);
   const matrix = partIn(page, "access.matrix");

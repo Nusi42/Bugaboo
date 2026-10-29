@@ -17,7 +17,7 @@ test("ux_5 the rows of the lists that open an item have a chevron", async ({ pag
         await page.goto(address);
         const row = partIn(page, "list-editor.open").first();
         await expect(row).toBeVisible();
-        await expect(row.locator("svg")).toHaveCount(1);
+        await expect(row.locator("svg.lucide-chevron-right"), address).toHaveCount(1);
       },
     ),
   );
