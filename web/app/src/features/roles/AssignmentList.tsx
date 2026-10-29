@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, partOf, part, useLayout } from "@bugaboo/ui";
+import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { AssignmentRow } from "./AssignmentRow.tsx";
@@ -14,10 +15,17 @@ export interface AssignmentListProps {
   readonly onChangeHere: ((row: RowLine) => void) | undefined;
 }
 
+/** How many rows a phone shows before *Show more*: a long list is a page of thousands of pixels there. */
+const PHONE_ROWS = 10;
+
 /** The rows of a place, a page at a time: those of the place first, then those that come from above. */
 export function AssignmentList({ project, onRemove, onChangeHere }: AssignmentListProps) {
   const list = useAssignments(project);
-  const rows = rowsOf(list.data?.pages);
+  const all = rowsOf(list.data?.pages);
+  const phone = useLayout() === "phone";
+  const [shown, setShown] = useState(PHONE_ROWS);
+  const rows = phone ? all.slice(0, shown) : all;
+  const hiddenHere = phone && all.length > shown;
   return (
     <>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
@@ -30,12 +38,16 @@ export function AssignmentList({ project, onRemove, onChangeHere }: AssignmentLi
           ))}
         </ul>
       )}
-      {list.hasNextPage ? (
+      {hiddenHere || list.hasNextPage ? (
         <div {...partOf(part.row)}>
           <Button
             isPending={list.isFetchingNextPage}
             onPress={() => {
-              void list.fetchNextPage();
+              if (hiddenHere) {
+                setShown(shown + PHONE_ROWS);
+              } else {
+                void list.fetchNextPage();
+              }
             }}
           >
             {t("assignments.more")}
