@@ -3179,14 +3179,18 @@ part "window-dock" {
     cursor pointer
 }
 
-part "app-layout[variant=side] window-dock" {
-    inset-inline-start "$size-sidebar"
-    padding-inline "max($size-page-gutter, (100% - $size-sidebar - $size-page) / 2)"
+part "app-layout[variant=side]" {
+    --sidebar-width "$size-sidebar"
 }
 
-part "app-layout[variant=side-narrow] window-dock" {
-    inset-inline-start "$size-sidebar-narrow"
-    padding-inline "max($size-page-gutter, (100% - $size-sidebar-narrow - $size-page) / 2)"
+part "app-layout[variant=side-narrow]" {
+    --sidebar-width "$size-sidebar-narrow"
+}
+
+// The strip starts after the menu and its bar starts where the page column starts (centered where the room is wider).
+part "app-layout[variant=side] window-dock" "app-layout[variant=side-narrow] window-dock" {
+    inset-inline-start "var(--sidebar-width)"
+    padding-inline "max($size-page-gutter, (100% - var(--sidebar-width) - $size-page) / 2)"
 }
 
 part "window-dock[hovered]" {

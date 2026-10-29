@@ -2439,16 +2439,20 @@ optgroup {
   cursor: pointer;
 }
 
-[data-part="app-layout"][data-variant~="side"] [data-part="window-dock"] {
-  inset-inline-start: var(--size-sidebar);
-  padding-inline: max(var(--size-page-gutter), (100% - var(--size-sidebar) - var(--size-page)) / 2);
+[data-part="app-layout"][data-variant~="side"] {
+  --sidebar-width: var(--size-sidebar);
 }
 
+[data-part="app-layout"][data-variant~="side-narrow"] {
+  --sidebar-width: var(--size-sidebar-narrow);
+}
+
+[data-part="app-layout"][data-variant~="side"] [data-part="window-dock"],
 [data-part="app-layout"][data-variant~="side-narrow"] [data-part="window-dock"] {
-  inset-inline-start: var(--size-sidebar-narrow);
+  inset-inline-start: var(--sidebar-width);
   padding-inline: max(
     var(--size-page-gutter),
-    (100% - var(--size-sidebar-narrow) - var(--size-page)) / 2
+    (100% - var(--sidebar-width) - var(--size-page)) / 2
   );
 }
 
