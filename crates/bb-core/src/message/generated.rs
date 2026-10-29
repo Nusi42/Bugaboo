@@ -146,9 +146,6 @@ pub const ACCESS_ORIGIN_UNSET: MessageKey = MessageKey::new("access.origin-unset
 /// The message `access.reset`.
 pub const ACCESS_RESET: MessageKey = MessageKey::new("access.reset");
 
-/// The message `access.role-chooser`.
-pub const ACCESS_ROLE_CHOOSER: MessageKey = MessageKey::new("access.role-chooser");
-
 /// The message `access.roles-cut`.
 pub const ACCESS_ROLES_CUT: MessageKey = MessageKey::new("access.roles-cut");
 
@@ -203,9 +200,6 @@ pub const APPEARANCE_TITLE: MessageKey = MessageKey::new("appearance.title");
 
 /// The message `assignments.change-here`.
 pub const ASSIGNMENTS_CHANGE_HERE: MessageKey = MessageKey::new("assignments.change-here");
-
-/// The message `assignments.choose-role`.
-pub const ASSIGNMENTS_CHOOSE_ROLE: MessageKey = MessageKey::new("assignments.choose-role");
 
 /// The message `assignments.give`.
 pub const ASSIGNMENTS_GIVE: MessageKey = MessageKey::new("assignments.give");
@@ -638,6 +632,9 @@ pub const COMMENTS_WRITE_HELP: MessageKey = MessageKey::new("comments.write-help
 
 /// The message `common.cancel`.
 pub const COMMON_CANCEL: MessageKey = MessageKey::new("common.cancel");
+
+/// The message `common.choose-role`.
+pub const COMMON_CHOOSE_ROLE: MessageKey = MessageKey::new("common.choose-role");
 
 /// The message `common.close`.
 pub const COMMON_CLOSE: MessageKey = MessageKey::new("common.close");
@@ -3053,10 +3050,6 @@ pub const PEOPLE_LEVEL_ROLE_ONLY: MessageKey = MessageKey::new("people-level.rol
 
 /// The message `people-visibility.intro`.
 pub const PEOPLE_VISIBILITY_INTRO: MessageKey = MessageKey::new("people-visibility.intro");
-
-/// The message `people-visibility.preview-role`.
-pub const PEOPLE_VISIBILITY_PREVIEW_ROLE: MessageKey =
-    MessageKey::new("people-visibility.preview-role");
 
 /// The message `people-visibility.table-name`.
 pub const PEOPLE_VISIBILITY_TABLE_NAME: MessageKey =
@@ -11138,7 +11131,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access.origin-unset", "Nothing set, so it is hidden"),
     ("access.reset", "Reset"),
     ("access.reset-label", "Reset {subject} for {role}"),
-    ("access.role-chooser", "Choose a role"),
     (
         "access.roles-cut",
         "There are more roles than fit in this table. The first ones are shown.",
@@ -11173,7 +11165,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "assignments.change-here-name",
         "Change for this project: {who}",
     ),
-    ("assignments.choose-role", "Choose a role"),
     ("assignments.give", "Give the role"),
     ("assignments.give-no-access", "Set No access"),
     ("assignments.give-title", "Give a role"),
@@ -11555,6 +11546,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Type @ and a name to mention someone.",
     ),
     ("common.cancel", "Cancel"),
+    ("common.choose-role", "Choose a role"),
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.done", "Done"),
@@ -13590,7 +13582,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
     ),
     ("people-visibility.preview-heading", "What {role} sees"),
-    ("people-visibility.preview-role", "Choose a role"),
     (
         "people-visibility.project-title",
         "Who sees people in {project}",

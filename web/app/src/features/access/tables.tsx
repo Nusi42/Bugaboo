@@ -81,7 +81,7 @@ export function PeopleVisibilityTable({ project }: { readonly project?: string }
       subjectHeading={t("access.kind")}
       tableName={t("people-visibility.table-name")}
       preferredRole={t("starting-role.guest")}
-      previewLabel={t("people-visibility.preview-role")}
+      previewsRole
       after={preview}
     />
   );

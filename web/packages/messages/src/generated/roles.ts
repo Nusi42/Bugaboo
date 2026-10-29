@@ -86,7 +86,6 @@ export const messages = {
   "assignments.pick-more": "Show more",
   "assignments.picked": "Chosen: {name}",
   "assignments.role": "Role",
-  "assignments.choose-role": "Choose a role",
   "assignments.where": "Where it counts",
   "assignments.no-access-help":
     "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",

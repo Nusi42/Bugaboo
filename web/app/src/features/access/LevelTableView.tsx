@@ -17,10 +17,10 @@ export interface LevelTableViewProps<Subject extends string, Level extends strin
   /** The name of the role the table opens on a phone, if it has a role of that name; else the first role. */
   readonly preferredRole?: string;
   /**
-   * What a computer says about the chooser of a role when the table has something to show for the
-   * chosen role (a preview), else the chooser is only for phones and tablets.
+   * The table has something to show for the chosen role (a preview), so a computer has the chooser of a role too;
+   * else the chooser is only for phones and tablets.
    */
-  readonly previewLabel?: string;
+  readonly previewsRole?: boolean;
   /** What follows the table, for the role that is chosen: a preview. */
   readonly after?: (table: LevelTable<Subject, Level>, role: string) => ReactNode;
 }
@@ -55,11 +55,11 @@ function TableBody<Subject extends string, Level extends string>({
   computer,
   role,
   onChoose,
-  previewLabel,
+  previewsRole = false,
   after,
   ...view
 }: TableBodyProps<Subject, Level>) {
-  const showChooser = table.roles.length > 0 && (!computer || previewLabel !== undefined);
+  const showChooser = table.roles.length > 0 && (!computer || previewsRole);
   return (
     <div {...partOf(part.stack)}>
       {table.truncated ? <Alert tone={alertTone.warning}>{t("access.roles-cut")}</Alert> : null}
@@ -69,7 +69,7 @@ function TableBody<Subject extends string, Level extends string>({
       {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
       {showChooser ? (
         <SelectField
-          label={computer && previewLabel !== undefined ? previewLabel : t("access.role-chooser")}
+          label={t("common.choose-role")}
           choices={table.roles.map((known) => ({ value: known.id, label: known.name }))}
           value={role}
           onChange={onChoose}

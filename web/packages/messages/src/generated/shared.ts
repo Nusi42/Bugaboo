@@ -160,6 +160,7 @@ export const messages = {
   "setup.next":
     "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to create the first administrator in your browser.",
   "setup.service-hint": "To have Bugaboo start with the computer, run: bugaboo service install",
+  "common.choose-role": "Choose a role",
   "common.cancel": "Cancel",
   "common.loading": "Loading…",
   "common.try-again": "Try again",
