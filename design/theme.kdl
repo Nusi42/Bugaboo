@@ -626,6 +626,13 @@ mixin "control-label" {
     color "$fg-muted"
 }
 
+// The hint under a control or beside a row of a list: 13 and muted (UX §7.3: "13 field names, times, counts,
+// hints"). The hint of a field and of a picker are this one.
+mixin "control-hint" {
+    font-size "$fs-sm"
+    color "$fg-muted"
+}
+
 // A box that is typed in: the field, the box that takes a key, the search box.
 mixin "input-box" {
     use "control-box"
@@ -1042,8 +1049,7 @@ part "field.label" {
 }
 
 part "field.description" {
-    font-size "$fs-sm"
-    color "$fg-muted"
+    use "control-hint"
     line-height "$lh-body"
 }
 
@@ -1610,8 +1616,7 @@ part "picker.name[variant=boxed]" {
 }
 
 part "picker.hint" {
-    color "$fg-muted"
-    font-size "$fs-sm"
+    use "control-hint"
 }
 
 // ───────────── Status and priority (R4, R5, UX §7.2) ─────────────
@@ -3479,9 +3484,9 @@ part "roles.topic" {
 }
 
 part "roles.legend" {
+    use "control-label"
     margin-block-end "$space-2"
     padding 0
-    font-weight "$weight-regular"
 }
 
 part "roles.note" {
@@ -3792,10 +3797,9 @@ part "access-keys.group" {
 }
 
 part "access-keys.legend" {
+    use "control-label"
     padding 0
     margin-bottom "$space-1"
-    font-size "$fs-md"
-    font-weight "$weight-regular"
 }
 
 // ───────────── Shell ─────────────
@@ -12405,8 +12409,8 @@ part "workflow-rules" {
     gap "$space-2"
 }
 
-// The name of a group of rules is bold like the heading of a section, and starts where its hint
-// starts: a legend has a padding of its own that would push it 2 px in (the review of M4, B rules).
+// The name of a group of rules is the one label of a control, and starts where its hint starts: a legend has a
+// padding of its own that would push it 2 px in (the review of M4, B rules).
 part "workflow-rules.legend" {
     use "control-label"
     padding 0

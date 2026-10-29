@@ -36,7 +36,7 @@ export function PlaceEditorCard<Editor>({
   return (
     <Card heading={heading} level={1}>
       <div {...partOf(part.stack)}>
-        <p {...partOf(part.muted)}>{intro}</p>
+        <p {...partOf(part.text)}>{intro}</p>
         {chooser}
         {notes}
         <QueryGate error={error} data={data}>
