@@ -298,6 +298,16 @@ impl ThemeFile {
             .filter(|opacity| (0.0..=1.0).contains(opacity))
     }
 
+    /// The value of a number token (the same in every theme); `None` for a name that is no number token.
+    pub(crate) fn number(&self, name: &str) -> Option<f64> {
+        self.token(name)
+            .filter(|token| token.kind == TokenKind::Number)?
+            .same
+            .as_deref()?
+            .parse()
+            .ok()
+    }
+
     /// The rules of the app and of the design pages, for a check that reads every value.
     pub(crate) fn every_rule(&self) -> impl Iterator<Item = &Rule> {
         self.rules
