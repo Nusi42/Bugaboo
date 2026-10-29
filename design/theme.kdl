@@ -2793,6 +2793,11 @@ part "row" {
     gap "$space-3"
 }
 
+// The last item of a row stands at its end (the button that sends a comment, after the one that adds files).
+part "row.end" {
+    margin-inline-start auto
+}
+
 // A row whose items are as high as the row.
 part "row[variant=stretch]" {
     align-items stretch

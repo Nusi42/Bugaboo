@@ -2060,6 +2060,10 @@ optgroup {
   gap: var(--space-3);
 }
 
+[data-part="row.end"] {
+  margin-inline-start: auto;
+}
+
 [data-part="row"][data-variant~="stretch"] {
   align-items: stretch;
 }

@@ -100,11 +100,11 @@ export function CommentComposer({ issue }: { readonly issue: string }) {
           }}
         />
       )}
-      <ChosenFilesPicker chosen={chosen} />
       {add.isError ? <Alert tone={alertTone.danger}>{messageOf(add.error)}</Alert> : null}
-      <div {...partOf(part.row)}>
-        <SubmitButton isPending={add.isPending}>{t("comments.add")}</SubmitButton>
-      </div>
+      <ChosenFilesPicker
+        chosen={chosen}
+        end={<SubmitButton isPending={add.isPending}>{t("comments.add")}</SubmitButton>}
+      />
     </Form>
   );
 }
