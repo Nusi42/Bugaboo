@@ -90,6 +90,7 @@
   --size-icon-small: 16px;
   --size-list: 300px;
   --size-list-main: 560px;
+  --size-list-item: 240px;
   --legend-start: auto;
   --size-details: 340px;
   --gap-details: var(--space-5);
@@ -2302,7 +2303,7 @@ optgroup {
   padding: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--size-list) * 0.8), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--size-list-item), 1fr));
   gap: var(--space-1) var(--space-4);
 }
 
@@ -6330,9 +6331,25 @@ optgroup {
   overflow-y: auto;
 }
 
-[data-part="search-panel"][data-variant~="sheet"] {
-  height: var(--size-bar-sheet);
+[data-part="bottom-sheet"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-sizing: border-box;
+  padding: var(--space-5);
+  overflow-y: auto;
   max-height: 100%;
+}
+
+[data-part="bottom-sheet"][data-variant~="tall"] {
+  height: var(--size-bar-sheet);
+}
+
+[data-part="bottom-sheet.actions"] {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-block-start: auto;
 }
 
 [data-part="search-panel.head"] {
@@ -6354,21 +6371,20 @@ optgroup {
   gap: var(--space-2);
 }
 
-[data-part="search-panel"][data-variant~="sheet"] [data-part="search-panel.actions"] {
-  margin-block-start: auto;
-}
-
-[data-part="search-panel"] [data-part="search-bar.head"] {
+[data-part="search-panel"] [data-part="search-bar.head"],
+[data-part="bottom-sheet"] [data-part="search-bar.head"] {
   flex-direction: column;
   align-items: stretch;
 }
 
-[data-part="search-panel"] [data-part="search-filters"] {
+[data-part="search-panel"] [data-part="search-filters"],
+[data-part="bottom-sheet"] [data-part="search-filters"] {
   flex-direction: column;
   align-items: stretch;
 }
 
-[data-part="search-panel"] [data-part="search-filter"] {
+[data-part="search-panel"] [data-part="search-filter"],
+[data-part="bottom-sheet"] [data-part="search-filter"] {
   justify-content: space-between;
   white-space: normal;
 }
@@ -6382,7 +6398,8 @@ optgroup {
   width: 100%;
 }
 
-[data-part="search-panel"] [data-part="search-bar.actions"] {
+[data-part="search-panel"] [data-part="search-bar.actions"],
+[data-part="bottom-sheet"] [data-part="search-bar.actions"] {
   margin-inline-start: 0;
 }
 

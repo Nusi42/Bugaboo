@@ -27,7 +27,7 @@ export function Selected({ selection, project, search, shown }: SelectedProps) {
   return (
     <section
       {...partOf(part.selectedBar, { states: [count > 0 && "active"] })}
-      aria-label={t("issues.selected-bar")}
+      aria-label={count > 0 ? t("issues.selected-bar") : undefined}
     >
       {/* The count is told as it changes (UX §8); the visible words are left out of the reading. */}
       <Announce>{count === 0 ? "" : t("issues.selected", { count })}</Announce>

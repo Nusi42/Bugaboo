@@ -57,7 +57,7 @@ test("ux_a2 a question of many changes is inside the screen, and its filled butt
 }) => {
   await signIn(page, ada);
   await tickIssues(page, ["WEB-1", "WEB-2"]);
-  const dialog = await openAction(page, t("many-changes.action-change"));
+  const dialog = await openAction(page, "change", 2);
   await expectInsideTheScreen(page, dialog);
   const main = dialog.getByRole("button", {
     name: t("many-changes.apply", { count: 2 }),

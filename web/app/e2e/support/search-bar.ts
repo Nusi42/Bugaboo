@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 
 import { ada, type Person } from "./accounts.ts";
 import { chooseTheme, themes } from "./checks.ts";
@@ -32,6 +32,24 @@ export async function openSearch(page: Page, text: string, person: Person = ada)
 export async function openBar(page: Page): Promise<void> {
   if (layoutOf(page) === "phone") {
     await page.getByRole("button", { name: /^Filters/u }).click();
+  }
+}
+
+/**
+ * Where Group by and Spacing are: above the list on a computer, in the sheet of the Filters on a
+ * phone (D2). Opens the sheet where it is needed, does what `act` says in it, and closes it again.
+ */
+export async function inViewChoices(
+  page: Page,
+  act: (scope: Locator | Page) => Promise<void>,
+): Promise<void> {
+  await openBar(page);
+  const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
+  const inSheet = (await sheet.count()) > 0;
+  await act(inSheet ? sheet : page);
+  if (inSheet) {
+    await sheet.getByRole("button", { name: t("common.close"), exact: true }).click();
+    await expect(sheet).toHaveCount(0);
   }
 }
 

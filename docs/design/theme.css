@@ -90,6 +90,7 @@
   --size-icon-small: 16px;
   --size-list: 300px;
   --size-list-main: 560px;
+  --size-list-item: 240px;
   --legend-start: auto;
   --size-details: 340px;
   --gap-details: var(--space-5);

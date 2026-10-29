@@ -13,7 +13,7 @@ export interface ListInfoProps {
   readonly stale: boolean;
 }
 
-/** The count line above the list, *302 in Website · 13 shown* (UX §4.2), . */
+/** The count line above the list, *302 in Website · 13 shown* (UX §4.2). */
 export function ListInfo({ scopeName, shown, stale }: ListInfoProps) {
   const { search, failure } = useListContext();
   const count = useFoundCount(search);

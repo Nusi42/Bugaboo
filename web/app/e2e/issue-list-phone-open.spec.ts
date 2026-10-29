@@ -11,12 +11,12 @@ import { preparePanel } from "./support/list-panel.ts";
 import { layoutOf } from "./support/layout.ts";
 
 // On a phone an issue opened from a list is its full page with Back to the list; the side panel is
-// for computers only (UX §3.2, maintainer decision D1 of the M5 exit wave, finding A1). The person here
+// for computers only (UX §3.4, maintainer decision D1 of the M5 exit wave, finding A1). The person here
 // has chosen the side panel, which a phone cannot show next to a list.
 
 test.use({ preparation: { run: preparePanel } });
 
-test("ux_3_2 on a phone an issue of the list opens as its page, and Back returns to the same search (A1)", async ({
+test("ux_3_4 on a phone an issue of the list opens as its page, and Back returns to the same search (A1)", async ({
   page,
 }) => {
   test.skip(layoutOf(page) !== "phone", "only a phone opens the full page");

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Overlay, overlayEdge, part, partOf } from "@bugaboo/ui";
+import { BottomSheet, Button, part, partOf } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { filtersOf } from "../../shared/search-tree.ts";
@@ -42,33 +42,22 @@ export function PhoneFilters({
           {search === null ? t("search.bar.filters") : t("search.bar.filters-count", { count })}
         </Button>
       </div>
-      <Overlay
+      <BottomSheet
         isOpen={open}
         onOpenChange={onOpenChange}
         label={t("search.bar.filters")}
-        from={overlayEdge.bottom}
+        closeLabel={t("common.close")}
+        tall
       >
-        <div {...partOf(part.searchPanel, { variants: ["sheet"] })}>
-          <div {...partOf(part.searchBar)}>
-            {children}
-            {listView === undefined ? null : (
-              <div {...partOf(part.listOptions)}>
-                <ViewChoices {...listView} fields={fields} />
-              </div>
-            )}
-          </div>
-          <div {...partOf(part.searchPanelActions)}>
-            <Button
-              look={buttonLook.primary}
-              onPress={() => {
-                onOpenChange(false);
-              }}
-            >
-              {t("common.close")}
-            </Button>
-          </div>
+        <div {...partOf(part.searchBar)}>
+          {children}
+          {listView === undefined ? null : (
+            <div {...partOf(part.listOptions)}>
+              <ViewChoices {...listView} fields={fields} />
+            </div>
+          )}
         </div>
-      </Overlay>
+      </BottomSheet>
     </div>
   );
 }

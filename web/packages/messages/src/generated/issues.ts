@@ -31,7 +31,7 @@ export const messages = {
   "issues.create-first": "Create an issue",
   "issues.list": "Issues",
   "issues.legend": "What the colors mean",
-  "issues.key": "Key",
+  "issues.legend-button": "Legend",
   "issues.select-issue": "Select {key}",
   "issues.customize": "Customize",
   "issues.customize-columns": "Columns",

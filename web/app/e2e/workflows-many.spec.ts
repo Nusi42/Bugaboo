@@ -23,7 +23,7 @@ test("iss_09 ticking three issues and Send to testing skips the one whose workfl
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   await tickAll(page, issues);
-  const dialog = await openAction(page, t("many-changes.action-change"));
+  const dialog = await openAction(page, "change", issues.length);
   const words = serverWord("workflow-change.send-to-testing");
   await dialog.getByLabel(t("issue-field.status"), { exact: true }).selectOption({ label: words });
   await dialog.getByRole("button", { name: t("many-changes.show-changes"), exact: true }).click();

@@ -12,7 +12,8 @@ import { useQuickResults } from "./use-quick-results.ts";
 
 /** Esc closes the dialog, also with something typed: the box would clear its text first, and the person has to press twice. */
 function closeOnEscape(event: KeyboardEvent<HTMLElement>): void {
-  if (event.key === "Escape") {
+  // A key that ends the composing of a letter (Japanese, Chinese) is not an Esc for the dialog.
+  if (event.key === "Escape" && !event.nativeEvent.isComposing) {
     event.preventDefault();
     event.stopPropagation();
     closeOverlay();

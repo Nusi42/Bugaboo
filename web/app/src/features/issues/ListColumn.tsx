@@ -1,5 +1,5 @@
 import { ListFrame, part, partOf, type ListColumnSpec } from "@bugaboo/ui";
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 
 import { cellOf } from "../../shared/list-columns.ts";
 import { useListContext } from "./list-context.ts";
@@ -36,7 +36,8 @@ export function ListColumn({
   const { view, fields, onView, onText } = props;
   const { words, ticks, phone, project, selection, search } = useListContext();
   const column = useRef<HTMLDivElement>(null);
-  useRoom(() => column.current, onRoom);
+  const getBox = useCallback(() => column.current, []);
+  useRoom(getBox, onRoom);
   const compact = view.spacing === "compact";
   const specs: readonly ListColumnSpec[] = [
     ...(ticks && !phone ? [selectSpec] : []),

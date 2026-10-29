@@ -5,7 +5,7 @@ import { messageOf } from "../../shared/errors.ts";
 
 import { useSearchFields } from "./search-fields.ts";
 import { useSearchLanguage } from "./search-language.ts";
-import { PhoneFilters } from "./PhoneSheet.tsx";
+import { PhoneFilters } from "./PhoneFilters.tsx";
 import { SearchBarBody } from "./SearchBarBody.tsx";
 import type { ListViewControl } from "./ViewChoices.tsx";
 import { useSearchKey } from "./use-search-key.ts";

@@ -8,7 +8,7 @@ import { signIn } from "./flows.ts";
 import { issueOf, prepareWeb, setStatusAndPriority, versionOf, webIssues } from "./issues.ts";
 import { type Instance } from "./server.ts";
 import { partIn } from "./parts.ts";
-import { boxOf } from "./windows.ts";
+export { inViewChoices } from "./search-bar.ts";
 
 /** The sample of the project WEB: one issue in progress and critical, one done and high, one plain. */
 export async function prepareLook(server: Instance): Promise<void> {
@@ -60,31 +60,11 @@ export async function openList(page: Page): Promise<void> {
   await expect(rowOf(page, webIssues.login)).toBeVisible();
 }
 
-/**
- * Where Group by and Spacing are: above the list on a computer, in the sheet of the Filters on a
- * phone (D2). Opens the sheet where it is needed, does what `act` says in it, and closes it again.
- */
-export async function inViewChoices(
-  page: Page,
-  act: (scope: Locator | Page) => Promise<void>,
-): Promise<void> {
-  const filters = page.getByRole("button", { name: /^Filters/u });
-  if ((await filters.count()) === 0) {
-    await act(page);
-    return;
-  }
-  await filters.click();
-  const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
-  await act(sheet);
-  await sheet.getByRole("button", { name: t("common.close"), exact: true }).click();
-  await expect(sheet).toHaveCount(0);
-}
-
 /** Shows the Legend: it stands beside the toolbar on a computer, and opens from the Key button on a phone (D2). */
 export async function showLegend(page: Page): Promise<Locator> {
-  const key = page.getByRole("button", { name: t("issues.key"), exact: true });
-  if ((await key.count()) > 0) {
-    await key.click();
+  const legend = page.getByRole("button", { name: t("issues.legend-button"), exact: true });
+  if ((await legend.count()) > 0) {
+    await legend.click();
   }
   return page.getByRole("list", { name: t("issues.legend"), exact: true });
 }
@@ -102,6 +82,10 @@ export async function placeInGrid(page: Page, text: string): Promise<number> {
  * over the whole row (R8), so the browser test must not ask whether the element itself is hit.
  */
 export async function pressMiddleOf(page: Page, element: Locator): Promise<void> {
-  const box = await boxOf(element);
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  const box = await element.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(
+    (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    (box?.y ?? 0) + (box?.height ?? 0) / 2,
+  );
 }
