@@ -2035,7 +2035,7 @@ optgroup {
 
 [data-part="list-main"] {
   display: flex;
-  flex: 1 1 var(--size-list-main);
+  flex: 1000 1 var(--size-list-main);
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
@@ -2249,7 +2249,7 @@ optgroup {
   flex-direction: column;
   gap: var(--space-3);
   box-sizing: border-box;
-  width: var(--size-list);
+  flex: 1 1 var(--size-list);
   padding: var(--pad-box);
 }
 
@@ -2278,9 +2278,9 @@ optgroup {
   margin: 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--size-list) * 0.8), 1fr));
+  gap: var(--space-1) var(--space-4);
 }
 
 [data-part="list-nothing"] {

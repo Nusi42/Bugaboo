@@ -1980,7 +1980,7 @@ part "list-group.count" {
 // The list and its options in one column: beside Customize where there is room for both, above it where there is not.
 part "list-main" {
     display flex
-    flex 1 1 "$size-list-main"
+    flex 1000 1 "$size-list-main"
     flex-direction column
     gap "$space-3"
     min-width 0
@@ -2193,7 +2193,7 @@ part "list-panel" {
     flex-direction column
     gap "$space-3"
     box-sizing border-box
-    width "$size-list"
+    flex "1 1 $size-list"
     padding "$pad-box"
 }
 
@@ -2218,11 +2218,12 @@ part "list-panel.item" {
     min-height "$size-control"
 }
 
+// The checklist stands in as many columns as the panel has room for: one beside the list, two or more under it, as wide as the list.
 part "list-panel.items" {
     use "list-reset"
-    display flex
-    flex-direction column
-    gap "$space-1"
+    display grid
+    grid-template-columns "repeat(auto-fill, minmax(calc($size-list * 0.8), 1fr))"
+    gap "$space-1" "$space-4"
 }
 
 // What the list says when no issue is found: a sentence and the one thing to do, in the middle of the list (R1).
