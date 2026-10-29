@@ -103,7 +103,7 @@ optgroup {
   border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
-  padding: 0 var(--pad-control);
+  padding: var(--space-1) var(--pad-control);
   color: var(--fg);
   font-size: var(--fs-ui);
   font-weight: var(--weight-regular);
@@ -258,8 +258,8 @@ optgroup {
 
 [data-part="field.label"] {
   font-size: var(--fs-sm);
-  font-weight: var(--weight-regular);
   color: var(--fg-muted);
+  font-weight: var(--weight-regular);
 }
 
 [data-part="field.description"] {
@@ -521,8 +521,8 @@ optgroup {
 
 [data-part="choice-group.legend"] {
   font-size: var(--fs-sm);
-  font-weight: var(--weight-regular);
   color: var(--fg-muted);
+  font-weight: var(--weight-regular);
   padding: 0;
   margin-bottom: var(--space-1);
 }
@@ -796,16 +796,16 @@ optgroup {
 
 [data-part="picker.legend"][data-variant~="list"] {
   font-size: var(--fs-sm);
-  font-weight: var(--weight-regular);
   color: var(--fg-muted);
+  font-weight: var(--weight-regular);
   margin-block-end: var(--space-3);
   padding: 0;
 }
 
 [data-part="picker.legend"][data-variant~="boxed"] {
   font-size: var(--fs-sm);
-  font-weight: var(--weight-regular);
   color: var(--fg-muted);
+  font-weight: var(--weight-regular);
   padding: 0;
 }
 
@@ -1682,12 +1682,13 @@ optgroup {
 }
 
 [data-part="name-value.name"] {
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+  font-weight: var(--weight-regular);
   display: flex;
   align-items: center;
   min-height: var(--size-control);
   margin: 0;
-  color: var(--fg-muted);
-  font-size: var(--fs-sm);
 }
 
 [data-part="name-value.value"] {
@@ -2605,9 +2606,9 @@ optgroup {
 }
 
 [data-part="settings.source"] {
-  margin: 0;
-  color: var(--fg-muted);
   font-size: var(--fs-sm);
+  color: var(--fg-muted);
+  margin: 0;
 }
 
 [data-part="settings.locked"] {
@@ -2815,16 +2816,16 @@ optgroup {
 
 [data-part="roles.legend"] {
   font-size: var(--fs-sm);
-  font-weight: var(--weight-regular);
   color: var(--fg-muted);
+  font-weight: var(--weight-regular);
   margin-block-end: var(--space-2);
   padding: 0;
 }
 
 [data-part="roles.note"] {
-  padding-inline-start: calc(var(--space-5) + var(--space-3));
-  color: var(--fg-muted);
   font-size: var(--fs-sm);
+  color: var(--fg-muted);
+  padding-inline-start: calc(var(--space-5) + var(--space-3));
 }
 
 [data-part="projects.details"] {
@@ -3163,8 +3164,8 @@ optgroup {
 
 [data-part="access-keys.legend"] {
   font-size: var(--fs-sm);
-  font-weight: var(--weight-regular);
   color: var(--fg-muted);
+  font-weight: var(--weight-regular);
   padding: 0;
   margin-bottom: var(--space-1);
 }
@@ -4171,8 +4172,8 @@ optgroup {
 
 [data-part="key-capture-field.label"] {
   font-size: var(--fs-sm);
-  font-weight: var(--weight-regular);
   color: var(--fg-muted);
+  font-weight: var(--weight-regular);
 }
 
 [data-part="key-capture-field.box"] {
@@ -5483,8 +5484,8 @@ optgroup {
 
 [data-part="workflow-rules.legend"] {
   font-size: var(--fs-sm);
-  font-weight: var(--weight-regular);
   color: var(--fg-muted);
+  font-weight: var(--weight-regular);
   padding: 0;
 }
 

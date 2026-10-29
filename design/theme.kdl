@@ -623,18 +623,18 @@ mixin "control-box" {
     background "$bg-raised"
 }
 
-// The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13, muted).
-mixin "control-label" {
-    font-size "$fs-sm"
-    font-weight "$weight-regular"
-    color "$fg-muted"
-}
-
 // The hint under a control or beside a row of a list: 13 and muted (UX §7.3: "13 field names, times, counts,
 // hints"). The hint of a field and of a picker are this one.
 mixin "control-hint" {
     font-size "$fs-sm"
     color "$fg-muted"
+}
+
+// The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13,
+// muted). It is the hint, as regular weight.
+mixin "control-label" {
+    use "control-hint"
+    font-weight "$weight-regular"
 }
 
 // A box that is typed in: the field, the box that takes a key, the search box.
@@ -905,7 +905,7 @@ part "button" {
     justify-content center
     gap "$space-2"
     use "control-box"
-    padding 0 "$pad-control"
+    padding "$space-1" "$pad-control"
     use "menu-text"
     font-family "$font"
     line-height "$lh-tight"
@@ -2365,12 +2365,11 @@ part "name-value" {
 // The name stands at the height of the first line of its value: both are as high as a control and
 // centered in it (R1, the review of M4: the names sat above the middle of their values).
 part "name-value.name" {
+    use "control-label"
     display flex
     align-items center
     min-height "$size-control"
     margin 0
-    color "$fg-muted"
-    font-size "$fs-sm"
 }
 
 part "name-value.value" {
@@ -3305,9 +3304,8 @@ part "account.qr" {
 // ───────────── Settings ─────────────
 
 part "settings.source" {
+    use "control-hint"
     margin 0
-    color "$fg-muted"
-    font-size "$fs-sm"
 }
 
 part "settings.locked" {
@@ -3501,9 +3499,8 @@ part "roles.legend" {
 }
 
 part "roles.note" {
+    use "control-hint"
     padding-inline-start "calc($space-5 + $space-3)"
-    color "$fg-muted"
-    font-size "$fs-sm"
 }
 
 // ───────────── Projects ─────────────

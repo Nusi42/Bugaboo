@@ -5,7 +5,6 @@ import { expect, test } from "./support/fixtures.ts";
 import { layoutOf } from "./support/layout.ts";
 import { signIn } from "./support/flows.ts";
 import { sampleAdministrator } from "./support/sample.ts";
-import { inOrder } from "./support/sequence.ts";
 import { resolved } from "./support/styles.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -54,15 +53,15 @@ test("ux_7_4 Put in and Take out are as high as a control", async ({ page }) => 
   await expect(panel).toBeVisible();
   const takeOut = panel.getByRole("button", { name: t("groups.remove"), exact: false });
   const putIn = panel.getByRole("button", { name: t("groups.add"), exact: false });
-  await inOrder(
-    [takeOut, putIn].map((buttons) => async () => {
-      const heights = await heightsOf(buttons);
-      expect(heights.length).toBeGreaterThan(0);
-      heights.forEach((height) => {
-        expect(height).toBeGreaterThanOrEqual(least - 0.5);
-      });
-    }),
-  );
+  const [takeOutHeights, putInHeights] = [await heightsOf(takeOut), await heightsOf(putIn)];
+  const all = [...takeOutHeights, ...putInHeights];
+  expect(takeOutHeights.length).toBeGreaterThan(0);
+  expect(putInHeights.length).toBeGreaterThan(0);
+  all.forEach((height) => {
+    expect(height).toBeGreaterThanOrEqual(least - 0.5);
+  });
+  // Put in and Take out are one height, to the pixel.
+  expect(new Set(all.map((height) => Math.round(height))).size).toBe(1);
 });
 
 test("ux_7_4 a button with long words grows and never has a fixed height", async ({ page }) => {

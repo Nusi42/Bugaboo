@@ -11,45 +11,55 @@ import { inEveryLook, resolved } from "./support/styles.ts";
 // or grey dot (a switched-off look in Dusk and Midnight): an outlined circle with the edge of a control, and
 // the accent when it is chosen. The box to tick of a row has a stronger edge on a tint.
 
-test.describe("the radios of a dialog", () => {
-  test.use({
-    preparation: {
-      run: async (server) => {
-        const admin = await createAdmin(server);
-        const website = await createProject(admin, "WEB", "Website");
-        await createProject(admin, "DOCS", "Documents", website);
-        await createProject(admin, "OPS", "Operations");
-        await admin.dispose();
-      },
+test.use({
+  preparation: {
+    run: async (server) => {
+      const admin = await createAdmin(server);
+      const website = await createProject(admin, "WEB", "Website");
+      await createProject(admin, "DOCS", "Documents", website);
+      await createProject(admin, "OPS", "Operations");
+      await admin.dispose();
     },
-  });
+  },
+});
 
-  test("ux_7_4 a radio is an outlined circle, and the accent when it is chosen, in every theme", async ({
-    page,
-  }) => {
-    await signIn(page, ada);
-    const dialog = await openMove(page, addressInProject(paths.projectSettings, "DOCS"));
-    const chosen = dialog.getByRole("radio", { name: t("projects.picker-top") });
-    const radio = dialog.getByRole("radio", { name: /Operations/u });
-    await expect(chosen).toBeChecked();
-    await expect(radio).not.toBeChecked();
-    await inEveryLook(page, async (look) => {
-      await expect(radio, look).toHaveCSS("appearance", "none");
-      await expect(radio, look).toHaveCSS(
-        "border-top-color",
-        await resolved(page, "border-top-color", "var(--border-control)"),
-      );
-      await expect(radio, look).toHaveCSS(
-        "border-top-left-radius",
-        await resolved(page, "border-top-left-radius", "var(--r-pill)"),
-      );
-    });
-    await radio.check();
-    await inEveryLook(page, async (look) => {
-      await expect(radio, look).toHaveCSS(
-        "background-color",
-        await resolved(page, "background-color", "var(--accent)"),
-      );
-    });
+test("ux_7_4 a radio is an outlined circle, and the accent when it is chosen, in every theme", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  const dialog = await openMove(page, addressInProject(paths.projectSettings, "DOCS"));
+  const chosen = dialog.getByRole("radio", { name: t("projects.picker-top") });
+  const radio = dialog.getByRole("radio", { name: /Operations/u });
+  await expect(chosen).toBeChecked();
+  await expect(radio).not.toBeChecked();
+  await inEveryLook(page, async (look) => {
+    await expect(radio, look).toHaveCSS("appearance", "none");
+    await expect(radio, look).toHaveCSS(
+      "border-top-color",
+      await resolved(page, "border-top-color", "var(--border-control)"),
+    );
+    await expect(radio, look).toHaveCSS(
+      "border-top-left-radius",
+      await resolved(page, "border-top-left-radius", "var(--r-pill)"),
+    );
   });
+  await radio.check();
+  await inEveryLook(page, async (look) => {
+    await expect(radio, look).toHaveCSS(
+      "background-color",
+      await resolved(page, "background-color", "var(--accent)"),
+    );
+  });
+});
+
+test("ux_7_4 under forced colors a chosen radio is filled with Highlight", async ({ page }) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await signIn(page, ada);
+  const dialog = await openMove(page, addressInProject(paths.projectSettings, "DOCS"));
+  const chosen = dialog.getByRole("radio", { name: t("projects.picker-top") });
+  await expect(chosen).toBeChecked();
+  await expect(chosen).toHaveCSS(
+    "background-color",
+    await resolved(page, "background-color", "Highlight"),
+  );
 });
