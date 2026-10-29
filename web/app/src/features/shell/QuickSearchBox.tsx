@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Announce, IconButton, iconName, SearchField, partOf, part } from "@bugaboo/ui";
+import { Announce, Button, buttonLook, SearchField, partOf, part } from "@bugaboo/ui";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Autocomplete } from "react-aria-components";
 
@@ -49,7 +49,9 @@ export function QuickSearchBox() {
               onChange={setQuery}
             />
           </div>
-          <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
+          <Button look={buttonLook.quiet} onPress={closeOverlay}>
+            {t("common.close")}
+          </Button>
         </div>
         <QuickResults found={found} listKey={fresh} onOpen={open} />
         <Announce>

@@ -12530,7 +12530,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "invitations.link-help",
         "Bugaboo cannot send e-mail yet. Copy this link and send it to the person. It is shown only now.",
     ),
-    ("invitations.more", "Show more"),
+    ("invitations.more", "Show more invitations"),
     ("invitations.none", "There are no open invitations."),
     ("invitations.open", "Open invitations"),
     ("invitations.take-back", "Take back"),

@@ -667,6 +667,8 @@ mixin "control-box" {
 mixin "control-hint" {
     font-size "$fs-sm"
     color "$fg-muted"
+    // No single word alone on the last line of a hint or a label.
+    text-wrap pretty
 }
 
 // The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13,
@@ -3283,6 +3285,12 @@ part "fact" {
     border-bottom "$border-width solid $border-subtle"
 }
 
+// The last of the facts has no line under it: nothing follows it.
+part "fact:last-child" {
+    padding-bottom 0
+    border-bottom none
+}
+
 part "term" {
     color "$fg-muted"
     font-size "$fs-base"
@@ -3399,6 +3407,7 @@ part "card.heading" {
     line-height "$lh-snug"
     color "$fg"
     font-weight "$weight-bold"
+    text-wrap pretty
 }
 
 part "card.heading:focus" {

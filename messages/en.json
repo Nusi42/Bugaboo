@@ -399,7 +399,7 @@
   "invitations.take-back-title": "Take back the invitation for {email}?",
   "invitations.take-back-text": "The link stops working.",
   "invitations.taken-back": "The invitation is taken back.",
-  "invitations.more": "Show more",
+  "invitations.more": "Show more invitations",
   "sign-up-policy.title": "Signing up without an invitation",
   "sign-up-policy.intro": "When this is on, anyone who can open Bugaboo can ask for an account without being invited. It works only while e-mail is on, because the e-mail that lets them create the account goes to their address.",
   "sign-up-policy.switch": "Let people create their own account",
