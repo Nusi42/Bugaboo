@@ -1,4 +1,4 @@
-import { lengthInPixels } from "./css-length.ts";
+import { pixelsOf } from "./css-length.ts";
 import type { ListColumn } from "./list-columns.ts";
 import type { TokenName } from "./tokens.ts";
 
@@ -65,18 +65,6 @@ export function listTemplate(columns: readonly ListColumnSpec[], keyChars = 0): 
       return lengthOf(column);
     })
     .join(" ");
-}
-
-/**
- * The size in pixels of a length token of the theme file, as the page has it (the density and the
- * size of the text counted, and the sizes of a touch screen); none where there is no page.
- */
-export function pixelsOf(token: TokenName): number {
-  if (typeof document === "undefined") {
-    return 0;
-  }
-  const style = getComputedStyle(document.documentElement);
-  return lengthInPixels(`var(--${token})`, (name) => style.getPropertyValue(name));
 }
 
 /** The width in pixels of the tokens of a column added, as the page has them. */

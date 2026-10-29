@@ -3480,7 +3480,8 @@ optgroup {
   gap: var(--space-3);
 }
 
-[data-part="search-panel.actions"] {
+[data-part="search-panel.actions"],
+[data-part="bottom-sheet.actions"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3490,7 +3491,8 @@ optgroup {
 
 [data-part="window.footer-actions"] [data-part="button"][data-variant~="quiet"]:first-child,
 [data-part="confirm.actions"] [data-part="button"][data-variant~="quiet"]:first-child,
-[data-part="search-panel.actions"] [data-part="button"][data-variant~="quiet"]:first-child {
+[data-part="search-panel.actions"] [data-part="button"][data-variant~="quiet"]:first-child,
+[data-part="bottom-sheet.actions"] [data-part="button"][data-variant~="quiet"]:first-child {
   margin-inline-end: auto;
 }
 
@@ -3501,13 +3503,6 @@ optgroup {
 
 [data-part="overlay.modal"][data-variant~="full"] [data-part="confirm.actions"] {
   margin-top: auto;
-}
-
-[data-part="search-panel.actions"],
-[data-part="bottom-sheet.actions"] {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
 }
 
 [data-part="bottom-sheet.actions"] {
@@ -5794,7 +5789,6 @@ optgroup {
   box-sizing: border-box;
   width: var(--space-3);
   height: var(--space-3);
-  background: currentColor;
 }
 
 [data-part="field-text"] {
@@ -7152,4 +7146,43 @@ optgroup {
 [data-part="search-panel"] [data-part="search-suggestions"] {
   position: static;
   margin-block-start: var(--space-1);
+}
+
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="app-layout.main"]:has([data-part="list-scroll"]) {
+  overflow-y: hidden;
+}
+
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="app-layout.inner"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"] [data-part="card"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="card"]
+  > [data-part="stack"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="list-editor"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="list-editor.list"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="list-main"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="list-body"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="list-column"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="list-frame"]:has([data-part="list-scroll"]),
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="search-results"]:has([data-part="list-scroll"]) {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+[data-part="app-layout"][data-variant~="phone"] [data-part="list-scroll"] {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
 }

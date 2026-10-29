@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { doNothing } from "./do-nothing.ts";
-import { pixelsOf } from "./list-template.ts";
+import { pixelsOf } from "./css-length.ts";
 
 /** How a person changes the width of a column. */
 export interface ColumnResize {

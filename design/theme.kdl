@@ -3428,13 +3428,14 @@ part "confirm.actions" {
     use "answer-row"
 }
 
-// The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end.
-part "search-panel.actions" {
+// The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end;
+// the foot of a sheet from the bottom of a phone (the filters, the legend) is the same.
+part "search-panel.actions" "bottom-sheet.actions" {
     use "answer-row"
 }
 
 // The text buttons of an answer row stand on the start edge, the others at the end.
-part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" "search-panel.actions button[variant=quiet]:first-child" {
+part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" "search-panel.actions button[variant=quiet]:first-child" "bottom-sheet.actions button[variant=quiet]:first-child" {
     margin-inline-end auto
 }
 
@@ -3449,14 +3450,7 @@ part "overlay.modal[variant=full] confirm.actions" {
     margin-top auto
 }
 
-// The buttons at the foot of a panel or a sheet (the filters, the legend), at the end of their row.
-part "search-panel.actions" "bottom-sheet.actions" {
-    display flex
-    justify-content flex-end
-    gap "$space-2"
-}
-
-// The button that closes a sheet stays at the foot of it.
+// The foot of a sheet stays at the foot of it, whatever its content adds.
 part "bottom-sheet.actions" {
     flex none
     margin-block-start auto
@@ -5563,7 +5557,6 @@ part "label-mark" {
     box-sizing border-box
     width "$space-3"
     height "$space-3"
-    background currentColor
 }
 
 part "field-text" {
@@ -13322,3 +13315,23 @@ part "search-panel search-suggestions" {
     margin-block-start "$space-1"
 }
 
+// A phone has one scroller where the list is: the list. The page does not scroll, and every box between the page and the
+// list gives it the room that is left, so the list ends above the bar of the ticked issues and the navigation.
+part "app-layout[variant=phone] app-layout.main:has(list-scroll)" {
+    overflow-y hidden
+}
+
+part "app-layout[variant=phone] app-layout.inner:has(list-scroll)" "app-layout[variant=phone] card:has(list-scroll)" "app-layout[variant=phone] card > stack:has(list-scroll)" "app-layout[variant=phone] list-editor:has(list-scroll)" "app-layout[variant=phone] list-editor.list:has(list-scroll)" "app-layout[variant=phone] list-main:has(list-scroll)" "app-layout[variant=phone] list-body:has(list-scroll)" "app-layout[variant=phone] list-column:has(list-scroll)" "app-layout[variant=phone] list-frame:has(list-scroll)" "app-layout[variant=phone] search-results:has(list-scroll)" {
+    display flex
+    flex-direction column
+    flex-wrap nowrap
+    align-items stretch
+    flex "1 1 0"
+    min-height 0
+}
+
+part "app-layout[variant=phone] list-scroll" {
+    flex "1 1 0"
+    min-height 0
+    max-height none
+}

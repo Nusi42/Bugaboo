@@ -9,12 +9,6 @@ export interface CardProps {
   readonly heading: string;
   /** The level of the heading: 1 for the one card that is the whole page, 2 inside a page. */
   readonly level?: 1 | 2;
-  /**
-   * The heading is for screen readers only: the page already shows the same words where a person
-   * sees them. The one card that is the whole page (level 1) does so on a phone always: the top bar
-   * is its title, and a screen has one title (UX §7.3).
-   */
-  readonly headingHidden?: boolean;
   /** How the card looks besides the usual. */
   readonly look?: CardLook;
   /** What can be done with the whole card, at the end of its heading row: *Customize*. */
@@ -23,17 +17,11 @@ export interface CardProps {
 }
 
 /** A region of a page with a heading: a form, a list, a group of settings. */
-export function Card({
-  heading,
-  level = 2,
-  headingHidden = false,
-  look,
-  actions,
-  children,
-}: CardProps) {
+export function Card({ heading, level = 2, look, actions, children }: CardProps) {
   const headingId = useId();
   const phone = useLayout() === "phone";
-  const hidden = headingHidden || (level === 1 && phone);
+  // The one card that is the whole page (level 1) has its heading for screen readers only on a phone: the top bar is its title, and a screen has one title (UX §7.3).
+  const hidden = level === 1 && phone;
   const Heading = level === 1 ? "h1" : "h2";
   return (
     <section {...partOf(part.card, { variants: [look] })} aria-labelledby={headingId}>

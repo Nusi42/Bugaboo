@@ -45,30 +45,26 @@ export function toggleSidebar(): void {
   sidebar.replace({ ...sidebar.snapshot(), narrowed });
 }
 
-/** Narrows the sidebar while `active`: the focus view gives the open item most of the screen. */
-export function useNarrowSidebarWhile(active: boolean): void {
+/** Adds one to a count of the sidebar state while `active`, and takes it away again when it stops (or the screen goes). */
+function useCountWhile(name: "squeezed" | "focused", active: boolean): void {
   useEffect(() => {
     if (active) {
-      sidebar.replace({ ...sidebar.snapshot(), squeezed: sidebar.snapshot().squeezed + 1 });
+      sidebar.replace({ ...sidebar.snapshot(), [name]: sidebar.snapshot()[name] + 1 });
     }
     return () => {
       if (active) {
-        sidebar.replace({ ...sidebar.snapshot(), squeezed: sidebar.snapshot().squeezed - 1 });
+        sidebar.replace({ ...sidebar.snapshot(), [name]: sidebar.snapshot()[name] - 1 });
       }
     };
-  }, [active]);
+  }, [name, active]);
+}
+
+/** Narrows the sidebar while `active`: the focus view gives the open item most of the screen. */
+export function useNarrowSidebarWhile(active: boolean): void {
+  useCountWhile("squeezed", active);
 }
 
 /** Notes that a focus view is open while `active`, whatever the screen. */
 export function useFocusViewOpen(active: boolean): void {
-  useEffect(() => {
-    if (active) {
-      sidebar.replace({ ...sidebar.snapshot(), focused: sidebar.snapshot().focused + 1 });
-    }
-    return () => {
-      if (active) {
-        sidebar.replace({ ...sidebar.snapshot(), focused: sidebar.snapshot().focused - 1 });
-      }
-    };
-  }, [active]);
+  useCountWhile("focused", active);
 }

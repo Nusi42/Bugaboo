@@ -69,7 +69,8 @@ export {
   type ListFrameProps,
 } from "./ListColumns.tsx";
 export { RowBox, TableBox } from "./ListRoles.tsx";
-export { listNeeds, pixelsOf, type ListColumnSpec } from "./list-template.ts";
+export { pixelsOf } from "./css-length.ts";
+export { listNeeds, type ListColumnSpec } from "./list-template.ts";
 export type { ColumnResize } from "./use-column-resize.ts";
 export {
   ListGrid,

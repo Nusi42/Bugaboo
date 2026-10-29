@@ -1,3 +1,5 @@
+import type { TokenName } from "./tokens.ts";
+
 /** How a custom property is read: its written value, or nothing where it has none. */
 export type ReadProperty = (name: string) => string;
 
@@ -68,4 +70,17 @@ export function lengthInPixels(written: string, read: ReadProperty, depth = 0): 
     return { value: 0, rest: trimmed.replace(/^[^\s)*/+-]+/u, "") };
   };
   return sum(written).value;
+}
+
+/**
+ * The size in pixels of a length token of the theme file, as the page has it (the density and the
+ * size of the text counted, and the sizes of a touch screen); none where there is no page, as in a
+ * test of logic.
+ */
+export function pixelsOf(token: TokenName): number {
+  if (typeof document === "undefined") {
+    return 0;
+  }
+  const style = getComputedStyle(document.documentElement);
+  return lengthInPixels(`var(--${token})`, (name) => style.getPropertyValue(name));
 }
