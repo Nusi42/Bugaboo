@@ -90,6 +90,8 @@ async function tourOf(
   // Each theme starts from the same state: the places a person is signed in are the ones of this run only
   // (the page of the sessions would show one more with every theme), so the person signs out at its end.
   if (who !== "nobody") {
+    // From the start page, which has one *More* on a phone (a page of an issue has more than one).
+    await page.goto(paths.home);
     await signOut(page);
   }
   await context.close();

@@ -77,6 +77,11 @@ async function takeBackInvitationsOf(page: Page, email: string): Promise<void> {
     .first()
     .getByRole("button", { name: /^Take back/u })
     .click();
+  // The question that follows is answered with the same words.
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: t("invitations.take-back"), exact: true })
+    .click();
   await expect(rows).toHaveCount(before - 1);
   await takeBackInvitationsOf(page, email);
 }
