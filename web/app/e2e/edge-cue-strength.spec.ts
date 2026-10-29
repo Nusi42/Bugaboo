@@ -65,8 +65,7 @@ test("ux_5 the shadows at the ends of a scrolling box are clear in every theme",
 
 test("ux_5 the list of issues shades its end while rows remain, and not at its end", async ({
   page,
-}, testInfo) => {
-  test.skip(testInfo.project.name === "phone", "a phone scrolls the page, not the list");
+}) => {
   await signIn(page, sampleAdministrator());
   await page.goto(projectIssuesAddress("WEB"));
   const rows = partIn(page, "list-scroll");
@@ -74,11 +73,15 @@ test("ux_5 the list of issues shades its end while rows remain, and not at its e
   await expect.poll(() => shadowsOf(rows)).toEqual({ start: 0, end: 1 });
   // The list measures its rows as they come, so the end moves while it is scrolled: keep going to it.
   await expect
-    .poll(async () => {
-      await rows.evaluate((node) => {
-        node.scrollTop = node.scrollHeight;
-      });
-      return shadowsOf(rows);
-    })
+    .poll(
+      async () => {
+        await rows.evaluate((node) => {
+          node.scrollTop = node.scrollHeight;
+        });
+        return shadowsOf(rows);
+      },
+      // A phone loads the next rows as the end comes near, again and again, until there are no more.
+      { timeout: 60_000 },
+    )
     .toEqual({ start: 1, end: 0 });
 });
