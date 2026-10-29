@@ -4892,6 +4892,11 @@ part "list-editor.details" {
     gap "$space-2"
 }
 
+// In a row of columns the sign that the row opens stands at the end of the row, after the second column.
+part "list-editor.open[variant=columns] list-editor.details" {
+    justify-content space-between
+}
+
 part "list-editor.open[hovered]" {
     background "$bg-hover"
 }
