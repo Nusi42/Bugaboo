@@ -162,15 +162,20 @@ export async function expectVisibleTextInName(page: Page): Promise<void> {
   expect(mismatches).toEqual([]);
 }
 
+/** The open screen is accessible, does not scroll sideways, has nothing over anything and names what it shows. */
+async function expectGoodScreen(page: Page): Promise<void> {
+  await expectNoViolations(page);
+  await expectNoSidewaysScroll(page);
+  await expectNoOverlap(page);
+  await expectVisibleTextInName(page);
+}
+
 /** The open screen is accessible and does not scroll sideways, in every theme, picked as a person does. */
 export function expectGoodInEveryTheme(page: Page): Promise<void> {
   return inOrder(
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
-      await expectNoViolations(page);
-      await expectNoSidewaysScroll(page);
-      await expectNoOverlap(page);
-      await expectVisibleTextInName(page);
+      await expectGoodScreen(page);
     }),
   );
 }
@@ -180,10 +185,7 @@ export function expectGoodWithRingsInEveryTheme(page: Page): Promise<void> {
   return inOrder(
     themes.map((theme) => async () => {
       await chooseTheme(page, theme);
-      await expectNoViolations(page);
-      await expectNoSidewaysScroll(page);
-      await expectNoOverlap(page);
-      await expectVisibleTextInName(page);
+      await expectGoodScreen(page);
       await expectRingsWhole(page);
     }),
   );
@@ -194,10 +196,7 @@ export function expectGoodInEveryLook(page: Page): Promise<void> {
   return inOrder(
     themes.map((theme) => async () => {
       await putOnTheme(page, theme);
-      await expectNoViolations(page);
-      await expectNoSidewaysScroll(page);
-      await expectNoOverlap(page);
-      await expectVisibleTextInName(page);
+      await expectGoodScreen(page);
     }),
   );
 }
