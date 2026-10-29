@@ -45,7 +45,6 @@ function Questions({
         choices={kinds.map((each) => ({ value: each.kind, label: typeName(each.kind) }))}
         value={kind}
         onChange={setKind}
-        stacked
       />
       <p {...partOf(part.muted)}>{typeExample(kind)}</p>
       <ChoiceGroup
@@ -53,7 +52,6 @@ function Questions({
         choices={forChoices}
         value={appliesTo}
         onChange={setAppliesTo}
-        stacked
       />
     </>
   );

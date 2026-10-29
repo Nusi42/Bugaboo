@@ -1453,14 +1453,14 @@ part "choice-group.input:focus-visible + choice-group.label" "choice-group.input
     use "ring"
 }
 
-// Long words (how a connection is protected) stand under each other on a phone, as wide as the screen,
-// and not as ragged buttons side by side.
-part "app-layout[variant=phone] choice-group.choices[variant=stacked]" {
+// The choices stand side by side while they all fit on one line; when they do not (the component measures it) they stand
+// under each other, as wide as the room, and never as ragged buttons on two lines: one rule for every group.
+part "choice-group.choices[variant=stacked]" {
     flex-direction column
     align-items stretch
 }
 
-part "app-layout[variant=phone] choice-group.choices[variant=stacked] choice-group.label" {
+part "choice-group.choices[variant=stacked] choice-group.label" {
     flex 1
 }
 
