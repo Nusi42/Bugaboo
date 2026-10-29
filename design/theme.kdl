@@ -12857,11 +12857,11 @@ part "search-made-by" {
 }
 
 // The words and the buttons share one cell, so the buttons that are held (and not seen) take no
-// width from the words: they are one line on a phone too.
+// width from the words: they are one line on a phone too. The held height (the control height) holds
+// for words up to two lines long.
 part "search-made-by > muted" {
     grid-area "1 / 1"
     min-width 0
-    margin 0
 }
 
 part "search-made-by > search-held-actions" {

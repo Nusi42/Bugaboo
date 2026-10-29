@@ -63,11 +63,9 @@ test.use({
       // A search stored before D3, as migration 24 and the old language left it.
       storedBefore = await saveWithColumns(admin, "Stored before", "status group is not Done", [
         "id",
-        "assigned to",
+        "assignedTo",
       ]);
-      storeInOldSpelling(server, "Stored before", "statusGroup is not done", {
-        "assigned to": "assignedTo",
-      });
+      storeInOldSpelling(server, "Stored before", "statusGroup is not done");
       await admin.dispose();
     },
   },

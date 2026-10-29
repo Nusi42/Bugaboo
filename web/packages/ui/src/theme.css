@@ -6708,7 +6708,6 @@ optgroup {
 [data-part="search-made-by"] > [data-part="muted"] {
   grid-area: 1 / 1;
   min-width: 0;
-  margin: 0;
 }
 
 [data-part="search-made-by"] > [data-part="search-held-actions"] {
