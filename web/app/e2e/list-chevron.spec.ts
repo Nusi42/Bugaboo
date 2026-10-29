@@ -20,7 +20,7 @@ function chevronOf(row: Locator): Promise<{ count: number; fromEnd: number; alon
     const first = chevrons.item(0)?.getBoundingClientRect();
     let textBottom = 0;
     for (const word of node.querySelectorAll("span, a")) {
-      if (!word.querySelector("svg") && word.textContent !== "") {
+      if (!word.querySelector("svg.lucide-chevron-right") && word.textContent !== "") {
         textBottom = Math.max(textBottom, word.getBoundingClientRect().bottom);
       }
     }

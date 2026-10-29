@@ -8,6 +8,7 @@ import { type CodeApp, codeApp } from "./totp.ts";
 import { issueAddress, paths } from "../../src/shared/paths.ts";
 import { type ApiSession, sessionOver } from "./api.ts";
 import { places } from "../../src/shared/places.ts";
+import { itemArea } from "./windows.ts";
 
 /** Types the e-mail address and the password into the sign-in form that is open, and sends them. */
 export async function fillSignIn(
@@ -269,7 +270,7 @@ export async function keepOnDevice(
 export async function chooseGoHomeKeys(page: Page): Promise<void> {
   await page.goto(paths.shortcuts);
   await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
+  const panel = itemArea(page, t("shortcut.go-home"));
   await panel.getByRole("textbox", { name: t("shortcuts.new-keys"), exact: true }).click();
   await page.keyboard.press("g");
   await page.keyboard.press("i");
@@ -295,4 +296,5 @@ export async function serverKeptFollow(page: Page, method: "PUT" | "DELETE"): Pr
       response.request().method() === method && response.url().includes("/follow") && response.ok(),
   );
 }
-export { itemArea } from "./windows.ts";
+
+export { itemArea };

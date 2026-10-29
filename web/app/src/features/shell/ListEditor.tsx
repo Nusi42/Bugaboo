@@ -123,7 +123,9 @@ export function ListEditor({
         />
       </div>
       {open === undefined ? null : alone ? (
-        <ItemScreen name={open.name}>{open.editor}</ItemScreen>
+        <ItemScreen name={open.name} onClose={onClose}>
+          {open.editor}
+        </ItemScreen>
       ) : (
         <SidePanel title={open.name} onClose={onClose}>
           {open.editor}

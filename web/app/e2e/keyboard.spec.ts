@@ -5,6 +5,7 @@ import { shortcutDefinitions } from "../src/shared/shortcuts.ts";
 import { ada, forgetChoices, createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { itemArea } from "./support/windows.ts";
 import { addressEndingAt, signIn } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -80,7 +81,7 @@ test("ux_05 a shortcut does nothing while a text field has the focus", async ({ 
 async function openEditor(page: Page, name: string) {
   await page.goto(paths.shortcuts);
   await page.getByRole("button", { name, exact: true }).click();
-  return page.getByRole("complementary", { name, exact: true });
+  return itemArea(page, name);
 }
 
 test("ux_05 own keys replace the defaults: the new key works and the old one does not", async ({
@@ -134,10 +135,10 @@ test("ux_05 the shortcuts are searchable, and the open one is in the address", a
   await search.fill(t("shortcut.list-next"));
   await page.getByRole("button", { name: t("shortcut.list-next"), exact: true }).click();
   await expect(page).toHaveURL(/[?]edit=list-next$/u);
-  await expect(page.getByRole("complementary", { name: t("shortcut.list-next") })).toBeVisible();
+  await expect(itemArea(page, t("shortcut.list-next"))).toBeVisible();
   // An address with the shortcut in it opens the panel straight away.
   await page.goto(`${paths.shortcuts}?edit=go-home`);
-  await expect(page.getByRole("complementary", { name: t("shortcut.go-home") })).toBeVisible();
+  await expect(itemArea(page, t("shortcut.go-home"))).toBeVisible();
 });
 
 test("ux_05 the box for new keys has a visible label and its help text", async ({ page }) => {
