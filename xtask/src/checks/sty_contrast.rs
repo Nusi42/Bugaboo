@@ -90,12 +90,12 @@ fn hovered_findings(file: &ThemeFile) -> Vec<Finding> {
                         color(file, name, &theme.name)
                     }
                 };
-                let (Some(text), Some(fill)) = (pick(&rule.text), pick(&rule.on)) else {
+                let (Some(text), Some(under)) = (pick(&rule.text), pick(&rule.on)) else {
                     continue;
                 };
                 let ratio = ratio_of(
                     luminance_of(brighten(text, brightness)),
-                    luminance_of(brighten(fill, brightness)),
+                    luminance_of(brighten(under, brightness)),
                 );
                 if ratio < min {
                     findings.push(Finding::at(
