@@ -13,10 +13,45 @@ import { readSearch, searchLocation } from "./search-address.ts";
 const project = builtInView({ everywhere: false, spacing: "comfortable" });
 const everywhere = builtInView({ everywhere: true, spacing: "comfortable" });
 
+describe("the words of the old language in an address or a saved search (D3)", () => {
+  it("reads the words of the old language: an address or a saved search from before D3 still works", () => {
+    const state = readSearch({
+      pathname: "/p/WEB/issues",
+      search: { cols: "id,assignedTo,statusGroup", widths: "assignedTo:200", group: "statusGroup" },
+    });
+    expect(viewOf(state, project)).toMatchObject({
+      columns: ["id", "assigned to", "status group"],
+      widths: { "assigned to": 200 },
+      groupBy: "status group",
+    });
+    const saved = viewFromPresentation(
+      {
+        view: "list",
+        columns: [{ field: "reportedBy", width: 90 }],
+        spacing: "compact",
+        group_by: "statusGroup",
+      },
+      project,
+    );
+    expect(saved).toMatchObject({
+      columns: ["reported by"],
+      widths: { "reported by": 90 },
+      groupBy: "status group",
+    });
+  });
+});
+
 describe("the view of a list that the address and the defaults give (UX 2.1, 4.2)", () => {
   it("is the columns of UX 4.2, grouped by status group, for a project's list", () => {
-    expect(project.columns).toEqual(["status", "id", "title", "priority", "assignedTo", "changed"]);
-    expect(project.groupBy).toBe("statusGroup");
+    expect(project.columns).toEqual([
+      "status",
+      "id",
+      "title",
+      "priority",
+      "assigned to",
+      "changed",
+    ]);
+    expect(project.groupBy).toBe("status group");
     expect(project.spacing).toBe("comfortable");
     expect(project.widths).toEqual({});
   });

@@ -19,8 +19,10 @@ pub struct ReadableFields {
 /// One field that may stand in a search.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Field {
-    /// The word of the field: one word in lower camel case (`assignedTo`), or the name of an own
-    /// field made by [`own_field_word`].
+    /// The word of the field, as the glossary writes it in lower case (`assigned to`), or the name
+    /// of an own field made by [`own_field_word`]. A text may spell it in any case and with the
+    /// spaces run together (`assignedTo`, the form of the old language): see
+    /// [`ReadableFields::field`].
     pub word: String,
     /// What kind of values it holds.
     pub kind: FieldKind,
@@ -221,10 +223,15 @@ impl Field {
 }
 
 impl ReadableFields {
-    /// The field that has this word. The word is compared as written.
+    /// The field that has this word. A word is told from another by its letters alone
+    /// ([`bb_core::fields::word_key`]): `Status group`, `status group` and `statusGroup` are the
+    /// same field.
     #[must_use]
     pub fn field(&self, word: &str) -> Option<&Field> {
-        self.fields.iter().find(|field| field.word == word)
+        let wanted = bb_core::fields::word_key(word);
+        self.fields
+            .iter()
+            .find(|field| bb_core::fields::word_key(&field.word) == wanted)
     }
 
     /// Whether a `contains` on its own is a search for this person: it looks in the title and in
@@ -241,22 +248,12 @@ impl ReadableFields {
     }
 }
 
-/// The word of an own field, made from its name by one rule: a name of words and numbers becomes
-/// one word in lower camel case (`Story points` is `storyPoints`); any other name stays as it is
-/// and is written in quotes in a search.
+/// The word of an own field, made from its name by one rule: the name as it is told apart from
+/// other names (`bb_core::names::name_key`: lower case, the spaces squeezed), so `Story points` is
+/// `story points`. A name that is not made of plain words is written in quotes in a search.
 #[must_use]
 pub fn own_field_word(name: &str) -> String {
-    let parts: Vec<&str> = name.split_whitespace().collect();
-    let one_word = !parts.is_empty()
-        && parts
-            .iter()
-            .all(|part| part.chars().all(char::is_alphanumeric));
-    let camel = bb_core::fields::lower_camel(parts);
-    if one_word && camel.chars().next().is_some_and(char::is_alphabetic) {
-        camel
-    } else {
-        name.trim().to_owned()
-    }
+    bb_core::names::name_key(name)
 }
 
 /// The word of *yes* in a field that holds yes or no.
@@ -303,7 +300,7 @@ impl IssueField {
         match self {
             Self::Project => "project",
             Self::Type => "type",
-            Self::StatusGroup => "statusGroup",
+            Self::StatusGroup => "status group",
             Self::Parent => "parent",
             Self::Created => "created",
             Self::Changed => "changed",
@@ -373,20 +370,39 @@ mod tests {
 
     #[test]
     fn an_own_field_gets_a_word_from_its_name_by_one_rule() {
-        assert_eq!(own_field_word("Story points"), "storyPoints");
-        assert_eq!(own_field_word("  customer   ID "), "customerID");
+        assert_eq!(own_field_word("Story points"), "story points");
+        assert_eq!(own_field_word("  customer   ID "), "customer id");
         assert_eq!(own_field_word("Größe"), "größe");
-        assert_eq!(own_field_word("Due-date (2)"), "Due-date (2)");
-        assert_eq!(own_field_word("3D model"), "3D model");
+        assert_eq!(own_field_word("Due-date (2)"), "due-date (2)");
         assert_eq!(own_field_word(""), "");
+    }
+
+    #[test]
+    fn a_field_is_found_by_the_letters_of_its_word_alone() {
+        let readable = ReadableFields {
+            fields: vec![Field::new("status group", FieldKind::Choice)],
+        };
+        for typed in [
+            "status group",
+            "Status Group",
+            "statusGroup",
+            "STATUS  GROUP",
+        ] {
+            assert!(readable.field(typed).is_some(), "{typed}");
+        }
+        assert!(readable.field("status").is_none());
     }
 
     #[test]
     fn the_words_of_the_built_in_fields_are_all_different() {
         let mut words: Vec<String> = bb_core::fields::Field::ALL
             .iter()
-            .map(|field| field.search_word())
-            .chain(IssueField::ALL.iter().map(|each| each.word().to_owned()))
+            .map(|field| bb_core::fields::word_key(&field.search_word()))
+            .chain(
+                IssueField::ALL
+                    .iter()
+                    .map(|each| bb_core::fields::word_key(each.word())),
+            )
             .collect();
         let all = words.len();
         words.sort();

@@ -7,7 +7,7 @@
 //! person may not read it (QRY-05): the checker cannot tell the two apart, because readable fields
 //! only holds what the person may read.
 
-use bb_core::names::same_name;
+use bb_core::fields::word_key;
 use bb_core::text_words::{SearchWord, checked_words};
 
 use crate::fields::{Field, FieldKind, Operator, ReadableFields};
@@ -298,7 +298,7 @@ fn unknown_choice(field: &Field, value: &Operand, span: Span) -> Option<Mistake>
             || field
                 .choices
                 .iter()
-                .any(|choice| same_name(choice, &wanted)))
+                .any(|choice| word_key(choice) == word_key(&wanted)))
     {
         return None;
     }

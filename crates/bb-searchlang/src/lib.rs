@@ -18,6 +18,7 @@ mod duration;
 mod answer;
 #[cfg(feature = "browser")]
 mod browser;
+mod canon;
 mod checker;
 mod fields;
 mod lexer;
@@ -76,12 +77,18 @@ pub fn parse(text: &str) -> Result<Search, Mistake> {
 /// Reads the text of a search into its tree, and reads a value by its field: an Issue ID is read
 /// only where the field holds issues (`parent is web-142`), and a word that is written like one
 /// stays the text it is where it does not (`tag is re-test`). The server and the browser read a
-/// search this way before they check it.
+/// search this way before they check it. The fields and the values of fixed lists are put in the
+/// words the fields give (`status group is Done` for `statusGroup is done`, ADR-0005 amendment M5,
+/// decision 11).
 ///
 /// # Errors
 /// The first mistake of the text: where it is and what is wrong, in message keys.
 pub fn parse_with(text: &str, fields: &ReadableFields) -> Result<Search, Mistake> {
     parser::parse_for(text, Some(fields))
         .result
+        .map(|mut search| {
+            canon::put_in_words(&mut search, fields);
+            search
+        })
         .map_err(|error| Mistake::from(&error))
 }

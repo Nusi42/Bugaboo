@@ -36,7 +36,7 @@
         "choices": ["Open", "In progress", "Done"]
       },
       {
-        "word": "statusGroup",
+        "word": "status group",
         "kind": "choice",
         "operators": [
           "is",
@@ -65,7 +65,7 @@
           "is_empty",
           "is_not_empty"
         ],
-        "choices": ["lowest", "low", "normal", "high", "highest"]
+        "choices": ["Lowest", "Low", "Normal", "High", "Highest"]
       },
       {
         "word": "tag",
@@ -84,13 +84,13 @@
         "choices": []
       },
       {
-        "word": "assignedTo",
+        "word": "assigned to",
         "kind": "person",
         "operators": ["is", "is_not", "in", "member_of", "is_empty", "is_not_empty"],
         "choices": []
       },
       {
-        "word": "reportedBy",
+        "word": "reported by",
         "kind": "person",
         "operators": ["is", "is_not", "in", "member_of", "is_empty", "is_not_empty"],
         "choices": []
@@ -165,7 +165,7 @@
         "choices": []
       },
       {
-        "word": "storyPoints",
+        "word": "story points",
         "kind": "number",
         "operators": [
           "is",
@@ -180,7 +180,7 @@
         "choices": []
       },
       {
-        "word": "timeSpent",
+        "word": "time spent",
         "kind": "duration",
         "operators": [
           "is",
@@ -198,7 +198,7 @@
   },
   "cases": [
     {
-      "text": "project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first",
+      "text": "project within WEB and status group is not Done and assigned to is me and changed in last 7 days sort by priority, highest first",
       "answer": {
         "search": {
           "filter": {
@@ -235,7 +235,153 @@
               {
                 "type": "field",
                 "field": {
-                  "word": "statusGroup",
+                  "word": "status group",
+                  "span": {
+                    "start": 23,
+                    "end": 35
+                  }
+                },
+                "test": {
+                  "type": "is_not",
+                  "value": {
+                    "type": "text",
+                    "text": "Done",
+                    "span": {
+                      "start": 43,
+                      "end": 47
+                    }
+                  },
+                  "span": {
+                    "start": 36,
+                    "end": 47
+                  }
+                },
+                "span": {
+                  "start": 23,
+                  "end": 47
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "assigned to",
+                  "span": {
+                    "start": 52,
+                    "end": 63
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "me",
+                    "span": {
+                      "start": 67,
+                      "end": 69
+                    }
+                  },
+                  "span": {
+                    "start": 64,
+                    "end": 69
+                  }
+                },
+                "span": {
+                  "start": 52,
+                  "end": 69
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "changed",
+                  "span": {
+                    "start": 74,
+                    "end": 81
+                  }
+                },
+                "test": {
+                  "type": "in_last",
+                  "count": 7,
+                  "unit": "day",
+                  "span": {
+                    "start": 82,
+                    "end": 96
+                  }
+                },
+                "span": {
+                  "start": 74,
+                  "end": 96
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 96
+            }
+          },
+          "sort": [
+            {
+              "field": {
+                "word": "priority",
+                "span": {
+                  "start": 105,
+                  "end": 113
+                }
+              },
+              "direction": "highest_first",
+              "span": {
+                "start": 105,
+                "end": 128
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 128
+          }
+        },
+        "canonical": "project within WEB and status group is not Done and assigned to is me and changed in last 7 days sort by priority, highest first",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "project within WEB and statusGroup is not done and assignedTo is me and changed in last 7 days sort by priority, highest first",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "project",
+                  "span": {
+                    "start": 0,
+                    "end": 7
+                  }
+                },
+                "test": {
+                  "type": "within",
+                  "project": {
+                    "text": "WEB",
+                    "span": {
+                      "start": 15,
+                      "end": 18
+                    }
+                  },
+                  "span": {
+                    "start": 8,
+                    "end": 18
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 18
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "status group",
                   "span": {
                     "start": 23,
                     "end": 34
@@ -264,7 +410,7 @@
               {
                 "type": "field",
                 "field": {
-                  "word": "assignedTo",
+                  "word": "assigned to",
                   "span": {
                     "start": 51,
                     "end": 61
@@ -339,7 +485,398 @@
             "end": 126
           }
         },
-        "canonical": "project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first",
+        "canonical": "project within WEB and status group is not Done and assigned to is me and changed in last 7 days sort by priority, highest first",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "Status Group IS NOT \"in progress\" and PRIORITY is high",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "status group",
+                  "span": {
+                    "start": 0,
+                    "end": 12
+                  }
+                },
+                "test": {
+                  "type": "is_not",
+                  "value": {
+                    "type": "text",
+                    "text": "In progress",
+                    "span": {
+                      "start": 20,
+                      "end": 33
+                    }
+                  },
+                  "span": {
+                    "start": 13,
+                    "end": 33
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 33
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "priority",
+                  "span": {
+                    "start": 38,
+                    "end": 46
+                  }
+                },
+                "test": {
+                  "type": "is",
+                  "value": {
+                    "type": "text",
+                    "text": "High",
+                    "span": {
+                      "start": 50,
+                      "end": 54
+                    }
+                  },
+                  "span": {
+                    "start": 47,
+                    "end": 54
+                  }
+                },
+                "span": {
+                  "start": 38,
+                  "end": 54
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 54
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 54
+          }
+        },
+        "canonical": "status group is not \"In progress\" and priority is High",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "statusGroup in (inProgress, \"to do\") sort by assignedTo, timeSpent",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "status group",
+              "span": {
+                "start": 0,
+                "end": 11
+              }
+            },
+            "test": {
+              "type": "in",
+              "values": [
+                {
+                  "type": "text",
+                  "text": "In progress",
+                  "span": {
+                    "start": 16,
+                    "end": 26
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "To do",
+                  "span": {
+                    "start": 28,
+                    "end": 35
+                  }
+                }
+              ],
+              "span": {
+                "start": 12,
+                "end": 36
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 36
+            }
+          },
+          "sort": [
+            {
+              "field": {
+                "word": "assigned to",
+                "span": {
+                  "start": 45,
+                  "end": 55
+                }
+              },
+              "direction": null,
+              "span": {
+                "start": 45,
+                "end": 55
+              }
+            },
+            {
+              "field": {
+                "word": "time spent",
+                "span": {
+                  "start": 57,
+                  "end": 66
+                }
+              },
+              "direction": null,
+              "span": {
+                "start": 57,
+                "end": 66
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 66
+          }
+        },
+        "canonical": "status group in (\"In progress\", \"To do\") sort by assigned to, time spent",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "assigned to is empty and reported by is not empty sort by story points, A to Z",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "assigned to",
+                  "span": {
+                    "start": 0,
+                    "end": 11
+                  }
+                },
+                "test": {
+                  "type": "is_empty",
+                  "span": {
+                    "start": 12,
+                    "end": 20
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 20
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "reported by",
+                  "span": {
+                    "start": 25,
+                    "end": 36
+                  }
+                },
+                "test": {
+                  "type": "is_not_empty",
+                  "span": {
+                    "start": 37,
+                    "end": 49
+                  }
+                },
+                "span": {
+                  "start": 25,
+                  "end": 49
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 49
+            }
+          },
+          "sort": [
+            {
+              "field": {
+                "word": "story points",
+                "span": {
+                  "start": 58,
+                  "end": 70
+                }
+              },
+              "direction": "a_to_z",
+              "span": {
+                "start": 58,
+                "end": 78
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 78
+          }
+        },
+        "canonical": "assigned to is empty and reported by is not empty sort by story points, A to Z",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "time spent > 2 hours and story points > 5 sort by time spent, highest first",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "and",
+            "items": [
+              {
+                "type": "field",
+                "field": {
+                  "word": "time spent",
+                  "span": {
+                    "start": 0,
+                    "end": 10
+                  }
+                },
+                "test": {
+                  "type": "compare",
+                  "operator": "greater",
+                  "value": {
+                    "type": "duration",
+                    "minutes": 120,
+                    "span": {
+                      "start": 13,
+                      "end": 20
+                    }
+                  },
+                  "span": {
+                    "start": 11,
+                    "end": 20
+                  }
+                },
+                "span": {
+                  "start": 0,
+                  "end": 20
+                }
+              },
+              {
+                "type": "field",
+                "field": {
+                  "word": "story points",
+                  "span": {
+                    "start": 25,
+                    "end": 37
+                  }
+                },
+                "test": {
+                  "type": "compare",
+                  "operator": "greater",
+                  "value": {
+                    "type": "number",
+                    "number": {
+                      "value": 5,
+                      "scale": 0
+                    },
+                    "span": {
+                      "start": 40,
+                      "end": 41
+                    }
+                  },
+                  "span": {
+                    "start": 38,
+                    "end": 41
+                  }
+                },
+                "span": {
+                  "start": 25,
+                  "end": 41
+                }
+              }
+            ],
+            "span": {
+              "start": 0,
+              "end": 41
+            }
+          },
+          "sort": [
+            {
+              "field": {
+                "word": "time spent",
+                "span": {
+                  "start": 50,
+                  "end": 60
+                }
+              },
+              "direction": "highest_first",
+              "span": {
+                "start": 50,
+                "end": 75
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 75
+          }
+        },
+        "canonical": "time spent > 2 hours and story points > 5 sort by time spent, highest first",
+        "mistakes": []
+      }
+    },
+    {
+      "text": "\"story points\" > 5",
+      "answer": {
+        "search": {
+          "filter": {
+            "type": "field",
+            "field": {
+              "word": "story points",
+              "span": {
+                "start": 0,
+                "end": 14
+              }
+            },
+            "test": {
+              "type": "compare",
+              "operator": "greater",
+              "value": {
+                "type": "number",
+                "number": {
+                  "value": 5,
+                  "scale": 0
+                },
+                "span": {
+                  "start": 17,
+                  "end": 18
+                }
+              },
+              "span": {
+                "start": 15,
+                "end": 18
+              }
+            },
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "sort": [],
+          "span": {
+            "start": 0,
+            "end": 18
+          }
+        },
+        "canonical": "story points > 5",
         "mistakes": []
       }
     },
@@ -559,7 +1096,7 @@
               "operator": "greater_or_equal",
               "value": {
                 "type": "text",
-                "text": "high",
+                "text": "High",
                 "span": {
                   "start": 12,
                   "end": 16
@@ -581,7 +1118,7 @@
             "end": 16
           }
         },
-        "canonical": "priority >= high",
+        "canonical": "priority >= High",
         "mistakes": []
       }
     },
@@ -681,7 +1218,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "timeSpent",
+              "word": "time spent",
               "span": {
                 "start": 0,
                 "end": 9
@@ -714,7 +1251,7 @@
             "end": 19
           }
         },
-        "canonical": "timeSpent > 2 hours",
+        "canonical": "time spent > 2 hours",
         "mistakes": []
       }
     },
@@ -725,7 +1262,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "timeSpent",
+              "word": "time spent",
               "span": {
                 "start": 0,
                 "end": 9
@@ -758,7 +1295,7 @@
             "end": 30
           }
         },
-        "canonical": "timeSpent <= 1 hour 30 minutes",
+        "canonical": "time spent <= 1 hour 30 minutes",
         "mistakes": []
       }
     },
@@ -769,7 +1306,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "timeSpent",
+              "word": "time spent",
               "span": {
                 "start": 0,
                 "end": 9
@@ -801,7 +1338,7 @@
             "end": 23
           }
         },
-        "canonical": "timeSpent is 45 minutes",
+        "canonical": "time spent is 45 minutes",
         "mistakes": []
       }
     },
@@ -815,7 +1352,7 @@
               {
                 "type": "field",
                 "field": {
-                  "word": "timeSpent",
+                  "word": "time spent",
                   "span": {
                     "start": 0,
                     "end": 9
@@ -845,7 +1382,7 @@
               {
                 "type": "field",
                 "field": {
-                  "word": "timeSpent",
+                  "word": "time spent",
                   "span": {
                     "start": 27,
                     "end": 36
@@ -884,7 +1421,7 @@
             "end": 46
           }
         },
-        "canonical": "timeSpent < 1 hour 30 minutes and timeSpent >= 1 hour",
+        "canonical": "time spent < 1 hour 30 minutes and time spent >= 1 hour",
         "mistakes": []
       }
     },
@@ -895,7 +1432,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "timeSpent",
+              "word": "time spent",
               "span": {
                 "start": 0,
                 "end": 9
@@ -927,7 +1464,7 @@
             "end": 31
           }
         },
-        "canonical": "timeSpent is 3 hours 30 minutes",
+        "canonical": "time spent is 3 hours 30 minutes",
         "mistakes": []
       }
     },
@@ -1022,7 +1559,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "assignedTo",
+              "word": "assigned to",
               "span": {
                 "start": 0,
                 "end": 10
@@ -1053,7 +1590,7 @@
             "end": 30
           }
         },
-        "canonical": "assignedTo member of \"Backend\"",
+        "canonical": "assigned to member of \"Backend\"",
         "mistakes": []
       }
     },
@@ -1064,7 +1601,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "assignedTo",
+              "word": "assigned to",
               "span": {
                 "start": 0,
                 "end": 10
@@ -1088,7 +1625,7 @@
             "end": 19
           }
         },
-        "canonical": "assignedTo is empty",
+        "canonical": "assigned to is empty",
         "mistakes": []
       }
     },
@@ -1099,7 +1636,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "reportedBy",
+              "word": "reported by",
               "span": {
                 "start": 0,
                 "end": 10
@@ -1123,7 +1660,7 @@
             "end": 23
           }
         },
-        "canonical": "reportedBy is not empty",
+        "canonical": "reported by is not empty",
         "mistakes": []
       }
     },
@@ -1817,7 +2354,7 @@
                   "type": "is",
                   "value": {
                     "type": "text",
-                    "text": "high",
+                    "text": "High",
                     "span": {
                       "start": 50,
                       "end": 54
@@ -1860,7 +2397,7 @@
             "end": 70
           }
         },
-        "canonical": "(contains \"crash\" or contains \"save\") and priority is high sort by created",
+        "canonical": "(contains \"crash\" or contains \"save\") and priority is High sort by created",
         "mistakes": []
       }
     },
@@ -2159,7 +2696,7 @@
                       "type": "is",
                       "value": {
                         "type": "text",
-                        "text": "high",
+                        "text": "High",
                         "span": {
                           "start": 32,
                           "end": 36
@@ -2184,7 +2721,7 @@
               {
                 "type": "field",
                 "field": {
-                  "word": "assignedTo",
+                  "word": "assigned to",
                   "span": {
                     "start": 41,
                     "end": 51
@@ -2221,7 +2758,7 @@
             "end": 57
           }
         },
-        "canonical": "status is Open and priority is high or assignedTo is me",
+        "canonical": "status is Open and priority is High or assigned to is me",
         "mistakes": []
       }
     },
@@ -2274,7 +2811,7 @@
                   "type": "is",
                   "value": {
                     "type": "text",
-                    "text": "high",
+                    "text": "High",
                     "span": {
                       "start": 33,
                       "end": 37
@@ -2302,7 +2839,7 @@
             "end": 39
           }
         },
-        "canonical": "status is Open and priority is high",
+        "canonical": "status is Open and priority is High",
         "mistakes": []
       }
     },
@@ -2412,7 +2949,7 @@
                   "type": "is",
                   "value": {
                     "type": "text",
-                    "text": "high",
+                    "text": "High",
                     "span": {
                       "start": 32,
                       "end": 36
@@ -2431,7 +2968,7 @@
               {
                 "type": "field",
                 "field": {
-                  "word": "assignedTo",
+                  "word": "assigned to",
                   "span": {
                     "start": 41,
                     "end": 51
@@ -2468,7 +3005,7 @@
             "end": 58
           }
         },
-        "canonical": "status is Open and priority is high and assignedTo is me",
+        "canonical": "status is Open and priority is High and assigned to is me",
         "mistakes": []
       }
     },
@@ -2479,7 +3016,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "storyPoints",
+              "word": "story points",
               "span": {
                 "start": 0,
                 "end": 11
@@ -2512,7 +3049,7 @@
           "sort": [
             {
               "field": {
-                "word": "storyPoints",
+                "word": "story points",
                 "span": {
                   "start": 24,
                   "end": 35
@@ -2530,7 +3067,7 @@
             "end": 35
           }
         },
-        "canonical": "storyPoints > 5 sort by storyPoints",
+        "canonical": "story points > 5 sort by story points",
         "mistakes": []
       }
     },
@@ -3491,7 +4028,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "timeSpent",
+              "word": "time spent",
               "span": {
                 "start": 0,
                 "end": 9
@@ -3536,7 +4073,7 @@
             },
             "key": "search.mistake.wrong-duration",
             "args": {
-              "field": "timeSpent",
+              "field": "time spent",
               "hour": "hour",
               "hours": "hours",
               "minutes": "minutes"
@@ -3761,7 +4298,7 @@
           "filter": {
             "type": "field",
             "field": {
-              "word": "assignedTo",
+              "word": "assigned to",
               "span": {
                 "start": 0,
                 "end": 10
@@ -3805,7 +4342,7 @@
             },
             "key": "search.mistake.wrong-person",
             "args": {
-              "field": "assignedTo",
+              "field": "assigned to",
               "me": "me"
             },
             "suggestions": []
@@ -3973,10 +4510,12 @@
               "start": 10,
               "end": 10
             },
-            "key": "search.mistake.expected-in",
+            "key": "search.mistake.expected-operator",
             "args": {
+              "contains": "contains",
+              "field": "changed in",
               "in": "in",
-              "last": "last"
+              "is": "is"
             },
             "suggestions": []
           }
@@ -4147,20 +4686,53 @@
     {
       "text": "sort by priority, sideways first",
       "answer": {
-        "search": null,
+        "search": {
+          "filter": null,
+          "sort": [
+            {
+              "field": {
+                "word": "priority",
+                "span": {
+                  "start": 8,
+                  "end": 16
+                }
+              },
+              "direction": null,
+              "span": {
+                "start": 8,
+                "end": 16
+              }
+            },
+            {
+              "field": {
+                "word": "sideways first",
+                "span": {
+                  "start": 18,
+                  "end": 32
+                }
+              },
+              "direction": null,
+              "span": {
+                "start": 18,
+                "end": 32
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 32
+          }
+        },
         "canonical": null,
         "mistakes": [
           {
             "span": {
-              "start": 27,
+              "start": 18,
               "end": 32
             },
-            "key": "search.mistake.expected-continue",
+            "key": "search.mistake.unknown-field",
             "args": {
-              "and": "and",
-              "by": "by",
-              "or": "or",
-              "sort": "sort"
+              "field": "sideways first"
             },
             "suggestions": []
           }
@@ -4531,7 +5103,7 @@
           },
           {
             "type": "word",
-            "text": "statusGroup",
+            "text": "status group",
             "kind": "field"
           },
           {
@@ -4546,12 +5118,12 @@
           },
           {
             "type": "word",
-            "text": "assignedTo",
+            "text": "assigned to",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "reportedBy",
+            "text": "reported by",
             "kind": "field"
           },
           {
@@ -4581,12 +5153,12 @@
           },
           {
             "type": "word",
-            "text": "storyPoints",
+            "text": "story points",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "timeSpent",
+            "text": "time spent",
             "kind": "field"
           },
           {
@@ -4643,8 +5215,127 @@
         "items": [
           {
             "type": "word",
-            "text": "assignedTo",
+            "text": "assigned to",
             "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "assigned t",
+      "cursor": 10,
+      "suggestions": {
+        "replace": {
+          "start": 0,
+          "end": 10
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "assigned to",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status g",
+      "cursor": 8,
+      "suggestions": {
+        "replace": {
+          "start": 0,
+          "end": 8
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "status group",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status is Open and assigned ",
+      "cursor": 28,
+      "suggestions": {
+        "replace": {
+          "start": 28,
+          "end": 28
+        },
+        "items": []
+      }
+    },
+    {
+      "text": "status is Open sort by assigned t",
+      "cursor": 33,
+      "suggestions": {
+        "replace": {
+          "start": 23,
+          "end": 33
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "assigned to",
+            "kind": "field"
+          }
+        ]
+      }
+    },
+    {
+      "text": "status group ",
+      "cursor": 13,
+      "suggestions": {
+        "replace": {
+          "start": 13,
+          "end": 13
+        },
+        "items": [
+          {
+            "type": "word",
+            "text": "is",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is not",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "in",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "<",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": ">",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "<=",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": ">=",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is empty",
+            "kind": "operator"
+          },
+          {
+            "type": "word",
+            "text": "is not empty",
+            "kind": "operator"
           }
         ]
       }
@@ -4712,27 +5403,27 @@
           },
           {
             "type": "word",
-            "text": "lowest",
+            "text": "Lowest",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "low",
+            "text": "Low",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "normal",
+            "text": "Normal",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "high",
+            "text": "High",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "highest",
+            "text": "Highest",
             "kind": "value"
           }
         ]
@@ -4754,27 +5445,27 @@
           },
           {
             "type": "word",
-            "text": "lowest",
+            "text": "Lowest",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "low",
+            "text": "Low",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "normal",
+            "text": "Normal",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "high",
+            "text": "High",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "highest",
+            "text": "Highest",
             "kind": "value"
           }
         ]
@@ -4791,12 +5482,12 @@
         "items": [
           {
             "type": "word",
-            "text": "high",
+            "text": "High",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "highest",
+            "text": "Highest",
             "kind": "value"
           }
         ]
@@ -4813,12 +5504,12 @@
         "items": [
           {
             "type": "word",
-            "text": "high",
+            "text": "High",
             "kind": "value"
           },
           {
             "type": "word",
-            "text": "highest",
+            "text": "Highest",
             "kind": "value"
           }
         ]
@@ -5019,18 +5710,7 @@
           "start": 11,
           "end": 11
         },
-        "items": [
-          {
-            "type": "word",
-            "text": "last",
-            "kind": "operator"
-          },
-          {
-            "type": "word",
-            "text": "(",
-            "kind": "sign"
-          }
-        ]
+        "items": []
       }
     },
     {
@@ -5194,7 +5874,7 @@
           },
           {
             "type": "word",
-            "text": "statusGroup",
+            "text": "status group",
             "kind": "field"
           },
           {
@@ -5209,12 +5889,12 @@
           },
           {
             "type": "word",
-            "text": "assignedTo",
+            "text": "assigned to",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "reportedBy",
+            "text": "reported by",
             "kind": "field"
           },
           {
@@ -5244,12 +5924,12 @@
           },
           {
             "type": "word",
-            "text": "storyPoints",
+            "text": "story points",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "timeSpent",
+            "text": "time spent",
             "kind": "field"
           },
           {
@@ -5433,7 +6113,7 @@
           },
           {
             "type": "word",
-            "text": "statusGroup",
+            "text": "status group",
             "kind": "field"
           },
           {
@@ -5448,12 +6128,12 @@
           },
           {
             "type": "word",
-            "text": "assignedTo",
+            "text": "assigned to",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "reportedBy",
+            "text": "reported by",
             "kind": "field"
           },
           {
@@ -5483,12 +6163,12 @@
           },
           {
             "type": "word",
-            "text": "storyPoints",
+            "text": "story points",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "timeSpent",
+            "text": "time spent",
             "kind": "field"
           }
         ]
@@ -5600,7 +6280,7 @@
           },
           {
             "type": "word",
-            "text": "statusGroup",
+            "text": "status group",
             "kind": "field"
           },
           {
@@ -5615,12 +6295,12 @@
           },
           {
             "type": "word",
-            "text": "assignedTo",
+            "text": "assigned to",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "reportedBy",
+            "text": "reported by",
             "kind": "field"
           },
           {
@@ -5650,12 +6330,12 @@
           },
           {
             "type": "word",
-            "text": "storyPoints",
+            "text": "story points",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "timeSpent",
+            "text": "time spent",
             "kind": "field"
           }
         ]
@@ -5705,7 +6385,7 @@
         "items": [
           {
             "type": "word",
-            "text": "assignedTo",
+            "text": "assigned to",
             "kind": "field"
           }
         ]
@@ -5727,7 +6407,7 @@
           },
           {
             "type": "word",
-            "text": "statusGroup",
+            "text": "status group",
             "kind": "field"
           }
         ]
@@ -5764,7 +6444,7 @@
           },
           {
             "type": "word",
-            "text": "statusGroup",
+            "text": "status group",
             "kind": "field"
           },
           {
@@ -5779,12 +6459,12 @@
           },
           {
             "type": "word",
-            "text": "assignedTo",
+            "text": "assigned to",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "reportedBy",
+            "text": "reported by",
             "kind": "field"
           },
           {
@@ -5814,12 +6494,12 @@
           },
           {
             "type": "word",
-            "text": "storyPoints",
+            "text": "story points",
             "kind": "field"
           },
           {
             "type": "word",
-            "text": "timeSpent",
+            "text": "time spent",
             "kind": "field"
           },
           {

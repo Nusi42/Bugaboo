@@ -146,7 +146,7 @@ mod tests {
         let fields = bb_searchlang::readable_fields_from_json(&fields_json()).unwrap_or_default();
         let json = write_json(&bb_searchlang::suggest("assi", 4, &fields)).unwrap_or_default();
         let found: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
-        assert_eq!(found["items"][0]["text"], "assignedTo");
+        assert_eq!(found["items"][0]["text"], "assigned to");
     }
 
     #[test]
@@ -157,6 +157,6 @@ mod tests {
 
     #[test]
     fn qry_03_the_word_of_an_own_field_is_the_rule_of_the_language() {
-        assert_eq!(own_field_word("Story points"), "storyPoints");
+        assert_eq!(own_field_word("Story points"), "story points");
     }
 }
