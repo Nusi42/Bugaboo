@@ -3050,7 +3050,7 @@ part "window-layout.fields" {
 part "window-dock" {
     position fixed
     inset-inline-start "$space-4"
-    bottom 0
+    bottom "$space-3"
     z-index "$z-panel"
     box-sizing border-box
     display flex
@@ -3059,9 +3059,8 @@ part "window-dock" {
     min-height "$size-control"
     max-width "calc(100% - $space-4 * 2)"
     padding 0 "$pad-box"
-    border "$border-width solid $border"
-    border-bottom 0
-    border-radius "$r-card $r-card 0 0"
+    border "$border-width solid $border-control"
+    border-radius "$r-card"
     background "$bg-raised"
     box-shadow "$shadow"
     color "$fg"
@@ -3097,7 +3096,8 @@ part "window-dock.title" {
 }
 
 part "window-dock.note" {
-    use "quiet-text"
+    color "$fg"
+    font-size "$fs-base"
     white-space nowrap
 }
 
