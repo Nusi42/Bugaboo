@@ -607,6 +607,13 @@ mixin "control-box" {
     background "$bg-raised"
 }
 
+// The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13, muted).
+mixin "control-label" {
+    font-size "$fs-sm"
+    font-weight "$weight-regular"
+    color "$fg-muted"
+}
+
 // A box that is typed in: the field, the box that takes a key, the search box.
 mixin "input-box" {
     use "control-box"
@@ -1018,13 +1025,11 @@ part "field" {
 }
 
 part "field.label" {
-    font-size "$fs-md"
-    font-weight "$weight-regular"
-    color "$fg-muted"
+    use "control-label"
 }
 
 part "field.description" {
-    font-size "$fs-base"
+    font-size "$fs-sm"
     color "$fg-muted"
     line-height "$lh-body"
 }
@@ -1238,11 +1243,9 @@ part "choice-group" {
 }
 
 part "choice-group.legend" {
+    use "control-label"
     padding 0
-    margin-bottom "$space-2"
-    font-size "$fs-md"
-    font-weight "$weight-regular"
-    color "$fg"
+    margin-bottom "$space-1"
 }
 
 part "choice-group.choices" {
@@ -1267,13 +1270,14 @@ part "choice-group.input" {
 part "choice-group.label" {
     display inline-flex
     align-items center
+    box-sizing border-box
     min-height "$size-control"
     padding 0 "$space-4"
-    border "$border-width solid $border"
+    border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
     color "$fg"
-    font-size "$fs-md"
+    font-size "$fs-ui"
 }
 
 // The tile of the theme picker (a sample and a name) is chosen, pointed at and focused like a label.
@@ -1492,16 +1496,14 @@ part "picker" {
 }
 
 part "picker.legend[variant=list]" {
+    use "control-label"
     margin-block-end "$space-3"
     padding 0
-    font-weight "$weight-regular"
 }
 
 part "picker.legend[variant=boxed]" {
+    use "control-label"
     padding 0
-    font-size "$fs-md"
-    font-weight "$weight-regular"
-    color "$fg"
 }
 
 part "picker.options[variant=list]" {
@@ -4650,8 +4652,7 @@ part "issue-bar.item" {
 }
 
 part "key-capture-field.label" {
-    font-size "$fs-md"
-    font-weight "$weight-regular"
+    use "control-label"
 }
 
 part "key-capture-field.box" {
@@ -12335,9 +12336,8 @@ part "workflow-rules" {
 // The name of a group of rules is bold like the heading of a section, and starts where its hint
 // starts: a legend has a padding of its own that would push it 2 px in (the review of M4, B rules).
 part "workflow-rules.legend" {
+    use "control-label"
     padding 0
-    font-size "$fs-md"
-    font-weight "$weight-regular"
 }
 
 part "workflow-condition" {
@@ -12504,6 +12504,7 @@ part "search-filters" {
 // A filter: the button that changes it and the button that takes it away, in one outline.
 part "search-filter" {
     use "control-box"
+    font-size "$fs-ui"
     display inline-flex
     align-items center
     max-width "100%"
@@ -12513,6 +12514,7 @@ part "search-filter" {
 part "search-filter > button" {
     padding-inline-start "$space-3"
     border-color transparent
+    min-height "calc($size-control - $border-width * 2)"
 }
 
 // What opens over the page for the search: a window of the bar on a phone, the list of fields.

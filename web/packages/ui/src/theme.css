@@ -1025,13 +1025,13 @@ optgroup {
 }
 
 [data-part="field.label"] {
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   font-weight: var(--weight-regular);
   color: var(--fg-muted);
 }
 
 [data-part="field.description"] {
-  font-size: var(--fs-base);
+  font-size: var(--fs-sm);
   color: var(--fg-muted);
   line-height: var(--lh-body);
 }
@@ -1263,11 +1263,11 @@ optgroup {
 }
 
 [data-part="choice-group.legend"] {
-  padding: 0;
-  margin-bottom: var(--space-2);
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   font-weight: var(--weight-regular);
-  color: var(--fg);
+  color: var(--fg-muted);
+  padding: 0;
+  margin-bottom: var(--space-1);
 }
 
 [data-part="choice-group.choices"] {
@@ -1292,13 +1292,14 @@ optgroup {
 [data-part="choice-group.label"] {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
   min-height: var(--size-control);
   padding: 0 var(--space-4);
-  border: var(--border-width) solid var(--border);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   color: var(--fg);
-  font-size: var(--fs-md);
+  font-size: var(--fs-ui);
 }
 
 [data-part="theme-picker.tile"] {
@@ -1529,16 +1530,18 @@ optgroup {
 }
 
 [data-part="picker.legend"][data-variant~="list"] {
+  font-size: var(--fs-sm);
+  font-weight: var(--weight-regular);
+  color: var(--fg-muted);
   margin-block-end: var(--space-3);
   padding: 0;
-  font-weight: var(--weight-regular);
 }
 
 [data-part="picker.legend"][data-variant~="boxed"] {
-  padding: 0;
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   font-weight: var(--weight-regular);
-  color: var(--fg);
+  color: var(--fg-muted);
+  padding: 0;
 }
 
 [data-part="picker.options"][data-variant~="list"] {
@@ -4742,8 +4745,9 @@ optgroup {
 }
 
 [data-part="key-capture-field.label"] {
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   font-weight: var(--weight-regular);
+  color: var(--fg-muted);
 }
 
 [data-part="key-capture-field.box"] {
@@ -6011,9 +6015,10 @@ optgroup {
 }
 
 [data-part="workflow-rules.legend"] {
-  padding: 0;
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   font-weight: var(--weight-regular);
+  color: var(--fg-muted);
+  padding: 0;
 }
 
 [data-part="workflow-condition"] {
@@ -6188,6 +6193,7 @@ optgroup {
   border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
+  font-size: var(--fs-ui);
   display: inline-flex;
   align-items: center;
   max-width: 100%;
@@ -6196,6 +6202,7 @@ optgroup {
 [data-part="search-filter"] > [data-part="button"] {
   padding-inline-start: var(--space-3);
   border-color: transparent;
+  min-height: calc(var(--size-control) - var(--border-width) * 2);
 }
 
 [data-part="search-panel"] {
