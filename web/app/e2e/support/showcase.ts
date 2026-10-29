@@ -106,6 +106,9 @@ const withCrops: ReadonlySet<string> = new Set([
   "issue-team-member",
 ]);
 
+/** The tall screens a phone also gets the two windows' worth for: the page of an issue and its details (M5 exit, round 8). */
+const withPhoneCrops: ReadonlySet<string> = new Set(["issue", "issue-details"]);
+
 /** Waits until the browser has drawn what was just scrolled to, so a picture is never of an empty page. */
 function painted(page: Page): Promise<unknown> {
   return page.evaluate(
@@ -143,7 +146,8 @@ async function takeCrops(page: Page, shot: Shot): Promise<void> {
     );
     return;
   }
-  if (shot.device !== "computer" || !withCrops.has(shot.screen)) {
+  const crops = shot.device === "computer" ? withCrops : withPhoneCrops;
+  if (!crops.has(shot.screen)) {
     return;
   }
   const base = `${numbered(shot.order)}-${shot.screen}-${shot.device}`;

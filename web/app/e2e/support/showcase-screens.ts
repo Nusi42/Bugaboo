@@ -1,6 +1,7 @@
 import {
   at,
   atList,
+  atPanel,
   openCheckAccess,
   openInvitation,
   openPeople,
@@ -184,7 +185,7 @@ export const screens: readonly Screen[] = [
     "issue-panel",
     "administrator",
     "The issues of a project with one issue open in the side panel",
-    at(issuePanelAddress(undefined, ISSUE_PROJECT, ISSUE)),
+    atPanel(issuePanelAddress(undefined, ISSUE_PROJECT, ISSUE)),
   ),
   screen(
     "new-issue",

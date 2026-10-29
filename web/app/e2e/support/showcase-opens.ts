@@ -3,6 +3,7 @@ import { expect, type Page } from "@playwright/test";
 
 import { check } from "./access.ts";
 import { addressWith, sendPassword } from "./flows.ts";
+import { layoutOf } from "./layout.ts";
 import { openMove, tree } from "./projects.ts";
 import { sampleWithCodeApp } from "./sample.ts";
 import { PROJECT, showcaseNames, SUB_PROJECT, type ShowcaseIds } from "./showcase-sample.ts";
@@ -28,6 +29,17 @@ export function atList(address: string): Screen["open"] {
     await page.goto(address);
     await expectPage(page);
     await expect(page.locator("[data-part='list-row']").first()).toBeVisible();
+  };
+}
+
+/** The list with an issue open in the side panel: the picture waits for the count line of the list; a phone has no list beside the issue. */
+export function atPanel(address: string): Screen["open"] {
+  return async ({ page }) => {
+    await page.goto(address);
+    await expectPage(page);
+    if (layoutOf(page) !== "phone") {
+      await expect(page.getByText(/ shown$/u).first()).toBeVisible();
+    }
   };
 }
 
