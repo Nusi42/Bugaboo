@@ -20,8 +20,8 @@ const dateStyles = {
 } as const;
 
 /** A space that does not break the line, and a hyphen that does not (U+00A0, U+2011). */
-const NO_BREAK_SPACE = " ";
-const NO_BREAK_HYPHEN = "‑";
+const NO_BREAK_SPACE = "\u00A0";
+const NO_BREAK_HYPHEN = "\u2011";
 
 /**
  * Dates and times never wrap in the middle (UX review of M4, A4): a line breaks before a date,
