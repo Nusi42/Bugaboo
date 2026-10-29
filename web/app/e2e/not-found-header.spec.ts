@@ -1,26 +1,19 @@
 import { t } from "@bugaboo/messages";
 
-import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { partIn } from "./support/parts.ts";
+import { sampleTeamMember } from "./support/sample.ts";
+import { paths } from "../src/shared/paths.ts";
 
-// M5 exit, package O (O10): a page that does not exist is named so in the top bar, not by the place the
-// address was under (a hidden place must not be named).
+// M5 exit, package O (O10): a page that is hidden from a person is named "does not exist" in the top bar, not by the
+// place under it (a hidden place must not be named).
 
-test.use({
-  preparation: {
-    run: async (server) => {
-      await (await createAdmin(server)).dispose();
-    },
-  },
-});
+test.use({ sample: true });
 
-test("ux_3 the top bar of a page that does not exist does not name the place under it", async ({
-  page,
-}) => {
-  await signIn(page, ada);
-  await page.goto("/settings/no-such-topic");
+test("ux_3 the top bar of a hidden page does not name the place under it", async ({ page }) => {
+  await signIn(page, sampleTeamMember());
+  await page.goto(paths.people);
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
