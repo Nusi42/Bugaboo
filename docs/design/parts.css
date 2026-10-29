@@ -399,6 +399,26 @@ optgroup {
   text-decoration: none;
 }
 
+[data-part="link"][data-variant~="row"] {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+[data-part="link"][data-variant~="row"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+[data-part="link"][data-variant~="row"][data-focus-visible] {
+  outline: none;
+}
+
+[data-part="link"][data-variant~="row"][data-focus-visible]::after {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: calc(var(--ring-width) * -1);
+}
+
 [data-part="switch"] {
   display: flex;
   align-items: center;

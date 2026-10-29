@@ -1237,6 +1237,27 @@ part "link[current]" {
     text-decoration none
 }
 
+// The name of a row that opens a page: plain words like every other row, and the whole row is the link (its box
+// is the room of the row, which is the first thing above it that is placed).
+part "link[variant=row]" {
+    color "$fg"
+    text-decoration none
+}
+
+part "link[variant=row]::after" {
+    content "\"\""
+    position absolute
+    inset 0
+}
+
+part "link[variant=row][focus-visible]" {
+    outline none
+}
+
+part "link[variant=row][focus-visible]::after" {
+    use "ring-inside"
+}
+
 // ───────────── Switch ─────────────
 
 part "switch" {
@@ -3163,6 +3184,7 @@ part "list[variant=loose]" {
 // What several screens share: an item of a list, facts, a heading, a hint.
 
 part "item" {
+    position relative
     display flex
     flex-wrap wrap
     align-items center

@@ -29,7 +29,9 @@ export function FieldsPage() {
                 {page.fields.map((field) => (
                   <li key={field.id} {...partOf(part.item)}>
                     <span {...partOf(part.rowMain)}>
-                      <Link href={fieldAddress(field.id)}>{field.name}</Link>
+                      <Link row href={fieldAddress(field.id)}>
+                        {field.name}
+                      </Link>
                       <span {...partOf(part.muted)}>{detailsOf(field)}</span>
                     </span>
                     <RowChevron />

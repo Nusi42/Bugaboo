@@ -26,7 +26,9 @@ function SubProjectList({ project }: { readonly project: string }) {
         {linesOf(list.data?.pages).map((line) => (
           <li key={line.id} {...partOf(part.item, { variants: ["spread", "wrap"] })}>
             <span {...partOf(part.rowMain)}>
-              <Link href={projectAddress(line.shortName)}>{line.name}</Link>
+              <Link row href={projectAddress(line.shortName)}>
+                {line.name}
+              </Link>
               <span {...partOf(part.muted)}>{line.shortName}</span>
             </span>
             <RowChevron />

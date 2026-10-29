@@ -13,14 +13,16 @@ export interface LinkProps {
   readonly children: ReactNode;
   /** The link to the page that is open now, as in a menu. */
   readonly current?: boolean;
+  /** The name of a row that opens a page: plain words, and the whole row is the link. */
+  readonly row?: boolean;
 }
 
 /** A link. With a `RouterProvider` above it, links to pages of the app do not reload the page. */
-export function Link({ href, children, current = false }: LinkProps) {
+export function Link({ href, children, current = false, row = false }: LinkProps) {
   return (
     <AriaLink
       href={href}
-      {...partOf(part.link)}
+      {...partOf(part.link, { variants: [row && "row"] })}
       {...(current ? { "aria-current": currentPage } : {})}
     >
       {children}

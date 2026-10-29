@@ -20,7 +20,9 @@ export function Groups({ line }: { readonly line: PersonLine }) {
           {line.groups.map((group) => (
             <li key={group.id} {...partOf(part.item)}>
               <span {...partOf(part.rowMain)}>
-                <Link href={groupAddress(group.id)}>{group.name}</Link>
+                <Link row href={groupAddress(group.id)}>
+                  {group.name}
+                </Link>
               </span>
               <RowChevron />
             </li>

@@ -17,7 +17,9 @@ export function RoleList() {
         {lines.map((role) => (
           <li key={role.id} {...partOf(part.item)}>
             <span {...partOf(part.rowMain)}>
-              <Link href={roleAddress(role.id)}>{role.name}</Link>
+              <Link row href={roleAddress(role.id)}>
+                {role.name}
+              </Link>
               <span {...partOf(part.muted)}>
                 {detailsText(
                   [
