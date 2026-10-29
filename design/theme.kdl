@@ -2938,6 +2938,14 @@ part "item[variant=slim]" {
     padding "$space-1 $space-3"
 }
 
+// An item that is a name and a line of facts (a field): on a phone the facts stand under the name in every row,
+// not beside it in the rows where they fit and under it where they do not (M5 exit, O9).
+part "app-layout[variant=phone] item[variant=named]" {
+    flex-direction column
+    align-items flex-start
+    justify-content center
+}
+
 part "item[variant=wrap]" {
     overflow-wrap anywhere
 }
@@ -4854,6 +4862,15 @@ part "list-editor.open" {
 part "list-editor.open[variant=columns]" {
     display grid
     grid-template-columns "minmax(0, 1fr) minmax(0, 1.5fr)"
+}
+
+// The same on a phone for the rows of a list that opens its items (labels, groups of labels): the name, and under it
+// what is said about it.
+part "app-layout[variant=phone] list-editor.open" {
+    flex-direction column
+    align-items flex-start
+    justify-content center
+    padding-block "$space-2"
 }
 
 part "list-editor.name" {

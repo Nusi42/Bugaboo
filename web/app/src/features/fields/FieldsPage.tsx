@@ -27,7 +27,7 @@ export function FieldsPage() {
             ) : (
               <ul {...partOf(part.list)} aria-label={t("fields.list")}>
                 {page.fields.map((field) => (
-                  <li key={field.id} {...partOf(part.item)}>
+                  <li key={field.id} {...partOf(part.item, { variants: ["named"] })}>
                     <Link href={fieldAddress(field.id)}>{field.name}</Link>
                     <span {...partOf(part.muted)}>{detailsOf(field)}</span>
                   </li>

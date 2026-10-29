@@ -3006,6 +3006,12 @@ optgroup {
   padding: var(--space-1) var(--space-3);
 }
 
+[data-part="app-layout"][data-variant~="phone"] [data-part="item"][data-variant~="named"] {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 [data-part="item"][data-variant~="wrap"] {
   overflow-wrap: anywhere;
 }
@@ -5074,6 +5080,13 @@ optgroup {
 [data-part="list-editor.open"][data-variant~="columns"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+}
+
+[data-part="app-layout"][data-variant~="phone"] [data-part="list-editor.open"] {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding-block: var(--space-2);
 }
 
 [data-part="list-editor.name"] {

@@ -903,7 +903,7 @@ export const partWords = {
   text: { variant: [], state: [] },
   row: { variant: ["stretch"], state: [] },
   list: { variant: ["loose", "tight", "inset", "snug"], state: [] },
-  item: { variant: ["spread", "slim", "wrap"], state: [] },
+  item: { variant: ["spread", "slim", "named", "wrap"], state: [] },
   "item.text": { variant: [], state: [] },
   "item.main": { variant: [], state: [] },
   "item.title": { variant: [], state: [] },
