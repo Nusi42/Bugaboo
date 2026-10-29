@@ -2,7 +2,10 @@ import { pixelsOf } from "@bugaboo/ui";
 
 import { staysColumns, cellOf, type ColumnCell } from "../../shared/list-columns.ts";
 
-/** The least width, in pixels, each kind of column is drawn at (the template of the list says how it shrinks to it). */
+/**
+ * The width, in pixels, each kind of column needs to show its name and its words whole. A column of
+ * a field that has no such room is dropped (see `columnsThatFit`) before it is squeezed to a stump.
+ */
 const leastOf: Readonly<Record<ColumnCell, () => number>> = {
   status: () => pixelsOf("size-col-icon"),
   key: () => pixelsOf("size-col-key"),
@@ -10,11 +13,11 @@ const leastOf: Readonly<Record<ColumnCell, () => number>> = {
   title: () => (pixelsOf("size-col-title") * 4) / 3,
   priority: () => pixelsOf("size-col-priority") + pixelsOf("size-icon-small"),
   type: () => pixelsOf("size-col-project"),
-  labels: () => pixelsOf("size-col-least"),
-  person: () => pixelsOf("size-col-least"),
-  project: () => pixelsOf("size-col-least"),
-  value: () => pixelsOf("size-col-least"),
-  changed: () => pixelsOf("size-col-least"),
+  labels: () => pixelsOf("size-col-labels"),
+  person: () => pixelsOf("size-col-person"),
+  project: () => pixelsOf("size-col-project"),
+  value: () => pixelsOf("size-col-value"),
+  changed: () => pixelsOf("size-col-changed"),
 };
 
 /** The widths the list needs at the least for these columns: the tick box, the columns, the gaps, the edge and the padding. */
