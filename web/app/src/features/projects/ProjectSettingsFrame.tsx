@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import { SettingsScreens, TopicList } from "../shell/index.ts";
 import { projectTopics } from "./settings-tabs.ts";
-import { useShowsSettingsMenu } from "./use-settings-menu.ts";
+import { hasSettingsMenu, useShowsSettingsMenu } from "./use-settings-menu.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /**
@@ -27,7 +27,11 @@ export function ProjectSettingsFrame({
     <SettingsScreens
       heading={t("projects.settings-title", { name: project.project.name })}
       label={t("projects.tabs")}
-      menu={topics.length < 2 ? undefined : <TopicList topics={topics} pathname={pathname} />}
+      menu={
+        hasSettingsMenu(topics.length) ? (
+          <TopicList topics={topics} pathname={pathname} />
+        ) : undefined
+      }
       onMenu={onMenu}
     >
       <div {...partOf(part.stack)}>{children}</div>
