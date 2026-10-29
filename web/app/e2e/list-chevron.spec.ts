@@ -12,7 +12,7 @@ test.use({ sample: true });
 test("ux_5 the rows of the lists that open an item have a chevron", async ({ page }) => {
   await signIn(page, sampleAdministrator());
   await inOrder(
-    [paths.groups, paths.labels, paths.issueTypes, paths.relationKinds].map(
+    [paths.groups, paths.labels, paths.issueTypes, paths.relationKinds, paths.projects].map(
       (address) => async () => {
         await page.goto(address);
         const row = partIn(page, "list-editor.open").first();
