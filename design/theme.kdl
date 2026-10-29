@@ -2053,7 +2053,7 @@ part "list-row" {
     min-height "$size-row"
     padding 0 "$pad-box"
     border-inline-start "$size-edge solid transparent"
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
     background "$bg-raised"
     color "$fg"
     font-size "$fs-ui"
@@ -2304,8 +2304,8 @@ part "list-group" {
     margin-block-start "$space-2"
     padding 0 "$pad-box"
     border-inline-start "$size-edge solid transparent"
-    border-top "$border-width solid $border"
-    border-bottom "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
+    border-bottom "$border-width solid $divider"
     background "$bg-surface"
     font-size "$fs-md"
     font-weight "$weight-regular"
@@ -2419,7 +2419,7 @@ part "list-scroll" {
     padding-block-end "$space-3"
     max-height "$size-list-scroll"
     overflow auto
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
 }
 
 // The head is as wide as its columns at their least need and at least the frame (the code measures it and gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
@@ -2897,7 +2897,7 @@ part "window.title-bar" {
     flex none
     align-items stretch
     min-height "$size-control"
-    border-bottom "$border-width solid $border"
+    border-bottom "$border-width solid $divider"
     border-radius "$r-card $r-card 0 0"
     background "$bg-surface"
 }
@@ -3008,7 +3008,7 @@ part "window.footer" {
     flex-direction column
     gap "$space-3"
     padding "$pad-box $pad-dialog"
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
 }
 
 part "window.footer-note" {
@@ -3335,7 +3335,7 @@ part "facts" {
 part "fact" {
     use "column-wrap"
     padding-bottom "$space-3"
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
 }
 
 // The last of the facts has no line under it: nothing follows it.
@@ -3489,7 +3489,7 @@ part "or-divider" {
 part "or-divider::before" "or-divider::after" {
     content "\"\""
     flex 1
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
 }
 
 // The words that say whether the last change reached the server. Its own part: a change of the
@@ -3787,7 +3787,7 @@ part "access.matrix-cell" {
     }
     padding "$space-2 $space-3"
     scroll-snap-align start
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
     text-align start
     vertical-align top
 }
@@ -3929,7 +3929,7 @@ part "people.person" {
     position relative
     justify-content center
     padding-inline-end "calc($space-3 + $size-icon-small + $space-2)"
-    border-bottom "$border-width solid $border-subtle"
+    border-bottom "$border-width solid $divider"
 }
 
 part "people.person-text" {
@@ -4421,7 +4421,7 @@ part "shell.footer" {
     // No wider than the card above it: the choices of theme wrap there as they do on a phone.
     max-width "$size-form"
     padding-top "$space-4"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
 }
 
 part "app-layout" {
@@ -4582,7 +4582,7 @@ part "sidebar.person" {
     gap "$space-1"
     width "100%"
     padding-top "$space-3"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
 }
 
 part "sidebar.who" {
@@ -4645,7 +4645,7 @@ part "nav-item.tooltip" {
 }
 
 part "bottom-bar" {
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
     background "$bg-surface"
     padding-bottom "env(safe-area-inset-bottom)"
 }
@@ -4704,7 +4704,7 @@ part "top-bar" {
     top 0
     z-index "$z-sticky"
     use "phone-bar"
-    border-bottom "$border-width solid $border"
+    border-bottom "$border-width solid $divider"
 }
 
 part "top-bar.crumbs" {
@@ -5255,7 +5255,7 @@ part "issue-bar" {
     display flex
     gap "$space-2"
     padding "$space-2"
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
     background "$bg-raised"
 }
 
@@ -5612,7 +5612,7 @@ base "[data-part=markdown] th" "[data-part=markdown] td" {
 
 base "[data-part=markdown] hr" {
     border 0
-    border-top "$border-width solid $border"
+    border-top "$border-width solid $divider"
 }
 
 base "[data-part=markdown] img" {
@@ -12608,7 +12608,7 @@ part "tabs" {
     display flex
     flex-wrap wrap
     gap "$space-1"
-    border-bottom "$border-width solid $border"
+    border-bottom "$border-width solid $divider"
 }
 
 part "tab" {
@@ -12904,7 +12904,7 @@ part "workflow-change" {
     align-items end
     gap "$space-2" "$space-3"
     padding "$space-3 0"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
 }
 
 part "app-layout[variant=phone] workflow-change" {
@@ -13586,7 +13586,7 @@ part "nav-subgroup" {
 part "nav-subheading" {
     margin 0
     padding "$space-3 $space-3 $space-1"
-    border-top "$border-width solid $border-subtle"
+    border-top "$border-width solid $divider"
     color "$fg-muted"
     font-size "$fs-sm"
     font-weight "$weight-regular"
