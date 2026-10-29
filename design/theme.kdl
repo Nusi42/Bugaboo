@@ -1323,7 +1323,7 @@ part "choice-group.label" {
     align-items center
     box-sizing border-box
     min-height "$size-control"
-    padding 0 "$space-4"
+    padding 0 "$pad-control"
     border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"

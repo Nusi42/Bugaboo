@@ -551,7 +551,7 @@ optgroup {
   align-items: center;
   box-sizing: border-box;
   min-height: var(--size-control);
-  padding: 0 var(--space-4);
+  padding: 0 var(--pad-control);
   border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);

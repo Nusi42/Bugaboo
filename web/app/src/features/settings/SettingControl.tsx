@@ -104,7 +104,7 @@ export function SettingControl({ setting, onChange, help }: SettingControlProps)
         choices={choices}
         value={value}
         onChange={onChange}
-        stacked
+        stacked={choices.length > 2}
       />
     ) : (
       <SelectField
