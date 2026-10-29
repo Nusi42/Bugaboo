@@ -3302,6 +3302,10 @@ optgroup {
   outline: none;
 }
 
+[data-part="app-layout"]:has([data-part="window-dock"]) [data-part="app-layout.main"] {
+  padding-block-end: calc(var(--space-4) + var(--size-control));
+}
+
 [data-part="app-layout.inner"] {
   width: 100%;
   max-width: var(--size-page);

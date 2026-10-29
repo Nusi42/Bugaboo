@@ -3961,6 +3961,12 @@ part "app-layout.main:focus" {
     outline none
 }
 
+// While a window is minimized to its bar at the bottom of the page, the page has room for the bar at its end, so
+// the bar covers no row of a list (M5 exit, O7).
+part "app-layout:has(window-dock) app-layout.main" {
+    padding-block-end "calc($space-4 + $size-control)"
+}
+
 part "app-layout.inner" {
     use "page-column"
     display flex
