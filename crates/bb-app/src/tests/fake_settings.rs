@@ -174,7 +174,7 @@ impl SettingsStore for FakeStore {
     ) -> Result<(), FakeError> {
         let key = definition.key();
         if !locked {
-            // A row that only held the lock at the standard value goes away on unlocking.
+            // A row that only held the lock at the default value goes away on unlocking.
             let standard = definition.default().to_value();
             tx.state.settings.retain(|row| {
                 !(row.scope == Scope::Organization && row.key == key && row.value == standard)

@@ -3241,7 +3241,7 @@ export interface paths {
     put: operations["changeOrganizationSetting"];
     post?: never;
     /**
-     * *Reset to default* for the organization: takes its value away, so the standard value counts
+     * *Reset to default* for the organization: takes its value away, so the default value counts
      *     again. Needs the permission *Change organization settings*.
      */
     delete: operations["resetOrganizationSetting"];
@@ -7701,7 +7701,7 @@ export interface components {
       bounds?: components["schemas"]["BoundsBody"] | null;
       /** @description For a setting with a fixed list: the values it can have. */
       choices: components["schemas"]["ChoiceBody"][];
-      /** @description The standard value. */
+      /** @description The default value. */
       default: components["schemas"]["ValueBody"];
       /** @description For text: what kind of text. */
       format: components["schemas"]["SettingFormat"];

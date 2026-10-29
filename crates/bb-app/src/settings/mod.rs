@@ -118,7 +118,7 @@ pub struct LockSetting {
 /// Where the value that counts comes from, as the person who asks may know it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SettingSource {
-    /// Nobody set it: the standard value.
+    /// Nobody set it: the default value.
     Default,
     /// The organization set it.
     Organization,
@@ -138,7 +138,7 @@ pub struct SettingView {
     /// Where it comes from.
     pub source: SettingSource,
     /// Whether this scope has a value of its own, which *Reset to default* takes away. A lock
-    /// that holds the standard value is no value of its own.
+    /// that holds the default value is no value of its own.
     pub own: bool,
     /// On the organization's scope: whether the value is locked, which administrators can change.
     /// On a lower scope: whether the organization's lock is in effect, so the value is read only.
@@ -592,7 +592,7 @@ fn moves_the_mail_server(
 
 /// *Reset to default*: takes the value of a setting on one scope away. A scope that has no value
 /// of its own is left alone, and no event is written. On the organization's scope a lock stays:
-/// the standard value is stored, still locked, and unlocking is [`lock_setting`].
+/// the default value is stored, still locked, and unlocking is [`lock_setting`].
 ///
 /// # Errors
 /// The same as [`change_setting`], except that a locked setting can be reset: the value that is
@@ -657,7 +657,7 @@ pub async fn reset_setting<S: AuthStore>(
 }
 
 /// Locks the organization's value of a setting, or unlocks it. A setting that has no value of the
-/// organization is locked at its standard value, which is not a value of its own (*Reset to
+/// organization is locked at its default value, which is not a value of its own (*Reset to
 /// default* still has nothing to take away); unlocking one that is not locked changes nothing.
 ///
 /// # Errors

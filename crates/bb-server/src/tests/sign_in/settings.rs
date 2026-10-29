@@ -276,7 +276,7 @@ async fn cfg_06_resetting_a_locked_organization_value_keeps_the_lock() -> TestRe
         change(&rig, ada, SettingsScope::Organization, NOTE, text("org")).await?;
         lock(&rig, ada, NOTE, true).await?;
         let back = reset(&rig, ada, SettingsScope::Organization, NOTE).await?;
-        // The standard value counts, still locked; there is nothing of its own left to reset.
+        // The default value counts, still locked; there is nothing of its own left to reset.
         assert_eq!(
             (back.value, back.locked, back.own),
             (text("none"), true, false)
@@ -341,7 +341,7 @@ async fn cfg_06_reset_to_default_removes_only_that_layer() -> TestResult {
         );
         let organization = one(&rig, ada, SettingsScope::Organization, NOTE, None).await?;
         assert_eq!((organization.value, organization.own), (text("org"), true));
-        // The organization's reset is the standard value.
+        // The organization's reset is the default value.
         let standard = reset(&rig, ada, SettingsScope::Organization, NOTE).await?;
         assert_eq!(
             (standard.value, standard.source),

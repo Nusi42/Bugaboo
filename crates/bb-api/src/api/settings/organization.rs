@@ -68,7 +68,7 @@ pub(super) async fn change_organization_setting(
     .await
 }
 
-/// *Reset to default* for the organization: takes its value away, so the standard value counts
+/// *Reset to default* for the organization: takes its value away, so the default value counts
 /// again. Needs the permission *Change organization settings*.
 #[utoipa::path(
     delete,

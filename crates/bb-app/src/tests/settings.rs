@@ -395,7 +395,7 @@ async fn cfg_06_reset_of_an_organization_value_keeps_the_lock_until_it_is_unlock
     change(&world, SettingsScope::Organization, key, text("dark")).await?;
     lock(&world, key, true).await?;
     let view = reset(&world, SettingsScope::Organization, key).await?;
-    // The standard value counts, still locked, and there is nothing of its own to reset again.
+    // The default value counts, still locked, and there is nothing of its own to reset again.
     assert_eq!(
         (view.value, view.locked, view.own),
         (text("device"), true, false)
