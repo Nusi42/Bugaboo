@@ -22,6 +22,15 @@ export function at(address: string | ((ids: ShowcaseIds) => string)): Screen["op
   };
 }
 
+/** A screen that is a page of issues at an address: the picture is taken when the list has its first rows, not before the data came. */
+export function atList(address: string): Screen["open"] {
+  return async ({ page }) => {
+    await page.goto(address);
+    await expectPage(page);
+    await expect(page.locator("[data-part='list-row']").first()).toBeVisible();
+  };
+}
+
 /** Signs in as a person with a code app: the second step of signing in then asks for its code. */
 export async function secondStep({ page }: Needs): Promise<void> {
   await sendPassword(page, sampleWithCodeApp().person);

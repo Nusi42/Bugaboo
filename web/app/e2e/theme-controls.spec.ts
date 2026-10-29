@@ -3,7 +3,7 @@ import { type Locator, type Page } from "@playwright/test";
 import { expect, test } from "./support/fixtures.ts";
 import { layoutOf } from "./support/layout.ts";
 import { openList, prepareLook } from "./support/list-look.ts";
-import { openSearch } from "./support/search-bar.ts";
+import { openBar, openSearch } from "./support/search-bar.ts";
 import { partIn } from "./support/parts.ts";
 import { inOrder } from "./support/sequence.ts";
 import { inEveryLook, resolved } from "./support/styles.ts";
@@ -79,6 +79,8 @@ test("ux_7_3 every label above a control is the one muted color and size, in eve
   page,
 }) => {
   await openList(page);
+  // On a phone Group by and Spacing are in the sheet of the filters (M5 exit D2).
+  await openBar(page);
   const options = partIn(page, "list-options");
   const group = partIn(options, "field.label");
   const spacing = partIn(options, "choice-group.legend");
@@ -97,6 +99,8 @@ test("ux_7_3 the segment that is not chosen has the edge of a control, in every 
   page,
 }) => {
   await openList(page);
+  // On a phone Group by and Spacing are in the sheet of the filters (M5 exit D2).
+  await openBar(page);
   const segments = partIn(partIn(page, "list-options"), "choice-group.label");
   const unchosen = segments.filter({ hasText: /compact/iu });
   await inEveryLook(page, async (look) => {

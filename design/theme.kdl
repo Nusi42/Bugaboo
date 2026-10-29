@@ -1943,6 +1943,8 @@ part "list-row:hover" {
 // it keeps its tint and has no ring of its own.
 part "list-row[state=selected]" {
     border-bottom-color "$accent"
+    // The clear outline is drawn only under forced colors, which drop the accent line: there a ticked row has its outline.
+    use "ring-clear"
 }
 
 // The issue that is open next to the list is ringed inside its edge, so it never relies on the fill alone.
@@ -3821,10 +3823,11 @@ part "selected-bar" {
     gap "$space-2"
 }
 
+// Pinned to the bottom edge of the window with no gap under it: a gap would show a cut half row of the list below the bar.
 part "selected-bar[state=active]" {
     use "floating-box"
     position sticky
-    inset-block-end "$space-3"
+    inset-block-end 0
     z-index "$z-sticky"
     padding "$space-2" "$space-3"
     margin-block-start "$space-3"
@@ -5196,7 +5199,7 @@ part "shortcut-list.alternative" {
 
 part "shortcuts-page.intro" {
     margin 0
-    color "$fg-muted"
+    color "$fg"
     line-height "$lh-body"
 }
 

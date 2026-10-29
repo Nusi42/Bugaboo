@@ -2002,6 +2002,8 @@ optgroup {
 
 [data-part="list-row"][data-state~="selected"] {
   border-bottom-color: var(--accent);
+  outline: var(--ring-width) solid transparent;
+  outline-offset: calc(var(--ring-width) * -1);
 }
 
 [data-part="list-row"][data-state~="current"],
@@ -5424,7 +5426,7 @@ optgroup {
 
 [data-part="shortcuts-page.intro"] {
   margin: 0;
-  color: var(--fg-muted);
+  color: var(--fg);
   line-height: var(--lh-body);
 }
 
