@@ -3500,6 +3500,7 @@ part "confirm.body confirm.title" {
 // A line above the answers, so what scrolls above them ends at a line and not at the buttons.
 part "confirm.actions" {
     use "answer-row"
+    margin-top "calc(-1 * $space-2)"
     padding-top "$space-3"
     border-top "$border-width solid $border-subtle"
 }
@@ -3516,14 +3517,10 @@ part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions 
 }
 
 // On a phone the question starts at the top and its answers are at the bottom, one under the
-// other and as wide as the screen, the main one first (the thumb reaches it).
+// other and as wide as the screen, the main one first (the thumb reaches it); the body takes the room between.
 part "overlay.modal[variant=full] confirm.dialog" {
     flex 1
     min-height 0
-}
-
-part "overlay.modal[variant=full] confirm.actions" {
-    margin-top auto
 }
 
 // The foot of a sheet stays at the foot of it, whatever its content adds.

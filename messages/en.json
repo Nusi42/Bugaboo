@@ -1225,7 +1225,7 @@
   "assignments.intro-project": "The people and groups with a role here. A row that comes from a parent project says so; change it for this project by giving a row here. No access hides this project and its sub-projects, whatever role comes from above.",
   "assignments.list": "Who has which role",
   "assignments.none": "Nobody has a role here yet.",
-  "assignments.more": "Show more",
+  "assignments.more": "Show more rows",
   "assignments.who-group": "Group {name}",
   "assignments.remove": "Take away",
   "assignments.remove-name": "Take away {what} from {who}",
