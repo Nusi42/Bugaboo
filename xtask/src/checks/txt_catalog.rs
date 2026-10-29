@@ -199,10 +199,12 @@ fn read_locale(
         if message.trim().is_empty() {
             problems.push(Finding::at(path, format!("`{key}` has no text.")));
         }
-        if message.contains(" & ") {
+        if message.contains('&') {
             problems.push(Finding::at(
                 path,
-                format!("`{key}` writes & between words; the texts say and (plain language, the glossary)."),
+                format!(
+                    "`{key}` writes an ampersand; the texts say and (plain language, the glossary)."
+                ),
             ));
         }
         if key.starts_with("setting.")
@@ -461,11 +463,15 @@ mod tests {
     #[test]
     fn a_message_says_and_never_an_ampersand() {
         let locales = [locale(
-            r#"{"nav.a": "Roles & permissions", "nav.b": "Roles and permissions"}"#,
+            r#"{"nav.a": "Roles & permissions", "nav.b": "Roles and permissions", "nav.c": "R&D"}"#,
         )];
         let code = [source("web/a.ts", r#"t("nav.a"); t("nav.b")"#)];
         let text = messages(&evaluate(&locales, &code, &[]));
-        assert!(text.contains("`nav.a`") && text.contains("and"), "{text}");
+        assert!(
+            text.contains("`nav.a` writes an ampersand; the texts say and"),
+            "{text}"
+        );
+        assert!(text.contains("`nav.c`"), "{text}");
         assert!(!text.contains("`nav.b`"), "{text}");
     }
 
