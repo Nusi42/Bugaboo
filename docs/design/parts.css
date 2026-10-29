@@ -4173,9 +4173,9 @@ optgroup {
 }
 
 [data-part="nav-item.by"] {
-  display: inline-block;
-  margin-inline-start: var(--space-1);
-  white-space: nowrap;
+  display: block;
+  font-size: var(--doc-font-12);
+  color: var(--fg-muted);
 }
 
 [data-part="nav-item.tooltip"] {

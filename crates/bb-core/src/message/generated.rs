@@ -10030,11 +10030,11 @@ pub fn search_project_list_use(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `search.saved-by`.
+/// The message `search.saved-by-spoken`.
 #[must_use]
-pub fn search_saved_by(person: impl std::fmt::Display) -> Message {
+pub fn search_saved_by_spoken(person: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("search.saved-by"),
+        MessageKey::new("search.saved-by-spoken"),
         vec![("person", Value::Text(person.to_string()))],
     )
 }
@@ -14715,7 +14715,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.save-text",
         "Give the search a name. It keeps the filters and how the results are shown. At first only you can see it.",
     ),
-    ("search.saved-by", "· {person}"),
+    ("search.saved-by-spoken", ", {person}"),
     ("search.saved-heading", "Saved searches"),
     ("search.saved-mine", "Mine"),
     ("search.saved-shared", "Shared with me"),

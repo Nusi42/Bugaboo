@@ -42,7 +42,10 @@ function SavedList({
               icon={iconName.search}
               label={saved.name}
               {...(which === savedSet.shared
-                ? { by: t("search.saved-by", { person: personName(saved.maker) }) }
+                ? {
+                    by: personName(saved.maker),
+                    bySpoken: t("search.saved-by-spoken", { person: personName(saved.maker) }),
+                  }
                 : {})}
               href={savedSearchAddress(saved.id)}
               current={pathname === savedSearchAddress(saved.id)}

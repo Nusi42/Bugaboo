@@ -14,8 +14,10 @@ interface ItemProps {
   readonly narrow?: boolean;
   /** A number after the words, such as the notifications not read yet. Nothing for none. */
   readonly count?: string | undefined;
-  /** Who it is by, after the label on the same line, kept in one piece (a saved search that somebody shared). */
+  /** Who it is by, on a second line under the label (a saved search that somebody shared). */
   readonly by?: string | undefined;
+  /** What a screen reader says after the label for it ("Questions, Ada Brandt"), the separator included. */
+  readonly bySpoken?: string | undefined;
   /** The item opens a page of its own (a menu that is the page): the chevron at its end says so. */
   readonly opens?: boolean;
 }
@@ -27,6 +29,7 @@ function Content({
   narrow,
   count,
   by,
+  bySpoken,
   opens = false,
   hint,
 }: ItemProps & { readonly hint?: ReactNode }) {
@@ -38,7 +41,14 @@ function Content({
       ) : (
         <span {...partOf(part.navItemLabel)}>
           {label}
-          {by === undefined ? null : <span {...partOf(part.navItemBy)}>{by}</span>}
+          {by === undefined ? null : (
+            <>
+              <span aria-hidden {...partOf(part.navItemBy)}>
+                {by}
+              </span>
+              <span {...partOf(part.visuallyHidden)}>{bySpoken}</span>
+            </>
+          )}
         </span>
       )}
       {count === undefined ? null : <span {...partOf(part.navItemCount)}>{count}</span>}
@@ -91,6 +101,7 @@ export function NavLink({
   current = false,
   count,
   by,
+  bySpoken,
   opens = false,
   onNavigate,
 }: NavLinkProps) {
@@ -102,7 +113,15 @@ export function NavLink({
         {...(current ? { "aria-current": currentPage } : {})}
         {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
       >
-        <Content icon={icon} label={label} narrow={narrow} count={count} by={by} opens={opens} />
+        <Content
+          icon={icon}
+          label={label}
+          narrow={narrow}
+          count={count}
+          by={by}
+          bySpoken={bySpoken}
+          opens={opens}
+        />
       </Link>
     </WithTooltip>
   );
