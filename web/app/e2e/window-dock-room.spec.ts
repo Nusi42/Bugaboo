@@ -36,4 +36,6 @@ test("ux_8 the bar of a minimized window covers no row at the end of the list", 
   const dock = await boxOf(windowDock(page));
   const content = await boxOf(page.locator("[data-part='app-layout.inner']"));
   expect(content.y + content.height).toBeLessThanOrEqual(dock.y + 0.5);
+  // And it stands inside the frame of the page, never across the border of the card behind it.
+  expect(dock.x).toBeGreaterThanOrEqual(content.x + 8);
 });

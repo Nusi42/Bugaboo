@@ -209,7 +209,9 @@ tokens {
     size "size-bar-ticked" "40dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
-    // A row of the people list as tall as a name and four lines of small text need: the box of the list is five of them.
+    // A row of the people list as tall as a name and three lines of small text need: the box of the list is five of them.
+    // How far the bar of a minimized window stands above the bottom edge; the page leaves the same room under its end.
+    size "size-dock-gap" "$space-3"
     size "size-person-row" "calc(2 * $space-2 + 2 * $space-1 + $fs-md * $lh-body + 3 * $fs-base * $lh-body + $border-width)"
     size "size-list-tall" "calc($size-list * 2)"
     // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
@@ -3062,15 +3064,15 @@ part "window-layout.fields" {
 // A window that is minimized is a bar at the bottom of the page with its title and what it keeps.
 part "window-dock" {
     position fixed
-    inset-inline-start "$space-4"
-    bottom "$space-3"
+    inset-inline-start "calc($space-4 * 2)"
+    bottom "$size-dock-gap"
     z-index "$z-panel"
     box-sizing border-box
     display flex
     align-items center
     gap "$space-3"
     min-height "$size-control"
-    max-width "calc(100% - $space-4 * 2)"
+    max-width "calc(100% - $space-4 * 4)"
     padding 0 "$pad-box"
     border "$border-width solid $border-control"
     border-radius "$r-card"
@@ -3084,13 +3086,15 @@ part "window-dock" {
 
 // On a computer the dock stands in the main area, after the menu, so it never covers it.
 part "app-layout[variant=side] window-dock" {
-    inset-inline-start "calc($size-sidebar + $space-4)"
-    max-width "calc(100% - $size-sidebar - $space-4 * 2)"
+    // Inside the column of the page, a little in from the frame of its card: the page column is centered where the
+    // room is wider than it.
+    inset-inline-start "calc($size-sidebar + max($space-4, (100% - $size-sidebar - $size-page) / 2) + $space-4)"
+    max-width "calc(100% - $size-sidebar - $space-4 * 4)"
 }
 
 part "app-layout[variant=side-narrow] window-dock" {
-    inset-inline-start "calc($size-sidebar-narrow + $space-4)"
-    max-width "calc(100% - $size-sidebar-narrow - $space-4 * 2)"
+    inset-inline-start "calc($size-sidebar-narrow + max($space-4, (100% - $size-sidebar-narrow - $size-page) / 2) + $space-4)"
+    max-width "calc(100% - $size-sidebar-narrow - $space-4 * 4)"
 }
 
 part "window-dock[hovered]" {
@@ -4357,7 +4361,7 @@ part "app-layout.main:focus" {
 // While a window is minimized to its bar at the bottom of the page, the page has room for the bar at its end, so
 // the bar covers no row of a list (M5 exit, O7).
 part "app-layout:has(window-dock) app-layout.main" {
-    padding-block-end "calc($space-4 + $space-3 + $size-control)"
+    padding-block-end "calc($space-4 + $size-dock-gap + $size-control)"
 }
 
 part "app-layout.inner" {

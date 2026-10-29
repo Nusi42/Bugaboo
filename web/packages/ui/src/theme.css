@@ -104,6 +104,7 @@
   --size-bar-sheet: 80dvh;
   --size-bar-ticked: 40dvh;
   --size-matrix-cell: calc(var(--size-control) * 4);
+  --size-dock-gap: var(--space-3);
   --size-person-row: calc(
     2 * var(--space-2) + 2 * var(--space-1) + var(--fs-md) * var(--lh-body) + 3 * var(--fs-base) *
       var(--lh-body) + var(--border-width)
@@ -3108,15 +3109,15 @@ optgroup {
 
 [data-part="window-dock"] {
   position: fixed;
-  inset-inline-start: var(--space-4);
-  bottom: var(--space-3);
+  inset-inline-start: calc(var(--space-4) * 2);
+  bottom: var(--size-dock-gap);
   z-index: var(--z-panel);
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   min-height: var(--size-control);
-  max-width: calc(100% - var(--space-4) * 2);
+  max-width: calc(100% - var(--space-4) * 4);
   padding: 0 var(--pad-box);
   border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-card);
@@ -3129,13 +3130,20 @@ optgroup {
 }
 
 [data-part="app-layout"][data-variant~="side"] [data-part="window-dock"] {
-  inset-inline-start: calc(var(--size-sidebar) + var(--space-4));
-  max-width: calc(100% - var(--size-sidebar) - var(--space-4) * 2);
+  inset-inline-start: calc(
+    var(--size-sidebar) + max(var(--space-4), (100% - var(--size-sidebar) - var(--size-page)) / 2) +
+      var(--space-4)
+  );
+  max-width: calc(100% - var(--size-sidebar) - var(--space-4) * 4);
 }
 
 [data-part="app-layout"][data-variant~="side-narrow"] [data-part="window-dock"] {
-  inset-inline-start: calc(var(--size-sidebar-narrow) + var(--space-4));
-  max-width: calc(100% - var(--size-sidebar-narrow) - var(--space-4) * 2);
+  inset-inline-start: calc(
+    var(--size-sidebar-narrow) +
+      max(var(--space-4), (100% - var(--size-sidebar-narrow) - var(--size-page)) / 2) +
+      var(--space-4)
+  );
+  max-width: calc(100% - var(--size-sidebar-narrow) - var(--space-4) * 4);
 }
 
 [data-part="window-dock"][data-hovered] {
@@ -4465,7 +4473,7 @@ optgroup {
 }
 
 [data-part="app-layout"]:has([data-part="window-dock"]) [data-part="app-layout.main"] {
-  padding-block-end: calc(var(--space-4) + var(--space-3) + var(--size-control));
+  padding-block-end: calc(var(--space-4) + var(--size-dock-gap) + var(--size-control));
 }
 
 [data-part="app-layout.inner"] {
