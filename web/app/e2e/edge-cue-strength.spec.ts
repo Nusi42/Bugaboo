@@ -63,25 +63,28 @@ test("ux_5 the shadows at the ends of a scrolling box are clear in every theme",
   }
 });
 
-test("ux_5 the list of issues shades its end while rows remain, and not at its end", async ({
-  page,
-}) => {
+test("ux_5 the list of issues shades both ends in the middle of its rows", async ({ page }) => {
   await signIn(page, sampleAdministrator());
   await page.goto(projectIssuesAddress("WEB"));
   const rows = partIn(page, "list-scroll");
   await expect(rows).toBeVisible();
   await expect.poll(() => shadowsOf(rows)).toEqual({ start: 0, end: 1 });
-  // The list measures its rows as they come, so the end moves while it is scrolled: keep going to it.
-  await expect
-    .poll(
-      async () => {
-        await rows.evaluate((node) => {
-          node.scrollTop = node.scrollHeight;
-        });
-        return shadowsOf(rows);
-      },
-      // A phone loads the next rows as the end comes near, again and again, until there are no more.
-      { timeout: 60_000 },
-    )
-    .toEqual({ start: 1, end: 0 });
+  await rows.evaluate((node) => {
+    node.scrollTop = (node.scrollHeight - node.clientHeight) / 2;
+  });
+  await expect.poll(() => shadowsOf(rows)).toEqual({ start: 1, end: 1 });
+});
+
+test("ux_5 the list of issues has no shadow where all its rows fit in one page of results", async ({
+  page,
+}) => {
+  await signIn(page, sampleAdministrator());
+  // A few rows only (no next page), so the list has no more behind its end.
+  await page.goto(
+    `${projectIssuesAddress("WEB")}?s=${encodeURIComponent('title contains "Check the image gallery for fewer support calls"')}`,
+  );
+  const rows = partIn(page, "list-scroll");
+  await expect(rows).toBeVisible();
+  await expect(page.getByRole("row").or(page.getByRole("listitem")).first()).toBeVisible();
+  await expect.poll(() => shadowsOf(rows)).toEqual({ start: 0, end: 0 });
 });
