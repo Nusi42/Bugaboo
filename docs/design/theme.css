@@ -153,6 +153,8 @@
   --accent: #5b3fd9;
   --accent-soft: #eeeafd;
   --accent-fg: #4a2fc4;
+  --disabled-fill: #d7dbe1;
+  --on-disabled: #4d5461;
   --on-accent: #ffffff;
   --danger: #c62f2f;
   --danger-soft: #fdecec;
@@ -217,6 +219,8 @@
     --accent: #a495ff;
     --accent-soft: #37325a;
     --accent-fg: #c2b8ff;
+    --disabled-fill: #434955;
+    --on-disabled: #c0c6d1;
     --on-accent: #1a1530;
     --danger: #ff8a80;
     --danger-soft: #4a2a2c;
@@ -281,6 +285,8 @@
   --accent: #a495ff;
   --accent-soft: #37325a;
   --accent-fg: #c2b8ff;
+  --disabled-fill: #434955;
+  --on-disabled: #c0c6d1;
   --on-accent: #1a1530;
   --danger: #ff8a80;
   --danger-soft: #4a2a2c;
@@ -345,6 +351,8 @@
   --accent: #5b3fd9;
   --accent-soft: #eeeafd;
   --accent-fg: #4a2fc4;
+  --disabled-fill: #d7dbe1;
+  --on-disabled: #4d5461;
   --on-accent: #ffffff;
   --danger: #c62f2f;
   --danger-soft: #fdecec;
@@ -409,6 +417,8 @@
   --accent: #2f5d8a;
   --accent-soft: #e4ecf4;
   --accent-fg: #284f75;
+  --disabled-fill: #d9d0c2;
+  --on-disabled: #564e45;
   --on-accent: #ffffff;
   --danger: #b23a2e;
   --danger-soft: #f8e6e1;
@@ -473,6 +483,8 @@
   --accent: #a495ff;
   --accent-soft: #37325a;
   --accent-fg: #c2b8ff;
+  --disabled-fill: #434955;
+  --on-disabled: #c0c6d1;
   --on-accent: #1a1530;
   --danger: #ff8a80;
   --danger-soft: #4a2a2c;
@@ -537,6 +549,8 @@
   --accent: #9483ff;
   --accent-soft: #221d47;
   --accent-fg: #b7abff;
+  --disabled-fill: #272a31;
+  --on-disabled: #9ca3af;
   --on-accent: #0b0820;
   --danger: #ff7a70;
   --danger-soft: #3a1414;
@@ -636,6 +650,7 @@
     --fg-subtle: #484c58;
     --accent: #4a30b8;
     --accent-fg: #492ec0;
+    --on-disabled: #333843;
     --danger: #912222;
     --warning: #7c3907;
     --success: #165637;
@@ -656,6 +671,7 @@
     --fg-subtle: #cccfd5;
     --accent: #a697ff;
     --accent-fg: #d0c8ff;
+    --on-disabled: #e6e9ef;
     --danger: #ffbfb9;
     --warning: #f7c781;
     --success: #96dfb5;
@@ -678,6 +694,7 @@
     --fg-subtle: #cccfd5;
     --accent: #a697ff;
     --accent-fg: #d0c8ff;
+    --on-disabled: #e6e9ef;
     --danger: #ffbfb9;
     --warning: #f7c781;
     --success: #96dfb5;
@@ -698,6 +715,7 @@
     --fg-subtle: #484c58;
     --accent: #4a30b8;
     --accent-fg: #492ec0;
+    --on-disabled: #333843;
     --danger: #912222;
     --warning: #7c3907;
     --success: #165637;
@@ -716,6 +734,7 @@
     --fg-subtle: #4d4741;
     --accent: #244b78;
     --accent-fg: #264a6e;
+    --on-disabled: #3d3731;
     --danger: #802a21;
     --warning: #693e0c;
     --success: #2e502a;
@@ -734,6 +753,7 @@
     --fg-subtle: #cccfd5;
     --accent: #a697ff;
     --accent-fg: #d0c8ff;
+    --on-disabled: #e6e9ef;
     --danger: #ffbfb9;
     --warning: #f7c781;
     --success: #96dfb5;
@@ -753,6 +773,7 @@
     --fg-muted: #b2b7c1;
     --fg-subtle: #afb4bd;
     --accent: #9b8cff;
+    --on-disabled: #c4c9d2;
     --danger: #ff928a;
     --st-ns: #abb1bb;
     --st-ns-soft: #1a1c21;
@@ -780,6 +801,8 @@
     --border: ButtonText;
     --border-control: ButtonText;
     --accent: Highlight;
+    --disabled-fill: ButtonFace;
+    --on-disabled: GrayText;
     --on-accent: HighlightText;
     --edge-high: CanvasText;
     --hover-line: ButtonText;

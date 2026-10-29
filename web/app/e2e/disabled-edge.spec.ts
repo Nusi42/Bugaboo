@@ -23,7 +23,7 @@ test("ux_07 the edge of a main button that cannot be pressed is its grey fill, i
   const publish = page.getByRole("button", { name: t("workflows.publish"), exact: true });
   await expect(publish).toBeDisabled();
   await inEveryLook(page, async (look) => {
-    const edge = await resolved(page, "border-top-color", "var(--border)");
+    const edge = await resolved(page, "border-top-color", "var(--disabled-fill)");
     await expect(publish, look).toHaveCSS("border-top-color", edge);
   });
 });
@@ -55,13 +55,13 @@ test("ux_07 a main button that cannot be pressed is flat and quiet, not selected
   const publish = page.getByRole("button", { name: t("workflows.publish"), exact: true });
   await expect(publish).toBeDisabled();
   await inEveryLook(page, async (look) => {
-    const grey = await resolved(page, "background-color", "var(--border)");
+    const grey = await resolved(page, "background-color", "var(--disabled-fill)");
     await expect(publish, look).toHaveCSS("background-color", grey);
     // Not faded: the grey chip is told from the surface by its own color, not by being thin.
     await expect(publish, look).toHaveCSS("opacity", "1");
     await expect(publish, look).toHaveCSS(
       "color",
-      await resolved(page, "color", "var(--fg-muted)"),
+      await resolved(page, "color", "var(--on-disabled)"),
     );
     await inOrder(
       ["var(--accent-soft)", "var(--bg-selected)", "var(--bg-raised)"].map((chosen) => async () => {
@@ -71,4 +71,19 @@ test("ux_07 a main button that cannot be pressed is flat and quiet, not selected
       }),
     );
   });
+});
+
+test("ux_07 under forced colors a main button that cannot be pressed has the face and the gray words of the system", async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await signIn(page, ada);
+  await openSimple(page);
+  const publish = page.getByRole("button", { name: t("workflows.publish"), exact: true });
+  await expect(publish).toBeDisabled();
+  await expect(publish).toHaveCSS(
+    "background-color",
+    await resolved(page, "background-color", "ButtonFace"),
+  );
+  await expect(publish).toHaveCSS("color", await resolved(page, "color", "GrayText"));
 });

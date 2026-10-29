@@ -292,6 +292,10 @@ tokens {
     color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#4a30b8" paper-more="#244b78" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
     color "accent-soft" daylight="#eeeafd" paper="#e4ecf4" dusk="#37325a" midnight="#221d47"
     color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
+    // The grey chip of a main button that cannot be pressed yet, and its words: a fill and words of their own, so that
+    // more contrast and forced colors can change them without touching the dividers (M5 exit, O-gate B1, S7).
+    color "disabled-fill" daylight="#d7dbe1" paper="#d9d0c2" dusk="#434955" midnight="#272a31" forced="ButtonFace"
+    color "on-disabled" daylight="#4d5461" paper="#564e45" dusk="#c0c6d1" midnight="#9ca3af" daylight-more="#333843" paper-more="#3d3731" dusk-more="#e6e9ef" midnight-more="#c4c9d2" forced="GrayText"
     color "on-accent" daylight="#ffffff" paper="#ffffff" dusk="#1a1530" midnight="#0b0820" forced="HighlightText"
     color "danger" daylight="#c62f2f" paper="#b23a2e" dusk="#ff8a80" midnight="#ff7a70" daylight-more="#912222" paper-more="#802a21" dusk-more="#ffbfb9" midnight-more="#ff928a"
     color "danger-soft" daylight="#fdecec" paper="#f8e6e1" dusk="#4a2a2c" midnight="#3a1414"
@@ -359,8 +363,9 @@ tokens {
 // Contrast rules (WCAG, THM-03, UX-04, THM-06). Every text color is checked on every
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
-    text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
-    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "on-disabled" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ns" "tint-ip" "tint-done" "disabled-fill" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    restricted "on-disabled" on="disabled-fill" reason="The words of a main button that cannot be pressed are only ever drawn on its grey fill."
     restricted "on-accent" on="accent danger" reason="On-accent text is only ever drawn on the accent fill, and on the red of the Close button of a window."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
@@ -378,6 +383,10 @@ contrast min=4.5 {
     exclude reason="The accent fill carries only on-accent text." {
         text "fg" "fg-*" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
         on "accent"
+    }
+    exclude reason="The grey fill of a main button that cannot be pressed carries only its own words, on-disabled." {
+        text "fg" "fg-*" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
+        on "disabled-fill"
     }
     exclude reason="Hint text sits on plain surfaces, never on tinted backgrounds." {
         text "fg-subtle"
@@ -441,11 +450,6 @@ contrast min=4.5 {
         on "accent"
     }
 
-    stronger min=4.5 reason="The quiet words of a main button that cannot be pressed stand on its grey fill, the color of the dividers: they stay readable (M5 exit)." {
-        text "fg-muted"
-        on "border"
-    }
-
     stronger min=5 reason="The ID, the hint and the quiet words of a row are small and thin and are read on the tints all day: they reach 5:1 there, not only the 4.5:1 that every text color has (M5 exit, L23: sampled in a picture the ID of a row looked like 4.2:1). With the device setting for more contrast every text color already asks 7:1 (the `more` rule)." {
         text "fg-muted" "fg-subtle"
         on "tint-ns" "tint-ip" "tint-done"
@@ -460,7 +464,7 @@ contrast min=4.5 {
 
     // With the device setting for more contrast.
     more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
-        text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent"
+        text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent" "on-disabled"
         lines "border" "border-subtle"
         line-on "bg-canvas" "bg-surface" "bg-raised"
     }
@@ -477,9 +481,9 @@ distinct min-delta-e-between-states=11 min-delta-e-against-surfaces=7.5 reason="
 
 // A main button that cannot be pressed is a grey chip that is told from the raised surface (an outlined button) and from
 // the fills of a chosen thing (a selected segment, the soft accent) by a clear difference of color, in every theme.
-distinct min-delta-e-against-surfaces=6 reason="The fill of a main button that cannot be pressed (the color of the dividers) differs from the raised surface, the selected fill and the soft accent fill by at least 6 (delta E), in every theme (M5 exit)." {
-    states "border"
-    surfaces "bg-raised" "bg-selected" "accent-soft"
+distinct min-delta-e-against-surfaces=7.5 reason="The fill of a main button that cannot be pressed differs from the raised and the sunken surface, the selected fill and the soft accent fill by at least 7.5 (delta E), in every theme (M5 exit)." {
+    states "disabled-fill"
+    surfaces "bg-raised" "bg-selected" "accent-soft" "bg-sunken"
 }
 
 // The edge of High is told from the edge of Critical (the red of `danger`) at a glance.
@@ -1068,9 +1072,9 @@ part "button[state=current]" {
 // belongs to the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" {
     opacity 1
-    border-color "$border"
-    background "$border"
-    color "$fg-muted"
+    border-color "$disabled-fill"
+    background "$disabled-fill"
+    color "$on-disabled"
 }
 
 part "button[state=busy]" {

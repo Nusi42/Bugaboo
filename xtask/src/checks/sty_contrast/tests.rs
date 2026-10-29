@@ -484,21 +484,30 @@ fn the_knob_of_a_switch_is_seen_on_its_track_in_every_theme() {
 
 #[test]
 fn a_main_button_that_cannot_be_pressed_is_told_from_the_surface_and_stays_readable() {
-    // M5 exit: in Dusk and Midnight it read like an enabled outlined button. Its fill, the color of the dividers,
-    // put back next to the raised surface is rejected, and so are quiet words that sink into the fill.
-    let findings = evaluate(&with_value("border", "dusk", "#30363f"));
+    // M5 exit: in Dusk and Midnight it read like an enabled outlined button. Its fill put back next to the raised
+    // surface is rejected, and so are words that sink into the fill, plain and with more contrast.
+    let findings = evaluate(&with_value("disabled-fill", "dusk", "#30363f"));
     assert!(
         findings
             .iter()
-            .any(|f| f.message.contains("`border`") && f.message.contains("`bg-raised`")),
+            .any(|f| f.message.contains("`disabled-fill`") && f.message.contains("`bg-raised`")),
         "{:?}",
         messages(&findings)
     );
-    let findings = evaluate(&with_value("fg-muted", "dusk", "#555b67"));
+    let findings = evaluate(&with_value("on-disabled", "dusk", "#6c727e"));
     assert!(
         findings
             .iter()
-            .any(|f| f.message.contains("`fg-muted` on `border`")),
+            .any(|f| f.message.contains("`on-disabled` on `disabled-fill`")),
+        "{:?}",
+        messages(&findings)
+    );
+    // With more contrast the words need 7:1 on the fill (the divider colors gave 1.7:1, M5 exit B1).
+    let findings = evaluate(&with_value("on-disabled", "daylight-more", "#565d6b"));
+    assert!(
+        findings.iter().any(
+            |f| f.message.contains("with more contrast") && f.message.contains("`on-disabled`")
+        ),
         "{:?}",
         messages(&findings)
     );

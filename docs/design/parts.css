@@ -229,9 +229,9 @@ optgroup {
 
 [data-part="button"][data-variant~="primary"][data-disabled] {
   opacity: 1;
-  border-color: var(--border);
-  background: var(--border);
-  color: var(--fg-muted);
+  border-color: var(--disabled-fill);
+  background: var(--disabled-fill);
+  color: var(--on-disabled);
 }
 
 [data-part="button"][data-state~="busy"] {
