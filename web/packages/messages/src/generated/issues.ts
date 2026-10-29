@@ -4,7 +4,7 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "search.issues": "Issues",
-  "search.create-issue": "Create the issue",
+  "search.create-issue": "Create an issue",
   "search.found-stale":
     "These are the issues of the last search without a mistake. Fix the mistake to update them.",
   "search.found-none": "No issues match this search.",
@@ -18,8 +18,8 @@ export const messages = {
   "issues.project": "Project",
   "issues.type": "Type",
   "issues.no-issue-type": "This project offers no issue type. Ask who looks after the project.",
-  "issues.create": "Create",
-  "issues.create-another": "Create and start another",
+  "issues.create": "Create the issue",
+  "issues.create-another": "Create the issue and start another",
   "issues.missing-title": "Write a title first, then you can create and start another.",
   "issues.missing-type": "Choose an issue type first, then you can create and start another.",
   "issues.missing-project": "Choose a project first, then you can create and start another.",

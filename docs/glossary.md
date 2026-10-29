@@ -250,7 +250,7 @@ Rules:
 | **Start page**           | The page Bugaboo opens after you sign in                           | landing page, home screen (in UI)  |
 | **Sign-in rules**        | The organization settings for how long people stay signed in and who must use two-step sign-in | authentication policy, session policy (in UI) |
 | **and**                  | The word between two names in a text for people (*Roles and permissions*, *E-mail and notifications*): never the sign & | & (in UI, a check refuses it) |
-| **Create**               | The verb for bringing something new into Bugaboo, on every button and form: *Create the issue*, *Create the project*, *Create the role* | made (in UI), making (in UI), make, add new (in UI and code) |
+| **Create**               | The verb for bringing something new into Bugaboo, on every button and form. A button that opens a form says *Create an issue*, *Create a project*; the button that sends the form says *Create the issue*, *Create the project*, *Create the issue and start another* | made (in UI), making (in UI), make, add new (in UI and code) |
 | **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
 | **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
 | **Assistant**            | The built-in AI helper. Not an agent: it only proposes, and only to the person using it | copilot (in UI) |

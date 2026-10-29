@@ -6,7 +6,7 @@ export const messages = {
   "invitations.title": "Invitations",
   "invitations.intro":
     "An invitation is a link that lets one person create their account. It works once and runs out after 7 days.",
-  "invitations.create": "Create an invitation",
+  "invitations.create": "Create the invitation",
   "invitations.created": "Invitation for {email}",
   "invitations.link": "Link to send",
   "invitations.link-help":
