@@ -3,6 +3,7 @@ import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { focusRowByKeys, tickIssues } from "./support/list-pictures.ts";
 import { openList, prepareLook, rowOf } from "./support/list-look.ts";
+import { partIn } from "./support/parts.ts";
 import { inEveryLook, resolved } from "./support/styles.ts";
 
 // M5 exit, package T (L24, L26): the edge of High is its own clear orange, a pointed-at row has a line
@@ -61,5 +62,18 @@ test("ux_7_2 the keyboard focus on a row is two rings with a gap, in every theme
     // The rings come from the outside in: the accent, the gap, the text color.
     expect(shadow.indexOf(accent), look).toBeLessThan(shadow.indexOf(gap));
     expect(shadow.indexOf(gap), look).toBeLessThan(shadow.indexOf(text));
+  });
+});
+
+test("ux_7_4 the box to tick of a row has the edge of the quiet words, a strong edge on every tint", async ({
+  page,
+}) => {
+  await openList(page);
+  const box = partIn(rowOf(page, webIssues.login), "checkbox.box");
+  await inEveryLook(page, async (look) => {
+    await expect(box, look).toHaveCSS(
+      "border-top-color",
+      await resolved(page, "border-top-color", "var(--fg-muted)"),
+    );
   });
 });

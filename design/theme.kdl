@@ -1214,6 +1214,12 @@ part "checkbox.box" {
     background "$bg-raised"
 }
 
+// The box to tick of a row has the edge of the quiet words, a strong line on every tint (the edge of a control
+// was hard to see on the dark In progress tint, M5 exit).
+part "list-row checkbox.box" {
+    border-color "$fg-muted"
+}
+
 part "checkbox[hovered] checkbox.box" {
     background "$bg-hover"
 }
@@ -1549,6 +1555,27 @@ part "picker.option[variant=boxed]" {
     use "touch-row"
     padding "$space-1 $space-3"
     use "surface-box"
+}
+
+// A radio is drawn by the theme, not by the browser (its own blue, and a grey dot in the dark themes that
+// looks switched off): an outlined circle with the edge of a control, and the accent when it is chosen,
+// a dot inside a ring of the raised surface. Under forced colors the chosen one is a filled circle.
+part "picker.input" {
+    appearance none
+    flex none
+    box-sizing border-box
+    width "$size-icon-small"
+    height "$size-icon-small"
+    margin 0
+    border "$border-width solid $border-control"
+    border-radius "$r-pill"
+    background "$bg-raised"
+}
+
+part "picker.input:checked" {
+    border-color "$accent"
+    background "$accent"
+    box-shadow "inset 0 0 0 $space-1 $bg-raised"
 }
 
 part "picker.input[variant=boxed]" {
