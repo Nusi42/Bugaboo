@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, Link, PageBack, RowChevron, partOf, part } from "@bugaboo/ui";
+import { Card, Link, RowChevron, partOf, part } from "@bugaboo/ui";
 
 import { heldText } from "../../shared/access-words.ts";
 import { formatDateTime } from "../../shared/format.ts";
@@ -56,7 +56,7 @@ export function Roles({ line }: { readonly line: PersonLine }) {
 /** The address and the day the account was made. */
 export function Facts({ line, since }: { readonly line: PersonLine; readonly since: string }) {
   return (
-    <Card heading={line.name} level={1}>
+    <Card heading={line.name} level={1} back={{ href: paths.people, label: t("person.back") }}>
       <dl {...partOf(part.facts)}>
         <div {...partOf(part.fact)}>
           <dt {...partOf(part.term)}>{t("person.email")}</dt>
@@ -67,7 +67,6 @@ export function Facts({ line, since }: { readonly line: PersonLine; readonly sin
           <dd {...partOf(part.definition)}>{formatDateTime(since)}</dd>
         </div>
       </dl>
-      <PageBack href={paths.people} label={t("person.back")} />
     </Card>
   );
 }

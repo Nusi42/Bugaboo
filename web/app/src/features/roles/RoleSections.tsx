@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Card, PageBack, partOf, part } from "@bugaboo/ui";
+import { Card, partOf, part } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
 import { PermissionsCard } from "./PermissionsCard.tsx";
@@ -21,7 +21,7 @@ export function RoleSections({ role, used }: RoleSectionsProps) {
   const own = role.starting === undefined || role.starting === null;
   return (
     <>
-      <Card heading={role.name} level={1}>
+      <Card heading={role.name} level={1} back={{ href: paths.roles, label: t("roles.back") }}>
         <p {...partOf(part.muted)}>
           {t("roles.badge-used", {
             badge: t(own ? "roles.own" : "roles.starting-badge"),
@@ -29,7 +29,6 @@ export function RoleSections({ role, used }: RoleSectionsProps) {
           })}
         </p>
         <RoleName key={role.name} id={role.id} name={role.name} version={role.version} />
-        <PageBack href={paths.roles} label={t("roles.back")} />
       </Card>
       <PermissionsCard role={role} />
       <RoleActions role={role} used={used} />

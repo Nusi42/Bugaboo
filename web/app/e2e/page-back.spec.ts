@@ -20,17 +20,17 @@ interface Place {
   readonly back: string;
 }
 
-/** The height of a card with nothing in it but padding: a card must be taller than this. */
-const EMPTY_CARD = 48;
-
-/** The height of the lowest card on the page. */
-function smallestCard(page: Page): Promise<number> {
+/** How many cards have nothing in them: a heading for screen readers only, and an empty card around it. */
+function cardsWithNothingInThem(page: Page): Promise<number> {
   return page.evaluate(() => {
-    let least = Number.POSITIVE_INFINITY;
+    let empty = 0;
     for (const card of document.querySelectorAll("[data-part='card']")) {
-      least = Math.min(least, card.getBoundingClientRect().height);
+      const stack = card.querySelector(":scope > [data-part='stack']");
+      if (stack !== null && stack.children.length === 0) {
+        empty += 1;
+      }
     }
-    return least;
+    return empty;
   });
 }
 
@@ -78,8 +78,8 @@ test("ux_8 a page says Back at its foot on a computer and not on a phone", async
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.getByRole("link", { name: place.back }), place.name).toHaveCount(expected);
       // No card is left empty where the title and the link were hidden.
-      expect(await smallestCard(page), `${place.name}: the smallest card`).toBeGreaterThan(
-        EMPTY_CARD,
+      expect(await cardsWithNothingInThem(page), `${place.name}: cards with nothing in them`).toBe(
+        0,
       );
     }),
   );

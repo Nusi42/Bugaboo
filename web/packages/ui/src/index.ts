@@ -50,7 +50,6 @@ export {
   type IssueTypeIconName,
   type IssueTypeIconProps,
 } from "./IssueTypeIcon.tsx";
-export { PageBack } from "./PageBack.tsx";
 export { RowChevron } from "./RowChevron.tsx";
 export { type PagedList, ShowMore, ShowMoreOf } from "./ShowMore.tsx";
 export { TitleCarriedByBar } from "./TitleCarriedByBar.tsx";
