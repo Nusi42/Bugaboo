@@ -199,6 +199,12 @@ fn read_locale(
         if message.trim().is_empty() {
             problems.push(Finding::at(path, format!("`{key}` has no text.")));
         }
+        if message.contains(" & ") {
+            problems.push(Finding::at(
+                path,
+                format!("`{key}` writes & between words; the texts say and (plain language, the glossary)."),
+            ));
+        }
         if key.starts_with("setting.")
             && key.rsplit('.').next() == Some("help")
             && writes_bounds(&message)
@@ -450,6 +456,17 @@ mod tests {
         let locales = [locale(r#"{"a.b": "x", "a.b": "y"}"#)];
         let code = [source("web/a.ts", r#"t("a.b")"#)];
         assert!(messages(&evaluate(&locales, &code, &[])).contains("appears twice"));
+    }
+
+    #[test]
+    fn a_message_says_and_never_an_ampersand() {
+        let locales = [locale(
+            r#"{"nav.a": "Roles & permissions", "nav.b": "Roles and permissions"}"#,
+        )];
+        let code = [source("web/a.ts", r#"t("nav.a"); t("nav.b")"#)];
+        let text = messages(&evaluate(&locales, &code, &[]));
+        assert!(text.contains("`nav.a`") && text.contains("and"), "{text}");
+        assert!(!text.contains("`nav.b`"), "{text}");
     }
 
     #[test]

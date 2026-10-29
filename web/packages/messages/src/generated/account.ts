@@ -3,7 +3,7 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "security.title": "Sign-in & security",
+  "security.title": "Sign-in and security",
   "security.intro": "How you prove that it is you, and how to keep your account safe.",
   "security.password.title": "Password",
   "security.password.current": "Your password now",

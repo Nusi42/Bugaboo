@@ -31,7 +31,7 @@ export const messages = {
   "notifications.kind": "What happens",
   "notifications.in-app": "In the app",
   "notifications.by-mail": "By e-mail",
-  "mail-server.title": "E-mail & notifications",
+  "mail-server.title": "E-mail and notifications",
   "mail-server.intro":
     "Bugaboo sends e-mail through your organization's mail server. E-mail stays off until you have entered the mail server, tried it with a test e-mail and switched it on.",
   "mail-server.connection": "Connection",

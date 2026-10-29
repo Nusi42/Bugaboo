@@ -249,7 +249,8 @@ Rules:
 | **Region**               | The choices about where you are: time zone, date format, number format and first day of the week | locale, localization, i18n (in UI) |
 | **Start page**           | The page Bugaboo opens after you sign in                           | landing page, home screen (in UI)  |
 | **Sign-in rules**        | The organization settings for how long people stay signed in and who must use two-step sign-in | authentication policy, session policy (in UI) |
-| **Create**               | The verb for bringing something new into Bugaboo, on every button and form: *Create issue*, *Create project*, *Create role* | made (in UI), making (in UI), make, add new (in UI and code) |
+| **and**                  | The word between two names in a text for people (*Roles and permissions*, *E-mail and notifications*): never the sign & | & (in UI, a check refuses it) |
+| **Create**               | The verb for bringing something new into Bugaboo, on every button and form: *Create the issue*, *Create the project*, *Create the role* | made (in UI), making (in UI), make, add new (in UI and code) |
 | **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
 | **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
 | **Assistant**            | The built-in AI helper. Not an agent: it only proposes, and only to the person using it | copilot (in UI) |
@@ -278,7 +279,7 @@ Rules:
 | **Customize**            | On *Notifications*: opens *Notification settings*. On a workflow or a layout: create a copy for this place that you can change. On a list: choose its columns | subscription settings (in UI) |
 | **Notification settings** | The page under *My settings* where you choose, for each kind of event, whether you hear of it in the app, by e-mail, in both or not at all | subscriptions, alert settings (in UI) |
 | **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
-| **E-mail & notifications** | The organization settings page where an administrator enters the mail server, sends a test e-mail and switches e-mail on | mail settings, SMTP (in UI) |
+| **E-mail and notifications** | The organization settings page where an administrator enters the mail server, sends a test e-mail and switches e-mail on | mail settings, SMTP (in UI) |
 | **Test e-mail**          | One e-mail that an administrator sends to themselves (*Send me a test e-mail*) to see that the mail server works | try it (for e-mail) |
 | **Link**                 | A web address that you open, in an e-mail or on a screen (to an issue, or to finish creating an account); never the connection between two issues, which is a *Relation* (so *link* stays in the Don't-say column of *Relation*, and TXT-TERMS allows the web sense by entries in `tools/checks/terms-exemptions.toml`) | address (for a link) |
 | **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments) | — |

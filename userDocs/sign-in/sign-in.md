@@ -10,17 +10,17 @@ If something is wrong, Bugaboo says so in plain words. After many wrong tries in
 
 A passkey lets you sign in with the fingerprint, face or screen lock of your device, instead of typing a password. Press "Sign in with a passkey" on the sign-in page.
 
-To add a passkey, sign in and open *My settings* and then "Sign-in & security". Give the passkey a name that tells you which device it is on, type your password again, and press the button to add it. A passkey belongs to the web address of Bugaboo. If the address changes, the passkey no longer works. Sign in with your password and add it again.
+To add a passkey, sign in and open *My settings* and then "Sign-in and security". Give the passkey a name that tells you which device it is on, type your password again, and press the button to add it. A passkey belongs to the web address of Bugaboo. If the address changes, the passkey no longer works. Sign in with your password and add it again.
 
 ## The second step
 
 If your account asks for a second check, Bugaboo shows "One more step" after your password:
 
 - Type the six-digit **code** from your code app. Each code works once.
-- If you cannot use the app, type one of your **backup codes**. Each backup code works once. In "Sign-in & security" you can create new backup codes, and the old ones stop working.
+- If you cannot use the app, type one of your **backup codes**. Each backup code works once. In "Sign-in and security" you can create new backup codes, and the old ones stop working.
 - If you have a passkey, press "Use a passkey".
 
-To switch the code app on or off, open *My settings* and then "Sign-in & security". Bugaboo asks for your password again before it changes anything.
+To switch the code app on or off, open *My settings* and then "Sign-in and security". Bugaboo asks for your password again before it changes anything.
 
 ## When your administrator asks for a second step
 

@@ -31,7 +31,7 @@ export const messages = {
   "workflows.status-up": "Move up {name}",
   "workflows.status-down": "Move down {name}",
   "workflows.status-remove": "Remove {name}",
-  "workflows.create-status": "Create status",
+  "workflows.create-status": "Create the status",
   "workflows.new-status": "Name of the new status",
   "workflows.status-name-taken": "A status with this name exists already.",
   "workflows.publish-name-twice":
@@ -47,7 +47,7 @@ export const messages = {
   "workflows.create-change": "Create a status change from {from}",
   "workflows.create-change-to": "Go to",
   "workflows.create-change-button": "Button text",
-  "workflows.create-change-do": "Create status change",
+  "workflows.create-change-do": "Create the status change",
   "workflows.rules-title": "Rules for “{button}”",
   "workflows.rules-intro": "From {from} to {to}. A rule that is left empty does not apply.",
   "workflows.who": "Who can do it",

@@ -55,7 +55,7 @@ export const messages = {
   "person.roles": "Roles",
   "person.roles-none": "{name} has no role in the places you decide about.",
   "person.roles-where":
-    "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
+    "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles and permissions and in the settings of a project.",
   "groups.intro":
     "A group is a set of people. Give a role to a group, and everybody in it has that role.",
   "groups.search": "Search groups",
