@@ -273,20 +273,34 @@ fn an_unknown_token_or_mixin_is_refused() {
 
 #[test]
 fn every_old_cue_keeps_its_covers_that_scroll_with_the_content() {
-    // No browser test can see the old cue (Chromium draws the new one), so the sheet is read: every box that
-    // falls back to it has the covers (`local`), their size, and the shadows that stay (`scroll`).
+    // No browser test can see the old cue (Chromium draws the new one), so the sheet is read: in every block that
+    // falls back to it the covers stay with the content (`local`), have their size, and the shadows stay (`scroll`).
     let sheet = css(&file()).unwrap();
-    let boxes = sheet
-        .matches("@supports not (animation-timeline: scroll())")
-        .count();
-    assert!(boxes >= 6, "the boxes with an old cue: {boxes}");
-    for line in [
-        "background-attachment: local, local, scroll, scroll;",
-        "background-repeat: no-repeat;",
-    ] {
-        assert!(
-            sheet.matches(line).count() >= boxes,
-            "`{line}` is missing in the old cue"
-        );
+    let blocks: Vec<&str> = sheet
+        .split("@supports not (animation-timeline: scroll())")
+        .skip(1)
+        .map(|rest| {
+            rest.split(
+                "
+}
+",
+            )
+            .next()
+            .unwrap_or(rest)
+        })
+        .filter(|block| block.contains("background-image"))
+        .collect();
+    assert!(!blocks.is_empty(), "no block draws the old cue");
+    for block in blocks {
+        for part in [
+            "background-size:",
+            "background-repeat: no-repeat;",
+            "background-attachment: local, local, scroll, scroll;",
+        ] {
+            assert!(
+                block.contains(part),
+                "`{part}` is missing in the old cue: {block}"
+            );
+        }
     }
 }

@@ -1705,20 +1705,9 @@ part "overlay.modal[variant=top]" {
     border-radius "0 0 $r-card $r-card"
 }
 
-part "overlay.dialog" {
-    display flex
-    flex 1
-    flex-direction column
-    min-height 0
-    overflow-y auto
-    outline none
-    supports "not (animation-timeline: scroll())" {
-        use "scroll-cue"
-    }
-}
-
-// A menu or a sheet that is taller than the screen scrolls, with a shadow at each end that has more behind it.
-part "overlay.dialog::before" {
+// The shadows at the ends of every box that scrolls its own content and has more behind it (the scroll position drives them,
+// where the browser has scroll timelines). A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
+part "overlay.dialog::before" "picker.options[variant=list]::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-start"
@@ -1726,13 +1715,25 @@ part "overlay.dialog::before" {
     }
 }
 
-part "overlay.dialog::after" {
+part "overlay.dialog::after" "picker.options[variant=list]::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-end"
         bottom 0
     }
 }
+
+part "overlay.dialog" {
+    display flex
+    flex 1
+    flex-direction column
+    min-height 0
+    overflow-y auto
+    outline none
+}
+
+// A menu or a sheet that is taller than the screen scrolls, with a shadow at each end that has more behind it.
+
 
 part "overlay[entering]::before" {
     animation "fade $motion-base $ease-out"
@@ -1809,16 +1810,11 @@ part "picker.options[variant=list]" {
     use "ring-room"
     list-style none
     overflow-y auto
-    supports "not (animation-timeline: scroll())" {
-        use "scroll-cue"
-    }
 }
 
 // The gap of the rows is taken back, so the lines at the ends take no room.
 part "picker.options[variant=list]::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-start"
         top "calc(-1 * $ring-room)"
         margin-block-end "calc(-1 * $size-option-gap)"
     }
@@ -1826,8 +1822,6 @@ part "picker.options[variant=list]::before" {
 
 part "picker.options[variant=list]::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-end"
         bottom "calc(-1 * $ring-room)"
         margin-block-start "calc(-1 * $size-option-gap)"
     }
@@ -2518,27 +2512,10 @@ part "list-scroll" {
     max-height "$size-list-scroll"
     overflow auto
     border-bottom "$border-width solid $divider"
-    supports "not (animation-timeline: scroll())" {
-        use "scroll-cue"
-    }
 }
 
 // The shadows at the ends of the rows that have more rows behind them (the list is a box of its own, as high as the page lets it be).
-part "list-scroll::before" {
-    supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-start"
-        top 0
-    }
-}
 
-part "list-scroll::after" {
-    supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-end"
-        bottom 0
-    }
-}
 
 // The head is as wide as its columns at their least need and at least the frame (the code measures it and gives that width to the rows, `list-width`), and scrolls sideways with them inside the frame.
 part "list-head" {
@@ -3100,23 +3077,16 @@ part "window.body" {
     min-height 0
     padding "$pad-dialog"
     overflow-y auto
-    supports "not (animation-timeline: scroll())" {
-        use "scroll-cue"
-    }
 }
 
 part "window.body::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-start"
         top "calc(-1 * $pad-dialog)"
     }
 }
 
 part "window.body::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-end"
         bottom "calc(-1 * $pad-dialog)"
     }
 }
@@ -3726,16 +3696,11 @@ part "confirm.body" {
     overflow-y auto
     use "ring-room"
     use "ring-room-flush"
-    supports "not (animation-timeline: scroll())" {
-        use "scroll-cue"
-    }
 }
 
 // The gap of the body is taken back, so the lines at its ends take no room.
 part "confirm.body::before" {
     supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-start"
         top "calc(-1 * $ring-room)"
         margin-block-end "calc(-1 * $size-body-gap)"
     }
@@ -3743,8 +3708,6 @@ part "confirm.body::before" {
 
 part "confirm.body::after" {
     supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-end"
         bottom "calc(-1 * $ring-room)"
         margin-block-start "calc(-1 * $size-body-gap)"
     }
@@ -4065,27 +4028,23 @@ part "people" {
     padding-inline "$ring-width"
     overflow-y auto
     use "surface-box"
-    supports "not (animation-timeline: scroll())" {
-        // The covers of the old cue are the color of this box, the plain surface.
-        use "scroll-cue"
-        --cue-cover "$bg-surface"
-    }
 }
 
 // The shadows at the ends of the box that have more people behind them.
-part "people::before" {
-    supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-start"
-        top 0
+
+
+// Where the browser has no scroll timelines these boxes keep the old cue (covers that scroll with the content). It comes after the six
+// boxes, so their own backgrounds do not reset it. The rows of `list-scroll` are opaque and paint over it: there that cue is not seen (accepted).
+part "overlay.dialog" "picker.options[variant=list]" "list-scroll" "window.body" "confirm.body" "people" {
+    supports "not (animation-timeline: scroll())" {
+        use "scroll-cue"
     }
 }
 
-part "people::after" {
-    supports "(animation-timeline: scroll())" {
-        use "edge-block"
-        use "edge-from-end"
-        bottom 0
+// The covers of the old cue in the list of people are the color of its box, the plain surface.
+part "people" {
+    supports "not (animation-timeline: scroll())" {
+        --cue-cover "$bg-surface"
     }
 }
 

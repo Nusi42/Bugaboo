@@ -805,36 +805,13 @@ optgroup {
   border-radius: 0 0 var(--r-card) var(--r-card);
 }
 
-[data-part="overlay.dialog"] {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-  outline: none;
-}
-
-@supports not (animation-timeline: scroll()) {
-  [data-part="overlay.dialog"] {
-    --cue-cover: var(--bg-raised);
-    background-image:
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
-      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
-    background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
-  }
-}
-
 @supports (animation-timeline: scroll()) {
-  [data-part="overlay.dialog"]::before {
+  [data-part="overlay.dialog"]::before,
+  [data-part="picker.options"][data-variant~="list"]::before,
+  [data-part="list-scroll"]::before,
+  [data-part="window.body"]::before,
+  [data-part="confirm.body"]::before,
+  [data-part="people"]::before {
     content: "";
     position: sticky;
     z-index: var(--z-raised);
@@ -854,7 +831,12 @@ optgroup {
 }
 
 @supports (animation-timeline: scroll()) {
-  [data-part="overlay.dialog"]::after {
+  [data-part="overlay.dialog"]::after,
+  [data-part="picker.options"][data-variant~="list"]::after,
+  [data-part="list-scroll"]::after,
+  [data-part="window.body"]::after,
+  [data-part="confirm.body"]::after,
+  [data-part="people"]::after {
     content: "";
     position: sticky;
     z-index: var(--z-raised);
@@ -871,6 +853,15 @@ optgroup {
     animation-range: calc(100% - var(--space-3)) 100%;
     bottom: 0;
   }
+}
+
+[data-part="overlay.dialog"] {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  outline: none;
 }
 
 [data-part="overlay"][data-entering]::before {
@@ -959,41 +950,8 @@ optgroup {
   overflow-y: auto;
 }
 
-@supports not (animation-timeline: scroll()) {
-  [data-part="picker.options"][data-variant~="list"] {
-    --cue-cover: var(--bg-raised);
-    background-image:
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
-      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
-    background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
-  }
-}
-
 @supports (animation-timeline: scroll()) {
   [data-part="picker.options"][data-variant~="list"]::before {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-in;
-    animation-range: 0% var(--space-3);
     top: calc(-1 * var(--ring-room));
     margin-block-end: calc(-1 * var(--size-option-gap));
   }
@@ -1001,20 +959,6 @@ optgroup {
 
 @supports (animation-timeline: scroll()) {
   [data-part="picker.options"][data-variant~="list"]::after {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-out;
-    animation-range: calc(100% - var(--space-3)) 100%;
     bottom: calc(-1 * var(--ring-room));
     margin-block-start: calc(-1 * var(--size-option-gap));
   }
@@ -1721,65 +1665,6 @@ optgroup {
   border-bottom: var(--border-width) solid var(--divider);
 }
 
-@supports not (animation-timeline: scroll()) {
-  [data-part="list-scroll"] {
-    --cue-cover: var(--bg-raised);
-    background-image:
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
-      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
-    background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
-  }
-}
-
-@supports (animation-timeline: scroll()) {
-  [data-part="list-scroll"]::before {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-in;
-    animation-range: 0% var(--space-3);
-    top: 0;
-  }
-}
-
-@supports (animation-timeline: scroll()) {
-  [data-part="list-scroll"]::after {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-out;
-    animation-range: calc(100% - var(--space-3)) 100%;
-    bottom: 0;
-  }
-}
-
 [data-part="list-head"] {
   box-sizing: border-box;
   width: min-content;
@@ -2337,61 +2222,14 @@ optgroup {
   overflow-y: auto;
 }
 
-@supports not (animation-timeline: scroll()) {
-  [data-part="window.body"] {
-    --cue-cover: var(--bg-raised);
-    background-image:
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
-      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
-    background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
-  }
-}
-
 @supports (animation-timeline: scroll()) {
   [data-part="window.body"]::before {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-in;
-    animation-range: 0% var(--space-3);
     top: calc(-1 * var(--pad-dialog));
   }
 }
 
 @supports (animation-timeline: scroll()) {
   [data-part="window.body"]::after {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-out;
-    animation-range: calc(100% - var(--space-3)) 100%;
     bottom: calc(-1 * var(--pad-dialog));
   }
 }
@@ -3011,41 +2849,8 @@ optgroup {
   margin-inline: calc(var(--ring-room) * -1);
 }
 
-@supports not (animation-timeline: scroll()) {
-  [data-part="confirm.body"] {
-    --cue-cover: var(--bg-raised);
-    background-image:
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
-      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
-    background-position: top, bottom, top, bottom;
-    background-size:
-      100% var(--space-3),
-      100% var(--space-3),
-      100% var(--space-1),
-      100% var(--space-1);
-    background-repeat: no-repeat;
-    background-attachment: local, local, scroll, scroll;
-  }
-}
-
 @supports (animation-timeline: scroll()) {
   [data-part="confirm.body"]::before {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-in;
-    animation-range: 0% var(--space-3);
     top: calc(-1 * var(--ring-room));
     margin-block-end: calc(-1 * var(--size-body-gap));
   }
@@ -3053,20 +2858,6 @@ optgroup {
 
 @supports (animation-timeline: scroll()) {
   [data-part="confirm.body"]::after {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-out;
-    animation-range: calc(100% - var(--space-3)) 100%;
     bottom: calc(-1 * var(--ring-room));
     margin-block-start: calc(-1 * var(--size-body-gap));
   }
@@ -3432,6 +3223,11 @@ optgroup {
 }
 
 @supports not (animation-timeline: scroll()) {
+  [data-part="overlay.dialog"],
+  [data-part="picker.options"][data-variant~="list"],
+  [data-part="list-scroll"],
+  [data-part="window.body"],
+  [data-part="confirm.body"],
   [data-part="people"] {
     --cue-cover: var(--bg-raised);
     background-image:
@@ -3447,47 +3243,12 @@ optgroup {
       100% var(--space-1);
     background-repeat: no-repeat;
     background-attachment: local, local, scroll, scroll;
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  [data-part="people"] {
     --cue-cover: var(--bg-surface);
-  }
-}
-
-@supports (animation-timeline: scroll()) {
-  [data-part="people"]::before {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-in;
-    animation-range: 0% var(--space-3);
-    top: 0;
-  }
-}
-
-@supports (animation-timeline: scroll()) {
-  [data-part="people"]::after {
-    content: "";
-    position: sticky;
-    z-index: var(--z-raised);
-    display: block;
-    flex: none;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 0 var(--space-3) var(--border-width) var(--cue);
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    height: 0;
-    animation-timeline: scroll(nearest block);
-    animation-name: cue-out;
-    animation-range: calc(100% - var(--space-3)) 100%;
-    bottom: 0;
   }
 }
 
