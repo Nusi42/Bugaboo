@@ -1685,15 +1685,17 @@ optgroup {
   overflow-y: auto;
   background-image:
     linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(to top, var(--border), transparent);
-  background-position: bottom, bottom;
+    linear-gradient(var(--bg-raised), var(--bg-raised)),
+    linear-gradient(var(--border-control), transparent),
+    linear-gradient(to top, var(--border-control), transparent);
+  background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
     100% var(--space-2);
   background-repeat: no-repeat;
   background-origin: content-box;
   background-clip: content-box;
-  background-attachment: local, scroll;
+  background-attachment: local, local, scroll, scroll;
 }
 
 [data-part="picker.options"][data-variant~="list"]:has([data-part="picker.choice"]) {
@@ -2947,6 +2949,21 @@ optgroup {
   min-height: 0;
   padding: var(--pad-dialog);
   overflow-y: auto;
+  background-image:
+    linear-gradient(var(--bg-raised), var(--bg-raised)),
+    linear-gradient(var(--bg-raised), var(--bg-raised)),
+    linear-gradient(var(--border-control), transparent),
+    linear-gradient(to top, var(--border-control), transparent);
+  background-position: top, bottom, top, bottom;
+  background-size:
+    100% var(--space-3),
+    100% var(--space-3),
+    100% var(--space-2),
+    100% var(--space-2);
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  background-clip: content-box;
+  background-attachment: local, local, scroll, scroll;
 }
 
 [data-part="window.footer"] {
@@ -3541,15 +3558,17 @@ optgroup {
   margin-inline: calc(var(--ring-room) * -1);
   background-image:
     linear-gradient(var(--bg-raised), var(--bg-raised)),
-    linear-gradient(to top, var(--border), transparent);
-  background-position: bottom, bottom;
+    linear-gradient(var(--bg-raised), var(--bg-raised)),
+    linear-gradient(var(--border-control), transparent),
+    linear-gradient(to top, var(--border-control), transparent);
+  background-position: top, bottom, top, bottom;
   background-size:
     100% var(--space-3),
     100% var(--space-2);
   background-repeat: no-repeat;
   background-origin: content-box;
   background-clip: content-box;
-  background-attachment: local, scroll;
+  background-attachment: local, local, scroll, scroll;
 }
 
 [data-part="confirm.title"] {
@@ -3557,14 +3576,6 @@ optgroup {
   font-size: var(--fs-lg);
   line-height: var(--lh-snug);
   font-weight: var(--weight-bold);
-}
-
-[data-part="confirm.body"] [data-part="confirm.title"] {
-  position: sticky;
-  top: calc(-1 * var(--ring-room));
-  padding-block: var(--ring-room) var(--space-2);
-  border-bottom: var(--border-width) solid var(--border-subtle);
-  background: var(--bg-raised);
 }
 
 [data-part="confirm.actions"] {

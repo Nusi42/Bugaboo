@@ -127,10 +127,10 @@ function Question({
   const hintId = useId();
   return (
     <Dialog {...partOf(part.confirmDialog)} role={dialogRole}>
+      <Heading slot={titleSlot} {...partOf(part.confirmTitle)}>
+        {title}
+      </Heading>
       <div {...partOf(part.confirmBody)}>
-        <Heading slot={titleSlot} {...partOf(part.confirmTitle)}>
-          {title}
-        </Heading>
         <p {...partOf(part.text)}>{text}</p>
         {children}
       </div>

@@ -700,16 +700,17 @@ mixin "stacked-facts" {
     justify-content center
 }
 
-// A box that scrolls says there is more below: a soft line at its foot that goes away when the end is reached.
-mixin "scroll-cue-foot" {
-    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
-    background-position "bottom, bottom"
-    background-size "100% $space-3, 100% $space-2"
+// A box that scrolls says there is more above and below: a soft shadow at each edge that has more behind it, and none
+// where the end is reached (two covers of the colour of the box scroll with the content and hide the shadows).
+mixin "scroll-cue" {
+    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient($bg-raised, $bg-raised), linear-gradient($border-control, transparent), linear-gradient(to top, $border-control, transparent)"
+    background-position "top, bottom, top, bottom"
+    background-size "100% $space-3, 100% $space-3, 100% $space-2, 100% $space-2"
     background-repeat no-repeat
     // The cue stays inside the edges of the field above the box, not in the padding for the ring.
     background-origin content-box
     background-clip content-box
-    background-attachment "local, scroll"
+    background-attachment "local, local, scroll, scroll"
 }
 
 // The column the pages are drawn in, centered; what is drawn at its bottom (the offers to undo) uses it too.
@@ -1660,7 +1661,7 @@ part "picker.options[variant=list]" {
     use "ring-room"
     list-style none
     overflow-y auto
-    use "scroll-cue-foot"
+    use "scroll-cue"
 }
 
 // Rows that are one button each reach out by the ring room, so their text stands on the edge of the
@@ -2913,6 +2914,7 @@ part "window.body" {
     min-height 0
     padding "$pad-dialog"
     overflow-y auto
+    use "scroll-cue"
 }
 
 // Rows: what is missing (it comes and goes), the buttons in one row at the right, the main one last
@@ -3501,24 +3503,19 @@ part "confirm.body" {
     overflow-y auto
     use "ring-room"
     use "ring-room-flush"
-    use "scroll-cue-foot"
+    use "scroll-cue"
 }
 
+// The title stands above the body that scrolls, so it never moves, and a line under it ends what scrolls (the review of
+// M5 exit, O1).
 part "confirm.title" {
+    flex none
     margin 0
+    padding-block-end "$space-2"
+    border-bottom "$border-width solid $border-subtle"
     font-size "$fs-lg"
     line-height "$lh-snug"
     font-weight "$weight-bold"
-}
-
-// The title of the question that scrolls stays at the top of its body, so a long preview never takes it off the
-// screen, and covers the ring room above it (the review of M5 exit, O1).
-part "confirm.body confirm.title" {
-    position sticky
-    top "calc(-1 * $ring-room)"
-    padding-block "$ring-room $space-2"
-    border-bottom "$border-width solid $border-subtle"
-    background "$bg-raised"
 }
 
 // A line above the answers, so what scrolls above them ends at a line and not at the buttons.
