@@ -106,6 +106,18 @@ const withCrops: ReadonlySet<string> = new Set([
   "issue-team-member",
 ]);
 
+/** Waits until the browser has drawn what was just scrolled to, so a picture is never of an empty page. */
+function painted(page: Page): Promise<unknown> {
+  return page.evaluate(
+    () =>
+      new Promise((done) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(done);
+        });
+      }),
+  );
+}
+
 /** The pictures of the top and of the next part of a tall page, at the size of the window. */
 async function takeCrops(page: Page, shot: Shot): Promise<void> {
   if (shot.screen === "project-move") {
@@ -138,10 +150,12 @@ async function takeCrops(page: Page, shot: Shot): Promise<void> {
   await page.evaluate(() => {
     window.scrollTo(0, 0);
   });
+  await painted(page);
   await shootWindowAs(page, `${base}-crop-top`, SHOWCASE, shot.theme.id);
   await page.evaluate(() => {
     window.scrollTo(0, window.innerHeight);
   });
+  await painted(page);
   await shootWindowAs(page, `${base}-crop-next`, SHOWCASE, shot.theme.id);
   await page.evaluate(() => {
     window.scrollTo(0, 0);

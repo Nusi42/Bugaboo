@@ -69,4 +69,6 @@ test("ux_4 the button that takes a filter away is inside the border of its chip"
   const bar = page.locator("main");
   await expect(page.locator("[data-part='search-filter']").first()).toBeVisible();
   expect(await chipsWithButtonOutside(bar), "chips with the button outside").toBe(0);
+  // Where the words are longer than the room, they start at the inner edge and give way at their end, never at their start.
+  expect(await leastRoomBeforeTheWords(bar), "room before the words").toBeGreaterThanOrEqual(8);
 });
