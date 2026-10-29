@@ -130,6 +130,17 @@ export function isOwnField(word: string): boolean {
 /** The words that cannot be grouped by: a long text and the Issue ID have no groups. */
 export const notGroupable: ReadonlySet<string> = new Set([listWord.description, listWord.id]);
 
+/**
+ * The columns the list keeps while an issue is open in the side panel beside it (UX §4.2): the
+ * list has the room that is left, so only the status, the ID, the title and the priority stay.
+ */
+export const besidePanelColumns: ReadonlySet<string> = new Set([
+  listWord.status,
+  listWord.id,
+  listWord.title,
+  listWord.priority,
+]);
+
 /** The columns a phone draws in each card (UX section 4.2): columns are not offered there. */
 export const phoneColumns: readonly string[] = [
   listWord.status,

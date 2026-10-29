@@ -30,7 +30,7 @@ export function useListContextValue(input: ContextInput): ListContextValue {
   const now = useNow();
   const { text, within, project, language, openIn, state, open, selection, onClear, report } =
     input;
-  const { words, failure, own } = useListRead({ text, within }, view, language, phone);
+  const { words, failure, own } = useListRead({ text, within }, view, language, open);
   // The same value while nothing it holds changed: every row and group reads it.
   return useMemo(
     () => ({

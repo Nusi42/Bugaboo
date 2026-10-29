@@ -1,7 +1,8 @@
 import type { SearchLanguage } from "@bugaboo/wasm-search";
+import { useLayout } from "@bugaboo/ui";
 import { useMemo } from "react";
 
-import { isOwnField, phoneColumns } from "../../shared/list-columns.ts";
+import { besidePanelColumns, isOwnField, phoneColumns } from "../../shared/list-columns.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import { useFoundGroups, useFoundIssues, type FoundSearch } from "./found-issues.ts";
 import { useOwnColumns, type OwnColumns } from "./own-columns.ts";
@@ -31,10 +32,19 @@ export function useListRead(
   search: FoundSearch,
   view: ListView,
   language: SearchLanguage,
-  phone: boolean,
+  open: string | undefined,
 ): ListRead {
+  // A phone has its own few columns; beside the side panel the list has little room.
+  const phone = useLayout() === "phone";
+  const besidePanel = open !== undefined;
   const columns = view.columns.join(",");
-  const words = useMemo(() => (phone ? phoneColumns : columns.split(",")), [phone, columns]);
+  const words = useMemo(() => {
+    if (phone) {
+      return phoneColumns;
+    }
+    const chosen = columns.split(",");
+    return besidePanel ? chosen.filter((word) => besidePanelColumns.has(word)) : chosen;
+  }, [phone, besidePanel, columns]);
   const own = useOwnColumns(language, needsOwn(view));
   const rows = useFoundIssues(search, words, view.groupBy === null);
   const groups = useFoundGroups(search, view.groupBy);
