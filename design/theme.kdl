@@ -1426,6 +1426,7 @@ part "overlay.modal[variant=center]" {
 part "overlay.modal[variant=question]" {
     width "100%"
     max-width "$size-dialog"
+    max-height "100%"
     border-radius "$r-card"
 }
 
@@ -3204,8 +3205,10 @@ part "search-field.input::-webkit-search-cancel-button" {
 
 part "confirm.dialog" {
     display flex
+    flex 1
     flex-direction column
     gap "$space-4"
+    min-height 0
     padding "$space-5"
     outline none
 }
@@ -3218,14 +3221,17 @@ part "confirm.body" {
     flex 1
     gap "$space-4"
     min-height 0
-}
-
-part "overlay.modal[variant=full] confirm.body" {
     overflow-y auto
 }
 
+// The title stays at the top of the scrolling question, so a long preview never takes it off the screen (the
+// review of M5 exit, O1).
 part "confirm.title" {
+    position sticky
+    top 0
     margin 0
+    padding-block-end "$space-1"
+    background "$bg-raised"
     font-size "$fs-lg"
     line-height "$lh-snug"
     font-weight "$weight-bold"

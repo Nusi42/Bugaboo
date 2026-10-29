@@ -693,6 +693,7 @@ optgroup {
 [data-part="overlay.modal"][data-variant~="question"] {
   width: 100%;
   max-width: var(--size-dialog);
+  max-height: 100%;
   border-radius: var(--r-card);
 }
 
@@ -2504,8 +2505,10 @@ optgroup {
 
 [data-part="confirm.dialog"] {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-4);
+  min-height: 0;
   padding: var(--space-5);
   outline: none;
 }
@@ -2516,14 +2519,15 @@ optgroup {
   flex: 1;
   gap: var(--space-4);
   min-height: 0;
-}
-
-[data-part="overlay.modal"][data-variant~="full"] [data-part="confirm.body"] {
   overflow-y: auto;
 }
 
 [data-part="confirm.title"] {
+  position: sticky;
+  top: 0;
   margin: 0;
+  padding-block-end: var(--space-1);
+  background: var(--bg-raised);
   font-size: var(--fs-lg);
   line-height: var(--lh-snug);
   font-weight: var(--weight-bold);
