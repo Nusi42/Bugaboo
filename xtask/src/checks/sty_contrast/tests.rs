@@ -370,6 +370,18 @@ fn the_three_status_tints_are_told_apart_from_each_other_and_from_the_card() {
 }
 
 #[test]
+fn the_shadow_at_the_end_of_a_scrolling_box_is_far_from_the_surfaces() {
+    // M5 exit, round 8: in Dusk and Midnight the shadow was 5 to 7 levels from the box and was not seen.
+    // A shade of Dusk that is close to its surfaces is rejected.
+    let findings = evaluate(&with_value("cue", "dusk", "#3a3f4a"));
+    assert!(
+        findings.iter().any(|f| f.message.contains("`cue`")),
+        "{:?}",
+        messages(&findings)
+    );
+}
+
+#[test]
 fn the_quiet_words_of_a_tinted_row_have_room_to_spare() {
     // M5 exit L23: the ID and the hint words of a row were 4.5:1 and a little over on the tints,
     // which a small thin text shows as hard to read. The old muted colors of Paper are rejected.

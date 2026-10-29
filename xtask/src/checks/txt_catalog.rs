@@ -465,13 +465,16 @@ mod tests {
         let locales = [locale(
             r#"{"nav.a": "Roles & permissions", "nav.b": "Roles and permissions", "nav.c": "R&D"}"#,
         )];
-        let code = [source("web/a.ts", r#"t("nav.a"); t("nav.b")"#)];
+        let code = [source("web/a.ts", r#"t("nav.a"); t("nav.b"); t("nav.c")"#)];
         let text = messages(&evaluate(&locales, &code, &[]));
         assert!(
             text.contains("`nav.a` writes an ampersand; the texts say and"),
             "{text}"
         );
-        assert!(text.contains("`nav.c`"), "{text}");
+        assert!(
+            text.contains("`nav.c` writes an ampersand; the texts say and"),
+            "{text}"
+        );
         assert!(!text.contains("`nav.b`"), "{text}");
     }
 
