@@ -1363,7 +1363,7 @@ optgroup {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--bg-sunken);
+  background: var(--scrim);
   opacity: var(--opacity-scrim);
 }
 

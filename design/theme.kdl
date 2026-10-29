@@ -1338,7 +1338,7 @@ part "overlay::before" {
     content "\"\""
     position absolute
     inset 0
-    background "$bg-sunken"
+    background "$scrim"
     opacity "$opacity-scrim"
     forced {
         background Canvas
@@ -10263,7 +10263,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
     rule ".scrim" {
         position fixed
         inset 0
-        background "color-mix(in srgb, $bg-sunken calc($opacity-scrim*100%), transparent)"
+        background "color-mix(in srgb, $scrim calc($opacity-scrim*100%), transparent)"
         z-index "$doc-z-60"
         display grid
         place-items start center
