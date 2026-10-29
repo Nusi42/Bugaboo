@@ -121,6 +121,15 @@ function painted(page: Page): Promise<unknown> {
   );
 }
 
+/** Scrolls the page to this height: the window on a computer, the main area of the page on a phone, where that is the box that scrolls. */
+async function scrollPageTo(page: Page, top: number): Promise<void> {
+  await page.evaluate((to) => {
+    window.scrollTo(0, to);
+    document.querySelector("[data-part='app-layout.main']")?.scrollTo(0, to);
+  }, top);
+  await painted(page);
+}
+
 /** The pictures of the top and of the next part of a tall page, at the size of the window. */
 async function takeCrops(page: Page, shot: Shot): Promise<void> {
   if (shot.screen === "project-move") {
@@ -151,19 +160,11 @@ async function takeCrops(page: Page, shot: Shot): Promise<void> {
     return;
   }
   const base = `${numbered(shot.order)}-${shot.screen}-${shot.device}`;
-  await page.evaluate(() => {
-    window.scrollTo(0, 0);
-  });
-  await painted(page);
+  await scrollPageTo(page, 0);
   await shootWindowAs(page, `${base}-crop-top`, SHOWCASE, shot.theme.id);
-  await page.evaluate(() => {
-    window.scrollTo(0, window.innerHeight);
-  });
-  await painted(page);
+  await scrollPageTo(page, page.viewportSize()?.height ?? 0);
   await shootWindowAs(page, `${base}-crop-next`, SHOWCASE, shot.theme.id);
-  await page.evaluate(() => {
-    window.scrollTo(0, 0);
-  });
+  await scrollPageTo(page, 0);
 }
 
 /** Takes the whole open screen in the theme it shows, and remembers it for the gallery. */
