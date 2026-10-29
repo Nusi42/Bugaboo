@@ -32,13 +32,19 @@ export function atList(address: string): Screen["open"] {
   };
 }
 
+/** The end of the count line of a list ("... 150 shown"), taken from the catalog, as a pattern. */
+function shownWord(): RegExp {
+  const line = t("issues.count-line", { total: 1, scope: "x", shown: 1 });
+  return new RegExp(`${line.slice(line.lastIndexOf("1") + 1).trim()}$`, "u");
+}
+
 /** The list with an issue open in the side panel: the picture waits for the count line of the list; a phone has no list beside the issue. */
 export function atPanel(address: string): Screen["open"] {
   return async ({ page }) => {
     await page.goto(address);
     await expectPage(page);
     if (layoutOf(page) !== "phone") {
-      await expect(page.getByText(/ shown$/u).first()).toBeVisible();
+      await expect(page.getByText(shownWord()).first()).toBeVisible();
     }
   };
 }

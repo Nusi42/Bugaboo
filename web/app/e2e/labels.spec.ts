@@ -1,13 +1,13 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { signedInAdmin } from "./support/access.ts";
 import { ada, bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { itemArea } from "./support/layout.ts";
 import { signIn } from "./support/flows.ts";
 import { detailRow, expectStatus, issueNote, prepareWeb, startWorking } from "./support/issues.ts";
-import { addTag, labelArea, labelIdOf, showDetails } from "./support/labels.ts";
+import { addTag, putLabelOn, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 
 // Labels and tags (TAG-01, TAG-02, TAG-03, M3 WP-08): the page of the people who look after them,
@@ -141,18 +141,13 @@ test("tag_03 renaming a label shows which issues change before it is saved", asy
   page,
   server,
 }) => {
-  const admin = await signedInAdmin(server);
-  await admin.client.POST("/api/v1/issues/{issue}/labels", {
-    params: { path: { issue: "WEB-1" } },
-    body: { label: await labelIdOf(admin, "frontend") },
-  });
-  await admin.dispose();
+  await putLabelOn(server, "WEB-1", "frontend");
   await signIn(page, ada);
   await page.goto(paths.labels);
   await listNamed(page, t("labels.labels-search"))
     .getByRole("button", { name: "frontend", exact: true })
     .click();
-  const panel = labelArea(page, "frontend");
+  const panel = itemArea(page, "frontend");
   await panel.getByLabel(t("labels.field-name"), { exact: true }).fill("front end");
   await panel.getByRole("button", { name: t("labels.show-changes"), exact: true }).click();
   await expect(panel.getByText(t("preview.summary", { changed: 1, skipped: 0 }))).toBeVisible();

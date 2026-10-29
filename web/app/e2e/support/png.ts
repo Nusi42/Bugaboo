@@ -54,6 +54,9 @@ export function readPng(file: Buffer): Pixels {
 /** The most that one color channel differs between two pictures of the same size. */
 export function mostLevelsBetween(first: Buffer, second: Buffer): number {
   const [one, two] = [readPng(first), readPng(second)];
+  if (one.width !== two.width || one.data.length !== two.data.length) {
+    throw new RangeError("The two pictures are not the same size.");
+  }
   let most = 0;
   one.data.forEach((level, at) => {
     most = Math.max(most, Math.abs(level - (two.data[at] ?? 0)));
