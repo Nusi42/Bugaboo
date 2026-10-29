@@ -12505,6 +12505,11 @@ part "search-filters" {
     min-width 0
 }
 
+// In a dialog (the filters inside an *Any of*) the list is as high as its filters, not the free height.
+part "confirm.body search-filters" {
+    flex none
+}
+
 // A filter: the button that changes it and the button that takes it away, in one outline.
 part "search-filter" {
     use "control-box"

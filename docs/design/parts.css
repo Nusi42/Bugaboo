@@ -5460,6 +5460,10 @@ optgroup {
   min-width: 0;
 }
 
+[data-part="confirm.body"] [data-part="search-filters"] {
+  flex: none;
+}
+
 [data-part="search-filter"] {
   box-sizing: border-box;
   min-height: var(--size-control);
