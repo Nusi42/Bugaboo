@@ -76,8 +76,8 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 |-----|-------|--------|------|---------------------------|
 | `see-projects` | Projects | project | See | See the project and what is in it |
 | `create-projects` | Projects | organization | Change | Create projects at the top level |
-| `create-sub-projects` | Projects | project | Change | Create sub-projects inside the project |
-| `move-projects` | Projects | project | Change | Move sub-projects into or out of the project |
+| `create-sub-projects` | Projects | project | Change | Create sub‑projects inside the project |
+| `move-projects` | Projects | project | Change | Move sub‑projects into or out of the project |
 | `change-project-settings` | Projects | project | Manage | Change the project's name, short name and settings |
 | `see-issues` | Issues | project | See | See every issue of the project, not only the ones they reported |
 | `create-issues` | Issues | project | Change | Create issues |
@@ -147,8 +147,8 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
 | See the project and what is in it | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Create projects at the top level | ✓ | – | – | – | – | – |
-| Create sub-projects inside the project | ✓ | ✓ | – | – | – | – |
-| Move sub-projects into or out of the project | ✓ | ✓ | – | – | – | – |
+| Create sub‑projects inside the project | ✓ | ✓ | – | – | – | – |
+| Move sub‑projects into or out of the project | ✓ | ✓ | – | – | – | – |
 | Change the project's name, short name and settings | ✓ | ✓ | – | – | – | – |
 | See every issue of the project, not only the ones they reported | ✓ | ✓ | ✓ | ✓ | ✓ | – |
 | Create issues | ✓ | ✓ | ✓ | ✓ | – | ✓ |

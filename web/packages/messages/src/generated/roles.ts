@@ -63,7 +63,7 @@ export const messages = {
   "assignments.intro-organization":
     "The people and groups with a role in the whole organization. A role given here counts in every project.",
   "assignments.intro-project":
-    "The people and groups with a role here. A row that comes from a parent project says so; change it for this project by giving a row here. No access hides this project and its sub-projects, whatever role comes from above.",
+    "The people and groups with a role here. A row that comes from a parent project says so; change it for this project by giving a row here. No access hides this project and its sub‑projects, whatever role comes from above.",
   "assignments.list": "Who has which role",
   "assignments.none": "Nobody has a role here yet.",
   "assignments.more": "Show more rows",
@@ -88,7 +88,7 @@ export const messages = {
   "assignments.role": "Role",
   "assignments.where": "Where it counts",
   "assignments.no-access-help":
-    "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",
+    "No access covers this project and its sub‑projects. It wins over any role from above and over a role through a group on this project. A role given on a sub‑project still counts there.",
   "assignments.give": "Give the role",
   "assignments.give-no-access": "Set No access",
   "assignments.incomplete": "Choose whom to give it to, and which role.",

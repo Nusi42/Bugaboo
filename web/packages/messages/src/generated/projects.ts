@@ -7,7 +7,7 @@ export const messages = {
   "projects.heading": "Projects",
   "projects.tree-empty": "You do not see any project yet.",
   "projects.tree-more": "Show more projects",
-  "projects.toggle-name": "Sub-projects of {name}",
+  "projects.toggle-name": "Sub‑projects of {name}",
   "projects.title": "Projects",
   "projects.intro":
     "The projects you can see. Open one to change its name or short name. A project is moved on its own settings page.",
@@ -19,7 +19,7 @@ export const messages = {
   "projects.at-the-top": "At the top level",
   "projects.create-title": "Create a project",
   "projects.create-intro":
-    "A project at the top level. Sub-projects are created inside their project.",
+    "A project at the top level. Sub‑projects are created inside their project.",
   "projects.create": "Create the project",
   "projects.created": "Created the project {name}.",
   "projects.field-name": "Name",
@@ -37,11 +37,11 @@ export const messages = {
   "projects.overview-short-name": "Short name",
   "projects.overview-inside": "Inside",
   "projects.overview-top": "At the top level",
-  "projects.sub-projects": "Sub-projects",
-  "projects.sub-projects-empty": "This project has no sub-projects yet.",
+  "projects.sub-projects": "Sub‑projects",
+  "projects.sub-projects-empty": "This project has no sub‑projects yet.",
   "projects.sub-projects-ask": "Ask a project lead if you need one.",
-  "projects.create-sub-project": "Create a sub-project",
-  "projects.sub-projects-more": "Show more sub-projects",
+  "projects.create-sub-project": "Create a sub‑project",
+  "projects.sub-projects-more": "Show more sub‑projects",
   "projects.move-title": "Move this project",
   "projects.move-text":
     "Put {name}, with everything inside it, into another project, or at the top level. You read what changes before it happens.",
