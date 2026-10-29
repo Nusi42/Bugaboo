@@ -1,9 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, Card, Link, partOf, part } from "@bugaboo/ui";
 
+import { useMemo } from "react";
+
 import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { Frame } from "./Frame.tsx";
+import { usePageTrail } from "./page-trail.ts";
 
 /** The brand, for the pages that stand outside the layouts. */
 function Brand() {
@@ -13,6 +16,9 @@ function Brand() {
 /** An address that no page has. */
 export function NotFoundPage() {
   usePageTitle(t("page.not-found.title"));
+  // The top bar says what this is, not the place the address was under (a hidden place is not named).
+  const trail = useMemo(() => [{ label: t("page.not-found.title"), href: paths.home }], []);
+  usePageTrail(trail);
   return (
     <Frame header={<Brand />}>
       <div {...partOf(part.shellNarrow)}>
