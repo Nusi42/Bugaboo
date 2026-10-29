@@ -36,15 +36,52 @@ function MoreChoices({
   ) : null;
 }
 
+/** One group or project: its tick box, and for a project of this search its quiet *Use as the list* button. */
+function ShareRow({
+  search,
+  kind,
+  item,
+  onToggle,
+}: {
+  readonly search: SavedSearch;
+  readonly kind: Schema<"ShareKind">;
+  readonly item: {
+    readonly id: string;
+    readonly name: string;
+    readonly short_name?: string | null;
+  };
+  readonly onToggle: (on: boolean) => void;
+}) {
+  return (
+    <li {...partOf(part.searchListItem)}>
+      <div {...partOf(part.shareChoice)}>
+        <Checkbox
+          label={item.name}
+          isSelected={isSharedWith(search, kind, item.id)}
+          onChange={onToggle}
+        />
+        {kind === shareKind.project &&
+        isSharedWith(search, kind, item.id) &&
+        item.short_name !== undefined &&
+        item.short_name !== null ? (
+          <ProjectListToggle search={search} project={item.short_name} name={item.name} />
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
 /** The groups or the projects the person may share with, each a box to tick; a tick shares at once. */
 function Choices({
   search,
   kind,
   legend,
+  none,
 }: {
   readonly search: SavedSearch;
   readonly kind: Schema<"ShareKind">;
   readonly legend: string;
+  readonly none: string;
 }) {
   const choices = useShareChoices(kind);
   const change = useChangeShare(search.id);
@@ -54,25 +91,19 @@ function Choices({
       <legend {...partOf(part.searchHelpTitle)}>{legend}</legend>
       {choices.isError ? <Alert tone={alertTone.danger}>{messageOf(choices.error)}</Alert> : null}
       {items.length === 0 && !choices.isPending && !choices.isError ? (
-        <p {...partOf(part.muted)}>{t("search.share-none")}</p>
+        <p {...partOf(part.muted)}>{none}</p>
       ) : null}
       <ul {...partOf(part.searchList)}>
         {items.map((item) => (
-          <li key={item.id} {...partOf(part.searchListItem)}>
-            <Checkbox
-              label={item.name}
-              isSelected={isSharedWith(search, kind, item.id)}
-              onChange={(on) => {
-                change.mutate({ on, target: { kind, id: item.id } });
-              }}
-            />
-            {kind === shareKind.project &&
-            isSharedWith(search, kind, item.id) &&
-            item.short_name !== undefined &&
-            item.short_name !== null ? (
-              <ProjectListToggle search={search} project={item.short_name} />
-            ) : null}
-          </li>
+          <ShareRow
+            key={item.id}
+            search={search}
+            kind={kind}
+            item={item}
+            onToggle={(on) => {
+              change.mutate({ on, target: { kind, id: item.id } });
+            }}
+          />
         ))}
       </ul>
       <MoreChoices
@@ -112,8 +143,18 @@ export function ShareWindow({ search, isOpen, onClose }: ShareWindowProps) {
       }
     >
       <div {...partOf(part.searchHelp)}>
-        <Choices search={search} kind={shareKind.group} legend={t("search.share-groups")} />
-        <Choices search={search} kind={shareKind.project} legend={t("search.share-projects")} />
+        <Choices
+          search={search}
+          kind={shareKind.group}
+          legend={t("search.share-groups")}
+          none={t("search.share-none-groups")}
+        />
+        <Choices
+          search={search}
+          kind={shareKind.project}
+          legend={t("search.share-projects")}
+          none={t("search.share-none-projects")}
+        />
         <p {...partOf(part.muted)}>{t("search.share-note")}</p>
       </div>
     </Window>

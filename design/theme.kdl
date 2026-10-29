@@ -12757,6 +12757,16 @@ part "search-list.item" {
     border-radius "$r-ctl"
 }
 
+// One project of the Share window: its tick box, and under it the quiet button that makes it the project's list.
+part "share-choice" {
+    display flex
+    flex-direction column
+    align-items flex-start
+    gap "$space-1"
+    flex 1
+    min-width 0
+}
+
 part "search-help.title" {
     margin 0
     margin-block-end "$space-2"

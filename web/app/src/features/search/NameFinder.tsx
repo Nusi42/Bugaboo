@@ -1,8 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { PickerChoice, SearchPicker } from "@bugaboo/ui";
+import { FieldValue, PickerChoice, SearchPicker, type FieldLook } from "@bugaboo/ui";
 import type { AskKind, SearchLanguage } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
+import { useMe } from "../../shared/use-me.ts";
 import { useAskedNames, type AskedName } from "./asked-names.ts";
 
 export interface NameFinderProps {
@@ -11,7 +12,12 @@ export interface NameFinderProps {
   readonly what: Exclude<AskKind, "issues">;
   /** A name was chosen. */
   readonly onPick: (name: AskedName) => void;
+  /** *Me* was chosen: for people, the first row of the list is *Me (Your Name)*. */
+  readonly onPickMe?: () => void;
 }
+
+/** A person is shown with the round face of the avatar look (UX design section 7.5). */
+const avatar: FieldLook = "avatar";
 
 /** The words of the finder for each kind of name. */
 const legends: Readonly<Record<NameFinderProps["what"], () => string>> = {
@@ -24,9 +30,13 @@ const legends: Readonly<Record<NameFinderProps["what"], () => string>> = {
  * Finding a person, a group or a project by the start of the name (UX design section 4.3): the
  * names come from the routes of the search, which list only those this person may use in a search.
  */
-export function NameFinder({ language, what, onPick }: NameFinderProps) {
+export function NameFinder({ language, what, onPick, onPickMe }: NameFinderProps) {
   const [words, setWords] = useState("");
-  const found = useAskedNames(language, { what, startingWith: words.trim() });
+  const asked = useAskedNames(language, { what, startingWith: words.trim() });
+  const myName = useMe()?.name;
+  // The person who searches is the first row, as *Me*, and is not in the list a second time.
+  const meRow = what === "people" && onPickMe !== undefined && myName !== undefined;
+  const found = meRow ? asked.filter((name) => name.value !== myName) : asked;
   return (
     <SearchPicker
       legend={legends[what]()}
@@ -36,14 +46,28 @@ export function NameFinder({ language, what, onPick }: NameFinderProps) {
       query={words}
       onQuery={setWords}
       failed={undefined}
-      nothing={found.length === 0 ? t("search.bar.pick-none") : undefined}
+      nothing={found.length === 0 && !meRow ? t("search.bar.pick-none") : undefined}
       more={undefined}
     >
+      {meRow && words.trim() === "" ? (
+        <PickerChoice
+          label={
+            <FieldValue
+              look={avatar}
+              text={t("search.bar.me-row", { name: myName })}
+              initialsFrom={myName}
+            />
+          }
+          onPick={onPickMe}
+        />
+      ) : null}
       {found.map((name) => (
         <PickerChoice
           key={name.source}
-          label={name.label}
-          accessibleName={t("search.bar.pick-take", { name: name.label })}
+          label={what === "people" ? <FieldValue look={avatar} text={name.label} /> : name.label}
+          {...(what === "people"
+            ? {}
+            : { accessibleName: t("search.bar.pick-take", { name: name.label }) })}
           onPick={() => {
             onPick(name);
           }}

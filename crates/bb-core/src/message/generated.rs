@@ -4271,8 +4271,11 @@ pub const SEARCH_SHARE_GROUPS: MessageKey = MessageKey::new("search.share-groups
 /// The message `search.share-more`.
 pub const SEARCH_SHARE_MORE: MessageKey = MessageKey::new("search.share-more");
 
-/// The message `search.share-none`.
-pub const SEARCH_SHARE_NONE: MessageKey = MessageKey::new("search.share-none");
+/// The message `search.share-none-groups`.
+pub const SEARCH_SHARE_NONE_GROUPS: MessageKey = MessageKey::new("search.share-none-groups");
+
+/// The message `search.share-none-projects`.
+pub const SEARCH_SHARE_NONE_PROJECTS: MessageKey = MessageKey::new("search.share-none-projects");
 
 /// The message `search.share-note`.
 pub const SEARCH_SHARE_NOTE: MessageKey = MessageKey::new("search.share-note");
@@ -9405,6 +9408,15 @@ pub fn search_bar_last_weeks(count: i64) -> Message {
     )
 }
 
+/// The message `search.bar.me-row`.
+#[must_use]
+pub fn search_bar_me_row(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.bar.me-row"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `search.bar.member-of`.
 #[must_use]
 pub fn search_bar_member_of(group: impl std::fmt::Display) -> Message {
@@ -9954,19 +9966,19 @@ pub fn search_mistake_wrong_text(field: impl std::fmt::Display) -> Message {
 
 /// The message `search.project-list-stop`.
 #[must_use]
-pub fn search_project_list_stop(project: impl std::fmt::Display) -> Message {
+pub fn search_project_list_stop(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.project-list-stop"),
-        vec![("project", Value::Text(project.to_string()))],
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
 /// The message `search.project-list-use`.
 #[must_use]
-pub fn search_project_list_use(project: impl std::fmt::Display) -> Message {
+pub fn search_project_list_use(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.project-list-use"),
-        vec![("project", Value::Text(project.to_string()))],
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -14235,7 +14247,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The index of the text search was built again for {issues, plural, one {# issue} other {# issues}}.",
     ),
     ("search.actions", "Actions"),
-    ("search.bar.a-day", "A day"),
+    ("search.bar.a-day", "A day I choose"),
     ("search.bar.above", "above"),
     ("search.bar.add-filter", "Add filter"),
     ("search.bar.add-filter-confirm", "Add filter"),
@@ -14268,7 +14280,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.compared", "{comparison} {value}"),
     ("search.bar.contains", "contains {text}"),
     ("search.bar.count", "How many"),
-    ("search.bar.day", "The day"),
+    ("search.bar.day", "Which day"),
     (
         "search.bar.duration-help",
         "Write a length of time, for example {hours}, {minutes} or {both}.",
@@ -14313,6 +14325,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "in the last {count, plural, one {week} other {# weeks}}",
     ),
     ("search.bar.me", "me"),
+    ("search.bar.me-row", "Me ({name})"),
     ("search.bar.member-of", "in the group {group}"),
     ("search.bar.name-colon", "{name}:"),
     ("search.bar.name-value", "{name}: {value}"),
@@ -14370,7 +14383,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.unit-weeks", "weeks"),
     ("search.bar.until", "until"),
     ("search.bar.value", "Value"),
-    ("search.bar.when", "Day"),
+    ("search.bar.when", "When"),
     ("search.clear", "Clear the search"),
     ("search.copy-name", "Copy of {name}"),
     (
@@ -14609,9 +14622,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "search.project-list-stop",
-        "Stop using as the list of {project}",
+        "Stop using this as the {name} project's list",
     ),
-    ("search.project-list-use", "Use as the list of {project}"),
+    (
+        "search.project-list-use",
+        "Use this as the {name} project's list",
+    ),
     ("search.projects", "Projects"),
     ("search.results", "Results"),
     ("search.save", "Save search"),
@@ -14632,7 +14648,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.share-done", "Done"),
     ("search.share-groups", "Groups"),
     ("search.share-more", "Show more"),
-    ("search.share-none", "There is nothing you may share with."),
+    (
+        "search.share-none-groups",
+        "You can't share with any group.",
+    ),
+    (
+        "search.share-none-projects",
+        "You can't share with any project.",
+    ),
     (
         "search.share-note",
         "Everyone sees only the issues and fields they are allowed to see.",

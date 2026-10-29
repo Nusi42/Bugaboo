@@ -141,8 +141,8 @@ export function PickerHint({ children }: { readonly children: ReactNode }) {
 
 export interface PickerChoiceProps {
   readonly label: ReactNode;
-  /** The name for screen readers, when the label alone does not say what the press does. */
-  readonly accessibleName: string;
+  /** The name for screen readers, when the label alone does not say what the press does; the words of the label when left out. */
+  readonly accessibleName?: string;
   /** More to read in the same row, on the same line (a status, an ID). */
   readonly children?: ReactNode;
   readonly onPick: () => void;
@@ -155,7 +155,11 @@ export interface PickerChoiceProps {
 export function PickerChoice({ label, accessibleName, children, onPick }: PickerChoiceProps) {
   return (
     <li>
-      <AriaButton {...partOf(part.pickerChoice)} aria-label={accessibleName} onPress={onPick}>
+      <AriaButton
+        {...partOf(part.pickerChoice)}
+        {...(accessibleName === undefined ? {} : { "aria-label": accessibleName })}
+        onPress={onPick}
+      >
         <span {...partOf(part.pickerName, { variants: [pickerLook.list] })}>{label}</span>
         {children}
       </AriaButton>

@@ -72,27 +72,22 @@ function ChoiceSelect({ field, values, onValues }: ValueInputProps) {
 /** A person or a project, found by name; for a person, the one who searches may be chosen as *me*. */
 function NamedValue({ field, language, values, onValues }: ValueInputProps) {
   const [first] = values;
-  const me = first?.type === "me";
   return (
-    <>
-      <NameChoice
-        language={language}
-        what={field.kind === "person" ? "people" : "projects"}
-        chosen={first?.type === "text" ? first.text : ""}
-        onChoose={(name) => {
-          onValues([textOperand(name)]);
-        }}
-      />
-      {field.kind === "person" ? (
-        <Checkbox
-          label={t("search.bar.me")}
-          isSelected={me}
-          onChange={(on) => {
-            onValues(on ? [{ type: "me", span: nowhere }] : []);
-          }}
-        />
-      ) : null}
-    </>
+    <NameChoice
+      language={language}
+      what={field.kind === "person" ? "people" : "projects"}
+      chosen={first?.type === "me" ? t("search.bar.me") : first?.type === "text" ? first.text : ""}
+      onChoose={(name) => {
+        onValues([textOperand(name)]);
+      }}
+      {...(field.kind === "person"
+        ? {
+            onChooseMe: () => {
+              onValues([{ type: "me", span: nowhere }]);
+            },
+          }
+        : {})}
+    />
   );
 }
 

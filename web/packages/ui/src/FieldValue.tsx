@@ -22,6 +22,8 @@ export interface FieldValueProps {
   readonly icon?: IssueTypeIconName | undefined;
   /** For a progress bar: how far it is, from 0 to 1. */
   readonly fraction?: number | undefined;
+  /** For an avatar: the name its letters come from, when the text is more than the name (*Me (Ada Admin)*). */
+  readonly initialsFrom?: string | undefined;
 }
 
 /** The first letters of the first two words of a name: what an avatar without a picture shows. */
@@ -72,11 +74,11 @@ function progressBar({ text, fraction }: FieldValueProps): ReactNode {
   );
 }
 
-function avatar({ text }: FieldValueProps): ReactNode {
+function avatar({ text, initialsFrom }: FieldValueProps): ReactNode {
   return (
     <span {...partOf(part.fieldAvatar)}>
       <span {...partOf(part.fieldAvatarFace)} aria-hidden>
-        {initialsOf(text)}
+        {initialsOf(initialsFrom ?? text)}
       </span>
       {text}
     </span>

@@ -51,7 +51,7 @@ test("qry_06 a person who may share only for one project is offered that project
   await expect(window.getByRole("checkbox", { name: "Website" })).toBeVisible();
   // A group needs the right to share for the whole organization; Ana has it for one project only,
   // so no group is offered, not even the one she is in.
-  await expect(window.getByText(t("search.share-none"))).toBeVisible();
+  await expect(window.getByText(t("search.share-none-groups"))).toBeVisible();
   await expect(window.getByRole("checkbox", { name: "Crew of Ana" })).toHaveCount(0);
   // What the person may not share with is not in the window, and nothing of it is in the page.
   await expect(window.getByRole("checkbox", { name: "Secret plans" })).toHaveCount(0);
@@ -62,7 +62,7 @@ test("qry_06 a person who may share only for one project is offered that project
   await window.getByText("Website", { exact: true }).click();
   await expect(window.getByRole("checkbox", { name: "Website", checked: true })).toBeVisible();
   await expect(
-    window.getByRole("button", { name: t("search.project-list-use", { project: "WEB" }) }),
+    window.getByRole("button", { name: t("search.project-list-use", { name: "Website" }) }),
   ).toHaveCount(0);
 });
 

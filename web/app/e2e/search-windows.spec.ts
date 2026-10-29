@@ -94,3 +94,27 @@ test("qry_01 the list of the Add filter window shows whole rows, never half a ro
   const cut = await rowsCutOff(list);
   expect(cut, "rows that are only partly inside the list").toEqual([]);
 });
+
+test("qry_01 the person picker has Me as the first row of its one list", async ({ page }) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+  await page
+    .getByRole("button", { name: t("search.bar.filter-by", { field: "Assigned to" }) })
+    .click();
+  const list = page.getByRole("list", { name: t("search.bar.pick-list") });
+  await expect(list.getByRole("button").first()).toHaveAccessibleName(
+    t("search.bar.me-row", { name: "Ada Admin" }),
+  );
+  // There is no second way to pick the same: no tick box for *me*, and Ada is not in the list again.
+  await expect(page.getByRole("checkbox", { name: t("search.bar.me") })).toHaveCount(0);
+  await expect(list.getByRole("button", { name: "Ada Admin", exact: true })).toHaveCount(0);
+  await list.getByRole("button").first().click();
+  await page
+    .getByRole("button", { name: t("search.bar.add-filter-confirm") })
+    .last()
+    .click();
+  await expect(
+    page.getByRole("button", { name: /Change the filter Assigned to: me/iu }),
+  ).toBeVisible();
+});
