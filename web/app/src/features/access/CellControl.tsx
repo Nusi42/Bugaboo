@@ -71,7 +71,7 @@ export function CellControl<Level extends string>({
       <SelectField
         label={label}
         hideLabel={hideLabel}
-        {...(origin === undefined || hideLabel ? {} : { description: origin })}
+        {...(origin === undefined ? {} : { description: origin })}
         choices={levels.map((level) => ({
           value: level,
           label: levelName(level),
@@ -80,9 +80,6 @@ export function CellControl<Level extends string>({
         value={cell.level}
         onChange={onChange}
       />
-      {hideLabel && origin !== undefined ? (
-        <span {...partOf(part.visuallyHidden)}>{origin}</span>
-      ) : null}
       {resettable ? (
         <ResetButton
           label={resetLabel}

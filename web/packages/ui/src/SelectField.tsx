@@ -14,7 +14,7 @@ export interface SelectChoice<Value extends string> {
 export interface SelectFieldProps<Value extends string> {
   /** The visible name of the field, already in the person's language. */
   readonly label: string;
-  /** Help under the name. */
+  /** Help under the name; with `hideLabel` it is there for screen readers only, like the name. */
   readonly description?: string;
   /** A problem the server found with the value: shown under the field. */
   readonly errorMessage?: string | undefined;
@@ -81,7 +81,7 @@ export function SelectField<Value extends string>({
         {label}
       </label>
       {description === undefined ? null : (
-        <span id={helpId} {...partOf(part.fieldDescription)}>
+        <span id={helpId} {...partOf(hideLabel ? part.visuallyHidden : part.fieldDescription)}>
           {description}
         </span>
       )}

@@ -102,6 +102,10 @@ async function changeBelow(page: Page): Promise<void> {
   await expect(around(inWeb)).toContainText(
     t("access.origin-from", { project: "Acme Corporation" }),
   );
+  // The list says where its level comes from to a screen reader too, whether the words are on the screen or not.
+  await expect(inWeb).toHaveAccessibleDescription(
+    t("access.origin-from", { project: "Acme Corporation" }),
+  );
 
   // WEB sets its own level; *Reset* takes it back and the level from ACME counts again.
   await pickLevel(inWeb, page, t("field-level.can-see"));
