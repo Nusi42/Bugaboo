@@ -137,7 +137,7 @@ tokens {
     // up theirs, down to the least width; then the list scrolls sideways, head and rows together. A
     // column that is only an icon, the ID and the priority keep their width. A column a person drags
     // is no narrower than the least and moves by the step with the arrow keys.
-    size "size-col-title" "120px"
+    size "size-col-title-least" "160px"
     size "size-col-least" "48px"
     size "size-col-most" "800px"
     size "size-col-step" "16px"

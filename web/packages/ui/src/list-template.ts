@@ -7,21 +7,25 @@ export interface ListColumnSpec {
   readonly width?: number | undefined;
 }
 
-/** The token of the usual width of each column; the title takes the room that is left. */
-const widthToken = {
-  select: "size-control",
-  status: "size-col-icon",
-  key: "size-col-key",
-  project: "size-col-project",
-  type: "size-col-project",
-  title: undefined,
-  labels: "size-col-labels",
-  priority: "size-col-priority",
-  person: "size-col-person",
-  value: "size-col-value",
-  changed: "size-col-changed",
-  action: "size-col-icon",
-} as const satisfies Readonly<Record<ListColumn, TokenName | undefined>>;
+/**
+ * The tokens whose sum is the width each column is drawn at: the one place that says it (the
+ * template of the list and the count of the columns that fit both read it). The title has a least
+ * width and takes the room that is left; the priority holds its name and the arrow of the sort.
+ */
+const widthTokens = {
+  select: ["size-control"],
+  status: ["size-col-icon"],
+  key: ["size-col-key"],
+  project: ["size-col-project"],
+  type: ["size-col-project"],
+  title: ["size-col-title-least"],
+  labels: ["size-col-labels"],
+  priority: ["size-col-priority", "size-icon-small"],
+  person: ["size-col-person"],
+  value: ["size-col-value"],
+  changed: ["size-col-changed"],
+  action: ["size-col-icon"],
+} as const satisfies Readonly<Record<ListColumn, readonly TokenName[]>>;
 
 /** The columns whose width is a most: they are narrower, down to the least, where the list has no room for it. Not the priority: its word (*Critical*) does not shrink. */
 const shrinks: ReadonlySet<ListColumn> = new Set([
@@ -36,6 +40,14 @@ function variable(token: TokenName): string {
   return `var(--${token})`;
 }
 
+/** The width of a column as a CSS length: its tokens added. */
+function lengthOf(column: ListColumn): string {
+  const tokens = widthTokens[column];
+  return tokens.length === 1
+    ? variable(tokens[0])
+    : `calc(${tokens.map((token) => variable(token)).join(" + ")})`;
+}
+
 /**
  * The columns of the head and of every row as one `grid-template-columns`: the width a person gave
  * a column, or the one the theme file gives its kind, and the title takes what is left. The ID
@@ -48,25 +60,17 @@ export function listTemplate(columns: readonly ListColumnSpec[], keyChars = 0): 
         return `${String(width)}px`;
       }
       if (column === "title") {
-        // The title is what people read: its least is a third more than the least of a column, and the columns of fields give way before it (L12).
-        return `minmax(calc(${variable("size-col-title")} * 4 / 3), 1fr)`;
+        // The title is what people read: the columns of fields give way before it.
+        return `minmax(${lengthOf(column)}, 1fr)`;
       }
       if (column === "key" && keyChars > 0) {
         // The ID is as wide as the longest one drawn, and not narrower than its head needs.
-        return `max(${variable("size-col-key")}, calc(${variable("size-code-char")} * ${String(keyChars)}))`;
-      }
-      if (column === "priority") {
-        // Its head holds the name and the arrow of the sort (its width is not set by hand, so no edge): the column fits its header.
-        return `calc(${variable("size-col-priority")} + ${variable("size-icon-small")})`;
-      }
-      const token = widthToken[column];
-      if (token === undefined) {
-        return variable("size-col-title");
+        return `max(${lengthOf(column)}, calc(${variable("size-code-char")} * ${String(keyChars)}))`;
       }
       // The columns of fields give up room, down to the least, before the title or another column does.
       return shrinks.has(column)
-        ? `minmax(${variable("size-col-least")}, ${variable(token)})`
-        : variable(token);
+        ? `minmax(${variable("size-col-least")}, ${lengthOf(column)})`
+        : lengthOf(column);
     })
     .join(" ");
 }
@@ -82,4 +86,27 @@ export function pixelsOf(token: TokenName): number {
     return 0;
   }
   return found;
+}
+
+/** The width in pixels of the tokens of a column added, as the page has them. */
+function pixelsOfColumn(column: ListColumn): number {
+  return widthTokens[column].reduce((sum, token) => sum + pixelsOf(token), 0);
+}
+
+/**
+ * The width in pixels a list needs for these columns where none gives way: the width each is
+ * drawn at (the one a person gave it, or the ID as wide as the longest ID drawn), the gaps of the
+ * row, the edge and the padding. The list counts it to see which columns fit.
+ */
+export function listNeeds(columns: readonly ListColumnSpec[], keyChars = 0): number {
+  const widths = columns.map(({ column, width }) => {
+    if (width !== undefined) {
+      return width;
+    }
+    const usual = pixelsOfColumn(column);
+    return column === "key" ? Math.max(usual, pixelsOf("size-code-char") * keyChars) : usual;
+  });
+  const gaps = Math.max(0, columns.length - 1) * pixelsOf("space-3");
+  const around = pixelsOf("size-edge") + 2 * pixelsOf("pad-box");
+  return widths.reduce((sum, width) => sum + width, gaps + around);
 }

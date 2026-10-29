@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { listTemplate } from "./list-template.ts";
+import { listNeeds, listTemplate } from "./list-template.ts";
 
 describe("ux_4_2 the columns of the list as one template", () => {
   it("lets the columns of fields give up room, down to the least, before the title", () => {
@@ -10,7 +10,7 @@ describe("ux_4_2 the columns of the list as one template", () => {
       { column: "changed" },
     ]);
     expect(template).toBe(
-      "minmax(calc(var(--size-col-title) * 4 / 3), 1fr) minmax(var(--size-col-least), var(--size-col-person)) minmax(var(--size-col-least), var(--size-col-changed))",
+      "minmax(var(--size-col-title-least), 1fr) minmax(var(--size-col-least), var(--size-col-person)) minmax(var(--size-col-least), var(--size-col-changed))",
     );
   });
 
@@ -30,5 +30,16 @@ describe("ux_4_2 the columns of the list as one template", () => {
     );
     expect(listTemplate([{ column: "key" }], 0)).toBe("var(--size-col-key)");
     expect(listTemplate([{ column: "key", width: 150 }], 19)).toBe("150px");
+  });
+
+  it("counts the room the columns need as they are drawn: the widths a person gave", () => {
+    // No page here, so a token is 0 px: only what is given counts.
+    expect(
+      listNeeds([
+        { column: "title", width: 200 },
+        { column: "person", width: 150 },
+      ]),
+    ).toBe(350);
+    expect(listNeeds([{ column: "key" }, { column: "title" }], 8)).toBe(0);
   });
 });

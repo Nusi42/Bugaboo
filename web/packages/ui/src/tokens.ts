@@ -156,7 +156,7 @@ export const tokenNames = [
   "size-col-person",
   "size-col-labels",
   "size-col-project",
-  "size-col-title",
+  "size-col-title-least",
   "size-col-least",
   "size-col-most",
   "size-col-step",
