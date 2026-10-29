@@ -54,6 +54,10 @@ export function listTemplate(columns: readonly ListColumnSpec[], keyChars = 0): 
         // The ID is as wide as the longest one drawn, and not narrower than its head needs.
         return `max(${variable("size-col-key")}, calc(${variable("size-code-char")} * ${String(keyChars)}))`;
       }
+      if (column === "priority") {
+        // Its head holds the name, the arrow of the sort and the edge that sets the width: the column fits its header.
+        return `calc(${variable("size-col-priority")} + ${variable("size-target-compact")} + ${variable("size-icon-small")})`;
+      }
       const token = widthToken[column];
       if (token === undefined) {
         return variable("size-col-title");

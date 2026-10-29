@@ -14,9 +14,9 @@ describe("ux_4_2 the columns of the list as one template", () => {
     );
   });
 
-  it("keeps the width of the priority, the ID and an icon", () => {
+  it("keeps the width of the ID and an icon, and gives the priority its head: the name, the arrow and the edge", () => {
     expect(listTemplate([{ column: "priority" }, { column: "key" }, { column: "status" }])).toBe(
-      "var(--size-col-priority) var(--size-col-key) var(--size-col-icon)",
+      "calc(var(--size-col-priority) + var(--size-target-compact) + var(--size-icon-small)) var(--size-col-key) var(--size-col-icon)",
     );
   });
 

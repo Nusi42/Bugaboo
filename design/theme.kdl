@@ -1978,7 +1978,7 @@ part "list-char-probe" {
 part "list-row[variant=grid]" {
     display grid
     grid-template-columns "$list-columns"
-    gap "$space-2"
+    gap "$space-3"
 }
 
 part "list-row[variant=grid] list-row.cell" {
