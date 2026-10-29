@@ -7,7 +7,7 @@ import { OpenIssue } from "./OpenIssue.tsx";
 import { useOpenIssuesIn } from "./open-in.ts";
 import { ProjectList, type ListedProject } from "./ProjectList.tsx";
 import { ProjectToolbar } from "./ProjectToolbar.tsx";
-import { useListReturn } from "./use-list-return.ts";
+import { useIssueOnPhone } from "./use-issue-on-phone.ts";
 import { useSelection } from "./use-selection.ts";
 
 export interface IssuesWithPanelProps {
@@ -34,7 +34,7 @@ export function IssuesWithPanel({
   const selection = useSelection();
   // The top bar of a phone already shows the title: one title for the screen (UX §7.3).
   const phone = useLayout() === "phone";
-  const toPage = useListReturn(project.shortName, state);
+  const toPage = useIssueOnPhone(state);
   if (toPage) {
     return null;
   }
