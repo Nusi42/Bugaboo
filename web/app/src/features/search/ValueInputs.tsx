@@ -184,10 +184,8 @@ function DateValue({ values, onValues }: ValueInputProps) {
         <TextField
           label={t("search.bar.day")}
           description={t("search.bar.day-format")}
-          errorMessage={
-            typed.trim() !== "" && dayOf(typed) === null ? t("search.bar.not-a-day") : undefined
-          }
           value={typed}
+          date={{ min: "0001-01-01", max: "9999-12-31" }}
           onChange={(day) => {
             setTyped(day);
             const operand = dayOf(day);

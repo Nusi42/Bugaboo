@@ -138,21 +138,23 @@ test("qry_01 an Any of shows its filters inside and adds them with the same pick
   await expect(page.getByRole("button", { name: /Change the filter Any of/u })).toBeVisible();
 });
 
-test("qry_01 the date editor takes the day in the format the help shows", async ({ page }) => {
+test("qry_01 the date editor is the browser's date box and the help names the typed form", async ({
+  page,
+}) => {
   await openSearch(page, "priority is high");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Created" }) }).click();
   const window = page.getByRole("alertdialog", { name: "Created" });
-  // The editor says the format the help uses, and the help's own example is in the same format.
+  // The calendar of the browser, in the person's own format; one line says how Advanced search writes a day.
+  const day = window.getByLabel(t("search.bar.day"));
+  await expect(day).toHaveAttribute("type", "date");
   await expect(window.getByText(t("search.bar.day-format"))).toBeVisible();
-  expect(t("search.help-time-text")).toContain("2026-12-31");
+  expect(t("search.bar.day-format")).toContain("Advanced search");
   expect(t("search.bar.day-format")).toContain("2026-12-31");
-  const day = window.getByRole("textbox", { name: t("search.bar.day") });
-  await day.fill("31.12.2026");
-  await expect(window.getByText(t("search.bar.not-a-day"))).toBeVisible();
+  expect(t("search.help-time-text")).toContain("Advanced search");
+  expect(t("search.help-time-text")).toContain("2026-12-31");
   await day.fill("2026-12-31");
-  await expect(window.getByText(t("search.bar.not-a-day"))).toHaveCount(0);
   await window.getByRole("button", { name: t("search.bar.add-filter-confirm") }).click();
   await expect(
     page.getByRole("button", { name: /Change the filter Created.*2026/u }),

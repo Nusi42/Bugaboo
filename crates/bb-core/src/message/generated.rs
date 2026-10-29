@@ -3980,9 +3980,6 @@ pub const SEARCH_BAR_KIND_VALUE: MessageKey = MessageKey::new("search.bar.kind-v
 /// The message `search.bar.me`.
 pub const SEARCH_BAR_ME: MessageKey = MessageKey::new("search.bar.me");
 
-/// The message `search.bar.not-a-day`.
-pub const SEARCH_BAR_NOT_A_DAY: MessageKey = MessageKey::new("search.bar.not-a-day");
-
 /// The message `search.bar.not-a-number`.
 pub const SEARCH_BAR_NOT_A_NUMBER: MessageKey = MessageKey::new("search.bar.not-a-number");
 
@@ -14309,7 +14306,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.day", "Which day"),
     (
         "search.bar.day-format",
-        "Write the day like 2026-12-31, as in the help.",
+        "In Advanced search, a day is typed like 2026-12-31.",
     ),
     (
         "search.bar.duration-help",
@@ -14360,10 +14357,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.name-colon", "{name}:"),
     ("search.bar.name-value", "{name}: {value}"),
     ("search.bar.not", "not {value}"),
-    (
-        "search.bar.not-a-day",
-        "That is not a day. Write it like 2026-12-31.",
-    ),
     (
         "search.bar.not-a-duration",
         "Write a length of time like {hours} or {both}.",
@@ -14461,7 +14454,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.help-time", "Time"),
     (
         "search.help-time-text",
-        "Days are written like 2026-12-31. Words like today and this week also work.",
+        "Typed in Advanced search, days are written like 2026-12-31. Words like today and this week also work.",
     ),
     ("search.help-title", "The words of the search"),
     ("search.help-use", "Use {example} in the search"),
