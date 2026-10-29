@@ -20,6 +20,20 @@ interface Place {
   readonly back: string;
 }
 
+/** The height of a card with nothing in it but padding: a card must be taller than this. */
+const EMPTY_CARD = 48;
+
+/** The height of the lowest card on the page. */
+function smallestCard(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    let least = Number.POSITIVE_INFINITY;
+    for (const card of document.querySelectorAll("[data-part='card']")) {
+      least = Math.min(least, card.getBoundingClientRect().height);
+    }
+    return least;
+  });
+}
+
 const places: readonly Place[] = [
   {
     name: "a role",
@@ -63,6 +77,10 @@ test("ux_8 a page says Back at its foot on a computer and not on a phone", async
       await place.open(page);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.getByRole("link", { name: place.back }), place.name).toHaveCount(expected);
+      // No card is left empty where the title and the link were hidden.
+      expect(await smallestCard(page), `${place.name}: the smallest card`).toBeGreaterThan(
+        EMPTY_CARD,
+      );
     }),
   );
 });

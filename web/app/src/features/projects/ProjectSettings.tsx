@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, PageBack } from "@bugaboo/ui";
+import { Card, PageBack, useLayout } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { paths, projectAddress, routeParam } from "../../shared/paths.ts";
@@ -19,13 +19,17 @@ export function ProjectSettings({
   readonly address: string;
 }) {
   const navigate = useNavigate();
+  // On a phone the card has only its heading for screen readers: the bar says it, and Back is in the bar.
+  const phone = useLayout() === "phone";
   const mayChange = mayChangeProject(project);
   const mayMove = mayMoveProject(project);
   const { id, name, short_name: shortName } = project.project;
   return (
     <ProjectSettingsFrame project={project}>
       <Card heading={t("projects.settings-title", { name })} level={1}>
-        <PageBack href={projectAddress(shortName)} label={t("projects.settings-back")} />
+        {phone ? null : (
+          <PageBack href={projectAddress(shortName)} label={t("projects.settings-back")} />
+        )}
       </Card>
       {mayChange ? (
         <Card heading={t("projects.edit-title")}>
