@@ -2,8 +2,8 @@ import { t } from "@bugaboo/messages";
 
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { itemArea } from "./support/windows.ts";
-import { openFromMenu, signIn } from "./support/flows.ts";
+
+import { itemArea, openFromMenu, signIn } from "./support/flows.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
 import {
   expectOfferClearOfControls,

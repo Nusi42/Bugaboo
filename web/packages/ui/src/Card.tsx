@@ -17,7 +17,7 @@ export interface CardProps {
   readonly actions?: ReactNode;
   /** The link at the foot that goes back up (*All people*): not drawn on a phone, where the bar of the screen has Back. */
   readonly back?: { readonly href: string; readonly label: string };
-  readonly children: ReactNode;
+  readonly children?: ReactNode;
 }
 
 /** The link at the foot of a page that goes back up, on a row of its own. */

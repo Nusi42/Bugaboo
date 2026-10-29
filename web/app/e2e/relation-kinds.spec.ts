@@ -4,8 +4,8 @@ import { type Page } from "@playwright/test";
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { itemArea } from "./support/windows.ts";
-import { openFromMenu, signIn } from "./support/flows.ts";
+
+import { itemArea, openFromMenu, signIn } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // Kinds of relation (ISS-04, WP-07): the four kinds of the first start, each named for both ends,

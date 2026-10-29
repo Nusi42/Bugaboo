@@ -28,9 +28,7 @@ export function ProjectSettings({
         heading={t("projects.settings-title", { name })}
         level={1}
         back={{ href: projectAddress(shortName), label: t("projects.settings-back") }}
-      >
-        {null}
-      </Card>
+      />
       {mayChange ? (
         <Card heading={t("projects.edit-title")}>
           <ChangeProjectForm

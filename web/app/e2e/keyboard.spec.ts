@@ -5,8 +5,8 @@ import { shortcutDefinitions } from "../src/shared/shortcuts.ts";
 import { ada, forgetChoices, createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { itemArea } from "./support/windows.ts";
-import { addressEndingAt, signIn } from "./support/flows.ts";
+
+import { addressEndingAt, itemArea, signIn } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({

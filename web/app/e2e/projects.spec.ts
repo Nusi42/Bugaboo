@@ -3,8 +3,8 @@ import { t } from "@bugaboo/messages";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { itemArea } from "./support/windows.ts";
-import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
+
+import { addressEndingAt, itemArea, openFromMenu, signIn } from "./support/flows.ts";
 import { fillCreate, openOverview, tree, treeLink } from "./support/projects.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
 

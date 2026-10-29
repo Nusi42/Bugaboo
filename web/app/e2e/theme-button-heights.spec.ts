@@ -2,9 +2,9 @@ import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures.ts";
-import { itemArea } from "./support/windows.ts";
+
 import { layoutOf } from "./support/layout.ts";
-import { signIn } from "./support/flows.ts";
+import { itemArea, signIn } from "./support/flows.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { resolved } from "./support/styles.ts";
 import { paths } from "../src/shared/paths.ts";

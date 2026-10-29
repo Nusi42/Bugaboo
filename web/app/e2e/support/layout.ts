@@ -44,3 +44,10 @@ export async function expectOneColumn(elements: readonly Locator[]): Promise<voi
     expect(Math.abs((box?.width ?? Number.NaN) - first.width)).toBeLessThanOrEqual(2);
   }
 }
+
+/** The place where one item of a list is changed: the panel beside the list on a computer, its own screen on a phone. */
+export function itemArea(page: Page, name: string): Locator {
+  return layoutOf(page) === "phone"
+    ? page.getByRole("region", { name, exact: true })
+    : page.getByRole("complementary", { name });
+}

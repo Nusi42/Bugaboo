@@ -4,8 +4,8 @@ import { type Page } from "@playwright/test";
 
 import { ada, bob, cleo, createAdmin, createPerson, ownId } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { itemArea } from "./support/windows.ts";
-import { signIn } from "./support/flows.ts";
+
+import { itemArea, signIn } from "./support/flows.ts";
 import { createProject } from "./support/projects.ts";
 import { rowOfPerson } from "./support/rows.ts";
 import { addToGroup, giveGroupRole, giveRole, createGroup, roleName } from "./support/access.ts";

@@ -4,9 +4,9 @@ import { type Page } from "@playwright/test";
 import { paths } from "../src/shared/paths.ts";
 import { ada, createAdmin, forgetChoices } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { signIn } from "./support/flows.ts";
+import { itemArea, signIn } from "./support/flows.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf, itemArea } from "./support/windows.ts";
+import { boxOf } from "./support/windows.ts";
 
 // The editor of a shortcut (the final check of M4): the keys of *Keys now* and of *Usual keys* start
 // on one edge, so the two rows read as one table.

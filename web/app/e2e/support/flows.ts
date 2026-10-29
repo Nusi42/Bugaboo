@@ -2,13 +2,12 @@ import { t } from "@bugaboo/messages";
 import { type Browser, expect, type Page, type Response } from "@playwright/test";
 
 import { type Person } from "./accounts.ts";
-import { layoutOf } from "./layout.ts";
+import { itemArea, layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { type CodeApp, codeApp } from "./totp.ts";
 import { issueAddress, paths } from "../../src/shared/paths.ts";
 import { type ApiSession, sessionOver } from "./api.ts";
 import { places } from "../../src/shared/places.ts";
-import { itemArea } from "./windows.ts";
 
 /** Types the e-mail address and the password into the sign-in form that is open, and sends them. */
 export async function fillSignIn(
