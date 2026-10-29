@@ -1659,9 +1659,17 @@ optgroup {
     --cue-cover: var(--bg-raised);
     background-image:
       linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
-      linear-gradient(to top, var(--cue), transparent);
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
+      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
     background-position: top, bottom, top, bottom;
+    background-size:
+      100% var(--space-3),
+      100% var(--space-3),
+      100% var(--space-1),
+      100% var(--space-1);
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -1796,9 +1804,17 @@ optgroup {
     --cue-cover: var(--bg-raised);
     background-image:
       linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
-      linear-gradient(to top, var(--cue), transparent);
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
+      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
     background-position: top, bottom, top, bottom;
+    background-size:
+      100% var(--space-3),
+      100% var(--space-3),
+      100% var(--space-1),
+      100% var(--space-1);
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -2550,9 +2566,17 @@ optgroup {
     --cue-cover: var(--bg-raised);
     background-image:
       linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
-      linear-gradient(to top, var(--cue), transparent);
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
+      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
     background-position: top, bottom, top, bottom;
+    background-size:
+      100% var(--space-3),
+      100% var(--space-3),
+      100% var(--space-1),
+      100% var(--space-1);
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -3158,9 +3182,17 @@ optgroup {
     --cue-cover: var(--bg-raised);
     background-image:
       linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
-      linear-gradient(to top, var(--cue), transparent);
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
+      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
     background-position: top, bottom, top, bottom;
+    background-size:
+      100% var(--space-3),
+      100% var(--space-3),
+      100% var(--space-1),
+      100% var(--space-1);
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -3824,9 +3856,17 @@ optgroup {
     --cue-cover: var(--bg-raised);
     background-image:
       linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
-      linear-gradient(to top, var(--cue), transparent);
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
+      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
     background-position: top, bottom, top, bottom;
+    background-size:
+      100% var(--space-3),
+      100% var(--space-3),
+      100% var(--space-1),
+      100% var(--space-1);
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
   }
 }
 
@@ -4236,9 +4276,17 @@ optgroup {
     --cue-cover: var(--bg-raised);
     background-image:
       linear-gradient(var(--cue-cover), var(--cue-cover)),
-      linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue), transparent),
-      linear-gradient(to top, var(--cue), transparent);
+      linear-gradient(var(--cue-cover), var(--cue-cover)),
+      linear-gradient(color-mix(in srgb, var(--cue) 50%, transparent), transparent),
+      linear-gradient(to top, color-mix(in srgb, var(--cue) 50%, transparent), transparent);
     background-position: top, bottom, top, bottom;
+    background-size:
+      100% var(--space-3),
+      100% var(--space-3),
+      100% var(--space-1),
+      100% var(--space-1);
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
     --cue-cover: var(--bg-surface);
   }
 }

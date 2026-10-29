@@ -270,3 +270,23 @@ fn an_unknown_token_or_mixin_is_refused() {
         );
     }
 }
+
+#[test]
+fn every_old_cue_keeps_its_covers_that_scroll_with_the_content() {
+    // No browser test can see the old cue (Chromium draws the new one), so the sheet is read: every box that
+    // falls back to it has the covers (`local`), their size, and the shadows that stay (`scroll`).
+    let sheet = css(&file()).unwrap();
+    let boxes = sheet
+        .matches("@supports not (animation-timeline: scroll())")
+        .count();
+    assert!(boxes >= 6, "the boxes with an old cue: {boxes}");
+    for line in [
+        "background-attachment: local, local, scroll, scroll;",
+        "background-repeat: no-repeat;",
+    ] {
+        assert!(
+            sheet.matches(line).count() >= boxes,
+            "`{line}` is missing in the old cue"
+        );
+    }
+}

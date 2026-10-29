@@ -777,8 +777,11 @@ mixin "edge-from-end" {
 // of another color than the raised surface sets `--cue-cover` to its own.
 mixin "scroll-cue" {
     --cue-cover "$bg-raised"
-    background-image "linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient($cue, transparent), linear-gradient(to top, $cue, transparent)"
+    background-image "linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(color-mix(in srgb, $cue 50%, transparent), transparent), linear-gradient(to top, color-mix(in srgb, $cue 50%, transparent), transparent)"
     background-position "top, bottom, top, bottom"
+    background-size "100% $space-3, 100% $space-3, 100% $space-1, 100% $space-1"
+    background-repeat no-repeat
+    background-attachment "local, local, scroll, scroll"
 }
 
 // The column the pages are drawn in, centered; what is drawn at its bottom (the offers to undo) uses it too.
