@@ -5232,13 +5232,18 @@ optgroup {
 }
 
 [data-part="markdown"] [data-token] {
-  padding: 0 var(--space-1);
-  border: var(--border-width) solid var(--border-subtle);
+  padding: 0;
   border-radius: var(--r-ctl);
   background: var(--accent-soft);
   color: var(--accent-fg);
   font-weight: var(--weight-regular);
   white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+  [data-part="markdown"] [data-token] {
+    text-decoration: underline;
+  }
 }
 
 [data-part="markdown.editor"] {

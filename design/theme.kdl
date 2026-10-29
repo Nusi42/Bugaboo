@@ -5677,13 +5677,16 @@ base "[data-part=markdown] img" {
 // An issue ID or a mention. The server resolves it with the viewer's rights and the page shows it
 // as a chip; until then, and where it cannot be resolved, it is marked text.
 base "[data-part=markdown] [data-token]" {
-    padding 0 "$space-1"
-    border "$border-width solid $border-subtle"
+    // No room inside at the ends: a comma or a full stop after a mention stands against it, as in the text it was written in.
+    padding 0
     border-radius "$r-ctl"
     background "$accent-soft"
     color "$accent-fg"
     font-weight "$weight-regular"
     white-space nowrap
+    forced {
+        text-decoration underline
+    }
 }
 
 part "markdown.editor" {
