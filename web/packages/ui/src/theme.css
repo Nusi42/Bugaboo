@@ -6759,6 +6759,13 @@ optgroup {
   overflow-wrap: anywhere;
 }
 
+[data-part="app-layout"][data-variant~="phone"] [data-part="notification-group"] {
+  padding: 0;
+  border-width: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 [data-part="notification"] {
   display: flex;
   flex-direction: column;

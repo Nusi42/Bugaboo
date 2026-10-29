@@ -12747,6 +12747,15 @@ part "notification-group.head" {
     overflow-wrap anywhere
 }
 
+// On a phone the group of notifications of an issue has no frame of its own inside the card: card, group and notification
+// were three boxes inside each other and left the words little of the width.
+part "app-layout[variant=phone] notification-group" {
+    padding 0
+    border-width 0
+    border-radius 0
+    background transparent
+}
+
 part "notification" {
     display flex
     flex-direction column
