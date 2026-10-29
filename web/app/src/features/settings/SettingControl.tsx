@@ -20,6 +20,8 @@ export interface SettingControlProps {
   readonly setting: Setting;
   /** The one-line explanation of a box that is typed in: it stands with the box, above its Save button. */
   readonly help?: string | undefined;
+  /** Where the value comes from, for a box that is typed in: it stands under the hint of the box, above its Save button. */
+  readonly source?: string | undefined;
   /** The new value, to be shown at once and sent. */
   readonly onChange: (value: SettingValue) => void;
 }
@@ -41,7 +43,7 @@ function timeZoneChoices(
 }
 
 /** A text or a number the person types, saved with its own button. */
-function TypedControl({ setting, onChange, help }: SettingControlProps) {
+function TypedControl({ setting, onChange, help, source }: SettingControlProps) {
   const [draft, setDraft] = useState(String(setting.value));
   const [problem, setProblem] = useState<string>();
   const bounds = setting.bounds ?? undefined;
@@ -79,6 +81,7 @@ function TypedControl({ setting, onChange, help }: SettingControlProps) {
           setProblem(undefined);
         }}
       />
+      {source === undefined ? null : <p {...partOf(part.settingsSource)}>{source}</p>}
       <div {...partOf(part.row)}>
         <SubmitButton>{t("common.save")}</SubmitButton>
       </div>
@@ -91,7 +94,7 @@ function TypedControl({ setting, onChange, help }: SettingControlProps) {
  * for a fixed list of choices, a list of time zones, a box for a number or a text. The keys of
  * shortcuts and the start page have pages of their own and are not drawn here.
  */
-export function SettingControl({ setting, onChange, help }: SettingControlProps) {
+export function SettingControl({ setting, onChange, help, source }: SettingControlProps) {
   const value = setting.value;
   const kind = controlKindOf(setting);
   if (kind === "switch" && typeof value === "boolean") {
@@ -132,5 +135,5 @@ export function SettingControl({ setting, onChange, help }: SettingControlProps)
     return null;
   }
   // Keyed by the stored value, so the box shows the new value after a reset.
-  return <TypedControl key={String(value)} setting={setting} onChange={onChange} help={help} />;
+  return <TypedControl key={String(value)} {...{ setting, onChange, help, source }} />;
 }

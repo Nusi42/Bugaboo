@@ -229,6 +229,7 @@ Rules:
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
 | **Server status**        | Whether the Bugaboo server is running and healthy: its database, its certificate, its security log (the route `/api/v1/status`; not the status of an issue) | health page, health check page     |
 | **Reset to default**     | Take away the value set at this level, so the value from above counts again; also for a workflow or a layout that a place has of its own (it goes back to the one that counts there without its own) | clear override, use the inherited … again (in UI) |
+| **Default value**        | The value a setting has until somebody sets one at a level: the line under a setting says *Default value* when none is set; *Reset to default* brings it back | standard value, Bugaboo's standard value (in UI) |
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
 | **Layout**               | Which fields appear where: on the *issue page*, in the *new-issue form*, on a *card* | screen, screen scheme      |
 | **Section**              | A titled group of fields in a layout; sections with the same *tab* are shown together under it | panel, block (in a layout) |

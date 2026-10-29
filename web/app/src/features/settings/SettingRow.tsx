@@ -64,21 +64,20 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
   };
   // A box that is typed in has its explanation inside, with its field; every other control has it under it.
   const helpWithField = control === undefined && controlKindOf(setting) === "typed";
+  const withField = helpWithField
+    ? { help: wordsOf(setting.help_key), source: sourceInWords(setting) }
+    : {};
   return (
     <li {...partOf(part.box)}>
       {lockedBelow ? (
         <Locked setting={setting} />
       ) : (
         (control?.(setting, change) ?? (
-          <SettingControl
-            setting={setting}
-            onChange={change}
-            help={helpWithField ? wordsOf(setting.help_key) : undefined}
-          />
+          <SettingControl setting={setting} onChange={change} {...withField} />
         ))
       )}
       {helpWithField ? null : <p {...partOf(part.muted)}>{wordsOf(setting.help_key)}</p>}
-      <p {...partOf(part.settingsSource)}>{sourceInWords(setting)}</p>
+      {helpWithField ? null : <p {...partOf(part.settingsSource)}>{sourceInWords(setting)}</p>}
       <div {...partOf(part.row)}>
         {setting.own && !lockedBelow ? (
           <Button

@@ -11,7 +11,7 @@ export const messages = {
     "An administrator chose this for everyone, so you cannot change it here.",
   "setting.ui.lock": "Lock for everyone",
   "setting.ui.lock-help": "While this is locked, nobody can choose their own value.",
-  "setting.ui.source-default": "Bugaboo's standard value",
+  "setting.ui.source-default": "Default value",
   "setting.ui.source-organization": "Your organization's choice",
   "setting.ui.source-project": "From {project}",
   "setting.ui.source-hidden-project": "From a project you cannot see",
