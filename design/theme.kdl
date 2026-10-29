@@ -829,6 +829,15 @@ mixin "floating-box" {
     box-shadow "$shadow"
 }
 
+// A box with no frame, no padding and no fill: what is inside it stands directly on the page (a card or a group on a phone).
+mixin "frameless" {
+    padding 0
+    border-width 0
+    border-radius 0
+    background transparent
+    box-shadow none
+}
+
 // A quiet box on a surface: an item of a list.
 mixin "surface-box" {
     border "$border-width solid $border-subtle"
@@ -3524,11 +3533,7 @@ part "card" {
 
 // On a phone a list goes with one gutter: a card of this look has no frame and no padding there.
 part "app-layout[variant=phone] card[variant=open-on-phone]" {
-    padding 0
-    border-width 0
-    border-radius 0
-    background transparent
-    box-shadow none
+    use "frameless"
 }
 
 // The heading and, at the end of its row, what can be done with the card (R6: at the end of the header).
@@ -4671,7 +4676,7 @@ part "sidebar" {
     height "$size-viewport"
     overflow-y auto
     padding "$space-3"
-    border-right "$border-width solid $border"
+    border-right "$border-width solid $divider"
     background "$bg-surface"
 }
 
@@ -12838,10 +12843,7 @@ part "notification-group.head" {
 // On a phone the group of notifications of an issue has no frame of its own inside the card: card, group and notification
 // were three boxes inside each other and left the words little of the width.
 part "app-layout[variant=phone] notification-group" {
-    padding 0
-    border-width 0
-    border-radius 0
-    background transparent
+    use "frameless"
 }
 
 part "notification" {

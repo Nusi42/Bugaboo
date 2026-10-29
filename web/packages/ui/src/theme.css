@@ -4880,7 +4880,7 @@ optgroup {
   height: var(--size-viewport);
   overflow-y: auto;
   padding: var(--space-3);
-  border-right: var(--border-width) solid var(--border);
+  border-right: var(--border-width) solid var(--divider);
   background: var(--bg-surface);
 }
 
@@ -6787,6 +6787,7 @@ optgroup {
   border-width: 0;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
 }
 
 [data-part="notification"] {
