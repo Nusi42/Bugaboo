@@ -259,7 +259,7 @@ tokens {
     // A control that waits for an answer is seen by people while it waits, so its text keeps AA (4.5:1)
     // on its own fill; a disabled control is exempt, a busy one is not. Held by the test of the busy Save.
     opacity "opacity-busy" 0.85
-    opacity "opacity-scrim" 0.8 forced=0.6
+    opacity "opacity-scrim" 0.9 forced=0.6
 
     // Easing, for the animations
     easing "ease-in" "ease-in"
@@ -282,9 +282,9 @@ tokens {
     color "border-control" daylight="#80838b" paper="#7a7366" dusk="#7d8696" midnight="#757a85" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
-    color "fg-muted" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
-    color "fg-subtle" daylight="#636879" paper="#6b635a" dusk="#a0a6b1" midnight="#8c939f" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
-    color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#573cd0" paper-more="#2e5b87" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
+    color "fg-muted" daylight="#565d6b" paper="#5f564d" dusk="#aeb5c1" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
+    color "fg-subtle" daylight="#5c6172" paper="#645b51" dusk="#a9afbb" midnight="#9198a4" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
+    color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#4a30b8" paper-more="#244b78" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
     color "accent-soft" daylight="#eeeafd" paper="#e4ecf4" dusk="#37325a" midnight="#221d47"
     color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
     color "on-accent" daylight="#ffffff" paper="#ffffff" dusk="#1a1530" midnight="#0b0820" forced="HighlightText"
@@ -294,7 +294,9 @@ tokens {
     color "warning-soft" daylight="#fef3e2" paper="#f6ead5" dusk="#47391f" midnight="#382810"
     color "success" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
     color "success-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
-    color "st-ns" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
+    // The value of `fg-muted` on purpose, written twice: there is no alias between tokens, and the two are named
+    // for what they say (a status, a quiet word) so one may change without the other.
+    color "st-ns" daylight="#565d6b" paper="#5f564d" dusk="#aeb5c1" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
     color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#262a31" midnight-more="#1a1c21"
     color "st-ip" daylight="#1d5fd1" paper="#1d6b80" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#14495a" dusk-more="#b3d0ff" midnight-more="#82b1ff"
     color "st-ip-soft" daylight="#e7effc" paper="#dfeef1" dusk="#24365a" midnight="#10244a"
@@ -304,9 +306,22 @@ tokens {
     // Done): the group's hue at the lightness where every text color of a row still reaches 4.5:1
     // (7:1 with more contrast), so the tint is as strong as the contrast rules allow. A row keeps its
     // tint in every state: hovered, selected (ring and ticked box) and current (ring) only add to it.
-    color "tint-ns" daylight="#e6eaf1" paper="#e6e1da" dusk="#343c4e" midnight="#1f2531"
-    color "tint-ip" daylight="#dbebff" paper="#d2e5ee" dusk="#153978" midnight="#052256"
+    color "tint-ns" daylight="#e9e9ec" paper="#e3e1dd" dusk="#2f3c50" midnight="#1f2531"
+    color "tint-ip" daylight="#d2eefe" paper="#cde6f6" dusk="#1f3b68" midnight="#0a2350"
     color "tint-done" daylight="#c8f3de" paper="#cdeabf" dusk="#17442d" midnight="#082b1a"
+    // The edge of a row by its priority (UX §4.2): Critical is the red of `danger`, High is a clear orange, as
+    // far from that red as the contrast rules ask (the brown of the text color `warning` was 28 from it in
+    // Daylight) and a line to see (3:1) on every tint and surface.
+    color "edge-high" daylight="#cf6a00" paper="#cb6300" dusk="#f5b65b" midnight="#ffb547" forced="CanvasText"
+    // The thin line just inside a row that is pointed at: the edge of a control in the light themes, a step
+    // stronger in the dark ones, where the edge of a control was barely seen on the tints of Dusk.
+    // A token of its own, though three themes give it the value of `border-control`: the two are set apart by
+    // what they draw, and the dark themes already differ. A token that says "the same as" another is not in
+    // the file (tokens have no alias); a follow-up may add one.
+    color "hover-line" daylight="#80838b" paper="#7a7366" dusk="#a0a8b6" midnight="#8e95a2" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#b0b4bb" midnight-more="#9a9ca2" forced="ButtonText"
+    // The dimmed page behind a sheet, a menu or Quick search. Dark in every theme: in the light themes the old
+    // fill (the sunken surface at 80%) left the text under the panel readable.
+    color "scrim" daylight="#1c2029" paper="#2a2826" dusk="#101217" midnight="#000000" forced="Canvas"
     color "cat1-bg" daylight="#fde7ef" paper="#f6e1e4" dusk="#4a2638" midnight="#3a1428"
     color "cat1-fg" daylight="#a3195b" paper="#97304a" dusk="#ff9cc8" midnight="#ff92c2"
     color "cat2-bg" daylight="#e3f1ff" paper="#e0eaf3" dusk="#213a5c" midnight="#10294a"
@@ -399,10 +414,34 @@ contrast min=4.5 {
         on "bg-canvas" "bg-surface" "bg-raised" "bg-sunken"
     }
 
-    lines min=3 reason="The ring of a selected or focused row and the line of a hovered row carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
-        colors "accent" "border-control"
+    non-text "edge-high" "hover-line" "scrim" reason="The edge of High, the line of a hovered row and the dimmed page behind a sheet are lines and fills, not text; the lines are kept at 3:1 by the `lines` rules below, the dimmed page by the `dimmed` rule below."
+
+    lines min=3 reason="The ring of a selected or focused row, the line of a hovered row and the edge of its priority carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
+        colors "accent" "border-control" "hover-line" "edge-high" "danger"
         on "tint-ns" "tint-ip" "tint-done"
     }
+
+    lines min=3 reason="The edge of High and the line of a hovered row stand on the raised and plain surfaces too (a row of no group, a card of the phone): WCAG 1.4.11 asks 3:1 against every surface." {
+        colors "edge-high" "hover-line"
+        on "bg-canvas" "bg-surface" "bg-raised"
+    }
+
+    lines min=3 reason="The knob of a switch (the quiet words color) stands on its track, the sunken surface: it is seen at 3:1 in every theme, so the off state is no dark knob on a dark track (M5 exit)." {
+        colors "fg-muted"
+        on "bg-sunken"
+    }
+
+    hovered brightness="hover-brightness" min=4.5 min-more=7 reason="A hovered or pressed main button is brightened (`filter: brightness`), which takes contrast away from a light fill and its words: as it is seen then it still reaches 4.5:1, and 7:1 with more contrast (M5 exit, A5)." {
+        text "on-accent"
+        on "accent"
+    }
+
+    stronger min=5 reason="The ID, the hint and the quiet words of a row are small and thin and are read on the tints all day: they reach 5:1 there, not only the 4.5:1 that every text color has (M5 exit, L23: sampled in a picture the ID of a row looked like 4.2:1). With the device setting for more contrast every text color already asks 7:1 (the `more` rule)." {
+        text "fg-muted" "fg-subtle"
+        on "tint-ns" "tint-ip" "tint-done"
+    }
+
+    dimmed scrim="scrim" opacity="opacity-scrim" page="bg-canvas" text="fg" sheet="bg-raised" min-sheet-light=4 min-sheet-dark=1.1 max-text=1.5 reason="Behind a sheet, a menu or Quick search the page is dimmed by the scrim as it is drawn: the sheet stands out from the page (4:1 darker in a light theme, still darker in a dark one, where a black page leaves little to dim) and the text of the page is dim against it (at most 1.5:1), so it cannot be read under the panel (M5 exit, R4)."
 
     lines min=2 faded-by="opacity-disabled" reason="The edge of a button that cannot be pressed is drawn in the color of quiet words and faded by the opacity of a disabled control: as it is seen it stays 2:1 against every plain surface in every theme (a disabled control is exempt from WCAG 1.4.11, but its frame must not vanish; the final check of M4 found 1.24:1)." {
         colors "fg-muted"
@@ -415,6 +454,21 @@ contrast min=4.5 {
         lines "border" "border-subtle"
         line-on "bg-canvas" "bg-surface" "bg-raised"
     }
+}
+
+// The three status groups must be told apart at a glance (UX §4.2, R5): the tints differ from each other
+// and from the raised card they stand on by a clear difference in color. The contrast ratio only knows
+// brightness, and every tint has about the same brightness, because every text color has to be read on it;
+// the difference of color is what tells them apart (M5 exit, A7, A8).
+distinct min-delta-e-between-states=11 min-delta-e-against-surfaces=7.5 reason="The tints of Not started, In progress and Done differ from each other by at least 11 (delta E) and from the plain card by at least 7.5, in every theme." {
+    states "tint-ns" "tint-ip" "tint-done"
+    surfaces "bg-canvas" "bg-raised"
+}
+
+// The edge of High is told from the edge of Critical (the red of `danger`) at a glance.
+distinct min-delta-e-between-states=31 min-delta-e-against-surfaces=30 reason="The orange edge of High differs from the red edge of Critical by at least 31 (delta E), and each differs from the plain page by at least 30, in every theme (M5 exit, L24)." {
+    states "danger" "edge-high"
+    surfaces "bg-canvas"
 }
 
 // Hovered and selected rows must stay visible.
@@ -499,16 +553,29 @@ mixin "ring-row" {
 }
 
 // The keyboard focus on a row: the accent ring and, inside it, a second ring in the text color, so the focus
-// is told from a selected or a current row on every tint. Both are shadows, even on all four sides.
+// is told from a selected or a current row on every tint, and between them a gap of one line in the color of
+// the raised surface, so the two do not read as one heavy box (M5 exit, L26). All are shadows, even on all four sides.
 mixin "ring-keyboard" {
-    box-shadow "inset 0 0 0 $ring-width $accent, inset 0 0 0 calc($ring-width * 2) $fg"
+    box-shadow "inset 0 0 0 $ring-width $accent, inset 0 0 0 calc($ring-width + $border-width) $bg-raised, inset 0 0 0 calc($ring-width * 2 + $border-width) $fg"
     use "ring-clear"
+    // Forced colors drop the shadows: the focus is a double outline inside the edge of the row (M5 exit, A16).
+    forced {
+        outline-style double
+        outline-width "calc($ring-width * 2)"
+        outline-offset "calc($ring-width * -2)"
+    }
 }
 
 // The ring around what has the focus: the one definition of how the focus looks.
 mixin "ring" {
     use "ring-line"
     outline-offset "$ring-offset"
+    // Forced colors draw the focus as a double outline: it is two lines, so it is told from a ring that is only a
+    // color of the system (M5 exit, A16). A double line is drawn from three widths of line.
+    forced {
+        outline-style double
+        outline-width "calc($ring-width * 2)"
+    }
 }
 
 // Words that are less important than their neighbours.
@@ -556,6 +623,20 @@ mixin "control-box" {
     border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
+}
+
+// The hint under a control or beside a row of a list: 13 and muted (UX §7.3: "13 field names, times, counts,
+// hints"). The hint of a field and of a picker are this one.
+mixin "control-hint" {
+    font-size "$fs-sm"
+    color "$fg-muted"
+}
+
+// The name of a control, above it: the one muted label of every select, field and group of choices (UX §7.3: 13,
+// muted). It is the hint, as regular weight.
+mixin "control-label" {
+    use "control-hint"
+    font-weight "$weight-regular"
 }
 
 // A box that is typed in: the field, the box that takes a key, the search box.
@@ -826,7 +907,7 @@ part "button" {
     justify-content center
     gap "$space-2"
     use "control-box"
-    padding 0 "$pad-control"
+    padding "$space-1" "$pad-control"
     use "menu-text"
     font-family "$font"
     line-height "$lh-tight"
@@ -935,14 +1016,15 @@ part "button[pressed]" {
     background "$bg-selected"
 }
 
-// A main button that cannot be pressed yet looks like any button that cannot be pressed: the same
-// edge, the same fill and the same pale words as a disabled secondary button, not a pale copy of the
-// filled one, whose white words are hard to read (the review of M4, A14). The dashed edge belongs to
-// the places to drop things on and to *Not started*.
+// A main button that cannot be pressed yet is a sunken, flat button with quiet words: not a pale copy of the
+// filled one, whose white words are hard to read (the review of M4, A14), not an outlined button with grey
+// words (the review of M5, S20), and not the soft accent fill either, which a selected segment or menu item
+// has and which reads as "chosen". It has the edge of every button that cannot be pressed. The dashed edge
+// belongs to the places to drop things on and to *Not started*.
 part "button[variant=primary][disabled]" {
     border-color "$fg-muted"
-    background "$bg-raised"
-    color "$fg"
+    background "$bg-sunken"
+    color "$fg-muted"
 }
 
 part "button[state=busy]" {
@@ -969,14 +1051,11 @@ part "field" {
 }
 
 part "field.label" {
-    font-size "$fs-md"
-    font-weight "$weight-regular"
-    color "$fg-muted"
+    use "control-label"
 }
 
 part "field.description" {
-    font-size "$fs-base"
-    color "$fg-muted"
+    use "control-hint"
     line-height "$lh-body"
 }
 
@@ -1149,6 +1228,12 @@ part "checkbox.box" {
     background "$bg-raised"
 }
 
+// The box to tick of a row has the edge of the quiet words, a strong line on every tint (the edge of a control
+// was hard to see on the dark In progress tint, M5 exit).
+part "list-row checkbox.box" {
+    border-color "$fg-muted"
+}
+
 part "checkbox[hovered] checkbox.box" {
     background "$bg-hover"
 }
@@ -1207,11 +1292,9 @@ part "choice-group" {
 }
 
 part "choice-group.legend" {
+    use "control-label"
     padding 0
-    margin-bottom "$space-2"
-    font-size "$fs-md"
-    font-weight "$weight-regular"
-    color "$fg"
+    margin-bottom "$space-1"
 }
 
 part "choice-group.choices" {
@@ -1236,13 +1319,14 @@ part "choice-group.input" {
 part "choice-group.label" {
     display inline-flex
     align-items center
+    box-sizing border-box
     min-height "$size-control"
     padding 0 "$space-4"
-    border "$border-width solid $border"
+    border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
     color "$fg"
-    font-size "$fs-md"
+    font-size "$fs-ui"
 }
 
 // The tile of the theme picker (a sample and a name) is chosen, pointed at and focused like a label.
@@ -1302,7 +1386,7 @@ part "overlay::before" {
     content "\"\""
     position absolute
     inset 0
-    background "$bg-sunken"
+    background "$scrim"
     opacity "$opacity-scrim"
     forced {
         background Canvas
@@ -1461,16 +1545,14 @@ part "picker" {
 }
 
 part "picker.legend[variant=list]" {
+    use "control-label"
     margin-block-end "$space-3"
     padding 0
-    font-weight "$weight-regular"
 }
 
 part "picker.legend[variant=boxed]" {
+    use "control-label"
     padding 0
-    font-size "$fs-md"
-    font-weight "$weight-regular"
-    color "$fg"
 }
 
 part "picker.options[variant=list]" {
@@ -1505,6 +1587,27 @@ part "picker.option[variant=boxed]" {
     use "surface-box"
 }
 
+// A radio is drawn by the theme, not by the browser (its own blue, and a grey dot in the dark themes that
+// looks switched off): an outlined circle with the edge of a control, and the accent when it is chosen,
+// a dot inside a ring of the raised surface. Under forced colors the chosen one is a filled circle.
+part "picker.input" {
+    appearance none
+    flex none
+    box-sizing border-box
+    width "$size-icon-small"
+    height "$size-icon-small"
+    margin 0
+    border "$border-width solid $border-control"
+    border-radius "$r-pill"
+    background "$bg-raised"
+}
+
+part "picker.input:checked" {
+    border-color "$accent"
+    background "$accent"
+    box-shadow "inset 0 0 0 $space-1 $bg-raised"
+}
+
 part "picker.input[variant=boxed]" {
     flex none
 }
@@ -1537,8 +1640,7 @@ part "picker.name[variant=boxed]" {
 }
 
 part "picker.hint" {
-    color "$fg-muted"
-    font-size "$fs-sm"
+    use "control-hint"
 }
 
 // ───────────── Status and priority (R4, R5, UX §7.2) ─────────────
@@ -1568,6 +1670,13 @@ part "status-icon[variant=in-progress]" {
 
 part "status-icon[variant=done]" {
     color "$st-done"
+}
+
+// Under forced colors the status is told by the shape of the icon, drawn in the text color.
+part "status-icon[variant=not-started]" "status-icon[variant=in-progress]" "status-icon[variant=done]" {
+    forced {
+        color CanvasText
+    }
 }
 
 // The small pill that shows a status in lists and in text.
@@ -1692,7 +1801,24 @@ part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "t
 }
 
 part "list-row[state=priority-high]" "issue-row[state=priority-high]" "timeline-bar[state=priority-high]" {
-    border-inline-start "$size-edge solid $warning"
+    border-inline-start "$size-edge solid $edge-high"
+}
+
+// Forced colors give every border the color of the system, so the transparent edge that keeps the titles in
+// one column (and the one of the head of the list) would be drawn as a bar like the edge of a priority; the row
+// and the bar of the timeline say `Canvas` for it. There the edge is told by its pattern (R5, M5 exit A15): Critical a double bar, High a single bar, every other row
+// and the head of the list none (the color of the canvas, so the width stays).
+part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "timeline-bar[state=priority-critical]" {
+    forced {
+        border-inline-start-style double
+        border-inline-start-color CanvasText
+    }
+}
+
+part "list-row[state=priority-high]" "issue-row[state=priority-high]" "timeline-bar[state=priority-high]" {
+    forced {
+        border-inline-start-color CanvasText
+    }
 }
 
 // ───────────── The grid of the issue list (UX §4.2) ─────────────
@@ -1720,12 +1846,15 @@ part "list-row" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-ui"
+    forced {
+        border-inline-start-color Canvas
+    }
 }
 
 // A row you can press shows it on hover with a thin line just inside its edge: a shadow draws it, so
 // nothing moves and the edge of its priority stays; it is thinner than the rings and another color.
 part "list-row:hover" {
-    box-shadow "inset 0 0 0 $border-width $border-control"
+    box-shadow "inset 0 0 0 $border-width $hover-line"
 }
 
 // A ticked row shows it by its ticked box and by the line under it in the accent color, so a run of ticked rows reads as one run;
@@ -2291,6 +2420,9 @@ part "timeline-bar" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-sm"
+    forced {
+        border-inline-start-color Canvas
+    }
 }
 
 // ───────────── Name and value (Details, UX §4.4) ─────────────
@@ -2316,12 +2448,11 @@ part "name-value" {
 // The name stands at the height of the first line of its value: both are as high as a control and
 // centered in it (R1, the review of M4: the names sat above the middle of their values).
 part "name-value.name" {
+    use "control-label"
     display flex
     align-items center
     min-height "$size-control"
     margin 0
-    color "$fg-muted"
-    font-size "$fs-sm"
 }
 
 part "name-value.value" {
@@ -2462,13 +2593,22 @@ part "legend.swatch[variant=critical]" {
 }
 
 part "legend.swatch[variant=high]" {
-    background "$warning"
+    background "$edge-high"
 }
 
 // Forced colors drop the fill of a bar, so both are drawn in the text color there.
 part "legend.swatch[variant=critical]" "legend.swatch[variant=high]" {
     forced {
         background CanvasText
+    }
+}
+
+// The same two patterns as the edge of a row: Critical a double bar, High a single bar.
+part "legend.swatch[variant=critical]" {
+    forced {
+        width 0
+        border-inline-start "$size-edge double CanvasText"
+        background Canvas
     }
 }
 
@@ -3258,9 +3398,8 @@ part "account.qr" {
 // ───────────── Settings ─────────────
 
 part "settings.source" {
+    use "control-hint"
     margin 0
-    color "$fg-muted"
-    font-size "$fs-sm"
 }
 
 part "settings.locked" {
@@ -3448,15 +3587,14 @@ part "roles.topic" {
 }
 
 part "roles.legend" {
+    use "control-label"
     margin-block-end "$space-2"
     padding 0
-    font-weight "$weight-regular"
 }
 
 part "roles.note" {
+    use "control-hint"
     padding-inline-start "calc($space-5 + $space-3)"
-    color "$fg-muted"
-    font-size "$fs-sm"
 }
 
 // ───────────── Projects ─────────────
@@ -3782,10 +3920,9 @@ part "access-keys.group" {
 }
 
 part "access-keys.legend" {
+    use "control-label"
     padding 0
     margin-bottom "$space-1"
-    font-size "$fs-md"
-    font-weight "$weight-regular"
 }
 
 // ───────────── Shell ─────────────
@@ -4714,8 +4851,7 @@ part "issue-bar.item" {
 }
 
 part "key-capture-field.label" {
-    font-size "$fs-md"
-    font-weight "$weight-regular"
+    use "control-label"
 }
 
 part "key-capture-field.box" {
@@ -10372,7 +10508,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
     rule ".scrim" {
         position fixed
         inset 0
-        background "color-mix(in srgb, $bg-sunken calc($opacity-scrim*100%), transparent)"
+        background "color-mix(in srgb, $scrim calc($opacity-scrim*100%), transparent)"
         z-index "$doc-z-60"
         display grid
         place-items start center
@@ -12443,12 +12579,11 @@ part "workflow-rules" {
     gap "$space-2"
 }
 
-// The name of a group of rules is bold like the heading of a section, and starts where its hint
-// starts: a legend has a padding of its own that would push it 2 px in (the review of M4, B rules).
+// The name of a group of rules is the one label of a control, and starts where its hint starts: a legend has a
+// padding of its own that would push it 2 px in (the review of M4, B rules).
 part "workflow-rules.legend" {
+    use "control-label"
     padding 0
-    font-size "$fs-md"
-    font-weight "$weight-regular"
 }
 
 part "workflow-condition" {
@@ -12615,6 +12750,7 @@ part "search-filters" {
 // A filter: the button that changes it and the button that takes it away, in one outline.
 part "search-filter" {
     use "control-box"
+    font-size "$fs-ui"
     display inline-flex
     align-items center
     max-width "100%"
@@ -12625,6 +12761,7 @@ part "search-filter" {
 part "search-filter > button" {
     padding-inline-start "$space-3"
     border-color transparent
+    min-height "calc($size-control - $border-width * 2)"
 }
 
 // What opens over the page for the search: a window of the bar on a phone, the list of fields.

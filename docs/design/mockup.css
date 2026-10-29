@@ -1406,7 +1406,7 @@ select.look {
 .scrim {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--bg-sunken) calc(var(--opacity-scrim)*100%), transparent);
+  background: color-mix(in srgb, var(--scrim) calc(var(--opacity-scrim)*100%), transparent);
   z-index: var(--doc-z-60);
   display: grid;
   place-items: start center;

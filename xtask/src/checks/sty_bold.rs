@@ -161,8 +161,13 @@ mod tests {
     use super::*;
     use crate::repo::Repo;
 
-    const LABEL_REGULAR: &str =
-        "part \"field.label\" {\n    font-size \"$fs-md\"\n    font-weight \"$weight-regular\"";
+    /// The field label as the theme writes it: the one label style, regular weight.
+    const LABEL: &str = "part \"field.label\" {\n    use \"control-label\"";
+
+    /// The field label with `line` written under its label style.
+    fn label_with(line: &str) -> String {
+        format!("{LABEL}\n    {line}")
+    }
 
     fn text() -> String {
         crate::source::read_text(&Repo::discover().unwrap(), THEME_PATH).unwrap()
@@ -190,10 +195,7 @@ mod tests {
 
     #[test]
     fn bad_example_a_field_label_in_bold() {
-        let file = changed(
-            LABEL_REGULAR,
-            "part \"field.label\" {\n    font-size \"$fs-md\"\n    font-weight \"$weight-bold\"",
-        );
+        let file = changed(LABEL, &label_with("font-weight \"$weight-bold\""));
         let findings = evaluate(&file);
         assert!(
             findings.iter().any(|f| f.message.contains("`field.label`")),
@@ -204,10 +206,7 @@ mod tests {
 
     #[test]
     fn bad_example_a_bold_number_is_bold_too() {
-        let file = changed(
-            LABEL_REGULAR,
-            "part \"field.label\" {\n    font-size \"$fs-md\"\n    font-weight 700",
-        );
+        let file = changed(LABEL, &label_with("font-weight 700"));
         assert!(!evaluate(&file).is_empty());
     }
 
@@ -250,11 +249,7 @@ mod tests {
     weight \"weight-semi\" 600",
                 1,
             )
-            .replacen(
-                LABEL_REGULAR,
-                &LABEL_REGULAR.replace("$weight-regular", "$weight-semi"),
-                1,
-            );
+            .replacen(LABEL, &label_with("font-weight \"$weight-semi\""), 1);
         let findings = evaluate(&ThemeFile::parse(&text).unwrap());
         assert!(
             findings.iter().any(|f| f.message.contains("`field.label`")),
@@ -265,12 +260,7 @@ mod tests {
 
     #[test]
     fn bad_example_the_weight_in_a_font_shorthand_is_found() {
-        let file = changed(
-            LABEL_REGULAR,
-            "part \"field.label\" {
-    font-size \"$fs-md\"
-    font \"bold 14px sans-serif\"",
-        );
+        let file = changed(LABEL, &label_with("font \"bold 14px sans-serif\""));
         let findings = evaluate(&file);
         assert!(
             findings.iter().any(|f| f.message.contains("`field.label`")),
