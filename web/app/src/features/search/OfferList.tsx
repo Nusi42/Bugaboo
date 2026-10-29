@@ -48,7 +48,7 @@ export function OfferList({ id, offers, active, onTake }: OfferListProps) {
           {...{ [ariaWords.offerIndex]: index }}
           {...partOf(part.searchSuggestion, { states: [index === active && "active"] })}
         >
-          <span>{offer.label}</span>
+          <span {...partOf(part.searchSuggestionName)}>{offer.label}</span>
           <span {...partOf(part.searchSuggestionKind)}>{offer.kind}</span>
         </li>
       ))}

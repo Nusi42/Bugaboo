@@ -100,6 +100,19 @@ impl Keyword {
         )
     }
 
+    /// Whether a bare word that spells this keyword can be the first word of the name of a field
+    /// (`hours logged`, the name of an own field): any keyword that means something only at its
+    /// own place and that no filter begins with. The words that join, negate, test or begin a
+    /// helper (`under`, `blocks`, `blocked by`, `connected to`) cannot.
+    #[must_use]
+    pub(crate) const fn can_open_a_field(self) -> bool {
+        !self.reserved_as_value()
+            && !matches!(
+                self,
+                Self::Under | Self::Blocks | Self::Blocked | Self::Connected
+            )
+    }
+
     /// The keyword that `word` spells, in any case.
     #[must_use]
     pub(crate) fn of(word: &str) -> Option<Self> {
@@ -107,6 +120,41 @@ impl Keyword {
             .iter()
             .copied()
             .find(|keyword| keyword.text().eq_ignore_ascii_case(word))
+    }
+}
+
+/// Whether `word`, after the first word of a field, goes on being the name of the field (ADR-0005
+/// amendment M5, decision 11: `assigned to`, `found in release`). `next` is the word after it.
+/// The one rule that the parser reads a field by and the printer decides by whether a name needs
+/// quotes: a word that starts a test (`is`, `in last`, `contains`, `member of`, `within`), joins
+/// (`and`, `or`, `not`) or starts `sort by` or a direction ends the name.
+#[must_use]
+pub(crate) fn continues_field(word: &str, next: Option<&str>) -> bool {
+    let is_next =
+        |keyword: Keyword| next.is_some_and(|next| keyword.text().eq_ignore_ascii_case(next));
+    match Keyword::of(word) {
+        Some(
+            Keyword::And
+            | Keyword::Or
+            | Keyword::Not
+            | Keyword::Is
+            | Keyword::Contains
+            | Keyword::Empty
+            | Keyword::Member
+            | Keyword::Within
+            | Keyword::Sort
+            | Keyword::Highest
+            | Keyword::Lowest
+            | Keyword::Newest
+            | Keyword::Oldest,
+        ) => false,
+        Some(Keyword::In) => !is_next(Keyword::Last),
+        _ => {
+            !(["a", "z"]
+                .iter()
+                .any(|letter| letter.eq_ignore_ascii_case(word))
+                && is_next(Keyword::To))
+        }
     }
 }
 

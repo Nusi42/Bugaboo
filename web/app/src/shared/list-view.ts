@@ -61,6 +61,23 @@ export function viewOf(state: SearchState, defaults: ListView): ListView {
   };
 }
 
+/**
+ * The view with every word of a column, of a width and of the grouping written as the fields the
+ * person may read write it (`now`: the old language's `storyPoints` is `story points`), so a list saved before D3 keeps the columns of its own fields.
+ */
+export function viewInWords(view: ListView, now: (word: string) => string): ListView {
+  const widths: Record<string, number> = {};
+  for (const word of Object.keys(view.widths)) {
+    widths[now(word)] = view.widths[word] ?? 0;
+  }
+  return {
+    ...view,
+    columns: view.columns.map(now),
+    widths,
+    groupBy: view.groupBy === null ? null : now(view.groupBy),
+  };
+}
+
 function sameWidths(
   first: Readonly<Record<string, number>>,
   second: Readonly<Record<string, number>>,

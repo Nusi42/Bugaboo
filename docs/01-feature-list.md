@@ -175,7 +175,7 @@ What each means in practice:
 ## 8. Search (QRY)
 
 - **QRY-01 (M)** — **Advanced search**: a readable *search language* typed as text. It uses the same field names as the UI (from the glossary), so what you see is what you type. For example:
-  `project within WEB and statusGroup is not Done and assignedTo is me and changed in last 7 days sort by priority, highest first`
+  `project within WEB and status group is not Done and assigned to is me and changed in last 7 days sort by priority, highest first`
   The exact grammar is defined in the architecture phase; the goal is that people can read a search aloud.
 - **QRY-02 (M)** — **Simple search**: filter buttons and dropdowns that convert exactly to and from Advanced search in both directions. Both show the same parsed search, so switching never loses information.
 - **QRY-03 (M)** — One grammar for both client and server. The Rust parser is compiled to WebAssembly, so the editor's syntax highlighting, autocomplete and inline errors behave exactly like the server.

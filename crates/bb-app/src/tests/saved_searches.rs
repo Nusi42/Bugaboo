@@ -93,7 +93,7 @@ async fn qry_06_a_saved_search_is_private_when_it_is_made_and_keeps_how_it_is_sh
     .await?;
     assert!(made.mine && made.shared_with.is_empty());
     assert_eq!(made.presentation, a_presentation());
-    assert_eq!(made.text, "status is open");
+    assert_eq!(made.text, "status is Open");
     // Nobody else lists it or opens it, and the address answers as for one that is not there.
     for other in [&crew.cleo, &crew.dan, &crew.eve] {
         for scope in [SearchSet::Mine, SearchSet::Shared] {

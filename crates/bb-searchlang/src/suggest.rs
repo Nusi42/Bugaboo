@@ -7,8 +7,8 @@
 use serde::Serialize;
 
 use crate::fields::{Field, FieldKind, ReadableFields};
-use crate::lexer::{TokenKind, tokens};
-use crate::literal::{value_or_quoted, word_or_quoted};
+use crate::lexer::{Token, TokenKind, tokens};
+use crate::literal::{field_or_quoted, value_or_quoted};
 use crate::parser::{excess, parse};
 use crate::situation::Situation;
 use crate::span::Span;
@@ -117,15 +117,72 @@ pub fn suggest(text: &str, cursor: usize, readable: &ReadableFields) -> Suggesti
     let (start, replace) = partial.map_or((cursor, Span::new(cursor, cursor)), |token| {
         (token.span.start, token.span)
     });
+    let situation = parse(&text[..start]).next;
+    let typed = &text[start..cursor];
+    let offered = items(situation.clone(), typed, readable, Quoted::No);
+    if offered.is_empty() && !typed.is_empty() {
+        // The name of a field has several words (`status group`): what is typed may be the start of
+        // its last words, after the words of a field that is a start of it already.
+        if let Some(longer) = longer_field(text, &found, start, situation.as_ref(), typed, readable)
+        {
+            return Suggestions {
+                replace: Span::new(longer.0, replace.end),
+                items: longer.1,
+            };
+        }
+    }
     Suggestions {
         replace,
-        items: items(
-            parse(&text[..start]).next,
-            &text[start..cursor],
-            readable,
-            Quoted::No,
-        ),
+        items: offered,
     }
+}
+
+/// The fields whose words start with the words of a field typed before `start` and what is typed
+/// since, and where the field begins; `None` when the place is not after the first words of a
+/// field, or no field starts so.
+fn longer_field(
+    text: &str,
+    found: &[Token],
+    start: usize,
+    situation: Option<&Situation>,
+    typed: &str,
+    readable: &ReadableFields,
+) -> Option<(usize, Vec<Suggestion>)> {
+    let before: Vec<&Token> = found
+        .iter()
+        .filter(|token| token.span.end <= start)
+        .collect();
+    let words = match situation? {
+        Situation::Operator { field } => field.split(' ').count(),
+        Situation::SortAfterField => before
+            .iter()
+            .rev()
+            .take_while(|token| match &token.kind {
+                TokenKind::Word(word) => Keyword::of(word) != Some(Keyword::By),
+                _ => false,
+            })
+            .count(),
+        _ => return None,
+    };
+    let first = before
+        .len()
+        .checked_sub(words)
+        .and_then(|at| before.get(at))?;
+    if words == 0
+        || !before[before.len() - words..]
+            .iter()
+            .all(|token| matches!(token.kind, TokenKind::Word(_)))
+    {
+        return None;
+    }
+    let begun = format!("{} {typed}", text[first.span.start..start].trim_end());
+    let items: Vec<Suggestion> = readable
+        .fields
+        .iter()
+        .filter(|field| starts_with(&field.word, &begun))
+        .map(|field| word(field_or_quoted(&field.word), WordKind::Field))
+        .collect();
+    (!items.is_empty()).then_some((first.span.start, items))
 }
 
 /// Whether the cursor stands inside quotes.
@@ -160,7 +217,7 @@ fn items(
         readable
             .fields
             .iter()
-            .map(|field| word(word_or_quoted(&field.word), WordKind::Field))
+            .map(|field| word(field_or_quoted(&field.word), WordKind::Field))
     };
     let helpers = || {
         // A `contains` on its own is offered to a person who has such a search.

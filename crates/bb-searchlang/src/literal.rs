@@ -6,7 +6,7 @@ use bb_core::project::ShortName;
 use bb_core::readable_id::ReadableId;
 
 use crate::syntax::{Date, Decimal};
-use crate::words::Keyword;
+use crate::words::{Keyword, continues_field};
 
 /// The dash of a day (`2026-10-25`) and the sign of a negative number. The dash of an Issue ID is
 /// `bb_core::readable_id::KEY_SEPARATOR`.
@@ -110,16 +110,6 @@ impl Date {
     }
 }
 
-/// Whether `text` is one plain word: it starts with a letter and goes on with letters, digits and
-/// the underscore, and is no keyword. Only such a word stands without quotes.
-#[must_use]
-pub(crate) fn is_plain_word(text: &str) -> bool {
-    let mut characters = text.chars();
-    characters.next().is_some_and(char::is_alphabetic)
-        && characters.all(|c| c.is_alphanumeric() || c == '_')
-        && Keyword::of(text).is_none()
-}
-
 /// The Issue ID that `text` spells, written the one way (in capitals), by the rule of `bb-core`
 /// that the server reads the same ID with; `None` when it is not an Issue ID.
 #[must_use]
@@ -134,8 +124,9 @@ pub(crate) fn short_name(text: &str) -> Option<String> {
     text.parse::<ShortName>().ok().map(|name| name.to_string())
 }
 
-/// Whether `text` is one plain word that can stand as a value: like [`is_plain_word`], but a word of
-/// the language only needs quotes when it would be read as the language.
+/// Whether `text` is one plain word that can stand as a value: it starts with a letter and goes on with
+/// letters, digits and the underscore, and a word of the language only needs quotes when it would
+/// be read as the language.
 pub(crate) fn is_plain_value(text: &str) -> bool {
     let mut characters = text.chars();
     characters.next().is_some_and(char::is_alphabetic)
@@ -158,14 +149,25 @@ pub(crate) fn quoted(text: &str) -> String {
     out
 }
 
-/// The word of a field: bare when it is one plain word, quoted otherwise.
+/// The word of a field, or of a key of `sort by`: bare when it is words and numbers one space apart
+/// that the language reads back as the one name (`assigned to`, `found in release`), quoted
+/// otherwise (ADR-0005 amendment M5, decision 11).
 #[must_use]
-pub(crate) fn word_or_quoted(text: &str) -> String {
-    if is_plain_word(text) {
-        text.to_owned()
-    } else {
-        quoted(text)
-    }
+pub(crate) fn field_or_quoted(text: &str) -> String {
+    let words: Vec<&str> = text.split(' ').collect();
+    let plain = words.iter().all(|word| {
+        let mut characters = word.chars();
+        characters.next().is_some_and(char::is_alphabetic)
+            && characters.all(|c| c.is_alphanumeric() || c == '_')
+    }) && words
+        .first()
+        .is_some_and(|first| Keyword::of(first).is_none_or(Keyword::can_open_a_field))
+        && words
+            .iter()
+            .enumerate()
+            .skip(1)
+            .all(|(at, word)| continues_field(word, words.get(at + 1).copied()));
+    if plain { text.to_owned() } else { quoted(text) }
 }
 
 /// A value: bare when it is one plain word that the language does not read as itself, quoted
@@ -218,16 +220,33 @@ mod tests {
 
     #[test]
     fn only_a_plain_word_goes_without_quotes() {
-        assert_eq!(word_or_quoted("Done"), "Done");
-        assert_eq!(word_or_quoted("In progress"), "\"In progress\"");
-        assert_eq!(word_or_quoted("week"), "\"week\"");
+        assert_eq!(field_or_quoted("title"), "title");
+        assert_eq!(field_or_quoted("week"), "week");
+        assert_eq!(field_or_quoted("hours logged"), "hours logged");
+        assert_eq!(field_or_quoted("and"), "\"and\"");
+        assert_eq!(field_or_quoted("under"), "\"under\"");
+        assert_eq!(field_or_quoted("404"), "\"404\"");
+        assert_eq!(field_or_quoted(""), "\"\"");
+        assert_eq!(field_or_quoted("say \"hi\"\\"), "\"say \\\"hi\\\"\\\\\"");
+        assert_eq!(value_or_quoted("Done"), "Done");
+        assert_eq!(value_or_quoted("In progress"), "\"In progress\"");
         assert_eq!(value_or_quoted("highest"), "highest");
         assert_eq!(value_or_quoted("Blocked"), "Blocked");
         assert_eq!(value_or_quoted("And"), "\"And\"");
         assert_eq!(value_or_quoted("this"), "\"this\"");
-        assert_eq!(word_or_quoted("404"), "\"404\"");
-        assert_eq!(word_or_quoted(""), "\"\"");
-        assert_eq!(word_or_quoted("say \"hi\"\\"), "\"say \\\"hi\\\"\\\\\"");
+    }
+
+    #[test]
+    fn a_field_of_several_words_goes_without_quotes_when_it_reads_back_as_one_name() {
+        assert_eq!(field_or_quoted("status group"), "status group");
+        assert_eq!(field_or_quoted("assigned to"), "assigned to");
+        assert_eq!(field_or_quoted("found in release"), "found in release");
+        // A word that starts a test, joins or orders ends the name, so the name needs quotes.
+        assert_eq!(field_or_quoted("a is b"), "\"a is b\"");
+        assert_eq!(field_or_quoted("x in last"), "\"x in last\"");
+        assert_eq!(field_or_quoted("x a to"), "\"x a to\"");
+        assert_eq!(field_or_quoted("two  spaces"), "\"two  spaces\"");
+        assert_eq!(field_or_quoted("not x"), "\"not x\"");
     }
 
     #[test]

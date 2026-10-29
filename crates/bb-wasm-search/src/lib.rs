@@ -103,6 +103,14 @@ pub fn own_field_word(name: &str) -> String {
     bb_searchlang::own_field_word(name)
 }
 
+/// What tells two words of the language apart (`bb_core::fields::word_key`): the one rule that the
+/// browser reads the words of the old language by (`statusGroup` is `status group`).
+#[must_use]
+#[wasm_bindgen]
+pub fn word_key(word: &str) -> String {
+    bb_searchlang::word_key(word)
+}
+
 /// The text of a person who is still typing, with a `*` after the last word when it can take
 /// one (`bb_searchlang::open_last_word`).
 #[must_use]
@@ -146,7 +154,7 @@ mod tests {
         let fields = bb_searchlang::readable_fields_from_json(&fields_json()).unwrap_or_default();
         let json = write_json(&bb_searchlang::suggest("assi", 4, &fields)).unwrap_or_default();
         let found: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
-        assert_eq!(found["items"][0]["text"], "assignedTo");
+        assert_eq!(found["items"][0]["text"], "assigned to");
     }
 
     #[test]
@@ -157,6 +165,6 @@ mod tests {
 
     #[test]
     fn qry_03_the_word_of_an_own_field_is_the_rule_of_the_language() {
-        assert_eq!(own_field_word("Story points"), "storyPoints");
+        assert_eq!(own_field_word("Story points"), "story points");
     }
 }

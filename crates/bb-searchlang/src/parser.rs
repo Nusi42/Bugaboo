@@ -14,10 +14,9 @@ use crate::literal::short_name;
 use crate::situation::{ParseError, Reason, Situation};
 use crate::span::Span;
 use crate::syntax::{
-    Comparison, Direction, Expr, FieldRef, IssueRef, Operand, ProjectRef, Search, SortKey, Steps,
-    Test, Text, TimeWord,
+    Comparison, Expr, FieldRef, IssueRef, Operand, ProjectRef, Search, Steps, Test, Text, TimeWord,
 };
-use crate::words::{Keyword, Part, direction_phrase, starts_phrase, time_phrase, unit_of};
+use crate::words::{Keyword, continues_field, starts_phrase, time_phrase, unit_of};
 
 /// What a parse of a text leaves: the search, or the error, and what the grammar wants next.
 pub(crate) struct Parsed {
@@ -77,6 +76,8 @@ pub(crate) fn excess(text: &str) -> Option<Span> {
         Span::new(start, text.len())
     })
 }
+
+mod sort;
 
 type Step<T> = Result<T, ParseError>;
 
@@ -307,8 +308,8 @@ impl Parser<'_> {
                         text,
                     })
                 }
-                Some(_) => self.fail(Situation::Filter),
-                None => self.field_filter(),
+                Some(keyword) if !keyword.can_open_a_field() => self.fail(Situation::Filter),
+                _ => self.field_filter(),
             },
             Some(TokenKind::Quoted { closed: true, .. }) => self.field_filter(),
             _ => self.fail(Situation::Filter),
@@ -351,16 +352,31 @@ impl Parser<'_> {
         self.fail(Situation::IssueRef)
     }
 
-    /// A field: a plain word or a quoted text.
+    /// A field: the words of its name (`assigned to`, `status group`; ADR-0005 amendment M5,
+    /// decision 11) up to the word that starts what is asked of it, or a quoted text.
     fn field_ref(&mut self, wanted: Situation) -> Step<FieldRef> {
         match self.peek_kind(0) {
             Some(TokenKind::Word(word)) => {
-                if Keyword::of(word).is_some() {
+                if Keyword::of(word).is_some_and(|keyword| !keyword.can_open_a_field()) {
                     let word = word.clone();
                     return self.reserved(&word);
                 }
-                let word = word.clone();
-                let span = self.advance();
+                let mut word = word.clone();
+                let mut span = self.advance();
+                while let Some(TokenKind::Word(next)) = self.peek_kind(0) {
+                    let after = match self.peek_kind(1) {
+                        Some(TokenKind::Word(after)) => Some(after.as_str()),
+                        _ => None,
+                    };
+                    let list = Keyword::of(next) == Some(Keyword::In)
+                        && self.peek_kind(1) == Some(&TokenKind::OpenBracket);
+                    if list || !continues_field(next, after) {
+                        break;
+                    }
+                    word.push(' ');
+                    word.push_str(next);
+                    span = span.to(self.advance());
+                }
                 Ok(FieldRef { word, span })
             }
             Some(TokenKind::Quoted { text, closed: true }) => {
@@ -664,95 +680,6 @@ impl Parser<'_> {
             }
         }
         None
-    }
-
-    fn sort_clause(&mut self) -> Step<Vec<SortKey>> {
-        self.advance();
-        if self.eat_keyword(Keyword::By).is_none() {
-            return self.fail(Situation::SortBy);
-        }
-        let mut keys = Vec::new();
-        loop {
-            let field = self.field_ref(Situation::SortField)?;
-            self.hint = Situation::SortAfterField;
-            let (direction, end) = self.sort_direction(field.span.end)?;
-            if direction.is_some() {
-                self.hint = Situation::SortAfterKey;
-            }
-            keys.push(SortKey {
-                span: Span::new(field.span.start, end),
-                field,
-                direction,
-            });
-            if self.eat(&TokenKind::Comma).is_none() {
-                return Ok(keys);
-            }
-            self.hint = Situation::SortField;
-        }
-    }
-
-    /// The direction after a field of `sort by`, with or without a comma before it, and where the
-    /// key ends.
-    fn sort_direction(&mut self, field_end: usize) -> Step<(Option<Direction>, usize)> {
-        let after_comma = usize::from(self.peek_kind(0) == Some(&TokenKind::Comma));
-        if !self.direction_starts(after_comma) {
-            return Ok((None, field_end));
-        }
-        if after_comma == 1 {
-            self.advance();
-        }
-        for direction in Direction::ALL {
-            let phrase = direction_phrase(direction);
-            let words: Vec<&str> = (0..phrase.len())
-                .map_while(|ahead| match self.peek_kind(ahead) {
-                    Some(TokenKind::Word(text)) => Some(text.as_str()),
-                    _ => None,
-                })
-                .collect();
-            if words.len() == phrase.len() && starts_phrase(phrase, &words) {
-                let mut end = field_end;
-                for _ in phrase {
-                    end = self.advance().end;
-                }
-                return Ok((Some(direction), end));
-            }
-        }
-        let typed = self.typed_direction_words();
-        let first = self.peek().map_or_else(Span::default, |token| token.span);
-        Err(ParseError {
-            at_end: self.at + typed.len() >= self.tokens.len(),
-            reason: Reason::Expected(Situation::Direction { typed }),
-            span: first,
-        })
-    }
-
-    /// Whether a direction begins `ahead` tokens on: its first word, and for a letter also `to`.
-    fn direction_starts(&self, ahead: usize) -> bool {
-        let Some(TokenKind::Word(word)) = self.peek_kind(ahead) else {
-            return false;
-        };
-        Direction::ALL.iter().any(|direction| {
-            let phrase = direction_phrase(*direction);
-            phrase.first().is_some_and(|first| first.is(word))
-                && (matches!(phrase.first(), Some(Part::Key(_)))
-                    || self.keyword_at(ahead + 1) == Some(Keyword::To))
-        })
-    }
-
-    /// The words of a direction that are typed and fit the start of one of the directions.
-    fn typed_direction_words(&self) -> Vec<String> {
-        let mut typed: Vec<&str> = Vec::new();
-        while let Some(TokenKind::Word(word)) = self.peek_kind(typed.len()) {
-            typed.push(word);
-            if !Direction::ALL
-                .iter()
-                .any(|direction| starts_phrase(direction_phrase(*direction), &typed))
-            {
-                typed.pop();
-                break;
-            }
-        }
-        typed.into_iter().map(str::to_lowercase).collect()
     }
 }
 

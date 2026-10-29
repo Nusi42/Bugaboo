@@ -18,7 +18,7 @@ import { type Instance } from "./server.ts";
 const DEMO_M5 = "M5/demo";
 
 /** The search of the first step: what a Team member looks at first. */
-export const HIGH_PRIORITY = "priority is high";
+export const HIGH_PRIORITY = "priority is High";
 /** The search that reads the own field *Customer*, which Contributors may not read. */
 export const CUSTOMER_SEARCH = 'customer is "Alder Street Bakery"';
 /** The answer for a field that is not there (the code the type of the API checks). */
@@ -47,7 +47,7 @@ export async function simpleSearchFindsIssues(page: Page): Promise<void> {
 
 /** Step 2: Advanced search shows the same text, and back to Simple loses nothing. */
 export async function switchingKeepsTheSearch(page: Page): Promise<void> {
-  await openSearch(page, `${HIGH_PRIORITY} and statusGroup is not Done`, sampleTeamMember());
+  await openSearch(page, `${HIGH_PRIORITY} and status group is not Done`, sampleTeamMember());
   await openBar(page);
   const text = addressText(page);
   await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();

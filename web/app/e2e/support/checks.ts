@@ -208,19 +208,15 @@ async function expectAbove(upper: Locator, lower: Locator): Promise<void> {
 }
 
 /**
- * The last list stands behind a mistake in the text (UX §4.3): a dashed edge round the whole list
- * frame (its head too, where there is one), and the note above the frame.
+ * The last list stands behind a mistake in the text (UX §4.3, §6.1): a blue note above the frame of
+ * the list says so, and the frame has no edge of its own (S27: a dashed edge looked like a place to
+ * drop something).
  */
-export async function expectStaleEdge(page: Page, note: Locator): Promise<void> {
+export async function expectStaleNote(page: Page, note: Locator): Promise<void> {
   const frame = page.locator("[data-part='list-frame']");
-  await expect(frame).toHaveCSS("outline-style", "dashed");
+  await expect(frame).not.toHaveCSS("outline-style", "dashed");
   await expectAbove(note, frame);
-  const head = page.locator("[data-part='list-head']");
-  if ((await head.count()) > 0) {
-    const [outer, inner] = await Promise.all([frame.boundingBox(), head.boundingBox()]);
-    expect(inner?.y ?? 0).toBeGreaterThanOrEqual(outer?.y ?? 1);
-    expect((inner?.y ?? 0) + (inner?.height ?? 0)).toBeLessThanOrEqual(
-      (outer?.y ?? 0) + (outer?.height ?? 0),
-    );
-  }
+  await expect(
+    page.locator("[data-part='alert'][data-variant='info']").filter({ has: note }),
+  ).toHaveCount(1);
 }

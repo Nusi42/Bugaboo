@@ -1,8 +1,9 @@
-import type { ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
+import type { Mistake, ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
 import { applyWord } from "../../shared/apply-suggestion.ts";
 import { useBoxEvents } from "./use-box-keys.ts";
+import { faultsOf } from "./unfinished.ts";
 import { useOffers, type Offer, type Offers } from "./use-offers.ts";
 import type { SearchBarState } from "./use-search-bar.ts";
 
@@ -14,17 +15,31 @@ export interface AdvancedBox {
   readonly showing: boolean;
   readonly active: number | undefined;
   readonly take: (offer: Offer) => void;
+  /** Where the text ends while the person may still be typing at it (S6); none otherwise. */
+  readonly unfinishedAt: number | undefined;
+  /** The mistakes that are faults: those that are not only something still missing at the end. */
+  readonly faults: readonly Mistake[];
 }
 
 /** Whether the list of offers is open, and the offer the keys are on. */
-function useList() {
+function useList(onLeave: () => void) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<number | undefined>();
+  const [focused, setFocused] = useState(false);
   const close = (): void => {
     setActive(undefined);
     setOpen(false);
   };
-  return { open, setOpen, active, setActive, close };
+  const enter = (): void => {
+    setFocused(true);
+    setOpen(true);
+  };
+  const exit = (): void => {
+    setFocused(false);
+    close();
+    onLeave();
+  };
+  return { open, setOpen, active, setActive, close, focused, enter, exit };
 }
 
 /**
@@ -37,13 +52,9 @@ export function useAdvancedBox(
   bar: SearchBarState,
 ): AdvancedBox {
   const [cursor, setCursor] = useState(bar.shown.length);
-  const { open, setOpen, active, setActive, close } = useList();
+  const { open, setOpen, active, setActive, close, focused, enter, exit } = useList(bar.endTyping);
   const offers = useOffers(language, fields, bar.shown, cursor);
   const showing = open && offers.items.length > 0;
-  const leave = (): void => {
-    close();
-    bar.endTyping();
-  };
   const take = (offer: Offer): void => {
     const edited = applyWord(bar.shown, offers.replace, offer.insert);
     bar.type(edited.text);
@@ -72,10 +83,15 @@ export function useAdvancedBox(
       setOpen(true);
     },
     onMoved: setCursor,
-    onFocus: () => {
-      setOpen(true);
-    },
-    onBlur: leave,
+    onFocus: enter,
+    onBlur: exit,
   });
-  return { box, offers, showing, active, take };
+  return {
+    box,
+    offers,
+    showing,
+    active,
+    take,
+    ...faultsOf(bar.answer.mistakes, focused, bar.shown.length),
+  };
 }

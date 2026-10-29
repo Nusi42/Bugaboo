@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
-use bb_core::fields::{Field, FieldKey, ID_WORD};
+use bb_core::fields::{Field, FieldKey, ID_WORD, word_key};
 use bb_core::id::{FieldId, ProjectId};
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
@@ -411,13 +411,14 @@ enum WordOwner {
 /// rule for the words the search reads ([`own_words`]) and for the names that are refused
 /// ([`word_is_taken`]). A field for projects owns no word: issues are what a search finds.
 fn word_owner(word: &str, own: &[Definition]) -> Option<WordOwner> {
-    if reserved_words().iter().any(|each| each == word) {
+    let wanted = word_key(word);
+    if reserved_words().iter().any(|each| word_key(each) == wanted) {
         return Some(WordOwner::Language);
     }
     own.iter()
         .find(|definition| {
             definition.field.applies_to == FieldFor::Issues
-                && own_field_word(&definition.field.name) == word
+                && word_key(&own_field_word(&definition.field.name)) == wanted
         })
         .map(|definition| WordOwner::Field(definition.field.id))
 }

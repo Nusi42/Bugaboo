@@ -305,7 +305,7 @@ export interface ReadableFields {
 
 /** One field that may stand in a search. */
 export interface Field {
-  /** The word of the field: one word in lower camel case (`assignedTo`), or the name of an own field made by [`own_field_word`]. */
+  /** The word of the field, as the glossary writes it in lower case (`assigned to`), or the name of an own field made by [`own_field_word`]. A text may spell it in any case and with the spaces run together (`assignedTo`, the form of the old language): see [`ReadableFields::field`]. */
   readonly word: string;
   /** What kind of values it holds. */
   readonly kind: FieldKind;

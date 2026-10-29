@@ -1,5 +1,6 @@
 //! What a word of a search stands for: the one list the checker and the compiler both start from.
 
+use bb_core::fields::word_key;
 use bb_core::id::FieldId;
 use bb_core::message::{self, MessageKey};
 use bb_core::own_fields::FieldType;
@@ -125,11 +126,14 @@ impl FieldTarget {
     }
 }
 
-/// The target of the field with this word.
+/// The target of the field with this word. A word is told from another by its letters alone
+/// (`word_key`): the form of the old language (`statusGroup`) is the field `status group` still, so
+/// a presentation that was saved with it keeps working.
 #[must_use]
 pub fn target_of(fields: &[Searchable], word: &str) -> Option<FieldTarget> {
+    let wanted = word_key(word);
     fields
         .iter()
-        .find(|searchable| searchable.field.word == word)
+        .find(|searchable| word_key(&searchable.field.word) == wanted)
         .map(|searchable| searchable.target)
 }

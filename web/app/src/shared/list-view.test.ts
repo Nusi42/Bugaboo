@@ -5,18 +5,79 @@ import {
   noGrouping,
   presentationOf,
   viewFromPresentation,
+  viewInWords,
   viewOf,
   withView,
 } from "./list-view.ts";
 import { readSearch, searchLocation } from "./search-address.ts";
+import { testSearchLanguage } from "./search-language-testing.ts";
 
 const project = builtInView({ everywhere: false, spacing: "comfortable" });
 const everywhere = builtInView({ everywhere: true, spacing: "comfortable" });
 
+/** The words the person may read; a word is told from another by the language module's own rule. */
+const readable = ["id", "story points", "assigned to", "status group"];
+const now = (word: string): string =>
+  readable.find((each) => testSearchLanguage.wordKey(each) === testSearchLanguage.wordKey(word)) ??
+  word;
+
+describe("a list saved with the words of the old language (D3)", () => {
+  const old = {
+    columns: ["id", "storyPoints", "assignedTo"],
+    widths: { storyPoints: 120 },
+    spacing: "comfortable",
+    groupBy: "statusGroup",
+  } as const;
+
+  it("keeps the column, the width and the grouping of every field, an own one included", () => {
+    expect(viewInWords(old, now)).toEqual({
+      columns: ["id", "story points", "assigned to"],
+      widths: { "story points": 120 },
+      spacing: "comfortable",
+      groupBy: "status group",
+    });
+  });
+
+  it("is not changed until a person changes it, and set back by hand it is not changed again", () => {
+    const defaults = viewInWords(old, now);
+    const state = readSearch({
+      pathname: "/search",
+      search: { cols: "id,storyPoints,assignedTo" },
+    });
+    const shown = viewInWords(viewOf(state, defaults), now);
+    // The same words on both sides: the address then says nothing of the columns.
+    expect(withView(state, shown, defaults).columns).toBeUndefined();
+    const changed = withView(state, { ...shown, columns: ["id"] }, defaults);
+    expect(changed.columns).toEqual(["id"]);
+    expect(withView(changed, shown, defaults).columns).toBeUndefined();
+  });
+
+  it("reads the address and a saved presentation as they are written", () => {
+    const saved = viewFromPresentation(
+      {
+        view: "list",
+        columns: [{ field: "reportedBy", width: 90 }],
+        spacing: "compact",
+        group_by: "statusGroup",
+      },
+      project,
+    );
+    expect(saved.columns).toEqual(["reportedBy"]);
+    expect(viewInWords(saved, now).groupBy).toBe("status group");
+  });
+});
+
 describe("the view of a list that the address and the defaults give (UX 2.1, 4.2)", () => {
   it("is the columns of UX 4.2, grouped by status group, for a project's list", () => {
-    expect(project.columns).toEqual(["status", "id", "title", "priority", "assignedTo", "changed"]);
-    expect(project.groupBy).toBe("statusGroup");
+    expect(project.columns).toEqual([
+      "status",
+      "id",
+      "title",
+      "priority",
+      "assigned to",
+      "changed",
+    ]);
+    expect(project.groupBy).toBe("status group");
     expect(project.spacing).toBe("comfortable");
     expect(project.widths).toEqual({});
   });

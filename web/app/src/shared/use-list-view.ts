@@ -1,7 +1,14 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { appearanceOf } from "./appearance-setting.ts";
-import { builtInView, viewFromPresentation, viewOf, withView, type ListView } from "./list-view.ts";
+import {
+  builtInView,
+  viewFromPresentation,
+  viewInWords,
+  viewOf,
+  withView,
+  type ListView,
+} from "./list-view.ts";
 import { historyStep, type HistoryStep, type SearchState } from "./search-address.ts";
 import { useMySettings } from "./use-my-settings.ts";
 
@@ -24,20 +31,25 @@ export interface ViewSource {
   readonly everywhere: boolean;
   /** How a saved search, or the saved search that is the project's list, shows its results. */
   readonly presentation?: Schema<"PresentationRef"> | undefined;
+  /** The word of a field as the person may read it now, for a list saved with the old words; none before the fields are there. */
+  readonly word?: ((word: string) => string) | undefined;
 }
 
 /** The view a list has: the address where it says anything, then the saved search, then the built-in list and the person's spacing. */
 export function useListView(
   state: SearchState,
   onState: (state: SearchState, step: HistoryStep) => void,
-  { everywhere, presentation }: ViewSource,
+  { everywhere, presentation, word }: ViewSource,
 ): Pick<ResultsInput, "view" | "defaults" | "onView"> {
   const spacing = appearanceOf(useMySettings()).spacing;
   const builtIn = builtInView({ everywhere, spacing });
-  const defaults =
-    presentation === undefined ? builtIn : viewFromPresentation(presentation, builtIn);
+  const saved = presentation === undefined ? builtIn : viewFromPresentation(presentation, builtIn);
+  // The words are mapped once, in the defaults and in the view, so a view set back by hand is the
+  // defaults again and nothing looks changed.
+  const defaults = word === undefined ? saved : viewInWords(saved, word);
+  const own = viewOf(state, defaults);
   return {
-    view: viewOf(state, defaults),
+    view: word === undefined ? own : viewInWords(own, word),
     defaults,
     onView: (view) => {
       onState(withView(state, view, defaults), historyStep.replace);

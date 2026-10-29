@@ -146,7 +146,7 @@ async fn qry_06_a_text_is_kept_in_its_canonical_spelling_and_a_bad_one_is_refuse
     let ben = &crew.ben.session_token;
     let text = "  priority   is   high  and status is open ";
     let made = save(&crew.world, ben, "Spacing", text).await?;
-    assert_eq!(made.text, "priority is high and status is open");
+    assert_eq!(made.text, "priority is High and status is Open");
     for bad in [
         "nonsense is true",
         "priority is",
@@ -288,11 +288,11 @@ async fn qry_06_a_shared_search_runs_with_the_rights_of_the_person_who_opens_it(
         }
     };
     let (ben, dan) = (words(&crew.ben).await?, words(&crew.dan).await?);
-    assert!(ben.contains(&"assignedTo".to_owned()));
-    assert!(!dan.contains(&"assignedTo".to_owned()));
+    assert!(ben.contains(&"assigned to".to_owned()));
+    assert!(!dan.contains(&"assigned to".to_owned()));
     for who in [&crew.ben, &crew.dan] {
         let seen = open(&crew.world, &who.session_token, made.id).await?;
-        assert_eq!(seen.text, "status is open");
+        assert_eq!(seen.text, "status is Open");
         assert!(seen.shared_with.is_empty() && !seen.mine);
     }
     Ok(())

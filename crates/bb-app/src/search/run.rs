@@ -334,12 +334,7 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
 ) -> Result<Authorized<SearchGroups>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
     let prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
-    if !prepared
-        .looked
-        .fields
-        .iter()
-        .any(|each| each.field.word == query.by)
-    {
+    if target_of(&prepared.looked.fields, &query.by).is_none() {
         return Err(AppError::Refused(ErrorCode::InvalidRequest));
     }
     let mut found = ctx
