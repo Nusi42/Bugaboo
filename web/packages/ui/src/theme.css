@@ -1696,8 +1696,8 @@ optgroup {
   background-size:
     100% var(--space-3),
     100% var(--space-3),
-    100% var(--space-2),
-    100% var(--space-2);
+    100% var(--space-1),
+    100% var(--space-1);
   background-repeat: no-repeat;
   background-origin: content-box;
   background-clip: content-box;
@@ -2966,8 +2966,8 @@ optgroup {
   background-size:
     100% var(--space-3),
     100% var(--space-3),
-    100% var(--space-2),
-    100% var(--space-2);
+    100% var(--space-1),
+    100% var(--space-1);
   background-repeat: no-repeat;
   background-origin: content-box;
   background-clip: content-box;
@@ -3581,8 +3581,8 @@ optgroup {
   background-size:
     100% var(--space-3),
     100% var(--space-3),
-    100% var(--space-2),
-    100% var(--space-2);
+    100% var(--space-1),
+    100% var(--space-1);
   background-repeat: no-repeat;
   background-origin: content-box;
   background-clip: content-box;

@@ -705,7 +705,7 @@ mixin "stacked-facts" {
 mixin "scroll-cue" {
     background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient($bg-raised, $bg-raised), linear-gradient($border-control, transparent), linear-gradient(to top, $border-control, transparent)"
     background-position "top, bottom, top, bottom"
-    background-size "100% $space-3, 100% $space-3, 100% $space-2, 100% $space-2"
+    background-size "100% $space-3, 100% $space-3, 100% $space-1, 100% $space-1"
     background-repeat no-repeat
     // The cue stays inside the edges of the field above the box, not in the padding for the ring.
     background-origin content-box
