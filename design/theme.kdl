@@ -2798,6 +2798,12 @@ part "row.end" {
     margin-inline-start auto
 }
 
+// A row that does not wrap: its items stay together and the row is as wide as they are (Spacing and Customize).
+part "row[variant=nowrap]" {
+    flex-wrap nowrap
+    align-items flex-end
+}
+
 // A row whose items are as high as the row.
 part "row[variant=stretch]" {
     align-items stretch
@@ -12527,6 +12533,7 @@ part "search-filter" {
     display inline-flex
     align-items center
     max-width "100%"
+    white-space nowrap
 }
 
 // The text of the button of a filter starts a little in from the edge of its outline (R3).
@@ -12590,6 +12597,7 @@ part "search-panel search-filters" {
 
 part "search-panel search-filter" {
     justify-content space-between
+    white-space normal
 }
 
 // *+ Add filter* and *Any of* are as wide as the sheet, like the filters above them.

@@ -23,10 +23,16 @@ export function ListOptions({ view, fields, customizing, onView, onCustomize }: 
   }
   return (
     <div {...partOf(part.listOptions)}>
-      <ViewChoices view={view} fields={fields} onView={onView} />
-      <Button current={customizing} onPress={onCustomize}>
-        {t("issues.customize")}
-      </Button>
+      <ViewChoices
+        view={view}
+        fields={fields}
+        onView={onView}
+        end={
+          <Button current={customizing} onPress={onCustomize}>
+            {t("issues.customize")}
+          </Button>
+        }
+      />
     </div>
   );
 }

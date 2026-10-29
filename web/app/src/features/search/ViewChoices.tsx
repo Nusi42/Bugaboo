@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { ChoiceGroup, SelectField } from "@bugaboo/ui";
+import { ChoiceGroup, SelectField, part, partOf } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
 import { notGroupable } from "../../shared/list-columns.ts";
 import { noGrouping, type ListView } from "../../shared/list-view.ts";
@@ -14,6 +15,8 @@ export interface ListViewControl {
 
 export interface ViewChoicesProps extends ListViewControl {
   readonly fields: SearchFieldsAnswer;
+  /** What stands with *Spacing*, on the same line (the button *Customize* on a computer). */
+  readonly end?: ReactNode;
 }
 
 /** The fields a list can be grouped by: every one the person may read. */
@@ -27,7 +30,7 @@ function groupChoicesOf(fields: SearchFieldsAnswer) {
  * *Group by* any field the person may read, and *Spacing* (UX section 4.2): above the list on a
  * computer, in the *Filters* sheet on a phone (M5 exit decision D2).
  */
-export function ViewChoices({ view, fields, onView }: ViewChoicesProps) {
+export function ViewChoices({ view, fields, onView, end }: ViewChoicesProps) {
   return (
     <>
       <SelectField
@@ -41,17 +44,20 @@ export function ViewChoices({ view, fields, onView }: ViewChoicesProps) {
           onView({ ...view, groupBy: value === noGrouping ? null : value });
         }}
       />
-      <ChoiceGroup
-        legend={t("appearance.spacing.legend")}
-        choices={searchSpacings.map((word) => ({
-          value: word,
-          label: t(`appearance.spacing.${word}`),
-        }))}
-        value={view.spacing}
-        onChange={(spacing) => {
-          onView({ ...view, spacing });
-        }}
-      />
+      <div {...partOf(part.row, { variants: ["nowrap"] })}>
+        <ChoiceGroup
+          legend={t("appearance.spacing.legend")}
+          choices={searchSpacings.map((word) => ({
+            value: word,
+            label: t(`appearance.spacing.${word}`),
+          }))}
+          value={view.spacing}
+          onChange={(spacing) => {
+            onView({ ...view, spacing });
+          }}
+        />
+        {end}
+      </div>
     </>
   );
 }

@@ -6,6 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { preparePanel } from "./support/list-panel.ts";
+import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 
 // The parts of the issue in the side panel (UX §4.2, §4.4; M5 exit L2, L3): the head stays on one
@@ -48,4 +49,21 @@ test("ux_4_2 the comment box in the panel has quiet icon buttons and one footer 
   const bold = panel.getByRole("button", { name: t("markdown.bold"), exact: true });
   await expect(bold).toBeVisible();
   expect((await boxOf(bold)).width).toBeLessThanOrEqual(48);
+});
+
+test("ux_4_2 beside the panel a filter chip does not wrap inside itself, and Customize stays with Spacing (A3)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "only a computer has the panel beside the list");
+  await signIn(page, ada);
+  await page.goto(`${projectIssuesAddress("WEB")}?s=statusGroup+is+not+Done&open=WEB-1`);
+  const chip = partIn(page, "search-filter").first();
+  await expect(chip).toBeVisible();
+  // One line: a chip as high as the buttons beside it, not two lines of text.
+  expect((await boxOf(chip)).height).toBeLessThanOrEqual(48);
+  const customize = await boxOf(page.getByRole("button", { name: t("issues.customize") }));
+  const compact = await boxOf(
+    page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }),
+  );
+  expect(Math.abs(customize.y - compact.y)).toBeLessThanOrEqual(12);
 });

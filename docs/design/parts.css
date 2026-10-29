@@ -2064,6 +2064,11 @@ optgroup {
   margin-inline-start: auto;
 }
 
+[data-part="row"][data-variant~="nowrap"] {
+  flex-wrap: nowrap;
+  align-items: flex-end;
+}
+
 [data-part="row"][data-variant~="stretch"] {
   align-items: stretch;
 }
@@ -5471,6 +5476,7 @@ optgroup {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
+  white-space: nowrap;
 }
 
 [data-part="search-filter"] > [data-part="button"] {
@@ -5527,6 +5533,7 @@ optgroup {
 
 [data-part="search-panel"] [data-part="search-filter"] {
   justify-content: space-between;
+  white-space: normal;
 }
 
 [data-part="search-filters.action"] {
