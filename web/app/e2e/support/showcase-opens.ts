@@ -66,11 +66,28 @@ export async function openMovePreview({ page }: Needs): Promise<void> {
 /** The address the invitation of the picture is for: always the same, so the picture is. */
 const NEW_COLLEAGUE = "new.colleague@bugaboo.example";
 
+/** Takes back every open invitation for this address, one after the other, until none is left. */
+async function takeBackInvitationsOf(page: Page, email: string): Promise<void> {
+  const rows = page.getByRole("listitem").filter({ hasText: email });
+  const before = await rows.count();
+  if (before === 0) {
+    return;
+  }
+  await rows
+    .first()
+    .getByRole("button", { name: /^Take back/u })
+    .click();
+  await expect(rows).toHaveCount(before - 1);
+  await takeBackInvitationsOf(page, email);
+}
+
 /** Makes an invitation for somebody new, so that the link that shows once is in the picture. */
 export async function openInvitation({ page }: Needs): Promise<void> {
   await page.goto(paths.people);
   await expectPage(page);
   const email = NEW_COLLEAGUE;
+  // An invitation of an earlier theme is taken back first, so every theme shows the same list (M5 exit, O11).
+  await takeBackInvitationsOf(page, email);
   await page.getByRole("textbox", { name: t("field.email"), exact: true }).fill(email);
   await page.getByRole("button", { name: t("invitations.create"), exact: true }).click();
   await expect(page.getByText(t("invitations.created", { email }))).toBeVisible();
