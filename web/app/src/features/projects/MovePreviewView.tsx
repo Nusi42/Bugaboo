@@ -1,9 +1,34 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, type LongPreviewLine, partOf, part } from "@bugaboo/ui";
 
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
-import { keyedLiftSentencesOfPreview, personSentencesOfPreview } from "./preview-sentences.ts";
+import {
+  keyedLiftSentencesOfPreview,
+  type PersonSentences,
+  personSentencesOfPreview,
+} from "./preview-sentences.ts";
 import type { Preview } from "./use-projects.ts";
+
+/** The lines under a person: the changes, or, where the person is changed in several projects, each project with its changes. */
+function linesOf(group: PersonSentences): readonly LongPreviewLine[] {
+  const [only, ...others] = group.projects;
+  if (only !== undefined && others.length === 0) {
+    return only.lines.map((line) => ({ key: line.key, content: line.text }));
+  }
+  return group.projects.map((project) => ({
+    key: project.key,
+    content: (
+      <>
+        <span {...partOf(part.muted)}>{project.project}</span>
+        <ul {...partOf(part.longPreviewLines)}>
+          {project.lines.map((line) => (
+            <li key={line.key}>{line.text}</li>
+          ))}
+        </ul>
+      </>
+    ),
+  }));
+}
 
 /**
  * What a move would do, in plain sentences (*Show, then do*): who gains or loses access or changes
@@ -34,7 +59,7 @@ export function MovePreviewView({ preview }: { readonly preview: Preview }) {
         groups={groups.map((group) => ({
           key: group.key,
           heading: <strong>{group.person}</strong>,
-          lines: group.lines.map((line) => ({ key: line.key, content: line.text })),
+          lines: linesOf(group),
         }))}
       />
       {preview.truncated ? <p {...partOf(part.muted)}>{t("projects.preview-truncated")}</p> : null}

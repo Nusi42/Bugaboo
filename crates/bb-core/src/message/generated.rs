@@ -3272,6 +3272,17 @@ pub const PROJECTS_INTRO: MessageKey = MessageKey::new("projects.intro");
 /// The message `projects.issue-ids-title`.
 pub const PROJECTS_ISSUE_IDS_TITLE: MessageKey = MessageKey::new("projects.issue-ids-title");
 
+/// The message `projects.line-held-back-ends`.
+pub const PROJECTS_LINE_HELD_BACK_ENDS: MessageKey =
+    MessageKey::new("projects.line-held-back-ends");
+
+/// The message `projects.line-held-back-starts`.
+pub const PROJECTS_LINE_HELD_BACK_STARTS: MessageKey =
+    MessageKey::new("projects.line-held-back-starts");
+
+/// The message `projects.line-loses`.
+pub const PROJECTS_LINE_LOSES: MessageKey = MessageKey::new("projects.line-loses");
+
 /// The message `projects.more`.
 pub const PROJECTS_MORE: MessageKey = MessageKey::new("projects.more");
 
@@ -7436,6 +7447,18 @@ pub fn issues_count_line(scope: impl std::fmt::Display, shown: i64, total: i64) 
     )
 }
 
+/// The message `issues.count-line-loading`.
+#[must_use]
+pub fn issues_count_line_loading(scope: impl std::fmt::Display, total: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.count-line-loading"),
+        vec![
+            ("scope", Value::Text(scope.to_string())),
+            ("total", Value::Number(total)),
+        ],
+    )
+}
+
 /// The message `issues.created`.
 #[must_use]
 pub fn issues_created(key: impl std::fmt::Display) -> Message {
@@ -8685,35 +8708,19 @@ pub fn projects_inside(name: impl std::fmt::Display) -> Message {
 
 /// The message `projects.line-can-no-more`.
 #[must_use]
-pub fn projects_line_can_no_more(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    things: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_can_no_more(things: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-can-no-more"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("things", Value::Text(things.to_string())),
-        ],
+        vec![("things", Value::Text(things.to_string()))],
     )
 }
 
 /// The message `projects.line-can-now`.
 #[must_use]
-pub fn projects_line_can_now(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    things: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_can_now(things: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-can-now"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("things", Value::Text(things.to_string())),
-        ],
+        vec![("things", Value::Text(things.to_string()))],
     )
 }
 
@@ -8723,8 +8730,6 @@ pub fn projects_line_field(
     after: impl std::fmt::Display,
     before: impl std::fmt::Display,
     field: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-field"),
@@ -8732,8 +8737,6 @@ pub fn projects_line_field(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
             ("field", Value::Text(field.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
         ],
     )
 }
@@ -8744,8 +8747,6 @@ pub fn projects_line_fields_many(
     after: impl std::fmt::Display,
     before: impl std::fmt::Display,
     fields: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-fields-many"),
@@ -8753,56 +8754,16 @@ pub fn projects_line_fields_many(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
             ("fields", Value::Text(fields.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
         ],
     )
 }
 
 /// The message `projects.line-gains`.
 #[must_use]
-pub fn projects_line_gains(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    roles: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_gains(roles: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-gains"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("roles", Value::Text(roles.to_string())),
-        ],
-    )
-}
-
-/// The message `projects.line-held-back-ends`.
-#[must_use]
-pub fn projects_line_held_back_ends(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.line-held-back-ends"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-        ],
-    )
-}
-
-/// The message `projects.line-held-back-starts`.
-#[must_use]
-pub fn projects_line_held_back_starts(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.line-held-back-starts"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-        ],
+        vec![("roles", Value::Text(roles.to_string()))],
     )
 }
 
@@ -8821,29 +8782,12 @@ pub fn projects_line_lift(
     )
 }
 
-/// The message `projects.line-loses`.
-#[must_use]
-pub fn projects_line_loses(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.line-loses"),
-        vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-        ],
-    )
-}
-
 /// The message `projects.line-people`.
 #[must_use]
 pub fn projects_line_people(
     after: impl std::fmt::Display,
     before: impl std::fmt::Display,
     kind: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-people"),
@@ -8851,8 +8795,6 @@ pub fn projects_line_people(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
             ("kind", Value::Text(kind.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
         ],
     )
 }
@@ -8863,8 +8805,6 @@ pub fn projects_line_people_many(
     after: impl std::fmt::Display,
     before: impl std::fmt::Display,
     kinds: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-people-many"),
@@ -8872,8 +8812,6 @@ pub fn projects_line_people_many(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
             ("kinds", Value::Text(kinds.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
         ],
     )
 }
@@ -8883,16 +8821,12 @@ pub fn projects_line_people_many(
 pub fn projects_line_roles(
     after: impl std::fmt::Display,
     before: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-roles"),
         vec![
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
         ],
     )
 }
@@ -12787,6 +12721,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.count-line",
         "{total, number} in {scope} · {shown, number} shown",
     ),
+    ("issues.count-line-loading", "{total, number} in {scope}"),
     ("issues.create", "Create"),
     ("issues.create-another", "Create and start another"),
     ("issues.create-first", "Create an issue"),
@@ -13834,50 +13769,41 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The projects you can see. Open one to change its name or short name. A project is moved on its own settings page.",
     ),
     ("projects.issue-ids-title", "Settings of this project"),
-    (
-        "projects.line-can-no-more",
-        "In {project}, {person} can no longer: {things}.",
-    ),
-    (
-        "projects.line-can-now",
-        "In {project}, {person} can now: {things}.",
-    ),
+    ("projects.line-can-no-more", "Can no longer: {things}."),
+    ("projects.line-can-now", "Can now: {things}."),
     (
         "projects.line-field",
-        "In {project}, for {person}, {field} goes from {before} to {after}.",
+        "{field} goes from {before} to {after}.",
     ),
     (
         "projects.line-fields-many",
-        "In {project}, for {person}, these fields go from {before} to {after}: {fields}.",
+        "These fields go from {before} to {after}: {fields}.",
     ),
-    (
-        "projects.line-gains",
-        "{person} gets access to {project}, as {roles}.",
-    ),
+    ("projects.line-gains", "Gets access, as {roles}."),
     (
         "projects.line-held-back-ends",
-        "In {project}, a No access no longer holds {person} back.",
+        "A No access no longer holds them back.",
     ),
     (
         "projects.line-held-back-starts",
-        "In {project}, a No access now holds {person} back.",
+        "A No access now holds them back.",
     ),
     (
         "projects.line-lift",
         "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
     ),
-    ("projects.line-loses", "{person} loses access to {project}."),
+    ("projects.line-loses", "Loses access."),
     (
         "projects.line-people",
-        "In {project}, for {person}, {kind} goes from {before} to {after}.",
+        "{kind} goes from {before} to {after}.",
     ),
     (
         "projects.line-people-many",
-        "In {project}, for {person}, these kinds of people information go from {before} to {after}: {kinds}.",
+        "These kinds of people information go from {before} to {after}: {kinds}.",
     ),
     (
         "projects.line-roles",
-        "{person} in {project}: {before} becomes {after}.",
+        "The role goes from {before} to {after}.",
     ),
     ("projects.more", "Show more projects"),
     ("projects.move-button", "Move"),
@@ -15202,7 +15128,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.files.max-megabytes.name", "Biggest file"),
     (
         "setting.issues.id-length.help",
-        "How many letters and digits a random issue ID has after the dash. Between 4 and 8. It grows by itself when the short ones run out.",
+        "How many letters and digits a random issue ID has after the dash. It grows by itself when the short ones run out.",
     ),
     (
         "setting.issues.id-length.name",
@@ -15490,7 +15416,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.reset", "Reset to default"),
     ("setting.ui.reset-name", "Reset to default: {name}"),
     ("setting.ui.search", "Search settings"),
-    ("setting.ui.source-default", "Bugaboo's standard value"),
+    ("setting.ui.source-default", "Default value"),
     (
         "setting.ui.source-hidden-project",
         "From a project you cannot see",
