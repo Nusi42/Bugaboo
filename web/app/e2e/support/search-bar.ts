@@ -48,7 +48,7 @@ export async function inViewChoices(
   const inSheet = (await sheet.count()) > 0;
   await act(inSheet ? sheet : page);
   if (inSheet) {
-    await sheet.getByRole("button", { name: t("common.close"), exact: true }).click();
+    await sheet.getByRole("button", { name: t("search.bar.sheet-done"), exact: true }).click();
     await expect(sheet).toHaveCount(0);
   }
 }

@@ -29,7 +29,7 @@ test("ux_3_4 Back from an issue opened on the Search page returns to that search
   await expect(page).toHaveURL(/\/issues\/WEB-1/u);
   await back(page);
   await expect.poll(() => new URL(page.url()).pathname).toBe(paths.search);
-  expect(new URL(page.url()).searchParams.get("s")).toBe("priority is not low");
+  expect(new URL(page.url()).searchParams.get("s")).toBe("priority is not Low");
 });
 
 test("ux_3_4 Back from an issue found by Quick search returns to the page it was opened over", async ({

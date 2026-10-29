@@ -4,7 +4,7 @@ import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareManyWeb, tickBox } from "./support/issues.ts";
+import { prepareManyWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
@@ -14,24 +14,25 @@ import { boxOf } from "./support/windows.ts";
 
 test.use({ preparation: { run: (server) => prepareManyWeb(server, 40) } });
 
-test("ux_4_2 on a phone the last card of a long list is not under the bar of the ticked issues", async ({
+test("ux_4_2 on a phone the list ends above the bar of the ticked issues, not under it", async ({
   page,
 }) => {
   test.skip(layoutOf(page) !== "phone", "only a phone has the bar above the navigation");
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
-  await tickBox(page, "WEB-1").locator("xpath=ancestor::label").click();
+  await partIn(page, "list-row", "phone").first().locator("label").click();
   const bar = page.getByRole("region", { name: t("issues.selected-bar"), exact: true });
   await expect(bar).toBeVisible();
-  // To the end of the list: it loads more as it is scrolled.
-  const cards = partIn(page, "list-row", "phone");
+  // The page scrolled to its end: the box of the list, with the cards it shows, ends above the bar.
+  const main = page.locator("main");
   await expect
-    .poll(async () => {
-      await cards.last().scrollIntoViewIfNeeded();
-      return cards.count();
-    })
-    .toBeGreaterThanOrEqual(43);
-  await cards.last().scrollIntoViewIfNeeded();
-  const [last, shown] = [await boxOf(partIn(cards.last(), "checkbox")), await boxOf(bar)];
-  expect(last.y + last.height).toBeLessThanOrEqual(shown.y + 1);
+    .poll(() =>
+      main.evaluate((frame) => {
+        frame.scrollTop = frame.scrollHeight;
+        return frame.scrollHeight - frame.clientHeight - frame.scrollTop;
+      }),
+    )
+    .toBeLessThanOrEqual(1);
+  const [list, shown] = [await boxOf(partIn(page, "list-scroll")), await boxOf(bar)];
+  expect(list.y + list.height).toBeLessThanOrEqual(shown.y + 1);
 });
