@@ -49,7 +49,7 @@ test("qry_03 the offers never push the foot of the sheet off the screen or cover
   });
 });
 
-test("qry_06 on a phone Save search stands next to Done in the foot of the sheet", async ({
+test("qry_06 on a phone Save search stands with Done in the foot of the sheet", async ({
   page,
 }) => {
   await openSearch(page, "priority is High");
@@ -62,8 +62,12 @@ test("qry_06 on a phone Save search stands next to Done in the foot of the sheet
       const save = sheet.getByRole("button", { name: t("search.save"), exact: true });
       const done = sheet.getByRole("button", { name: t("search.bar.sheet-done"), exact: true });
       const [saveBox, doneBox] = await Promise.all([boxOf(save), boxOf(done)]);
-      expect(saveBox.y).toBe(doneBox.y);
-      expect(saveBox.x + saveBox.width).toBeLessThanOrEqual(doneBox.x);
+      // The foot of a window has one pattern (package D): Done as wide as the foot, Save search under it.
+      expect(saveBox.x).toBe(doneBox.x);
+      expect(saveBox.y).toBeGreaterThan(doneBox.y + doneBox.height - 1);
+      expect(saveBox.y + saveBox.height).toBeLessThanOrEqual(
+        (await boxOf(sheet)).y + (await boxOf(sheet)).height,
+      );
     },
   });
 });
