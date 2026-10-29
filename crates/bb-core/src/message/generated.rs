@@ -3857,8 +3857,15 @@ pub const SEARCH_BAR_ADD_FILTER: MessageKey = MessageKey::new("search.bar.add-fi
 pub const SEARCH_BAR_ADD_FILTER_CONFIRM: MessageKey =
     MessageKey::new("search.bar.add-filter-confirm");
 
+/// The message `search.bar.add-filter-issue`.
+pub const SEARCH_BAR_ADD_FILTER_ISSUE: MessageKey = MessageKey::new("search.bar.add-filter-issue");
+
 /// The message `search.bar.add-filter-need`.
 pub const SEARCH_BAR_ADD_FILTER_NEED: MessageKey = MessageKey::new("search.bar.add-filter-need");
+
+/// The message `search.bar.add-filter-person`.
+pub const SEARCH_BAR_ADD_FILTER_PERSON: MessageKey =
+    MessageKey::new("search.bar.add-filter-person");
 
 /// The message `search.bar.add-filter-which`.
 pub const SEARCH_BAR_ADD_FILTER_WHICH: MessageKey = MessageKey::new("search.bar.add-filter-which");
@@ -14325,7 +14332,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.above", "above"),
     ("search.bar.add-filter", "Add filter"),
     ("search.bar.add-filter-confirm", "Add filter"),
+    ("search.bar.add-filter-issue", "Choose the issue."),
     ("search.bar.add-filter-need", "Choose a value first."),
+    ("search.bar.add-filter-person", "Choose the person."),
     ("search.bar.add-filter-text", "What should {field} be?"),
     (
         "search.bar.add-filter-which",
@@ -14365,10 +14374,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.contains", "contains {text}"),
     ("search.bar.count", "How many"),
     ("search.bar.day", "Which day"),
-    ("search.bar.day-format", "In Advanced search: 2026-12-31."),
+    (
+        "search.bar.day-format",
+        "In Advanced search a day is written like 2026-12-31.",
+    ),
     (
         "search.bar.duration-help",
-        "Write a length of time, for example {hours}, {minutes} or {both}.",
+        "Write a length of time, for example “{hours}”, “{minutes}” or “{both}”.",
     ),
     ("search.bar.fields-clear", "Clear the words"),
     ("search.bar.fields-legend", "Fields"),

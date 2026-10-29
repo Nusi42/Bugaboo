@@ -73,6 +73,8 @@ export const messages = {
   "search.bar.add-filter-confirm": "Add filter",
   "search.bar.change-filter-confirm": "Change filter",
   "search.bar.add-filter-text": "What should {field} be?",
+  "search.bar.add-filter-person": "Choose the person.",
+  "search.bar.add-filter-issue": "Choose the issue.",
   "search.bar.change-filter-text": "Change what {field} should be.",
   "search.bar.fields-legend": "Fields",
   "search.bar.fields-search": "Find a field",
@@ -86,7 +88,7 @@ export const messages = {
   "search.bar.when": "When",
   "search.bar.a-day": "A day I choose",
   "search.bar.day": "Which day",
-  "search.bar.day-format": "In Advanced search: 2026-12-31.",
+  "search.bar.day-format": "In Advanced search a day is written like 2026-12-31.",
   "search.bar.count": "How many",
   "search.bar.unit": "Unit",
   "search.bar.unit-days": "days",
@@ -170,7 +172,8 @@ export const messages = {
   "search.help-your-fields": "Your fields",
   "search.help-your-fields-text":
     "The fields you may search by, each with the word that stands for it in the search.",
-  "search.bar.duration-help": "Write a length of time, for example {hours}, {minutes} or {both}.",
+  "search.bar.duration-help":
+    "Write a length of time, for example “{hours}”, “{minutes}” or “{both}”.",
   "search.bar.not-a-duration": "Write a length of time like {hours} or {both}.",
   "search.mistake.expected-filter":
     "A filter is missing here. Start it with the name of a field, like “priority”.",
