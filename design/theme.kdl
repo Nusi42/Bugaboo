@@ -3840,6 +3840,8 @@ part "people" {
     padding-inline "$ring-width"
     overflow-y auto
     use "surface-box"
+    // A shadow at the end that has more people behind it.
+    use "scroll-cue"
 }
 
 // A row of the list is as tall as its words: the name, the address and the groups and roles under it, each one
