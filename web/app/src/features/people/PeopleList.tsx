@@ -20,7 +20,7 @@ import { type PersonLine, linesOf, usePeople } from "./people.ts";
  * What a row is expected to measure, before it is drawn: the list measures the real rows as they
  * appear, so a row of another height only makes the first guess of the scroll bar a little off.
  */
-const ROW_GUESS = 72;
+const ROW_GUESS = 84;
 
 /** The address, groups and roles of a person in one line, as far as the viewer sees them. */
 function factsOf(person: PersonLine): string {

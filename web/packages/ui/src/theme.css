@@ -3561,7 +3561,7 @@ optgroup {
 
 [data-part="people"] {
   display: block;
-  max-block-size: var(--size-list-tall);
+  max-block-size: calc(5 * (2 * var(--size-control) + var(--space-3)) + 2 * var(--ring-width));
   margin: 0;
   padding: var(--ring-width);
   overflow-y: auto;
@@ -3580,6 +3580,8 @@ optgroup {
   color: var(--fg);
   text-decoration: none;
   cursor: pointer;
+  block-size: calc(2 * var(--size-control) + var(--space-3));
+  overflow: hidden;
   border-bottom: var(--border-width) solid var(--border-subtle);
 }
 
@@ -3601,6 +3603,8 @@ optgroup {
 }
 
 [data-part="people.person-facts"] {
+  max-block-size: calc(2 * var(--fs-base) * var(--lh-body));
+  overflow: hidden;
   color: var(--fg-muted);
   font-size: var(--fs-base);
   overflow-wrap: anywhere;

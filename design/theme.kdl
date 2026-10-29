@@ -3482,15 +3482,21 @@ part "access.topic" "card.topic" {
 
 part "people" {
     display block
-    max-block-size "$size-list-tall"
+    // Whole rows: five rows of a fixed height (below), so the row at the edge is never cut where the list
+    // scrolls (M5 exit, O17).
+    max-block-size "calc(5 * (2 * $size-control + $space-3) + 2 * $ring-width)"
     margin 0
     padding "$ring-width"
     overflow-y auto
     use "surface-box"
 }
 
+// A row of the list has one height whatever it says (the list draws only the rows on screen, which need it): the
+// name, and the facts under it on at most two lines.
 part "people.person" {
     use "pick-row"
+    block-size "calc(2 * $size-control + $space-3)"
+    overflow hidden
     border-bottom "$border-width solid $border-subtle"
 }
 
@@ -3511,6 +3517,8 @@ part "people.person-name" {
 }
 
 part "people.person-facts" {
+    max-block-size "calc(2 * $fs-base * $lh-body)"
+    overflow hidden
     color "$fg-muted"
     font-size "$fs-base"
     overflow-wrap anywhere
