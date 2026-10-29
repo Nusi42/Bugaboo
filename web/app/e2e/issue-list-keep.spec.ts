@@ -7,7 +7,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
-import { prepareLook, rowOf } from "./support/list-look.ts";
+import { inViewChoices, prepareLook, rowOf } from "./support/list-look.ts";
 import { type Instance } from "./support/server.ts";
 
 // What a list keeps (UX §4.2, QRY-06): a saved search keeps the view it was changed to, and
@@ -59,7 +59,9 @@ test("qry_06 a saved search keeps a change of its view with Save", async ({ page
   await signIn(page, ada);
   await page.goto(savedSearchAddress(listId));
   await expect(page.getByRole("heading", { level: 1, name: "Only critical" })).toBeVisible();
-  await page.getByRole("radio", { name: t("appearance.spacing.compact") }).check();
+  await inViewChoices(page, async (scope) => {
+    await scope.getByRole("radio", { name: t("appearance.spacing.compact") }).check();
+  });
   await page.getByRole("button", { name: t("search.save-changes"), exact: true }).click();
   await expect(page.getByRole("button", { name: t("search.save-changes") })).toHaveCount(0);
   const admin = await signedInAdmin(server);

@@ -240,7 +240,7 @@ Rules:
 | **Maximize**             | Let a window fill the whole page, the menu included                | full screen (for a window)         |
 | **Restore down**         | Give a maximized window its earlier size again                     | — |
 | **Window size**          | The button in the title bar of a window with *Wider*, *Narrower*, *Taller* and *Shorter*, for people who cannot drag | resize handle menu |
-| **Legend**               | The small key beside the list of issues: what the color of a row and its left edge mean | key to colors, color guide |
+| **Legend**               | The small list beside the list of issues: what the color of a row and its left edge mean; on a phone, and beside an open issue, it opens from a *Legend* button | key to colors, color guide |
 | **Details**              | The name-and-value rows of an issue: who it is assigned to, its priority and the other fields | fields panel, attributes |
 | **Not scheduled yet**    | The tray beside the timeline with the issues that have no dates yet | backlog (on the timeline)          |
 | **Appearance**           | The choices about how Bugaboo looks: theme, *Spacing* (*Comfortable* or *Compact*), *Larger text* and *Less motion* | display settings |

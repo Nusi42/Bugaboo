@@ -1,8 +1,8 @@
 import { Toolbar } from "react-aria-components";
 
-import { Button } from "../Button.tsx";
+import { IconButton } from "../IconButton.tsx";
+import { iconName, type IconName } from "../icons.ts";
 import { partOf } from "../parts.ts";
-import { buttonLook } from "../props.ts";
 import { part } from "../tokens.ts";
 import { formatAction, type FormatAction } from "./format.ts";
 import type { MarkdownEditorLabels } from "./labels.ts";
@@ -16,6 +16,16 @@ const toolbarActions: readonly FormatAction[] = [
   formatAction.code,
   formatAction.quote,
 ];
+
+/** The drawing of each formatting button: quiet icons, named in words for screen readers and as a tooltip. */
+const icons: Record<FormatAction, IconName> = {
+  bold: iconName.bold,
+  italic: iconName.italic,
+  list: iconName.list,
+  link: iconName.link,
+  code: iconName.code,
+  quote: iconName.quote,
+};
 
 /** The formatting buttons above the text box. */
 export function FormattingToolbar({
@@ -39,16 +49,15 @@ export function FormattingToolbar({
   return (
     <Toolbar aria-label={labels.toolbar} {...partOf(part.markdownToolbar)}>
       {toolbarActions.map((action) => (
-        <Button
+        <IconButton
           key={action}
-          look={buttonLook.quiet}
+          icon={icons[action]}
+          label={names[action]}
           isDisabled={isDisabled}
           onPress={() => {
             onFormat(action);
           }}
-        >
-          {names[action]}
-        </Button>
+        />
       ))}
     </Toolbar>
   );

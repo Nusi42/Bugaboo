@@ -1,16 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Button, ChoiceGroup, SelectField, part, partOf, useLayout } from "@bugaboo/ui";
+import { Button, part, partOf, useLayout } from "@bugaboo/ui";
 
-import { notGroupable } from "../../shared/list-columns.ts";
-import { noGrouping, type ListView } from "../../shared/list-view.ts";
-import type { SearchFieldsAnswer } from "../search/index.ts";
-import { searchSpacings } from "../../shared/search-address.ts";
-
-/** A field the list can be grouped by. */
-export interface GroupChoice {
-  readonly word: string;
-  readonly name: string;
-}
+import type { ListView } from "../../shared/list-view.ts";
+import { ViewChoices, type SearchFieldsAnswer } from "../search/index.ts";
 
 export interface ListOptionsProps {
   readonly view: ListView;
@@ -20,49 +12,27 @@ export interface ListOptionsProps {
   readonly onCustomize: () => void;
 }
 
-/** The fields a list can be grouped by: every one the person may read. */
-function groupChoicesOf(fields: SearchFieldsAnswer) {
-  return Object.keys(fields.names)
-    .filter((word) => !notGroupable.has(word))
-    .map((word) => ({ value: word, label: fields.names[word] ?? word }));
-}
-
 /**
- * What a person sets above the list (UX section 4.2): *Group by* any field they may read,
- * *Spacing*, and *Customize* for the columns, which a phone does not offer (it shows a card for
- * each issue).
+ * What a person sets above the list on a computer (UX section 4.2): *Group by* any field they may
+ * read, *Spacing*, and *Customize* for the columns. A phone has none of it here: it shows a card for
+ * each issue, and *Group by* and *Spacing* are in its *Filters* sheet (M5 exit decision D2).
  */
 export function ListOptions({ view, fields, customizing, onView, onCustomize }: ListOptionsProps) {
-  const phone = useLayout() === "phone";
+  if (useLayout() === "phone") {
+    return null;
+  }
   return (
     <div {...partOf(part.listOptions)}>
-      <SelectField
-        label={t("issues.group-by")}
-        choices={[
-          { value: noGrouping, label: t("issues.group-by-none") },
-          ...groupChoicesOf(fields),
-        ]}
-        value={view.groupBy ?? noGrouping}
-        onChange={(value) => {
-          onView({ ...view, groupBy: value === noGrouping ? null : value });
-        }}
+      <ViewChoices
+        view={view}
+        fields={fields}
+        onView={onView}
+        end={
+          <Button current={customizing} onPress={onCustomize}>
+            {t("issues.customize")}
+          </Button>
+        }
       />
-      <ChoiceGroup
-        legend={t("appearance.spacing.legend")}
-        choices={searchSpacings.map((word) => ({
-          value: word,
-          label: t(`appearance.spacing.${word}`),
-        }))}
-        value={view.spacing}
-        onChange={(spacing) => {
-          onView({ ...view, spacing });
-        }}
-      />
-      {phone ? null : (
-        <Button current={customizing} onPress={onCustomize}>
-          {t("issues.customize")}
-        </Button>
-      )}
     </div>
   );
 }

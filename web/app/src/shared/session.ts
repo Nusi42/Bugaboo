@@ -1,6 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "./api.ts";
+import { forgetCameFrom } from "./came-from.ts";
 import { forgetConfirmedSettings } from "./change-my-settings.ts";
 import { forgetBrowserDrafts } from "./editing/browser-drafts.ts";
 import { codeOf } from "./errors.ts";
@@ -106,7 +107,12 @@ export async function leaveSession(go: () => Promise<void>): Promise<void> {
   forgetPersonalChoices();
   forgetConfirmedSettings();
   queryClient.removeQueries({ queryKey: meOptions().queryKey });
-  await go();
+  try {
+    await go();
+  } finally {
+    // The move to the sign-in page noted the page of the person who left: it goes too, also where `go` fails.
+    forgetCameFrom();
+  }
   // The page has changed, so nothing asks for the person's settings any more. They go now, not
   // with the cache: the look and the choice of theme of the page we are on read them, and for as
   // long as questions are on their way a choice made here would go to the person who has left.

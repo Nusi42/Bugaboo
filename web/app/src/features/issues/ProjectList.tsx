@@ -10,6 +10,7 @@ import { useListView } from "../../shared/use-list-view.ts";
 import { SearchBar, useCanonicalForms, useProjectListChoice } from "../search/index.ts";
 import { IssueResults } from "./IssueResults.tsx";
 import type { IssueShow } from "./issue-show.ts";
+import { PhoneActions } from "./ProjectToolbar.tsx";
 import { ProjectSave } from "./ProjectSave.tsx";
 import type { IssueSelection } from "./use-selection.ts";
 
@@ -60,6 +61,8 @@ export function ProjectList({ project, state, onState, openIn, selection }: Proj
         onText={onText}
         within={project.id}
         onStale={setStale}
+        listView={{ view: list.view, onView: list.onView }}
+        phoneStart={<PhoneActions shortName={project.shortName} />}
         actions={save}
       />
       <IssueResults

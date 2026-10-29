@@ -24,7 +24,7 @@ test("iss_09 a label is added to two ticked issues after a preview, and Undo tak
   await createLabel(admin, "release");
   await signIn(page, ada);
   await tickTwo(page);
-  const dialog = await openAction(page, t("many-changes.action-label"));
+  const dialog = await openAction(page, "label", 2);
   await expect(
     dialog.getByRole("button", { name: t("many-changes.apply", { count: 2 }), exact: true }),
   ).toBeDisabled();
@@ -80,7 +80,7 @@ test("iss_09 an issue the person may not change is skipped with the reason and n
 }) => {
   await signIn(page, ana);
   await tickTwo(page);
-  const dialog = await openAction(page, t("many-changes.action-change"));
+  const dialog = await openAction(page, "change", 2);
   await dialog.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.high"),
   });
@@ -96,7 +96,7 @@ test("iss_09 the bar and its dialog are good in every theme", async ({ page }) =
   await signIn(page, ada);
   await tickTwo(page);
   await expectGoodInEveryLook(page);
-  const dialog = await openAction(page, t("many-changes.action-move"));
+  const dialog = await openAction(page, "move", 2);
   await expect(dialog).toBeVisible();
   await expectGoodInEveryLook(page);
 });

@@ -1,5 +1,5 @@
 import { dataOf, type Schema, workflowEditPart } from "@bugaboo/api-client";
-import { type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import { roleName, signedInAdmin, createPeopleWithRoles } from "./access.ts";
 import { cleo } from "./accounts.ts";
@@ -235,7 +235,9 @@ export async function statusesOf(
 export async function tickAll(page: Page, issues: readonly MadeIssue[]): Promise<void> {
   await inOrder(
     issues.map((issue) => async () => {
-      await tickBox(page, issue.key).check({ force: true });
+      // A person presses the box they see, which is the label around it (the page may have a bar over the foot of the window).
+      await tickBox(page, issue.key).locator("xpath=ancestor::label").click();
+      await expect(tickBox(page, issue.key)).toBeChecked();
     }),
   );
 }

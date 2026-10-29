@@ -19,6 +19,8 @@ const selectColumn = "select" satisfies ListColumn;
 /** The box in the head that ticks the rows shown. */
 export interface HeadTick {
   readonly isSelected: boolean;
+  /** Some of the rows shown are ticked, not all. */
+  readonly isMixed: boolean;
   readonly onChange: (selected: boolean) => void;
 }
 
@@ -46,6 +48,7 @@ function TickCell({ tick }: { readonly tick: HeadTick }) {
         hideLabel
         label={t("issues.select-shown")}
         isSelected={tick.isSelected}
+        isIndeterminate={tick.isMixed}
         onChange={tick.onChange}
       />
     </ListCell>

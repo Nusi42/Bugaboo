@@ -112,6 +112,8 @@ tokens {
     size "pad-nothing" "$pad-box" phone="0px"
     // How tall the rows of a long list may be before the list scrolls inside the page.
     size "size-list-scroll" "70dvh"
+    // The least the list of a phone is high, where the page above it takes most of the screen.
+    size "size-list-scroll-least" "120px"
     // The coloured edge of a row for its priority.
     size "size-edge" "4px"
     // The name of a value in the details: 112 on a computer, 120 on a phone.
@@ -137,7 +139,7 @@ tokens {
     // up theirs, down to the least width; then the list scrolls sideways, head and rows together. A
     // column that is only an icon, the ID and the priority keep their width. A column a person drags
     // is no narrower than the least and moves by the step with the arrow keys.
-    size "size-col-title" "120px"
+    size "size-col-title-least" "160px"
     size "size-col-least" "48px"
     size "size-col-most" "800px"
     size "size-col-step" "16px"
@@ -186,6 +188,8 @@ tokens {
     size "size-list" "300px"
     // The room the list asks for beside Customize: with this much left over, the panel stands beside the list (UX §4.2); with less it stands under it.
     size "size-list-main" "560px"
+    // The least width of an item of the Customize checklist: as many columns as fit.
+    size "size-list-item" "240px"
     // Where the Legend stands at the end of the row above a list: at the far end of a computer, at the start edge on a phone, where it has a line of its own.
     size "legend-start" "auto" phone="0px"
     size "size-details" "340px"
@@ -201,6 +205,8 @@ tokens {
     // The sheet of the search bar on a phone is always this high, so what is under a finger does not
     // move when the offers under the box come and go.
     size "size-bar-sheet" "80dvh"
+    // The bar of the issues ticked, in the column of a phone, is never taller than this, and scrolls inside.
+    size "size-bar-ticked" "40dvh"
     // Wide enough for the longest level ("Can change") in its box, so no word is cut; more roles than fit scroll.
     size "size-matrix-cell" "calc($size-control * 4)"
     size "size-list-tall" "calc($size-list * 2)"
@@ -500,6 +506,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "side-panel.title" role="title"
     selector "top-bar.title" role="title"
     selector "card.heading" role="title"
+    selector "bottom-sheet.title" role="title"
     selector "issue-details.heading" role="section"
     selector "issue-section.title" role="section"
     selector "form-section.title" role="section"
@@ -508,7 +515,6 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "card.topic" role="section"
     selector "notification-group.head" role="section"
     selector "search-help.title" role="section"
-    selector "search-panel.title" role="section"
     selector "priority[variant=critical]" role="priority"
     selector "priority[variant=high]" role="priority"
     selector "[data-part=markdown] h1" role="own"
@@ -1046,6 +1052,14 @@ part "button[pressed]" {
     background "$bg-selected"
 }
 
+// A button that shows something is open (Customize while its panel is): chosen like a choice of Spacing.
+part "button[state=current]" {
+    border-color "$accent"
+    background "$bg-selected"
+    color "$accent-fg"
+    use "marked"
+}
+
 // A main button that cannot be pressed yet is a flat grey chip (the color of the dividers) with quiet words and no
 // fading: in the dark themes the sunken fill read like an enabled outlined button, and a faded fill like the card. Not a pale copy of the
 // filled one, whose white words are hard to read (the review of M4, A14), not an outlined button with grey
@@ -1150,8 +1164,10 @@ part "alert" {
     overflow-wrap break-word
 }
 
+// An error has a full border and its icon, not the thick red edge of Critical on a row (R5).
 part "alert[variant=danger]" {
     border-color "$danger"
+    border-left-width "$border-width"
     background "$danger-soft"
 }
 
@@ -1272,6 +1288,22 @@ part "checkbox[hovered] checkbox.box" {
 
 part "checkbox[selected] checkbox.box" {
     use "chosen"
+}
+
+// Some, not all, are ticked (the head of a list): the box is filled and holds a dash.
+part "checkbox[indeterminate] checkbox.box" {
+    use "chosen"
+}
+
+part "checkbox[indeterminate] checkbox.box::after" {
+    content "\"\""
+    position absolute
+    top "50%"
+    left "$space-1"
+    width "$space-3"
+    height 0
+    border-top "$ring-width solid $on-accent"
+    transform "translateY(-50%)"
 }
 
 // The tick: two sides of a box, turned.
@@ -1925,9 +1957,16 @@ part "list-row:hover" {
     box-shadow "inset 0 0 0 $border-width $hover-line"
 }
 
-// A selected row, and the issue that is open next to the list, are ringed inside their edge, so they never
-// rely on the fill alone.
-part "list-row[state=selected]" "list-row[state=current]" "issue-row[state=selected]" "issue-row[variant=current]" "timeline-bar[state=selected]" {
+// A ticked row shows it by its ticked box and by the line under it in the accent color, so a run of ticked rows reads as one run;
+// it keeps its tint and has no ring of its own.
+part "list-row[state=selected]" {
+    border-bottom-color "$accent"
+    // The clear outline is drawn only under forced colors, which drop the accent line: there a ticked row has its outline.
+    use "ring-clear"
+}
+
+// The issue that is open next to the list is ringed inside its edge, so it never relies on the fill alone.
+part "list-row[state=current]" "issue-row[state=selected]" "issue-row[variant=current]" "timeline-bar[state=selected]" {
     use "ring-row"
 }
 
@@ -1960,12 +1999,21 @@ part "list-row.cell[variant=select]" {
     width "$size-control"
 }
 
-part "list-row.cell[variant=status]" "list-row.cell[variant=type]" {
+part "list-row.cell[variant=status]" {
     flex none
     display flex
     align-items center
     justify-content center
     width "$size-col-icon"
+}
+
+// The type: its icon and its name, so the icon does not read as a second box to tick.
+part "list-row.cell[variant=type]" {
+    flex none
+    display flex
+    align-items center
+    gap "$space-1"
+    width "$size-col-project"
 }
 
 part "list-row.cell[variant=key]" {
@@ -2144,6 +2192,7 @@ part "list-group" {
     min-height "$size-control"
     margin-block-start "$space-2"
     padding 0 "$pad-box"
+    border-inline-start "$size-edge solid transparent"
     border-top "$border-width solid $border"
     border-bottom "$border-width solid $border-subtle"
     background "$bg-surface"
@@ -2172,6 +2221,23 @@ part "list-main" {
     min-width 0
 }
 
+// The list and the panel of Customize: the panel stands beside the list level with its head, or under it, as wide as the list.
+part "list-body" {
+    display flex
+    flex-wrap wrap
+    align-items flex-start
+    gap "$space-4"
+    min-width 0
+}
+
+part "list-column" {
+    display flex
+    flex 1000 1 "$size-list-main"
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
 part "list-frame" {
     display flex
     flex-direction column
@@ -2192,10 +2258,11 @@ part "list-char-probe" {
     font-size "$fs-ui"
 }
 
+// The gap, with the edge and the padding of `list-row`, is what `listNeeds` (ui, list-template.ts) counts to see which columns fit: change them there and here together.
 part "list-row[variant=grid]" {
     display grid
     grid-template-columns "$list-columns"
-    gap "$space-2"
+    gap "$space-3"
 }
 
 part "list-row[variant=grid] list-row.cell" {
@@ -2204,7 +2271,7 @@ part "list-row[variant=grid] list-row.cell" {
 
 
 // The cells of a column keep their alignment; a text column starts at the start edge.
-part "list-row[variant=grid] list-row.cell[variant=status]" "list-row[variant=grid] list-row.cell[variant=type]" "list-row[variant=grid] list-row.cell[variant=select]" {
+part "list-row[variant=grid] list-row.cell[variant=status]" "list-row[variant=grid] list-row.cell[variant=select]" {
     justify-content center
 }
 
@@ -2218,6 +2285,7 @@ part "list-frame[variant=compact] list-row[variant=head]" {
 
 // Compact: the tick box draws at its least size and keeps its target (24 for a pointer, WCAG 2.5.8; 44 on touch), and the group headers are as low as the rows.
 part "list-frame[variant=compact] checkbox" {
+    min-width "$size-target-compact"
     min-height "$size-target-compact"
 }
 
@@ -2237,6 +2305,7 @@ part "list-frame[variant=compact] checkbox.box" {
 part "list-scroll" {
     box-sizing border-box
     min-width "$list-width"
+    padding-block-end "$space-3"
     max-height "$size-list-scroll"
     overflow auto
     border-bottom "$border-width solid $border-subtle"
@@ -2308,19 +2377,46 @@ part "list-row[variant=head] list-row.cell:has(list-handle)" {
     padding-inline-end "$size-target-compact"
 }
 
+// The name "Issue ID" is short and its column is narrow: the edge that sets its width overlaps the end of the cell by little, so the name is not cut on a finger.
+part "list-row[variant=head] list-row.cell[variant=key]:has(list-handle)" {
+    padding-inline-end "$space-3"
+}
+
 // A group of rows can be folded: the whole header is the button.
+// The header of a group stands on the columns of the rows (R1): the arrow in the column of the tick box, the icon of
+// the group on the status icon, the name on the ID. A list without tick boxes has its arrow at the end.
 part "list-group.toggle" {
     use "bare-button"
-    display flex
-    flex 1
+    display grid
+    grid-auto-flow column
+    grid-template-columns "$size-control $size-col-icon minmax(0, 1fr) auto"
     align-items center
-    gap "$space-2"
+    gap "$space-3"
+    flex 1
     min-height "$size-control"
     padding 0
     color inherit
     font-size inherit
     font-weight inherit
     text-align start
+}
+
+part "list-group.toggle[variant=no-select]" {
+    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
+}
+
+part "list-group.chevron" {
+    display flex
+    justify-content center
+}
+
+part "list-group.toggle[variant=no-select] list-group.chevron" {
+    order 9
+}
+
+part "list-group.kind" {
+    display flex
+    justify-content center
 }
 
 part "list-group.toggle[focus-visible]" {
@@ -2357,7 +2453,7 @@ part "list-panel" {
     flex-direction column
     gap "$space-3"
     box-sizing border-box
-    width "$size-list"
+    flex "1 1 $size-list"
     padding "$pad-box"
 }
 
@@ -2382,20 +2478,28 @@ part "list-panel.item" {
     min-height "$size-control"
 }
 
-part "list-panel.items" {
-    use "list-reset"
-    display flex
-    flex-direction column
-    gap "$space-1"
+// The checklist stands in as many columns as the panel has room for: one beside the list, two or more under it, as wide as the list.
+// The arrows that move a column are quiet buttons of 28 px (44 for a finger).
+part "list-panel.item button[variant=square]" {
+    width "$size-control-small"
+    min-height "$size-control-small"
 }
 
-// What the list says when no issue is found: a sentence and the one thing to do, inside the list's padding (R3).
+part "list-panel.items" {
+    use "list-reset"
+    display grid
+    grid-template-columns "repeat(auto-fill, minmax($size-list-item, 1fr))"
+    gap "$space-1" "$space-4"
+}
+
+// What the list says when no issue is found: a sentence and the one thing to do, in the middle of the list (R1).
 part "list-nothing" {
     display flex
     flex-direction column
-    align-items flex-start
+    align-items center
     gap "$space-3"
     padding "$pad-box" "$pad-nothing"
+    text-align center
 }
 
 // The controls above the list: Group by, Spacing, Customize.
@@ -2991,6 +3095,23 @@ part "row" {
     gap "$space-3"
 }
 
+// The last item of a row stands at its end (the button that sends a comment, after the one that adds files).
+part "row.end" {
+    margin-inline-start auto
+}
+
+// A row that does not wrap and keeps its first item level with the first line of the rest (an icon before a sentence that wraps).
+part "row[variant=inline]" {
+    flex-wrap nowrap
+    align-items flex-start
+}
+
+// A row that does not wrap: its items stay together and the row is as wide as they are (Spacing and Customize).
+part "row[variant=nowrap]" {
+    flex-wrap nowrap
+    align-items flex-end
+}
+
 // A row whose items are as high as the row.
 part "row[variant=stretch]" {
     align-items stretch
@@ -3353,13 +3474,14 @@ part "confirm.actions" {
     use "answer-row"
 }
 
-// The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end.
-part "search-panel.actions" {
+// The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end;
+// the foot of a sheet from the bottom of a phone (the filters, the legend) is the same.
+part "search-panel.actions" "bottom-sheet.actions" {
     use "answer-row"
 }
 
 // The text buttons of an answer row stand on the start edge, the others at the end.
-part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" "search-panel.actions button[variant=quiet]:first-child" {
+part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" "search-panel.actions button[variant=quiet]:first-child" "bottom-sheet.actions button[variant=quiet]:first-child" {
     margin-inline-end auto
 }
 
@@ -3374,12 +3496,18 @@ part "overlay.modal[variant=full] confirm.actions" {
     margin-top auto
 }
 
-part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" "overlay[variant=bottom] search-panel.actions" {
+// The foot of a sheet stays at the foot of it, whatever its content adds.
+part "bottom-sheet.actions" {
+    flex none
+    margin-block-start auto
+}
+
+part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" "overlay[variant=bottom] search-panel.actions" "overlay[variant=bottom] bottom-sheet.actions" {
     flex-direction column-reverse
     align-items stretch
 }
 
-part "overlay[variant=full] confirm.actions button[variant=quiet]:first-child" "overlay[variant=full] window.footer-actions button[variant=quiet]:first-child" "overlay[variant=bottom] search-panel.actions button[variant=quiet]:first-child" {
+part "overlay[variant=full] confirm.actions button[variant=quiet]:first-child" "overlay[variant=full] window.footer-actions button[variant=quiet]:first-child" "overlay[variant=bottom] search-panel.actions button[variant=quiet]:first-child" "overlay[variant=bottom] bottom-sheet.actions button[variant=quiet]:first-child" {
     margin-inline 0
 }
 
@@ -3749,14 +3877,38 @@ part "chip" {
     gap "$space-1"
 }
 
-// The bar of the list that acts on the issues ticked.
+// The bar of the issues ticked (UX §4.2): under the list, where ticking moves nothing above it, and stuck to the
+// bottom of the window while there is more list than window. With nothing ticked it has no look and no room.
+part "selected-bar" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+// Pinned to the bottom edge of the window with no gap under it: a gap would show a cut half row of the list below the bar.
+part "selected-bar[state=active]" {
+    use "floating-box"
+    position sticky
+    inset-block-end 0
+    z-index "$z-sticky"
+    padding "$space-2" "$space-3"
+    margin-block-start "$space-3"
+    border-radius "$r-card"
+}
+
+// On a phone the bar stands in the column of the app above the bottom navigation (like the bar of an issue): fixed there, it covers no card.
+part "app-layout[variant=phone] selected-bar[state=active]" {
+    position static
+    max-height "$size-bar-ticked"
+    overflow-y auto
+}
+
+// What the bar offers for the issues ticked.
 part "many-change-bar" {
-    use "surface-box"
     display flex
     flex-wrap wrap
     align-items center
     gap "$space-2" "$space-3"
-    padding "$space-2" "$space-3"
 }
 
 // How far a change that goes on in the background is.
@@ -3816,7 +3968,8 @@ part "project-tree.link" {
     box-sizing border-box
     min-width 0
     min-height "$size-control"
-    padding "0 $space-3"
+    // The text of a project starts where the text of the other items of the sidebar starts: the arrow before it takes the room of the icon.
+    padding "0 $space-3 0 $space-1"
     border-radius "$r-ctl"
     use "menu-text"
 }
@@ -4968,7 +5121,11 @@ part "list-editor.open" {
 // the place) gives the rows the same two columns, so the details line up from row to row.
 part "list-editor.open[variant=columns]" {
     display grid
-    grid-template-columns "minmax(0, 1fr) minmax(0, 1.5fr)"
+    grid-template-columns "minmax(0, 1fr) auto auto"
+    align-items baseline
+    column-gap "$space-3"
+    row-gap "$space-1"
+    padding-block "$space-2"
 }
 
 // The same on a phone for the rows of a list that opens its items (labels, groups of labels): the name, and under it
@@ -4992,9 +5149,28 @@ part "list-editor.details" {
     gap "$space-2"
 }
 
-// In a row of columns the sign that the row opens stands at the end of the row, after the second column.
-part "list-editor.open[variant=columns] list-editor.details" {
-    justify-content space-between
+// The name and the short name stand on one line; where the project sits stands muted under them; a chevron says the row opens (A13).
+part "list-editor.open[variant=columns] list-editor.details" "list-editor.open[variant=columns] projects.details" {
+    display contents
+}
+
+part "list-editor.open[variant=columns] projects.short" {
+    grid-column 2
+    grid-row 1
+    color "$fg-muted"
+    font-family "$mono"
+}
+
+part "list-editor.open[variant=columns] projects.place" {
+    grid-column "1 / 3"
+    grid-row 2
+}
+
+part "list-editor.chevron" {
+    grid-column 3
+    grid-row "1 / span 2"
+    align-self center
+    color "$fg-muted"
 }
 
 part "list-editor.open[hovered]" {
@@ -5099,7 +5275,7 @@ part "shortcut-list.alternative" {
 
 part "shortcuts-page.intro" {
     margin 0
-    color "$fg-muted"
+    color "$fg"
     line-height "$lh-body"
 }
 
@@ -5446,6 +5622,22 @@ part "field-pill" {
     white-space nowrap
 }
 
+// A label in a list (UX §7.5): a small square in its color and its name in the plain text color, so the label does not compete with the priority.
+part "label-chip" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    color "$fg"
+    white-space nowrap
+}
+
+part "label-mark" {
+    flex none
+    box-sizing border-box
+    width "$space-3"
+    height "$space-3"
+}
+
 part "field-text" {
     margin 0
     color "$fg"
@@ -5540,64 +5732,69 @@ part "field-choice" {
 }
 
 
-part "field-badge[variant=cat1]" "field-pill[variant=cat1]" "field-swatch[variant=cat1]" {
+part "field-badge[variant=cat1]" "field-pill[variant=cat1]" "field-swatch[variant=cat1]" "label-mark[variant=cat1]" {
     background "$cat1-bg"
     color "$cat1-fg"
 }
 
-part "field-badge[variant=cat2]" "field-pill[variant=cat2]" "field-swatch[variant=cat2]" {
+part "field-badge[variant=cat2]" "field-pill[variant=cat2]" "field-swatch[variant=cat2]" "label-mark[variant=cat2]" {
     background "$cat2-bg"
     color "$cat2-fg"
 }
 
-part "field-badge[variant=cat3]" "field-pill[variant=cat3]" "field-swatch[variant=cat3]" {
+part "field-badge[variant=cat3]" "field-pill[variant=cat3]" "field-swatch[variant=cat3]" "label-mark[variant=cat3]" {
     background "$cat3-bg"
     color "$cat3-fg"
 }
 
-part "field-badge[variant=cat4]" "field-pill[variant=cat4]" "field-swatch[variant=cat4]" {
+part "field-badge[variant=cat4]" "field-pill[variant=cat4]" "field-swatch[variant=cat4]" "label-mark[variant=cat4]" {
     background "$cat4-bg"
     color "$cat4-fg"
 }
 
-part "field-badge[variant=cat5]" "field-pill[variant=cat5]" "field-swatch[variant=cat5]" {
+part "field-badge[variant=cat5]" "field-pill[variant=cat5]" "field-swatch[variant=cat5]" "label-mark[variant=cat5]" {
     background "$cat5-bg"
     color "$cat5-fg"
 }
 
-part "field-badge[variant=cat6]" "field-pill[variant=cat6]" "field-swatch[variant=cat6]" {
+part "field-badge[variant=cat6]" "field-pill[variant=cat6]" "field-swatch[variant=cat6]" "label-mark[variant=cat6]" {
     background "$cat6-bg"
     color "$cat6-fg"
 }
 
-part "field-badge[variant=cat7]" "field-pill[variant=cat7]" "field-swatch[variant=cat7]" {
+part "field-badge[variant=cat7]" "field-pill[variant=cat7]" "field-swatch[variant=cat7]" "label-mark[variant=cat7]" {
     background "$cat7-bg"
     color "$cat7-fg"
 }
 
-part "field-badge[variant=cat8]" "field-pill[variant=cat8]" "field-swatch[variant=cat8]" {
+part "field-badge[variant=cat8]" "field-pill[variant=cat8]" "field-swatch[variant=cat8]" "label-mark[variant=cat8]" {
     background "$cat8-bg"
     color "$cat8-fg"
 }
 
-part "field-badge[variant=cat9]" "field-pill[variant=cat9]" "field-swatch[variant=cat9]" {
+part "field-badge[variant=cat9]" "field-pill[variant=cat9]" "field-swatch[variant=cat9]" "label-mark[variant=cat9]" {
     background "$cat9-bg"
     color "$cat9-fg"
 }
 
-part "field-badge[variant=cat10]" "field-pill[variant=cat10]" "field-swatch[variant=cat10]" {
+part "field-badge[variant=cat10]" "field-pill[variant=cat10]" "field-swatch[variant=cat10]" "label-mark[variant=cat10]" {
     background "$cat10-bg"
     color "$cat10-fg"
 }
 
-part "field-badge[variant=cat11]" "field-pill[variant=cat11]" "field-swatch[variant=cat11]" {
+part "field-badge[variant=cat11]" "field-pill[variant=cat11]" "field-swatch[variant=cat11]" "label-mark[variant=cat11]" {
     background "$cat11-bg"
     color "$cat11-fg"
 }
 
-part "field-badge[variant=cat12]" "field-pill[variant=cat12]" "field-swatch[variant=cat12]" {
+part "field-badge[variant=cat12]" "field-pill[variant=cat12]" "field-swatch[variant=cat12]" "label-mark[variant=cat12]" {
     background "$cat12-bg"
     color "$cat12-fg"
+}
+
+// A label in a list is a small filled square in its color (§7.5): the swatch is the color itself, not the pale ground of a pill.
+part "label-mark[variant=cat1]" "label-mark[variant=cat2]" "label-mark[variant=cat3]" "label-mark[variant=cat4]" "label-mark[variant=cat5]" "label-mark[variant=cat6]" "label-mark[variant=cat7]" "label-mark[variant=cat8]" "label-mark[variant=cat9]" "label-mark[variant=cat10]" "label-mark[variant=cat11]" "label-mark[variant=cat12]" {
+    background currentColor
 }
 
 // ───────────── The design pages (docs/design) ─────────────
@@ -12753,6 +12950,7 @@ part "search-filter" {
     display inline-flex
     align-items center
     max-width "100%"
+    white-space nowrap
 }
 
 // The text of the button of a filter starts a little in from the edge of its outline (R3).
@@ -12763,7 +12961,7 @@ part "search-filter > button" {
 }
 
 // What opens over the page for the search: a window of the bar on a phone, the list of fields.
-part "search-panel" {
+part "search-panel" "bottom-sheet" {
     use "ring-scroll-room"
     display flex
     flex-direction column
@@ -12773,19 +12971,32 @@ part "search-panel" {
     overflow-y auto
 }
 
-// The sheet of the search bar on a phone has a fixed height (see size-bar-sheet).
-part "search-panel[variant=sheet]" {
-    height "$size-bar-sheet"
+// A sheet from the bottom of a phone (the filters, the legend) has the look of a panel (above), never taller than the screen.
+part "bottom-sheet" {
     max-height "100%"
     overflow-y hidden
 }
 
 // What the sheet holds scrolls inside it; its foot (the title row above and the button below) stays
 // where it is, whatever the offers or the mistakes add.
-part "search-panel[variant=sheet] search-bar" {
+part "bottom-sheet search-bar" {
     flex "1 1 auto"
     min-height 0
     overflow-y auto
+}
+
+// The sheet of the filters has a fixed height (see size-bar-sheet), so it does not jump as the filters change.
+part "bottom-sheet[variant=tall]" {
+    height "$size-bar-sheet"
+}
+
+// The name of what the sheet is for (Filters), as the title of a page is.
+part "bottom-sheet.title" {
+    margin 0
+    font-size "$fs-lg"
+    line-height "$lh-snug"
+    color "$fg"
+    font-weight "$weight-bold"
 }
 
 // The head of a panel: its title, and the button that closes it at the end of the same row.
@@ -12796,14 +13007,6 @@ part "search-panel.head" {
     gap "$space-3"
 }
 
-// The title of a window of the bar (S14): the size and weight of every window title.
-part "search-panel.title" {
-    margin 0
-    font-size "$fs-lg"
-    line-height "$lh-snug"
-    font-weight "$weight-bold"
-}
-
 // The chosen name and the finder of a filter on a person, a group or a project.
 part "search-choice" {
     display flex
@@ -12811,25 +13014,20 @@ part "search-choice" {
     gap "$space-3"
 }
 
-// The button that closes the sheet stays at the foot of it.
-part "search-panel[variant=sheet] search-panel.actions" {
-    flex none
-    margin-block-start auto
-}
-
 // In the sheet of a phone the filters stand under each other, as wide as the sheet.
-part "search-panel search-bar.head" {
+part "bottom-sheet search-bar.head" {
     flex-direction column
     align-items stretch
 }
 
-part "search-panel search-filters" {
+part "bottom-sheet search-filters" {
     flex-direction column
     align-items stretch
 }
 
-part "search-panel search-filter" {
+part "bottom-sheet search-filter" {
     justify-content space-between
+    white-space normal
 }
 
 // *+ Add filter* and *Any of* are as wide as the sheet, like the filters above them.
@@ -12862,7 +13060,7 @@ part "overlay[variant=full] confirm.body search-filters.action > button" {
     width "100%"
 }
 
-part "search-panel search-bar.actions" {
+part "bottom-sheet search-bar.actions" {
     margin-inline-start 0
 }
 
@@ -13127,12 +13325,21 @@ part "search-help.title" {
     font-weight "$weight-bold"
 }
 
-// The name of a list in the sidebar (*Mine*, *Shared with me*).
+// The sub-groups of Saved searches (Mine, Shared with me): a smaller muted name over a thin line, so they read as groups and not as a second header.
+part "nav-subgroup" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+    padding-inline-start "$space-3"
+}
+
 part "nav-subheading" {
     margin 0
-    padding "$space-2 $space-3"
+    padding "$space-3 $space-3 $space-1"
+    border-top "$border-width solid $border-subtle"
     color "$fg-muted"
-    font-size "$fs-base"
+    font-size "$fs-sm"
     font-weight "$weight-regular"
 }
 
@@ -13187,3 +13394,23 @@ part "search-panel search-suggestions" {
     margin-block-start "$space-1"
 }
 
+// A phone has one scroller where the list is: the list. The page does not scroll, and every box between the page and the
+// list gives it the room that is left, so the list ends above the bar of the ticked issues and the navigation.
+part "app-layout[variant=phone] app-layout.main:has(list-scroll)" {
+    overflow-y hidden
+}
+
+part "app-layout[variant=phone] app-layout.inner:has(list-scroll)" "app-layout[variant=phone] card:has(list-scroll)" "app-layout[variant=phone] card > stack:has(list-scroll)" "app-layout[variant=phone] list-editor:has(list-scroll)" "app-layout[variant=phone] list-editor.list:has(list-scroll)" "app-layout[variant=phone] list-main:has(list-scroll)" "app-layout[variant=phone] list-body:has(list-scroll)" "app-layout[variant=phone] list-column:has(list-scroll)" "app-layout[variant=phone] list-frame:has(list-scroll)" "app-layout[variant=phone] search-results:has(list-scroll)" {
+    display flex
+    flex-direction column
+    flex-wrap nowrap
+    align-items stretch
+    flex "1 1 0"
+    min-height 0
+}
+
+part "app-layout[variant=phone] list-scroll" {
+    flex "1 1 0"
+    min-height "$size-list-scroll-least"
+    max-height none
+}

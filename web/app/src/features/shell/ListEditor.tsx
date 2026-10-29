@@ -65,8 +65,13 @@ function Rows({ rows, label, openKey, onOpen, columns = false }: RowsProps) {
             </span>
             <span id={detailsId(row.key)} {...partOf(part.listEditorDetails)}>
               {row.details}
-              <Icon name={iconName.next} size={iconSize.small} />
+              {columns ? null : <Icon name={iconName.next} size={iconSize.small} />}
             </span>
+            {columns ? (
+              <span {...partOf(part.listEditorChevron)}>
+                <Icon name={iconName.next} size={iconSize.small} />
+              </span>
+            ) : null}
           </Button>
         </li>
       ))}

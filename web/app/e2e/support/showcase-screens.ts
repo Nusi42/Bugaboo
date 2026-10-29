@@ -1,5 +1,6 @@
 import {
   at,
+  atList,
   openCheckAccess,
   openInvitation,
   openPeople,
@@ -148,7 +149,7 @@ export const screens: readonly Screen[] = [
     "project-issues",
     "administrator",
     "The issues of a project, with a box to tick for each",
-    at(projectIssuesAddress(PROJECT)),
+    atList(projectIssuesAddress(PROJECT)),
   ),
   screen("home-team-member", "teamMember", "The start page of a Team member", at(paths.home)),
   screen(

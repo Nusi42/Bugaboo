@@ -18,6 +18,8 @@ export interface SavedSearchPageProps {
   readonly onState: (state: SearchState, step: HistoryStep) => void;
   /** The list of what the search finds (WP-08). */
   readonly results: (input: ResultsInput) => ReactNode;
+  /** What a phone shows before *Filters* in the row of the bar (the *Legend* button of the list). */
+  readonly phoneStart?: ReactNode;
   /** What is shown when the search is not there, or not for this person. */
   readonly notFound: ReactNode;
 }
@@ -26,7 +28,14 @@ export interface SavedSearchPageProps {
  * The page of a saved search, `/s/<ID>` (QRY-06, ADR-0034): it opens with its text, and a change
  * is kept in the address until it is saved; leaving without saving keeps the search as it was.
  */
-export function SavedSearchPage({ id, state, onState, results, notFound }: SavedSearchPageProps) {
+export function SavedSearchPage({
+  id,
+  state,
+  onState,
+  results,
+  phoneStart,
+  notFound,
+}: SavedSearchPageProps) {
   const saved = useSavedSearch(id);
   usePageTitle(saved.data?.name ?? "");
   const name = saved.data?.name;
@@ -44,7 +53,13 @@ export function SavedSearchPage({ id, state, onState, results, notFound }: Saved
   return (
     <QueryGate error={saved.error} data={saved.data} notFound={notFound}>
       {(search: SavedSearch) => (
-        <SavedSearchView search={search} state={state} onState={onState} results={results} />
+        <SavedSearchView
+          search={search}
+          state={state}
+          onState={onState}
+          results={results}
+          phoneStart={phoneStart}
+        />
       )}
     </QueryGate>
   );

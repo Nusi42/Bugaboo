@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { pixelsOf } from "./css-length.ts";
 import { variableOf } from "./variables.ts";
 import type { WindowResize } from "./WindowFrame.tsx";
 import {
@@ -15,17 +16,9 @@ import {
   type WindowSize,
 } from "./window-size.ts";
 
-/** The smallest height a person can make a window, from the theme file (`size-window-height-min`). */
+/** The smallest height a person can make a window, from the theme file (`size-window-height-min`); none in a test of logic, which has no page. */
 function smallestHeight(): number {
-  // A test of the logic has no page and so no theme: there is no smallest height then.
-  if (typeof document === "undefined") {
-    return 0;
-  }
-  const written = getComputedStyle(document.documentElement).getPropertyValue(
-    "--size-window-height-min",
-  );
-  const found = Number(/[\d.]+/u.exec(written)?.[0]);
-  return Number.isNaN(found) ? 0 : found;
+  return pixelsOf("size-window-height-min");
 }
 
 /** The size of a window on the page right now. */

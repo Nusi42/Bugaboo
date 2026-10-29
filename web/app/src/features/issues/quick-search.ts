@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import type { SearchLanguage } from "@bugaboo/wasm-search";
 
 import { api } from "../../shared/api.ts";
+import { isInvalidSearch } from "../../shared/errors.ts";
 import { fieldList } from "../../shared/paged.ts";
 import { issueAddress } from "../../shared/paths.ts";
 import type { QuickResult, QuickSearchSource } from "../shell/index.ts";
@@ -47,9 +48,6 @@ function resultOf(item: Line): QuickResult[] {
 /** The status with which the server says there is no such issue, or none the person may see. */
 const NOT_FOUND = 404;
 
-/** The problem with which the server refuses a text of the search language (the checker's mistakes). */
-const SEARCH_INVALID = "search.invalid";
-
 /** The server says there is no such issue: nothing to show, not a broken source. */
 function isNoIssue(error: unknown): boolean {
   return error instanceof ApiError && error.status === NOT_FOUND;
@@ -57,7 +55,7 @@ function isNoIssue(error: unknown): boolean {
 
 /** The server refuses the text as a search (too many words, too long): it finds nothing. */
 function isRefusedText(error: unknown): boolean {
-  return error instanceof ApiError && error.problem?.code === SEARCH_INVALID;
+  return isInvalidSearch(error);
 }
 
 /**

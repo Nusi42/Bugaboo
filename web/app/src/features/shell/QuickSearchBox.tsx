@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { Announce, IconButton, iconName, SearchField, partOf, part } from "@bugaboo/ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Autocomplete } from "react-aria-components";
 
 import { closeOverlay } from "./overlay-state.ts";
@@ -9,6 +9,16 @@ import { announcement } from "./quick-search-announce.ts";
 import { useFreshList } from "./use-fresh-list.ts";
 import { useOpenResult } from "./use-open-result.ts";
 import { useQuickResults } from "./use-quick-results.ts";
+
+/** Esc closes the dialog, also with something typed: the box would clear its text first, and the person has to press twice. */
+function closeOnEscape(event: KeyboardEvent<HTMLElement>): void {
+  // A key that ends the composing of a letter (Japanese, Chinese) is not an Esc for the dialog.
+  if (event.key === "Escape" && !event.nativeEvent.isComposing) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeOverlay();
+  }
+}
 
 /** The inside of the dialog, made new every time the dialog opens so the box starts empty. */
 export function QuickSearchBox() {
@@ -30,7 +40,7 @@ export function QuickSearchBox() {
     <Autocomplete disableAutoFocusFirst inputValue={query} onInputChange={setQuery}>
       <div ref={root} {...partOf(part.quickSearch)}>
         <div {...partOf(part.quickSearchHead)}>
-          <div ref={field} {...partOf(part.shellFill)}>
+          <div ref={field} {...partOf(part.shellFill)} onKeyDownCapture={closeOnEscape}>
             <SearchField
               label={t("search.label")}
               placeholder={t("search.placeholder")}

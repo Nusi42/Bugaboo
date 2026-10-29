@@ -3,7 +3,7 @@ import "@bugaboo/messages/parts/shell";
 
 export { AppLayout } from "./AppLayout.tsx";
 export { GuestLayout } from "./GuestLayout.tsx";
-export { ErrorPage, NotFoundPage, PendingPage } from "./Pages.tsx";
+export { ErrorPage, NotFoundPage, UnknownAddressPage, PendingPage } from "./Pages.tsx";
 export { QueryGate, type QueryGateProps } from "./QueryGate.tsx";
 export {
   addQuickSearchSource,
@@ -36,3 +36,4 @@ export {
 } from "./overlay-state.ts";
 export { useNarrowSidebarWhile } from "./sidebar-state.ts";
 export { BarSlot } from "./bar-slot.ts";
+export { useFocusViewOpen } from "./sidebar-state.ts";

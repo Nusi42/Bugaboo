@@ -2086,6 +2086,9 @@ pub const ISSUES_KEEP_THEIRS_UNNAMED: MessageKey = MessageKey::new("issues.keep-
 /// The message `issues.legend`.
 pub const ISSUES_LEGEND: MessageKey = MessageKey::new("issues.legend");
 
+/// The message `issues.legend-button`.
+pub const ISSUES_LEGEND_BUTTON: MessageKey = MessageKey::new("issues.legend-button");
+
 /// The message `issues.link-copied`.
 pub const ISSUES_LINK_COPIED: MessageKey = MessageKey::new("issues.link-copied");
 
@@ -2133,6 +2136,9 @@ pub const ISSUES_REMOVE_FILTERS: MessageKey = MessageKey::new("issues.remove-fil
 
 /// The message `issues.select-shown`.
 pub const ISSUES_SELECT_SHOWN: MessageKey = MessageKey::new("issues.select-shown");
+
+/// The message `issues.selected-bar`.
+pub const ISSUES_SELECTED_BAR: MessageKey = MessageKey::new("issues.selected-bar");
 
 /// The message `issues.sheet`.
 pub const ISSUES_SHEET: MessageKey = MessageKey::new("issues.sheet");
@@ -3851,8 +3857,15 @@ pub const SEARCH_BAR_ADD_FILTER: MessageKey = MessageKey::new("search.bar.add-fi
 pub const SEARCH_BAR_ADD_FILTER_CONFIRM: MessageKey =
     MessageKey::new("search.bar.add-filter-confirm");
 
+/// The message `search.bar.add-filter-issue`.
+pub const SEARCH_BAR_ADD_FILTER_ISSUE: MessageKey = MessageKey::new("search.bar.add-filter-issue");
+
 /// The message `search.bar.add-filter-need`.
 pub const SEARCH_BAR_ADD_FILTER_NEED: MessageKey = MessageKey::new("search.bar.add-filter-need");
+
+/// The message `search.bar.add-filter-person`.
+pub const SEARCH_BAR_ADD_FILTER_PERSON: MessageKey =
+    MessageKey::new("search.bar.add-filter-person");
 
 /// The message `search.bar.add-filter-which`.
 pub const SEARCH_BAR_ADD_FILTER_WHICH: MessageKey = MessageKey::new("search.bar.add-filter-which");
@@ -5069,6 +5082,9 @@ pub const SHELL_MORE: MessageKey = MessageKey::new("shell.more");
 
 /// The message `shell.narrow`.
 pub const SHELL_NARROW: MessageKey = MessageKey::new("shell.narrow");
+
+/// The message `shell.quick-search`.
+pub const SHELL_QUICK_SEARCH: MessageKey = MessageKey::new("shell.quick-search");
 
 /// The message `shell.search`.
 pub const SHELL_SEARCH: MessageKey = MessageKey::new("shell.search");
@@ -11986,7 +12002,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.search.too-slow",
-        "This search took too long. Add a filter to narrow it down and try again.",
+        "This search takes too long. Add a filter, for example a project or a status.",
     ),
     (
         "error.server.internal",
@@ -12774,6 +12790,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.keep-theirs", "Keep {name}'s change"),
     ("issues.keep-theirs-unnamed", "Keep their change"),
     ("issues.legend", "What the colors mean"),
+    ("issues.legend-button", "Legend"),
     ("issues.link-copied", "Address copied"),
     ("issues.list", "Issues"),
     (
@@ -12816,6 +12833,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
     ),
+    ("issues.selected-bar", "The issues you ticked"),
     ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Open in the side panel"),
@@ -12836,7 +12854,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "issues.tick-narrow",
-        "Narrow the search to {limit, number} issues or fewer to change them together",
+        "Narrow the search to {limit, number} issues or fewer to change them together.",
     ),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
@@ -14314,7 +14332,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.above", "above"),
     ("search.bar.add-filter", "Add filter"),
     ("search.bar.add-filter-confirm", "Add filter"),
+    ("search.bar.add-filter-issue", "Choose the issue."),
     ("search.bar.add-filter-need", "Choose a value first."),
+    ("search.bar.add-filter-person", "Choose the person."),
     ("search.bar.add-filter-text", "What should {field} be?"),
     (
         "search.bar.add-filter-which",
@@ -14354,10 +14374,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.contains", "contains {text}"),
     ("search.bar.count", "How many"),
     ("search.bar.day", "Which day"),
-    ("search.bar.day-format", "In Advanced search: 2026-12-31."),
+    (
+        "search.bar.day-format",
+        "In Advanced search a day is written like 2026-12-31.",
+    ),
     (
         "search.bar.duration-help",
-        "Write a length of time, for example {hours}, {minutes} or {both}.",
+        "Write a length of time, for example “{hours}”, “{minutes}” or “{both}”.",
     ),
     ("search.bar.fields-clear", "Clear the words"),
     ("search.bar.fields-legend", "Fields"),
@@ -15495,6 +15518,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shell.menu-button", "Menu"),
     ("shell.more", "More"),
     ("shell.narrow", "Narrow the menu"),
+    ("shell.quick-search", "Quick search"),
     ("shell.search", "Search"),
     ("shell.signed-in-as", "Signed in as {name}"),
     ("shell.skip", "Skip to the content"),

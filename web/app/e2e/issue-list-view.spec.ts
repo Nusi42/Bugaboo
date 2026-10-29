@@ -12,6 +12,7 @@ import {
   columnButton,
   grid,
   groupOf,
+  inViewChoices,
   openList,
   prepareLook,
   titlesInOrder,
@@ -50,9 +51,11 @@ test("cfg_02 sorting by a column writes sort by into the search", async ({ page 
 
 test("cfg_02 group by a field shows each group with its count", async ({ page }) => {
   await openList(page);
-  await page
-    .getByLabel(t("issues.group-by"), { exact: true })
-    .selectOption({ label: t("issue-field.priority") });
+  await inViewChoices(page, async (scope) => {
+    await scope
+      .getByLabel(t("issues.group-by"), { exact: true })
+      .selectOption({ label: t("issue-field.priority") });
+  });
   await expect(page).toHaveURL(/group=priority/u);
   await Promise.all(
     (["critical", "high", "normal"] as const).map((word) =>
@@ -68,9 +71,11 @@ test("cfg_02 group by a field shows each group with its count", async ({ page })
 test("cfg_02 a folded group loads nothing when the search changes", async ({ page }) => {
   test.skip(layoutOf(page) === "phone", "a phone has no column names to sort by");
   await openList(page);
-  await page
-    .getByLabel(t("issues.group-by"), { exact: true })
-    .selectOption({ label: t("issue-field.priority") });
+  await inViewChoices(page, async (scope) => {
+    await scope
+      .getByLabel(t("issues.group-by"), { exact: true })
+      .selectOption({ label: t("issue-field.priority") });
+  });
   await expect(groupOf(page, t("priority.high"))).toContainText("1");
   await groupOf(page, t("priority.high")).click();
   await expect(grid(page).getByRole("link", { name: webIssues.passkey })).toHaveCount(0);

@@ -3,7 +3,7 @@ import { iconName, part, partOf } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { itemsOf } from "../../shared/paged.ts";
-import { paths, savedSearchAddress } from "../../shared/paths.ts";
+import { savedSearchAddress } from "../../shared/paths.ts";
 import { personName } from "../../shared/person.ts";
 import { NavLink } from "../shell/index.ts";
 import { useSavedList, savedSet, type SavedSearch, type SavedSet } from "./saved-searches.ts";
@@ -35,7 +35,7 @@ function SavedList({
   return (
     <li>
       <p {...partOf(part.navSubheading)}>{heading}</p>
-      <ul {...partOf(part.list, { variants: ["tight"] })}>
+      <ul {...partOf(part.navSubgroup)}>
         {searches.map((saved: SavedSearch) => (
           <li key={saved.id}>
             <NavLink
@@ -57,24 +57,15 @@ function SavedList({
 }
 
 /**
- * *Saved searches* in the sidebar (UX design section 4.3): the page of *Search*, then the ones the
- * person made, then the ones shared with them, each with who made it. A saved search opens at its
+ * *Saved searches* in the sidebar (UX design section 4.3): the ones the person made, then the ones
+ * shared with them, each with who made it, in two sub-groups. The page of *Search* is not one of
+ * them: it stands with the start page above. A saved search opens at its
  * own address.
  */
 export function SavedSearchesSection({ narrow, onNavigate }: SavedSearchesSectionProps) {
   const { pathname } = useLocation();
   return (
     <ul {...partOf(part.sidebarList)}>
-      <li>
-        <NavLink
-          icon={iconName.search}
-          label={t("search.page.title")}
-          narrow={narrow}
-          href={paths.search}
-          current={pathname === paths.search}
-          {...(onNavigate === undefined ? {} : { onNavigate })}
-        />
-      </li>
       {narrow ? null : (
         <>
           <SavedList

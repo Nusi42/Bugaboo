@@ -5,6 +5,7 @@ import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, signIn } from "./support/flows.ts";
+import { layoutOf } from "./support/layout.ts";
 import { nothingFound } from "./support/quick-search.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -103,4 +104,31 @@ test("cfg_08 Ctrl+K opens quick search also while a text field has the focus", a
   await expect(dialog(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(search).toBeFocused();
+});
+
+test("cfg_08 Esc closes quick search at once, also with a word typed, and the keys work again (M5 exit)", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.keyboard.press("Control+k");
+  await page.getByRole("searchbox", { name: t("search.label"), exact: true }).fill("a");
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toHaveCount(0);
+  // Focus is back on the page, not in a text box: the key for the list of shortcuts works.
+  await page.keyboard.press("?");
+  await expect(page.getByRole("dialog", { name: t("shortcut.title") })).toBeVisible();
+});
+
+test("cfg_08 the sidebar says Quick search for the overlay, and the Search page is the one item highlighted on it (L19)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "only a computer has the sidebar");
+  await signIn(page, ada);
+  await page.goto(paths.search);
+  const quick = page.getByRole("button", { name: new RegExp(`^${t("shell.quick-search")}`, "u") });
+  await expect(quick).toBeVisible();
+  await expect(quick).not.toHaveAttribute("aria-current", /.+/u);
+  await expect(
+    page.getByRole("link", { name: t("search.page.title"), exact: true }),
+  ).toHaveAttribute("aria-current", "page");
 });

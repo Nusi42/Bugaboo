@@ -7,6 +7,11 @@ export function codeOf(error: unknown): ErrorCode | undefined {
   return error instanceof ApiError ? error.problem?.code : undefined;
 }
 
+/** The server refused the text as a search: it has a mistake in the search language (a search that takes too long is another answer). */
+export function isInvalidSearch(error: unknown): boolean {
+  return codeOf(error) === "search.invalid";
+}
+
 /** The seconds the server asks to wait before trying again, if the error is an answer that says so. */
 export function retryAfterSecondsOf(error: unknown): number | undefined {
   return error instanceof ApiError ? error.retryAfterSeconds : undefined;
