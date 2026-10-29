@@ -170,7 +170,7 @@ async function expectGoodScreen(page: Page): Promise<void> {
   await expectVisibleTextInName(page);
 }
 
-/** The open screen is accessible and does not scroll sideways, in every theme, picked as a person does. */
+/** The open screen is good (see `expectGoodScreen`) in every theme, picked as a person does. */
 export function expectGoodInEveryTheme(page: Page): Promise<void> {
   return inOrder(
     themes.map((theme) => async () => {

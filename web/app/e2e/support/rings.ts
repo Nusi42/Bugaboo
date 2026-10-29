@@ -56,13 +56,24 @@ async function ringFacts(page: Page): Promise<readonly RingFacts[]> {
       taker.focus();
       const ringed = taker.closest('[data-part="search-field.box"]') ?? taker;
       const style = getComputedStyle(ringed);
+      const [width, offset] = [style.outlineWidth, style.outlineOffset].map((v) =>
+        Number(v.replace("px", "")),
+      );
       const own = ringed.getBoundingClientRect();
       const clips: (Edges & { tag: string })[] = [];
       for (let up = ringed.parentElement; up !== null; up = up.parentElement) {
         const { overflowX, overflowY } = getComputedStyle(up);
         if (overflowX !== "visible" || overflowY !== "visible") {
-          const { left, right, top, bottom } = up.getBoundingClientRect();
-          clips.push({ left, right, top, bottom, tag: up.tagName });
+          const frame = up.getBoundingClientRect();
+          const left = frame.left + up.clientLeft;
+          const top = frame.top + up.clientTop;
+          clips.push({
+            left,
+            right: left + up.clientWidth,
+            top,
+            bottom: top + up.clientHeight,
+            tag: up.tagName,
+          });
         }
         if (up === dialog) {
           break;
@@ -71,9 +82,9 @@ async function ringFacts(page: Page): Promise<readonly RingFacts[]> {
       facts.push({
         name: `${taker.tagName} ${(taker.textContent ?? "").trim().slice(0, 24)}`,
         outlineStyle: style.outlineStyle,
-        outlineWidth: Number(style.outlineWidth.replace("px", "")),
+        outlineWidth: width ?? 0,
         outlineColor: style.outlineColor,
-        outlineOffset: Number(style.outlineOffset.replace("px", "")),
+        outlineOffset: offset ?? 0,
         box: { left: own.left, right: own.right, top: own.top, bottom: own.bottom },
         clips,
       });
@@ -94,22 +105,20 @@ function undrawn(facts: readonly RingFacts[]): readonly string[] {
     .map((one) => `${one.name}: no focus ring is drawn`);
 }
 
-/** The ring, which reaches its width plus its offset beyond the edge, is cut by a box that clips: none for a ring drawn inside the edge. */
+/** The ring reaches its width plus its offset beyond the edge (nothing for a ring drawn fully inside it); a box that clips and is nearer than that cuts it. */
 function cut(facts: readonly RingFacts[]): readonly string[] {
   const slack = 0.5;
   return facts.flatMap((one) => {
-    const reach = one.outlineWidth + one.outlineOffset;
-    return one.outlineOffset < 0
-      ? []
-      : one.clips
-          .filter(
-            (clip) =>
-              one.box.left - reach < clip.left - slack ||
-              one.box.right + reach > clip.right + slack ||
-              one.box.top - reach < clip.top - slack ||
-              one.box.bottom + reach > clip.bottom + slack,
-          )
-          .map((clip) => `${one.name}: the focus ring is cut by ${clip.tag}`);
+    const reach = Math.max(0, one.outlineWidth + one.outlineOffset);
+    return one.clips
+      .filter(
+        (clip) =>
+          one.box.left - reach < clip.left - slack ||
+          one.box.right + reach > clip.right + slack ||
+          one.box.top - reach < clip.top - slack ||
+          one.box.bottom + reach > clip.bottom + slack,
+      )
+      .map((clip) => `${one.name}: the focus ring is cut by ${clip.tag}`);
   });
 }
 
