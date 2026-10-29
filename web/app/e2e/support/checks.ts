@@ -210,3 +210,51 @@ export async function expectStaleEdge(page: Page, note: Locator): Promise<void> 
     );
   }
 }
+
+/**
+ * The focus ring of every field of the open dialog is whole (WCAG 2.4.7, and the review of M5, S19):
+ * each field is focused, its ring has a size, and no box that scrolls or hides on the way up to the
+ * dialog cuts it on any of its four sides. A field whose ring cannot be seen fails too.
+ */
+export async function expectRingsWhole(page: Page): Promise<void> {
+  const found = await page.evaluate(() => {
+    const failures: string[] = [];
+    const dialogs = document.querySelectorAll('[role="dialog"], [role="alertdialog"]');
+    const dialog = [...dialogs].at(-1);
+    if (dialog === undefined) {
+      return ["There is no open dialog."];
+    }
+    const fields = dialog.querySelectorAll<HTMLElement>("input, select, textarea");
+    for (const field of fields) {
+      field.focus();
+      const ringed = field.closest('[data-part="search-field.box"]') ?? field;
+      const style = getComputedStyle(ringed);
+      const reach =
+        Number(style.outlineWidth.replace("px", "")) +
+        Number(style.outlineOffset.replace("px", ""));
+      if (!(reach > 0)) {
+        failures.push(`${field.tagName}: the focus ring has no size`);
+      }
+      const ring = ringed.getBoundingClientRect();
+      for (let parent = ringed.parentElement; parent !== null; parent = parent.parentElement) {
+        const { overflowX, overflowY } = getComputedStyle(parent);
+        if (overflowX !== "visible" || overflowY !== "visible") {
+          const frame = parent.getBoundingClientRect();
+          const cut =
+            ring.left - reach < frame.left - 0.5 ||
+            ring.right + reach > frame.right + 0.5 ||
+            ring.top - reach < frame.top - 0.5 ||
+            ring.bottom + reach > frame.bottom + 0.5;
+          if (cut) {
+            failures.push(`${field.tagName}: the focus ring is cut by ${parent.tagName}`);
+          }
+        }
+        if (parent === dialog) {
+          break;
+        }
+      }
+    }
+    return failures;
+  });
+  expect(found).toEqual([]);
+}

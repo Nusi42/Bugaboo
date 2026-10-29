@@ -29,7 +29,7 @@ interface Inner {
 const fewest = 2;
 
 /** The filters with `filter` in the place of the one at `index`, or at the end when there is no place. */
-function withCondition(
+function withFilter(
   filters: readonly Expr[],
   index: number | undefined,
   filter: Expr,
@@ -102,7 +102,7 @@ interface AnyOfWindowsProps {
   readonly inner: Inner | null;
   readonly onInner: (inner: Inner | null) => void;
   /** A filter was made or changed in its window. */
-  readonly onCondition: (filter: Expr) => void;
+  readonly onFilter: (filter: Expr) => void;
 }
 
 /** The windows over the *Any of*: the list of fields, then the window of the field picked or of the filter pressed. */
@@ -113,7 +113,7 @@ function AnyOfWindows({
   onChoosing,
   inner,
   onInner,
-  onCondition,
+  onFilter,
 }: AnyOfWindowsProps) {
   const close = (): void => {
     onInner(null);
@@ -134,7 +134,7 @@ function AnyOfWindows({
         fields={fields}
         editing={inner?.editing}
         onApply={(filter) => {
-          onCondition(filter);
+          onFilter(filter);
           close();
         }}
         onClose={close}
@@ -184,8 +184,8 @@ export function AnyOfEditor({
         onChoosing={setChoosing}
         inner={inner}
         onInner={setInner}
-        onCondition={(filter) => {
-          setFilters(withCondition(filters, inner?.index, filter));
+        onFilter={(filter) => {
+          setFilters(withFilter(filters, inner?.index, filter));
         }}
       />
     </>

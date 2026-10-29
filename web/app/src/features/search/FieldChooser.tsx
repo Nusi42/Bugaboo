@@ -8,7 +8,7 @@ export interface FieldChooserProps {
   readonly isOpen: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly fields: ReadableFields;
-  /** The title of the window: *Add filter*, or *Add a condition*. */
+  /** The title of the window: *Add filter*, or *Add a filter* inside an *Any of*. */
   readonly title: string;
   /** The person picked a field; the window closes. */
   readonly onPick: (field: Field) => void;
@@ -17,7 +17,7 @@ export interface FieldChooserProps {
 /**
  * The window that lists the fields the person may read, the ones used most first (the order the
  * server gives), with a box to find the rest: a window on a computer, a sheet from the bottom on
- * a phone. *Add filter* and *Add a condition* of an *Any of* both open it.
+ * a phone. *Add filter* and *Add a filter* of an *Any of* both open it.
  */
 export function FieldChooser({ isOpen, onOpenChange, fields, title, onPick }: FieldChooserProps) {
   const phone = useLayout() === "phone";

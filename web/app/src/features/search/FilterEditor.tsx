@@ -31,7 +31,13 @@ function needText(field: Field): string {
   if (field.kind === "person") {
     return t("search.bar.need-person");
   }
-  return field.kind === "date" ? t("search.bar.need-day") : t("search.bar.add-filter-need");
+  if (field.kind === "date") {
+    return t("search.bar.need-day");
+  }
+  if (field.kind === "issue") {
+    return t("search.bar.need-issue");
+  }
+  return field.kind === "duration" ? t("search.bar.need-length") : t("search.bar.add-filter-need");
 }
 
 /** The first mistake the checker finds in the filter as it would be written, in plain words. */

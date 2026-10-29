@@ -17,7 +17,7 @@ export type Editing =
       readonly filter?: Expr;
     }
   | {
-      /** An *Any of*: its conditions, each picked like a filter of its own. */
+      /** An *Any of*: its filters, each picked like a filter of its own. */
       readonly kind: "any-of";
       readonly place?: FilterPlace;
       readonly members: readonly Expr[];

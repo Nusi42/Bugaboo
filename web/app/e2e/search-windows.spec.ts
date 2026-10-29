@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 
 import { createAdmin } from "./support/accounts.ts";
-import { expectGoodInEveryTheme } from "./support/checks.ts";
+import { expectGoodInEveryTheme, expectRingsWhole } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
@@ -9,7 +9,6 @@ import {
   addTitleFilter,
   box,
   boxOf,
-  focusRingClipped,
   leftEdgeOf,
   openBar,
   openSearch,
@@ -57,19 +56,24 @@ test("qry_01 the windows of the search are good in every theme", async ({ page }
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   await expectGoodInEveryTheme(page);
+  await expectRingsWhole(page);
   await page
     .getByRole("button", { name: t("search.bar.filter-by", { field: "Assigned to" }) })
     .click();
   await expectGoodInEveryTheme(page);
+  await expectRingsWhole(page);
   await page.getByRole("button", { name: t("common.cancel") }).click();
   await page.getByRole("button", { name: t("search.bar.any-of") }).click();
   await expectGoodInEveryTheme(page);
+  await expectRingsWhole(page);
   await page.getByRole("button", { name: t("common.cancel") }).click();
   await page.getByRole("button", { name: t("search.help") }).click();
   await expectGoodInEveryTheme(page);
+  await expectRingsWhole(page);
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: t("search.save"), exact: true }).click();
   await expectGoodInEveryTheme(page);
+  await expectRingsWhole(page);
 });
 
 test("qry_01 the sheet of a phone does not move when the offers come and go", async ({ page }) => {
@@ -116,6 +120,7 @@ test("qry_01 the person picker has Me as the first row of its one list", async (
   await expect(list.getByRole("button").first()).toHaveAccessibleName(
     t("search.bar.me-row", { name: "Ada Admin" }),
   );
+  await expect(page.getByText(t("search.bar.need-person"))).toBeVisible();
   // There is no second way to pick the same: no tick box for *me*, and Ada is not in the list again.
   await expect(page.getByRole("checkbox", { name: t("search.bar.me") })).toHaveCount(0);
   await expect(list.getByRole("button", { name: "Ada Admin", exact: true })).toHaveCount(0);
@@ -146,7 +151,7 @@ test("qry_01 an Any of shows its filters inside and adds them with the same pick
   await expect(page.getByRole("button", { name: /Change the filter Any of/u })).toBeVisible();
 });
 
-test("qry_01 the date editor is the browser's date box and the help names the typed form", async ({
+test("qry_01 a day picked in the date editor comes back in it, and Advanced search writes it as the help does", async ({
   page,
 }) => {
   await openSearch(page, "priority is high");
@@ -154,19 +159,25 @@ test("qry_01 the date editor is the browser's date box and the help names the ty
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Created" }) }).click();
   const window = page.getByRole("alertdialog", { name: "Created" });
-  // The calendar of the browser, in the person's own format; one line says how Advanced search writes a day.
   const day = window.getByLabel(t("search.bar.day"));
+  // The browser's own date box (a calendar, in the person's own format); the main button says what it waits for.
   await expect(day).toHaveAttribute("type", "date");
-  await expect(window.getByText(t("search.bar.day-format"))).toBeVisible();
-  expect(t("search.bar.day-format")).toContain("Advanced search");
-  expect(t("search.bar.day-format")).toContain("2026-12-31");
-  expect(t("search.help-time-text")).toContain("Advanced search");
-  expect(t("search.help-time-text")).toContain("2026-12-31");
-  await day.fill("2026-12-31");
-  await window.getByRole("button", { name: t("search.bar.add-filter-confirm") }).click();
+  await expect(window.getByText(t("search.bar.need-day"))).toBeVisible();
   await expect(
-    page.getByRole("button", { name: /Change the filter Created.*2026/u }),
-  ).toBeVisible();
+    window.getByRole("button", { name: t("search.bar.add-filter-confirm") }),
+  ).toBeDisabled();
+  await day.fill("2026-12-31");
+  await expect(window.getByText(t("search.bar.need-day"))).toHaveCount(0);
+  await window.getByRole("button", { name: t("search.bar.add-filter-confirm") }).click();
+  // Opened again, the filter shows the day it was given.
+  await page.getByRole("button", { name: /Change the filter Created/u }).click();
+  await expect(
+    page.getByRole("alertdialog", { name: "Created" }).getByLabel(t("search.bar.day")),
+  ).toHaveValue("2026-12-31");
+  await page.getByRole("button", { name: t("common.cancel") }).click();
+  // In Advanced search the same day is typed in the one form of the language.
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await expect(box(page)).toHaveValue(/created is 2026-12-31/iu);
 });
 
 test("qry_01 the person picker keeps Me while the typed words start your name, and says when nothing is found", async ({
@@ -196,6 +207,7 @@ test("qry_01 a row of the issue finder is the mono ID, the title and the status 
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Part of" }) }).click();
+  await expect(page.getByText(t("search.bar.need-issue"))).toBeVisible();
   const search = page.getByRole("searchbox", { name: t("search.bar.issue-search") });
   await search.fill("login");
   const row = page
@@ -210,8 +222,7 @@ test("qry_01 a row of the issue finder is the mono ID, the title and the status 
   const nameHeight = (await boxOf(row.locator('[data-part="picker.name"]'))).height;
   expect(nameHeight).toBeLessThan((await boxOf(id)).height * 1.6);
   // The ring of the focused box is not cut off by the box that holds it, on a phone too.
-  await search.focus();
-  expect(await focusRingClipped(page)).toEqual([]);
+  await expectRingsWhole(page);
 });
 
 test("qry_01 the titles are the dialog title and the rows start on the edge of the field", async ({
@@ -257,7 +268,7 @@ test("qry_01 the reason a main button waits is directly above it, and an Any of 
   const add = await boxOf(window.getByRole("button", { name: t("search.bar.any-of-add") }));
   const last = await boxOf(
     window
-      .getByRole("list", { name: t("search.bar.any-of-conditions") })
+      .getByRole("list", { name: t("search.bar.any-of-filters") })
       .getByRole("listitem")
       .nth(1),
   );

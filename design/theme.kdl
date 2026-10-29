@@ -600,6 +600,13 @@ mixin "page-column-wide" {
     max-width none
 }
 
+// Room for the focus ring inside a box that scrolls (it clips what is outside it): padding of the size
+// of the ring, and a negative margin at the sides so the text stays where it was.
+mixin "ring-room" {
+    padding "calc($ring-width + $ring-offset)"
+    margin-inline "calc(($ring-width + $ring-offset) * -1)"
+}
+
 // What floats over or stands out of the page: a card, a sheet, a panel, an offer.
 mixin "floating-box" {
     box-sizing border-box
@@ -1460,9 +1467,7 @@ part "picker.options[variant=list]" {
     flex-direction column
     gap "$space-1"
     max-height "calc($size-control * 7 + $space-1 * 6)"
-    // Room for the focus ring: a list that scrolls clips what is outside it.
-    margin 0
-    padding "calc($ring-width + $ring-offset)"
+    use "ring-room"
     list-style none
     overflow-y auto
     background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
@@ -1475,10 +1480,10 @@ part "picker.options[variant=list]" {
     background-attachment "local, scroll"
 }
 
-// A list of rows that are one button each: the negative margin puts their text on the edge of the box
-// above them (S16). The lists of radio buttons keep their margin.
-part "picker.options[variant=list]:has(picker.choice)" {
-    margin-inline "calc(($ring-width + $ring-offset) * -1)"
+// The negative margin of the ring room puts the text of rows that are one button each on the edge of
+// the box above them (S16); the lists of radio buttons keep their margin.
+part "picker.options[variant=list]:has(picker.option)" {
+    margin-inline 0
 }
 
 part "picker.option[variant=list]" {
@@ -3137,8 +3142,7 @@ part "confirm.body" {
 // negative margin keeps the text where it was.
 part "overlay.modal[variant=full] confirm.body" {
     overflow-y auto
-    margin-inline "calc(($ring-width + $ring-offset) * -1)"
-    padding-inline "calc($ring-width + $ring-offset)"
+    use "ring-room"
 }
 
 part "confirm.title" {
@@ -12596,6 +12600,15 @@ part "confirm.body search-filters" {
 part "confirm.body search-filters.action" {
     flex "1 1 100%"
     align-items flex-start
+}
+
+part "confirm.body search-filters.action > button" {
+    width auto
+}
+
+// On a phone it is as wide as the screen, like the main button.
+part "overlay[variant=full] confirm.body search-filters.action > button" {
+    width "100%"
 }
 
 part "search-panel search-bar.actions" {

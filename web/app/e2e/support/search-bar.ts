@@ -133,36 +133,6 @@ export async function leftEdgeOf(element: Locator): Promise<number> {
   return found === null ? Number.NaN : found.x;
 }
 
-/** The sides on which the focus ring of the focused element is cut off by a box that scrolls or hides (none when it is whole). */
-export function focusRingClipped(page: Page): Promise<readonly string[]> {
-  return page.evaluate(() => {
-    const clipped: string[] = [];
-    const focused = document.activeElement;
-    const ringed = focused?.closest('[data-part="search-field.box"]') ?? focused;
-    if (ringed === null || ringed === undefined) {
-      return clipped;
-    }
-    const style = getComputedStyle(ringed);
-    const reach =
-      Number(style.outlineWidth.replace("px", "")) + Number(style.outlineOffset.replace("px", ""));
-    const ring = ringed.getBoundingClientRect();
-    for (let parent = ringed.parentElement; parent !== null; parent = parent.parentElement) {
-      const { overflowX, overflowY } = getComputedStyle(parent);
-      const cuts = [overflowX, overflowY].some((each) => each !== "visible");
-      if (cuts) {
-        const frame = parent.getBoundingClientRect();
-        const tag = parent.tagName;
-        const left = ring.left - reach < frame.left - 0.5;
-        const right = ring.right + reach > frame.right + 0.5;
-        if (left || right) {
-          clipped.push(`ring cut on the ${left ? "left" : "right"} by ${tag}`);
-        }
-      }
-    }
-    return clipped;
-  });
-}
-
 /** The place and size of an element on the page; fails the test when it is not shown. */
 export async function boxOf(element: Locator): Promise<{
   readonly x: number;

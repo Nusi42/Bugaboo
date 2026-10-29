@@ -17,7 +17,7 @@ export interface AnyOfFiltersProps {
 /** The filters of an *Any of* as buttons, like those of Simple search, then *+ Add a filter* on a row of its own. */
 export function AnyOfFilters({ language, filters, onChange, onRemove, onAdd }: AnyOfFiltersProps) {
   return (
-    <ul {...partOf(part.searchFilters)} aria-label={t("search.bar.any-of-conditions")}>
+    <ul {...partOf(part.searchFilters)} aria-label={t("search.bar.any-of-filters")}>
       <FilterButtons
         language={language}
         filters={filters}
