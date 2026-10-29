@@ -3422,6 +3422,8 @@ optgroup {
 [data-part="access.scroll"] {
   position: relative;
   overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline-start: var(--size-matrix-cell);
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
   background: var(--bg-surface);
@@ -3440,6 +3442,7 @@ optgroup {
 
 [data-part="access.matrix-cell"] {
   padding: var(--space-2) var(--space-3);
+  scroll-snap-align: start;
   border-bottom: var(--border-width) solid var(--border-subtle);
   text-align: start;
   vertical-align: top;
@@ -3457,8 +3460,13 @@ optgroup {
 [data-part="access.matrix-cell"][data-variant~="row"] {
   position: sticky;
   inset-inline-start: 0;
+  padding-block-start: calc(
+    var(--space-2) + (var(--size-control) - var(--fs-ui) * var(--lh-body)) / 2
+  );
   background: var(--bg-surface);
   color: var(--fg);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-body);
   font-weight: var(--weight-regular);
   min-width: var(--size-matrix-cell);
 }

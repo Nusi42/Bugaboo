@@ -3337,6 +3337,9 @@ part "access.scroll" {
     // The names of the lists that only screen readers read are positioned boxes: this keeps them in the region.
     position relative
     overflow-x auto
+    // A column comes to rest whole, beside the names, where the scrolling stops near it (a control is not left cut).
+    scroll-snap-type "x proximity"
+    scroll-padding-inline-start "$size-matrix-cell"
     border "$border-width solid $border-subtle"
     border-radius "$r-ctl"
     background "$bg-surface"
@@ -3355,6 +3358,7 @@ part "access.matrix" {
 
 part "access.matrix-cell" {
     padding "$space-2 $space-3"
+    scroll-snap-align start
     border-bottom "$border-width solid $border-subtle"
     text-align start
     vertical-align top
@@ -3373,8 +3377,12 @@ part "access.matrix-cell[variant=head]" {
 part "access.matrix-cell[variant=row]" {
     position sticky
     inset-inline-start 0
+    // The words stand level with the control of the row: the middle of their line is the middle of a control.
+    padding-block-start "calc($space-2 + ($size-control - $fs-ui * $lh-body) / 2)"
     background "$bg-surface"
     color "$fg"
+    font-size "$fs-ui"
+    line-height "$lh-body"
     font-weight "$weight-regular"
     min-width "$size-matrix-cell"
 }
