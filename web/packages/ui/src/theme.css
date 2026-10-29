@@ -157,7 +157,7 @@
   --border: #dfe3e9;
   --border-control: #80838b;
   --border-subtle: #eaedf1;
-  --divider: #c5cad3;
+  --divider: #a9b0bc;
   --fg: #16181d;
   --fg-muted: #565d6b;
   --fg-subtle: #5c6172;
@@ -358,7 +358,7 @@
   --border: #dfe3e9;
   --border-control: #80838b;
   --border-subtle: #eaedf1;
-  --divider: #c5cad3;
+  --divider: #a9b0bc;
   --fg: #16181d;
   --fg-muted: #565d6b;
   --fg-subtle: #5c6172;
@@ -425,7 +425,7 @@
   --border: #e1d8ca;
   --border-control: #7a7366;
   --border-subtle: #eae3d7;
-  --divider: #c6bcab;
+  --divider: #b2a795;
   --fg: #2b2620;
   --fg-muted: #5f564d;
   --fg-subtle: #645b51;
@@ -3390,7 +3390,7 @@ optgroup {
 
 [data-part="window-dock.note"] {
   padding-inline-start: var(--space-3);
-  border-inline-start: var(--border-width) solid var(--border-control);
+  border-inline-start: var(--border-width) solid var(--divider);
   color: var(--fg);
   font-size: var(--fs-base);
   white-space: nowrap;

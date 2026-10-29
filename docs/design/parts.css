@@ -2556,7 +2556,7 @@ optgroup {
 
 [data-part="window-dock.note"] {
   padding-inline-start: var(--space-3);
-  border-inline-start: var(--border-width) solid var(--border-control);
+  border-inline-start: var(--border-width) solid var(--divider);
   color: var(--fg);
   font-size: var(--fs-base);
   white-space: nowrap;
