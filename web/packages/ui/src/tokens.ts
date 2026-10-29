@@ -177,6 +177,7 @@ export const tokenNames = [
   "size-day-week",
   "ring-width",
   "ring-offset",
+  "ring-room",
   "bp-tablet",
   "bp-computer",
   "size-sidebar",

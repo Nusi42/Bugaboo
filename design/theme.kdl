@@ -168,6 +168,7 @@ tokens {
     // Focus ring
     size "ring-width" "2px"
     size "ring-offset" "2px"
+    size "ring-room" "calc($ring-width + $ring-offset)"
 
     // Where the layout changes
     size "bp-tablet" "768px"
@@ -605,18 +606,18 @@ mixin "page-column-wide" {
 mixin "ring-room" {
     use "ring-scroll-room"
     margin-block 0
-    padding "calc($ring-width + $ring-offset)"
+    padding "$ring-room"
 }
 
 // What the focus scrolls into view keeps that room from the edge of a box that scrolls: the ring is not cut there.
 mixin "ring-scroll-room" {
-    scroll-padding "calc($ring-width + $ring-offset)"
+    scroll-padding "$ring-room"
 }
 
 // With the ring room: the box reaches out by the same size at the sides, so the text inside stays on
 // the edge of the boxes above and below it. Only for boxes that ask for it.
 mixin "ring-room-flush" {
-    margin-inline "calc(($ring-width + $ring-offset) * -1)"
+    margin-inline "calc($ring-room * -1)"
 }
 
 // What floats over or stands out of the page: a card, a sheet, a panel, an offer.

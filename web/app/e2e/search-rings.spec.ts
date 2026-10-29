@@ -2,7 +2,8 @@ import { t } from "@bugaboo/messages";
 import type { Page } from "@playwright/test";
 
 import { createAdmin } from "./support/accounts.ts";
-import { expectGoodInEveryTheme, expectRingsWhole } from "./support/checks.ts";
+import { expectGoodWithRingsInEveryTheme } from "./support/checks.ts";
+import { expectRingsWhole } from "./support/rings.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { gapAboveRows, openBar, openSearch } from "./support/search-bar.ts";
@@ -28,7 +29,7 @@ test.use({
 async function checkWindowOf(page: Page, field: string): Promise<void> {
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
   await page.getByRole("button", { name: t("search.bar.filter-by", { field }) }).click();
-  await expectGoodInEveryTheme(page, true);
+  await expectGoodWithRingsInEveryTheme(page);
   await page.getByRole("button", { name: t("common.cancel") }).click();
 }
 
@@ -36,46 +37,53 @@ test("qry_01 every ring of the windows of the search is whole in every theme", a
   await openSearch(page, "priority is high");
   await openBar(page);
   await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
-  await expectGoodInEveryTheme(page, true);
+  await expectGoodWithRingsInEveryTheme(page);
   await page
     .getByRole("button", { name: t("search.bar.filter-by", { field: "Assigned to" }) })
     .click();
-  await expectGoodInEveryTheme(page, true);
+  await expectGoodWithRingsInEveryTheme(page);
   await page.getByRole("button", { name: t("common.cancel") }).click();
   // The editor of a day, of a length of time and of a text.
   await checkWindowOf(page, "Created");
   await checkWindowOf(page, "Hours logged");
   await checkWindowOf(page, "Title");
   await page.getByRole("button", { name: t("search.bar.any-of") }).click();
-  await expectGoodInEveryTheme(page, true);
+  await expectGoodWithRingsInEveryTheme(page);
   await page.getByRole("button", { name: t("common.cancel") }).click();
   await page.getByRole("button", { name: t("search.help") }).click();
-  await expectGoodInEveryTheme(page, true);
+  await expectGoodWithRingsInEveryTheme(page);
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: t("search.save"), exact: true }).click();
-  await expectGoodInEveryTheme(page, true);
+  await expectGoodWithRingsInEveryTheme(page);
 });
 
 /** A dialog with one field in a box that has the style `around`. */
 function dialog(field: string, around: string): string {
-  return `<div role="dialog" style="padding:20px"><div style="${around}"><${field}></div></div>`;
+  return `<div role="dialog" style="padding:20px"><div style="${around}">${field}</div></div>`;
 }
 
 test("qry_01 the check of the rings fails on a field without a ring and on a ring that a box cuts", async ({
   page,
 }) => {
-  const wholeField =
-    '<input style="outline:2px solid red;outline-offset:2px;display:block;margin:4px">';
+  const ringed = "outline:2px solid red;outline-offset:2px;display:block";
   // A dialog with room round its field passes.
-  await page.setContent(dialog(wholeField.slice(1, -1), "overflow:hidden;padding:8px"));
+  await page.setContent(
+    dialog(`<input style="${ringed};margin:4px">`, "overflow:hidden;padding:8px"),
+  );
   await expectRingsWhole(page);
   // No ring at all: the field says `outline: none`.
-  await page.setContent(dialog('input style="outline:none"', ""));
+  await page.setContent(dialog('<input style="outline:none">', ""));
+  await expect(expectRingsWhole(page)).rejects.toThrow(/no focus ring is drawn/u);
+  // A ring of no colour (the transparent one of forced colours) is no ring.
+  await page.setContent(dialog('<input style="outline:2px solid transparent">', ""));
+  await expect(expectRingsWhole(page)).rejects.toThrow(/no focus ring is drawn/u);
+  // A shadow that is there before the focus is no ring either.
+  await page.setContent(dialog('<input style="outline:none;box-shadow:0 0 0 2px red">', ""));
   await expect(expectRingsWhole(page)).rejects.toThrow(/no focus ring is drawn/u);
   // A list that hides what is outside it and has no room for the ring of its field.
   await page.setContent(
     dialog(
-      'input style="outline:2px solid red;outline-offset:2px;display:block;width:100%;box-sizing:border-box"',
+      `<input style="${ringed};width:100%;box-sizing:border-box">`,
       "overflow:hidden;width:200px",
     ),
   );

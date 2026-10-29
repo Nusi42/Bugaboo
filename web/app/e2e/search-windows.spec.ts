@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
 
 import { createAdmin } from "./support/accounts.ts";
-import { expectGoodInEveryTheme, expectRingsWhole } from "./support/checks.ts";
+import { expectGoodInEveryTheme } from "./support/checks.ts";
+import { expectRingsWhole } from "./support/rings.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
