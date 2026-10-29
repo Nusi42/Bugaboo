@@ -43,9 +43,9 @@ export function AssignmentList({ project, onRemove, onChangeHere }: AssignmentLi
           <Button
             isPending={list.isFetchingNextPage}
             onPress={() => {
-              if (hiddenHere) {
-                setShown(shown + PHONE_ROWS);
-              } else {
+              // Ten more are shown, and the next page is read where the rows that are loaded do not reach.
+              setShown(shown + PHONE_ROWS);
+              if (all.length < shown + PHONE_ROWS && list.hasNextPage) {
                 void list.fetchNextPage();
               }
             }}

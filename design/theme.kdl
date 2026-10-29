@@ -3460,17 +3460,20 @@ part "confirm.body" {
     use "ring-room-flush"
 }
 
-// The title stays at the top of the scrolling question, so a long preview never takes it off the screen (the
-// review of M5 exit, O1).
 part "confirm.title" {
-    position sticky
-    top "calc(-1 * $ring-room)"
     margin 0
-    padding-block "$ring-room $space-1"
-    background "$bg-raised"
     font-size "$fs-lg"
     line-height "$lh-snug"
     font-weight "$weight-bold"
+}
+
+// The title of the question that scrolls stays at the top of its body, so a long preview never takes it off the
+// screen, and covers the ring room above it (the review of M5 exit, O1).
+part "confirm.body confirm.title" {
+    position sticky
+    top "calc(-1 * $ring-room)"
+    padding-block "$ring-room $space-1"
+    background "$bg-raised"
 }
 
 part "confirm.actions" {

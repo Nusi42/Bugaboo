@@ -14,7 +14,7 @@ export interface CreatedLinkProps {
 }
 
 /** Marks of the place of the address in the message, which the message has once. */
-const WHERE = "";
+const WHERE = "@@address@@";
 
 /**
  * The address with room to break after its `@` and its dots, so a narrow screen breaks it at those places and

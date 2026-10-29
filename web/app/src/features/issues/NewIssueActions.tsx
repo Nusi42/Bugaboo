@@ -62,12 +62,11 @@ function missingForCreate(form: NewIssue) {
  * while the form scrolls.
  */
 export function NewIssueActions({ form, formId, onMade, onClose, whyId }: NewIssueActionsProps) {
-  const why = whyId;
   const missing = missingForCreate(form);
   const phone = useLayout() === "phone";
   return (
     <>
-      <p id={why} {...partOf(part.muted)}>
+      <p id={whyId} {...partOf(part.muted)}>
         {t(missing ?? "issues.ready-to-create")}
       </p>
       <div {...partOf(part.windowFooterActions)}>
@@ -76,7 +75,7 @@ export function NewIssueActions({ form, formId, onMade, onClose, whyId }: NewIss
             <Button look={buttonLook.quiet} onPress={onClose}>
               {t("common.cancel")}
             </Button>
-            <CreateAnother form={form} missing={missing} why={why} onMade={onMade} />
+            <CreateAnother form={form} missing={missing} why={whyId} onMade={onMade} />
           </>
         )}
         <SubmitButton form={formId} isPending={form.pending} isDisabled={missing !== undefined}>
@@ -134,11 +133,10 @@ export function NewIssueMoreActions({
   onClose,
   whyId,
 }: Omit<NewIssueActionsProps, "formId">) {
-  const why = whyId;
   const missing = missingForCreate(form);
   return (
     <div {...partOf(part.stack)}>
-      <CreateAnother form={form} missing={missing} why={why} onMade={onMade} />
+      <CreateAnother form={form} missing={missing} why={whyId} onMade={onMade} />
       <Button look={buttonLook.quiet} onPress={onClose}>
         {t("common.cancel")}
       </Button>

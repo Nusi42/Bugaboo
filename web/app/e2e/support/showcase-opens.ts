@@ -88,7 +88,7 @@ async function takeBackInvitationsOf(page: Page, email: string): Promise<void> {
   }
   await rows
     .first()
-    .getByRole("button", { name: /^Take back/u })
+    .getByRole("button", { name: new RegExp(`^${t("invitations.take-back")}`, "u") })
     .click();
   // The question that follows is answered with the same words.
   await page

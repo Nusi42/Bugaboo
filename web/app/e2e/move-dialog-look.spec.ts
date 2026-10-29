@@ -50,7 +50,10 @@ test("ux_6 the question Move stays on the screen, its title and answers in view 
   const title = dialog.getByRole("heading", {
     name: t("projects.move-dialog-title", { name: "Documents" }),
   });
-  expect((await boxOf(title)).y).toBeGreaterThanOrEqual(0);
+  // The title stays at the top of the question, whatever the body has scrolled: within its first line or two.
+  const titleBox = await boxOf(title);
+  expect(titleBox.y).toBeGreaterThanOrEqual(box.y);
+  expect(titleBox.y).toBeLessThan(box.y + 80);
   const answers = await boxOf(partIn(dialog, "confirm.actions"));
   const bodyBox = await boxOf(body);
   expect(bodyBox.y + bodyBox.height).toBeLessThanOrEqual(answers.y + 0.5);
