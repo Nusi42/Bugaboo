@@ -12836,6 +12836,17 @@ part "search-mistake" {
     overflow-wrap anywhere
 }
 
+part "search-held-actions" {
+    display flex
+    flex none
+    align-items center
+    gap "$space-2"
+}
+
+part "search-held-actions[state=held]" {
+    visibility hidden
+}
+
 // The line under the name of a saved search says who made it, and what is done with a change stands
 // at its end. The line is always as high as the buttons, so nothing under the name moves when
 // *Changed, not saved* appears (S29).
@@ -12847,26 +12858,15 @@ part "search-made-by" {
 
 // The words and the buttons share one cell, so the buttons that are held (and not seen) take no
 // width from the words: they are one line on a phone too.
-part "search-made-by > p" {
+part "search-made-by > muted" {
     grid-area "1 / 1"
     min-width 0
     margin 0
 }
 
-part "search-made-by > span" {
+part "search-made-by > search-held-actions" {
     grid-area "1 / 1"
     justify-self end
-}
-
-part "search-held-actions" {
-    display flex
-    flex none
-    align-items center
-    gap "$space-2"
-}
-
-part "search-held-actions[state=held]" {
-    visibility hidden
 }
 
 // While the person is still typing at the end of the text, what is missing is a hint, not a fault (S6).

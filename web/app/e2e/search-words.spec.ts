@@ -243,9 +243,10 @@ test("qry_06 a saved search has one line under its name and no empty band", asyn
   const line = page.locator("[data-part='search-made-by']");
   const [title, held, shown] = await Promise.all([boxOf(heading), boxOf(line), boxOf(bar)]);
   // The line is one row of the height of the buttons, and the bar follows it at once.
-  expect(held.height).toBeLessThanOrEqual(48);
+  const button = await boxOf(line.locator("button").last());
+  expect(held.height).toBeLessThanOrEqual(button.height + 1);
   // The words are one line, on a phone too: the held buttons take no width from them.
-  const words = await boxOf(line.locator("p"));
+  const words = await boxOf(line.locator("[data-part='muted']"));
   expect(words.height).toBeLessThanOrEqual(28);
   expect(shown.y - (held.y + held.height)).toBeLessThan(24);
   expect(held.y - (title.y + title.height)).toBeLessThan(24);
