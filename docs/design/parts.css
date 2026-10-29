@@ -318,6 +318,7 @@ optgroup {
 
 [data-part="alert"][data-variant~="danger"] {
   border-color: var(--danger);
+  border-left-width: var(--border-width);
   background: var(--danger-soft);
 }
 
@@ -1365,6 +1366,7 @@ optgroup {
 [data-part="list-scroll"] {
   box-sizing: border-box;
   min-width: var(--list-width);
+  padding-block-end: var(--space-3);
   max-height: var(--size-list-scroll);
   overflow: auto;
   border-bottom: var(--border-width) solid var(--border-subtle);

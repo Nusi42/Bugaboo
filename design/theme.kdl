@@ -1035,8 +1035,10 @@ part "alert" {
     overflow-wrap anywhere
 }
 
+// An error has a full border and its icon, not the thick red edge of Critical on a row (R5).
 part "alert[variant=danger]" {
     border-color "$danger"
+    border-left-width "$border-width"
     background "$danger-soft"
 }
 
@@ -2068,6 +2070,7 @@ part "list-frame[variant=compact] checkbox.box" {
 part "list-scroll" {
     box-sizing border-box
     min-width "$list-width"
+    padding-block-end "$space-3"
     max-height "$size-list-scroll"
     overflow auto
     border-bottom "$border-width solid $border-subtle"
