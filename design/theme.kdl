@@ -1460,17 +1460,22 @@ part "picker.options[variant=list]" {
     flex-direction column
     gap "$space-1"
     max-height "calc($size-control * 7 + $space-1 * 6)"
-    // The padding is room for the focus ring (a list that scrolls clips what is outside it); the
-    // negative margin puts the text of the rows on the edge of the box above them (S16).
-    margin 0 "calc(($ring-width + $ring-offset) * -1)"
+    // Room for the focus ring: a list that scrolls clips what is outside it.
+    margin 0
     padding "calc($ring-width + $ring-offset)"
     list-style none
     overflow-y auto
-    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border, transparent)"
+    background-image "linear-gradient($bg-raised, $bg-raised), linear-gradient(to top, $border-subtle, transparent)"
     background-position "bottom, bottom"
     background-size "100% $space-4, 100% $space-3"
     background-repeat no-repeat
     background-attachment "local, scroll"
+}
+
+// A list of rows that are one button each: the negative margin puts their text on the edge of the box
+// above them (S16). The lists of radio buttons keep their margin.
+part "picker.options[variant=list]:has(picker.choice)" {
+    margin-inline "calc(($ring-width + $ring-offset) * -1)"
 }
 
 part "picker.option[variant=list]" {
@@ -3140,6 +3145,11 @@ part "confirm.actions" {
     use "answer-row"
 }
 
+// The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end.
+part "search-panel.actions" {
+    use "answer-row"
+}
+
 // The text buttons of an answer row stand on the start edge, the others at the end.
 part "window.footer-actions button[variant=quiet]:first-child" "confirm.actions button[variant=quiet]:first-child" "search-panel.actions button[variant=quiet]:first-child" {
     margin-inline-end auto
@@ -3156,12 +3166,12 @@ part "overlay.modal[variant=full] confirm.actions" {
     margin-top auto
 }
 
-part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" {
+part "overlay[variant=full] confirm.actions" "overlay[variant=full] window.footer-actions" "overlay[variant=bottom] search-panel.actions" {
     flex-direction column-reverse
     align-items stretch
 }
 
-part "overlay[variant=full] confirm.actions button[variant=quiet]:first-child" "overlay[variant=full] window.footer-actions button[variant=quiet]:first-child" {
+part "overlay[variant=full] confirm.actions button[variant=quiet]:first-child" "overlay[variant=full] window.footer-actions button[variant=quiet]:first-child" "overlay[variant=bottom] search-panel.actions button[variant=quiet]:first-child" {
     margin-inline 0
 }
 
@@ -12540,11 +12550,6 @@ part "search-choice" {
     gap "$space-3"
 }
 
-// The same foot as every dialog (confirm.actions): the way out on the start edge, the main button at the end.
-part "search-panel.actions" {
-    use "answer-row"
-}
-
 // The button that closes the sheet stays at the foot of it.
 part "search-panel[variant=sheet] search-panel.actions" {
     margin-block-start auto
@@ -12765,6 +12770,23 @@ part "share-choice" {
     gap "$space-1"
     flex 1
     min-width 0
+}
+
+// The body of the Share window starts where its title starts (the title bar is padded by pad-box,
+// the body by pad-dialog), and a row of it has no padding of its own: title, groups and tick boxes
+// stand on one edge (S31).
+part "share-body" {
+    display flex
+    flex-direction column
+    gap "$space-5"
+    margin-inline "calc(($pad-dialog - $pad-box) * -1)"
+}
+
+part "share-row" {
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-control"
 }
 
 part "search-help.title" {

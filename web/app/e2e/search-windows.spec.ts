@@ -5,7 +5,7 @@ import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
-import { box, openBar, openSearch, rowsCutOff } from "./support/search-bar.ts";
+import { addTitleFilter, box, openBar, openSearch, rowsCutOff } from "./support/search-bar.ts";
 
 // The windows of the search bar (UX design section 4.3): the button of a phone with its count and its
 // Close button, and every window of the bar in the four themes.
@@ -116,5 +116,45 @@ test("qry_01 the person picker has Me as the first row of its one list", async (
     .click();
   await expect(
     page.getByRole("button", { name: /Change the filter Assigned to: me/iu }),
+  ).toBeVisible();
+});
+
+test("qry_01 an Any of shows its filters inside and adds them with the same pickers", async ({
+  page,
+}) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.any-of"), exact: true }).click();
+  const window = page.getByRole("alertdialog", { name: t("search.bar.any-of") });
+  // The reason the main button waits is on the page, not only in its colour.
+  await expect(window.getByText(t("search.bar.any-of-need"))).toBeVisible();
+  await expect(
+    window.getByRole("button", { name: t("search.bar.add-filter-confirm") }),
+  ).toBeDisabled();
+  await addTitleFilter(page, window, "login");
+  await addTitleFilter(page, window, "logout");
+  await expect(window.getByText(t("search.bar.any-of-need"))).toHaveCount(0);
+  await window.getByRole("button", { name: t("search.bar.add-filter-confirm") }).click();
+  await expect(page.getByRole("button", { name: /Change the filter Any of/u })).toBeVisible();
+});
+
+test("qry_01 the date editor takes the day in the format the help shows", async ({ page }) => {
+  await openSearch(page, "priority is high");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+  await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Created" }) }).click();
+  const window = page.getByRole("alertdialog", { name: "Created" });
+  // The editor says the format the help uses, and the help's own example is in the same format.
+  await expect(window.getByText(t("search.bar.day-format"))).toBeVisible();
+  expect(t("search.help-time-text")).toContain("2026-12-31");
+  expect(t("search.bar.day-format")).toContain("2026-12-31");
+  const day = window.getByRole("textbox", { name: t("search.bar.day") });
+  await day.fill("31.12.2026");
+  await expect(window.getByText(t("search.bar.not-a-day"))).toBeVisible();
+  await day.fill("2026-12-31");
+  await expect(window.getByText(t("search.bar.not-a-day"))).toHaveCount(0);
+  await window.getByRole("button", { name: t("search.bar.add-filter-confirm") }).click();
+  await expect(
+    page.getByRole("button", { name: /Change the filter Created.*2026/u }),
   ).toBeVisible();
 });

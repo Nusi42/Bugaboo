@@ -102,6 +102,7 @@ export function FilterEditor({
       }
       cancelLabel={t("common.cancel")}
       confirmDisabled={made === null || problem !== undefined}
+      confirmHint={t("search.bar.add-filter-need")}
       onConfirm={() => {
         if (made !== null) {
           onApply(made);

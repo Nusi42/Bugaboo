@@ -53,7 +53,7 @@ function ShareRow({
   readonly onToggle: (on: boolean) => void;
 }) {
   return (
-    <li {...partOf(part.searchListItem)}>
+    <li {...partOf(part.shareRow)}>
       <div {...partOf(part.shareChoice)}>
         <Checkbox
           label={item.name}
@@ -142,7 +142,7 @@ export function ShareWindow({ search, isOpen, onClose }: ShareWindowProps) {
         </div>
       }
     >
-      <div {...partOf(part.searchHelp)}>
+      <div {...partOf(part.shareBody)}>
         <Choices
           search={search}
           kind={shareKind.group}

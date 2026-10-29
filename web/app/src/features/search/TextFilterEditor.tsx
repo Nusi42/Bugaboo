@@ -10,8 +10,6 @@ export interface TextFilterEditorProps {
   readonly fields: ReadableFields;
   /** The text the window starts with: the text of the filter, or nothing for a new one. */
   readonly text: string;
-  /** What the filter is: an *Any of* or a filter with no picker. */
-  readonly anyOf: boolean;
   readonly isNew: boolean;
   readonly onApply: (filter: Expr) => void;
   readonly onClose: () => void;
@@ -19,13 +17,11 @@ export interface TextFilterEditorProps {
 
 /**
  * The window for what Simple search has no picker for: the filter as text, checked as it is typed.
- * An *Any of* is the same: the conditions with `or` between them (UX design section 4.3).
  */
 export function TextFilterEditor({
   language,
   fields,
   text,
-  anyOf,
   isNew,
   onApply,
   onClose,
@@ -44,8 +40,8 @@ export function TextFilterEditor({
           onClose();
         }
       }}
-      title={anyOf ? t("search.bar.any-of") : t("search.bar.text-filter")}
-      text={anyOf ? t("search.bar.any-of-text") : t("search.bar.text-filter-text")}
+      title={t("search.bar.text-filter")}
+      text={t("search.bar.text-filter-text")}
       confirmLabel={t(isNew ? "search.bar.add-filter-confirm" : "search.bar.change-filter-confirm")}
       cancelLabel={t("common.cancel")}
       confirmDisabled={!usable}

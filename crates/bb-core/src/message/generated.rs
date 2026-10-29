@@ -3851,6 +3851,9 @@ pub const SEARCH_BAR_ADD_FILTER: MessageKey = MessageKey::new("search.bar.add-fi
 pub const SEARCH_BAR_ADD_FILTER_CONFIRM: MessageKey =
     MessageKey::new("search.bar.add-filter-confirm");
 
+/// The message `search.bar.add-filter-need`.
+pub const SEARCH_BAR_ADD_FILTER_NEED: MessageKey = MessageKey::new("search.bar.add-filter-need");
+
 /// The message `search.bar.add-filter-which`.
 pub const SEARCH_BAR_ADD_FILTER_WHICH: MessageKey = MessageKey::new("search.bar.add-filter-which");
 
@@ -3866,6 +3869,16 @@ pub const SEARCH_BAR_AFTER: MessageKey = MessageKey::new("search.bar.after");
 
 /// The message `search.bar.any-of`.
 pub const SEARCH_BAR_ANY_OF: MessageKey = MessageKey::new("search.bar.any-of");
+
+/// The message `search.bar.any-of-add`.
+pub const SEARCH_BAR_ANY_OF_ADD: MessageKey = MessageKey::new("search.bar.any-of-add");
+
+/// The message `search.bar.any-of-conditions`.
+pub const SEARCH_BAR_ANY_OF_CONDITIONS: MessageKey =
+    MessageKey::new("search.bar.any-of-conditions");
+
+/// The message `search.bar.any-of-need`.
+pub const SEARCH_BAR_ANY_OF_NEED: MessageKey = MessageKey::new("search.bar.any-of-need");
 
 /// The message `search.bar.any-of-text`.
 pub const SEARCH_BAR_ANY_OF_TEXT: MessageKey = MessageKey::new("search.bar.any-of-text");
@@ -3891,6 +3904,9 @@ pub const SEARCH_BAR_COUNT: MessageKey = MessageKey::new("search.bar.count");
 
 /// The message `search.bar.day`.
 pub const SEARCH_BAR_DAY: MessageKey = MessageKey::new("search.bar.day");
+
+/// The message `search.bar.day-format`.
+pub const SEARCH_BAR_DAY_FORMAT: MessageKey = MessageKey::new("search.bar.day-format");
 
 /// The message `search.bar.fields-clear`.
 pub const SEARCH_BAR_FIELDS_CLEAR: MessageKey = MessageKey::new("search.bar.fields-clear");
@@ -3963,6 +3979,9 @@ pub const SEARCH_BAR_KIND_VALUE: MessageKey = MessageKey::new("search.bar.kind-v
 
 /// The message `search.bar.me`.
 pub const SEARCH_BAR_ME: MessageKey = MessageKey::new("search.bar.me");
+
+/// The message `search.bar.not-a-day`.
+pub const SEARCH_BAR_NOT_A_DAY: MessageKey = MessageKey::new("search.bar.not-a-day");
 
 /// The message `search.bar.not-a-number`.
 pub const SEARCH_BAR_NOT_A_NUMBER: MessageKey = MessageKey::new("search.bar.not-a-number");
@@ -4246,6 +4265,9 @@ pub const SEARCH_SAVE_COPY_CONFIRM: MessageKey = MessageKey::new("search.save-co
 
 /// The message `search.save-name`.
 pub const SEARCH_SAVE_NAME: MessageKey = MessageKey::new("search.save-name");
+
+/// The message `search.save-need`.
+pub const SEARCH_SAVE_NEED: MessageKey = MessageKey::new("search.save-need");
 
 /// The message `search.save-text`.
 pub const SEARCH_SAVE_TEXT: MessageKey = MessageKey::new("search.save-text");
@@ -14251,6 +14273,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.above", "above"),
     ("search.bar.add-filter", "Add filter"),
     ("search.bar.add-filter-confirm", "Add filter"),
+    ("search.bar.add-filter-need", "Choose a value first."),
     ("search.bar.add-filter-text", "What should {field} be?"),
     (
         "search.bar.add-filter-which",
@@ -14263,9 +14286,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("search.bar.after", "after"),
     ("search.bar.any-of", "Any of"),
+    ("search.bar.any-of-add", "Add a filter"),
+    ("search.bar.any-of-conditions", "Filters of this Any of"),
+    ("search.bar.any-of-need", "Add at least two filters."),
     (
         "search.bar.any-of-text",
-        "Write the conditions with “or” between them. A result needs to fit at least one.",
+        "A result needs to fit at least one of these filters.",
     ),
     ("search.bar.at-least", "at least"),
     ("search.bar.at-most", "at most"),
@@ -14281,6 +14307,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.contains", "contains {text}"),
     ("search.bar.count", "How many"),
     ("search.bar.day", "Which day"),
+    (
+        "search.bar.day-format",
+        "Write the day like 2026-12-31, as in the help.",
+    ),
     (
         "search.bar.duration-help",
         "Write a length of time, for example {hours}, {minutes} or {both}.",
@@ -14330,6 +14360,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.bar.name-colon", "{name}:"),
     ("search.bar.name-value", "{name}: {value}"),
     ("search.bar.not", "not {value}"),
+    (
+        "search.bar.not-a-day",
+        "That is not a day. Write it like 2026-12-31.",
+    ),
     (
         "search.bar.not-a-duration",
         "Write a length of time like {hours} or {both}.",
@@ -14636,6 +14670,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.save-copy", "Save a copy"),
     ("search.save-copy-confirm", "Save a copy"),
     ("search.save-name", "Name"),
+    ("search.save-need", "Give the search a name first."),
     (
         "search.save-text",
         "Give the search a name. It keeps the filters and how the results are shown. At first only you can see it.",

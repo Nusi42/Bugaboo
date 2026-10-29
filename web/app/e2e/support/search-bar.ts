@@ -106,3 +106,29 @@ export function rowsCutOff(list: Locator): Promise<readonly string[]> {
     return cut;
   });
 }
+
+/** Where the words of an element start (not where the box that holds them starts), in pixels from the left of the page. */
+export function wordsStartOf(element: Locator): Promise<number> {
+  return element.first().evaluate((node) => {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    return range.getBoundingClientRect().left;
+  });
+}
+
+/** In the window of an *Any of*: *Add a filter*, the field *Title*, the words, and the window's own *Add filter*. */
+export async function addTitleFilter(page: Page, anyOf: Locator, words: string): Promise<void> {
+  await anyOf.getByRole("button", { name: t("search.bar.any-of-add") }).click();
+  await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Title" }) }).click();
+  await page.getByRole("textbox", { name: t("search.bar.value") }).fill(words);
+  await page
+    .getByRole("alertdialog", { name: "Title" })
+    .getByRole("button", { name: t("search.bar.add-filter-confirm") })
+    .click();
+}
+
+/** Where the box of an element starts, in pixels from the left of the page. */
+export async function leftEdgeOf(element: Locator): Promise<number> {
+  const found = await element.boundingBox();
+  return found === null ? Number.NaN : found.x;
+}
