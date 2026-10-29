@@ -1797,7 +1797,7 @@
   "issues.keep-theirs": "Keep {name}'s change",
   "issues.keep-theirs-unnamed": "Keep their change",
   "issues.use-mine": "Use mine",
-  "shortcut.new-issue": "Create a new issue",
+  "shortcut.new-issue": "Create an issue",
   "shortcut.change-status": "Change the status of the open issue",
   "shortcut.assign": "Choose who the open issue is assigned to",
   "shortcut.edit-description": "Edit the description of the open issue",

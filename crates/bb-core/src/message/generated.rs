@@ -15524,7 +15524,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "shortcut.list-previous",
         "Open the previous item in the list",
     ),
-    ("shortcut.new-issue", "Create a new issue"),
+    ("shortcut.new-issue", "Create an issue"),
     ("shortcut.on-issue", "On an open issue"),
     ("shortcut.or", "or"),
     ("shortcut.quick-search", "Open quick search"),

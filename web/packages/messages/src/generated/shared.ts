@@ -594,7 +594,7 @@ export const messages = {
   "editing.lost-changed": "Not saved yet: {name} changed {thing} after you. Your text is kept.",
   "editing.draft-continue": "Continue your draft from {when}",
   "editing.draft-drop": "Throw the draft away",
-  "shortcut.new-issue": "Create a new issue",
+  "shortcut.new-issue": "Create an issue",
   "shortcut.change-status": "Change the status of the open issue",
   "shortcut.assign": "Choose who the open issue is assigned to",
   "shortcut.edit-description": "Edit the description of the open issue",
