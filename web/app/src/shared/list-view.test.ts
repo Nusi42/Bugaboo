@@ -10,14 +10,16 @@ import {
   withView,
 } from "./list-view.ts";
 import { readSearch, searchLocation } from "./search-address.ts";
+import { testSearchLanguage } from "./search-language-testing.ts";
 
 const project = builtInView({ everywhere: false, spacing: "comfortable" });
 const everywhere = builtInView({ everywhere: true, spacing: "comfortable" });
 
-/** The words the person may read, and how a word is told from another (the language module's rule, in short). */
+/** The words the person may read; a word is told from another by the language module's own rule. */
 const readable = ["id", "story points", "assigned to", "status group"];
-const key = (each: string): string => each.replaceAll(" ", "").toLowerCase();
-const now = (word: string): string => readable.find((each) => key(each) === key(word)) ?? word;
+const now = (word: string): string =>
+  readable.find((each) => testSearchLanguage.wordKey(each) === testSearchLanguage.wordKey(word)) ??
+  word;
 
 describe("a list saved with the words of the old language (D3)", () => {
   const old = {

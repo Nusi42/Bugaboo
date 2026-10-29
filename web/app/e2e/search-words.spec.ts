@@ -4,6 +4,7 @@ import { t, textByKey } from "@bugaboo/messages";
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { storeInOldSpelling } from "./support/old-spelling.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
 import { addressText, box, boxOf, closeBar, openBar, openSearch } from "./support/search-bar.ts";
@@ -15,6 +16,29 @@ import { savedSearchAddress } from "../src/shared/paths.ts";
 
 let adasSearch = "";
 let oldColumns = "";
+let storedBefore = "";
+
+/** A saved search with columns (no widths), made through the API; its ID. */
+async function saveWithColumns(
+  admin: Awaited<ReturnType<typeof createAdmin>>,
+  name: string,
+  text: string,
+  fields: readonly string[],
+): Promise<string> {
+  const reply = await admin.client.POST("/api/v1/saved-searches", {
+    body: {
+      name,
+      search_text: text,
+      presentation: {
+        view: "list",
+        columns: fields.map((field) => ({ field, width: null })),
+        spacing: "comfortable",
+        group_by: null,
+      },
+    },
+  });
+  return dataOf(reply).id;
+}
 
 test.use({
   preparation: {
@@ -30,25 +54,20 @@ test.use({
         body: { name: "Hours logged", kind: "duration", applies_to: "issues" },
       });
       // A list saved before D3: its columns name the fields the old way, an own field included.
-      oldColumns = dataOf(
-        await admin.client.POST("/api/v1/saved-searches", {
-          body: {
-            name: "Old columns",
-            search_text: "",
-            presentation: {
-              view: "list",
-              columns: [
-                { field: "id", width: null },
-                { field: "title", width: null },
-                { field: "assignedTo", width: null },
-                { field: "hoursLogged", width: null },
-              ],
-              spacing: "comfortable",
-              group_by: null,
-            },
-          },
-        }),
-      ).id;
+      oldColumns = await saveWithColumns(admin, "Old columns", "", [
+        "id",
+        "title",
+        "assignedTo",
+        "hoursLogged",
+      ]);
+      // A search stored before D3, as migration 24 and the old language left it.
+      storedBefore = await saveWithColumns(admin, "Stored before", "status group is not Done", [
+        "id",
+        "assigned to",
+      ]);
+      storeInOldSpelling(server, "Stored before", "statusGroup is not done", {
+        "assigned to": "assignedTo",
+      });
       await admin.dispose();
     },
   },
@@ -225,6 +244,29 @@ test("qry_06 a saved search has one line under its name and no empty band", asyn
   const [title, held, shown] = await Promise.all([boxOf(heading), boxOf(line), boxOf(bar)]);
   // The line is one row of the height of the buttons, and the bar follows it at once.
   expect(held.height).toBeLessThanOrEqual(48);
+  // The words are one line, on a phone too: the held buttons take no width from them.
+  const words = await boxOf(line.locator("p"));
+  expect(words.height).toBeLessThanOrEqual(28);
   expect(shown.y - (held.y + held.height)).toBeLessThan(24);
   expect(held.y - (title.y + title.height)).toBeLessThan(24);
+});
+
+test("qry_06 a search stored in the old spelling opens unchanged and Undo comes back to it", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(savedSearchAddress(storedBefore));
+  await openBar(page);
+  await expect(page.getByText(textByKey("search.made-by", { person: "Ada Admin" }))).toBeVisible();
+  await expect(page.getByText(t("search.changed-not-saved"))).toBeHidden();
+  // The address says nothing of the search: it is the saved one.
+  expect(addressText(page)).toBe("");
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await expect(box(page)).toHaveValue("status group is not Done");
+  await box(page).fill("status group is Done");
+  await closeBar(page);
+  await expect(page.getByText(t("search.changed-not-saved"))).toBeVisible();
+  await page.getByRole("button", { name: t("search.undo-changes") }).click();
+  await expect(page.getByText(t("search.changed-not-saved"))).toBeHidden();
+  expect(addressText(page)).toBe("");
 });

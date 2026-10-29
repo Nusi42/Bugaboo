@@ -1,4 +1,5 @@
 import type { ReadableFields, SearchLanguage } from "@bugaboo/wasm-search";
+import { useMemo } from "react";
 
 import { useSearchFields } from "./search-fields.ts";
 import { useSearchLanguage } from "./search-language.ts";
@@ -30,8 +31,12 @@ export function canonicalFormsOf(language: SearchLanguage, fields: ReadableField
 /** The canonical forms, once the language and the readable fields are there; none before. */
 export function useCanonicalForms(within?: string): CanonicalForms | undefined {
   const language = useSearchLanguage();
-  const fields = useSearchFields(within).data;
-  return language === undefined || fields === undefined
-    ? undefined
-    : canonicalFormsOf(language, fields.fields);
+  const fields = useSearchFields(within).data?.fields;
+  return useMemo(
+    () =>
+      language === undefined || fields === undefined
+        ? undefined
+        : canonicalFormsOf(language, fields),
+    [language, fields],
+  );
 }

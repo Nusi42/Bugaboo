@@ -12703,17 +12703,22 @@ part "search-mistake" {
 // at its end. The line is always as high as the buttons, so nothing under the name moves when
 // *Changed, not saved* appears (S29).
 part "search-made-by" {
-    display flex
+    display grid
     align-items center
-    justify-content space-between
-    gap "$space-2"
     min-height "$size-control"
 }
 
+// The words and the buttons share one cell, so the buttons that are held (and not seen) take no
+// width from the words: they are one line on a phone too.
 part "search-made-by > p" {
-    flex "1 1 auto"
+    grid-area "1 / 1"
     min-width 0
     margin 0
+}
+
+part "search-made-by > span" {
+    grid-area "1 / 1"
+    justify-self end
 }
 
 part "search-held-actions" {

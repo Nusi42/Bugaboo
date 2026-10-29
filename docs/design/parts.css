@@ -5648,17 +5648,20 @@ optgroup {
 }
 
 [data-part="search-made-by"] {
-  display: flex;
+  display: grid;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
   min-height: var(--size-control);
 }
 
 [data-part="search-made-by"] > [data-part="p"] {
-  flex: 1 1 auto;
+  grid-area: 1 / 1;
   min-width: 0;
   margin: 0;
+}
+
+[data-part="search-made-by"] > [data-part="span"] {
+  grid-area: 1 / 1;
+  justify-self: end;
 }
 
 [data-part="search-held-actions"] {
