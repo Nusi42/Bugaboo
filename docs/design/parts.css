@@ -5519,7 +5519,6 @@ optgroup {
   display: grid;
   position: relative;
   height: auto;
-  font-family: var(--mono);
   line-height: var(--lh-text);
 }
 
@@ -5541,7 +5540,7 @@ optgroup {
   margin: 0;
   padding: 0;
   border: 0;
-  font-family: inherit;
+  font-family: var(--mono);
   font-size: inherit;
   letter-spacing: inherit;
   line-height: inherit;

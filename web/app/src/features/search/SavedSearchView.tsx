@@ -56,6 +56,9 @@ export function SavedSearchView({ search, state, onState, results }: SavedSearch
             onSaved={() => {
               onState(withoutChanges(state), historyStep.replace);
             }}
+            onUndo={() => {
+              onState(withoutChanges(state), historyStep.push);
+            }}
           />
         )
       }

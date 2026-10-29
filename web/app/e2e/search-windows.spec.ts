@@ -5,7 +5,7 @@ import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
-import { box, openBar, openSearch } from "./support/search-bar.ts";
+import { box, boxOf, openBar, openSearch } from "./support/search-bar.ts";
 
 // The windows of the search bar (UX design section 4.3): the button of a phone with its count and its
 // Close button, and every window of the bar in the four themes.
@@ -36,7 +36,7 @@ test("qry_01 on a phone the button says how many filters the search has", async 
       // The sheet has a button that closes it.
       await page.getByRole("button", { name: t("search.bar.filters-count", { count: 2 }) }).click();
       const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
-      await sheet.getByRole("button", { name: t("common.close") }).click();
+      await sheet.getByRole("button", { name: t("search.bar.sheet-done") }).click();
       await expect(sheet).toHaveCount(0);
     },
   });
@@ -79,6 +79,36 @@ test("qry_01 the sheet of a phone does not move when the offers come and go", as
       const withoutOffers = await toSimple.boundingBox();
       // The same place, so a tap that closes the offers is also a tap on what was under the finger.
       expect(withoutOffers?.y).toBe(withOffers?.y);
+    },
+  });
+});
+
+test("qry_03 the offers never push the foot of the sheet off the screen or cover the page", async ({
+  page,
+}) => {
+  await openSearch(page, "assignedTo is me");
+  await openBar(page);
+  await page.getByRole("button", { name: t("search.bar.to-advanced") }).click();
+  await box(page).fill("prio is high and ");
+  const offers = page.getByRole("listbox");
+  await expect(offers).toBeVisible();
+  await expect(offers).not.toHaveCSS("position", "absolute");
+  const offered = await boxOf(offers);
+  const field = await boxOf(box(page));
+  // The offers stand under the box in the flow of the page, they do not float over what follows it.
+  expect(offered.y).toBeGreaterThanOrEqual(field.y + field.height);
+  await onThisLayout(page, {
+    computer: nothing,
+    tablet: nothing,
+    phone: async () => {
+      const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
+      const button = sheet.getByRole("button", { name: t("search.bar.sheet-done") });
+      await expect(button).toBeInViewport({ ratio: 1 });
+      const [sheetBox, buttonBox] = await Promise.all([boxOf(sheet), boxOf(button)]);
+      // The offers start above the foot (the body of the sheet scrolls to the rest), and the foot
+      // stays where it is, in the screen.
+      expect(offered.y).toBeLessThan(buttonBox.y);
+      expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(sheetBox.y + sheetBox.height);
     },
   });
 });

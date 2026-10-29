@@ -1,18 +1,31 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, part, partOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { presentationOf, type ListView } from "../../shared/list-view.ts";
 import { SaveSearchButton } from "./SaveSearchButton.tsx";
 import { useChangeSearch, type SavedSearch } from "./saved-searches.ts";
 
-/** The buttons at the name of a saved search that was changed: *Save* for its maker, *Save a copy* for anybody else. */
+/** Says the changes are not saved and gives them up when asked. */
+function UndoChanges({ onUndo }: { readonly onUndo: () => void }) {
+  return (
+    <>
+      <span {...partOf(part.muted)}>{t("search.changed-not-saved")}</span>
+      <Button look={buttonLook.quiet} onPress={onUndo}>
+        {t("search.undo-changes")}
+      </Button>
+    </>
+  );
+}
+
+/** What stands at the name of a saved search that was changed: that it is not saved, *Undo changes*, and *Save* for its maker or *Save a copy* for anybody else. */
 export function ChangedActions({
   search,
   text,
   view,
   hasMistake,
   onSaved,
+  onUndo,
 }: {
   readonly search: SavedSearch;
   readonly text: string;
@@ -22,10 +35,13 @@ export function ChangedActions({
   readonly hasMistake: boolean;
   /** The changes were saved: the address of the search holds no unsaved text any more. */
   readonly onSaved: () => void;
+  /** The person gives up the changes: the address goes back to the saved search. */
+  readonly onUndo: () => void;
 }) {
   const change = useChangeSearch(search.id);
   return (
     <>
+      <UndoChanges onUndo={onUndo} />
       {search.mine ? (
         <Button
           look={buttonLook.primary}

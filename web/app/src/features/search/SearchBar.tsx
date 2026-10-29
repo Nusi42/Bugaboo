@@ -1,23 +1,11 @@
-import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonLook,
-  Overlay,
-  overlayEdge,
-  Skeleton,
-  useLayout,
-  part,
-  partOf,
-} from "@bugaboo/ui";
+import { Alert, alertTone, Skeleton, useLayout, part, partOf } from "@bugaboo/ui";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 
 import { useSearchFields } from "./search-fields.ts";
 import { useSearchLanguage } from "./search-language.ts";
-import { filtersOf } from "../../shared/search-tree.ts";
+import { FiltersButton, PhoneSheet } from "./PhoneSheet.tsx";
 import { SearchBarBody } from "./SearchBarBody.tsx";
 import { useSearchKey } from "./use-search-key.ts";
 import { useSearchBar, type SearchBarInput } from "./use-search-bar.ts";
@@ -88,55 +76,20 @@ function LoadedBar({ language, fields, names, text, onText, onStale, actions }: 
       </div>
     );
   }
-  const count = bar.search === null ? 0 : filtersOf(bar.search).length;
   return (
     <div {...partOf(part.searchBar)}>
       <div {...partOf(part.searchBarHead)}>
-        <Button
+        <FiltersButton
+          search={bar.search}
+          mistakes={bar.answer.mistakes.length}
           onPress={() => {
             setOpen(true);
           }}
-        >
-          {bar.search === null ? t("search.bar.filters") : t("search.bar.filters-count", { count })}
-        </Button>
+        />
       </div>
       <PhoneSheet open={open} onOpenChange={setOpen}>
         {body}
       </PhoneSheet>
     </div>
-  );
-}
-
-/** The bar in a sheet from the bottom of a phone, with a button that closes it. */
-function PhoneSheet({
-  open,
-  onOpenChange,
-  children,
-}: {
-  readonly open: boolean;
-  readonly onOpenChange: (open: boolean) => void;
-  readonly children: ReactNode;
-}) {
-  return (
-    <Overlay
-      isOpen={open}
-      onOpenChange={onOpenChange}
-      label={t("search.bar.filters")}
-      from={overlayEdge.bottom}
-    >
-      <div {...partOf(part.searchPanel, { variants: ["sheet"] })}>
-        <div {...partOf(part.searchBar)}>{children}</div>
-        <div {...partOf(part.searchPanelActions)}>
-          <Button
-            look={buttonLook.primary}
-            onPress={() => {
-              onOpenChange(false);
-            }}
-          >
-            {t("common.close")}
-          </Button>
-        </div>
-      </div>
-    </Overlay>
   );
 }
