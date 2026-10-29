@@ -9,7 +9,7 @@
 
 import { settingDefaults, type Schema } from "@bugaboo/api-client";
 
-import { currentWord, listWord, projectColumns, searchColumns } from "./list-columns.ts";
+import { listWord, projectColumns, searchColumns } from "./list-columns.ts";
 import { spacingOf, type SearchSpacing, type SearchState } from "./search-address.ts";
 
 /**
@@ -54,33 +54,18 @@ export function builtInView({ everywhere, spacing }: BuiltInInput): ListView {
 export function viewOf(state: SearchState, defaults: ListView): ListView {
   const { groupBy } = state;
   return {
-    columns: state.columns?.map((word) => currentWord(word)) ?? defaults.columns,
-    widths: state.widths === undefined ? defaults.widths : wordsNow(state.widths),
+    columns: state.columns ?? defaults.columns,
+    widths: state.widths ?? defaults.widths,
     spacing: state.spacing ?? defaults.spacing,
-    groupBy:
-      groupBy === undefined
-        ? defaults.groupBy
-        : groupBy === noGrouping
-          ? null
-          : currentWord(groupBy),
+    groupBy: groupBy === undefined ? defaults.groupBy : groupBy === noGrouping ? null : groupBy,
   };
-}
-
-/** The widths with the words of the columns written the current way. */
-function wordsNow(widths: Readonly<Record<string, number>>): Readonly<Record<string, number>> {
-  const now: Record<string, number> = {};
-  for (const word of Object.keys(widths)) {
-    now[currentWord(word)] = widths[word] ?? 0;
-  }
-  return now;
 }
 
 /**
  * The view with every word of a column, of a width and of the grouping written as the fields the
- * person may read write it (`known`), so a list saved before D3 keeps the columns of its own fields.
+ * person may read write it (`now`: the old language's `storyPoints` is `story points`), so a list saved before D3 keeps the columns of its own fields.
  */
-export function viewInWords(view: ListView, known: readonly string[]): ListView {
-  const now = (word: string): string => currentWord(word, known);
+export function viewInWords(view: ListView, now: (word: string) => string): ListView {
   const widths: Record<string, number> = {};
   for (const word of Object.keys(view.widths)) {
     widths[now(word)] = view.widths[word] ?? 0;
@@ -145,16 +130,16 @@ export function viewFromPresentation(
   const widths: Record<string, number> = {};
   for (const column of presentation.columns) {
     if (column.width !== null) {
-      widths[currentWord(column.field)] = column.width;
+      widths[column.field] = column.width;
     }
   }
   return {
     columns:
       presentation.columns.length === 0
         ? defaults.columns
-        : presentation.columns.map((column) => currentWord(column.field)),
+        : presentation.columns.map((column) => column.field),
     widths,
     spacing: spacingOf(presentation.spacing) ?? settingDefaults.appearanceSpacing,
-    groupBy: presentation.group_by === null ? null : currentWord(presentation.group_by),
+    groupBy: presentation.group_by,
   };
 }

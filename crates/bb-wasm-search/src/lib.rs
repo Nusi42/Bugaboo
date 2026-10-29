@@ -103,6 +103,14 @@ pub fn own_field_word(name: &str) -> String {
     bb_searchlang::own_field_word(name)
 }
 
+/// What tells two words of the language apart (`bb_core::fields::word_key`): the one rule that the
+/// browser reads the words of the old language by (`statusGroup` is `status group`).
+#[must_use]
+#[wasm_bindgen]
+pub fn word_key(word: &str) -> String {
+    bb_searchlang::word_key(word)
+}
+
 /// The text of a person who is still typing, with a `*` after the last word when it can take
 /// one (`bb_searchlang::open_last_word`).
 #[must_use]

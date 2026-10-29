@@ -14,36 +14,43 @@ import { readSearch, searchLocation } from "./search-address.ts";
 const project = builtInView({ everywhere: false, spacing: "comfortable" });
 const everywhere = builtInView({ everywhere: true, spacing: "comfortable" });
 
-describe("an own field kept in the old words is found by its name (D3)", () => {
-  it("keeps the column, the width and the grouping of an own field", () => {
-    const old = {
-      columns: ["id", "storyPoints", "assignedTo"],
-      widths: { storyPoints: 120 },
-      spacing: "comfortable",
-      groupBy: "storyPoints",
-    } as const;
-    expect(viewInWords(old, ["id", "story points", "assigned to"])).toEqual({
+/** The words the person may read, and how a word is told from another (the language module's rule, in short). */
+const readable = ["id", "story points", "assigned to", "status group"];
+const key = (each: string): string => each.replaceAll(" ", "").toLowerCase();
+const now = (word: string): string => readable.find((each) => key(each) === key(word)) ?? word;
+
+describe("a list saved with the words of the old language (D3)", () => {
+  const old = {
+    columns: ["id", "storyPoints", "assignedTo"],
+    widths: { storyPoints: 120 },
+    spacing: "comfortable",
+    groupBy: "statusGroup",
+  } as const;
+
+  it("keeps the column, the width and the grouping of every field, an own one included", () => {
+    expect(viewInWords(old, now)).toEqual({
       columns: ["id", "story points", "assigned to"],
       widths: { "story points": 120 },
       spacing: "comfortable",
-      groupBy: "story points",
-    });
-    // A word that is no field of the person's stays as it is, and is left out later as unreadable.
-    expect(viewInWords(old, []).columns).toEqual(["id", "storyPoints", "assigned to"]);
-  });
-});
-
-describe("the words of the old language in an address or a saved search (D3)", () => {
-  it("reads the words of the old language: an address or a saved search from before D3 still works", () => {
-    const state = readSearch({
-      pathname: "/p/WEB/issues",
-      search: { cols: "id,assignedTo,statusGroup", widths: "assignedTo:200", group: "statusGroup" },
-    });
-    expect(viewOf(state, project)).toMatchObject({
-      columns: ["id", "assigned to", "status group"],
-      widths: { "assigned to": 200 },
       groupBy: "status group",
     });
+  });
+
+  it("is not changed until a person changes it, and set back by hand it is not changed again", () => {
+    const defaults = viewInWords(old, now);
+    const state = readSearch({
+      pathname: "/search",
+      search: { cols: "id,storyPoints,assignedTo" },
+    });
+    const shown = viewInWords(viewOf(state, defaults), now);
+    // The same words on both sides: the address then says nothing of the columns.
+    expect(withView(state, shown, defaults).columns).toBeUndefined();
+    const changed = withView(state, { ...shown, columns: ["id"] }, defaults);
+    expect(changed.columns).toEqual(["id"]);
+    expect(withView(changed, shown, defaults).columns).toBeUndefined();
+  });
+
+  it("reads the address and a saved presentation as they are written", () => {
     const saved = viewFromPresentation(
       {
         view: "list",
@@ -53,11 +60,8 @@ describe("the words of the old language in an address or a saved search (D3)", (
       },
       project,
     );
-    expect(saved).toMatchObject({
-      columns: ["reported by"],
-      widths: { "reported by": 90 },
-      groupBy: "status group",
-    });
+    expect(saved.columns).toEqual(["reportedBy"]);
+    expect(viewInWords(saved, now).groupBy).toBe("status group");
   });
 });
 

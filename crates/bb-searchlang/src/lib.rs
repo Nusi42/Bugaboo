@@ -37,6 +37,7 @@ pub mod vectors;
 mod words;
 
 pub use answer::{Answer, read};
+pub use bb_core::fields::word_key;
 pub use bb_core::text_words::open_last_word;
 #[cfg(feature = "browser")]
 pub use browser::{

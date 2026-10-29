@@ -1,4 +1,4 @@
-import { searchWords, type SearchWord } from "@bugaboo/api-client";
+import type { SearchWord } from "@bugaboo/api-client";
 import { listColumns, type ListColumn } from "@bugaboo/ui";
 
 /** The cells of the list that are not a choice: the tick box and the buttons of the row. */
@@ -42,26 +42,6 @@ const wordOfCell = {
   person: listWord.assignedTo,
   changed: listWord.changed,
 } as const satisfies Readonly<Record<Exclude<ListColumn, FixedCell>, SearchWord>>;
-
-/** What tells two words of the search language apart: lower case and no space (`word_key` of `bb-core`). */
-function wordKey(word: string): string {
-  return word.replaceAll(/\s/gu, "").toLowerCase();
-}
-
-/**
- * The word of a built-in field for a word of the old language (`statusGroup` is `status group`,
- * ADR-0005 amendment M5, decision 11), so an address or a saved search that names a column or a
- * grouping the old way keeps working. `known` are the words the person may read, so an own field
- * (`storyPoints` is `story points`) is found by the same rule. Any other word stays as it is.
- */
-export function currentWord(word: string, known: readonly string[] = []): string {
-  const key = wordKey(word);
-  return (
-    known.find((each) => wordKey(each) === key) ??
-    searchWords.find((each) => wordKey(each) === key) ??
-    word
-  );
-}
 
 /** The cell a column is drawn in: one the list has a cell for, or a plain value (an own field). */
 export type ColumnCell = Exclude<ListColumn, FixedCell> | "value";

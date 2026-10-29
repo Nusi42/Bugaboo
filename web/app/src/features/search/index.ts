@@ -23,3 +23,4 @@ export {
   type SearchState,
 } from "../../shared/search-address.ts";
 export { withGroupFilter } from "../../shared/with-filter.ts";
+export { useCanonicalForms, type CanonicalForms } from "./canonical-forms.ts";

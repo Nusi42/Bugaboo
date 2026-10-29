@@ -100,6 +100,8 @@ test("qry_03 the offers continue the words of a field and keep to the font of th
   const font = (locator: ReturnType<typeof page.locator>) =>
     locator.evaluate((element) => getComputedStyle(element).fontFamily);
   expect(await font(offer.locator("span").first())).toBe(await font(box(page)));
+  // The mono font is drawn at the regular weight (S8).
+  await expect(box(page)).toHaveCSS("font-weight", "400");
   await offer.click();
   await expect(box(page)).toHaveValue("status group ");
 });

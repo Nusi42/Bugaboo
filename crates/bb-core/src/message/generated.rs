@@ -11943,7 +11943,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.search.invalid",
-        "The search has a mistake. Read the notes next to it and correct it.",
+        "The search has a mistake. Find it in the search box and correct it.",
     ),
     (
         "error.search.too-slow",

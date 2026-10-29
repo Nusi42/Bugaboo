@@ -12699,25 +12699,31 @@ part "search-mistake" {
     overflow-wrap anywhere
 }
 
-// The room of the buttons of a changed saved search is held before they are there, so nothing
-// under the title moves when *Changed, not saved* appears (S29).
+// The line under the name of a saved search says who made it, and what is done with a change stands
+// at its end. The line is always as high as the buttons, so nothing under the name moves when
+// *Changed, not saved* appears (S29).
+part "search-made-by" {
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-2"
+    min-height "$size-control"
+}
+
+part "search-made-by > div" {
+    flex "1 1 auto"
+    min-width 0
+}
+
+part "search-made-by > div > p" {
+    margin 0
+}
+
 part "search-held-actions" {
     display flex
-    flex-wrap nowrap
+    flex none
     align-items center
     gap "$space-2"
-    min-width 0
-    max-width "100%"
-}
-
-// The words of the note give way (they wrap) before the buttons do, so the row never leaves its card.
-part "search-held-actions > span" {
-    flex "0 1 auto"
-    min-width 0
-}
-
-part "search-held-actions > button" {
-    flex none
 }
 
 part "search-held-actions[state=held]" {

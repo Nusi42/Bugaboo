@@ -56,7 +56,7 @@ export function AdvancedSearch({ language, fields, bar }: AdvancedSearchProps) {
         />
       </div>
       <MistakeList id={mistakesId} mistakes={mistakes} unfinishedAt={unfinishedAt} />
-      {faults.length > 0 ? <p {...partOf(part.muted)}>{t("search.bar.blocked")}</p> : null}
+      {mistakes.length > 0 ? <p {...partOf(part.muted)}>{t("search.bar.blocked")}</p> : null}
       {showing ? (
         <OfferList id={listId} offers={offers.items} active={active} onTake={take} />
       ) : null}

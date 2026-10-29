@@ -1,20 +1,17 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, part, partOf } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { presentationOf, type ListView } from "../../shared/list-view.ts";
 import { SaveSearchButton } from "./SaveSearchButton.tsx";
 import { useChangeSearch, type SavedSearch } from "./saved-searches.ts";
 
-/** Says the changes are not saved and gives them up when asked. */
+/** Gives the changes up when asked. */
 function UndoChanges({ onUndo }: { readonly onUndo: () => void }) {
   return (
-    <>
-      <span {...partOf(part.muted)}>{t("search.changed-not-saved")}</span>
-      <Button look={buttonLook.quiet} onPress={onUndo}>
-        {t("search.undo-changes")}
-      </Button>
-    </>
+    <Button look={buttonLook.quiet} onPress={onUndo}>
+      {t("search.undo-changes")}
+    </Button>
   );
 }
 

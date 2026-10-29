@@ -175,7 +175,7 @@ fn longer_field(
     {
         return None;
     }
-    let begun = format!("{} {typed}", &text[first.span.start..start].trim_end());
+    let begun = format!("{} {typed}", text[first.span.start..start].trim_end());
     let items: Vec<Suggestion> = readable
         .fields
         .iter()
