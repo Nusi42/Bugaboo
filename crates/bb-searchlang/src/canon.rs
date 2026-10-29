@@ -75,6 +75,9 @@ fn choice_word(value: &mut Operand, field: &Field) {
     };
     let exact = field.choices.iter().find(|choice| same_name(choice, text));
     let run_together = || {
+        if !field.reads_run_together() {
+            return None;
+        }
         let wanted = word_key(text);
         let mut found = field
             .choices

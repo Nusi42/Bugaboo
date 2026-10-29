@@ -8,6 +8,7 @@
 //! only holds what the person may read.
 
 use bb_core::fields::word_key;
+use bb_core::names::same_name;
 use bb_core::text_words::{SearchWord, checked_words};
 
 use crate::fields::{Field, FieldKind, Operator, ReadableFields};
@@ -295,10 +296,10 @@ fn unknown_choice(field: &Field, value: &Operand, span: Span) -> Option<Mistake>
     let is_duration = matches!(value, Operand::Duration { .. });
     if !is_duration
         && (field.choices.is_empty()
-            || field
-                .choices
-                .iter()
-                .any(|choice| word_key(choice) == word_key(&wanted)))
+            || field.choices.iter().any(|choice| {
+                same_name(choice, &wanted)
+                    || (field.reads_run_together() && word_key(choice) == word_key(&wanted))
+            }))
     {
         return None;
     }

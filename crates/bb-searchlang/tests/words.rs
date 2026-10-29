@@ -81,3 +81,37 @@ fn qry_01_an_unknown_field_before_the_end_of_an_unfinished_text_is_told_first() 
     let answer = bb_searchlang::read("priority is ", Some(&sample_fields()));
     assert_eq!(answer.mistakes.len(), 1);
 }
+
+#[test]
+fn qry_05_two_choices_of_an_own_field_that_differ_in_spaces_or_case_are_never_merged() {
+    let readable = ReadableFields {
+        fields: vec![
+            Field::unordered("kind").with_choices(&["Bug fix", "bugfix", "Task"]),
+            Field::unordered("priority").with_choices(&["Low", "High"]),
+            Field::unordered("status group").with_choices(&["Not started", "In progress"]),
+        ],
+    };
+    let shown = |text: &str| {
+        let tree = parse_with(text, &readable).ok()?;
+        check(tree, &readable)
+            .ok()
+            .map(|checked| print(checked.search()))
+    };
+    // The same name, in any case and with any spaces between words, is that choice.
+    assert_eq!(shown("kind is BUGFIX").as_deref(), Some("kind is bugfix"));
+    assert_eq!(
+        shown("kind is \"bug   FIX\"").as_deref(),
+        Some("kind is \"Bug fix\"")
+    );
+    // Case alone never tells the two apart, spaces do: this is `bugfix`, not `Bug fix`.
+    assert_eq!(shown("kind is bugFix").as_deref(), Some("kind is bugfix"));
+    // A spelling that is neither of the two names is not a choice, and picks neither.
+    assert_eq!(shown("kind is bugf\"ix\""), None);
+    assert_eq!(shown("kind is \"bugf ix\""), None);
+    // The built-in lists read the old run-together form.
+    assert_eq!(
+        shown("statusGroup is inProgress").as_deref(),
+        Some("status group is \"In progress\"")
+    );
+    assert_eq!(shown("kind is taskk"), None);
+}

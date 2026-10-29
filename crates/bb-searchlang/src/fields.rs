@@ -332,6 +332,21 @@ impl IssueField {
 }
 
 impl Field {
+    /// Whether the values of this field's list are also read with the spaces run together
+    /// (`inProgress` for `In progress`, the form of the old language): only the built-in lists,
+    /// *Priority* and *Status group*. For any other list two different names (`Bug fix` and
+    /// `bugfix`) must never be taken for each other.
+    #[must_use]
+    pub fn reads_run_together(&self) -> bool {
+        let key = bb_core::fields::word_key(&self.word);
+        [
+            bb_core::fields::Field::Priority.search_word(),
+            IssueField::StatusGroup.word().to_owned(),
+        ]
+        .iter()
+        .any(|word| bb_core::fields::word_key(word) == key)
+    }
+
     /// A field with a list of values that have no order (a status, an issue type, a tag, a group):
     /// it can be asked whether it is, is not or is one of them, and whether it is empty.
     #[must_use]
