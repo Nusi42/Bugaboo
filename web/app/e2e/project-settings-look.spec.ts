@@ -22,20 +22,16 @@ test("ux_4 every Save of the settings of a project is as wide as its words, and 
   const saves = page.getByRole("button", { name: t("common.save"), exact: true });
   await expect(saves.nth(1)).toBeVisible();
   const [first, second] = [await boxOf(saves.nth(0)), await boxOf(saves.nth(1))];
+  const asWideAsItsWords = (): Promise<void> => {
+    expect(Math.round(first.width), "every Save is as wide as its words").toBe(
+      Math.round(second.width),
+    );
+    return nothing();
+  };
   // On a computer every Save is as wide as its words; on a phone it is as wide as its form (one width for a form).
   await onThisLayout(page, {
-    computer: () => {
-      expect(Math.round(first.width), "every Save is as wide as its words").toBe(
-        Math.round(second.width),
-      );
-      return nothing();
-    },
-    tablet: () => {
-      expect(Math.round(first.width), "every Save is as wide as its words").toBe(
-        Math.round(second.width),
-      );
-      return nothing();
-    },
+    computer: asWideAsItsWords,
+    tablet: asWideAsItsWords,
     phone: () =>
       inOrder(
         [0, 1].map((at) => async () => {
