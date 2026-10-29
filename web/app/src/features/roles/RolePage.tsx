@@ -3,8 +3,8 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
-import { NotFoundPage, QueryGate } from "../shell/index.ts";
-import { useRoleTrail } from "./role-trail.ts";
+import { paths } from "../../shared/paths.ts";
+import { NotFoundPage, QueryGate, useItemTrail } from "../shell/index.ts";
 import { RoleSections } from "./RoleSections.tsx";
 import { useRole } from "./roles.ts";
 
@@ -18,7 +18,7 @@ export function RolePage({ id }: { readonly id: string }) {
   const detail: Schema<"RoleDetailBody"> | undefined = found.data;
   const role = detail?.role;
   usePageTitle(role?.name ?? t("nav.roles"));
-  useRoleTrail(role?.name);
+  useItemTrail(t("nav.roles"), paths.roles, role?.name);
   const shown =
     detail !== undefined && role !== undefined ? { role, used: detail.used_by } : undefined;
   return (

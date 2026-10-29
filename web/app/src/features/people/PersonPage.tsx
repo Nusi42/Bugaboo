@@ -2,9 +2,9 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
-import { NotFoundPage, QueryGate } from "../shell/index.ts";
+import { paths } from "../../shared/paths.ts";
+import { NotFoundPage, QueryGate, useItemTrail } from "../shell/index.ts";
 import { lineOf, usePerson } from "./people.ts";
-import { usePersonTrail } from "./person-trail.ts";
 import { Facts, Groups, Roles } from "./PersonSections.tsx";
 
 /**
@@ -20,7 +20,7 @@ export function PersonPage({ id }: { readonly id: string }) {
       ? { line, since: found.data.created_at }
       : undefined;
   usePageTitle(line?.name ?? t("nav.people"));
-  usePersonTrail(line?.name);
+  useItemTrail(t("nav.people"), paths.people, line?.name);
   return (
     <QueryGate error={found.error} data={shown} notFound={<NotFoundPage />}>
       {(person) => (

@@ -3,9 +3,9 @@ import { Alert, alertTone, Card, partOf, part, ShowMoreOf, useLayout } from "@bu
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { ListEditor, type ListRow } from "../shell/index.ts";
+import { paths } from "../../shared/paths.ts";
+import { ListEditor, type ListRow, useItemTrail } from "../shell/index.ts";
 import { GroupEditor } from "./GroupEditor.tsx";
-import { useGroupTrail } from "./group-trail.ts";
 import { groupLinesOf, useGroup, useGroups } from "./groups.ts";
 import { CreateGroupForm } from "./CreateGroupForm.tsx";
 
@@ -19,7 +19,7 @@ export interface GroupsPageProps {
 /** On a phone one group is a screen of its own, like a person: its name in the bar, and Back to the list. */
 function GroupScreen({ id, onGone }: { readonly id: string; readonly onGone: () => void }) {
   const name = useGroup(id).data?.group.name;
-  useGroupTrail(name);
+  useItemTrail(t("nav.groups"), paths.groups, name);
   return (
     <Card heading={name ?? t("nav.groups")} level={1}>
       <GroupEditor id={id} onDeleted={onGone} />

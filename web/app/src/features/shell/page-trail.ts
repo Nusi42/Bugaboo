@@ -1,4 +1,7 @@
-import { useEffect } from "react";
+import { t } from "@bugaboo/messages";
+import { useEffect, useMemo } from "react";
+
+import { paths } from "../../shared/paths.ts";
 
 import { createRegistry } from "./registry.ts";
 
@@ -35,4 +38,22 @@ export function usePageTrail(steps: readonly TrailStep[] | undefined): void {
       remove?.();
     };
   }, [steps]);
+}
+
+/**
+ * The trail of an item of a list in the organization settings (a person, a role, a group): *Organization settings*,
+ * then the list, then the item, which is the title in the bar of a phone. Back leads to the list.
+ */
+export function useItemTrail(listLabel: string, listHref: string, name: string | undefined): void {
+  const steps = useMemo((): readonly TrailStep[] | undefined => {
+    if (name === undefined) {
+      return undefined;
+    }
+    return [
+      { label: t("nav.organization-settings"), href: paths.organizationSettings },
+      { label: listLabel, href: listHref },
+      { label: name, href: listHref },
+    ];
+  }, [listLabel, listHref, name]);
+  usePageTrail(steps);
 }
