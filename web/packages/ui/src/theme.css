@@ -2672,6 +2672,11 @@ optgroup {
   background: var(--bg-surface);
 }
 
+[data-part="overlay.modal"][data-variant~="full"] [data-part="window.title-bar"] {
+  min-height: var(--size-bar);
+  background: var(--bg-canvas);
+}
+
 [data-part="window.title"] {
   flex: 1;
   min-width: 0;

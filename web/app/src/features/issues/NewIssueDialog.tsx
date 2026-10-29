@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Window } from "@bugaboo/ui";
+import { useLayout, Window } from "@bugaboo/ui";
 import { useId } from "react";
 
 import { useWindowProps } from "../../shared/use-window-props.ts";
 import { windowForms } from "../../shared/window-forms.ts";
 import { closeOverlay, useOverlay } from "../shell/index.ts";
-import { NewIssueActions } from "./NewIssueActions.tsx";
+import { NewIssueActions, NewIssueMoreActions } from "./NewIssueActions.tsx";
 import { NewIssueForm } from "./NewIssueForm.tsx";
 import { useNewIssue } from "./use-new-issue.ts";
 import { useOnMade } from "./use-on-made.ts";
@@ -23,6 +23,7 @@ export function NewIssueDialog() {
   const windowProps = useWindowProps(windowForms.newIssue);
   const formId = useId();
   const onMade = useOnMade();
+  const phone = useLayout() === "phone";
   return (
     <Window
       {...overlay}
@@ -33,6 +34,7 @@ export function NewIssueDialog() {
       }
     >
       <NewIssueForm form={form} formId={formId} onMade={onMade} />
+      {phone ? <NewIssueMoreActions form={form} onMade={onMade} onClose={closeOverlay} /> : null}
     </Window>
   );
 }

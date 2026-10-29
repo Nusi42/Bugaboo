@@ -2603,6 +2603,13 @@ part "window.title-bar" {
     background "$bg-surface"
 }
 
+// On a phone the window is a screen, and its bar is the bar of every other page: the canvas, not the tinted
+// surface of the bar of a window (M5 exit, O13).
+part "overlay.modal[variant=full] window.title-bar" {
+    min-height "$size-bar"
+    background "$bg-canvas"
+}
+
 part "window.title" {
     flex 1
     min-width 0
