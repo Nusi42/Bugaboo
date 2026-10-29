@@ -50,6 +50,14 @@ function TypedControl({ setting, onChange, help }: SettingControlProps) {
     bounds === undefined
       ? undefined
       : t("setting.ui.between", { least: bounds.least, most: bounds.most });
+  // The explanation of the setting is the hint of the box, with its bounds once: where the explanation does not
+  // say them, they follow it.
+  const description =
+    help === undefined
+      ? between
+      : bounds === undefined || help.includes(String(bounds.most))
+        ? help
+        : `${help} ${between ?? ""}`;
   const submit = (): void => {
     if (!number) {
       onChange(draft);
@@ -68,7 +76,7 @@ function TypedControl({ setting, onChange, help }: SettingControlProps) {
     <Form onSubmit={submit}>
       <TextField
         label={wordsOf(setting.name_key)}
-        {...(help === undefined ? {} : { description: help })}
+        {...(description === undefined ? {} : { description })}
         errorMessage={problem}
         value={draft}
         onChange={(next) => {
